@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { FileText, CheckCircle, XCircle, UserPlus, Upload, X, AlertCircle, Eye, ShieldCheck, ShoppingCart, Download, Paperclip } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, UserPlus, X, AlertCircle, Eye, ShieldCheck, ShoppingCart, Download, ThumbsUp } from 'lucide-react';
 
-// --- 模拟已提交的单据数据 (增加了内审部的历史填报数据) ---
+// --- 模拟已提交的单据数据 (包含了内审部的历史填报数据) ---
 const submittedData = {
   docNo: 'SCRAP-20231027-8842',
   status: '审批中',
@@ -22,6 +22,12 @@ const submittedData = {
       quotationAmount: '12000.00',
       supplier: '深圳市绿能环保回收有限公司',
       attachmentName: '内审部资产评估参考报告_20231028.pdf'
+    },
+    {
+      id: 2,
+      quotationAmount: '12500.00',
+      supplier: '广环再生资源利用有限公司',
+      attachmentName: '广环报价单_20231029.pdf'
     }
   ]
 };
@@ -31,12 +37,19 @@ export default function App() {
   const [previewImage, setPreviewImage] = useState(null);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
 
-  // 当前节点：采购部专属填报数据
+  // 衍生数据：内审部报价按金额从高到低排序
+  const sortedQuotations = [...submittedData.internalAuditQuotations].sort(
+    (a, b) => parseFloat(b.quotationAmount) - parseFloat(a.quotationAmount)
+  );
+  // 获取最高报价金额（用于动态打标签）
+  const maxQuotationAmount = sortedQuotations.length > 0 ? parseFloat(sortedQuotations[0].quotationAmount) : 0;
+
+  // 当前节点：采购部专属填报数据 (通过下拉框联动)
   const [purchasingQuotation, setPurchasingQuotation] = useState({
+    supplierId: '',
     quotationAmount: '',
     supplier: '',
-    attachmentName: '',
-    otherAttachmentName: ''
+    attachmentName: ''
   });
 
   const showToast = (message, type = 'success') => {
@@ -44,27 +57,21 @@ export default function App() {
     setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 4000);
   };
 
-  const handleQuotationChange = (e) => {
-    const { name, value } = e.target;
-    setPurchasingQuotation(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setPurchasingQuotation(prev => ({ ...prev, attachmentName: file.name }));
-      showToast(`报价附件 ${file.name} 上传成功`);
+  const handleSupplierChange = (e) => {
+    const selectedId = parseInt(e.target.value, 10);
+    if (!selectedId) {
+      setPurchasingQuotation({ supplierId: '', quotationAmount: '', supplier: '', attachmentName: '' });
+      return;
     }
-    e.target.value = null;
-  };
-
-  const handleOtherFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setPurchasingQuotation(prev => ({ ...prev, otherAttachmentName: file.name }));
-      showToast(`其他附件 ${file.name} 上传成功`);
+    const selectedQuote = submittedData.internalAuditQuotations.find(q => q.id === selectedId);
+    if (selectedQuote) {
+      setPurchasingQuotation({
+        supplierId: selectedId,
+        quotationAmount: selectedQuote.quotationAmount,
+        supplier: selectedQuote.supplier,
+        attachmentName: selectedQuote.attachmentName
+      });
     }
-    e.target.value = null;
   };
 
   const handleExport = () => {
@@ -73,8 +80,8 @@ export default function App() {
 
   const handleApprovalAction = (actionName) => {
     if (actionName === '同意') {
-      if (!purchasingQuotation.quotationAmount || !purchasingQuotation.supplier || !purchasingQuotation.attachmentName) {
-        showToast('请完整填写报价金额、最终回收供应商，并上传最终报价附件', 'error');
+      if (!purchasingQuotation.supplier) {
+        showToast('请选择最终回收供应商', 'error');
         return;
       }
       showToast('审批已同意，单据流转至下一节点', 'success');
@@ -119,6 +126,7 @@ export default function App() {
 
       <main className="max-w-7xl mx-auto p-4 space-y-5">
         
+        {}
         {/* 基本信息模块 (全局只读) */}
         <section className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
           <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center text-gray-600">
@@ -153,6 +161,7 @@ export default function App() {
           </div>
         </section>
 
+        {}
         {/* 报废资产明细模块 (全局只读) */}
         <section className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
           <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
@@ -175,7 +184,7 @@ export default function App() {
 
           <div className="p-4">
             <div className="overflow-x-auto border border-gray-200 rounded">
-              <table className="w-full text-left whitespace-nowrap min-w-[1300px]">
+              <table className="w-full text-left whitespace-nowrap min-w-[1400px]">
                 <thead className="bg-gray-100 border-b">
                   <tr>
                     <th className="p-2 w-12 text-center text-gray-600 font-medium">#</th>
@@ -184,6 +193,7 @@ export default function App() {
                     <th className="p-2 font-medium text-gray-600">序列号</th>
                     <th className="p-2 font-medium text-gray-600 text-center">数量</th>
                     <th className="p-2 font-medium text-gray-600">资产大类</th>
+                    <th className="p-2 font-medium text-gray-600">资产小类</th>
                     <th className="p-2 font-medium text-gray-600">资产说明</th>
                     <th className="p-2 font-medium text-gray-600">公司</th>
                     <th className="p-2 font-medium text-gray-600">板块</th>
@@ -205,6 +215,7 @@ export default function App() {
                       <td className="p-3 text-gray-500">{row.serialNo}</td>
                       <td className="p-3 text-center">{row.qty}</td>
                       <td className="p-3">{row.category}</td>
+                      <td className="p-3">{row.subCategory}</td>
                       <td className="p-3" title={row.desc}>{row.desc}</td>
                       <td className="p-3">{row.company}</td>
                       <td className="p-3">{row.segment}</td>
@@ -231,6 +242,7 @@ export default function App() {
           </div>
         </section>
 
+        {}
         {/* ✨ 内审部报价信息 (全局只读) - 历史节点数据 ✨ */}
         <section className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
           <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center text-gray-600">
@@ -246,10 +258,13 @@ export default function App() {
                     <th className="p-2 font-medium text-gray-600">回收供应商</th>
                     <th className="p-2 font-medium text-gray-600 text-right">报价金额（元）</th>
                     <th className="p-2 font-medium text-gray-600">报价附件</th>
+                    <th className="p-2 font-medium text-gray-600 text-center">内审部建议</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {submittedData.internalAuditQuotations.map((item, index) => (
+                  {sortedQuotations.map((item, index) => {
+                    const isRecommended = parseFloat(item.quotationAmount) === maxQuotationAmount;
+                    return (
                     <tr key={item.id} className="hover:bg-gray-50 transition-colors text-gray-700">
                       <td className="p-3 text-center text-gray-400">{index + 1}</td>
                       <td className="p-3 font-medium">{item.supplier}</td>
@@ -260,14 +275,30 @@ export default function App() {
                           <span className="text-blue-500 hover:underline cursor-pointer">{item.attachmentName}</span>
                         </div>
                       </td>
+                      <td className="p-3 text-center">
+                        {index === 0 ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
+                            推荐
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">-</span>
+                        // {isRecommended ? (
+                        //   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-50 text-red-600 border border-red-200">
+                        //     <ThumbsUp className="w-3 h-3 mr-1" /> 推荐
+                        //   </span>
+                        // ) : (
+                        //   <span className="text-gray-400 text-xs">-</span>
+                        )}
+                      </td>
                     </tr>
-                  ))}
+                  )})}
                 </tbody>
               </table>
             </div>
           </div>
         </section>
 
+        {}
         {/* ✨ 采购部专属操作区 (可编辑) - 当前待办节点 ✨ */}
         <section className="bg-blue-50/50 border border-blue-200 rounded-md shadow-sm overflow-hidden relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
@@ -275,68 +306,59 @@ export default function App() {
             <div className="flex items-center text-blue-800">
               <ShoppingCart className="w-4 h-4 mr-2 text-blue-600" />
               <span className="font-semibold">采购部最终报价信息</span>
-              <span className="ml-2 text-xs text-blue-600">(请确认并填写最终回收数据)</span>
+              <span className="ml-2 text-xs text-blue-600">(请确认并选择最终回收数据)</span>
             </div>
           </div>
           <div className="p-6 bg-white">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-x-8 gap-y-6">
               
-              <div className="flex flex-col">
-                <label className="text-gray-700 mb-1 font-medium">报价金额（元） <span className="text-red-500">*</span></label>
-                <input 
-                  type="number" 
-                  name="quotationAmount"
-                  value={purchasingQuotation.quotationAmount}
-                  onChange={handleQuotationChange}
-                  placeholder="请输入最终金额" 
-                  className="border border-gray-300 rounded p-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white transition-shadow" 
-                />
-              </div>
-
-              <div className="flex flex-col">
+              <div className="flex flex-col md:col-span-2">
                 <label className="text-gray-700 mb-1 font-medium">最终回收供应商 <span className="text-red-500">*</span></label>
-                <input 
-                  type="text" 
-                  name="supplier"
-                  value={purchasingQuotation.supplier}
-                  onChange={handleQuotationChange}
-                  placeholder="请输入最终供应商名称" 
-                  className="border border-gray-300 rounded p-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white transition-shadow" 
-                />
-              </div>
-
-              <div className="col-span-1 md:col-span-2"></div>
-
-              <div className="flex flex-col md:col-span-2 mt-2">
-                <label className="text-gray-700 mb-1 font-medium">最终报价附件 <span className="text-red-500">*</span></label>
-                <div className="flex items-center h-10 w-full">
-                  <input type="file" className="hidden" id="quote-upload" onChange={handleFileUpload} />
-                  {purchasingQuotation.attachmentName ? (
-                    <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded px-3 h-full w-full">
-                      <span className="text-blue-600 truncate flex-grow text-sm" title={purchasingQuotation.attachmentName}>{purchasingQuotation.attachmentName}</span>
-                      <button onClick={() => setPurchasingQuotation(prev => ({...prev, attachmentName: ''}))} className="text-gray-400 hover:text-red-500 ml-2"><X className="w-4 h-4"/></button>
-                    </div>
-                  ) : (
-                    <label htmlFor="quote-upload" className="w-full h-full border border-dashed border-gray-300 rounded text-center text-gray-500 hover:border-blue-400 hover:text-blue-500 cursor-pointer flex items-center justify-center transition-colors bg-gray-50/50 hover:bg-gray-50">
-                      <Upload className="w-4 h-4 mr-2" /> 点击上传附件
-                    </label>
-                  )}
+                <div className="relative">
+                  <select 
+                    value={purchasingQuotation.supplierId || ''}
+                    onChange={handleSupplierChange}
+                    className="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white transition-shadow cursor-pointer appearance-none"
+                  >
+                    <option value="">-- 请选择最终回收供应商 --</option>
+                    {sortedQuotations.map(quote => {
+                      const isRecommended = parseFloat(quote.quotationAmount) === maxQuotationAmount;
+                      return (
+                        <option key={quote.id} value={quote.id}>
+                          {quote.supplier} {isRecommended ? ' (内审推荐最高价)' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-col md:col-span-2 mt-2">
-                <label className="text-gray-700 mb-1 font-medium">其他附件</label>
-                <div className="flex items-center h-10 w-full">
-                  <input type="file" className="hidden" id="other-upload" onChange={handleOtherFileUpload} />
-                  {purchasingQuotation.otherAttachmentName ? (
-                    <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded px-3 h-full w-full">
-                      <span className="text-blue-600 truncate flex-grow text-sm" title={purchasingQuotation.otherAttachmentName}>{purchasingQuotation.otherAttachmentName}</span>
-                      <button onClick={() => setPurchasingQuotation(prev => ({...prev, otherAttachmentName: ''}))} className="text-gray-400 hover:text-red-500 ml-2"><X className="w-4 h-4"/></button>
-                    </div>
+              <div className="flex flex-col">
+                <label className="text-gray-700 mb-1 font-medium">报价金额（元）</label>
+                <input 
+                  type="text" 
+                  readOnly
+                  value={purchasingQuotation.quotationAmount}
+                  placeholder="自动带出" 
+                  className="border border-gray-200 rounded p-2 bg-gray-50 text-gray-500 cursor-not-allowed outline-none" 
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-gray-700 mb-1 font-medium">最终报价附件</label>
+                <div className="flex items-center h-10 w-full border border-gray-200 rounded bg-gray-50 px-3 overflow-hidden">
+                  {purchasingQuotation.attachmentName ? (
+                    <>
+                      <FileText className="w-4 h-4 text-blue-500 mr-2 flex-shrink-0" />
+                      <span className="text-gray-600 truncate text-sm" title={purchasingQuotation.attachmentName}>
+                        {purchasingQuotation.attachmentName}
+                      </span>
+                    </>
                   ) : (
-                    <label htmlFor="other-upload" className="w-full h-full border border-dashed border-gray-300 rounded text-center text-gray-500 hover:border-blue-400 hover:text-blue-500 cursor-pointer flex items-center justify-center transition-colors bg-gray-50/50 hover:bg-gray-50">
-                      <Paperclip className="w-4 h-4 mr-2" /> 点击上传其他附件
-                    </label>
+                    <span className="text-gray-400 text-sm">选择供应商后自动带出</span>
                   )}
                 </div>
               </div>
@@ -347,24 +369,18 @@ export default function App() {
 
       </main>
 
-      {/* ✨ 底部审批操作区 (定制颜色) ✨ */}
+      {}
+      {/* ✨ 底部审批操作区 ✨ */}
       <footer className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] p-4 flex justify-center space-x-6 z-40">
-
-        {/* 同意按钮 - 绿色 (主操作，强化视觉) */}
         <button onClick={() => handleApprovalAction('同意')} className="flex items-center px-12 py-2.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors shadow-md font-medium text-base hover:shadow-lg">
           <CheckCircle className="w-5 h-5 mr-2" /> 同意
         </button>
-
-        {/* 驳回按钮 - 红色 */}
         <button onClick={() => handleApprovalAction('驳回')} className="flex items-center px-8 py-2.5 bg-red-600 text-white rounded hover:bg-red-700 transition-colors shadow-md font-medium text-base hover:shadow-lg">
           <XCircle className="w-5 h-5 mr-2" /> 驳回
         </button>
-
-        {/* 加签按钮 - 白色背景，黑色字体 */}
         <button onClick={() => handleApprovalAction('加签')} className="flex items-center px-8 py-2.5 bg-white text-gray-800 border border-gray-300 rounded hover:bg-gray-50 transition-colors shadow-sm font-medium text-base hover:shadow-md">
           <UserPlus className="w-5 h-5 mr-2" /> 加签
         </button>
-        
       </footer>
     </div>
   );

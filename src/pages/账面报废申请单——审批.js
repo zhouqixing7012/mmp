@@ -5,13 +5,13 @@ import {
 
 // --- 模拟审批历史数据 ---
 const approvalHistoryData = [
-  { id: 1, node: '开始', approver: '发起人', time: '2026/9/12 12:33:34', comment: '同意' },
-  { id: 2, node: '财务初审', approver: '冯丽婷', time: '2026/9/13 12:33:34', comment: '同意' },
-  { id: 3, node: 'MO部7级及以上领导', approver: '章宇东', time: '2026/9/14 12:33:34', comment: '同意' },
-  { id: 4, node: 'ES二级审批', approver: '何文', time: '2026/9/16 12:33:34', comment: '同意' },
-  { id: 5, node: 'ES一级审批', approver: '刘宇', time: '2026/9/17 12:33:34', comment: '同意' },
-  { id: 6, node: '财务复审', approver: '冯丽婷', time: '2026/9/18 12:33:34', comment: '同意' },
-  { id: 7, node: '财务主管', approver: '张洁', time: '-', comment: '待审批' },
+  { id: 1, node: '开始', approver: '发起人', time: '2026/9/12 12:33:34', status: '已完成', comment: '提交申请' },
+  { id: 2, node: '财务初审', approver: '冯丽婷', time: '2026/9/13 12:33:34', status: '已同意', comment: '同意，符合报废标准' },
+  { id: 3, node: 'MO部7级及以上领导', approver: '章宇东', time: '2026/9/14 12:33:34', status: '已同意', comment: '同意' },
+  { id: 4, node: 'ES二级审批', approver: '何文', time: '2026/9/16 12:33:34', status: '已同意', comment: '同意' },
+  { id: 5, node: 'ES一级审批', approver: '刘宇', time: '2026/9/17 12:33:34', status: '已同意', comment: '同意' },
+  { id: 6, node: '财务复审', approver: '冯丽婷', time: '2026/9/18 12:33:34', status: '已同意', comment: '同意' },
+  { id: 7, node: '财务主管', approver: '张洁', time: '-', status: '待审批', comment: '-' },
 ];
 
 // --- 模拟丰富的审批数据 ---
@@ -135,6 +135,7 @@ export default function App() {
     return {
       qty: activeTabItems.reduce((sum, item) => sum + item.qty, 0),
       originalValue: activeTabItems.reduce((sum, item) => sum + item.originalValue, 0).toFixed(2),
+      accDepreciation: activeTabItems.reduce((sum, item) => sum + item.accDepreciation, 0).toFixed(2),
       netValue: activeTabItems.reduce((sum, item) => sum + item.netValue, 0).toFixed(2)
     };
   }, [activeTabItems]);
@@ -295,6 +296,10 @@ export default function App() {
                   <span className="text-orange-600 font-bold text-base">{tabTotals.originalValue}</span>
                 </div>
                 <div className="flex items-center">
+                  <span className="text-gray-500 mr-2">折旧合计:</span>
+                  <span className="text-purple-600 font-bold text-base">{tabTotals.accDepreciation}</span>
+                </div>
+                <div className="flex items-center">
                   <span className="text-gray-500 mr-2">净值合计:</span>
                   <span className="text-green-600 font-bold text-base">{tabTotals.netValue}</span>
                 </div>
@@ -316,6 +321,7 @@ export default function App() {
                 // 计算当前大类的统计数据
                 const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
                 const totalOrigVal = items.reduce((sum, item) => sum + item.originalValue, 0).toFixed(2);
+                const totalAccDepVal = items.reduce((sum, item) => sum + item.accDepreciation, 0).toFixed(2);
                 const totalNetVal = items.reduce((sum, item) => sum + item.netValue, 0).toFixed(2);
 
                 return (
@@ -334,6 +340,8 @@ export default function App() {
                         <span className="text-gray-500">数量: <strong className="text-gray-900 ml-1">{totalQty}</strong></span>
                         <div className="w-px h-4 bg-gray-200"></div>
                         <span className="text-gray-500">原值合计: <strong className="text-orange-600 ml-1">{totalOrigVal}</strong></span>
+                        <div className="w-px h-4 bg-gray-200"></div>
+                        <span className="text-gray-500">折旧合计: <strong className="text-purple-600 ml-1">{totalAccDepVal}</strong></span>
                         <div className="w-px h-4 bg-gray-200"></div>
                         <span className="text-gray-500">净值合计: <strong className="text-green-600 ml-1">{totalNetVal}</strong></span>
                       </div>
@@ -420,6 +428,7 @@ export default function App() {
                     <th className="p-3 text-center border-r border-gray-200/80">节点</th>
                     <th className="p-3 text-center border-r border-gray-200/80">审批人</th>
                     <th className="p-3 text-center border-r border-gray-200/80">审批时间</th>
+                    <th className="p-3 text-center border-r border-gray-200/80">审批状态</th>
                     <th className="p-3 text-center">审批意见</th>
                   </tr>
                 </thead>
@@ -430,7 +439,11 @@ export default function App() {
                       <td className="p-3 text-center border-r border-gray-100 font-medium">{row.node}</td>
                       <td className="p-3 text-center border-r border-gray-100">{row.approver}</td>
                       <td className="p-3 text-center border-r border-gray-100 text-gray-500">{row.time}</td>
-                      <td className={`p-3 text-center font-medium ${row.comment === '同意' ? 'text-green-600' : 'text-amber-500'}`}>{row.comment}</td>
+                      <td className={`p-3 text-center border-r border-gray-100 font-medium ${
+                        row.status === '已同意' || row.status === '已完成' ? 'text-green-600' : 
+                        row.status === '待审批' ? 'text-amber-500' : 'text-gray-600'
+                      }`}>{row.status}</td>
+                      <td className="p-3 text-center text-gray-600">{row.comment}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -51,7 +51,8 @@ export default function App() {
   // ✨ 当前节点待办：收款确认数据
   const [paymentConfirmation, setPaymentConfirmation] = useState({
     handoverForm: '',      // 交接签字表
-    receiptVoucher: ''     // 收款凭证附件
+    receiptVoucher: '',    // 收款凭证附件
+    otherAttachments: ''   // 新增：其他附件（如数据清除报告）
   });
 
   const showToast = (message, type = 'success') => {
@@ -75,7 +76,7 @@ export default function App() {
 
   const handleApprovalAction = (actionName) => {
     if (actionName === '同意') {
-      // 强校验：收款确认的所有必填项
+      // 强校验：收款确认的所有必填项（其他附件为非必填，所以不在此处校验）
       if (!paymentConfirmation.handoverForm || !paymentConfirmation.receiptVoucher) {
         showToast('请完整上传交接签字表与收款凭证', 'error');
         return;
@@ -252,6 +253,7 @@ export default function App() {
                     <th className="p-2 font-medium text-gray-600">回收供应商</th>
                     <th className="p-2 font-medium text-gray-600 text-right">报价金额（元）</th>
                     <th className="p-2 font-medium text-gray-600 pl-8">报价附件</th>
+                    <th className="p-2 font-medium text-gray-600 text-center">内审部建议</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -265,6 +267,15 @@ export default function App() {
                           <FileText className="w-4 h-4 text-gray-400" />
                           <span className="text-blue-500 hover:underline cursor-pointer">{row.attachmentName}</span>
                         </div>
+                      </td>
+                      <td className="p-3 text-center">
+                        {index === 0 ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
+                            推荐
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">-</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -291,11 +302,13 @@ export default function App() {
                 <span className="text-gray-500 mb-1">最终回收供应商</span>
                 <span className="font-medium text-gray-800">{submittedData.purchasingQuotation.supplier}</span>
               </div>
-              <div className="flex flex-col md:col-span-3 mt-2">
+              <div className="flex flex-col">
                 <span className="text-gray-500 mb-1">报价附件</span>
                 <div className="flex items-center space-x-2">
                   <FileText className="w-4 h-4 text-gray-400" />
-                  <span className="text-blue-500 hover:underline cursor-pointer">{submittedData.purchasingQuotation.attachmentName}</span>
+                  <span className="text-blue-500 hover:underline cursor-pointer truncate" title={submittedData.purchasingQuotation.attachmentName}>
+                    {submittedData.purchasingQuotation.attachmentName}
+                  </span>
                 </div>
               </div>
             </div>
@@ -338,7 +351,8 @@ export default function App() {
             </div>
           </div>
           <div className="p-6 bg-white">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            {}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
               
               {/* 字段 1：交接签字表 */}
               <div className="flex flex-col">
@@ -373,6 +387,25 @@ export default function App() {
                   ) : (
                     <label htmlFor="voucher-upload" className="w-full h-full border border-dashed border-gray-300 rounded text-center text-gray-500 hover:border-emerald-500 hover:text-emerald-600 cursor-pointer flex items-center justify-center transition-colors bg-gray-50/50 hover:bg-emerald-50/30">
                       <Upload className="w-4 h-4 mr-2" /> 上传回单/流水
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* 新增字段 3：其他附件（非必填） */}
+              <div className="flex flex-col">
+                <label className="text-gray-700 mb-1.5 font-medium">其他附件 <span className="text-xs text-gray-400 font-normal ml-1">上传数据清除报告等</span></label>
+                <div className="flex items-center h-10">
+                  <input type="file" className="hidden" id="other-upload" onChange={(e) => handlePaymentFileUpload(e, 'otherAttachments')} />
+                  {paymentConfirmation.otherAttachments ? (
+                    <div className="flex items-center justify-between bg-emerald-50/50 border border-emerald-200 rounded px-3 h-full w-full">
+                      <FileText className="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0" />
+                      <span className="text-emerald-700 truncate flex-grow text-sm" title={paymentConfirmation.otherAttachments}>{paymentConfirmation.otherAttachments}</span>
+                      <button onClick={() => setPaymentConfirmation(prev => ({...prev, otherAttachments: ''}))} className="text-gray-400 hover:text-red-500 ml-2"><X className="w-4 h-4"/></button>
+                    </div>
+                  ) : (
+                    <label htmlFor="other-upload" className="w-full h-full border border-dashed border-gray-300 rounded text-center text-gray-500 hover:border-emerald-500 hover:text-emerald-600 cursor-pointer flex items-center justify-center transition-colors bg-gray-50/50 hover:bg-emerald-50/30">
+                      <Upload className="w-4 h-4 mr-2" /> 上传附件
                     </label>
                   )}
                 </div>
