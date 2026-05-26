@@ -1,0 +1,31 @@
+const routes = [
+  { path: '/',            name: '报废申请单',          nav: true },
+  { path: '/approval',    name: '账面报废审批',         nav: true },
+  { path: '/BaofeiNeishen', name: '报废申请单——内审',  nav: true },
+  { path: '/BaofeiCaigou2', name: '报废申请单——采购（2）', nav: true },
+  { path: '/BaofeiCaigou3', name: '报废申请单——采购（3）', nav: true },
+  { path: '/BaofeiCaigou4', name: '报废申请单——采购（4）', nav: true },
+  { path: '/Dashboard',   name: '机房资产大盘',        nav: true },
+  { path: '/Dashboardapp', name: '机房资产大盘移动端',  nav: true },
+  { path: '/Caigoudingdan', name: '采购订单编辑页',     nav: true },
+  { path: '/BaofeiCaigou1', name: '报废申请单——采购（1）', nav: true },
+  { path: '/Jifang',      name: '机房资产管理',        nav: true },
+  { path: '/Jifanglist',  name: '机房资产维护查询列表', nav: true },
+  { path: '/Jifanglistone', name: '机房资产维护查询列表（员工端）', nav: true },
+  { path: '/Weizhi',      name: '位置变更编辑页',      nav: true },
+  { path: '/Positionshenpi', name: '位置变更审批页',    nav: true },
+  { path: '/SN',          name: '序列号变更编辑页',    nav: true },
+  { path: '/SNshenpi',    name: '序列号变更审批页',    nav: true },
+  { path: '/PCS',         name: '域名&证书查询列表',   nav: true },
+  { path: '/PCSDASHBOARD', name: '域名&证书看板',     nav: true },
+  { path: '/PCSDASHBOARD(2)', name: '域名&证书看板（2）', nav: true },
+  { path: '/Connectzhu',  name: '主备维护主编辑页',    nav: true },
+  { path: '/Connectbei',  name: '主备维护备件编辑页',  nav: true },
+  { path: '/Connectshenpi', name: '主备维护审批页',    nav: true },
+  { path: '/People',      name: '责任人变更编辑页',    nav: true },
+  { path: '/Peoplejieshou', name: '责任人变更接收人确认——审批', nav: true },
+  { path: '/Peopleshiwu', name: '责任人变更实物确认——审批', nav: true },
+];
+
+export const navRoutes = routes.filter(r => r.nav);
+export default routes;
