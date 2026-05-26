@@ -4,7 +4,6 @@ import Navbar from './components/Navbar';
 import routes from './config/routes';
 
 // Page imports (using new English names after rename)
-import ScrapForm from './pages/ScrapForm';
 import ApprovalPage from './pages/ApprovalPage';
 import ScrapInternalReview from './pages/ScrapInternalReview';
 import ScrapProcurement1 from './pages/ScrapProcurement1';
@@ -33,7 +32,7 @@ import ResponsiblePersonPhysicalApproval from './pages/ResponsiblePersonPhysical
 import AccountingScrapEdit from './pages/AccountingScrapEdit';
 
 const componentMap = {
-  '/': ScrapForm,
+  '/': AccountingScrapEdit,
   '/approval': ApprovalPage,
   '/BaofeiNeishen': ScrapInternalReview,
   '/BaofeiCaigou1': ScrapProcurement1,
