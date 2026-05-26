@@ -92,7 +92,7 @@ const MOCK_APPROVAL_DATA = {
   ]
 };
 
-const App = () => {
+const MainSpareApproval = () => {
   const { applicantInfo } = MOCK_APPROVAL_DATA;
   const [assets, setAssets] = useState(MOCK_APPROVAL_DATA.assets);
   const [message, setMessage] = useState({ type: '', content: '', visible: false });

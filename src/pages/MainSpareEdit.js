@@ -599,7 +599,7 @@ const MainSpareEdit = () => {
             <div className="bg-white rounded-lg shadow-[0_6px_16px_0_rgba(0,0,0,0.08)] w-full max-w-[520px] overflow-hidden">
               <div className="px-6 py-4 border-b border-border flex justify-between items-center">
                 <h3 className="text-[16px] font-semibold text-text-primary">新增主资产</h3>
-                <Xsize={16} className="text-text-tertiary hover:text-text-primary" onClick={() => setAddMainModalOpen(false)} />
+                <X size={16} className="text-text-tertiary hover:text-text-primary" onClick={() => setAddMainModalOpen(false)} />
               </div>
               <div className="p-6">
                 <label className="block text-[14px] text-text-primary mb-2">
@@ -634,7 +634,7 @@ const MainSpareEdit = () => {
             <div className="bg-white rounded-lg shadow-[0_6px_16px_0_rgba(0,0,0,0.08)] w-full max-w-[520px] overflow-hidden">
               <div className="px-6 py-4 border-b border-border flex justify-between items-center">
                 <h3 className="text-[16px] font-semibold text-text-primary">为主资产添加备件</h3>
-                <Xsize={16} className="text-text-tertiary hover:text-text-primary" onClick={() => setAddSpareModal({ isOpen: false, parentId: null, selectedSpare: '' })} />
+                <X size={16} className="text-text-tertiary hover:text-text-primary" onClick={() => setAddSpareModal({ isOpen: false, parentId: null, selectedSpare: '' })} />
               </div>
               <div className="p-6">
                 <label className="block text-[14px] text-text-primary mb-2">
@@ -670,7 +670,7 @@ const MainSpareEdit = () => {
             <div className="bg-white rounded-lg shadow-[0_6px_16px_0_rgba(0,0,0,0.08)] w-full max-w-[520px] overflow-hidden">
               <div className="px-6 py-4 border-b border-border flex justify-between items-center">
                 <h3 className="text-[16px] font-semibold text-text-primary">备件流转转配</h3>
-                <Xsize={16} className="text-text-tertiary hover:text-text-primary" onClick={() => setTransferSpareModal({ isOpen: false, spareId: null, currentParentId: null, spareName: '', targetParentId: '' })} />
+                <X size={16} className="text-text-tertiary hover:text-text-primary" onClick={() => setTransferSpareModal({ isOpen: false, spareId: null, currentParentId: null, spareName: '', targetParentId: '' })} />
               </div>
               <div className="p-6 space-y-4">
                 <div>
