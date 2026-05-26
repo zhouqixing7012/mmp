@@ -1,51 +1,30 @@
 import React, { useState } from 'react';
+import { X, Upload, Trash2, ChevronRight, ChevronDown, Plus, CheckCircle, AlertCircle } from 'lucide-react';
 
-const IconX = ({ size = 16, className = "", onClick }) => (
-  <svg onClick={onClick} className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{cursor: onClick ? 'pointer' : 'default'}}>
-    <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
-  </svg>
-);
-const IconUpload = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line>
-  </svg>
-);
-const IconTrash2 = ({ size = 14, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line>
-  </svg>
-);
-const IconChevronRight = ({ size = 14, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="9 18 15 12 9 6"></polyline>
-  </svg>
-);
-const IconChevronDown = ({ size = 14, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="6 9 12 15 18 9"></polyline>
-  </svg>
-);
-const IconSearch = ({ size = 14, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-  </svg>
-);
-const IconPlus = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
-  </svg>
-);
-const IconCheckCircle = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>
-  </svg>
-);
-const IconAlertCircle = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+// Custom icons (not available in lucide-react)
+const IconUnlink = ({ size = 14, className = "" }) => (
+  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    {/* 左上半环 */}
+    <path d="M10 13a5 5 0 0 0 7.54.54l1.5-1.5" />
+    {/* 右下半环 */}
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-1.5 1.5" />
+    {/* 斩断线，特意用更明晰的断开间距表达 */}
+    <line x1="19" y1="5" x2="5" y2="19" stroke="#ff4d4f" strokeWidth="3" />
   </svg>
 );
 
+// 新增：“关联其他” 扁平文本化图标 (简洁的左右对调交换双流向箭头)
+const IconExchange = ({ size = 14, className = "" }) => (
+  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 1l4 4-4 4" />
+    <path d="M3 5h18" />
+    <path d="M7 23l-4-4 4-4" />
+    <path d="M21 19H3" />
+  </svg>
+);
+
+
+// === 模拟基础数据 ===
 const MOCK_AVAILABLE_MAIN_ASSETS = [
   { assetCode: 'SRV-BJ-2024-003', serialNumber: 'SN-LENOVO-SR650-01', brand: 'Lenovo', majorCategory: 'SERVER', minorCategory: '服务器-机架式', description: 'Lenovo ThinkSystem SR650', config: 'Xeon Silver 4210R*2, 64G' },
   { assetCode: 'SRV-BJ-2024-004', serialNumber: 'SN-INSPUR-5280M5-01', brand: 'Inspur', majorCategory: 'SERVER', minorCategory: '服务器-机架式', description: 'Inspur NF5280M5', config: 'Xeon Gold 5218*2, 128G' },
@@ -58,7 +37,7 @@ const MOCK_AVAILABLE_SPARE_PARTS = [
   { assetCode: 'PART-NIC-001', serialNumber: 'SN-INTEL-X710-01', brand: 'Intel', majorCategory: 'PART', minorCategory: '服务器网卡', description: 'Intel X710-DA2', config: '万兆双口网卡 光口' },
 ];
 
-const App = () => {
+const MainSpareEdit = () => {
   // 申请表单状态
   const [formData, setFormData] = useState({
     applicant: '梁声 (111160)',
@@ -155,6 +134,15 @@ const App = () => {
   // 备件添加弹窗
   const [addSpareModal, setAddSpareModal] = useState({ isOpen: false, parentId: null, selectedSpare: '' });
 
+  // 备件转移弹窗状态
+  const [transferSpareModal, setTransferSpareModal] = useState({
+    isOpen: false,
+    spareId: null,
+    currentParentId: null,
+    spareName: '',
+    targetParentId: ''
+  });
+
   // 触发全局提示
   const showMessage = (type, content) => {
     setMessage({ type, content, visible: true });
@@ -194,23 +182,80 @@ const App = () => {
     setAssets(prev => prev.map(item => item.id === id ? { ...item, expanded: !item.expanded } : item));
   };
 
-  // 删除逻辑 (主资产带走备件，备件仅删自身)
-  const handleDelete = (id, parentId = null) => {
+  // 删除主资产逻辑 (将同时清空该主机下的所有备件)
+  const handleDeleteMain = (id) => {
+    setAssets(prevAssets => prevAssets.filter(main => main.id !== id));
+    showMessage('success', '主资产及关联备件已成功删除');
+  };
+
+  // 备件解除绑定关系（“解除”）
+  const handleUnbindSpare = (spareId, parentId, spareName) => {
     setAssets(prevAssets => {
-      if (parentId) {
-        // 删除的是备件
-        return prevAssets.map(main => {
-          if (main.id === parentId) {
-            return { ...main, children: main.children.filter(child => child.id !== id) };
-          }
-          return main;
-        });
-      } else {
-        // 删除的是主资产
-        return prevAssets.filter(main => main.id !== id);
-      }
+      return prevAssets.map(main => {
+        if (main.id === parentId) {
+          return {
+            ...main,
+            children: main.children.filter(child => child.id !== spareId)
+          };
+        }
+        return main;
+      });
     });
-    showMessage('success', '删除成功');
+    showMessage('success', `备件【${spareName}】已解除绑定`);
+  };
+
+  // 备件转移模态框打开
+  const openTransferModal = (spare, parentId) => {
+    setTransferSpareModal({
+      isOpen: true,
+      spareId: spare.id,
+      currentParentId: parentId,
+      spareName: `${spare.assetCode} (${spare.description})`,
+      targetParentId: ''
+    });
+  };
+
+  // 备件转移保存逻辑（“关联其他主资产”）
+  const handleConfirmTransfer = () => {
+    const { spareId, currentParentId, targetParentId } = transferSpareModal;
+    if (!targetParentId) {
+      showMessage('error', '请选择目标主资产');
+      return;
+    }
+
+    setAssets(prevAssets => {
+      // 1. 深拷贝当前资产列表
+      const newAssets = JSON.parse(JSON.stringify(prevAssets));
+      let spareObj = null;
+
+      // 2. 从源主资产下移除该备件
+      const sourceMain = newAssets.find(main => main.id === currentParentId);
+      if (sourceMain) {
+        spareObj = sourceMain.children.find(child => child.id === spareId);
+        sourceMain.children = sourceMain.children.filter(child => child.id !== spareId);
+      }
+
+      if (!spareObj) return prevAssets;
+
+      // 3. 将备件添加至目标主资产下，并强制同步目标主资产的物理位置
+      const targetMain = newAssets.find(main => main.id === targetParentId);
+      if (targetMain) {
+        const transferredSpare = {
+          ...spareObj,
+          city: targetMain.city,
+          building: targetMain.building,
+          floor: targetMain.floor,
+          remark: spareObj.remark ? `${spareObj.remark} (转配自主机:${sourceMain.assetCode})` : `转配自主机:${sourceMain.assetCode}`
+        };
+        targetMain.children.push(transferredSpare);
+        targetMain.expanded = true; // 转移后自动展开目标主机以便用户确认
+      }
+
+      return newAssets;
+    });
+
+    setTransferSpareModal({ isOpen: false, spareId: null, currentParentId: null, spareName: '', targetParentId: '' });
+    showMessage('success', '备件已成功流转至新的主资产');
   };
 
   // 确认添加主资产
@@ -222,7 +267,7 @@ const App = () => {
       id: `main-${Date.now()}`,
       relation: '主',
       qty: 1,
-      city: '', building: '', floor: '', remark: '',
+      city: '北京市', building: '土城', floor: '9层', remark: '',
       status: '在用-使用中',
       expanded: true,
       children: [],
@@ -297,9 +342,9 @@ const App = () => {
         <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999] flex items-center justify-center pointer-events-none transition-all duration-300 translate-y-0 opacity-100">
           <div className="bg-white shadow-[0_6px_16px_0_rgba(0,0,0,0.08),0_3px_6px_-4px_rgba(0,0,0,0.12),0_9px_28px_8px_rgba(0,0,0,0.05)] rounded-lg px-4 py-2.5 flex items-center gap-2 pointer-events-auto">
             {message.type === 'success' ? (
-              <IconCheckCircle size={18} className="text-[#52c41a]" />
+              <CheckCircle size={18} className="text-[#52c41a]" />
             ) : (
-              <IconAlertCircle size={18} className="text-[#ff4d4f]" />
+              <AlertCircle size={18} className="text-[#ff4d4f]" />
             )}
             <span className="text-[14px] leading-tight text-[rgba(0,0,0,0.88)]">{message.content}</span>
           </div>
@@ -364,7 +409,7 @@ const App = () => {
               <button 
                 className="flex items-center gap-1.5 px-4 py-1.5 border border-[#1677ff] text-[#1677ff] rounded-md hover:bg-[#e6f4ff] transition-colors text-[14px] font-medium"
               >
-                <IconUpload size={16} />
+                <Upload size={16} />
                 <span>批量上传</span>
               </button>
             </div>
@@ -387,7 +432,7 @@ const App = () => {
                   <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[130px]">建筑物</th>
                   <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[130px]">楼层/机房</th>
                   <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[160px]">备注</th>
-                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-36 text-center sticky right-0 bg-[#fafafa] z-10 shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] border-l border-[#f0f0f0]">操作</th>
+                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-44 text-center sticky right-0 bg-[#fafafa] z-10 shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] border-l border-[#f0f0f0]">操作</th>
                 </tr>
               </thead>
               
@@ -415,7 +460,7 @@ const App = () => {
                               onClick={() => toggleExpand(asset.id)}
                               className={`w-[20px] h-[20px] flex items-center justify-center border border-[#d9d9d9] rounded-[4px] bg-white text-[rgba(0,0,0,0.45)] hover:text-[#1677ff] hover:border-[#1677ff] cursor-pointer transition-all ${!hasChildren ? 'opacity-0 pointer-events-none' : ''}`}
                             >
-                              {asset.expanded ? <IconChevronDown size={12} /> : <IconChevronRight size={12} />}
+                              {asset.expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                             </div>
                           )}
                           {!asset.isMain && <div className="w-[16px] h-[20px] border-l border-b border-[#d9d9d9] -mt-[10px] mr-1 rounded-bl-sm"></div>}
@@ -453,7 +498,7 @@ const App = () => {
 
                       <td className="py-3 px-3 align-middle text-center text-[rgba(0,0,0,0.88)]">{asset.qty}</td>
                       
-                      {/* 禁用编辑的地点展示 */}
+                      {/* 地点展示区 */}
                       {['city', 'building', 'floor'].map((field) => (
                         <td key={field} className="py-2 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px]">
                           {asset[field] || '-'}
@@ -468,23 +513,53 @@ const App = () => {
                         />
                       </td>
 
+                      {/* Sticky 操作区列 - 已重构为极致轻盈、一致的无背景纯文本链接按钮样式 */}
                       <td className={`py-3 px-4 align-middle text-center sticky right-0 z-10 border-l border-[#f0f0f0] transition-colors shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] ${rowBg} group-hover:bg-[#f5f5f5]`}>
-                        <div className="flex items-center justify-center gap-3">
-                          {asset.isMain && (
-                            <button 
-                              onClick={() => setAddSpareModal({ isOpen: true, parentId: asset.id, selectedSpare: '' })}
-                              className="text-[#1677ff] hover:text-[#4096ff] transition-colors text-[13px] font-medium"
-                            >
-                              添加备件
-                            </button>
+                        <div className="flex items-center justify-center gap-2">
+                          {asset.isMain ? (
+                            // 主资产操作：添加备件 与 删除
+                            <>
+                              <button 
+                                onClick={() => setAddSpareModal({ isOpen: true, parentId: asset.id, selectedSpare: '' })}
+                                className="text-[#1677ff] hover:text-[#4096ff] transition-colors text-[13px] font-medium"
+                              >
+                                添加备件
+                              </button>
+                              <span className="text-[#f0f0f0] select-none">|</span>
+                              <button 
+                                onClick={() => handleDeleteMain(asset.id)}
+                                className="text-[#ff4d4f] hover:text-[#ff7875] transition-colors flex items-center justify-center p-1"
+                                title="删除主资产(将同时删除其关联备件)"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </>
+                          ) : (
+                            // 备件操作：扁平的“解除” 与 “关联其他” 纯文字链接按钮
+                            <>
+                              {/* 解除绑定 */}
+                              <button
+                                onClick={() => handleUnbindSpare(asset.id, asset.parentId, asset.description)}
+                                className="flex items-center gap-1.5 text-[#ff7875] hover:text-[#ff4d4f] transition-colors text-[13px] font-medium py-1 px-1.5 rounded hover:bg-[#fff1f0]"
+                                title="解绑此备件，从本主机移除"
+                              >
+                                <IconUnlink size={13} className="shrink-0" />
+                                <span>解除</span>
+                              </button>
+
+                              <span className="text-[#f0f0f0] select-none">|</span>
+
+                              {/* 流转到其他主资产 */}
+                              <button
+                                onClick={() => openTransferModal(asset, asset.parentId)}
+                                className="flex items-center gap-1.5 text-[#1677ff] hover:text-[#4096ff] transition-colors text-[13px] font-medium py-1 px-1.5 rounded hover:bg-[#e6f4ff]"
+                                title="将此备件重新关联至另一台主机"
+                              >
+                                <IconExchange size={13} className="shrink-0" />
+                                <span>关联其他</span>
+                              </button>
+                            </>
                           )}
-                          <button 
-                            onClick={() => handleDelete(asset.id, asset.parentId)}
-                            className="text-[#ff4d4f] hover:text-[#ff7875] transition-colors flex items-center justify-center p-1"
-                            title={asset.isMain ? "删除主资产(将同时删除其关联备件)" : "删除备件"}
-                          >
-                            <IconTrash2 size={15} />
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -500,7 +575,7 @@ const App = () => {
                 onClick={() => setAddMainModalOpen(true)}
                 className="w-full max-w-[150px] flex items-center justify-center gap-1.5 px-4 py-2 border border-dashed border-[#d9d9d9] bg-white text-[rgba(0,0,0,0.65)] rounded-md hover:text-[#1677ff] hover:border-[#1677ff] transition-colors text-[14px]"
               >
-                <IconPlus size={16} />
+                <Plus size={16} />
                 <span>添加主资产</span>
               </button>
           </div>
@@ -518,12 +593,13 @@ const App = () => {
           </button>
         </div>
 
+        {/* 模态框 1: 新增主资产 */}
         {addMainModalOpen && (
           <div className="fixed inset-0 bg-[rgba(0,0,0,0.45)] z-[1000] flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-[0_6px_16px_0_rgba(0,0,0,0.08)] w-full max-w-[520px] overflow-hidden">
               <div className="px-6 py-4 border-b border-[#f0f0f0] flex justify-between items-center">
                 <h3 className="text-[16px] font-semibold text-[rgba(0,0,0,0.88)]">新增主资产</h3>
-                <IconX size={16} className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)]" onClick={() => setAddMainModalOpen(false)} />
+                <Xsize={16} className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)]" onClick={() => setAddMainModalOpen(false)} />
               </div>
               <div className="p-6">
                 <label className="block text-[14px] text-[rgba(0,0,0,0.88)] mb-2">
@@ -552,12 +628,13 @@ const App = () => {
           </div>
         )}
 
+        {/* 模态框 2: 为主资产绑定备件 */}
         {addSpareModal.isOpen && (
           <div className="fixed inset-0 bg-[rgba(0,0,0,0.45)] z-[1000] flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-[0_6px_16px_0_rgba(0,0,0,0.08)] w-full max-w-[520px] overflow-hidden">
               <div className="px-6 py-4 border-b border-[#f0f0f0] flex justify-between items-center">
                 <h3 className="text-[16px] font-semibold text-[rgba(0,0,0,0.88)]">为主资产添加备件</h3>
-                <IconX size={16} className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)]" onClick={() => setAddSpareModal({ isOpen: false, parentId: null, selectedSpare: '' })} />
+                <Xsize={16} className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)]" onClick={() => setAddSpareModal({ isOpen: false, parentId: null, selectedSpare: '' })} />
               </div>
               <div className="p-6">
                 <label className="block text-[14px] text-[rgba(0,0,0,0.88)] mb-2">
@@ -575,7 +652,7 @@ const App = () => {
                   ))}
                 </select>
                 <div className="mt-4 text-[13px] text-[rgba(0,0,0,0.45)] bg-[#fafafa] border border-[#f0f0f0] p-3 rounded flex gap-2">
-                   <IconAlertCircle size={15} className="mt-[2px] shrink-0 text-[#1677ff]"/>
+                   <AlertCircle size={15} className="mt-[2px] shrink-0 text-[#1677ff]"/>
                    <span>备件添加后，其位置信息（城市/建筑/楼层）将强制与当前绑定的主资产保持一致，无法单独修改。</span>
                 </div>
               </div>
@@ -587,9 +664,59 @@ const App = () => {
           </div>
         )}
 
+        {/* 模态框 3: 备件流转/关联其他主资产 */}
+        {transferSpareModal.isOpen && (
+          <div className="fixed inset-0 bg-[rgba(0,0,0,0.45)] z-[1000] flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-[0_6px_16px_0_rgba(0,0,0,0.08)] w-full max-w-[520px] overflow-hidden">
+              <div className="px-6 py-4 border-b border-[#f0f0f0] flex justify-between items-center">
+                <h3 className="text-[16px] font-semibold text-[rgba(0,0,0,0.88)]">备件流转转配</h3>
+                <Xsize={16} className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)]" onClick={() => setTransferSpareModal({ isOpen: false, spareId: null, currentParentId: null, spareName: '', targetParentId: '' })} />
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <div className="text-[13px] text-[rgba(0,0,0,0.45)] mb-1">正在流转的备件</div>
+                  <div className="font-semibold text-[14px] text-[rgba(0,0,0,0.88)] bg-[#fafafa] border border-[#f0f0f0] p-2.5 rounded">
+                    {transferSpareModal.spareName}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[14px] text-[rgba(0,0,0,0.88)] mb-2">
+                    <span className="text-[#ff4d4f] font-family-[SimSun] mr-1">*</span>选择目标主资产 (流转至该服务器)
+                  </label>
+                  <select 
+                    value={transferSpareModal.targetParentId} 
+                    onChange={(e) => setTransferSpareModal({...transferSpareModal, targetParentId: e.target.value})}
+                    className="w-full border border-[#d9d9d9] rounded-md h-8 px-3 text-[14px] text-[rgba(0,0,0,0.88)] outline-none hover:border-[#4096ff] focus:border-[#4096ff] transition-all bg-white"
+                  >
+                    <option value="">请选择目标服务器...</option>
+                    {assets
+                      .filter(main => main.id !== transferSpareModal.currentParentId) // 过滤掉当前的父资产
+                      .map(main => (
+                        <option key={main.id} value={main.id}>
+                          {main.assetCode} - {main.description} ({main.serialNumber} | 物理位置: {main.city}-{main.building})
+                        </option>
+                      ))
+                    }
+                  </select>
+                </div>
+
+                <div className="text-[13px] text-[rgba(0,0,0,0.45)] bg-[#e6f4ff] border border-[#91caff] p-3 rounded flex gap-2">
+                   <AlertCircle size={15} className="mt-[2px] shrink-0 text-[#1677ff]"/>
+                   <span>⚠️ 注意：完成转配后，该备件在表单中的城市、建筑、楼层等物理地址，将自动继承并变更为所选目标主机对应的物理地址，实现资产流转一体化。</span>
+                </div>
+              </div>
+              <div className="px-6 py-3.5 border-t border-[#f0f0f0] flex justify-end gap-2 bg-[#fafafa]">
+                <button onClick={() => setTransferSpareModal({ isOpen: false, spareId: null, currentParentId: null, spareName: '', targetParentId: '' })} className="h-8 px-4 border border-[#d9d9d9] rounded-md hover:text-[#4096ff] hover:border-[#4096ff] transition-all bg-white">取消</button>
+                <button onClick={handleConfirmTransfer} disabled={!transferSpareModal.targetParentId} className={`h-8 px-4 rounded-md shadow-sm transition-all ${transferSpareModal.targetParentId ? 'bg-[#1677ff] text-white hover:bg-[#4096ff]' : 'bg-[#f5f5f5] text-[rgba(0,0,0,0.25)] border border-[#d9d9d9] cursor-not-allowed'}`}>确认转移</button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
 };
 
-export default App;
+export default MainSpareEdit;

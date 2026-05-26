@@ -1,40 +1,5 @@
 import React, { useState } from 'react';
-
-const IconX = ({ size = 16, className = "", onClick }) => (
-  <svg onClick={onClick} className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{cursor: onClick ? 'pointer' : 'default'}}>
-    <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
-  </svg>
-);
-const IconUpload = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line>
-  </svg>
-);
-const IconTrash2 = ({ size = 14, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line>
-  </svg>
-);
-const IconSearch = ({ size = 14, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-  </svg>
-);
-const IconPlus = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
-  </svg>
-);
-const IconCheckCircle = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>
-  </svg>
-);
-const IconAlertCircle = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
-  </svg>
-);
+import { X, Upload, Trash2, Search, Plus, CheckCircle, AlertCircle } from 'lucide-react';
 
 const MOCK_AVAILABLE_MAIN_ASSETS = [
   { assetCode: '114141605224', serialNumber: '4XMSWG2', description: 'Dell.R730', city: '北京市', building: '土城', floor: '9层' },
@@ -48,7 +13,7 @@ const MOCK_AVAILABLE_SPARE_PARTS = [
   { assetCode: 'PART-NIC-001', serialNumber: 'SN-INTEL-X710-01', brand: 'Intel', majorCategory: 'PART', minorCategory: '服务器网卡', description: 'Intel X710-DA2', config: '万兆双口网卡 光口' },
 ];
 
-const App = () => {
+const MainSparePartEdit = () => {
   // 申请表单状态
   const [formData, setFormData] = useState({
     applicant: '梁声 (111160)',
@@ -234,9 +199,9 @@ const App = () => {
         <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999] flex items-center justify-center pointer-events-none transition-all duration-300 translate-y-0 opacity-100">
           <div className="bg-white shadow-[0_6px_16px_0_rgba(0,0,0,0.08),0_3px_6px_-4px_rgba(0,0,0,0.12),0_9px_28px_8px_rgba(0,0,0,0.05)] rounded-lg px-4 py-2.5 flex items-center gap-2 pointer-events-auto">
             {message.type === 'success' ? (
-              <IconCheckCircle size={18} className="text-[#52c41a]" />
+              <CheckCircle size={18} className="text-[#52c41a]" />
             ) : (
-              <IconAlertCircle size={18} className="text-[#ff4d4f]" />
+              <AlertCircle size={18} className="text-[#ff4d4f]" />
             )}
             <span className="text-[14px] leading-tight text-[rgba(0,0,0,0.88)]">{message.content}</span>
           </div>
@@ -300,7 +265,7 @@ const App = () => {
                 共计明细 <span className="text-[#1677ff] font-medium mx-1">{assets.length}</span> 条
               </span>
               <button className="flex items-center gap-1.5 px-4 py-1.5 border border-[#1677ff] text-[#1677ff] rounded-md hover:bg-[#e6f4ff] transition-colors text-[14px] font-medium">
-                <IconUpload size={16} />
+                <Upload size={16} />
                 <span>批量上传</span>
               </button>
             </div>
@@ -354,7 +319,7 @@ const App = () => {
                           className="w-full border border-[#d9d9d9] bg-white rounded px-2.5 py-1.5 text-[13px] text-[#1677ff] font-medium outline-none transition-all group-hover:border-[#4096ff] cursor-pointer placeholder:text-[rgba(0,0,0,0.25)] placeholder:font-normal" 
                           placeholder="点击选择主资产"
                         />
-                        <IconSearch size={14} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[rgba(0,0,0,0.25)] group-hover:text-[#1677ff] transition-colors" />
+                        <Search size={14} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[rgba(0,0,0,0.25)] group-hover:text-[#1677ff] transition-colors" />
                       </div>
                     </td>
 
@@ -393,7 +358,7 @@ const App = () => {
                         className="text-[#ff4d4f] hover:text-[#ff7875] transition-colors flex items-center justify-center p-1 mx-auto"
                         title="删除该明细"
                       >
-                        <IconTrash2 size={15} />
+                        <Trash2 size={15} />
                       </button>
                     </td>
                   </tr>
@@ -408,7 +373,7 @@ const App = () => {
                 onClick={() => setAddSpareModalOpen(true)}
                 className="w-full max-w-[100px] flex items-center justify-center gap-1.5 px-4 py-2 border border-dashed border-[#d9d9d9] bg-white text-[rgba(0,0,0,0.65)] rounded-md hover:text-[#1677ff] hover:border-[#1677ff] transition-colors text-[14px]"
               >
-                <IconPlus size={16} />
+                <Plus size={16} />
                 <span>添加</span>
               </button>
           </div>
@@ -433,7 +398,7 @@ const App = () => {
             <div className="bg-white rounded-lg shadow-[0_6px_16px_0_rgba(0,0,0,0.08)] w-full max-w-[520px] overflow-hidden">
               <div className="px-6 py-4 border-b border-[#f0f0f0] flex justify-between items-center">
                 <h3 className="text-[16px] font-semibold text-[rgba(0,0,0,0.88)]">新增备件明细</h3>
-                <IconX size={16} className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)]" onClick={() => setAddSpareModalOpen(false)} />
+                <X size={16} className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)]" onClick={() => setAddSpareModalOpen(false)} />
               </div>
               <div className="p-6">
                 <label className="block text-[14px] text-[rgba(0,0,0,0.88)] mb-2">
@@ -468,7 +433,7 @@ const App = () => {
             <div className="bg-white rounded-lg shadow-[0_6px_16px_0_rgba(0,0,0,0.08)] w-full max-w-[520px] overflow-hidden">
               <div className="px-6 py-4 border-b border-[#f0f0f0] flex justify-between items-center">
                 <h3 className="text-[16px] font-semibold text-[rgba(0,0,0,0.88)]">选择绑定的主资产</h3>
-                <IconX size={16} className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)]" onClick={() => setBindMainModal({ isOpen: false, targetSpareId: null, selectedMainCode: '' })} />
+                <X size={16} className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)]" onClick={() => setBindMainModal({ isOpen: false, targetSpareId: null, selectedMainCode: '' })} />
               </div>
               <div className="p-6">
                 <label className="block text-[14px] text-[rgba(0,0,0,0.88)] mb-2">
@@ -486,7 +451,7 @@ const App = () => {
                   ))}
                 </select>
                 <div className="mt-4 text-[13px] text-[rgba(0,0,0,0.45)] bg-[#fafafa] border border-[#f0f0f0] p-3 rounded flex gap-2">
-                   <IconAlertCircle size={15} className="mt-[2px] shrink-0 text-[#1677ff]"/>
+                   <AlertCircle size={15} className="mt-[2px] shrink-0 text-[#1677ff]"/>
                    <span>绑定主资产后，该备件的城市、建筑物及楼层信息将自动与所选主资产对齐。</span>
                 </div>
               </div>
@@ -503,4 +468,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default MainSparePartEdit;

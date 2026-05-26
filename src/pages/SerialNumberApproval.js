@@ -1,21 +1,5 @@
 import React, { useState } from 'react';
-
-// 复用图标
-const IconCheckCircle = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>
-  </svg>
-);
-const IconAlertCircle = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
-  </svg>
-);
-const IconImage = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>
-  </svg>
-);
+import { CheckCircle, AlertCircle, Image } from 'lucide-react';
 
 // 模拟来自后端的审批数据，包含序列号变更前后的信息
 const MOCK_APPROVAL_DATA = {
@@ -65,7 +49,7 @@ const MOCK_APPROVAL_DATA = {
   ]
 };
 
-const App = () => {
+const SerialNumberApproval = () => {
   const { applicantInfo, formNumber, assets } = MOCK_APPROVAL_DATA;
   const [message, setMessage] = useState({ type: '', content: '', visible: false });
   const [approvalComment, setApprovalComment] = useState('');
@@ -121,9 +105,9 @@ const App = () => {
         <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999] flex items-center justify-center transition-all duration-300">
           <div className="bg-white shadow-lg rounded-lg px-4 py-2.5 flex items-center gap-2">
             {message.type === 'success' ? (
-              <IconCheckCircle size={18} className="text-[#52c41a]" />
+              <CheckCircle size={18} className="text-[#52c41a]" />
             ) : (
-              <IconAlertCircle size={18} className="text-[#ff4d4f]" />
+              <AlertCircle size={18} className="text-[#ff4d4f]" />
             )}
             <span>{message.content}</span>
           </div>
@@ -227,7 +211,7 @@ const App = () => {
                           </div>
                         ) : (
                           <div className="w-10 h-10 rounded-[4px] border border-dashed border-[#d9d9d9] bg-[#fafafa] flex items-center justify-center text-[rgba(0,0,0,0.25)]">
-                            <IconImage size={16} />
+                            <Image size={16} />
                           </div>
                         )}
                       </div>
@@ -292,4 +276,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default SerialNumberApproval;

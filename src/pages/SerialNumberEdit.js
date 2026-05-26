@@ -1,31 +1,5 @@
 import React, { useState } from 'react';
-
-// --- 内置 SVG 图标组件 ---
-const IconX = ({ size = 16, className = "", onClick }) => (
-  <svg onClick={onClick} className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{cursor: onClick ? 'pointer' : 'default'}}>
-    <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
-  </svg>
-);
-const IconUpload = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line>
-  </svg>
-);
-const IconCamera = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle>
-  </svg>
-);
-const IconTrash2 = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line>
-  </svg>
-);
-const IconPlus = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
-  </svg>
-);
+import { X, Upload, Camera, Trash2, Plus } from 'lucide-react';
 
 // 模拟可供新增的外部资产库数据
 const MOCK_AVAILABLE_ASSETS = [
@@ -34,7 +8,7 @@ const MOCK_AVAILABLE_ASSETS = [
   { assetCode: 'SRV-BJ-2024-005', serialNumber: 'SN-HUAWEI-2288H-01', description: 'Huawei TaiShan 2288H V5', city: '广州市', building: '越秀机房', floor: '5层 502机房' },
 ];
 
-const App = () => {
+const SerialNumberEdit = () => {
   // 申请信息表单状态
   const [formData, setFormData] = useState({
     applicant: '吕静 (115720)',
@@ -178,7 +152,7 @@ const App = () => {
         {errorMsg && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded flex items-center justify-between">
             <span>{errorMsg}</span>
-            <IconX size={16} className="text-red-500 hover:text-red-700" onClick={() => setErrorMsg('')} />
+            <X size={16} className="text-red-500 hover:text-red-700" onClick={() => setErrorMsg('')} />
           </div>
         )}
 
@@ -186,7 +160,7 @@ const App = () => {
         {successMsg && (
           <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded flex items-center justify-between">
             <span>{successMsg}</span>
-            <IconX size={16} className="text-green-500 hover:text-green-700" onClick={() => setSuccessMsg('')} />
+            <X size={16} className="text-green-500 hover:text-green-700" onClick={() => setSuccessMsg('')} />
           </div>
         )}
 
@@ -251,7 +225,7 @@ const App = () => {
                 共计资产 <span className="text-blue-600 font-medium">{assets.length}</span> 项
               </div>
               <button className="flex items-center space-x-1 px-3 py-1.5 border border-blue-400 text-blue-500 rounded hover:bg-blue-50 transition-colors">
-                <IconUpload size={14} />
+                <Upload size={14} />
                 <span>批量导入</span>
               </button>
             </div>
@@ -300,7 +274,7 @@ const App = () => {
                           <div className="relative w-9 h-9 group rounded border border-gray-200 overflow-hidden shadow-sm">
                             <img src={asset.snPhoto} alt="SN Preview" className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <IconX size={16} className="text-white cursor-pointer" onClick={() => handleAssetChange(asset.id, 'snPhoto', null)} title="移除照片" />
+                              <X size={16} className="text-white cursor-pointer" onClick={() => handleAssetChange(asset.id, 'snPhoto', null)} title="移除照片" />
                             </div>
                           </div>
                         ) : (
@@ -309,7 +283,7 @@ const App = () => {
                             className="flex items-center justify-center w-full py-1 border border-dashed border-gray-300 rounded text-gray-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-colors cursor-pointer"
                             title="点击上传"
                           >
-                            <IconCamera size={16} className="my-1" />
+                            <Camera size={16} className="my-1" />
                             <input
                               type="file"
                               accept="image/*"
@@ -349,7 +323,7 @@ const App = () => {
                         className="text-gray-400 hover:text-red-500 p-1.5 rounded hover:bg-red-50 transition-colors focus:outline-none inline-flex items-center justify-center"
                         title="删除"
                       >
-                        <IconTrash2 size={16} />
+                        <Trash2 size={16} />
                       </button>
                     </td>
                   </tr>
@@ -364,7 +338,7 @@ const App = () => {
               onClick={() => setAddModalOpen(true)}
               className="flex items-center space-x-1 px-5 py-2 border border-dashed border-blue-400 text-blue-500 rounded hover:bg-blue-50 transition-colors focus:outline-none"
             >
-              <IconPlus size={16} />
+              <Plus size={16} />
               <span className="font-medium text-sm"></span>
             </button>
           </div>
@@ -389,7 +363,7 @@ const App = () => {
             <div className="bg-white rounded-lg shadow-xl w-[480px] overflow-hidden transform transition-all">
               <div className="flex justify-between items-center px-5 py-4 border-b border-gray-100 bg-gray-50/80">
                 <h3 className="font-medium text-gray-800 text-base">选择新增资产</h3>
-                <IconX size={18} className="text-gray-400 hover:text-gray-600 cursor-pointer transition-colors" onClick={() => setAddModalOpen(false)} />
+                <X size={18} className="text-gray-400 hover:text-gray-600 cursor-pointer transition-colors" onClick={() => setAddModalOpen(false)} />
               </div>
               <div className="p-6">
                 <label className="block text-gray-600 mb-2 text-sm font-medium"><span className="text-red-500 mr-1">*</span>资产标签号 / 序列号</label>
@@ -433,4 +407,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default SerialNumberEdit;

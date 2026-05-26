@@ -1,26 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { ChevronRight, ChevronDown, CheckCircle, AlertCircle } from 'lucide-react';
 
-// 复用图标
-const IconChevronRight = ({ size = 14, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="9 18 15 12 9 6"></polyline>
-  </svg>
-);
-const IconChevronDown = ({ size = 14, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="6 9 12 15 18 9"></polyline>
-  </svg>
-);
-const IconCheckCircle = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>
-  </svg>
-);
-const IconAlertCircle = ({ size = 16, className = "" }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
-  </svg>
-);
 
 // 模拟来自后端的审批数据（包含变更状态 changeStatus）
 const MOCK_APPROVAL_DATA = {
@@ -182,9 +162,9 @@ const App = () => {
         <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999] flex items-center justify-center transition-all duration-300">
           <div className="bg-white shadow-lg rounded-lg px-4 py-2.5 flex items-center gap-2">
             {message.type === 'success' ? (
-              <IconCheckCircle size={18} className="text-[#52c41a]" />
+              <CheckCircle size={18} className="text-[#52c41a]" />
             ) : (
-              <IconAlertCircle size={18} className="text-[#ff4d4f]" />
+              <AlertCircle size={18} className="text-[#ff4d4f]" />
             )}
             <span>{message.content}</span>
           </div>
@@ -290,7 +270,7 @@ const App = () => {
                               onClick={() => toggleExpand(asset.id)}
                               className={`w-[20px] h-[20px] flex items-center justify-center border border-[#d9d9d9] rounded-[4px] bg-white text-[rgba(0,0,0,0.45)] hover:text-[#1677ff] hover:border-[#1677ff] cursor-pointer transition-all ${!hasChildren ? 'opacity-0 pointer-events-none' : ''}`}
                             >
-                              {asset.expanded ? <IconChevronDown size={12} /> : <IconChevronRight size={12} />}
+                              {asset.expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                             </div>
                           )}
                           {!asset.isMain && <div className="w-[16px] h-[20px] border-l border-b border-[#d9d9d9] -mt-[10px] mr-1 rounded-bl-sm"></div>}
@@ -396,4 +376,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default MainSpareApproval;
