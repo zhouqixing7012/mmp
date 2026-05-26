@@ -335,7 +335,7 @@ const MainSpareEdit = () => {
   const displayAssets = getFlattenedAssets();
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5] p-6 font-sans text-[14px] text-[rgba(0,0,0,0.88)] relative">
+    <div className="min-h-screen bg-[#f0f2f5] p-6 font-sans text-[14px] text-text-primary relative">
       
       {/* AntD 风格全局 Message 提示 */}
       {message.visible && (
@@ -344,9 +344,9 @@ const MainSpareEdit = () => {
             {message.type === 'success' ? (
               <CheckCircle size={18} className="text-[#52c41a]" />
             ) : (
-              <AlertCircle size={18} className="text-[#ff4d4f]" />
+              <AlertCircle size={18} className="text-danger" />
             )}
-            <span className="text-[14px] leading-tight text-[rgba(0,0,0,0.88)]">{message.content}</span>
+            <span className="text-[14px] leading-tight text-text-primary">{message.content}</span>
           </div>
         </div>
       )}
@@ -354,41 +354,41 @@ const MainSpareEdit = () => {
       <div className="max-w-[1400px] mx-auto space-y-6">
         
         {/* 顶部申请信息卡片 */}
-        <div className="bg-white rounded-lg shadow-sm border border-[#f0f0f0] p-6">
-          <div className="flex items-center pb-4 mb-4 border-b border-[#f0f0f0]">
+        <div className="bg-white rounded-lg shadow-sm border border-border p-6">
+          <div className="flex items-center pb-4 mb-4 border-b border-border">
             <div className="w-1 h-4 bg-[#1677ff] mr-3 rounded-sm"></div>
-            <h2 className="text-[16px] font-semibold text-[rgba(0,0,0,0.88)]">申请信息</h2>
+            <h2 className="text-[16px] font-semibold text-text-primary">申请信息</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-8">
             <div className="flex items-start">
-              <label className="w-[100px] text-right pr-4 text-[rgba(0,0,0,0.65)] leading-[32px]">申请人:</label>
-              <div className="flex-1 text-[rgba(0,0,0,0.88)] leading-[32px]">{formData.applicant}</div>
+              <label className="w-[100px] text-right pr-4 text-text-secondary leading-[32px]">申请人:</label>
+              <div className="flex-1 text-text-primary leading-[32px]">{formData.applicant}</div>
             </div>
             <div className="flex items-start">
-              <label className="w-[100px] text-right pr-4 text-[rgba(0,0,0,0.65)] leading-[32px]">申请部门:</label>
-              <div className="flex-1 text-[rgba(0,0,0,0.88)] leading-[32px]">{formData.department}</div>
+              <label className="w-[100px] text-right pr-4 text-text-secondary leading-[32px]">申请部门:</label>
+              <div className="flex-1 text-text-primary leading-[32px]">{formData.department}</div>
             </div>
             <div className="flex items-start">
-              <label className="w-[100px] text-right pr-4 text-[rgba(0,0,0,0.65)] leading-[32px]">申请时间:</label>
-              <div className="flex-1 text-[rgba(0,0,0,0.88)] leading-[32px]">{formData.applyTime}</div>
+              <label className="w-[100px] text-right pr-4 text-text-secondary leading-[32px]">申请时间:</label>
+              <div className="flex-1 text-text-primary leading-[32px]">{formData.applyTime}</div>
             </div>
             <div className="flex items-start">
-              <label className="w-[100px] text-right pr-4 text-[rgba(0,0,0,0.65)] leading-[32px]">变更类型:</label>
-              <div className="flex-1 text-[rgba(0,0,0,0.88)] leading-[32px]">{formData.changeType}</div>
+              <label className="w-[100px] text-right pr-4 text-text-secondary leading-[32px]">变更类型:</label>
+              <div className="flex-1 text-text-primary leading-[32px]">{formData.changeType}</div>
             </div>
             <div className="hidden md:block md:col-span-2"></div>
 
             <div className="md:col-span-3 flex items-start">
-              <label className="w-[100px] text-right pr-4 pt-1.5 text-[rgba(0,0,0,0.65)]">
-                <span className="text-[#ff4d4f] font-family-[SimSun] mr-1">*</span>变更理由:
+              <label className="w-[100px] text-right pr-4 pt-1.5 text-text-secondary">
+                <span className="text-danger font-family-[SimSun] mr-1">*</span>变更理由:
               </label>
               <div className="flex-1 relative">
                 <textarea 
                   name="changeReason" rows="3"
                   value={formData.changeReason}
                   onChange={handleInputChange}
-                  className="w-full border border-[#d9d9d9] rounded-md p-2 text-[14px] leading-[1.5] transition-all hover:border-[#4096ff] focus:border-[#4096ff] focus:shadow-[0_0_0_2px_rgba(5,145,255,0.1)] outline-none resize-none"
+                  className="w-full border border-border-input rounded-md p-2 text-[14px] leading-[1.5] transition-all hover:border-[#4096ff] focus:border-[#4096ff] focus:shadow-[0_0_0_2px_rgba(5,145,255,0.1)] outline-none resize-none"
                   placeholder="请输入变更理由"
                 ></textarea>
               </div>
@@ -396,18 +396,18 @@ const MainSpareEdit = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-[#f0f0f0] p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-border p-6">
           <div className="flex items-center justify-between pb-4 mb-4">
             <div className="flex items-center">
               <div className="w-1 h-4 bg-[#1677ff] mr-3 rounded-sm"></div>
-              <h2 className="text-[16px] font-semibold text-[rgba(0,0,0,0.88)]">资产明细</h2>
+              <h2 className="text-[16px] font-semibold text-text-primary">资产明细</h2>
             </div>
             <div className="flex items-center space-x-3">
-              <span className="text-[14px] text-[rgba(0,0,0,0.65)]">
-                共计主资产 <span className="text-[#1677ff] font-medium mx-1">{assets.length}</span> 项，明细 <span className="text-[#1677ff] font-medium mx-1">{displayAssets.length}</span> 条
+              <span className="text-[14px] text-text-secondary">
+                共计主资产 <span className="text-primary font-medium mx-1">{assets.length}</span> 项，明细 <span className="text-primary font-medium mx-1">{displayAssets.length}</span> 条
               </span>
               <button 
-                className="flex items-center gap-1.5 px-4 py-1.5 border border-[#1677ff] text-[#1677ff] rounded-md hover:bg-[#e6f4ff] transition-colors text-[14px] font-medium"
+                className="flex items-center gap-1.5 px-4 py-1.5 border border-[#1677ff] text-primary rounded-md hover:bg-primary-bg transition-colors text-[14px] font-medium"
               >
                 <Upload size={16} />
                 <span>批量上传</span>
@@ -416,30 +416,30 @@ const MainSpareEdit = () => {
           </div>
 
           {/* AntD 风格表格主体 */}
-          <div className="overflow-x-auto border border-[#f0f0f0] rounded-t-lg">
+          <div className="overflow-x-auto border border-border rounded-t-lg">
             <table className="w-full text-left whitespace-nowrap border-collapse">
               <thead className="bg-[#fafafa]">
                 <tr>
-                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[160px]">资产标签号</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[160px]">序列号</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-16 text-center">关系</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[100px]">品牌</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[130px]">资产小类</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[160px]">资产说明</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[180px]">配置</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-16 text-center">数量</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[100px]">城市</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[130px]">建筑物</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[130px]">楼层/机房</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[160px]">备注</th>
-                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-44 text-center sticky right-0 bg-[#fafafa] z-10 shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] border-l border-[#f0f0f0]">操作</th>
+                  <th className="py-3.5 px-4 font-medium text-text-primary border-b border-border min-w-[160px]">资产标签号</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[160px]">序列号</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border w-16 text-center">关系</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[100px]">品牌</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[130px]">资产小类</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[160px]">资产说明</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[180px]">配置</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border w-16 text-center">数量</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[100px]">城市</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[130px]">建筑物</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[130px]">楼层/机房</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[160px]">备注</th>
+                  <th className="py-3.5 px-4 font-medium text-text-primary border-b border-border w-44 text-center sticky right-0 bg-[#fafafa] z-10 shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] border-l border-border">操作</th>
                 </tr>
               </thead>
               
               <tbody className="bg-white">
                 {displayAssets.length === 0 ? (
                   <tr>
-                    <td colSpan="13" className="py-12 text-center text-[rgba(0,0,0,0.45)] border-b border-[#f0f0f0]">
+                    <td colSpan="13" className="py-12 text-center text-text-tertiary border-b border-border">
                       暂无数据，请新增主资产
                     </td>
                   </tr>
@@ -451,56 +451,56 @@ const MainSpareEdit = () => {
                   return (
                     <tr 
                       key={asset.id} 
-                      className={`group border-b border-[#f0f0f0] transition-colors hover:bg-[#f5f5f5] ${rowBg}`}
+                      className={`group border-b border-border transition-colors hover:bg-[#f5f5f5] ${rowBg}`}
                     >
                       <td className="py-3 px-4 align-middle">
                         <div className="flex items-center gap-1.5" style={{ paddingLeft: asset.isMain ? '0px' : '24px' }}>
                           {asset.isMain && (
                             <div 
                               onClick={() => toggleExpand(asset.id)}
-                              className={`w-[20px] h-[20px] flex items-center justify-center border border-[#d9d9d9] rounded-[4px] bg-white text-[rgba(0,0,0,0.45)] hover:text-[#1677ff] hover:border-[#1677ff] cursor-pointer transition-all ${!hasChildren ? 'opacity-0 pointer-events-none' : ''}`}
+                              className={`w-[20px] h-[20px] flex items-center justify-center border border-border-input rounded-[4px] bg-white text-text-tertiary hover:text-primary hover:border-[#1677ff] cursor-pointer transition-all ${!hasChildren ? 'opacity-0 pointer-events-none' : ''}`}
                             >
                               {asset.expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                             </div>
                           )}
-                          {!asset.isMain && <div className="w-[16px] h-[20px] border-l border-b border-[#d9d9d9] -mt-[10px] mr-1 rounded-bl-sm"></div>}
-                          <span className="font-medium text-[rgba(0,0,0,0.88)]">{asset.assetCode}</span>
+                          {!asset.isMain && <div className="w-[16px] h-[20px] border-l border-b border-border-input -mt-[10px] mr-1 rounded-bl-sm"></div>}
+                          <span className="font-medium text-text-primary">{asset.assetCode}</span>
                         </div>
                       </td>
                       
-                      <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px]">
+                      <td className="py-3 px-3 align-middle text-text-secondary text-[13px]">
                         {asset.serialNumber}
                       </td>
 
                       <td className="py-3 px-3 align-middle text-center">
                         <span className={`px-2 py-[2px] rounded border text-[12px] ${
                           asset.isMain 
-                            ? 'bg-[#e6f4ff] text-[#1677ff] border-[#91caff]' 
-                            : 'bg-[#fafafa] text-[rgba(0,0,0,0.65)] border-[#d9d9d9]'
+                            ? 'bg-primary-bg text-primary border-primary-border' 
+                            : 'bg-[#fafafa] text-text-secondary border-border-input'
                         }`}>
                           {asset.relation}
                         </span>
                       </td>
 
-                      <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.88)]">
+                      <td className="py-3 px-3 align-middle text-text-primary">
                         {asset.brand}
                       </td>
-                      <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px]">
+                      <td className="py-3 px-3 align-middle text-text-secondary text-[13px]">
                         {asset.minorCategory}
                       </td>
                       
                       <td className="py-3 px-3 align-middle">
-                        <div className="text-[rgba(0,0,0,0.88)] truncate max-w-[160px]" title={asset.description}>{asset.description}</div>
+                        <div className="text-text-primary truncate max-w-[160px]" title={asset.description}>{asset.description}</div>
                       </td>
                       <td className="py-3 px-3 align-middle">
-                        <div className="text-[rgba(0,0,0,0.65)] text-[13px] truncate max-w-[180px]" title={asset.config}>{asset.config}</div>
+                        <div className="text-text-secondary text-[13px] truncate max-w-[180px]" title={asset.config}>{asset.config}</div>
                       </td>
 
-                      <td className="py-3 px-3 align-middle text-center text-[rgba(0,0,0,0.88)]">{asset.qty}</td>
+                      <td className="py-3 px-3 align-middle text-center text-text-primary">{asset.qty}</td>
                       
                       {/* 地点展示区 */}
                       {['city', 'building', 'floor'].map((field) => (
-                        <td key={field} className="py-2 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px]">
+                        <td key={field} className="py-2 px-3 align-middle text-text-secondary text-[13px]">
                           {asset[field] || '-'}
                         </td>
                       ))}
@@ -509,26 +509,26 @@ const MainSpareEdit = () => {
                         <input 
                           type="text" value={asset.remark || ''} placeholder="选填..."
                           onChange={(e) => handleAssetChange(asset.id, 'remark', e.target.value)}
-                          className="w-full border border-[#d9d9d9] rounded px-2.5 py-1.5 text-[13px] text-[rgba(0,0,0,0.88)] outline-none transition-all focus:border-[#4096ff] focus:shadow-[0_0_0_2px_rgba(5,145,255,0.1)] hover:border-[#4096ff] placeholder:text-[rgba(0,0,0,0.25)]" 
+                          className="w-full border border-border-input rounded px-2.5 py-1.5 text-[13px] text-text-primary outline-none transition-all focus:border-[#4096ff] focus:shadow-[0_0_0_2px_rgba(5,145,255,0.1)] hover:border-[#4096ff] placeholder:text-text-disabled" 
                         />
                       </td>
 
                       {/* Sticky 操作区列 - 已重构为极致轻盈、一致的无背景纯文本链接按钮样式 */}
-                      <td className={`py-3 px-4 align-middle text-center sticky right-0 z-10 border-l border-[#f0f0f0] transition-colors shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] ${rowBg} group-hover:bg-[#f5f5f5]`}>
+                      <td className={`py-3 px-4 align-middle text-center sticky right-0 z-10 border-l border-border transition-colors shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] ${rowBg} group-hover:bg-[#f5f5f5]`}>
                         <div className="flex items-center justify-center gap-2">
                           {asset.isMain ? (
                             // 主资产操作：添加备件 与 删除
                             <>
                               <button 
                                 onClick={() => setAddSpareModal({ isOpen: true, parentId: asset.id, selectedSpare: '' })}
-                                className="text-[#1677ff] hover:text-[#4096ff] transition-colors text-[13px] font-medium"
+                                className="text-primary hover:text-primary-hover transition-colors text-[13px] font-medium"
                               >
                                 添加备件
                               </button>
                               <span className="text-[#f0f0f0] select-none">|</span>
                               <button 
                                 onClick={() => handleDeleteMain(asset.id)}
-                                className="text-[#ff4d4f] hover:text-[#ff7875] transition-colors flex items-center justify-center p-1"
+                                className="text-danger hover:text-danger-hover transition-colors flex items-center justify-center p-1"
                                 title="删除主资产(将同时删除其关联备件)"
                               >
                                 <Trash2 size={15} />
@@ -540,7 +540,7 @@ const MainSpareEdit = () => {
                               {/* 解除绑定 */}
                               <button
                                 onClick={() => handleUnbindSpare(asset.id, asset.parentId, asset.description)}
-                                className="flex items-center gap-1.5 text-[#ff7875] hover:text-[#ff4d4f] transition-colors text-[13px] font-medium py-1 px-1.5 rounded hover:bg-[#fff1f0]"
+                                className="flex items-center gap-1.5 text-[#ff7875] hover:text-danger transition-colors text-[13px] font-medium py-1 px-1.5 rounded hover:bg-danger-bg"
                                 title="解绑此备件，从本主机移除"
                               >
                                 <IconUnlink size={13} className="shrink-0" />
@@ -552,7 +552,7 @@ const MainSpareEdit = () => {
                               {/* 流转到其他主资产 */}
                               <button
                                 onClick={() => openTransferModal(asset, asset.parentId)}
-                                className="flex items-center gap-1.5 text-[#1677ff] hover:text-[#4096ff] transition-colors text-[13px] font-medium py-1 px-1.5 rounded hover:bg-[#e6f4ff]"
+                                className="flex items-center gap-1.5 text-primary hover:text-primary-hover transition-colors text-[13px] font-medium py-1 px-1.5 rounded hover:bg-primary-bg"
                                 title="将此备件重新关联至另一台主机"
                               >
                                 <IconExchange size={13} className="shrink-0" />
@@ -570,10 +570,10 @@ const MainSpareEdit = () => {
           </div>
           
           {/* AntD 风格底部新增主资产按钮 */}
-          <div className="border border-[#f0f0f0] border-t-0 rounded-b-lg p-3 bg-[#fafafa]/50 flex justify-center">
+          <div className="border border-border border-t-0 rounded-b-lg p-3 bg-[#fafafa]/50 flex justify-center">
              <button 
                 onClick={() => setAddMainModalOpen(true)}
-                className="w-full max-w-[150px] flex items-center justify-center gap-1.5 px-4 py-2 border border-dashed border-[#d9d9d9] bg-white text-[rgba(0,0,0,0.65)] rounded-md hover:text-[#1677ff] hover:border-[#1677ff] transition-colors text-[14px]"
+                className="w-full max-w-[150px] flex items-center justify-center gap-1.5 px-4 py-2 border border-dashed border-border-input bg-white text-text-secondary rounded-md hover:text-primary hover:border-[#1677ff] transition-colors text-[14px]"
               >
                 <Plus size={16} />
                 <span>添加主资产</span>
@@ -582,7 +582,7 @@ const MainSpareEdit = () => {
         </div>
 
         <div className="flex justify-center items-center py-6 gap-4">
-          <button className="h-8 px-6 border border-[#d9d9d9] text-[rgba(0,0,0,0.88)] bg-white rounded-md hover:text-[#4096ff] hover:border-[#4096ff] transition-all text-[14px]">
+          <button className="h-8 px-6 border border-border-input text-text-primary bg-white rounded-md hover:text-primary-hover hover:border-[#4096ff] transition-all text-[14px]">
             返回
           </button>
           <button 
@@ -597,17 +597,17 @@ const MainSpareEdit = () => {
         {addMainModalOpen && (
           <div className="fixed inset-0 bg-[rgba(0,0,0,0.45)] z-[1000] flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-[0_6px_16px_0_rgba(0,0,0,0.08)] w-full max-w-[520px] overflow-hidden">
-              <div className="px-6 py-4 border-b border-[#f0f0f0] flex justify-between items-center">
-                <h3 className="text-[16px] font-semibold text-[rgba(0,0,0,0.88)]">新增主资产</h3>
-                <Xsize={16} className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)]" onClick={() => setAddMainModalOpen(false)} />
+              <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+                <h3 className="text-[16px] font-semibold text-text-primary">新增主资产</h3>
+                <Xsize={16} className="text-text-tertiary hover:text-text-primary" onClick={() => setAddMainModalOpen(false)} />
               </div>
               <div className="p-6">
-                <label className="block text-[14px] text-[rgba(0,0,0,0.88)] mb-2">
-                  <span className="text-[#ff4d4f] font-family-[SimSun] mr-1">*</span>选择基础资产数据
+                <label className="block text-[14px] text-text-primary mb-2">
+                  <span className="text-danger font-family-[SimSun] mr-1">*</span>选择基础资产数据
                 </label>
                 <select 
                   value={selectedNewMainAsset} onChange={(e) => setSelectedNewMainAsset(e.target.value)}
-                  className="w-full border border-[#d9d9d9] rounded-md h-8 px-3 text-[14px] text-[rgba(0,0,0,0.88)] outline-none hover:border-[#4096ff] focus:border-[#4096ff] transition-all bg-white"
+                  className="w-full border border-border-input rounded-md h-8 px-3 text-[14px] text-text-primary outline-none hover:border-[#4096ff] focus:border-[#4096ff] transition-all bg-white"
                 >
                   <option value="">请搜索或选择要添加的主资产...</option>
                   {MOCK_AVAILABLE_MAIN_ASSETS.map(ast => (
@@ -616,13 +616,13 @@ const MainSpareEdit = () => {
                     </option>
                   ))}
                 </select>
-                <div className="mt-4 text-[13px] text-[rgba(0,0,0,0.45)] bg-[#fafafa] border border-[#f0f0f0] p-3 rounded">
+                <div className="mt-4 text-[13px] text-text-tertiary bg-[#fafafa] border border-border p-3 rounded">
                   💡 提示：添加主资产后，您可以继续在其操作列中为其绑定相关的备件信息。
                 </div>
               </div>
-              <div className="px-6 py-3.5 border-t border-[#f0f0f0] flex justify-end gap-2 bg-[#fafafa]">
-                <button onClick={() => setAddMainModalOpen(false)} className="h-8 px-4 border border-[#d9d9d9] rounded-md hover:text-[#4096ff] hover:border-[#4096ff] transition-all bg-white">取消</button>
-                <button onClick={confirmAddMainAsset} disabled={!selectedNewMainAsset} className={`h-8 px-4 rounded-md shadow-sm transition-all ${selectedNewMainAsset ? 'bg-[#1677ff] text-white hover:bg-[#4096ff]' : 'bg-[#f5f5f5] text-[rgba(0,0,0,0.25)] border border-[#d9d9d9] cursor-not-allowed'}`}>确定添加</button>
+              <div className="px-6 py-3.5 border-t border-border flex justify-end gap-2 bg-[#fafafa]">
+                <button onClick={() => setAddMainModalOpen(false)} className="h-8 px-4 border border-border-input rounded-md hover:text-primary-hover hover:border-[#4096ff] transition-all bg-white">取消</button>
+                <button onClick={confirmAddMainAsset} disabled={!selectedNewMainAsset} className={`h-8 px-4 rounded-md shadow-sm transition-all ${selectedNewMainAsset ? 'bg-[#1677ff] text-white hover:bg-[#4096ff]' : 'bg-[#f5f5f5] text-text-disabled border border-border-input cursor-not-allowed'}`}>确定添加</button>
               </div>
             </div>
           </div>
@@ -632,17 +632,17 @@ const MainSpareEdit = () => {
         {addSpareModal.isOpen && (
           <div className="fixed inset-0 bg-[rgba(0,0,0,0.45)] z-[1000] flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-[0_6px_16px_0_rgba(0,0,0,0.08)] w-full max-w-[520px] overflow-hidden">
-              <div className="px-6 py-4 border-b border-[#f0f0f0] flex justify-between items-center">
-                <h3 className="text-[16px] font-semibold text-[rgba(0,0,0,0.88)]">为主资产添加备件</h3>
-                <Xsize={16} className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)]" onClick={() => setAddSpareModal({ isOpen: false, parentId: null, selectedSpare: '' })} />
+              <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+                <h3 className="text-[16px] font-semibold text-text-primary">为主资产添加备件</h3>
+                <Xsize={16} className="text-text-tertiary hover:text-text-primary" onClick={() => setAddSpareModal({ isOpen: false, parentId: null, selectedSpare: '' })} />
               </div>
               <div className="p-6">
-                <label className="block text-[14px] text-[rgba(0,0,0,0.88)] mb-2">
-                  <span className="text-[#ff4d4f] font-family-[SimSun] mr-1">*</span>选择备件数据
+                <label className="block text-[14px] text-text-primary mb-2">
+                  <span className="text-danger font-family-[SimSun] mr-1">*</span>选择备件数据
                 </label>
                 <select 
                   value={addSpareModal.selectedSpare} onChange={(e) => setAddSpareModal({...addSpareModal, selectedSpare: e.target.value})}
-                  className="w-full border border-[#d9d9d9] rounded-md h-8 px-3 text-[14px] text-[rgba(0,0,0,0.88)] outline-none hover:border-[#4096ff] focus:border-[#4096ff] transition-all bg-white"
+                  className="w-full border border-border-input rounded-md h-8 px-3 text-[14px] text-text-primary outline-none hover:border-[#4096ff] focus:border-[#4096ff] transition-all bg-white"
                 >
                   <option value="">请搜索或选择关联备件...</option>
                   {MOCK_AVAILABLE_SPARE_PARTS.map(ast => (
@@ -651,14 +651,14 @@ const MainSpareEdit = () => {
                     </option>
                   ))}
                 </select>
-                <div className="mt-4 text-[13px] text-[rgba(0,0,0,0.45)] bg-[#fafafa] border border-[#f0f0f0] p-3 rounded flex gap-2">
-                   <AlertCircle size={15} className="mt-[2px] shrink-0 text-[#1677ff]"/>
+                <div className="mt-4 text-[13px] text-text-tertiary bg-[#fafafa] border border-border p-3 rounded flex gap-2">
+                   <AlertCircle size={15} className="mt-[2px] shrink-0 text-primary"/>
                    <span>备件添加后，其位置信息（城市/建筑/楼层）将强制与当前绑定的主资产保持一致，无法单独修改。</span>
                 </div>
               </div>
-              <div className="px-6 py-3.5 border-t border-[#f0f0f0] flex justify-end gap-2 bg-[#fafafa]">
-                <button onClick={() => setAddSpareModal({ isOpen: false, parentId: null, selectedSpare: '' })} className="h-8 px-4 border border-[#d9d9d9] rounded-md hover:text-[#4096ff] hover:border-[#4096ff] transition-all bg-white">取消</button>
-                <button onClick={confirmAddSparePart} disabled={!addSpareModal.selectedSpare} className={`h-8 px-4 rounded-md shadow-sm transition-all ${addSpareModal.selectedSpare ? 'bg-[#1677ff] text-white hover:bg-[#4096ff]' : 'bg-[#f5f5f5] text-[rgba(0,0,0,0.25)] border border-[#d9d9d9] cursor-not-allowed'}`}>确认绑定</button>
+              <div className="px-6 py-3.5 border-t border-border flex justify-end gap-2 bg-[#fafafa]">
+                <button onClick={() => setAddSpareModal({ isOpen: false, parentId: null, selectedSpare: '' })} className="h-8 px-4 border border-border-input rounded-md hover:text-primary-hover hover:border-[#4096ff] transition-all bg-white">取消</button>
+                <button onClick={confirmAddSparePart} disabled={!addSpareModal.selectedSpare} className={`h-8 px-4 rounded-md shadow-sm transition-all ${addSpareModal.selectedSpare ? 'bg-[#1677ff] text-white hover:bg-[#4096ff]' : 'bg-[#f5f5f5] text-text-disabled border border-border-input cursor-not-allowed'}`}>确认绑定</button>
               </div>
             </div>
           </div>
@@ -668,26 +668,26 @@ const MainSpareEdit = () => {
         {transferSpareModal.isOpen && (
           <div className="fixed inset-0 bg-[rgba(0,0,0,0.45)] z-[1000] flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-[0_6px_16px_0_rgba(0,0,0,0.08)] w-full max-w-[520px] overflow-hidden">
-              <div className="px-6 py-4 border-b border-[#f0f0f0] flex justify-between items-center">
-                <h3 className="text-[16px] font-semibold text-[rgba(0,0,0,0.88)]">备件流转转配</h3>
-                <Xsize={16} className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)]" onClick={() => setTransferSpareModal({ isOpen: false, spareId: null, currentParentId: null, spareName: '', targetParentId: '' })} />
+              <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+                <h3 className="text-[16px] font-semibold text-text-primary">备件流转转配</h3>
+                <Xsize={16} className="text-text-tertiary hover:text-text-primary" onClick={() => setTransferSpareModal({ isOpen: false, spareId: null, currentParentId: null, spareName: '', targetParentId: '' })} />
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <div className="text-[13px] text-[rgba(0,0,0,0.45)] mb-1">正在流转的备件</div>
-                  <div className="font-semibold text-[14px] text-[rgba(0,0,0,0.88)] bg-[#fafafa] border border-[#f0f0f0] p-2.5 rounded">
+                  <div className="text-[13px] text-text-tertiary mb-1">正在流转的备件</div>
+                  <div className="font-semibold text-[14px] text-text-primary bg-[#fafafa] border border-border p-2.5 rounded">
                     {transferSpareModal.spareName}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[14px] text-[rgba(0,0,0,0.88)] mb-2">
-                    <span className="text-[#ff4d4f] font-family-[SimSun] mr-1">*</span>选择目标主资产 (流转至该服务器)
+                  <label className="block text-[14px] text-text-primary mb-2">
+                    <span className="text-danger font-family-[SimSun] mr-1">*</span>选择目标主资产 (流转至该服务器)
                   </label>
                   <select 
                     value={transferSpareModal.targetParentId} 
                     onChange={(e) => setTransferSpareModal({...transferSpareModal, targetParentId: e.target.value})}
-                    className="w-full border border-[#d9d9d9] rounded-md h-8 px-3 text-[14px] text-[rgba(0,0,0,0.88)] outline-none hover:border-[#4096ff] focus:border-[#4096ff] transition-all bg-white"
+                    className="w-full border border-border-input rounded-md h-8 px-3 text-[14px] text-text-primary outline-none hover:border-[#4096ff] focus:border-[#4096ff] transition-all bg-white"
                   >
                     <option value="">请选择目标服务器...</option>
                     {assets
@@ -701,14 +701,14 @@ const MainSpareEdit = () => {
                   </select>
                 </div>
 
-                <div className="text-[13px] text-[rgba(0,0,0,0.45)] bg-[#e6f4ff] border border-[#91caff] p-3 rounded flex gap-2">
-                   <AlertCircle size={15} className="mt-[2px] shrink-0 text-[#1677ff]"/>
+                <div className="text-[13px] text-text-tertiary bg-primary-bg border border-primary-border p-3 rounded flex gap-2">
+                   <AlertCircle size={15} className="mt-[2px] shrink-0 text-primary"/>
                    <span>⚠️ 注意：完成转配后，该备件在表单中的城市、建筑、楼层等物理地址，将自动继承并变更为所选目标主机对应的物理地址，实现资产流转一体化。</span>
                 </div>
               </div>
-              <div className="px-6 py-3.5 border-t border-[#f0f0f0] flex justify-end gap-2 bg-[#fafafa]">
-                <button onClick={() => setTransferSpareModal({ isOpen: false, spareId: null, currentParentId: null, spareName: '', targetParentId: '' })} className="h-8 px-4 border border-[#d9d9d9] rounded-md hover:text-[#4096ff] hover:border-[#4096ff] transition-all bg-white">取消</button>
-                <button onClick={handleConfirmTransfer} disabled={!transferSpareModal.targetParentId} className={`h-8 px-4 rounded-md shadow-sm transition-all ${transferSpareModal.targetParentId ? 'bg-[#1677ff] text-white hover:bg-[#4096ff]' : 'bg-[#f5f5f5] text-[rgba(0,0,0,0.25)] border border-[#d9d9d9] cursor-not-allowed'}`}>确认转移</button>
+              <div className="px-6 py-3.5 border-t border-border flex justify-end gap-2 bg-[#fafafa]">
+                <button onClick={() => setTransferSpareModal({ isOpen: false, spareId: null, currentParentId: null, spareName: '', targetParentId: '' })} className="h-8 px-4 border border-border-input rounded-md hover:text-primary-hover hover:border-[#4096ff] transition-all bg-white">取消</button>
+                <button onClick={handleConfirmTransfer} disabled={!transferSpareModal.targetParentId} className={`h-8 px-4 rounded-md shadow-sm transition-all ${transferSpareModal.targetParentId ? 'bg-[#1677ff] text-white hover:bg-[#4096ff]' : 'bg-[#f5f5f5] text-text-disabled border border-border-input cursor-not-allowed'}`}>确认转移</button>
               </div>
             </div>
           </div>
