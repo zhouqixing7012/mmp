@@ -1,66 +1,75 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar'; //导航栏
-import ScrapForm from './pages/账面报废申请单——编辑页';  //账面报废——编辑页
-import ApprovalPage from './pages/账面报废申请单——审批';  //账面报废——审批页
-import BaofeiNeishen from './pages/报废申请单——内审';
-import BaofeiCaigou2 from './pages/报废申请单——采购（2）';
-import BaofeiCaigou3 from './pages/报废申请单——采购（3）';
-import BaofeiCaigou4 from './pages/报废申请单——采购（4）';
-import Dashboard from './pages/机房资产看板';
-import Dashboardapp from './pages/机房资产看板app';
-import Caigoudingdan from './pages/采购订单编辑页';
-import BaofeiCaigou1 from './pages/报废申请单——采购（1）';
-import Jifang from './pages/机房资产管理';
-import Jifanglist from './pages/机房资产维护查询列表';
-import Jifanglistone from './pages/机房资产维护查询列表（员工端）';
-import Weizhi from './pages/信息变更编辑页';
-import PCS from './pages/域名&证书查询列表';
-import SN from './pages/序列号变更编辑页';
-import PCSDASHBOARD from './pages/PCS看板';
-import PCSDASHBOARD2 from './pages/PCS看板 副本';
-import Connectzhu from './pages/主备维护主编辑页';
-import Connectbei from './pages/主备维护备件编辑页';
-import Connectshenpi from './pages/主备维护审批页';
-import Positionshenpi from './pages/位置变更审批页';
-import SNshenpi from './pages/序列号变更审批页';
-import People from './pages/责任人变更编辑页';
-import Peoplejieshou from './pages/责任人变更接收人确认——审批';
-import Peopleshiwu from './pages/责任人变更实物确认——审批';
-// import Peopleshiws from './pages/责任人变更认——审批';
+import Navbar from './components/Navbar';
+import routes from './config/routes';
+
+// Page imports (using new English names after rename)
+import ScrapForm from './pages/ScrapForm';
+import ApprovalPage from './pages/ApprovalPage';
+import ScrapInternalReview from './pages/ScrapInternalReview';
+import ScrapProcurement1 from './pages/ScrapProcurement1';
+import ScrapProcurement2 from './pages/ScrapProcurement2';
+import ScrapProcurement3 from './pages/ScrapProcurement3';
+import ScrapProcurement4 from './pages/ScrapProcurement4';
+import AssetDashboard from './pages/AssetDashboard';
+import AssetDashboardMobile from './pages/AssetDashboardMobile';
+import PurchaseOrderEdit from './pages/PurchaseOrderEdit';
+import AssetManagement from './pages/AssetManagement';
+import AssetMaintenanceList from './pages/AssetMaintenanceList';
+import AssetMaintenanceListEmployee from './pages/AssetMaintenanceListEmployee';
+import InfoChangeEdit from './pages/InfoChangeEdit';
+import PositionChangeApproval from './pages/PositionChangeApproval';
+import SerialNumberEdit from './pages/SerialNumberEdit';
+import SerialNumberApproval from './pages/SerialNumberApproval';
+import DomainCertList from './pages/DomainCertList';
+import PCSDashboard from './pages/PCSDashboard';
+import PCSDashboard2 from './pages/PCSDashboard2';
+import MainSpareEdit from './pages/MainSpareEdit';
+import MainSparePartEdit from './pages/MainSparePartEdit';
+import MainSpareApproval from './pages/MainSpareApproval';
+import ResponsiblePersonEdit from './pages/ResponsiblePersonEdit';
+import ResponsiblePersonReceiverApproval from './pages/ResponsiblePersonReceiverApproval';
+import ResponsiblePersonPhysicalApproval from './pages/ResponsiblePersonPhysicalApproval';
+import AccountingScrapEdit from './pages/AccountingScrapEdit';
+
+const componentMap = {
+  '/': ScrapForm,
+  '/approval': ApprovalPage,
+  '/BaofeiNeishen': ScrapInternalReview,
+  '/BaofeiCaigou1': ScrapProcurement1,
+  '/BaofeiCaigou2': ScrapProcurement2,
+  '/BaofeiCaigou3': ScrapProcurement3,
+  '/BaofeiCaigou4': ScrapProcurement4,
+  '/Dashboard': AssetDashboard,
+  '/Dashboardapp': AssetDashboardMobile,
+  '/Caigoudingdan': PurchaseOrderEdit,
+  '/Jifang': AssetManagement,
+  '/Jifanglist': AssetMaintenanceList,
+  '/Jifanglistone': AssetMaintenanceListEmployee,
+  '/Weizhi': InfoChangeEdit,
+  '/Positionshenpi': PositionChangeApproval,
+  '/SN': SerialNumberEdit,
+  '/SNshenpi': SerialNumberApproval,
+  '/PCS': DomainCertList,
+  '/PCSDASHBOARD': PCSDashboard,
+  '/PCSDASHBOARD(2)': PCSDashboard2,
+  '/Connectzhu': MainSpareEdit,
+  '/Connectbei': MainSparePartEdit,
+  '/Connectshenpi': MainSpareApproval,
+  '/People': ResponsiblePersonEdit,
+  '/Peoplejieshou': ResponsiblePersonReceiverApproval,
+  '/Peopleshiwu': ResponsiblePersonPhysicalApproval,
+};
 
 export default function App() {
   return (
     <BrowserRouter>
       <Navbar />
       <Routes>
-        <Route path="/" element={<ScrapForm />} />
-        <Route path="/approval" element={<ApprovalPage />} />
-        <Route path="/BaofeiNeishen" element={<BaofeiNeishen />} />
-        <Route path="/BaofeiCaigou2" element={<BaofeiCaigou2 />} />
-        <Route path="/BaofeiCaigou3" element={<BaofeiCaigou3 />} />
-        <Route path="/BaofeiCaigou4" element={<BaofeiCaigou4 />} />
-        <Route path="/Dashboard" element={<Dashboard />} />
-        <Route path="/Dashboardapp" element={<Dashboardapp />} />
-        <Route path="/Caigoudingdan" element={<Caigoudingdan />} />
-        <Route path="/BaofeiCaigou1" element={<BaofeiCaigou1 />} />
-        <Route path="/Jifang" element={<Jifang />} />
-        <Route path="/Jifanglist" element={<Jifanglist />} />
-        <Route path="/Jifanglistone" element={<Jifanglistone />} />
-        <Route path="/Weizhi" element={<Weizhi />} />
-        <Route path="/SN" element={<SN />} />
-        <Route path="/PCS" element={<PCS />} />
-        <Route path="/PCSDASHBOARD" element={<PCSDASHBOARD />} />
-        <Route path="/PCSDASHBOARD(2)" element={<PCSDASHBOARD2 />} />
-        <Route path="/Connectzhu" element={<Connectzhu />} />
-        <Route path="/Connectbei" element={<Connectbei />} />
-        <Route path="/Connectshenpi" element={<Connectshenpi />} />
-        <Route path="/Positionshenpi" element={<Positionshenpi />} />
-        <Route path="/SNshenpi" element={<SNshenpi />} />
-        <Route path="/People" element={<People />} />
-        <Route path="/Peoplejieshou" element={<Peoplejieshou />} />
-        <Route path="/Peopleshiwu" element={<Peopleshiwu />} />
-        {/* <Route path="/Peopleshiws" element={<Peopleshiws />} /> */}
+        {routes.map((route) => {
+          const Component = componentMap[route.path];
+          return Component ? <Route key={route.path} path={route.path} element={<Component />} /> : null;
+        })}
       </Routes>
     </BrowserRouter>
   );
