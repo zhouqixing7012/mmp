@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
 
-export default function App() {
+export default function PurchaseOrderEdit() {
   const [isExpanded, setIsExpanded] = useState(true);
 
   // 完整表头数据

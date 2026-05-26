@@ -36,7 +36,7 @@ const assetData = [
   { id: 'PART-HDD-012', sn: 'SN-P-005566', rel: '备', desc: '硬盘', qty: 1, city: '北京市', bldg: '搜狐媒体大厦', floor: '8层', cat: 'IT设备', subcat: '服务器配件', status: '在用-使用中', isChild: true, parentId: '114141605224' },
 ];
 
-export default function App() {
+export default function ResponsiblePersonPhysicalApproval() {
   // 简单的状态用于控制树状表格行的展开/折叠
   const [expandedRows, setExpandedRows] = useState({
     '114141605224': true,

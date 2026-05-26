@@ -1,4 +1,4 @@
-export default function AssetComparisonSlide() {
+export default function AssetManagement() {
   const rows = [
     // {
     //   id: '1',

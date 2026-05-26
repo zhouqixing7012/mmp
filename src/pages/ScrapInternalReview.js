@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, CheckCircle, XCircle, UserPlus, Upload, X, AlertCircle, Eye, Download } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, UserPlus, Upload, X, AlertCircle, Eye, Download, Plus, Trash2 } from 'lucide-react';
 
 // --- 模拟已提交的单据数据 ---
 const submittedData = {
@@ -17,44 +17,72 @@ const submittedData = {
   ]
 };
 
-export default function App() {
+export default function ScrapInternalReview() {
   const [activeTab, setActiveTab] = useState('main'); 
   const [previewImage, setPreviewImage] = useState(null);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
 
-  // 填写方选择
-  const [infoProvider, setInfoProvider] = useState('purchasing'); // 'purchasing' 或 'internalaudit'
-
-  // 采购部专属填报数据
-  const [quotationData, setQuotationData] = useState({
-    quoteAmount: '',
-    supplier: '',
-    attachmentName: ''
-  });
+  // 采购部专属填报数据 (改为多行表格支持)
+  const [quotationList, setQuotationList] = useState([
+    { id: Date.now(), supplier: '', quoteAmount: '', attachments: [] }
+  ]);
 
   const showToast = (message, type = 'success') => {
     setToast({ visible: true, message, type });
     setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 4000);
   };
 
-  const handleQuotationChange = (e) => {
-    const { name, value } = e.target;
-    setQuotationData(prev => ({ ...prev, [name]: value }));
+  const handleAddQuotationRow = () => {
+    setQuotationList(prev => [
+      ...prev, 
+      { id: Date.now(), supplier: '', quoteAmount: '', attachments: [] }
+    ]);
   };
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setQuotationData(prev => ({ ...prev, attachmentName: file.name }));
-      showToast(`报价附件 ${file.name} 上传成功`);
+  const handleRemoveQuotationRow = (id) => {
+    if (quotationList.length === 1) {
+      showToast('至少需要保留一行报价信息', 'error');
+      return;
     }
-    e.target.value = null;
+    setQuotationList(prev => prev.filter(row => row.id !== id));
+  };
+
+  const handleQuotationChange = (id, field, value) => {
+    setQuotationList(prev => prev.map(row => 
+      row.id === id ? { ...row, [field]: value } : row
+    ));
+  };
+
+  const handleFileUpload = (id, e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setQuotationList(prev => prev.map(row => {
+        if (row.id === id) {
+          // 模拟存储附件名称
+          const newAttachments = files.map(f => ({ name: f.name, uid: Math.random().toString(36).substring(7) }));
+          return { ...row, attachments: [...row.attachments, ...newAttachments] };
+        }
+        return row;
+      }));
+      showToast(`成功上传 ${files.length} 个附件`);
+    }
+    e.target.value = null; // 重置 input
+  };
+
+  const handleRemoveAttachment = (rowId, attachmentUid) => {
+    setQuotationList(prev => prev.map(row => {
+      if (row.id === rowId) {
+        return { ...row, attachments: row.attachments.filter(a => a.uid !== attachmentUid) };
+      }
+      return row;
+    }));
   };
 
   const handleApprovalAction = (actionName) => {
     if (actionName === '同意') {
-      if (infoProvider === 'purchasing' && (!quotationData.quoteAmount || !quotationData.supplier || !quotationData.attachmentName)) {
-        showToast('请完整填写报价金额、回收供应商，并上传报价附件', 'error');
+      const isValid = quotationList.every(q => q.quoteAmount && q.supplier && q.attachments.length > 0);
+      if (!isValid) {
+        showToast('请完整填写所有报价行的金额、回收供应商，并至少上传一个报价附件', 'error');
         return;
       }
       showToast('审批已同意，流转至下一节点', 'success');
@@ -212,7 +240,7 @@ export default function App() {
               <table className="w-full text-left whitespace-nowrap min-w-[1300px]">
                 <thead className="bg-gray-100 border-b">
                   <tr>
-                    <th className="p-2 w-12 text-center text-gray-600 font-medium">#</th>
+                    <th className="p-2 w-12 text-center text-gray-600 font-medium">序号</th>
                     {activeTab === 'accessory' && <th className="p-2 font-medium text-gray-600 bg-gray-200/50">所属主资产</th>}
                     <th className="p-2 font-medium text-gray-600">资产标签号</th>
                     <th className="p-2 font-medium text-gray-600">序列号</th>
@@ -268,81 +296,108 @@ export default function App() {
         {/* ✨ 采购部专属操作区 (可编辑) - 移到下方 ✨ */}
         <section className="bg-blue-50/50 border border-blue-200 rounded-md shadow-sm overflow-hidden relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-          <div className="bg-white px-4 py-2.5 border-b border-blue-100 flex items-center text-blue-800">
-            <span className="font-semibold">报价信息</span>
-            <span className="ml-2 text-xs text-blue-600">(请选择填写方并完善相关数据)</span>
-          </div>
-          <div className="p-6 bg-white">
-            <div className="mb-6 flex items-center">
-              <label className="text-gray-700 mr-4 font-medium">信息填写方 <span className="text-red-500">*</span></label>
-              <div className="flex items-center space-x-6">
-                <label className="flex items-center cursor-pointer">
-                  <input 
-                    type="radio" 
-                    value="purchasing" 
-                    checked={infoProvider === 'purchasing'} 
-                    onChange={(e) => setInfoProvider(e.target.value)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-gray-700">采购部</span>
-                </label>
-                <label className="flex items-center cursor-pointer">
-                  <input 
-                    type="radio" 
-                    value="internalaudit" 
-                    checked={infoProvider === 'internalaudit'} 
-                    onChange={(e) => setInfoProvider(e.target.value)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-gray-700">内审部</span>
-                </label>
-              </div>
+          <div className="bg-white px-4 py-2.5 border-b border-blue-100 flex items-center justify-between text-blue-800">
+            <div>
+              <span className="font-semibold">内审部报价信息</span>
+              <span className="ml-2 text-xs text-blue-600">(请填写回收相关数据)</span>
             </div>
+            <button 
+              onClick={handleAddQuotationRow}
+              className="flex items-center text-sm px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-100 transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4 mr-1" /> 添加报价
+            </button>
+          </div>
+          <div className="p-4 bg-white overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[800px]">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="p-2 w-12 text-center text-gray-600 font-medium">序号</th>
+                  <th className="p-2 w-[30%] font-medium text-gray-700">回收供应商 <span className="text-red-500">*</span></th>
+                  <th className="p-2 w-[25%] font-medium text-gray-700">报价金额（元） <span className="text-red-500">*</span></th>
+                  <th className="p-2 font-medium text-gray-700">报价附件 <span className="text-red-500">*</span></th>
+                  <th className="p-2 w-16 text-center font-medium text-gray-700">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {quotationList.map((row, index) => (
+                  <tr key={row.id} className="hover:bg-gray-50 transition-colors align-top">
+                    <td className="p-3 text-center text-gray-400 pt-5">{index + 1}</td>
+                    
+                    <td className="p-3">
+                      <input 
+                        type="text" 
+                        value={row.supplier}
+                        onChange={(e) => handleQuotationChange(row.id, 'supplier', e.target.value)}
+                        placeholder="请输入供应商名称" 
+                        className="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white" 
+                      />
+                    </td>
 
-            {infoProvider === 'purchasing' && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-x-8 gap-y-6 pt-4 border-t border-gray-100">
-                <div className="flex flex-col">
-                  <label className="text-gray-700 mb-1 font-medium">报价金额（元） <span className="text-red-500">*</span></label>
-                  <input 
-                    type="number" 
-                    name="quoteAmount"
-                    value={quotationData.quoteAmount}
-                    onChange={handleQuotationChange}
-                    placeholder="请输入金额" 
-                    className="border border-gray-300 rounded p-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white" 
-                  />
-                </div>
+                    <td className="p-3">
+                      <input 
+                        type="number" 
+                        value={row.quoteAmount}
+                        onChange={(e) => handleQuotationChange(row.id, 'quoteAmount', e.target.value)}
+                        placeholder="请输入金额" 
+                        className="w-full border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white" 
+                      />
+                    </td>
 
-                <div className="flex flex-col">
-                  <label className="text-gray-700 mb-1 font-medium">回收供应商 <span className="text-red-500">*</span></label>
-                  <input 
-                    type="text" 
-                    name="supplier"
-                    value={quotationData.supplier}
-                    onChange={handleQuotationChange}
-                    placeholder="请输入供应商名称" 
-                    className="border border-gray-300 rounded p-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white" 
-                  />
-                </div>
-
-                <div className="flex flex-col md:col-span-4 mt-2">
-                  <label className="text-gray-700 mb-1 font-medium">报价附件 <span className="text-red-500">*</span></label>
-                  <div className="flex items-center h-10 md:max-w-sm">
-                    <input type="file" className="hidden" id="quote-upload" onChange={handleFileUpload} />
-                    {quotationData.attachmentName ? (
-                      <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded px-3 h-full w-full">
-                        <span className="text-blue-600 truncate flex-grow text-sm" title={quotationData.attachmentName}>{quotationData.attachmentName}</span>
-                        <button onClick={() => setQuotationData(prev => ({...prev, attachmentName: ''}))} className="text-gray-400 hover:text-red-500 ml-2"><X className="w-4 h-4"/></button>
+                    <td className="p-3">
+                      <div className="flex flex-col space-y-2">
+                        <div className="flex items-center h-9">
+                          <input 
+                            type="file" 
+                            multiple 
+                            className="hidden" 
+                            id={`quote-upload-${row.id}`} 
+                            onChange={(e) => handleFileUpload(row.id, e)} 
+                          />
+                          <label 
+                            htmlFor={`quote-upload-${row.id}`} 
+                            className="px-3 h-full border border-dashed border-gray-300 rounded text-gray-500 hover:border-blue-400 hover:text-blue-500 cursor-pointer flex items-center justify-center transition-colors bg-gray-50/50 hover:bg-gray-50 text-sm whitespace-nowrap"
+                          >
+                            <Upload className="w-4 h-4 mr-1.5" /> 上传多附件
+                          </label>
+                        </div>
+                        
+                        {/* 附件列表 */}
+                        {row.attachments.length > 0 && (
+                          <div className="flex flex-col space-y-1 mt-1">
+                            {row.attachments.map(file => (
+                              <div key={file.uid} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded px-2 py-1 max-w-[280px]">
+                                <span className="text-blue-600 truncate text-xs flex-grow" title={file.name}>
+                                  {file.name}
+                                </span>
+                                <button 
+                                  onClick={() => handleRemoveAttachment(row.id, file.uid)} 
+                                  className="text-gray-400 hover:text-red-500 ml-2 flex-shrink-0"
+                                  title="移除附件"
+                                >
+                                  <X className="w-3.5 h-3.5"/>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <label htmlFor="quote-upload" className="w-full h-full border border-dashed border-gray-300 rounded text-center text-gray-500 hover:border-blue-400 hover:text-blue-500 cursor-pointer flex items-center justify-center transition-colors bg-gray-50/50 hover:bg-gray-50">
-                        <Upload className="w-4 h-4 mr-2" /> 点击上传附件
-                      </label>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+                    </td>
+
+                    <td className="p-3 text-center pt-4">
+                      <button 
+                        onClick={() => handleRemoveQuotationRow(row.id)}
+                        className={`p-1.5 rounded-full transition-colors ${quotationList.length === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
+                        disabled={quotationList.length === 1}
+                        title={quotationList.length === 1 ? '至少保留一行' : '删除该行'}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
 

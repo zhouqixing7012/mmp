@@ -20,7 +20,7 @@ const FormRow = ({ label, value, required }) => (
   </div>
 );
 
-export default function App() {
+export default function ResponsiblePersonReceiverApproval() {
   const [expandedRows, setExpandedRows] = useState(['1']);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalForm, setModalForm] = useState({ city: '', building: '', floor: '' });

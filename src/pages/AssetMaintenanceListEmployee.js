@@ -7,8 +7,7 @@ import {
   MapPin, Server, Hash
 } from 'lucide-react';
 
-export default function App() {
-  // 修改当前选中标签页为“资产维护”
+export default function AssetMaintenanceListEmployee() {
   const [selectedTab, setSelectedTab] = useState('资产维护');
 
   // 水印背景样式
@@ -17,33 +16,28 @@ export default function App() {
     backgroundRepeat: 'repeat',
   };
 
-  // 模拟表格数据 (完全恢复您的19个字段数据)
+  // 模拟表格数据
   const tableData = Array.from({ length: 22 }).map((_, i) => ({
     id: i + 1,
+    seq: `SOHU-PMS-00${3656 + i * 16}`,
     tag: `ME-00${190 + i * 16}`,
-    mainTag: i % 4 === 0 ? `ME-00${180 + i * 16}` : '', // 模拟有时为空，有时有值
-    serialNumber: i % 3 === 0 ? `SN${80000 + i * 123}` : '', // 模拟有时为空，有时有值
+    mainTag: '',
     company: '新媒体',
     sector: '11.搜狐网-web',
     majorClass: 'SERVER',
     minorClass: '服务器-服务器内存',
     desc: 'Inspur.16G DDR4 2666 RDIMM',
     brand: 'Inspur',
-    quantity: 1,
-    originalValue: '1,250.00',
-    netValue: '0.00',
-    ownerId: '111160',
-    ownerName: '梁声',
+    config: '',
+    location: '亦庄库房',
+    owner: '111160-梁声',
     status: '在用-使用中',
-    costCenter: '101001-技术中心',
-    warehouse: '亦庄库房',
-    enableDate: '2019-12-25'
+    date: '2019-12-25'
   }));
 
   return (
     <div className="flex h-screen w-full bg-white font-['Microsoft_YaHei',_sans-serif] text-[12px] text-gray-800 overflow-hidden">
       
-      {}
       {/* 侧边栏 */}
       <div className="w-[180px] bg-[#f5f5f5] flex flex-col flex-shrink-0 border-r border-gray-300">
         {/* 用户信息区 */}
@@ -66,10 +60,8 @@ export default function App() {
           </div>
         </div>
 
-        {}
         {/* 菜单区 */}
         <div className="flex-1 overflow-y-auto pb-4">
-          {/* 个人工作台 */}
           <div className="flex items-center justify-between p-2 border-b border-gray-200 cursor-pointer hover:bg-[#e8e8e8]">
             <div className="flex items-center gap-2">
               <Settings size={14} className="text-orange-500" />
@@ -78,7 +70,6 @@ export default function App() {
             <ChevronRight size={14} className="text-gray-500" />
           </div>
 
-          {/* 资产管理 */}
           <div className="flex items-center justify-between p-2 border-b border-gray-200 cursor-pointer hover:bg-[#e8e8e8]">
             <div className="flex items-center gap-2">
               <Archive size={14} className="text-indigo-500" />
@@ -96,7 +87,6 @@ export default function App() {
               </div>
               <ChevronDown size={14} className="text-gray-500" />
             </div>
-            {/* 子菜单 */}
             <div className="flex flex-col bg-white">
               <div className="py-1.5 px-6 bg-[#337ab7] text-white cursor-pointer font-bold pl-9">
                 资产维护
@@ -151,7 +141,6 @@ export default function App() {
         </div>
       </div>
 
-      {}
       {/* 主内容区 */}
       <div className="flex-1 flex flex-col min-w-0 bg-[#f9f9f9]">
         
@@ -183,8 +172,7 @@ export default function App() {
             资产查询列表
           </div>
 
-          {}
-          {/* 查询条件面板 (完全恢复为无损的四行布局) */}
+          {/* 查询条件面板 */}
           <div className="border border-gray-200 mb-2 bg-white/90 shrink-0">
             <div className="flex items-center gap-1 border-b border-gray-200 p-1 bg-[#fcfcfc]">
               <ChevronDown size={12} className="text-blue-500" />
@@ -193,16 +181,13 @@ export default function App() {
             
             <div className="p-3 flex items-start gap-4">
               <div className="flex-1 grid grid-cols-3 gap-x-4 gap-y-3 items-center">
-                {/* 第一行：标签号、主资产标签号、序列号 */}
+                {/* 第一行 */}
                 <div className="flex items-center">
                   <label className="w-24 text-right pr-2 font-bold text-gray-700 whitespace-nowrap">标签号</label>
-                  <div className="w-full min-w-0 flex-1 flex items-center relative">
-                    <input type="text" className="w-full border border-gray-300 h-6 px-1 pr-6 outline-none focus:border-blue-500" />
-                    <Search size={14} className="absolute right-1 text-blue-500 cursor-pointer" />
-                  </div>
+                  <input type="text" className="w-full min-w-0 flex-1 border border-gray-300 h-6 px-1 outline-none focus:border-blue-500" />
                 </div>
                 <div className="flex items-center">
-                  <label className="w-24 text-right pr-2 font-bold text-gray-700 whitespace-nowrap">主资产标签号</label>
+                  <label className="w-28 text-right pr-2 font-bold text-gray-700 whitespace-nowrap">主资产标签号</label>
                   <input type="text" className="w-full min-w-0 flex-1 border border-gray-300 h-6 px-1 outline-none focus:border-blue-500" />
                 </div>
                 <div className="flex items-center">
@@ -210,7 +195,7 @@ export default function App() {
                   <input type="text" className="w-full min-w-0 flex-1 border border-gray-300 h-6 px-1 outline-none focus:border-blue-500" />
                 </div>
 
-                {/* 第二行：公司、部门、资产责任人 */}
+                {/* 第二行 */}
                 <div className="flex items-center">
                   <label className="w-24 text-right pr-2 font-bold text-gray-700 whitespace-nowrap">公司</label>
                   <div className="w-full min-w-0 flex-1 flex items-center relative">
@@ -219,7 +204,7 @@ export default function App() {
                   </div>
                 </div>
                 <div className="flex items-center">
-                  <label className="w-24 text-right pr-2 font-bold text-gray-700 whitespace-nowrap">部门</label>
+                  <label className="w-28 text-right pr-2 font-bold text-gray-700 whitespace-nowrap">部门</label>
                   <div className="w-full min-w-0 flex-1 flex items-center relative">
                     <input type="text" className="w-full border border-gray-300 h-6 px-1 pr-6 outline-none focus:border-blue-500" />
                     <Search size={14} className="absolute right-1 text-blue-500 cursor-pointer" />
@@ -233,48 +218,23 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 第三行：资产说明、资产类别、资产状态 */}
+                {/* 第三行 */}
                 <div className="flex items-center">
                   <label className="w-24 text-right pr-2 font-bold text-gray-700 whitespace-nowrap">资产说明</label>
                   <input type="text" className="w-full min-w-0 flex-1 border border-gray-300 h-6 px-1 outline-none focus:border-blue-500" />
                 </div>
                 <div className="flex items-center">
-                  <label className="w-24 text-right pr-2 font-bold text-gray-700 whitespace-nowrap">资产类别</label>
+                  <label className="w-28 text-right pr-2 font-bold text-gray-700 whitespace-nowrap">资产类别</label>
                   <div className="w-full min-w-0 flex-1 flex items-center relative">
                     <input type="text" className="w-full border border-gray-300 h-6 px-1 pr-6 outline-none focus:border-blue-500" />
                     <Search size={14} className="absolute right-1 text-blue-500 cursor-pointer" />
                   </div>
                 </div>
-                <div className="flex items-center">
-                  <label className="w-24 text-right pr-2 font-bold text-gray-700 whitespace-nowrap">资产状态</label>
-                  <div className="w-full min-w-0 flex-1 flex items-center relative">
-                    <input type="text" className="w-full border border-gray-300 h-6 px-1 pr-6 outline-none focus:border-blue-500" />
-                    <Search size={14} className="absolute right-1 text-blue-500 cursor-pointer" />
-                  </div>
-                </div>
-
-                {/* 第四行：板块、成本中心、仓库 */}
                 <div className="flex items-center">
                   <label className="w-24 text-right pr-2 font-bold text-gray-700 whitespace-nowrap">板块</label>
                   <select className="w-full min-w-0 flex-1 border border-gray-300 h-6 px-1 outline-none focus:border-blue-500">
                     <option>请选择</option>
-                    <option>17.Corporate</option>
-                    <option>16.视频</option>
                   </select>
-                </div>
-                <div className="flex items-center">
-                  <label className="w-24 text-right pr-2 font-bold text-gray-700 whitespace-nowrap">成本中心</label>
-                  <div className="w-full min-w-0 flex-1 flex items-center relative">
-                    <input type="text" className="w-full border border-gray-300 h-6 px-1 pr-6 outline-none focus:border-blue-500" />
-                    <Search size={14} className="absolute right-1 text-blue-500 cursor-pointer" />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <label className="w-24 text-right pr-2 font-bold text-gray-700 whitespace-nowrap">仓库</label>
-                  <div className="w-full min-w-0 flex-1 flex items-center relative">
-                    <input type="text" className="w-full border border-gray-300 h-6 px-1 pr-6 outline-none focus:border-blue-500" />
-                    <Search size={14} className="absolute right-1 text-blue-500 cursor-pointer" />
-                  </div>
                 </div>
               </div>
 
@@ -289,30 +249,28 @@ export default function App() {
             </div>
           </div>
 
-          {}
-          {/* 操作按钮栏 - 已把“主备维护”和“序列号变更”放置在“位置变更”前面 */}
+          {/* 操作按钮栏 - 新增主备维护、序列号变更到此处 */}
           <div className="flex justify-end items-center p-2 bg-white/80 shrink-0">
             <div className="flex gap-4">
-              <button className="flex items-center gap-1 text-gray-700 hover:text-blue-600 font-medium">
+              <button className="flex items-center gap-1 text-gray-700 hover:text-blue-600">
                 <Server size={14} className="text-teal-500" /> 主备维护
               </button>
-              <button className="flex items-center gap-1 text-gray-700 hover:text-blue-600 font-medium">
+              <button className="flex items-center gap-1 text-gray-700 hover:text-blue-600">
                 <Hash size={14} className="text-orange-500" /> 序列号变更
               </button>
-              <button className="flex items-center gap-1 text-gray-700 hover:text-blue-600 font-medium">
+              <button className="flex items-center gap-1 text-gray-700 hover:text-blue-600">
                 <MapPin size={14} className="text-yellow-500" /> 位置变更
               </button>
-              <button className="flex items-center gap-1 text-gray-700 hover:text-blue-600 font-medium">
+              <button className="flex items-center gap-1 text-gray-700 hover:text-blue-600">
                 <UserCog size={14} className="text-indigo-500" /> 责任人变更
               </button>
-              <button className="flex items-center gap-1 text-gray-700 hover:text-blue-600 font-medium">
+              <button className="flex items-center gap-1 text-gray-700 hover:text-blue-600">
                 <Save size={14} className="text-blue-600" /> 导出数据
               </button>
             </div>
           </div>
 
-          {}
-          {/* 数据表格区 - 已完整保留所有19个字段列，并完全删除原本末尾的“操作”列 */}
+          {/* 数据表格区 - 已移除操作列 */}
           <div className="flex-1 overflow-auto border border-gray-300 bg-white shadow-sm min-h-0 relative">
             <table className="w-full text-center border-collapse whitespace-nowrap">
               <thead className="sticky top-0 z-20 shadow-[0_1px_2px_rgba(0,0,0,0.1)]">
@@ -327,14 +285,10 @@ export default function App() {
                   <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">资产小类</th>
                   <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">资产说明</th>
                   <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">品牌</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">数量</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">原值</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">净值</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">资产责任人编号</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">配置</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">NO位置</th>
                   <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">资产责任人</th>
                   <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">资产状态</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">成本中心</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">仓库</th>
                   <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">启用日期</th>
                 </tr>
               </thead>
@@ -344,29 +298,24 @@ export default function App() {
                     <td className="border border-gray-300 p-1"><input type="checkbox" className="cursor-pointer" /></td>
                     <td className="border border-gray-300 p-1 text-blue-600 hover:underline cursor-pointer">{row.tag}</td>
                     <td className="border border-gray-300 p-1">{row.mainTag}</td>
-                    <td className="border border-gray-300 p-1">{row.serialNumber}</td>
+                    <td className="border border-gray-300 p-1 text-blue-600 hover:underline cursor-pointer">{row.seq}</td>
                     <td className="border border-gray-300 p-1">{row.company}</td>
                     <td className="border border-gray-300 p-1">{row.sector}</td>
                     <td className="border border-gray-300 p-1">{row.majorClass}</td>
                     <td className="border border-gray-300 p-1">{row.minorClass}</td>
                     <td className="border border-gray-300 p-1">{row.desc}</td>
                     <td className="border border-gray-300 p-1">{row.brand}</td>
-                    <td className="border border-gray-300 p-1">{row.quantity}</td>
-                    <td className="border border-gray-300 p-1 text-right">{row.originalValue}</td>
-                    <td className="border border-gray-300 p-1 text-right">{row.netValue}</td>
-                    <td className="border border-gray-300 p-1">{row.ownerId}</td>
-                    <td className="border border-gray-300 p-1">{row.ownerName}</td>
+                    <td className="border border-gray-300 p-1">{row.config}</td>
+                    <td className="border border-gray-300 p-1">{row.location}</td>
+                    <td className="border border-gray-300 p-1">{row.owner}</td>
                     <td className="border border-gray-300 p-1">{row.status}</td>
-                    <td className="border border-gray-300 p-1">{row.costCenter}</td>
-                    <td className="border border-gray-300 p-1">{row.warehouse}</td>
-                    <td className="border border-gray-300 p-1">{row.enableDate}</td>
+                    <td className="border border-gray-300 p-1">{row.date}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {}
           {/* 分页区 */}
           <div className="flex justify-end items-center gap-3 mt-3 pb-2 text-gray-600 pr-2 bg-white/80 shrink-0">
             <div className="flex items-center gap-1">

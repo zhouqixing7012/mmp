@@ -165,7 +165,7 @@ const ChartGroupCard = ({ title, dataValue, dataCount, totalValue, totalCount, i
 };
 
 // --- 主页面组件 ---
-export default function App() {
+export default function AssetDashboardMobile() {
   const C = {
     blue: '#3b82f6',
     orange: '#fbbf24',

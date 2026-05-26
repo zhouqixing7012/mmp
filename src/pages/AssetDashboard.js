@@ -137,7 +137,7 @@ const ChartCard = ({ title, data, totalText, subText, isToggleable = false }) =>
 };
 
 // --- 主页面组件 ---
-export default function App() {
+export default function AssetDashboard() {
   // 定义一致的颜色映射
   const C = {
     blue: '#3b82f6',

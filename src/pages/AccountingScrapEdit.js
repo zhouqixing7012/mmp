@@ -53,7 +53,7 @@ const initialData = [
   }
 ];
 
-export default function App() {
+export default function AccountingScrapEdit() {
   const [formData, setFormData] = useState({
     docNo: 'BF-202309280001',
     company: '114.新媒体',

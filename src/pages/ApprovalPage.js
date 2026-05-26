@@ -105,7 +105,7 @@ const approvalData = {
   ]
 };
 
-export default function App() {
+export default function ApprovalPage() {
   const [activeTab, setActiveTab] = useState('已到报废期');
   const [approvalComment, setApprovalComment] = useState('');
 

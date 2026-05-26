@@ -17,21 +17,19 @@ import {
 // 1. 数据部分 (Data)
 // ==========================================
 
-// 原有域名数据
 const mockData = [
   { id: 1, name: 'sohu-inc.net', regDate: '2001-06-15 06:28:09', expDate: '2026-06-15 06:28:09', cost: ' 120.00', status: '即将过期' },
-  { id: 2, name: 'sohu-inc.net.cn', regDate: '2001-06-23 00:00:00', expDate: '2026-06-23 00:00:00', cost: ' 60.00', status: '正常' },
+  { id: 2, name: 'sohu-inc.net.cn', regDate: '2001-06-23 00:00:00', expDate: '2026-06-23 00:00:00', cost: ' 60.00', status: '正常使用中' },
   { id: 3, name: 'sohu-inc.com.cn', regDate: '2001-06-23 00:00:00', expDate: '2026-06-23 00:00:00', cost: ' 60.00', status: '即将过期' },
-  { id: 4, name: '56img.net', regDate: '2011-06-29 13:42:53', expDate: '2026-06-29 13:42:53', cost: ' 85.00', status: '正常' },
-  { id: 5, name: 'soq.com.cn', regDate: '2000-06-30 00:00:00', expDate: '2026-06-30 00:00:00', cost: ' 60.00', status: '正常' },
-  { id: 6, name: 'soicq.com.cn', regDate: '2000-06-30 00:00:00', expDate: '2026-06-30 00:00:00', cost: ' 60.00', status: '正常' },
+  { id: 4, name: '56img.net', regDate: '2011-06-29 13:42:53', expDate: '2026-06-29 13:42:53', cost: ' 85.00', status: '正常使用中' },
+  { id: 5, name: 'soq.com.cn', regDate: '2000-06-30 00:00:00', expDate: '2026-06-30 00:00:00', cost: ' 60.00', status: '正常使用中' },
+  { id: 6, name: 'soicq.com.cn', regDate: '2000-06-30 00:00:00', expDate: '2026-06-30 00:00:00', cost: ' 60.00', status: '正常使用中' },
   { id: 7, name: 'sohuicq.com.cn', regDate: '2000-06-30 00:00:00', expDate: '2026-06-30 00:00:00', cost: ' 60.00', status: '即将过期' },
-  { id: 8, name: 'sohu-icq.com.cn', regDate: '2000-06-30 00:00:00', expDate: '2026-06-30 00:00:00', cost: ' 60.00', status: '正常' },
-  { id: 9, name: 'so-icq.com.cn', regDate: '2000-06-30 00:00:00', expDate: '2026-06-30 00:00:00', cost: ' 60.00', status: '正常' },
+  { id: 8, name: 'sohu-icq.com.cn', regDate: '2000-06-30 00:00:00', expDate: '2026-06-30 00:00:00', cost: ' 60.00', status: '正常使用中' },
+  { id: 9, name: 'so-icq.com.cn', regDate: '2000-06-30 00:00:00', expDate: '2026-06-30 00:00:00', cost: ' 60.00', status: '正常使用中' },
   { id: 10, name: 'scq.com.cn', regDate: '2000-06-30 00:00:00', expDate: '2026-06-30 00:00:00', cost: ' 60.00', status: '即将过期' },
 ];
 
-// 新增 HTTPS 证书数据
 const mockCertData = [
   {
     id: 'SHZS-M-00259',
@@ -47,7 +45,7 @@ const mockCertData = [
     brand: 'GeoTrust',
     effectiveTime: '2025-12-31\n08:00:00',
     expireTime: '2027-02-01\n07:59:59',
-    status: '正常'
+    status: '正常使用中'
   },
   {
     id: 'SHZS-M-00266',
@@ -81,7 +79,7 @@ const mockCertData = [
     brand: 'Symantec',
     effectiveTime: '2025-06-19\n08:00:00',
     expireTime: '2026-07-21\n07:59:59',
-    status: '正常'
+    status: '正常使用中'
   },
   {
     id: 'SHZS-M-00277',
@@ -96,7 +94,7 @@ const mockCertData = [
     brand: 'Symantec',
     effectiveTime: '2025-06-19\n08:00:00',
     expireTime: '2026-07-21\n07:59:59',
-    status: '正常'
+    status: '正常使用中'
   },
   {
     id: 'SHZS-S-00278',
@@ -110,14 +108,12 @@ const mockCertData = [
     brand: 'Symantec',
     effectiveTime: '2025-08-27\n08:00:00',
     expireTime: '2026-09-24\n07:59:59',
-    status: '正常'
+    status: '正常使用中'
   }
 ];
 
-// 图表颜色常量
 const THEME_COLORS = ['#4080FF', '#FFB240', '#45D9A1', '#B56DFF', '#36CBCB', '#F2637B'];
 
-// 核心指标数据
 const summaryData = {
   totalCount: 664,
   totalCost: 333820.00,
@@ -127,19 +123,16 @@ const summaryData = {
   alerting: { expiringCount: 20, expiredCount: 4 }
 };
 
-// 域名资产状态分布
 const domainStatusData = [
   { name: '正常', value: 345 },
   { name: '即将过期', value: 16 },
 ];
 
-// HTTPS证书状态分布
 const certStatusData = [
   { name: '正常', value: 295 },
   { name: '即将过期', value: 4 },
 ];
 
-// 部门归属金额分布
 const deptCostData = [
   { name: '产品技术中心', value: 85000.00 },
   { name: '网络运营部', value: 72000.00 },
@@ -150,7 +143,6 @@ const deptCostData = [
   { name: 'ERP', value: 15000.00 },
 ];
 
-// 部门归属数量分布
 const deptCountData = [
   { name: '网络运营部', value: 156 },
   { name: '产品技术中心', value: 142 },
@@ -165,14 +157,12 @@ const deptCountData = [
 // 2. 组件及渲染函数部分 (Components)
 // ==========================================
 
-// SVG Info Icon helper
 const InfoIcon = () => (
   <svg className="w-3.5 h-3.5 text-gray-400 inline-block ml-1 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
 
-// 统一的健康状态标签渲染函数
 const renderStatusBadge = (status) => {
   if (status === '即将过期') {
     return (
@@ -188,7 +178,6 @@ const renderStatusBadge = (status) => {
   );
 };
 
-// 自定义环形图组件
 const CustomDonutChart = ({ title, data, centerLabel, centerValue }) => {
   return (
     <div className="flex-1">
@@ -241,7 +230,6 @@ const CustomDonutChart = ({ title, data, centerLabel, centerValue }) => {
   );
 };
 
-// 自定义柱状图组件
 const CustomBarChart = ({ title, data }) => {
   return (
     <div className="flex-1 flex flex-col h-full w-full">
@@ -287,10 +275,23 @@ const CustomBarChart = ({ title, data }) => {
 // 3. 主应用 (Main App)
 // ==========================================
 
-export default function App() {
+export default function DomainCertList() {
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'domain' | 'cert'
+  // 记录展开的证书行 ID 集合
+  const [expandedCerts, setExpandedCerts] = useState(new Set());
 
   const isOverview = activeTab === 'overview';
+
+  // 展开/收起切换逻辑
+  const toggleCertRow = (id) => {
+    const newExpanded = new Set(expandedCerts);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedCerts(newExpanded);
+  };
 
   return (
     <div className={`min-h-screen font-sans transition-colors duration-300 ${isOverview ? 'bg-[#F5F7FA] text-gray-800 p-8' : 'bg-[#F8F9FA] p-6 flex flex-col'}`}>
@@ -466,11 +467,11 @@ export default function App() {
                   </div>
                 </div>
                 <div className="flex items-center">
-                  <label className="text-sm text-gray-600 w-20 text-right mr-2 shrink-0">健康状态：</label>
+                  <label className="text-sm text-gray-600 w-20 text-right mr-2 shrink-0">提醒状态：</label>
                   <div className="relative w-full">
                     <select className="appearance-none border border-gray-300 rounded-[4px] px-3 py-1.5 text-sm w-full focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors bg-white text-gray-400 cursor-pointer">
                       <option value="">请选择</option>
-                      <option value="normal" className="text-gray-700">正常</option>
+                      <option value="normal" className="text-gray-700">正常使用中</option>
                       <option value="expiring" className="text-gray-700">即将过期</option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
@@ -494,7 +495,7 @@ export default function App() {
                       <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[20%]">注册时间</th>
                       <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[20%]">到期时间</th>
                       <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[15%]">费用金额（CNY）</th>
-                      <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[15%]">健康状态</th>
+                      <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[15%]">提醒状态</th>
                       <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[10%]">操作</th>
                     </tr>
                   </thead>
@@ -552,7 +553,7 @@ export default function App() {
           </div>
         )}
 
-        {/* ---------------- 模块三：HTTPS证书 内容面板 ---------------- */}
+        {/* ---------------- 模块三：HTTPS证书 内容面板 (展开折叠版) ---------------- */}
         {activeTab === 'cert' && (
           <div className="animate-in fade-in duration-300">
             {/* 证书指标卡片 */}
@@ -624,11 +625,11 @@ export default function App() {
                   </div>
                 </div>
                 <div className="flex items-center">
-                  <label className="text-sm text-gray-600 w-20 text-right mr-2 shrink-0">健康状态：</label>
+                  <label className="text-sm text-gray-600 w-20 text-right mr-2 shrink-0">提醒状态：</label>
                   <div className="relative w-full">
                     <select className="appearance-none border border-gray-300 rounded-[4px] px-3 py-1.5 text-sm w-full focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors bg-white text-gray-400 cursor-pointer">
                       <option value="">请选择</option>
-                      <option value="normal" className="text-gray-700">正常</option>
+                      <option value="normal" className="text-gray-700">正常使用中</option>
                       <option value="expiring" className="text-gray-700">即将过期</option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
@@ -642,61 +643,98 @@ export default function App() {
               </div>
             </div>
 
-            {/* 证书数据表格 */}
+            {/* 折叠表格 */}
             <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden flex flex-col">
               <div className="overflow-x-auto">
                 <table className="w-full text-center border-collapse text-[13px]">
                   <thead>
                     <tr className="bg-[#FAFAFA] border-b border-gray-200">
-                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">证书名称 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
+                      {/* 将第一列设为靠左，以便展示展开箭头 */}
+                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100 text-left">证书名称 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
                       <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">涵盖域名</th>
                       <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">使用人</th>
                       <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">使用部门</th>
-                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">费用金额（CNY）） <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
+                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">费用金额 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
                       <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">供应商 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
                       <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">证书品牌 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
                       <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">生效时间 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
                       <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">到期时间</th>
-                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">健康状态</th>
+                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">提醒状态</th>
                       <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap">操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {mockCertData.map((cert) => (
-                      <React.Fragment key={cert.id}>
-                        {cert.subItems.map((sub, subIdx) => (
-                          <tr key={`${cert.id}-${subIdx}`}>
-                            {subIdx === 0 && (
-                              <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white">
-                                <a href="#" className="text-[#1E5EFF] hover:text-blue-700 hover:underline transition-colors font-medium">{cert.name}</a>
-                              </td>
-                            )}
-                            <td className={`px-4 py-3 border-r border-gray-100 text-gray-700 bg-white ${subIdx !== cert.subItems.length - 1 ? 'border-b border-gray-50' : 'border-b border-gray-100'}`}>
-                              {sub.domain}
+                    {mockCertData.map((cert) => {
+                      const isExpanded = expandedCerts.has(cert.id);
+                      // 提取并去重使用人
+                      const userSet = Array.from(new Set(cert.subItems.map(item => item.user)));
+                      const userSummary = userSet.length > 1 ? `${userSet[0]} 等 ${userSet.length} 人` : userSet[0];
+
+                      return (
+                        <React.Fragment key={cert.id}>
+                          {/* 1. 主干行 (点击展开/折叠) */}
+                          <tr 
+                            className={`transition-colors cursor-pointer group ${isExpanded ? 'bg-[#F8FBFF]' : 'hover:bg-[#F8FBFF] bg-white'}`}
+                            onClick={() => toggleCertRow(cert.id)}
+                          >
+                            <td className="px-4 py-4 border-r border-gray-100 text-left">
+                              <div className="flex items-center gap-1.5 justify-start">
+                                <div className="w-4 h-4 flex items-center justify-center text-gray-400 group-hover:text-[#1E5EFF] transition-colors">
+                                  {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                </div>
+                                <span className="text-[#1E5EFF] group-hover:text-blue-700 font-medium">{cert.name}</span>
+                              </div>
                             </td>
-                            <td className={`px-4 py-3 border-r border-gray-100 bg-white ${subIdx !== cert.subItems.length - 1 ? 'border-b border-gray-50' : 'border-b border-gray-100'}`}>
-                              <button className="text-[#1E5EFF] hover:underline transition-colors">{sub.user}</button>
+                            <td className="px-4 py-4 border-r border-gray-100 text-gray-600">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-xs border border-blue-100">
+                                共 {cert.subItems.length} 个
+                              </span>
                             </td>
-                            {subIdx === 0 && (
-                              <>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-600 bg-white">{cert.department}</td>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white">{cert.cost}</td>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white">{cert.provider}</td>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white">{cert.brand}</td>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white whitespace-pre-line leading-relaxed">{cert.effectiveTime}</td>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white whitespace-pre-line leading-relaxed">{cert.expireTime}</td>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 bg-white">
-                                  {renderStatusBadge(cert.status)}
-                                </td>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-b border-gray-100 bg-white">
-                                  <button className="text-[#1E5EFF] hover:text-blue-700 hover:underline transition-colors">变更记录</button>
-                                </td>
-                              </>
-                            )}
+                            <td className="px-4 py-4 border-r border-gray-100 text-gray-600">{userSummary}</td>
+                            <td className="px-4 py-4 border-r border-gray-100 text-gray-600">{cert.department}</td>
+                            <td className="px-4 py-4 border-r border-gray-100 text-gray-700">{cert.cost}</td>
+                            <td className="px-4 py-4 border-r border-gray-100 text-gray-700">{cert.provider}</td>
+                            <td className="px-4 py-4 border-r border-gray-100 text-gray-700">{cert.brand}</td>
+                            <td className="px-4 py-4 border-r border-gray-100 text-gray-700 whitespace-pre-line leading-relaxed">{cert.effectiveTime}</td>
+                            <td className="px-4 py-4 border-r border-gray-100 text-gray-700 whitespace-pre-line leading-relaxed">{cert.expireTime}</td>
+                            <td className="px-4 py-4 border-r border-gray-100">
+                              {renderStatusBadge(cert.status)}
+                            </td>
+                            <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                              <button className="text-[#1E5EFF] hover:text-blue-700 hover:underline transition-colors">变更记录</button>
+                            </td>
                           </tr>
-                        ))}
-                      </React.Fragment>
-                    ))}
+
+                          {/* 2. 展开的子表格行 */}
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan="11" className="p-0 border-b border-gray-100 bg-[#FAFAFA]">
+                                <div className="py-4 pl-[48px] pr-8 shadow-inner border-l-2 border-[#1E5EFF]">
+                                  <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
+                                    <table className="w-full text-left text-[13px]">
+                                      <thead className="bg-[#F5F7FA] border-b border-gray-200">
+                                        <tr>
+                                          <th className="px-4 py-2.5 font-medium text-gray-600 w-1/2">包含的域名详情</th>
+                                          <th className="px-4 py-2.5 font-medium text-gray-600 w-1/2">使用人</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-gray-100">
+                                        {cert.subItems.map((sub, idx) => (
+                                          <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-4 py-2.5 text-gray-700 font-mono text-xs">{sub.domain}</td>
+                                            <td className="px-4 py-2.5 text-[#1E5EFF] cursor-pointer hover:underline">{sub.user}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -721,12 +759,12 @@ export default function App() {
         )}
       </div>
 
-      {/* 列表页 Footer（仅在域名或证书面板下显示）
+      {/* 列表页 Footer（仅在域名或证书面板下显示） */}
       {!isOverview && (
         <div className="text-center text-gray-400 text-[13px] mt-8 mb-2">
           Copyright © 2018–2026 PCS All Rights Reserved.
         </div>
-      )} */}
+      )}
     </div>
   );
 }

@@ -178,6 +178,34 @@ const renderStatusBadge = (status) => {
   );
 };
 
+// 悬浮气泡组件 (Popover)
+const Popover = ({ trigger, title, content }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div 
+      className="relative inline-flex items-center justify-center"
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      {trigger}
+      {/* Popover 内容区域 - 适当放宽气泡宽度以容纳两列表格 */}
+      <div className={`absolute z-[100] transition-all duration-200 top-full left-1/2 -translate-x-1/2 mt-2 w-max min-w-[320px] max-w-[450px] bg-white border border-gray-200 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.15)] rounded-md p-0 ${isOpen ? 'visible opacity-100 pointer-events-auto translate-y-0' : 'invisible opacity-0 pointer-events-none -translate-y-1'}`}>
+        {/* 小箭头 */}
+        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-t border-l border-gray-200 transform rotate-45"></div>
+        {/* 头部标题 */}
+        <div className="bg-[#F8F9FA] px-3 py-2 border-b border-gray-100 rounded-t-md font-medium text-gray-700 text-[12px] text-left">
+          {title}
+        </div>
+        {/* 内容区域 (支持自定义节点如表格) */}
+        <div className="max-h-[240px] overflow-y-auto custom-scrollbar rounded-b-md">
+          {content}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const CustomDonutChart = ({ title, data, centerLabel, centerValue }) => {
   return (
     <div className="flex-1">
@@ -275,23 +303,10 @@ const CustomBarChart = ({ title, data }) => {
 // 3. 主应用 (Main App)
 // ==========================================
 
-export default function App() {
+export default function PCSDashboard2() {
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'domain' | 'cert'
-  // 记录展开的证书行 ID 集合
-  const [expandedCerts, setExpandedCerts] = useState(new Set());
 
   const isOverview = activeTab === 'overview';
-
-  // 展开/收起切换逻辑
-  const toggleCertRow = (id) => {
-    const newExpanded = new Set(expandedCerts);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    setExpandedCerts(newExpanded);
-  };
 
   return (
     <div className={`min-h-screen font-sans transition-colors duration-300 ${isOverview ? 'bg-[#F5F7FA] text-gray-800 p-8' : 'bg-[#F8F9FA] p-6 flex flex-col'}`}>
@@ -553,7 +568,7 @@ export default function App() {
           </div>
         )}
 
-        {/* ---------------- 模块三：HTTPS证书 内容面板 (展开折叠版) ---------------- */}
+        {/* ---------------- 模块三：HTTPS证书 内容面板 (悬浮 Popover 版) ---------------- */}
         {activeTab === 'cert' && (
           <div className="animate-in fade-in duration-300">
             {/* 证书指标卡片 */}
@@ -643,13 +658,13 @@ export default function App() {
               </div>
             </div>
 
-            {/* 折叠表格 */}
+            {/* Popover 数据表格 */}
             <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden flex flex-col">
-              <div className="overflow-x-auto">
+              {/* 保证最小高度，防止 Popover 内容被容器底部裁切 */}
+              <div className="overflow-x-auto min-h-[350px]">
                 <table className="w-full text-center border-collapse text-[13px]">
                   <thead>
                     <tr className="bg-[#FAFAFA] border-b border-gray-200">
-                      {/* 将第一列设为靠左，以便展示展开箭头 */}
                       <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100 text-left">证书名称 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
                       <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">涵盖域名</th>
                       <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">使用人</th>
@@ -665,74 +680,64 @@ export default function App() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {mockCertData.map((cert) => {
-                      const isExpanded = expandedCerts.has(cert.id);
                       // 提取并去重使用人
                       const userSet = Array.from(new Set(cert.subItems.map(item => item.user)));
                       const userSummary = userSet.length > 1 ? `${userSet[0]} 等 ${userSet.length} 人` : userSet[0];
 
-                      return (
-                        <React.Fragment key={cert.id}>
-                          {/* 1. 主干行 (点击展开/折叠) */}
-                          <tr 
-                            className={`transition-colors cursor-pointer group ${isExpanded ? 'bg-[#F8FBFF]' : 'hover:bg-[#F8FBFF] bg-white'}`}
-                            onClick={() => toggleCertRow(cert.id)}
-                          >
-                            <td className="px-4 py-4 border-r border-gray-100 text-left">
-                              <div className="flex items-center gap-1.5 justify-start">
-                                <div className="w-4 h-4 flex items-center justify-center text-gray-400 group-hover:text-[#1E5EFF] transition-colors">
-                                  {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                </div>
-                                <span className="text-[#1E5EFF] group-hover:text-blue-700 font-medium">{cert.name}</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 border-r border-gray-100 text-gray-600">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-xs border border-blue-100">
-                                共 {cert.subItems.length} 个
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 border-r border-gray-100 text-gray-600">{userSummary}</td>
-                            <td className="px-4 py-4 border-r border-gray-100 text-gray-600">{cert.department}</td>
-                            <td className="px-4 py-4 border-r border-gray-100 text-gray-700">{cert.cost}</td>
-                            <td className="px-4 py-4 border-r border-gray-100 text-gray-700">{cert.provider}</td>
-                            <td className="px-4 py-4 border-r border-gray-100 text-gray-700">{cert.brand}</td>
-                            <td className="px-4 py-4 border-r border-gray-100 text-gray-700 whitespace-pre-line leading-relaxed">{cert.effectiveTime}</td>
-                            <td className="px-4 py-4 border-r border-gray-100 text-gray-700 whitespace-pre-line leading-relaxed">{cert.expireTime}</td>
-                            <td className="px-4 py-4 border-r border-gray-100">
-                              {renderStatusBadge(cert.status)}
-                            </td>
-                            <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                              <button className="text-[#1E5EFF] hover:text-blue-700 hover:underline transition-colors">变更记录</button>
-                            </td>
-                          </tr>
-
-                          {/* 2. 展开的子表格行 */}
-                          {isExpanded && (
+                      // 构造包含“域名 + 使用人”的两列子表格
+                      const subTableContent = (
+                        <table className="w-full text-left border-collapse text-[12px]">
+                          <thead className="bg-[#F4F6F8] sticky top-0 z-10">
                             <tr>
-                              <td colSpan="11" className="p-0 border-b border-gray-100 bg-[#FAFAFA]">
-                                <div className="py-4 pl-[48px] pr-8 shadow-inner border-l-2 border-[#1E5EFF]">
-                                  <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
-                                    <table className="w-full text-left text-[13px]">
-                                      <thead className="bg-[#F5F7FA] border-b border-gray-200">
-                                        <tr>
-                                          <th className="px-4 py-2.5 font-medium text-gray-600 w-1/2">包含的域名详情</th>
-                                          <th className="px-4 py-2.5 font-medium text-gray-600 w-1/2">使用人</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody className="divide-y divide-gray-100">
-                                        {cert.subItems.map((sub, idx) => (
-                                          <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-4 py-2.5 text-gray-700 font-mono text-xs">{sub.domain}</td>
-                                            <td className="px-4 py-2.5 text-[#1E5EFF] cursor-pointer hover:underline">{sub.user}</td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                </div>
-                              </td>
+                              <th className="px-3 py-2 font-medium text-gray-600 border-b border-gray-100 w-2/3">涵盖域名</th>
+                              <th className="px-3 py-2 font-medium text-gray-600 border-b border-gray-100 w-1/3">使用人</th>
                             </tr>
-                          )}
-                        </React.Fragment>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50">
+                            {cert.subItems.map((sub, idx) => (
+                              <tr key={idx} className="hover:bg-[#F0F5FF] transition-colors">
+                                <td className="px-3 py-2 text-gray-700 font-mono break-all">{sub.domain}</td>
+                                <td className="px-3 py-2 text-[#1E5EFF]">{sub.user}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      );
+
+                      return (
+                        <tr key={cert.id} className="hover:bg-[#F8FBFF] transition-colors bg-white">
+                          <td className="px-4 py-4 border-r border-gray-100 text-left">
+                            <a href="#" className="text-[#1E5EFF] hover:text-blue-700 hover:underline transition-colors font-medium">{cert.name}</a>
+                          </td>
+                          {/* 涵盖域名 列：采用 Popover 展现两列子表格 */}
+                          <td className="px-4 py-4 border-r border-gray-100 text-gray-600">
+                            <Popover 
+                              trigger={
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] bg-blue-50 text-blue-600 text-[12px] border border-blue-100 cursor-default">
+                                  共 {cert.subItems.length} 个
+                                </span>
+                              }
+                              // title={`包含的域名及使用详情 (${cert.subItems.length})`}
+                              content={subTableContent}
+                            />
+                          </td>
+                          {/* 使用人 列：恢复为普通文本展示，因为详情已在域名 Popover 中 */}
+                          <td className="px-4 py-4 border-r border-gray-100 text-gray-600">
+                            <span className="text-gray-700">{userSummary}</span>
+                          </td>
+                          <td className="px-4 py-4 border-r border-gray-100 text-gray-600">{cert.department}</td>
+                          <td className="px-4 py-4 border-r border-gray-100 text-gray-700">{cert.cost}</td>
+                          <td className="px-4 py-4 border-r border-gray-100 text-gray-700">{cert.provider}</td>
+                          <td className="px-4 py-4 border-r border-gray-100 text-gray-700">{cert.brand}</td>
+                          <td className="px-4 py-4 border-r border-gray-100 text-gray-700 whitespace-pre-line leading-relaxed">{cert.effectiveTime}</td>
+                          <td className="px-4 py-4 border-r border-gray-100 text-gray-700 whitespace-pre-line leading-relaxed">{cert.expireTime}</td>
+                          <td className="px-4 py-4 border-r border-gray-100">
+                            {renderStatusBadge(cert.status)}
+                          </td>
+                          <td className="px-4 py-4">
+                            <button className="text-[#1E5EFF] hover:text-blue-700 hover:underline transition-colors">变更记录</button>
+                          </td>
+                        </tr>
                       );
                     })}
                   </tbody>

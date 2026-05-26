@@ -5,7 +5,7 @@ import ScrapForm from './pages/ScrapForm';
 import ApprovalPage from './pages/ApprovalPage';
 // import AssetList from './pages/AssetList';  // 等下会创建这个文件
 
-export default function App() {
+export default function ScrapForm() {
   return (
     <BrowserRouter>
       <Navbar />

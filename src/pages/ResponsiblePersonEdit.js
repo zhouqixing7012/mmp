@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, ChevronDown, ChevronRight, Upload } from 'lucide-react';
 
-const App = () => {
+const ResponsiblePersonEdit = () => {
   // 控制树状表格展开/折叠的状态
   const [expandedRows, setExpandedRows] = useState({ '1': true });
 
@@ -286,4 +286,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default ResponsiblePersonEdit;
