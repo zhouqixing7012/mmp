@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import routes from './config/routes';
+import PrototypeAnnotationLayer from './prototype-annotations/PrototypeAnnotationLayer';
 
 // Page imports (using new English names after rename)
 import ApprovalPage from './pages/ApprovalPage';
@@ -30,6 +31,9 @@ import ResponsiblePersonEdit from './pages/ResponsiblePersonEdit';
 import ResponsiblePersonReceiverApproval from './pages/ResponsiblePersonReceiverApproval';
 import ResponsiblePersonPhysicalApproval from './pages/ResponsiblePersonPhysicalApproval';
 import AccountingScrapEdit from './pages/AccountingScrapEdit';
+import yewurules from './pages/yewurules';
+import xitongrules from './pages/xitongrules';
+import applylist from './pages/applylist';
 
 const componentMap = {
   '/': AccountingScrapEdit,
@@ -58,6 +62,9 @@ const componentMap = {
   '/People': ResponsiblePersonEdit,
   '/Peoplejieshou': ResponsiblePersonReceiverApproval,
   '/Peopleshiwu': ResponsiblePersonPhysicalApproval,
+  '/yewurules': yewurules,
+  '/xitongrules': xitongrules,
+  '/applylist': applylist,
 };
 
 export default function App() {
@@ -70,6 +77,7 @@ export default function App() {
           return Component ? <Route key={route.path} path={route.path} element={<Component />} /> : null;
         })}
       </Routes>
+      <PrototypeAnnotationLayer />
     </BrowserRouter>
   );
 }

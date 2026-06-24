@@ -4,60 +4,66 @@
 
 - **项目名称**：企业资产管理系统（Asset Management System）
 - **技术栈**：React 18 + Create React App + Tailwind CSS
-- **主要文件**：src/pages/yewurules.js（业务规则管理）
+- **主要文件**：src/pages/yewurules.js（后台基础配置 + 业务视图）
 
 ## 代码规范
 
 ### 0. 组件使用规则（必须遵守）
 
-**禁止自己写按钮/输入框样式，必须使用已有的统一组件**
+**禁止自己写按钮/输入框样式，必须使用 Antd 原生组件**
 
 ✅ **正确做法**：
 ```jsx
-<AntButton type="primary" icon={<Plus size={14} />}>新增</AntButton>
-<AntButton type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</AntButton>
-<AntButton type="danger" icon={<XCircle size={14} />}>停用</AntButton>
+<Button type="primary" icon={<Plus size={14} />}>新增</Button>
+<Button danger icon={<Trash2 size={14} />}>删除</Button>
+<Input placeholder="请输入编码" />
+<Select
+  style={{ width: '100%' }}
+  placeholder="请选择"
+  allowClear
+  options={[{ label: '是', value: '1' }]}
+/>
 ```
 
-❌ **禁止这样做**：
+**表格状态列必须使用 `<StatusTag />`**：
 ```jsx
-<button className="px-4 py-1.5 bg-[#1677ff] hover:bg-blue-500 text-white text-sm rounded shadow-sm flex items-center">
-  <Plus size={14} className="mr-1" /> 新增
-</button>
+<StatusTag value={val} />          // 是/否
+<StatusTag value={val} type="enabled" />  // 启用/停用
+<StatusTag value={val} type="stop" />     // 停产/未停产
 ```
 
-**已有统一组件**：
-- `AntButton`（按钮，支持 type: primary/default/danger/dashed/link）
-- `AntInput`（输入框）
-- `AntSelect`（下拉选择）
-- `AntModal`（弹窗）
-- `AntTable`（表格）
+**选择弹窗必须使用 `<SelectModal />`**：
+```jsx
+<SelectModal
+  open={isOpen}
+  title="选择品牌"
+  dataSource={mockBrands}
+  columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+  searchFields={[{ label: '编码', name: 'code', dataIndex: 'code' }]}
+  onCancel={() => setIsOpen(false)}
+  onConfirm={(record) => { setField(record.desc); setIsOpen(false); }}
+/>
+```
 
-**新增按钮时的规则**：
-- 主要操作（新增、查询、保存）：`type="primary"`
-- 次要操作（导出）：`type="default"`
-- 危险操作（停用、删除）：`type="danger"`
-- 操作列编辑：`type="link"`
-- 启用按钮：`type="default" className="text-green-600" icon={<CheckCircle size={14} />}`
-- 批量操作：`type="default" icon={<Edit size={14} />}`
-- 批量删除：`type="default" icon={<Trash2 size={14} />}`
+**查询栏必须使用 `<QueryBar>` + `<QueryItem>`**：
+```jsx
+<QueryBar>
+  <QueryItem label="字段名">
+    <Input placeholder="..." />
+  </QueryItem>
+</QueryBar>
+```
 
-### 1. 文件组织
-- 页面组件放在 `src/pages/` 目录下
-- 通用组件放在 `src/components/` 目录下
-- 配置文件放在 `src/config/` 目录下
-- 文档放在 `docs/` 目录下
+### 1. 状态组件（可沿用）
 
-### 2. 组件命名
-- 页面组件使用 PascalCase（如 `MaterialCategoryView`）
-- 弹窗选择组件使用 PascalCase + Modal 后缀（如 `BrandSelectModal`）
-- 通用组件使用 PascalCase（如 `AntButton`）
+```jsx
+<StatusTag value={val} />            // 是/否（绿色/灰色）
+<StatusTag value={val} type="enabled" />  // 启用/停用（绿色/红色）
+<StatusTag value={val} type="stop" />     // 停产/未停产（橙色/灰色）
+```
 
-### 3. 样式规范
-- 使用 Tailwind CSS 进行样式编写
-- 遵循 Antd 设计风格
-- 使用语义化的颜色 token
-
+  - 空值显示 `-`
+  - `value` 兼容 `'1'`、`true`、`'是'`
 ## 关键设计决策
 
 ### 1. 弹窗选择组件
@@ -78,24 +84,44 @@
 ```
 
 ### 2. 菜单结构
-系统采用侧边栏菜单结构，主要分为：
-- **业务配置**：包含多个子菜单（物料基础数据维护、业务映射规则管理等）
-- **系统配置**：组织与用户管理
+系统采用侧边栏菜单结构，当前一级菜单：
+- **后台基础配置**：包含 13 个子菜单（业务基础数据维护、业务映射规则管理、组织与用户管理等）
+- 其余为独立一级菜单（个人工作台、资产管理、无形资产、资产盘点）
 
 **菜单状态管理**：
-- `activeMenu`：当前活动的一级菜单（如 '业务配置'、'系统配置'）
+- `activeMenu`：当前活动的一级菜单（如 '后台基础配置'）
 - `activeSubMenu`：当前活动的二级菜单（如 '物料大类'、'组织与用户管理'）
 - `activeTab`：当前活动的标签页
 
 ### 3. 组件复用
 系统大量使用可复用组件，包括：
 - `AntButton`（按钮组件）
-- `AntInput`（输入框组件）
-- `AntSelect`（下拉选择组件）
+- `AntInput`（输入框组件，默认 `w-full` 填满父容器）
+- `AntSelect`（下拉选择组件，`className` 作用于外层 div）
 - `AntRadio`（单选按钮组件）
 - `AntModal`（弹窗组件）
 - `AntTable`（表格组件）
-- `QueryBar`（查询栏组件）
+
+### 4. 查询条件布局（Grid 三列对齐）
+所有页面的查询条件区域统一使用 CSS Grid 三列布局，确保标签和输入框跨行对齐。
+
+**固定模式**：
+```jsx
+<div className="flex-1 grid grid-cols-[repeat(3,minmax(0,1fr))] gap-x-6 gap-y-3 items-center">
+  <div className="flex items-center justify-end gap-2">
+    <span className="text-sm text-gray-600 whitespace-nowrap w-24 text-right">标签名:</span>
+    <div className="flex-1"><AntInput placeholder="请输入..." /></div>
+  </div>
+  {/* AntSelect 同理，className="flex-1" */}
+</div>
+```
+
+**关键规则**：
+- 标签固定 `w-24 text-right whitespace-nowrap`（96px 右对齐）
+- AntInput 包在 `<div className="flex-1">` 中（因 AntInput 自带 `w-full` 无法被 className 覆盖）
+- AntSelect 使用 `className="flex-1"`（className 作用于外层 div，可正常覆盖）
+- 每行最多 3 个条件，不足 3 个用空 `<div></div>` 补齐
+- 查询/重置按钮在 grid 右侧，使用 `shrink-0`
 
 ## 开发流程
 
