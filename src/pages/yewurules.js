@@ -913,11 +913,11 @@ const ModelView = () => {
   return (
     <div className="flex flex-col gap-4">
       <QueryBar>
-      <QueryItem label="品牌编码">
-          <Input placeholder="请输入品牌编码" />
-        </QueryItem>
       <QueryItem label="品牌">
-          <Input placeholder="请输入品牌" />
+          <div className="relative w-full cursor-pointer" onClick={() => setIsBrandModalOpen(true)}>
+            <Input placeholder="请选择品牌" readOnly className="pointer-events-none" />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+          </div>
         </QueryItem>
       <QueryItem label="规格型号编码">
           <Input placeholder="请输入编码" />
@@ -947,8 +947,14 @@ const ModelView = () => {
           <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>品牌</div>
             <div className="w-[35%] p-2 flex items-center">
-              <Input value={formData.brand} onChange={(e) => setFormData({...formData, brand: e.target.value})} placeholder="请选择品牌" disabled />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" onClick={() => setIsBrandModalOpen(true)} />
+              {modalMode === 'edit' ? (
+                <Input value={formData.brand} disabled />
+              ) : (
+                <div className="relative cursor-pointer w-full" onClick={() => setIsBrandModalOpen(true)}>
+                  <Input value={formData.brand} placeholder="请选择品牌" readOnly className="pointer-events-none" />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+                </div>
+              )}
             </div>
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>规格型号编码</div>
             <div className="w-[35%] p-2 flex items-center">
@@ -981,6 +987,18 @@ const ModelView = () => {
           </div>
         </div>
       </Modal>
+      <SelectModal
+        open={isBrandModalOpen}
+        title="选择品牌"
+        dataSource={mockBrands}
+        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsBrandModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({ ...formData, brand: record.desc });
+          setIsBrandModalOpen(false);
+        }}
+      />
     </div>
   );
 };
