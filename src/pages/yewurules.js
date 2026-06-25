@@ -3885,7 +3885,7 @@ export default function App() {
           </div>
           <div className="text-gray-400 text-xs ml-5">2026年05月27日 星期三</div>
         </div>
-        <div className="flex-1 overflow-y-auto py-2 custom-scrollbar">
+        <div className="flex-1 py-2">
           {[
             { id: '个人工作台', icon: <LayoutDashboard size={16} /> },
             { id: '资产管理', icon: <Monitor size={16} /> },
@@ -3904,7 +3904,7 @@ export default function App() {
           <div className="mt-1">
             <div
               className={`flex items-center justify-between px-5 py-3 cursor-pointer text-sm text-gray-300 hover:text-white hover:bg-white/5`}
-              onClick={() => setActiveMenu('后台基础配置')}
+              onClick={() => setActiveMenu(activeMenu === '后台基础配置' ? '' : '后台基础配置')}
             >
               <div className="flex items-center gap-3">
                 <Settings size={16} />
