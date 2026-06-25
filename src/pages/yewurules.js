@@ -238,124 +238,182 @@ const MaterialComprehensiveView = () => {
             业务规则字段
           </div>
           <div className="border border-t-0 border-[#e8e8e8] text-sm">
-            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">是否需要盘点</div>
-              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
-                <Radio checked={formData.needCheck==='是'} onChange={() => setFormData({...formData, needCheck: '是'})}>需要</Radio>
-                <Radio checked={formData.needCheck==='否'} onChange={() => setFormData({...formData, needCheck: '否'})}>不需要</Radio>
-              </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"></div>
-              <div className="w-[37.5%] p-2 flex items-center"></div>
-            </div>
-            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">正式员工可申请</div>
-              <div className="w-[37.5%] p-2 flex items-center gap-2 px-3">
-                <Radio checked={formData.formalCanApply==='是'} onChange={() => setFormData({...formData, formalCanApply: '是'})}>是</Radio>
-                <Radio checked={formData.formalCanApply==='否'} onChange={() => setFormData({...formData, formalCanApply: '否'})}>否</Radio>
-                <Radio checked={formData.formalCanApply==='临时可申请'} onChange={() => setFormData({...formData, formalCanApply: '临时可申请'})}>临时可申请</Radio>
-              </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"></div>
-              <div className="w-[37.5%] p-2 flex items-center"></div>
-            </div>
-            {formData.formalCanApply !== '临时可申请' && (
-            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">实习生可申请</div>
-              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
-                <Radio checked={formData.internCanApply==='是'} onChange={() => setFormData({...formData, internCanApply: '是'})}>是</Radio>
-                <Radio checked={formData.internCanApply==='否'} onChange={() => setFormData({...formData, internCanApply: '否'})}>否</Radio>
-              </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">是否允许退库</div>
-              <div className="w-[37.5%] p-2 flex items-center gap-4 px-3">
-                <Radio checked={formData.allowReturn==='1'} onChange={() => setFormData({...formData, allowReturn: '1'})}>是</Radio>
-                <Radio checked={formData.allowReturn==='0'} onChange={() => setFormData({...formData, allowReturn: '0'})}>否</Radio>
-              </div>
-            </div>
-            )}
-            {formData.formalCanApply === '临时可申请' && (
-            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">生效时间</div>
-              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center gap-1">
-                <DatePicker value={formData.tempEffStartDate} onChange={(date, dateString) => setFormData({...formData, tempEffStartDate: dateString})} placeholder="开始日期" className="w-full" />
-                <span className="text-gray-400">~</span>
-                <DatePicker value={formData.tempEffEndDate} onChange={(date, dateString) => setFormData({...formData, tempEffEndDate: dateString})} placeholder="结束日期" className="w-full" />
-              </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">可申请部门</div>
-              <div className="w-[37.5%] p-2 flex items-center relative">
-                <Input value={formData.tempDept || ''} placeholder="请选择部门" readOnly className="pointer-events-none bg-white" />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
-              </div>
-            </div>
-            )}
-            {formData.formalCanApply === '临时可申请' && (
-            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">可申请员工</div>
-              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center relative">
-                <Input value={formData.tempEmployee || ''} placeholder="请选择员工" readOnly className="pointer-events-none bg-white" />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
-              </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">是否允许退库</div>
-              <div className="w-[37.5%] p-2 flex items-center gap-4 px-3">
-                <Radio checked={formData.allowReturn==='1'} onChange={() => setFormData({...formData, allowReturn: '1'})}>是</Radio>
-                <Radio checked={formData.allowReturn==='0'} onChange={() => setFormData({...formData, allowReturn: '0'})}>否</Radio>
-              </div>
-            </div>
-            )}
-            {(formData.mainCatCode === '2' || formData.mainCatCode === '3') && (
-            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">耗材申请是否需要MIS审核</div>
-              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
-                <Radio checked={formData.misAudit==='1'} onChange={() => setFormData({...formData, misAudit: '1'})}>是</Radio>
-                <Radio checked={formData.misAudit==='0'} onChange={() => setFormData({...formData, misAudit: '0'})}>否</Radio>
-              </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">是否关联主资产</div>
-              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center">
-                <Select value={formData.hasMainAsset} onChange={(value) => setFormData({...formData, hasMainAsset: value})} options={[{label:'是', value:'1'}, {label:'否', value:'0'}]} placeholder="请选择" allowClear className="w-full" />
-              </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"></div>
-              <div className="w-[37.5%] p-2 flex items-center"></div>
-            </div>
-            )}
-            {formData.hasMainAsset === '1' && (formData.mainCatCode === '2' || formData.mainCatCode === '3') && (
-            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">主资产物料小类</div>
-              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center relative">
-                <Input value={formData.mainAssetSubCat || ''} onChange={(e) => setFormData({...formData, mainAssetSubCat: e.target.value})} placeholder="请选择主资产物料小类" />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
-              </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"></div>
-              <div className="w-[37.5%] p-2 flex items-center"></div>
-            </div>
-            )}
-            {formData.mainCatCode === '1' && (
-            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">退库是否需要MIS鉴定</div>
-              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
-                <Radio checked={formData.misIdentifyOnReturn==='1'} onChange={() => setFormData({...formData, misIdentifyOnReturn: '1'})}>是</Radio>
-                <Radio checked={formData.misIdentifyOnReturn==='0'} onChange={() => setFormData({...formData, misIdentifyOnReturn: '0'})}>否</Radio>
-              </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">是否允许更换</div>
-              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
-                <Radio checked={formData.allowReplace==='1'} onChange={() => setFormData({...formData, allowReplace: '1'})}>是</Radio>
-                <Radio checked={formData.allowReplace==='0'} onChange={() => setFormData({...formData, allowReplace: '0'})}>否</Radio>
-              </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">是否允许转移</div>
-              <div className="w-[37.5%] p-2 flex items-center gap-4 px-3">
-                <Radio checked={formData.allowTransfer==='1'} onChange={() => setFormData({...formData, allowTransfer: '1'})}>是</Radio>
-                <Radio checked={formData.allowTransfer==='0'} onChange={() => setFormData({...formData, allowTransfer: '0'})}>否</Radio>
-              </div>
-            </div>
-            )}
-            {formData.mainCatCode !== '1' && formData.mainCatCode !== '2' && formData.mainCatCode !== '3' && (
-            <div className="flex min-h-[40px]">
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"></div>
-              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center"></div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"></div>
-              <div className="w-[37.5%] p-2 flex items-center"></div>
-            </div>
-            )}
+            {(() => {
+              const fields = [
+                {
+                  key: 'needCheck',
+                  label: '是否需要盘点',
+                  visible: true,
+                  content: (
+                    <div className="flex items-center gap-4 px-3">
+                      <Radio checked={formData.needCheck==='是'} onChange={() => setFormData({...formData, needCheck: '是'})}>需要</Radio>
+                      <Radio checked={formData.needCheck==='否'} onChange={() => setFormData({...formData, needCheck: '否'})}>不需要</Radio>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'formalCanApply',
+                  label: '正式员工可申请',
+                  visible: true,
+                  content: (
+                    <div className="flex items-center gap-2 px-3">
+                      <Radio checked={formData.formalCanApply==='是'} onChange={() => setFormData({...formData, formalCanApply: '是'})}>是</Radio>
+                      <Radio checked={formData.formalCanApply==='否'} onChange={() => setFormData({...formData, formalCanApply: '否'})}>否</Radio>
+                      <Radio checked={formData.formalCanApply==='临时可申请'} onChange={() => setFormData({...formData, formalCanApply: '临时可申请'})}>临时可申请</Radio>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'internCanApply',
+                  label: '实习生可申请',
+                  visible: formData.formalCanApply !== '临时可申请',
+                  content: (
+                    <div className="flex items-center gap-4 px-3">
+                      <Radio checked={formData.internCanApply==='是'} onChange={() => setFormData({...formData, internCanApply: '是'})}>是</Radio>
+                      <Radio checked={formData.internCanApply==='否'} onChange={() => setFormData({...formData, internCanApply: '否'})}>否</Radio>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'allowReturn',
+                  label: '是否允许退库',
+                  visible: true,
+                  content: (
+                    <div className="flex items-center gap-4 px-3">
+                      <Radio checked={formData.allowReturn==='1'} onChange={() => setFormData({...formData, allowReturn: '1'})}>是</Radio>
+                      <Radio checked={formData.allowReturn==='0'} onChange={() => setFormData({...formData, allowReturn: '0'})}>否</Radio>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'tempDateRange',
+                  label: '生效时间',
+                  visible: formData.formalCanApply === '临时可申请',
+                  content: (
+                    <div className="flex items-center gap-1">
+                      <DatePicker value={formData.tempEffStartDate} onChange={(date, dateString) => setFormData({...formData, tempEffStartDate: dateString})} placeholder="开始日期" className="w-full" />
+                      <span className="text-gray-400">~</span>
+                      <DatePicker value={formData.tempEffEndDate} onChange={(date, dateString) => setFormData({...formData, tempEffEndDate: dateString})} placeholder="结束日期" className="w-full" />
+                    </div>
+                  ),
+                },
+                {
+                  key: 'tempDept',
+                  label: '可申请部门',
+                  visible: formData.formalCanApply === '临时可申请',
+                  content: (
+                    <div className="flex items-center relative">
+                      <Input value={formData.tempDept || ''} placeholder="请选择部门" readOnly className="pointer-events-none bg-white" />
+                      <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
+                    </div>
+                  ),
+                },
+                {
+                  key: 'tempEmployee',
+                  label: '可申请员工',
+                  visible: formData.formalCanApply === '临时可申请',
+                  content: (
+                    <div className="flex items-center relative">
+                      <Input value={formData.tempEmployee || ''} placeholder="请选择员工" readOnly className="pointer-events-none bg-white" />
+                      <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
+                    </div>
+                  ),
+                },
+                {
+                  key: 'misAudit',
+                  label: '耗材申请是否需要MIS审核',
+                  visible: formData.mainCatCode === '2' || formData.mainCatCode === '3',
+                  content: (
+                    <div className="flex items-center gap-4 px-3">
+                      <Radio checked={formData.misAudit==='1'} onChange={() => setFormData({...formData, misAudit: '1'})}>是</Radio>
+                      <Radio checked={formData.misAudit==='0'} onChange={() => setFormData({...formData, misAudit: '0'})}>否</Radio>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'hasMainAsset',
+                  label: '是否关联主资产',
+                  visible: formData.mainCatCode === '2' || formData.mainCatCode === '3',
+                  content: (
+                    <div className="flex items-center">
+                      <Select value={formData.hasMainAsset} onChange={(value) => setFormData({...formData, hasMainAsset: value})} options={[{label:'是', value:'1'}, {label:'否', value:'0'}]} placeholder="请选择" allowClear className="w-full" />
+                    </div>
+                  ),
+                },
+                {
+                  key: 'mainAssetSubCat',
+                  label: '主资产物料小类',
+                  visible: formData.hasMainAsset === '1' && (formData.mainCatCode === '2' || formData.mainCatCode === '3'),
+                  content: (
+                    <div className="flex items-center relative">
+                      <Input value={formData.mainAssetSubCat || ''} onChange={(e) => setFormData({...formData, mainAssetSubCat: e.target.value})} placeholder="请选择主资产物料小类" />
+                      <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
+                    </div>
+                  ),
+                },
+                {
+                  key: 'misIdentifyOnReturn',
+                  label: '退库是否需要MIS鉴定',
+                  visible: formData.mainCatCode === '1',
+                  content: (
+                    <div className="flex items-center gap-4 px-3">
+                      <Radio checked={formData.misIdentifyOnReturn==='1'} onChange={() => setFormData({...formData, misIdentifyOnReturn: '1'})}>是</Radio>
+                      <Radio checked={formData.misIdentifyOnReturn==='0'} onChange={() => setFormData({...formData, misIdentifyOnReturn: '0'})}>否</Radio>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'allowReplace',
+                  label: '是否允许更换',
+                  visible: formData.mainCatCode === '1',
+                  content: (
+                    <div className="flex items-center gap-4 px-3">
+                      <Radio checked={formData.allowReplace==='1'} onChange={() => setFormData({...formData, allowReplace: '1'})}>是</Radio>
+                      <Radio checked={formData.allowReplace==='0'} onChange={() => setFormData({...formData, allowReplace: '0'})}>否</Radio>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'allowTransfer',
+                  label: '是否允许转移',
+                  visible: formData.mainCatCode === '1',
+                  content: (
+                    <div className="flex items-center gap-4 px-3">
+                      <Radio checked={formData.allowTransfer==='1'} onChange={() => setFormData({...formData, allowTransfer: '1'})}>是</Radio>
+                      <Radio checked={formData.allowTransfer==='0'} onChange={() => setFormData({...formData, allowTransfer: '0'})}>否</Radio>
+                    </div>
+                  ),
+                },
+              ];
+              const visibleFields = fields.filter(f => f.visible);
+              const rows = [];
+              for (let i = 0; i < visibleFields.length; i += 2) {
+                rows.push([visibleFields[i], i + 1 < visibleFields.length ? visibleFields[i + 1] : null]);
+              }
+              return rows.map((row, rowIdx) => (
+                <div key={rowIdx} className={"flex min-h-[40px]" + (rowIdx < rows.length - 1 ? " border-b border-[#e8e8e8]" : "")}>
+                  <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">{row[0].label}</div>
+                  <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center">
+                    {row[0].content}
+                  </div>
+                  {row[1] ? (
+                    <>
+                      <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">{row[1].label}</div>
+                      <div className="w-[37.5%] p-2 flex items-center">
+                        {row[1].content}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"></div>
+                      <div className="w-[37.5%] p-2 flex items-center"></div>
+                    </>
+                  )}
+                </div>
+              ));
+            })()}
           </div>
-        </div>
-        <div className="flex justify-center gap-3 mt-6">
+        </div>        <div className="flex justify-center gap-3 mt-6">
           <Button type="primary" onClick={() => setIsModalOpen(false)} className="px-6">保存</Button>
           <Button type="default" onClick={() => setIsModalOpen(false)} className="px-6">返回</Button>
         </div>
