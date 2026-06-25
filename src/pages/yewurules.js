@@ -239,22 +239,11 @@ const MaterialComprehensiveView = () => {
           </div>
           <div className="border border-t-0 border-[#e8e8e8] text-sm">
             {(() => {
-              const fields = [
-                {
-                  key: 'needCheck',
-                  label: '是否需要盘点',
-                  visible: true,
-                  content: (
-                    <div className="flex items-center gap-4 px-3">
-                      <Radio checked={formData.needCheck==='是'} onChange={() => setFormData({...formData, needCheck: '是'})}>需要</Radio>
-                      <Radio checked={formData.needCheck==='否'} onChange={() => setFormData({...formData, needCheck: '否'})}>不需要</Radio>
-                    </div>
-                  ),
-                },
+              // 基础字段（始终显示）
+              const baseFields = [
                 {
                   key: 'formalCanApply',
                   label: '正式员工可申请',
-                  visible: true,
                   content: (
                     <div className="flex items-center gap-2 px-3">
                       <Radio checked={formData.formalCanApply==='是'} onChange={() => setFormData({...formData, formalCanApply: '是'})}>是</Radio>
@@ -271,17 +260,6 @@ const MaterialComprehensiveView = () => {
                     <div className="flex items-center gap-4 px-3">
                       <Radio checked={formData.internCanApply==='是'} onChange={() => setFormData({...formData, internCanApply: '是'})}>是</Radio>
                       <Radio checked={formData.internCanApply==='否'} onChange={() => setFormData({...formData, internCanApply: '否'})}>否</Radio>
-                    </div>
-                  ),
-                },
-                {
-                  key: 'allowReturn',
-                  label: '是否允许退库',
-                  visible: true,
-                  content: (
-                    <div className="flex items-center gap-4 px-3">
-                      <Radio checked={formData.allowReturn==='1'} onChange={() => setFormData({...formData, allowReturn: '1'})}>是</Radio>
-                      <Radio checked={formData.allowReturn==='0'} onChange={() => setFormData({...formData, allowReturn: '0'})}>否</Radio>
                     </div>
                   ),
                 },
@@ -319,89 +297,64 @@ const MaterialComprehensiveView = () => {
                     </div>
                   ),
                 },
+              ];
+              // 条件字段（根据物料总类插入在正式员工/实习生之后、盘点/退库之前）
+              const conditionFields = [];
+              if (formData.mainCatCode === '1') {
+                conditionFields.push(
+                  { key: 'misIdentifyOnReturn', label: '退库是否需要MIS鉴定', content: (<div className="flex items-center gap-4 px-3"><Radio checked={formData.misIdentifyOnReturn==='1'} onChange={() => setFormData({...formData, misIdentifyOnReturn: '1'})}>是</Radio><Radio checked={formData.misIdentifyOnReturn==='0'} onChange={() => setFormData({...formData, misIdentifyOnReturn: '0'})}>否</Radio></div>) },
+                  { key: 'allowReplace', label: '是否允许更换', content: (<div className="flex items-center gap-4 px-3"><Radio checked={formData.allowReplace==='1'} onChange={() => setFormData({...formData, allowReplace: '1'})}>是</Radio><Radio checked={formData.allowReplace==='0'} onChange={() => setFormData({...formData, allowReplace: '0'})}>否</Radio></div>) },
+                  { key: 'allowTransfer', label: '是否允许转移', content: (<div className="flex items-center gap-4 px-3"><Radio checked={formData.allowTransfer==='1'} onChange={() => setFormData({...formData, allowTransfer: '1'})}>是</Radio><Radio checked={formData.allowTransfer==='0'} onChange={() => setFormData({...formData, allowTransfer: '0'})}>否</Radio></div>) },
+                );
+              } else if (formData.mainCatCode === '2' || formData.mainCatCode === '3') {
+                conditionFields.push(
+                  { key: 'misAudit', label: '耗材申请是否需要MIS审核', content: (<div className="flex items-center gap-4 px-3"><Radio checked={formData.misAudit==='1'} onChange={() => setFormData({...formData, misAudit: '1'})}>是</Radio><Radio checked={formData.misAudit==='0'} onChange={() => setFormData({...formData, misAudit: '0'})}>否</Radio></div>) },
+                  { key: 'hasMainAsset', label: '是否关联主资产', content: (<div className="flex items-center"><Select value={formData.hasMainAsset} onChange={(value) => setFormData({...formData, hasMainAsset: value})} options={[{label:'是', value:'1'}, {label:'否', value:'0'}]} placeholder="请选择" allowClear className="w-full" /></div>) },
+                );
+                if (formData.hasMainAsset === '1') {
+                  conditionFields.push(
+                    { key: 'mainAssetSubCat', label: '主资产物料小类', content: (<div className="flex items-center relative"><Input value={formData.mainAssetSubCat || ''} onChange={(e) => setFormData({...formData, mainAssetSubCat: e.target.value})} placeholder="请选择主资产物料小类" /><Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" /></div>) },
+                  );
+                }
+              }
+              // 尾部字段（始终显示）
+              const tailFields = [
                 {
-                  key: 'misAudit',
-                  label: '耗材申请是否需要MIS审核',
-                  visible: formData.mainCatCode === '2' || formData.mainCatCode === '3',
+                  key: 'needCheck',
+                  label: '是否需要盘点',
                   content: (
                     <div className="flex items-center gap-4 px-3">
-                      <Radio checked={formData.misAudit==='1'} onChange={() => setFormData({...formData, misAudit: '1'})}>是</Radio>
-                      <Radio checked={formData.misAudit==='0'} onChange={() => setFormData({...formData, misAudit: '0'})}>否</Radio>
+                      <Radio checked={formData.needCheck==='是'} onChange={() => setFormData({...formData, needCheck: '是'})}>需要</Radio>
+                      <Radio checked={formData.needCheck==='否'} onChange={() => setFormData({...formData, needCheck: '否'})}>不需要</Radio>
                     </div>
                   ),
                 },
                 {
-                  key: 'hasMainAsset',
-                  label: '是否关联主资产',
-                  visible: formData.mainCatCode === '2' || formData.mainCatCode === '3',
-                  content: (
-                    <div className="flex items-center">
-                      <Select value={formData.hasMainAsset} onChange={(value) => setFormData({...formData, hasMainAsset: value})} options={[{label:'是', value:'1'}, {label:'否', value:'0'}]} placeholder="请选择" allowClear className="w-full" />
-                    </div>
-                  ),
-                },
-                {
-                  key: 'mainAssetSubCat',
-                  label: '主资产物料小类',
-                  visible: formData.hasMainAsset === '1' && (formData.mainCatCode === '2' || formData.mainCatCode === '3'),
-                  content: (
-                    <div className="flex items-center relative">
-                      <Input value={formData.mainAssetSubCat || ''} onChange={(e) => setFormData({...formData, mainAssetSubCat: e.target.value})} placeholder="请选择主资产物料小类" />
-                      <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
-                    </div>
-                  ),
-                },
-                {
-                  key: 'misIdentifyOnReturn',
-                  label: '退库是否需要MIS鉴定',
-                  visible: formData.mainCatCode === '1',
+                  key: 'allowReturn',
+                  label: '是否允许退库',
                   content: (
                     <div className="flex items-center gap-4 px-3">
-                      <Radio checked={formData.misIdentifyOnReturn==='1'} onChange={() => setFormData({...formData, misIdentifyOnReturn: '1'})}>是</Radio>
-                      <Radio checked={formData.misIdentifyOnReturn==='0'} onChange={() => setFormData({...formData, misIdentifyOnReturn: '0'})}>否</Radio>
-                    </div>
-                  ),
-                },
-                {
-                  key: 'allowReplace',
-                  label: '是否允许更换',
-                  visible: formData.mainCatCode === '1',
-                  content: (
-                    <div className="flex items-center gap-4 px-3">
-                      <Radio checked={formData.allowReplace==='1'} onChange={() => setFormData({...formData, allowReplace: '1'})}>是</Radio>
-                      <Radio checked={formData.allowReplace==='0'} onChange={() => setFormData({...formData, allowReplace: '0'})}>否</Radio>
-                    </div>
-                  ),
-                },
-                {
-                  key: 'allowTransfer',
-                  label: '是否允许转移',
-                  visible: formData.mainCatCode === '1',
-                  content: (
-                    <div className="flex items-center gap-4 px-3">
-                      <Radio checked={formData.allowTransfer==='1'} onChange={() => setFormData({...formData, allowTransfer: '1'})}>是</Radio>
-                      <Radio checked={formData.allowTransfer==='0'} onChange={() => setFormData({...formData, allowTransfer: '0'})}>否</Radio>
+                      <Radio checked={formData.allowReturn==='1'} onChange={() => setFormData({...formData, allowReturn: '1'})}>是</Radio>
+                      <Radio checked={formData.allowReturn==='0'} onChange={() => setFormData({...formData, allowReturn: '0'})}>否</Radio>
                     </div>
                   ),
                 },
               ];
-              const visibleFields = fields.filter(f => f.visible);
+              // 拼接：基础(可见) + 条件 + 尾部
+              const allFields = [...baseFields.filter(f => f.visible !== false), ...conditionFields, ...tailFields];
+              // 每2个一行
               const rows = [];
-              for (let i = 0; i < visibleFields.length; i += 2) {
-                rows.push([visibleFields[i], i + 1 < visibleFields.length ? visibleFields[i + 1] : null]);
+              for (let i = 0; i < allFields.length; i += 2) {
+                rows.push([allFields[i], i + 1 < allFields.length ? allFields[i + 1] : null]);
               }
               return rows.map((row, rowIdx) => (
                 <div key={rowIdx} className={"flex min-h-[40px]" + (rowIdx < rows.length - 1 ? " border-b border-[#e8e8e8]" : "")}>
                   <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">{row[0].label}</div>
-                  <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center">
-                    {row[0].content}
-                  </div>
+                  <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center">{row[0].content}</div>
                   {row[1] ? (
                     <>
                       <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">{row[1].label}</div>
-                      <div className="w-[37.5%] p-2 flex items-center">
-                        {row[1].content}
-                      </div>
+                      <div className="w-[37.5%] p-2 flex items-center">{row[1].content}</div>
                     </>
                   ) : (
                     <>
