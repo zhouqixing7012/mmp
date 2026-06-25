@@ -1,4 +1,5 @@
 ﻿import React, { useState } from 'react';
+import dayjs from 'dayjs';
 import {
   Search, Plus, CheckCircle, XCircle, Download, Edit, Settings,
   ChevronDown, Folder, LayoutDashboard, Monitor, Layers, ClipboardList,
@@ -268,11 +269,7 @@ const MaterialComprehensiveView = () => {
                   label: '生效时间',
                   visible: formData.formalCanApply === '临时可申请',
                   content: (
-                    <div className="flex items-center gap-1">
-                      <DatePicker value={formData.tempEffStartDate} onChange={(date, dateString) => setFormData({...formData, tempEffStartDate: dateString})} placeholder="开始日期" className="w-full" />
-                      <span className="text-gray-400">~</span>
-                      <DatePicker value={formData.tempEffEndDate} onChange={(date, dateString) => setFormData({...formData, tempEffEndDate: dateString})} placeholder="结束日期" className="w-full" />
-                    </div>
+                    <DatePicker.RangePicker value={formData.tempEffStartDate && formData.tempEffEndDate ? [dayjs(formData.tempEffStartDate), dayjs(formData.tempEffEndDate)] : null} onChange={(dates, dateStrings) => setFormData({...formData, tempEffStartDate: dateStrings[0], tempEffEndDate: dateStrings[1]})} placeholder={['开始日期', '结束日期']} className="w-full" />
                   ),
                 },
                 {
