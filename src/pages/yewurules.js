@@ -217,14 +217,14 @@ const MaterialComprehensiveView = () => {
                   </div>
                   <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料大类/小类</div>
                   <div className="w-[37.5%] p-2 flex items-center relative cursor-pointer" onClick={() => {if (formData.mainCatDesc) setIsSubCategoryModalOpen(true); else setIsMaterialCategoryModalOpen(true);}}>
-                    <Input value={formData.mainCatDesc && formData.subCatDesc ? formData.mainCatDesc + ' / ' + formData.subCatDesc : (formData.mainCatDesc || '请先选择物料大类')} placeholder="请选择" readOnly className="pointer-events-none" />
+                    <Input value={formData.mainCatDesc && formData.subCatDesc ? formData.mainCatDesc + ' / ' + formData.subCatDesc : ''} placeholder="请先选择物料大类" readOnly className="pointer-events-none" />
                     <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
                   </div>
                 </div>
                 <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
                   <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>品牌/规格型号</div>
                   <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => {if (!formData.brand) setIsBrandModalOpen(true); else setIsModelModalOpen(true);}}>
-                    <Input value={formData.brand && formData.modelCode ? formData.brand + " / " + formData.modelCode : (formData.brand || "请先选择品牌")} placeholder="请选择" readOnly className="pointer-events-none" />
+                    <Input value={formData.brand && formData.modelCode ? formData.brand + " / " + formData.modelCode : ""} placeholder="请先选择品牌" readOnly className="pointer-events-none" />
                     <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
                   </div>
                   <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">配置描述</div>
@@ -280,7 +280,7 @@ const MaterialComprehensiveView = () => {
             </div>
           </div>
         </div>
-状态字段 */}
+{/* 状态字段 */}
         <div className="mb-4">
           <div className="bg-[#f6ffed] border border-[#b7eb8f] px-4 py-2 rounded-t text-sm font-medium text-[#52c41a]">
             状态字段
@@ -548,7 +548,7 @@ const MaterialComprehensiveView = () => {
           setFormData({...formData, tempEmployee: record.desc});
           setIsEmpModalOpen(false);
         }}
-      />/>/>
+      />
       <SelectModal
         open={isConfigModalOpen}
         title="选择配置"
@@ -2575,12 +2575,7 @@ const LocationBasicDataView = () => {
         </QueryItem>
       </QueryBar>
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex flex-col overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#f0f0f0] bg-white flex gap-2">
-          <Button type="primary" icon={<Plus size={14} />}>新增</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
-          <Button type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</Button>
-          <Button type="default" className="text-red-500" icon={<XCircle size={14} />}>停用</Button>
-        </div>
+
         <div className="flex-1 overflow-auto bg-white p-4">
           <div className="border border-[#e8e8e8] rounded">
             <table className="w-full text-sm">
