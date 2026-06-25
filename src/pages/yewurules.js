@@ -65,32 +65,29 @@ const MaterialComprehensiveView = () => {
     setIsModalOpen(true);
   };
   const columns = [
-    { title: '序号', dataIndex: 'id' },
-    { title: '维度组合编码', dataIndex: 'code' },
-    { title: '维度组合描述', dataIndex: 'desc' },
-    { title: '物料总类', dataIndex: 'mainCatCode', render: (val) => val === '1' ? '资产' : val === '2' ? '耗材' : val === '3' ? '低值耐用品' : '-' },
-    { title: '大类描述', dataIndex: 'catDesc' },
-    { title: '小类描述', dataIndex: 'subCatDesc' },
-    { title: '品牌', dataIndex: 'brand' },
-    { title: '型号', dataIndex: 'model' },
-    { title: '配置描述', dataIndex: 'configDesc' },
-    { title: '单位', dataIndex: 'unit' },
-    { title: '是否有级别', dataIndex: 'hasLevel', render: (val) => <StatusTag value={val} /> },
-    { title: '级别', dataIndex: 'level', render: (val) => val === '1' ? '标准' : val === '2' ? '高端' : '-' },
-    { title: '是否关联主资产', dataIndex: 'hasMainAsset', render: (val) => <StatusTag value={val} /> },
-    { title: '退库鉴定', dataIndex: 'returnCheck', render: (val) => val || '-' },
-    { title: '是否MIS审核', dataIndex: 'misAudit', render: (val) => <StatusTag value={val} /> },
-    { title: '是否启用', dataIndex: 'enabled', render: (val) => <StatusTag value={val} type="enabled" /> },
-    { title: '参考价格', dataIndex: 'refPrice', render: (val) => val || '0.00' },
-    { title: '是否可申请', dataIndex: 'canApply', render: (val) => <StatusTag value={val} /> },
-    { title: '是否停产', dataIndex: 'isStop', render: (val) => <StatusTag value={val} type="stop" /> },
-    { title: '是否需要盘点', dataIndex: 'needCheck', render: (val) => <StatusTag value={val} /> },
-    { title: '是否允许更换', dataIndex: 'allowReplace', render: (val) => <StatusTag value={val} /> },
-    { title: '是否允许转岗', dataIndex: 'allowTransfer', render: (val) => <StatusTag value={val} /> },
-    { title: '是否允许借用', dataIndex: 'allowBorrow', render: (val) => <StatusTag value={val} /> },
-    { title: '是否需要ES审批', dataIndex: 'needEsApproval', render: (val) => <StatusTag value={val} /> },
-    { title: '是否允许退库', dataIndex: 'allowReturn', render: (val) => <StatusTag value={val} /> },
-    { title: '操作', dataIndex: 'action', render: (_, record) => <Button type="link" onClick={() => handleEdit(record)}>编辑</Button> }
+    { title: '序号', dataIndex: 'id', width: 60, fixed: 'left' },
+    { title: '维度组合编码', dataIndex: 'code', width: 140 },
+    { title: '维度组合描述', dataIndex: 'desc', width: 180 },
+    { title: '物料总类', dataIndex: 'mainCatCode', width: 100, render: (val) => val === '1' ? '资产' : val === '2' ? '耗材' : val === '3' ? '低值耐用品' : '-' },
+    { title: '物料大类', dataIndex: 'catDesc', width: 120 },
+    { title: '物料小类', dataIndex: 'subCatDesc', width: 120 },
+    { title: '品牌', dataIndex: 'brand', width: 120 },
+    { title: '规格型号', dataIndex: 'model', width: 120 },
+    { title: '配置描述', dataIndex: 'configDesc', width: 130, render: (val) => val || '-' },
+    { title: '单位', dataIndex: 'unit', width: 80 },
+    { title: '参考价格', dataIndex: 'refPrice', width: 100, render: (val) => val || '0.00' },
+    { title: '是否启用', dataIndex: 'enabled', width: 90, render: (val) => <StatusTag value={val} type="enabled" /> },
+    { title: '是否停产', dataIndex: 'isStop', width: 90, render: (val) => <StatusTag value={val} type="stop" /> },
+    { title: '正式员工可申请', dataIndex: 'formalCanApply', width: 120, render: (val) => val || '-' },
+    { title: '实习生可申请', dataIndex: 'internCanApply', width: 110, render: (val) => val || '-' },
+    { title: '是否允许退库', dataIndex: 'allowReturn', width: 110, render: (val) => <StatusTag value={val} /> },
+    { title: '是否需要盘点', dataIndex: 'needCheck', width: 100, render: (val) => val === '是' ? '需要' : val === '否' ? '不需要' : '-' },
+    { title: '退库是否需要MIS鉴定', dataIndex: 'misIdentifyOnReturn', width: 140, render: (val) => <StatusTag value={val} /> },
+    { title: '耗材申请是否需要MIS审核', dataIndex: 'misAudit', width: 160, render: (val) => <StatusTag value={val} /> },
+    { title: '是否关联主资产', dataIndex: 'hasMainAsset', width: 120, render: (val) => <StatusTag value={val} /> },
+    { title: '是否允许更换', dataIndex: 'allowReplace', width: 110, render: (val) => <StatusTag value={val} /> },
+    { title: '是否允许转移', dataIndex: 'allowTransfer', width: 110, render: (val) => <StatusTag value={val} /> },
+    { title: '操作', dataIndex: 'action', width: 80, fixed: 'right', render: (_, record) => <Button type="link" onClick={() => handleEdit(record)}>编辑</Button> }
   ];
   const data = mockComprehensiveData;
   return (
@@ -150,7 +147,7 @@ const MaterialComprehensiveView = () => {
           </div>
         </div>
         <div data-prototype-anchor="material-table" className="overflow-x-auto">
-          <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
+          <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 2800 }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
         </div>
       </div>
       <Modal open={isModalOpen} onCancel={() => setIsModalOpen(false)} footer={null} title={modalMode === 'add' ? '新增物料维度组合' : '编辑物料维度组合'} width="1100px">
