@@ -2,7 +2,7 @@
 import dayjs from 'dayjs';
 import {
   Search, Plus, CheckCircle, XCircle, Download, Edit, Settings,
-  ChevronDown, Folder, LayoutDashboard, Monitor, Layers, ClipboardList,
+  ChevronDown, ChevronUp, Folder, LayoutDashboard, Monitor, Layers, ClipboardList,
   Menu, User, Bell, ChevronRight, MoreHorizontal, Trash2, RefreshCcw, MinusSquare, X, Upload, ArrowLeft
 } from 'lucide-react';
 // 导入 xitongrules.js 中的组织与用户管理组件
@@ -100,7 +100,13 @@ const MaterialComprehensiveView = () => {
   return (
     <div className="flex flex-col gap-4">
       <div data-prototype-anchor="material-query-bar">
-      <QueryBar>
+      <QueryBar buttons={
+        <>
+          <Button type="primary" icon={<Search size={14} />}>查询</Button>
+          <Button icon={<RefreshCcw size={14} />}>重置</Button>
+          <Button type="link" onClick={() => setIsQueryExpanded(!isQueryExpanded)} icon={isQueryExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}>{isQueryExpanded ? '收起更多' : '展开更多'}</Button>
+        </>
+      }>
         <QueryItem label="维度组合编码">
           <Input placeholder="请输入编码" />
         </QueryItem>
@@ -143,41 +149,33 @@ const MaterialComprehensiveView = () => {
         <QueryItem label="单位">
           <Select style={{ width: '100%' }} placeholder="请选择" allowClear options={[{label:'台', value:'1'}, {label:'块', value:'2'}, {label:'个', value:'3'}, {label:'套', value:'4'}, {label:'件', value:'5'}]} />
         </QueryItem>
-        {isQueryExpanded && (
-          <>
-            <QueryItem label="是否启用">
+        {isQueryExpanded && <QueryItem label="是否启用">
               <Select style={{ width: '100%' }} placeholder="请选择" allowClear options={[{label:'启用', value:'1'}, {label:'停用', value:'0'}]} />
-            </QueryItem>
-            <QueryItem label="正式员工可申请">
+            </QueryItem>}
+            {isQueryExpanded && <QueryItem label="正式员工可申请">
               <Select style={{ width: '100%' }} placeholder="请选择" allowClear options={[{label:'是', value:'是'}, {label:'否', value:'否'}]} />
-            </QueryItem>
-            <QueryItem label="耗材申请是否需要MIS审核">
+            </QueryItem>}
+            {isQueryExpanded && <QueryItem label="耗材申请是否需要MIS审核">
               <Select style={{ width: '100%' }} placeholder="请选择" allowClear options={[{label:'是', value:'1'}, {label:'否', value:'0'}]} />
-            </QueryItem>
-            <QueryItem label="退库是否需要MIS鉴定">
+            </QueryItem>}
+            {isQueryExpanded && <QueryItem label="退库是否需要MIS鉴定">
               <Select style={{ width: '100%' }} placeholder="请选择" allowClear options={[{label:'是', value:'1'}, {label:'否', value:'0'}]} />
-            </QueryItem>
-            <QueryItem label="是否关联主资产">
+            </QueryItem>}
+            {isQueryExpanded && <QueryItem label="是否关联主资产">
               <Select style={{ width: '100%' }} placeholder="请选择" allowClear options={[{label:'是', value:'1'}, {label:'否', value:'0'}]} />
-            </QueryItem>
-            <QueryItem label="是否需要盘点">
+            </QueryItem>}
+            {isQueryExpanded && <QueryItem label="是否需要盘点">
               <Select style={{ width: '100%' }} placeholder="请选择" allowClear options={[{label:'是', value:'是'}, {label:'否', value:'否'}]} />
-            </QueryItem>
-            <QueryItem label="参考价格">
+            </QueryItem>}
+            {isQueryExpanded && <QueryItem label="参考价格">
               <div className="flex items-center w-full gap-2">
                 <Input placeholder="从" />
                 <span className="text-gray-400">至</span>
                 <Input placeholder="至" />
               </div>
-            </QueryItem>
-          </>
-        )}
+            </QueryItem>}
       </QueryBar>
-      <div className="flex justify-end px-4 py-2">
-        <Button type="link" onClick={() => setIsQueryExpanded(!isQueryExpanded)} icon={isQueryExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}>
-          {isQueryExpanded ? '收起更多' : '展开更多'}
-        </Button>
-      </div>
+
       </div>
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
         <div data-prototype-anchor="material-table-toolbar" className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
