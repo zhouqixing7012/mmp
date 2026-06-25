@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
+import { Modal, Select, DatePicker, Input } from 'antd';
 import { 
   Search, Plus, CheckCircle, XCircle, Download, Edit, Settings, 
   ChevronDown, Folder, LayoutDashboard, Monitor, Layers, ClipboardList,
@@ -1086,90 +1087,104 @@ const CompanyBelongingAuthView = () => {
 
 // --- New Warehouse Data Views ---
 
-// 12. 仓库信息 (Warehouse Information View - With Tree)
 const WarehouseInfoView = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('add');
+  const [formData, setFormData] = useState({ code: '', desc: '', usage: '', isVirtual: '0', company: '', city: '', admin: '', enabled: '1', enableDate: '', stopDate: '' });
   const columns = [
-    { title: '序号', dataIndex: 'id' },
-    { title: '仓库编码', dataIndex: 'code' },
-    { title: '仓库描述', dataIndex: 'desc' },
-    { title: '仓库用途', dataIndex: 'usage' },
-    { title: '是否虚拟库', dataIndex: 'isVirtual', render: (val) => val ? '是' : '否' },
-    { title: '公司', dataIndex: 'company' },
+    { title: '\u5e8f\u53f7', dataIndex: 'id' },
+    { title: '\u4ed3\u5e93\u7f16\u7801', dataIndex: 'code' },
+    { title: '\u4ed3\u5e93\u63cf\u8ff0', dataIndex: 'desc' },
+    { title: '\u4ed3\u5e93\u7528\u9014', dataIndex: 'usage' },
+    { title: '\u662f\u5426\u865a\u62df\u5e93', dataIndex: 'isVirtual', render: (val) => val === '1' ? '\u662f' : '\u5426' },
+    { title: '\u516c\u53f8', dataIndex: 'company' },
     { title: 'City', dataIndex: 'city' },
-    { title: '库管员', dataIndex: 'admin' },
-    { title: '启用', dataIndex: 'enabled', render: (val) => val ? '启用' : '停用' },
-    { title: '操作', dataIndex: 'action', render: () => <AntButton type="link">操作</AntButton> }
+    { title: '\u5e93\u7ba1\u5458', dataIndex: 'admin' },
+    { title: '\u542f\u7528\u65e5\u671f', dataIndex: 'enableDate' },
+    { title: '\u505c\u7528\u65e5\u671f', dataIndex: 'stopDate' },
+    { title: '\u542f\u7528', dataIndex: 'enabled', render: (val) => val === '1' ? '\u542f\u7528' : '\u505c\u7528' },
+    { title: '\u64cd\u4f5c', dataIndex: 'action', render: (_, record) => React.createElement(AntButton, { type: 'link', onClick: () => { setModalMode('edit'); setFormData({ ...formData, ...record }); setIsModalOpen(true); } }, '\u64cd\u4f5c') }
   ];
-
-  const data = [
-    { id: 1, code: 'I0001', desc: '资产库北京库(新媒体)', usage: 'IU0001_资产库标准', isVirtual: false, company: '114_新媒体', city: '35_北京市', admin: '114111-杨平', enabled: true },
-    { id: 2, code: 'I0002', desc: '资产库北京库(畅游北...)', usage: 'IU0001_资产库标准', isVirtual: false, company: '101_焦点互动', city: '35_北京市', admin: '114111-杨平', enabled: true },
-    { id: 3, code: 'I0003', desc: '资产库北京库(互联网)', usage: 'IU0001_资产库标准', isVirtual: true, company: '102_互联网', city: '35_北京市', admin: '114111-杨平', enabled: true },
-    { id: 4, code: 'I0004', desc: '资产库北京库(视频支付)', usage: 'IU0001_资产库标准', isVirtual: false, company: '129_视频支付', city: '35_北京市', admin: '114111-杨平', enabled: true },
-    { id: 5, code: 'I0005', desc: '资产库北京库(软件科技)', usage: 'IU0001_资产库标准', isVirtual: false, company: '111_软件科技(软件科技)', city: '35_北京市', admin: '114111-杨平', enabled: true },
-    { id: 6, code: 'I0006', desc: '资产库北京库(新媒体...)', usage: 'IU0001_资产库标准', isVirtual: false, company: '112_北京畅游动力', city: '35_北京市', admin: '114111-杨平', enabled: true },
-    { id: 7, code: 'I0007', desc: '资产库北京库(天游飞...)', usage: 'IU0001_资产库标准', isVirtual: false, company: '123_天游飞享', city: '35_北京市', admin: '114111-杨平', enabled: true },
-    { id: 8, code: 'I0008', desc: '资产库北京库(天津金...)', usage: 'IU0001_资产库标准', isVirtual: false, company: '124_天津金源', city: '35_北京市', admin: '114111-杨平', enabled: true },
-    { id: 9, code: 'I0009', desc: '资产库北京库(千钧)', usage: 'IU0001_资产库标准', isVirtual: false, company: '132_千钧', city: '35_北京市', admin: '114111-杨平', enabled: true },
-    { id: 10, code: 'I0010', desc: '资产库北京库(焦点互动)', usage: 'IU0001_资产库标准', isVirtual: false, company: '201_焦点互动', city: '35_北京市', admin: '114111-杨平', enabled: true },
-  ];
-  
-  const treeNodes = ['仓库信息', '实体库', '虚拟库', '报废库', '借用库', '待检库'];
-
+  const data = mockWarehouseInfoData;
+  const treeNodes = ['\u4ed3\u5e93\u4fe1\u606f', '\u5b9e\u4f53\u5e93', '\u865a\u62df\u5e93', '\u62a5\u5e9f\u5e93', '\u501f\u7528\u5e93', '\u5f85\u68c0\u5e93'];
   return (
+    <>
     <div className="flex h-[calc(100vh-210px)] gap-4">
-      {/* Left Tree */}
       <div className="w-56 bg-white border border-[#f0f0f0] rounded shadow-sm flex flex-col overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#f0f0f0] font-medium text-gray-800 text-sm bg-[#fafafa]">
-          仓库信息
-        </div>
+        <div className="px-4 py-3 border-b border-[#f0f0f0] font-medium text-gray-800 text-sm bg-[#fafafa]">\u4ed3\u5e93\u4fe1\u606f</div>
         <div className="p-2 overflow-y-auto flex-1">
           {treeNodes.map((node, i) => (
-            <div key={i} className={`flex items-center gap-2 px-2 py-1.5 hover:bg-[#f5f5f5] cursor-pointer rounded text-sm ${i === 0 ? 'text-[#1677ff] font-medium bg-[#e6f4ff]' : 'text-gray-700'}`}>
+            <div key={i} className={"flex items-center gap-2 px-2 py-1.5 hover:bg-[#f5f5f5] cursor-pointer rounded text-sm " + (i === 0 ? "text-[#1677ff] font-medium bg-[#e6f4ff]" : "text-gray-700")}>
               <Folder size={14} className={i === 0 ? "text-[#1677ff]" : "text-[#1677ff] opacity-70"} />
               <span>{node}</span>
             </div>
           ))}
         </div>
       </div>
-      
-      {/* Right Content */}
       <div className="flex-1 bg-white border border-[#f0f0f0] rounded shadow-sm flex flex-col overflow-hidden">
         <div className="p-4 border-b border-[#f0f0f0]">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-y-4 gap-x-6">
-            <div className="flex items-center gap-2">
-              <span className="w-24 text-right text-sm text-gray-600">仓库编码:</span>
-              <AntInput placeholder="请输入仓库编码" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-24 text-right text-sm text-gray-600">仓库描述:</span>
-              <AntInput placeholder="请输入仓库描述" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-24 text-right text-sm text-gray-600">是否虚拟库:</span>
-              <AntSelect options={[{label:'是', value:'1'}, {label:'否', value:'0'}]} />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-24 text-right text-sm text-gray-600">是否启用:</span>
-              <AntSelect options={[{label:'是', value:'1'}, {label:'否', value:'0'}]} />
-              <AntButton type="primary" className="ml-4" icon={<Search size={14}/>}>查询</AntButton>
-            </div>
+            <div className="flex items-center gap-2"><span className="w-24 text-right text-sm text-gray-600">\u4ed3\u5e93\u7f16\u7801:</span><Input placeholder="\u8bf7\u8f93\u5165\u4ed3\u5e93\u7f16\u7801" className="flex-1" /></div>
+            <div className="flex items-center gap-2"><span className="w-24 text-right text-sm text-gray-600">\u4ed3\u5e93\u63cf\u8ff0:</span><Input placeholder="\u8bf7\u8f93\u5165\u4ed3\u5e93\u63cf\u8ff0" className="flex-1" /></div>
+            <div className="flex items-center gap-2"><span className="w-24 text-right text-sm text-gray-600">\u662f\u5426\u865a\u62df\u5e93:</span><Select className="flex-1" placeholder="\u8bf7\u9009\u62e9" options={[{label:'\u662f', value:'1'}, {label:'\u5426', value:'0'}]} /></div>
+            <div className="flex items-center gap-2"><span className="w-24 text-right text-sm text-gray-600">\u662f\u5426\u542f\u7528:</span><Select className="flex-1" placeholder="\u8bf7\u9009\u62e9" options={[{label:'\u662f', value:'1'}, {label:'\u5426', value:'0'}]} /><AntButton type="primary" className="ml-4" icon={<Search size={14}/>}>\u67e5\u8be2</AntButton></div>
           </div>
         </div>
         <div className="px-3 py-2 border-b border-[#f0f0f0] bg-white flex gap-2">
-          <AntButton type="primary" icon={<Plus size={14} />}>新增</AntButton>
-          <AntButton type="danger" icon={<Trash2 size={14} />}>删除</AntButton>
-          <AntButton type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</AntButton>
-          <AntButton type="default" className="text-red-500" icon={<XCircle size={14} />}>停用</AntButton>
-          <AntButton type="default" icon={<Settings size={14} />}>配置</AntButton>
+          <AntButton type="primary" icon={<Plus size={14} />} onClick={() => { setModalMode('add'); setFormData({ code: '', desc: '', usage: '', isVirtual: '0', company: '', city: '', admin: '', enabled: '1', enableDate: '', stopDate: '' }); setIsModalOpen(true); }}>\u65b0\u589e</AntButton>
+          <AntButton type="danger" icon={<Trash2 size={14} />}>\u5220\u9664</AntButton>
+          <AntButton type="default" className="text-green-600" icon={<CheckCircle size={14} />}>\u542f\u7528</AntButton>
+          <AntButton type="default" className="text-red-500" icon={<XCircle size={14} />}>\u505c\u7528</AntButton>
+          <AntButton type="default" icon={<Settings size={14} />}>\u914d\u7f6e</AntButton>
         </div>
         <div className="flex-1 overflow-auto bg-white p-4">
            <AntTable columns={columns} data={data} />
         </div>
       </div>
     </div>
-  )
-}
+    <Modal open={isModalOpen} onCancel={() => setIsModalOpen(false)} footer={null} title={modalMode === 'add' ? '\u65b0\u589e\u4ed3\u5e93\u4fe1\u606f' : '\u7f16\u8f91\u4ed3\u5e93\u4fe1\u606f'} width="700px">
+      <div className="border border-[#e8e8e8] text-sm">
+        <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700"><span className="text-red-500 mr-1">*</span>\u4ed3\u5e93\u7f16\u7801</div>
+          <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center"><Input value={formData.code} onChange={(e) => setFormData({...formData, code: e.target.value})} placeholder="\u8bf7\u8f93\u5165\u4ed3\u5e93\u7f16\u7801" /></div>
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700"><span className="text-red-500 mr-1">*</span>\u4ed3\u5e93\u63cf\u8ff0</div>
+          <div className="w-[35%] p-2 flex items-center"><Input value={formData.desc} onChange={(e) => setFormData({...formData, desc: e.target.value})} placeholder="\u8bf7\u8f93\u5165\u4ed3\u5e93\u63cf\u8ff0" /></div>
+        </div>
+        <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700"><span className="text-red-500 mr-1">*</span>\u4ed3\u5e93\u7528\u9014</div>
+          <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center"><Input value={formData.usage} onChange={(e) => setFormData({...formData, usage: e.target.value})} placeholder="\u8bf7\u8f93\u5165\u4ed3\u5e93\u7528\u9014" /></div>
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700">\u662f\u5426\u865a\u62df\u5e93</div>
+          <div className="w-[35%] p-2 flex items-center"><Select value={formData.isVirtual} onChange={(v) => setFormData({...formData, isVirtual: v})} options={[{label:'\u662f', value:'1'}, {label:'\u5426', value:'0'}]} className="w-full" placeholder="\u8bf7\u9009\u62e9" /></div>
+        </div>
+        <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700">\u516c\u53f8</div>
+          <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center"><Input value={formData.company} onChange={(e) => setFormData({...formData, company: e.target.value})} placeholder="\u8bf7\u8f93\u5165\u516c\u53f8" /></div>
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700">City</div>
+          <div className="w-[35%] p-2 flex items-center"><Input value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} placeholder="\u8bf7\u8f93\u5165\u57ce\u5e02" /></div>
+        </div>
+        <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700">\u5e93\u7ba1\u5458</div>
+          <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center"><Input value={formData.admin} onChange={(e) => setFormData({...formData, admin: e.target.value})} placeholder="\u8bf7\u8f93\u5165\u5e93\u7ba1\u5458" /></div>
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700">\u662f\u5426\u542f\u7528</div>
+          <div className="w-[35%] p-2 flex items-center gap-3">
+            <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name="enabled" checked={formData.enabled === '1'} onChange={() => setFormData({...formData, enabled: '1'})} />\u542f\u7528</label>
+            <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name="enabled" checked={formData.enabled === '0'} onChange={() => setFormData({...formData, enabled: '0'})} />\u505c\u7528</label>
+          </div>
+        </div>
+        <div className="flex min-h-[40px]">
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700">\u542f\u7528\u65e5\u671f</div>
+          <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center"><DatePicker value={formData.enableDate} onChange={(date, dateString) => setFormData({...formData, enableDate: dateString})} placeholder="\u8bf7\u9009\u62e9\u542f\u7528\u65e5\u671f" className="w-full" /></div>
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700">\u505c\u7528\u65e5\u671f</div>
+          <div className="w-[35%] p-2 flex items-center"><DatePicker value={formData.stopDate} onChange={(date, dateString) => setFormData({...formData, stopDate: dateString})} placeholder="\u8bf7\u9009\u62e9\u505c\u7528\u65e5\u671f" className="w-full" /></div>
+        </div>
+      </div>
+      <div className="flex justify-center gap-3 mt-6">
+        <button className="px-6 py-1.5 bg-[#1677ff] text-white border border-[#1677ff] rounded hover:bg-[#4096ff] text-sm" onClick={() => setIsModalOpen(false)}>\u4fdd\u5b58</button>
+        <button className="px-6 py-1.5 bg-white text-gray-700 border border-[#d9d9d9] rounded hover:border-[#1677ff] text-sm" onClick={() => setIsModalOpen(false)}>\u8fd4\u56de</button>
+      </div>
+    </Modal>
+    </>)
+};
 
 // 13. 仓库用途 (Warehouse Usage View)
 const WarehouseUsageView = () => {
@@ -2539,3 +2554,4 @@ export default function App() {
     </div>
   );
 }
+
