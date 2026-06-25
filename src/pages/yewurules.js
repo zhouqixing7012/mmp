@@ -43,6 +43,8 @@ const MaterialComprehensiveView = () => {
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isDeptModalOpen, setIsDeptModalOpen] = useState(false);
+  const [isEmpModalOpen, setIsEmpModalOpen] = useState(false);
   const [isSubCategoryModalOpen, setIsSubCategoryModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     mainCatCode: '', mainCatDesc: '', subCatCode: '', subCatDesc: '', brand: '', modelCode: '', modelDesc: '',
@@ -277,9 +279,9 @@ const MaterialComprehensiveView = () => {
                   label: '可申请部门',
                   visible: formData.formalCanApply === '临时可申请',
                   content: (
-                    <div className="flex items-center relative w-full">
+                    <div className="flex items-center relative w-full cursor-pointer" onClick={() => setIsDeptModalOpen(true)}>
                       <Input value={formData.tempDept || ''} placeholder="请选择部门" readOnly className="pointer-events-none bg-white w-full" />
-                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
                     </div>
                   ),
                 },
@@ -288,9 +290,9 @@ const MaterialComprehensiveView = () => {
                   label: '可申请员工',
                   visible: formData.formalCanApply === '临时可申请',
                   content: (
-                    <div className="flex items-center relative w-full">
+                    <div className="flex items-center relative w-full cursor-pointer" onClick={() => setIsEmpModalOpen(true)}>
                       <Input value={formData.tempEmployee || ''} placeholder="请选择员工" readOnly className="pointer-events-none bg-white w-full" />
-                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
                     </div>
                   ),
                 },
@@ -310,7 +312,7 @@ const MaterialComprehensiveView = () => {
                 );
                 if (formData.hasMainAsset === '1') {
                   conditionFields.push(
-                    { key: 'mainAssetSubCat', label: '主资产物料小类', content: (<div className="flex items-center relative"><Input value={formData.mainAssetSubCat || ''} onChange={(e) => setFormData({...formData, mainAssetSubCat: e.target.value})} placeholder="请选择主资产物料小类" /><Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" /></div>) },
+                    { key: 'mainAssetSubCat', label: '主资产物料小类', content: (<div className="flex items-center relative w-full"><Input value={formData.mainAssetSubCat || ''} onChange={(e) => setFormData({...formData, mainAssetSubCat: e.target.value})} placeholder="请选择主资产物料小类" className="w-full" /><Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" /></div>) },
                   );
                 }
               }
@@ -447,7 +449,31 @@ const MaterialComprehensiveView = () => {
           });
           setIsSubCategoryModalOpen(false);
         }}
-      />/>
+      />
+      <SelectModal
+        open={isDeptModalOpen}
+        title="选择部门"
+        dataSource={mockDepartments}
+        columns={[{ title: '部门编码', dataIndex: 'code' }, { title: '部门名称', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '名称', name: 'desc', dataIndex: 'desc', placeholder: '请输入名称' }]}
+        onCancel={() => setIsDeptModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({...formData, tempDept: record.desc});
+          setIsDeptModalOpen(false);
+        }}
+      />
+      <SelectModal
+        open={isEmpModalOpen}
+        title="选择员工"
+        dataSource={mockEmployeeMappingData}
+        columns={[{ title: '员工编码', dataIndex: 'code' }, { title: '员工姓名', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '姓名', name: 'desc', dataIndex: 'desc', placeholder: '请输入姓名' }]}
+        onCancel={() => setIsEmpModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({...formData, tempEmployee: record.desc});
+          setIsEmpModalOpen(false);
+        }}
+      />/>/>
       <SelectModal
         open={isConfigModalOpen}
         title="选择配置"
