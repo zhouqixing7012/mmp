@@ -172,21 +172,21 @@ const MaterialComprehensiveView = () => {
               <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center">
                 <Select value={formData.mainCatCode} onChange={(value) => setFormData({...formData, mainCatCode: value})} options={[{label:'资产', value:'1'}, {label:'耗材', value:'2'}, {label:'低值耐用品', value:'3'}]} className="w-full"  placeholder="请选择" allowClear />
               </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料大类</div>
-              <div className="w-[37.5%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsMaterialCategoryModalOpen(true)}>
-                <Input value={formData.mainCatDesc} onChange={(e) => setFormData({...formData, mainCatDesc: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
+              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料大类/小类</div>
+              <div className="w-[37.5%] p-2 flex items-center relative cursor-pointer" onClick={() => {if (formData.mainCatDesc) setIsSubCategoryModalOpen(true); else setIsMaterialCategoryModalOpen(true);}}>
+                <Input value={formData.mainCatDesc && formData.subCatDesc ? formData.mainCatDesc + ' / ' + formData.subCatDesc : (formData.mainCatDesc || '请先选择物料大类')} placeholder="请选择" readOnly className="pointer-events-none" />
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
               </div>
             </div>
             <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料大类/小类</div>
-              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => {if (formData.mainCatDesc) setIsSubCategoryModalOpen(true); else setIsMaterialCategoryModalOpen(true);}}>
-                <Input value={formData.mainCatDesc && formData.subCatDesc ? formData.mainCatDesc + ' / ' + formData.subCatDesc : (formData.mainCatDesc || '请先选择物料大类')} placeholder="请选择" readOnly className="pointer-events-none" />
+              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>品牌/规格型号</div>
+              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => {if (!formData.brand) setIsBrandModalOpen(true); else setIsModelModalOpen(true);}}>
+                <Input value={formData.brand && formData.modelCode ? formData.brand + " / " + formData.modelCode : (formData.brand || "请先选择品牌")} placeholder="请选择" readOnly className="pointer-events-none" />
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
               </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>品牌/规格型号</div>
-              <div className="w-[37.5%] p-2 flex items-center relative cursor-pointer" onClick={() => {if (!formData.brand) setIsBrandModalOpen(true); else setIsModelModalOpen(true);}}>
-                <Input value={formData.brand && formData.modelCode ? formData.brand + " / " + formData.modelCode : (formData.brand || "请先选择品牌")} placeholder="请选择" readOnly className="pointer-events-none" />
+              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">配置描述</div>
+              <div className="w-[37.5%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsConfigModalOpen(true)}>
+                <Input value={formData.configDesc || ''} placeholder="请选择配置" readOnly className="pointer-events-none" />
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
               </div>
             </div>
@@ -202,7 +202,7 @@ const MaterialComprehensiveView = () => {
             </div>
           </div>
         </div>
-        {/* 状态字段 */}
+状态字段 */}
         <div className="mb-4">
           <div className="bg-[#f6ffed] border border-[#b7eb8f] px-4 py-2 rounded-t text-sm font-medium text-[#52c41a]">
             状态字段
