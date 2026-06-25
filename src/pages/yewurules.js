@@ -1008,6 +1008,7 @@ const ConfigView = () => {
   const [modalMode, setModalMode] = useState('add');
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
+  const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
   const [formData, setFormData] = useState({ brand: '', model: '', code: '', desc: '', enabled: '1' });
   const handleAdd = () => {
     setModalMode('add');
@@ -1033,17 +1034,17 @@ const ConfigView = () => {
   return (
     <div className="flex flex-col gap-4">
       <QueryBar>
-      <QueryItem label="品牌编码">
-          <Input placeholder="请输入品牌编码" />
+      <QueryItem label="品牌">
+          <div className="relative w-full cursor-pointer" onClick={() => setIsBrandModalOpen(true)}>
+            <Input placeholder="请选择品牌" readOnly className="pointer-events-none" />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+          </div>
         </QueryItem>
-      <QueryItem label="品牌型号">
-          <Input placeholder="请输入品牌型号" />
-        </QueryItem>
-      <QueryItem label="规格型号编码">
-          <Input placeholder="请输入编码" />
-        </QueryItem>
-      <QueryItem label="规格型号描述">
-          <Input placeholder="请输入描述" />
+      <QueryItem label="型号">
+          <div className="relative w-full cursor-pointer" onClick={() => setIsModelModalOpen(true)}>
+            <Input placeholder="请选择型号" readOnly className="pointer-events-none" />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+          </div>
         </QueryItem>
       <QueryItem label="配置编码">
           <Input placeholder="请输入编码" />
@@ -1069,30 +1070,50 @@ const ConfigView = () => {
         <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
       </div>
       <Modal open={isModalOpen} onCancel={() => setIsModalOpen(false)} footer={null} title={modalMode === 'add' ? '新增配置' : '编辑配置'} width="900px">
-        <div className="border border-[#e8e8e8] text-sm mb-4">
-          <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>品牌型号</div>
-            <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsModelModalOpen(true)}>
-              <Input value={formData.brand && formData.model ? `${formData.brand} / ${formData.model}` : ''} placeholder="请选择品牌型号" readOnly className="pointer-events-none" />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+        <div className="border border-[#e8e8e8] text-sm mb-4">{modalMode === 'edit' ? (
+              <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+                <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>品牌</div>
+                <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
+                  <Input value={formData.brand || ""} disabled />
+                </div>
+                <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>型号</div>
+                <div className="w-[35%] p-2 flex items-center">
+                  <Input value={formData.model || ""} disabled />
+                </div>
+              </div>
+            ) : (
+              <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+                <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>品牌</div>
+                <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
+                  <Input value={formData.brand || ""} disabled />
+                </div>
+                <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>型号</div>
+                <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsModelModalOpen(true)}>
+                  <Input value={formData.brand && formData.model ? formData.brand + " / " + formData.model : ""} placeholder="请选择型号" readOnly className="pointer-events-none" />
+                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+                </div>
+              </div>
+            )}
+            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>配置编码</div>
+              <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
+                <Input value={formData.code} disabled onChange={(e) => setFormData({...formData, code: e.target.value})} placeholder="请输入编码" />
+              </div>
+              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>配置描述</div>
+              <div className="w-[35%] p-2 flex items-center">
+                <Input value={formData.desc} onChange={(e) => setFormData({...formData, desc: e.target.value})} placeholder="请输入描述" />
+              </div>
             </div>
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>配置编码</div>
-            <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
-              <Input value={formData.code} disabled={true} onChange={(e) => setFormData({...formData, code: e.target.value})} placeholder="请输入编码" />
+            <div className="flex min-h-[40px]">
+              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>是否启用</div>
+              <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
+                <Radio checked={formData.enabled === '1'} onChange={() => setFormData({...formData, enabled: '1'})} label="是" />
+                <Radio checked={formData.enabled === '0'} onChange={() => setFormData({...formData, enabled: '0'})} label="否" />
+              </div>
+              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700"></div>
+              <div className="w-[35%] p-2 flex items-center"></div>
             </div>
           </div>
-          <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>配置描述</div>
-            <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
-              <Input value={formData.desc} onChange={(e) => setFormData({...formData, desc: e.target.value})} placeholder="请输入描述" />
-            </div>
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>是否启用</div>
-            <div className="w-[35%] p-2 flex items-center gap-4 px-3">
-              <Radio checked={formData.enabled === '1'} onChange={() => setFormData({...formData, enabled: '1'})} label="是" />
-              <Radio checked={formData.enabled === '0'} onChange={() => setFormData({...formData, enabled: '0'})} label="否" />
-            </div>
-          </div>
-        </div>
         <div className="flex justify-center gap-3 mt-6">
           <Button type="primary" onClick={() => setIsModalOpen(false)} className="px-6">保存</Button>
           <Button type="default" onClick={() => setIsModalOpen(false)} className="px-6">返回</Button>
@@ -1108,6 +1129,30 @@ const ConfigView = () => {
         </div>
       </Modal>
       <SelectModal
+        open={isBrandModalOpen}
+        title="选择品牌"
+        dataSource={mockBrands}
+        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsBrandModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({ ...formData, brand: record.desc });
+          setIsBrandModalOpen(false);
+        }}
+      />
+<SelectModal
+        open={isBrandModalOpen}
+        title="选择品牌"
+        dataSource={mockBrands}
+        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsBrandModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({ ...formData, brand: record.desc });
+          setIsBrandModalOpen(false);
+        }}
+      />
+<SelectModal
         open={isModelModalOpen}
         title="选择型号"
         dataSource={mockModels.filter(function(m) { return !formData.brand || m.brand === formData.brand })}
