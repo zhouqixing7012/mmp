@@ -61,11 +61,17 @@ const MaterialComprehensiveView = () => {
   };
   const handleEdit = (record) => {
     setModalMode('edit');
-    setFormData({ ...formData, ...record });
+    setFormData({
+      ...formData,
+      ...record,
+      mainCatDesc: record.mainCatDesc || record.catDesc || '',
+      modelDesc: record.modelDesc || record.model || '',
+      modelCode: record.modelCode || record.model || '',
+    });
     setIsModalOpen(true);
   };
   const columns = [
-    { title: '序号', dataIndex: 'id', width: 60, fixed: 'left' },
+    { title: '序号', dataIndex: 'id', width: 60 },
     { title: '维度组合编码', dataIndex: 'code', width: 140 },
     { title: '维度组合描述', dataIndex: 'desc', width: 180 },
     { title: '物料总类', dataIndex: 'mainCatCode', width: 100, render: (val) => val === '1' ? '资产' : val === '2' ? '耗材' : val === '3' ? '低值耐用品' : '-' },
@@ -77,11 +83,11 @@ const MaterialComprehensiveView = () => {
     { title: '单位', dataIndex: 'unit', width: 80 },
     { title: '参考价格', dataIndex: 'refPrice', width: 100, render: (val) => val || '0.00' },
     { title: '是否启用', dataIndex: 'enabled', width: 90, render: (val) => <StatusTag value={val} type="enabled" /> },
-    { title: '是否停产', dataIndex: 'isStop', width: 90, render: (val) => <StatusTag value={val} type="stop" /> },
+    { title: '是否停产', dataIndex: 'isStop', width: 90, render: (val) => <StatusTag value={val} /> },
     { title: '正式员工可申请', dataIndex: 'formalCanApply', width: 120, render: (val) => val || '-' },
     { title: '实习生可申请', dataIndex: 'internCanApply', width: 110, render: (val) => val || '-' },
     { title: '是否允许退库', dataIndex: 'allowReturn', width: 110, render: (val) => <StatusTag value={val} /> },
-    { title: '是否需要盘点', dataIndex: 'needCheck', width: 100, render: (val) => val === '是' ? '需要' : val === '否' ? '不需要' : '-' },
+    { title: '是否需要盘点', dataIndex: 'needCheck', width: 100, render: (val) => <StatusTag value={val} /> },
     { title: '退库是否需要MIS鉴定', dataIndex: 'misIdentifyOnReturn', width: 140, render: (val) => <StatusTag value={val} /> },
     { title: '耗材申请是否需要MIS审核', dataIndex: 'misAudit', width: 160, render: (val) => <StatusTag value={val} /> },
     { title: '是否关联主资产', dataIndex: 'hasMainAsset', width: 120, render: (val) => <StatusTag value={val} /> },
@@ -167,29 +173,66 @@ const MaterialComprehensiveView = () => {
                 <Input value={formData.brand && formData.modelCode ? formData.brand + "." + formData.modelCode : "请先选择品牌/规格型号"} disabled={true} className="bg-[#f5f5f5]" />
               </div>
             </div>
-            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料总类</div>
-              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center">
-                <Select value={formData.mainCatCode} onChange={(value) => setFormData({...formData, mainCatCode: value})} options={[{label:'资产', value:'1'}, {label:'耗材', value:'2'}, {label:'低值耐用品', value:'3'}]} className="w-full"  placeholder="请选择" allowClear />
-              </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料大类/小类</div>
-              <div className="w-[37.5%] p-2 flex items-center relative cursor-pointer" onClick={() => {if (formData.mainCatDesc) setIsSubCategoryModalOpen(true); else setIsMaterialCategoryModalOpen(true);}}>
-                <Input value={formData.mainCatDesc && formData.subCatDesc ? formData.mainCatDesc + ' / ' + formData.subCatDesc : (formData.mainCatDesc || '请先选择物料大类')} placeholder="请选择" readOnly className="pointer-events-none" />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
-              </div>
-            </div>
-            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>品牌/规格型号</div>
-              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => {if (!formData.brand) setIsBrandModalOpen(true); else setIsModelModalOpen(true);}}>
-                <Input value={formData.brand && formData.modelCode ? formData.brand + " / " + formData.modelCode : (formData.brand || "请先选择品牌")} placeholder="请选择" readOnly className="pointer-events-none" />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
-              </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">配置描述</div>
-              <div className="w-[37.5%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsConfigModalOpen(true)}>
-                <Input value={formData.configDesc || ''} placeholder="请选择配置" readOnly className="pointer-events-none" />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
-              </div>
-            </div>
+            {modalMode === 'add' ? (
+              <>
+                <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+                  <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料总类</div>
+                  <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center">
+                    <Select value={formData.mainCatCode} onChange={(value) => setFormData({...formData, mainCatCode: value})} options={[{label:'资产', value:'1'}, {label:'耗材', value:'2'}, {label:'低值耐用品', value:'3'}]} className="w-full" placeholder="请选择" allowClear />
+                  </div>
+                  <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料大类/小类</div>
+                  <div className="w-[37.5%] p-2 flex items-center relative cursor-pointer" onClick={() => {if (formData.mainCatDesc) setIsSubCategoryModalOpen(true); else setIsMaterialCategoryModalOpen(true);}}>
+                    <Input value={formData.mainCatDesc && formData.subCatDesc ? formData.mainCatDesc + ' / ' + formData.subCatDesc : (formData.mainCatDesc || '请先选择物料大类')} placeholder="请选择" readOnly className="pointer-events-none" />
+                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+                  </div>
+                </div>
+                <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+                  <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>品牌/规格型号</div>
+                  <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => {if (!formData.brand) setIsBrandModalOpen(true); else setIsModelModalOpen(true);}}>
+                    <Input value={formData.brand && formData.modelCode ? formData.brand + " / " + formData.modelCode : (formData.brand || "请先选择品牌")} placeholder="请选择" readOnly className="pointer-events-none" />
+                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+                  </div>
+                  <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">配置描述</div>
+                  <div className="w-[37.5%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsConfigModalOpen(true)}>
+                    <Input value={formData.configDesc || ''} placeholder="请选择配置" readOnly className="pointer-events-none" />
+                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+                  <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料总类</div>
+                  <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center">
+                    <Select value={formData.mainCatCode} disabled className="w-full" options={[{label:'资产', value:'1'}, {label:'耗材', value:'2'}, {label:'低值耐用品', value:'3'}]} />
+                  </div>
+                  <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料大类</div>
+                  <div className="w-[37.5%] p-2 flex items-center">
+                    <Input value={formData.mainCatDesc || ''} disabled />
+                  </div>
+                </div>
+                <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+                  <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料小类</div>
+                  <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center">
+                    <Input value={formData.subCatDesc || ''} disabled />
+                  </div>
+                  <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>品牌</div>
+                  <div className="w-[37.5%] p-2 flex items-center">
+                    <Input value={formData.brand || ''} disabled />
+                  </div>
+                </div>
+                <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+                  <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>规格型号</div>
+                  <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center">
+                    <Input value={formData.modelDesc || formData.model || ''} disabled />
+                  </div>
+                  <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">配置</div>
+                  <div className="w-[37.5%] p-2 flex items-center">
+                    <Input value={formData.configDesc || ''} disabled />
+                  </div>
+                </div>
+              </>
+            )}
             <div className="flex min-h-[40px]">
               <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">单位</div>
               <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center">
@@ -320,8 +363,8 @@ const MaterialComprehensiveView = () => {
                   label: '是否需要盘点',
                   content: (
                     <div className="flex items-center gap-4 px-3">
-                      <Radio checked={formData.needCheck==='是'} onChange={() => setFormData({...formData, needCheck: '是'})}>需要</Radio>
-                      <Radio checked={formData.needCheck==='否'} onChange={() => setFormData({...formData, needCheck: '否'})}>不需要</Radio>
+                      <Radio checked={formData.needCheck==='是'} onChange={() => setFormData({...formData, needCheck: '是'})}>是</Radio>
+                      <Radio checked={formData.needCheck==='否'} onChange={() => setFormData({...formData, needCheck: '否'})}>否</Radio>
                     </div>
                   ),
                 },
