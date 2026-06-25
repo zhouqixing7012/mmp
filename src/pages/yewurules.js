@@ -244,24 +244,18 @@ const MaterialComprehensiveView = () => {
                 <Radio checked={formData.needCheck==='是'} onChange={() => setFormData({...formData, needCheck: '是'})}>需要</Radio>
                 <Radio checked={formData.needCheck==='否'} onChange={() => setFormData({...formData, needCheck: '否'})}>不需要</Radio>
               </div>
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">退库是否需要MIS鉴定</div>
-              <div className="w-[37.5%] p-2 flex items-center gap-4 px-3">
-                <Radio checked={formData.misIdentifyOnReturn==='1'} onChange={() => setFormData({...formData, misIdentifyOnReturn: '1'})}>是</Radio>
-                <Radio checked={formData.misIdentifyOnReturn==='0'} onChange={() => setFormData({...formData, misIdentifyOnReturn: '0'})}>否</Radio>
-              </div>
+              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"></div>
+              <div className="w-[37.5%] p-2 flex items-center"></div>
             </div>
             <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">耗材申请是否需要MIS审核</div>
-              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
-                <Radio checked={formData.misAudit==='1'} onChange={() => setFormData({...formData, misAudit: '1'})}>是</Radio>
-                <Radio checked={formData.misAudit==='0'} onChange={() => setFormData({...formData, misAudit: '0'})}>否</Radio>
-              </div>
               <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">正式员工可申请</div>
               <div className="w-[37.5%] p-2 flex items-center gap-2 px-3">
                 <Radio checked={formData.formalCanApply==='是'} onChange={() => setFormData({...formData, formalCanApply: '是'})}>是</Radio>
                 <Radio checked={formData.formalCanApply==='否'} onChange={() => setFormData({...formData, formalCanApply: '否'})}>否</Radio>
                 <Radio checked={formData.formalCanApply==='临时可申请'} onChange={() => setFormData({...formData, formalCanApply: '临时可申请'})}>临时可申请</Radio>
               </div>
+              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"></div>
+              <div className="w-[37.5%] p-2 flex items-center"></div>
             </div>
             {formData.formalCanApply !== '临时可申请' && (
             <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
@@ -308,6 +302,11 @@ const MaterialComprehensiveView = () => {
             )}
             {(formData.mainCatCode === '2' || formData.mainCatCode === '3') && (
             <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">耗材申请是否需要MIS审核</div>
+              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
+                <Radio checked={formData.misAudit==='1'} onChange={() => setFormData({...formData, misAudit: '1'})}>是</Radio>
+                <Radio checked={formData.misAudit==='0'} onChange={() => setFormData({...formData, misAudit: '0'})}>否</Radio>
+              </div>
               <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">是否关联主资产</div>
               <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center">
                 <Select value={formData.hasMainAsset} onChange={(value) => setFormData({...formData, hasMainAsset: value})} options={[{label:'是', value:'1'}, {label:'否', value:'0'}]} placeholder="请选择" allowClear className="w-full" />
@@ -328,7 +327,12 @@ const MaterialComprehensiveView = () => {
             </div>
             )}
             {formData.mainCatCode === '1' && (
-            <div className="flex min-h-[40px]">
+            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+              <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">退库是否需要MIS鉴定</div>
+              <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
+                <Radio checked={formData.misIdentifyOnReturn==='1'} onChange={() => setFormData({...formData, misIdentifyOnReturn: '1'})}>是</Radio>
+                <Radio checked={formData.misIdentifyOnReturn==='0'} onChange={() => setFormData({...formData, misIdentifyOnReturn: '0'})}>否</Radio>
+              </div>
               <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">是否允许更换</div>
               <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
                 <Radio checked={formData.allowReplace==='1'} onChange={() => setFormData({...formData, allowReplace: '1'})}>是</Radio>
