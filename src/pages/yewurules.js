@@ -277,9 +277,9 @@ const MaterialComprehensiveView = () => {
                   label: '可申请部门',
                   visible: formData.formalCanApply === '临时可申请',
                   content: (
-                    <div className="flex items-center relative">
-                      <Input value={formData.tempDept || ''} placeholder="请选择部门" readOnly className="pointer-events-none bg-white" />
-                      <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
+                    <div className="flex items-center relative w-full">
+                      <Input value={formData.tempDept || ''} placeholder="请选择部门" readOnly className="pointer-events-none bg-white w-full" />
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
                     </div>
                   ),
                 },
@@ -288,9 +288,9 @@ const MaterialComprehensiveView = () => {
                   label: '可申请员工',
                   visible: formData.formalCanApply === '临时可申请',
                   content: (
-                    <div className="flex items-center relative">
-                      <Input value={formData.tempEmployee || ''} placeholder="请选择员工" readOnly className="pointer-events-none bg-white" />
-                      <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
+                    <div className="flex items-center relative w-full">
+                      <Input value={formData.tempEmployee || ''} placeholder="请选择员工" readOnly className="pointer-events-none bg-white w-full" />
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
                     </div>
                   ),
                 },
@@ -306,7 +306,7 @@ const MaterialComprehensiveView = () => {
               } else if (formData.mainCatCode === '2' || formData.mainCatCode === '3') {
                 conditionFields.push(
                   { key: 'misAudit', label: '耗材申请是否需要MIS审核', content: (<div className="flex items-center gap-4 px-3"><Radio checked={formData.misAudit==='1'} onChange={() => setFormData({...formData, misAudit: '1'})}>是</Radio><Radio checked={formData.misAudit==='0'} onChange={() => setFormData({...formData, misAudit: '0'})}>否</Radio></div>) },
-                  { key: 'hasMainAsset', label: '是否关联主资产', content: (<div className="flex items-center"><Select value={formData.hasMainAsset} onChange={(value) => setFormData({...formData, hasMainAsset: value})} options={[{label:'是', value:'1'}, {label:'否', value:'0'}]} placeholder="请选择" allowClear className="w-full" /></div>) },
+                  { key: 'hasMainAsset', label: '是否关联主资产', content: (<div className="flex items-center gap-4 px-3"><Radio checked={formData.hasMainAsset==='1'} onChange={() => setFormData({...formData, hasMainAsset: '1'})}>是</Radio><Radio checked={formData.hasMainAsset==='0'} onChange={() => setFormData({...formData, hasMainAsset: '0'})}>否</Radio></div>) },
                 );
                 if (formData.hasMainAsset === '1') {
                   conditionFields.push(
