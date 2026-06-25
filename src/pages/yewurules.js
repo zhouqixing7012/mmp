@@ -699,11 +699,11 @@ const MaterialSubCategoryView = () => {
   return (
     <div className="flex flex-col gap-4">
       <QueryBar>
-      <QueryItem label="物料大类编号">
-          <Input placeholder="请输入大类编号" />
-        </QueryItem>
-      <QueryItem label="物料大类描述">
-          <Input placeholder="请输入大类描述" />
+      <QueryItem label="物料大类">
+          <div className="relative w-full cursor-pointer" onClick={() => setIsMaterialCategoryModalOpen(true)}>
+            <Input placeholder="请选择物料大类" readOnly className="pointer-events-none" />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+          </div>
         </QueryItem>
       <QueryItem label="物料小类编号">
           <Input placeholder="请输入小类编号" />
@@ -731,37 +731,35 @@ const MaterialSubCategoryView = () => {
       <Modal open={isModalOpen} onCancel={() => setIsModalOpen(false)} footer={null} title={modalMode === 'add' ? '新增物料小类' : '编辑物料小类'} width="900px">
         <div className="border border-[#e8e8e8] text-sm mb-4">
           <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料大类编号</div>
-            <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsMaterialCategoryModalOpen(true)}>
-              <Input value={formData.mainCatCode} onChange={(e) => setFormData({...formData, mainCatCode: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料大类</div>
+              {modalMode === 'edit'? (
+                <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
+                  <Input value={formData.mainCatCode && formData.mainCatDesc ? formData.mainCatCode + " - " + formData.mainCatDesc : ""} disabled />
+                </div>
+              ) : (
+                <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsMaterialCategoryModalOpen(true)}>
+                  <Input value={formData.mainCatCode && formData.mainCatDesc ? formData.mainCatCode + " - " + formData.mainCatDesc : ""} placeholder="请选择物料大类" readOnly className="pointer-events-none" />
+                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+                </div>
+              )}
+              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料小类描述</div>
+              <div className="w-[35%] p-2 flex items-center">
+                <Input value={formData.subDesc} onChange={(e) => setFormData({...formData, subDesc: e.target.value})} />
+              </div>
             </div>
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">物料大类描述</div>
-            <div className="w-[35%] p-2 flex items-center">
-              <Input value={formData.mainCatDesc} onChange={(e) => setFormData({...formData, mainCatDesc: e.target.value})} />
+            <div className="flex min-h-[40px]">
+              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>是否启用</div>
+              <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
+                <Radio checked={formData.enabled === '1'} onChange={() => setFormData({...formData, enabled: '1'})} label="是" />
+                <Radio checked={formData.enabled === '0'} onChange={() => setFormData({...formData, enabled: '0'})} label="否" />
+              </div>
+              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>是否允许借用</div>
+              <div className="w-[35%] p-2 flex items-center gap-4 px-3">
+                <Radio checked={formData.borrowable === '1'} onChange={() => setFormData({...formData, borrowable: '1'})} label="是" />
+                <Radio checked={formData.borrowable === '0'} onChange={() => setFormData({...formData, borrowable: '0'})} label="否" />
+              </div>
             </div>
           </div>
-          <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料小类描述</div>
-            <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
-              <Input value={formData.subDesc} onChange={(e) => setFormData({...formData, subDesc: e.target.value})} />
-            </div>
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>是否启用</div>
-            <div className="w-[35%] p-2 flex items-center gap-4 px-3">
-              <Radio checked={formData.enabled === '1'} onChange={() => setFormData({...formData, enabled: '1'})} label="是" />
-              <Radio checked={formData.enabled === '0'} onChange={() => setFormData({...formData, enabled: '0'})} label="否" />
-            </div>
-          </div>
-          <div className="flex min-h-[40px]">
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>是否允许借用</div>
-            <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
-              <Radio checked={formData.borrowable === '1'} onChange={() => setFormData({...formData, borrowable: '1'})} label="是" />
-              <Radio checked={formData.borrowable === '0'} onChange={() => setFormData({...formData, borrowable: '0'})} label="否" />
-            </div>
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700"></div>
-            <div className="w-[35%] p-2 flex items-center"></div>
-          </div>
-        </div>
         <div className="flex justify-center gap-3 mt-6">
           <Button type="primary" onClick={() => setIsModalOpen(false)} className="px-6">保存</Button>
           <Button type="default" onClick={() => setIsModalOpen(false)} className="px-6">返回</Button>
