@@ -90,20 +90,42 @@ export const mockModelListData = [
 ];
  
  export const mockNOServiceData = [
-   { id: 1, brand: '三星', model: 'Galaxy S8+', code: '001', desc: 'G9550 64G 全网通', enabled: true },
- ];
- 
- export const mockOfficeWarehouseData = [
-   { id: 1, desc: '17173' },
-   { id: 2, desc: 'MediaPlatform' },
- ];
- 
- export const mockEmployeeMappingData = [
-   { id: 1, company: 'WJS_北京搜狐互...', dept: 'D0164_搜狐媒体_社会...', office: 'L062_北京-搜狐媒体大厦...', warehouse: 'I0015_资产库(前台库)(互联网)...', enabled: true },
- ];
+ { id: 1, brand: '三星', model: 'Galaxy S8+', code: '001', desc: 'G9550 64G 全网通', enabled: true },
+];
+
+// 办公区
+export const mockOffices = [
+  { id: 1, code: 'L062', desc: '北京-搜狐媒体大厦' },
+  { id: 2, code: 'L063', desc: '北京-搜狐网络大厦' },
+  { id: 3, code: 'L064', desc: '上海-搜狐媒体大厦' },
+];
+
+export const mockOfficeWarehouseData = [
+  { id: 1, company: 'WJS.北京搜狐互联网信息服务有限公司', dept: 'D0164.搜狐媒体.社交产品中心', office: 'L062.北京-搜狐媒体大厦', warehouse: 'I0015.资产集团前台库（互联网）', enabled: true },
+  { id: 2, company: '420.上海搜狐互联网有限公司', dept: 'D0164.搜狐媒体.社交产品中心', office: 'L064.上海-搜狐媒体大厦', warehouse: 'I3001.资产库上海库', enabled: true },
+];
+
+// 城市
+export const mockCities = [
+  { id: 1, code: 'CT0001', desc: '北京' },
+  { id: 2, code: 'CT0002', desc: '上海' },
+  { id: 3, code: 'CT0003', desc: '深圳' },
+];
+
+// 建筑
+export const mockBuildings = [
+  { id: 1, code: '206', desc: '缺省' },
+  { id: 2, code: 'SOHU01', desc: '搜狐媒体大厦' },
+  { id: 3, code: 'NETC01', desc: '联通数据中心' },
+];
+
+export const mockEmployeeMappingData = [
+  { id: 1, company: 'WJS_北京搜狐互...', dept: 'D0164_搜狐媒体_社会...', office: 'L062_北京-搜狐媒体大厦...', warehouse: 'I0015_资产库(前台库)(互联网)...', enabled: true },
+];
  
  export const mockNOLocationData = [
-   { id: 1, company: '420_上海搜狐互...', config: '标准台式设计机', city: 'CT0002_上海', desc: '芝麻 EIZO SX2262W显示器...', qty: 1, dept: 'ES', enabled: true },
+  { id: 1, code: 'SDZZ_CH1', desc: '枣庄联通机房', info: '山东省市中区长白山路2666号联通数据中心', city: '68.山东省-枣庄市', building: '206.联通数据中心', floor: '3层', enabled: true },
+  { id: 2, code: 'SDZZ_CU1', desc: '青岛联通', info: '青岛市苗岭路11号4楼 秦岭路IDC机房', city: '68.山东省-青岛市', building: '206.缺省', floor: '缺省', enabled: true },
  ];
  
 export const mockVirtualWarehouseData = [

@@ -16,6 +16,9 @@ import {
   mockCompanies, mockDepartments, mockWarehouses,
   mockComprehensiveData, mockCategoryData, mockSubCategoryData,
   mockBrandListData, mockModelListData, mockNOServiceData,
+  mockOffices,
+  mockBuildings,
+  mockCities,
   mockOfficeWarehouseData, mockEmployeeMappingData, mockNOLocationData,
   mockVirtualWarehouseData, mockVirtualWarehouseManagerData,
   mockPlateLedgerData, mockCompanyPlateAuthData, mockNODeviceAuthData,
@@ -180,7 +183,6 @@ const MaterialComprehensiveView = () => {
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
         <div data-prototype-anchor="material-table-toolbar" className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
           <Button type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</Button>
           <Button type="default" className="text-red-500" icon={<XCircle size={14} />}>停用</Button>
           <div className="relative">
@@ -1204,8 +1206,9 @@ const OfficeWarehouseMappingView = () => {
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
   const [isDepartmentModalOpen, setIsDepartmentModalOpen] = useState(false);
-  const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ company: '', dept: '', office: '', warehouse: '', enabled: '' });
+ const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
+  const [isOfficeModalOpen, setIsOfficeModalOpen] = useState(false);
+ const [formData, setFormData] = useState({ company: '', dept: '', office: '', warehouse: '', enabled: '' });
   const handleAdd = () => {
     setModalMode('add');
     setFormData({ company: '', dept: '', office: '', warehouse: '', enabled: '1' });
@@ -1265,7 +1268,6 @@ const OfficeWarehouseMappingView = () => {
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
           <Button type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</Button>
           <Button type="default" className="text-red-500" icon={<XCircle size={14} />}>停用</Button>
           <Button type="default" icon={<Edit size={14} />} onClick={() => setIsBatchModalOpen(true)}>批量修改</Button>
@@ -1288,10 +1290,10 @@ const OfficeWarehouseMappingView = () => {
           </div>
           <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>办公区</div>
-            <div className="w-[35%] p-2 flex items-center">
-              <Input value={formData.office} onChange={(e) => setFormData({...formData, office: e.target.value})} placeholder="请选择办公区" />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
-            </div>
+            <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsOfficeModalOpen(true)}>
+              <Input value={formData.office} onChange={(e) => setFormData({...formData, office: e.target.value})} placeholder="请选择办公区" readOnly className="pointer-events-none" />
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+              </div>
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>仓库</div>
             <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsWarehouseModalOpen(true)}>
               <Input value={formData.warehouse} onChange={(e) => setFormData({...formData, warehouse: e.target.value})} placeholder="请选择仓库" readOnly className="pointer-events-none" />
@@ -1367,6 +1369,21 @@ const OfficeWarehouseMappingView = () => {
           setIsWarehouseModalOpen(false);
         }}
       />
+      <SelectModal
+        open={isOfficeModalOpen}
+        title="选择办公区"
+        dataSource={mockOffices}
+        columns={[{ title: '办公区编码', dataIndex: 'code' }, { title: '办公区描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '办公区编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '办公区描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsOfficeModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          office: record.desc
+          });
+          setIsOfficeModalOpen(false);
+        }}
+      />
     </div>
   );
 };
@@ -1377,6 +1394,7 @@ const PSNewEmployeeMappingView = () => {
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isCityModalOpen, setIsCityModalOpen] = useState(false);
   const [formData, setFormData] = useState({ company: '', config: '', city: '', desc: '', qty: '', dept: '', enabled: '' });
   const handleAdd = () => {
     setModalMode('add');
@@ -1450,7 +1468,6 @@ const PSNewEmployeeMappingView = () => {
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
           <Button type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</Button>
           <Button type="default" className="text-red-500" icon={<XCircle size={14} />}>停用</Button>
           <Button type="default" icon={<Edit size={14} />} onClick={() => setIsBatchModalOpen(true)}>批量修改</Button>
@@ -1466,16 +1483,15 @@ const PSNewEmployeeMappingView = () => {
               <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
             </div>
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>资产配置</div>
-            <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsConfigModalOpen(true)}>
-              <Input value={formData.config} onChange={(e) => setFormData({...formData, config: e.target.value})} placeholder="请选择配置" readOnly className="pointer-events-none" />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+            <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
+              <Select style={{ width: '100%' }} value={formData.config} onChange={(value) => setFormData({...formData, config: value})} options={[{label:'标准台式设计机', value:'标准台式设计机'}, {label:'标准笔记本配置', value:'标准笔记本配置'}]} placeholder="请选择" allowClear />
             </div>
           </div>
           <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>City</div>
-            <div className="w-[35%] p-2 flex items-center">
-              <Input value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} placeholder="请选择City" />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
+            <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsCityModalOpen(true)}>
+              <Input value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} placeholder="请选择City" readOnly className="pointer-events-none" />
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
             </div>
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料描述</div>
             <div className="w-[35%] p-2 flex items-center relative">
@@ -1486,11 +1502,11 @@ const PSNewEmployeeMappingView = () => {
           <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>处理部门</div>
             <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
-              <Select value={formData.dept} onChange={(value) => setFormData({...formData, dept: value})} options={[{label:'MIS', value:'MIS'}, {label:'ES', value:'ES'}]}  placeholder="请选择" allowClear />
+              <Select style={{ width: '100%' }} value={formData.dept} onChange={(value) => setFormData({...formData, dept: value})} options={[{label:'MIS', value:'MIS'}, {label:'ES', value:'ES'}]}  placeholder="请选择" allowClear />
             </div>
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>数量</div>
             <div className="w-[35%] p-2 flex items-center">
-              <Input type="number" value={formData.qty} onChange={(e) => setFormData({...formData, qty: e.target.value})} placeholder="请输入数量" />
+              <Input type="number" value={formData.qty} onChange={(e) => setFormData({...formData, qty: e.target.value})} placeholder="请输入数量" min={0} />
             </div>
           </div>
           <div className="flex min-h-[40px]">
@@ -1533,18 +1549,18 @@ const PSNewEmployeeMappingView = () => {
         }}
       />
       <SelectModal
-        open={isConfigModalOpen}
-        title="选择配置"
-        dataSource={mockConfigs}
-        columns={[{ title: '品牌', dataIndex: 'brand' }, { title: '型号', dataIndex: 'model' }, { title: '配置编码', dataIndex: 'code' }, { title: '配置描述', dataIndex: 'desc' }]}
-        searchFields={[{ label: '品牌', name: 'brand', dataIndex: 'brand' }, { label: '型号', name: 'model', dataIndex: 'model' }, { label: '配置编码', name: 'code', dataIndex: 'code' }, { label: '配置描述', name: 'desc', dataIndex: 'desc' }]}
-        onCancel={() => setIsConfigModalOpen(false)}
+        open={isCityModalOpen}
+        title="选择City"
+        dataSource={mockCities}
+        columns={[{ title: '城市编码', dataIndex: 'code' }, { title: '城市描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '城市编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '城市描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsCityModalOpen(false)}
         onConfirm={(record) => {
           setFormData({
           ...formData,
-          config: record.desc
+          city: record.desc
           });
-          setIsConfigModalOpen(false);
+          setIsCityModalOpen(false);
         }}
       />
     </div>
@@ -1555,15 +1571,17 @@ const NOLocationMappingView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('add');
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ code: '', desc: '', info: '', city: '', building: '', floor: '' });
+  const [isCityModalOpen, setIsCityModalOpen] = useState(false);
+  const [isBuildingModalOpen, setIsBuildingModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ code: '', desc: '', info: '', city: '', building: '', floor: '', enabled: '1' });
   const handleAdd = () => {
     setModalMode('add');
-    setFormData({ code: '', desc: '', info: '', city: '', building: '', floor: '' });
+    setFormData({ code: '', desc: '', info: '', city: '', building: '', floor: '', enabled: '1' });
     setIsModalOpen(true);
   };
   const handleEdit = (record) => {
     setModalMode('edit');
-    setFormData({ code: record.code, desc: record.desc, info: record.info, city: record.city, building: record.building, floor: record.floor });
+    setFormData({ code: record.code, desc: record.desc, info: record.info, city: record.city, building: record.building, floor: record.floor, enabled: record.enabled ? '1' : '0' });
     setIsModalOpen(true);
   };
   const columns = [
@@ -1598,7 +1616,6 @@ const NOLocationMappingView = () => {
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
           <Button type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</Button>
           <Button type="default" className="text-red-500" icon={<XCircle size={14} />}>停用</Button>
           <Button type="default" className="text-green-600" icon={<RefreshCcw size={14} />}>刷新</Button>
@@ -1626,20 +1643,29 @@ const NOLocationMappingView = () => {
           </div>
           <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>City</div>
-            <div className="w-[35%] p-2 flex items-center">
-              <Input value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} placeholder="请选择City" />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
+            <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsCityModalOpen(true)}>
+              <Input value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} placeholder="请选择City" readOnly className="pointer-events-none" />
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
             </div>
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>Building</div>
-            <div className="w-[35%] p-2 flex items-center relative">
-              <Input value={formData.building} onChange={(e) => setFormData({...formData, building: e.target.value})} placeholder="请选择Building" />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
+            <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsBuildingModalOpen(true)}>
+              <Input value={formData.building} onChange={(e) => setFormData({...formData, building: e.target.value})} placeholder="请选择Building" readOnly className="pointer-events-none" />
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
             </div>
           </div>
-          <div className="flex min-h-[40px]">
+          <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>Floor</div>
             <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
-              <Input value={formData.floor} onChange={(e) => setFormData({...formData, floor: e.target.value})} placeholder="请输入Floor" />
+              <Select style={{ width: '100%' }} value={formData.floor} onChange={(value) => setFormData({...formData, floor: value})} options={[{label:'缺省', value:'缺省'}, {label:'1层', value:'1层'}, {label:'2层', value:'2层'}, {label:'3层', value:'3层'}, {label:'B1层', value:'B1层'}]} placeholder="请选择" allowClear />
+            </div>
+            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700"></div>
+            <div className="w-[35%] p-2 flex items-center"></div>
+          </div>
+          <div className="flex min-h-[40px]">
+            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>是否启用</div>
+            <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
+              <Radio checked={formData.enabled === '1'} onChange={() => setFormData({...formData, enabled: '1'})} label="是" />
+              <Radio checked={formData.enabled === '0'} onChange={() => setFormData({...formData, enabled: '0'})} label="否" />
             </div>
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700"></div>
             <div className="w-[35%] p-2 flex items-center"></div>
@@ -1659,6 +1685,36 @@ const NOLocationMappingView = () => {
           </div>
         </div>
       </Modal>
+      <SelectModal
+        open={isCityModalOpen}
+        title="选择City"
+        dataSource={mockCities}
+        columns={[{ title: '城市编码', dataIndex: 'code' }, { title: '城市描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '城市编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '城市描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsCityModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          city: record.desc
+          });
+          setIsCityModalOpen(false);
+        }}
+      />
+      <SelectModal
+        open={isBuildingModalOpen}
+        title="选择Building"
+        dataSource={mockBuildings}
+        columns={[{ title: '建筑编码', dataIndex: 'code' }, { title: '建筑描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '建筑编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '建筑描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsBuildingModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          building: record.desc
+          });
+          setIsBuildingModalOpen(false);
+        }}
+      />
     </div>
   );
 };
@@ -1851,7 +1907,7 @@ const PlateLedgerMappingView = () => {
           <div className="flex min-h-[40px]">
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>是否启用</div>
             <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
-              <Select value={formData.enabled} onChange={(value) => setFormData({...formData, enabled: value})} options={[{label:'是', value:'1'}, {label:'否', value:'0'}]}  placeholder="请选择" allowClear />
+              <Select style={{ width: '100%' }} value={formData.enabled} onChange={(value) => setFormData({...formData, enabled: value})} options={[{label:'是', value:'1'}, {label:'否', value:'0'}]}  placeholder="请选择" allowClear />
             </div>
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700"></div>
             <div className="w-[35%] p-2 flex items-center"></div>
