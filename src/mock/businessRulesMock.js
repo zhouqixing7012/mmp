@@ -134,12 +134,23 @@ export const mockVirtualWarehouseData = [
 ];
  
  export const mockVirtualWarehouseManagerData = [
-   { isGroup: true, groupName: '搜狐' },
    { id: 1, company: '203_搜狐千线', plate: '59_SAAS', virtualAdmin: 'SOHU52-库房管理员-焦点', realAdmin: 'SOHU51-公共管理员-焦点', enabled: true },
  ];
+
+// 虚拟库管员参考数据
+export const mockVirtualAdmins = [
+  { id: 1, code: 'SOHU52', desc: 'SOHU52-库房管理员-焦点' },
+  { id: 2, code: 'SOHU53', desc: 'SOHU53-库房管理员-搜狐媒体' },
+  { id: 3, code: 'SOHU54', desc: 'SOHU54-库房管理员-新媒体' },
+];
+
+// 仓库管理员参考数据
+export const mockRealAdmins = [
+  { id: 1, code: 'SOHU51', desc: 'SOHU51-公共管理员-焦点' },
+  { id: 2, code: 'SOHU55', desc: 'SOHU55-公共管理员-搜狐媒体' },
+];
  
  export const mockPlateLedgerData = [
-   { isGroup: true, groupName: '搜狐' },
    { id: 1, plate: '22_搜索事业部', ledger: 'FA_BOOK_SOGOU', enabled: true },
  ];
  
@@ -219,6 +230,13 @@ export const mockAssetAllocationRuleData = [
     { id: 1, name: '高配影像器材', desc: '方案3', subCat: '摄影摄像-镜头', level: '高端', qty: 3 },
   ];
 // yewurules.js 页面 - Material Request Limit 表格数据
+// 排除小类
+export const mockExcludeSubCats = [
+  { id: 1, code: '12302', desc: '主机-设计主机' },
+  { id: 2, code: '12303', desc: '主机-测试主机' },
+  { id: 3, code: '12304', desc: '笔记本-标准配置' },
+];
+
 export const mockMaterialRequestLimitData = [
     { name: '主机-设计主机', subCat: '12302_主机-设计主机', excludeSubCat: '12302_主机...', excludePerson: '' },
   ];

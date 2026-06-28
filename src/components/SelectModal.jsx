@@ -29,6 +29,7 @@ export default function SelectModal({
    dataSource = [],
    initialSearchValues = DEFAULT_SEARCH_VALUES,
    rowKey = 'id',
+  multiple = false,
  }) {
    const [searchValues, setSearchValues] = useState(() => {
      const init = {};
@@ -36,6 +37,7 @@ export default function SelectModal({
      return init;
    });
    const [selectedKey, setSelectedKey] = useState(null);
+  const [selectedKeys, setSelectedKeys] = useState([]);
  
    const filteredData = dataSource.filter(item => {
      return searchFields.every(field => {
@@ -56,6 +58,7 @@ export default function SelectModal({
     });
     setSearchValues(init);
     setSelectedKey(null);
+      setSelectedKeys([]);
   }, [open, initialSearchValues]);
 
 const resetState = () => {
@@ -66,12 +69,23 @@ const resetState = () => {
    };
  
    const handleConfirm = () => {
-     if (selectedKey) {
-       const selected = filteredData.find(item => String(item[rowKey]) === String(selectedKey));
-       if (selected) {
-        (onConfirm || onSelect)(selected);
-        onCancel();
-        resetState();
+     if (multiple) {
+       if (selectedKeys.length > 0) {
+         const selected = filteredData.filter(item => selectedKeys.includes(String(item[rowKey])));
+         if (selected.length > 0) {
+           (onConfirm || onSelect)(selected);
+           onCancel();
+           resetState();
+         }
+       }
+     } else {
+       if (selectedKey) {
+         const selected = filteredData.find(item => String(item[rowKey]) === String(selectedKey));
+         if (selected) {
+           (onConfirm || onSelect)(selected);
+           onCancel();
+           resetState();
+         }
        }
      }
    };
@@ -128,7 +142,7 @@ const resetState = () => {
                  <tr className="bg-[#fafafa] border-b border-[#f0f0f0]">
                    <th className="px-4 py-3 w-12 text-center">
                      <span className="w-4 h-4 flex items-center justify-center">
-                       <input type="radio" className="w-3.5 h-3.5" disabled />
+                       <input type={multiple ? "checkbox" : "radio"} className="w-3.5 h-3.5" disabled />
                      </span>
                    </th>
                    {columns.map((col, ci) => (
@@ -145,14 +159,22 @@ const resetState = () => {
                        className={`border-b border-[#f0f0f0] cursor-pointer transition-colors ${
                          selectedKey === keyVal ? 'bg-[#e6f7ff]' : 'hover:bg-[#fafafa]'
                        }`}
-                       onClick={() => setSelectedKey(keyVal)}
+                       onClick={() => { if (multiple) { setSelectedKeys(prev => prev.includes(keyVal) ? prev.filter(k => k !== keyVal) : [...prev, keyVal]); } else { setSelectedKey(keyVal); } }}
                      >
                        <td className="px-4 py-3 text-center">
                          <input
-                           type="radio"
+                           type={multiple ? "checkbox" : "radio"}
                            className="w-3.5 h-3.5"
-                           checked={selectedKey === keyVal}
-                           onChange={() => setSelectedKey(keyVal)}
+                           checked={multiple ? selectedKeys.includes(keyVal) : selectedKey === keyVal}
+                           onChange={() => {
+                             if (multiple) {
+                               setSelectedKeys(prev =>
+                                 prev.includes(keyVal) ? prev.filter(k => k !== keyVal) : [...prev, keyVal]
+                               );
+                             } else {
+                               setSelectedKey(keyVal);
+                             }
+                           }}
                          />
                        </td>
                        {columns.map((col, ci) => (
