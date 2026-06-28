@@ -310,9 +310,10 @@ const UserManagementView = () => {
   const [viewingUserId, setViewingUserId] = useState(null); // null 或者 用户ID
 
   // --- 用户管理视图所需 State ---
-  const [expandedKeys, setExpandedKeys] = useState(['D0001', 'D0002']);
-
-  if (viewingUserId) {
+ const [expandedKeys, setExpandedKeys] = useState(['D0001', 'D0002']);
+  const [selectedKey, setSelectedKey] = useState('D0002');
+  const [selectedRows, setSelectedRows] = useState([]);
+ if (viewingUserId) {
     return (
       <div className="bg-white rounded-md shadow-sm border border-gray-200 p-6 flex flex-col h-full overflow-y-auto">
         <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-100 pb-3 mb-6">用户信息</h2>
@@ -550,3 +551,5 @@ function App() {
 }
 
 export { UserManagementView, OrgManagementView };
+
+export default UserManagementView;
