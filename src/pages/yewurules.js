@@ -4365,6 +4365,10 @@ export default function App() {
     if (sub === '费用账户规则') setActiveTab('费用账户规则');
     // if (sub === '资产折旧规则管理') setActiveTab('资产折旧规则管理');
     if (sub === '账套内容维护') setActiveTab('账套内容维护');
+    if (sub === '用户管理') setActiveTab('');
+    if (sub === '组织管理') setActiveTab('');
+    if (sub === '角色管理') setActiveTab('');
+    if (sub === '字典管理') setActiveTab('');
   };
   return (
     <div className="flex h-screen w-full bg-[#f0f2f5] font-sans text-gray-800 overflow-hidden">
