@@ -3885,7 +3885,7 @@ const CostCenterSubjectMappingView = () => {
         onConfirm={(record) => {
           setFormData({
           ...formData,
-          company: record.desc
+          company: record.code + '.' + record.desc
           });
          setIsCompanyModalOpen(false);
        }}
@@ -3900,7 +3900,7 @@ const CostCenterSubjectMappingView = () => {
         onConfirm={(record) => {
           setFormData({
           ...formData,
-          costCenter: record.desc
+          costCenter: record.code + '.' + record.desc
           });
           setIsCostCenterModalOpen(false);
         }}
@@ -3915,7 +3915,7 @@ const CostCenterSubjectMappingView = () => {
         onConfirm={(record) => {
           setFormData({
           ...formData,
-          cat: record.desc
+          cat: record.code + '.' + record.desc
           });
           setIsCatModalOpen(false);
         }}
@@ -3930,7 +3930,7 @@ const CostCenterSubjectMappingView = () => {
         onConfirm={(record) => {
           setFormData({
           ...formData,
-          subject: record.desc
+          subject: record.code + '.' + record.desc
           });
           setIsSubjectModalOpen(false);
         }}
