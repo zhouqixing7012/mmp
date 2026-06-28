@@ -3887,8 +3887,9 @@ const CostCenterSubjectMappingView = () => {
           ...formData,
           company: record.desc
           });
-          setIsCompanyModalOpen(false);
-        }}
+         setIsCompanyModalOpen(false);
+       }}
+      />
       <SelectModal
         open={isCostCenterModalOpen}
         title="选择成本中心"
