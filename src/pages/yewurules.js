@@ -4061,7 +4061,8 @@ const NOServiceSubjectMappingView = () => {
   const [isPlateModalOpen, setIsPlateModalOpen] = useState(false);
   const [isCostCenterModalOpen, setIsCostCenterModalOpen] = useState(false);
  const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ service: '', plate: '', costCenter: '', subject: '', enabled: '1' });
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+ const [formData, setFormData] = useState({ service: '', plate: '', costCenter: '', subject: '', enabled: '1' });
  const handleAdd = () => {
    setModalMode('add');
     setFormData({ service: '', plate: '', costCenter: '', subject: '', enabled: '1' });
@@ -4118,9 +4119,10 @@ const NOServiceSubjectMappingView = () => {
         <div className="border border-[#e8e8e8] text-sm mb-4">
          <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>NO一级服务</div>
-           <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
-             <Input value={formData.service} onChange={(e) => setFormData({...formData, service: e.target.value})} />
-           </div>
+            <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsServiceModalOpen(true)}>
+              <Input value={formData.service} onChange={(e) => setFormData({...formData, service: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+            </div>
            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">板块</div>
             <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsPlateModalOpen(true)}>
               <Input value={formData.plate} onChange={(e) => setFormData({...formData, plate: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
@@ -4155,11 +4157,26 @@ const NOServiceSubjectMappingView = () => {
         </div>
       </Modal>
       <SelectModal
+        open={isServiceModalOpen}
+        title="选择NO一级服务"
+        dataSource={mockNOServiceData}
+        columns={[{ title: "编码", dataIndex: "code" }, { title: "描述", dataIndex: "desc" }]}
+        searchFields={[{ label: "编码", name: "code", dataIndex: "code", placeholder: "请输入编码" }, { label: "描述", name: "desc", dataIndex: "desc", placeholder: "请输入描述" }]}
+        onCancel={() => setIsServiceModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          service: record.code + "." + record.desc
+          });
+          setIsServiceModalOpen(false);
+        }}
+      />
+      <SelectModal
         open={isPlateModalOpen}
-        title="????"
+        title="选择板块"
         dataSource={mockPlates}
-        columns={[{ title: "??", dataIndex: "code" }, { title: "??", dataIndex: "desc" }]}
-        searchFields={[{ label: "??", name: "code", dataIndex: "code", placeholder: "?????" }, { label: "??", name: "desc", dataIndex: "desc", placeholder: "?????" }]}
+        columns={[{ title: "编码", dataIndex: "code" }, { title: "描述", dataIndex: "desc" }]}
+        searchFields={[{ label: "编码", name: "code", dataIndex: "code", placeholder: "请输入编码" }, { label: "描述", name: "desc", dataIndex: "desc", placeholder: "请输入描述" }]}
         onCancel={() => setIsPlateModalOpen(false)}
         onConfirm={(record) => {
           setFormData({
@@ -4171,10 +4188,10 @@ const NOServiceSubjectMappingView = () => {
       />
       <SelectModal
         open={isCostCenterModalOpen}
-        title="??????"
+        title="选择成本中心"
         dataSource={mockCostCenters}
-        columns={[{ title: "??", dataIndex: "code" }, { title: "??", dataIndex: "desc" }]}
-        searchFields={[{ label: "??", name: "code", dataIndex: "code", placeholder: "?????" }, { label: "??", name: "desc", dataIndex: "desc", placeholder: "?????" }]}
+        columns={[{ title: "编码", dataIndex: "code" }, { title: "描述", dataIndex: "desc" }]}
+        searchFields={[{ label: "编码", name: "code", dataIndex: "code", placeholder: "请输入编码" }, { label: "描述", name: "desc", dataIndex: "desc", placeholder: "请输入描述" }]}
         onCancel={() => setIsCostCenterModalOpen(false)}
         onConfirm={(record) => {
           setFormData({
@@ -4186,10 +4203,10 @@ const NOServiceSubjectMappingView = () => {
       />
       <SelectModal
         open={isSubjectModalOpen}
-        title="????"
+        title="选择科目"
         dataSource={mockSubjects}
-        columns={[{ title: "??", dataIndex: "code" }, { title: "??", dataIndex: "desc" }]}
-        searchFields={[{ label: "??", name: "code", dataIndex: "code", placeholder: "?????" }, { label: "??", name: "desc", dataIndex: "desc", placeholder: "?????" }]}
+        columns={[{ title: "编码", dataIndex: "code" }, { title: "描述", dataIndex: "desc" }]}
+        searchFields={[{ label: "编码", name: "code", dataIndex: "code", placeholder: "请输入编码" }, { label: "描述", name: "desc", dataIndex: "desc", placeholder: "请输入描述" }]}
         onCancel={() => setIsSubjectModalOpen(false)}
         onConfirm={(record) => {
           setFormData({
