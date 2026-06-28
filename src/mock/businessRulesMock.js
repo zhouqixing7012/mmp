@@ -297,8 +297,8 @@ export const mockExpenseAccountRuleData = [
   ];
 // yewurules.js 页面 - Cost Center Subject Mapping 表格数据
 export const mockCostCenterSubjectMappingData = [
-    { id: 1, costCenter: '168001', costCenterDesc: '视频_分摊费用', cat: '11 PC', company: '115 新媒体-上海', subject: '72101', subjectDesc: 'General and Administrative', enabled: true },
-  ];
+    { id: 1, costCenter: '168001.视频_分摊费用', cat: '11.PC', company: '115.新媒体-上海', subject: '72101.General and Administrative', enabled: true },
+];
 // yewurules.js 页面 - Material Sub Subject Mapping 表格数据
 export const mockMaterialSubSubjectMappingData = [
     { id: 1, mainCat: '22', mainCatDesc: 'Park lot land use rights', subSubj: 'E2102', subSubjDesc: 'Dpm - Park Lot Using Right', enabled: true },
