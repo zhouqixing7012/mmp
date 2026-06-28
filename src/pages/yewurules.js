@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import {
   Search, Plus, CheckCircle, XCircle, Download, Edit, Settings,
@@ -3941,7 +3941,8 @@ const CostCenterSubjectMappingView = () => {
 const MaterialSubSubjectMappingView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('add');
- const [isMaterialCategoryModalOpen, setIsMaterialCategoryModalOpen] = useState(false);
+  const [isMaterialCategoryModalOpen, setIsMaterialCategoryModalOpen] = useState(false);
+  const [isSubSubjectModalOpen, setIsSubSubjectModalOpen] = useState(false);
   const [formData, setFormData] = useState({ mainCat: '', subSubj: '', enabled: '1' });
   const handleAdd = () => {
     setModalMode('add');
@@ -3995,22 +3996,24 @@ const MaterialSubSubjectMappingView = () => {
        <div className="border border-[#e8e8e8] text-sm mb-4">
           <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料大类</div>
-           <div className="w-[35%] p-2 flex items-center">
-             <Input value={formData.mainCat} onChange={(e) => setFormData({...formData, mainCat: e.target.value})} placeholder="请选择" />
-             <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
-           </div>
-           <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">子科目</div>
-           <div className="w-[35%] p-2 flex items-center">
-             <Input value={formData.subSubj} onChange={(e) => setFormData({...formData, subSubj: e.target.value})} />
-           </div>
-         </div>
-         <div className="flex min-h-[40px]">
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">是否启用</div>
-            <div className="w-[35%] p-2 flex items-center">
-              <Select value={formData.enabled} onChange={(value) => setFormData({...formData, enabled: value})} options={[{label:'是', value:'1'}, {label:'否', value:'0'}]}  placeholder="请选择" allowClear />
+            <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsMaterialCategoryModalOpen(true)}>
+              <Input value={formData.mainCat} onChange={(e) => setFormData({...formData, mainCat: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
             </div>
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700"></div>
-            <div className="w-[35%] p-2 flex items-center"></div>
+            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">子科目</div>
+            <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsSubSubjectModalOpen(true)}>
+              <Input value={formData.subSubj} onChange={(e) => setFormData({...formData, subSubj: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+            </div>
+          </div>
+         <div className="flex min-h-[40px]">
+             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>是否启用</div>
+             <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
+               <Radio checked={formData.enabled === '1'} onChange={() => setFormData({...formData, enabled: '1'})} label="是" />
+               <Radio checked={formData.enabled === '0'} onChange={() => setFormData({...formData, enabled: '0'})} label="否" />
+             </div>
+             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700"></div>
+             <div className="w-[35%] p-2 flex items-center"></div>
           </div>
         </div>
         <div className="flex justify-center gap-3 mt-6">
@@ -4018,6 +4021,36 @@ const MaterialSubSubjectMappingView = () => {
           <Button type="default" onClick={() => setIsModalOpen(false)} className="px-6">返回</Button>
         </div>
       </Modal>
+      <SelectModal
+        open={isMaterialCategoryModalOpen}
+        title="选择物料大类"
+        dataSource={mockMaterialCategories}
+        columns={[{ title: "编码", dataIndex: "code" }, { title: "描述", dataIndex: "desc" }]}
+        searchFields={[{ label: "编码", name: "code", dataIndex: "code", placeholder: "请输入编码" }, { label: "描述", name: "desc", dataIndex: "desc", placeholder: "请输入描述" }]}
+        onCancel={() => setIsMaterialCategoryModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          mainCat: record.code + "." + record.desc
+          });
+          setIsMaterialCategoryModalOpen(false);
+        }}
+      />
+      <SelectModal
+        open={isSubSubjectModalOpen}
+        title="选择子科目"
+        dataSource={mockSubSubjects}
+        columns={[{ title: "编码", dataIndex: "code" }, { title: "描述", dataIndex: "desc" }]}
+        searchFields={[{ label: "编码", name: "code", dataIndex: "code", placeholder: "请输入编码" }, { label: "描述", name: "desc", dataIndex: "desc", placeholder: "请输入描述" }]}
+        onCancel={() => setIsSubSubjectModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          subSubj: record.code + "." + record.desc
+          });
+          setIsSubSubjectModalOpen(false);
+        }}
+      />
     </div>
   );
 };

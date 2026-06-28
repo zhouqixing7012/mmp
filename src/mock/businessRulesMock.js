@@ -301,8 +301,8 @@ export const mockCostCenterSubjectMappingData = [
 ];
 // yewurules.js 页面 - Material Sub Subject Mapping 表格数据
 export const mockMaterialSubSubjectMappingData = [
-    { id: 1, mainCat: '22', mainCatDesc: 'Park lot land use rights', subSubj: 'E2102', subSubjDesc: 'Dpm - Park Lot Using Right', enabled: true },
-  ];
+    { id: 1, mainCat: '001.SERVER', subSubj: 'S001.S001_子目A', enabled: true },
+ ];
 // yewurules.js 页面 - N O Service Subject Mapping 表格数据
 export const mockNOServiceSubjectMappingData = [];
 // yewurules.js 页面 - Employee Project Mapping 表格数据
