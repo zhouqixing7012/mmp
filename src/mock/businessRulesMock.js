@@ -304,7 +304,9 @@ export const mockMaterialSubSubjectMappingData = [
     { id: 1, mainCat: '001.SERVER', subSubj: 'S001.S001_子目A', enabled: true },
  ];
 // yewurules.js 页面 - N O Service Subject Mapping 表格数据
-export const mockNOServiceSubjectMappingData = [];
+export const mockNOServiceSubjectMappingData = [
+    { id: 1, service: 'NO001', plate: '17_Corporate.企业板块', costCenter: '168001.视频_分摊费用', subject: '72101.General and Administrative', enabled: true },
+  ];
 // yewurules.js 页面 - Employee Project Mapping 表格数据
 export const mockEmployeeProjectMappingData = [
     { id: 21, empNo: '219177', empName: '黄涛', projName: 'A项目' },
