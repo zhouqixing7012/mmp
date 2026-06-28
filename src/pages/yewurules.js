@@ -3491,11 +3491,11 @@ const ExpenseAccountRuleView = () => {
                 <Input value={formData.inCat} onChange={(e) => setFormData({...formData, inCat: e.target.value})} readOnly className="pointer-events-none" />
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
               </div>
-              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>公司(输入)</div>
-              <div className="w-[35%] p-2 flex items-center relative">
-                <Input value={formData.inComp} onChange={(e) => setFormData({...formData, inComp: e.target.value})}  placeholder="请选择" readOnly className="pointer-events-none" />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
-              </div>
+             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>公司(输入)</div>
+              <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsInCompModalOpen(true)}>
+               <Input value={formData.inComp} onChange={(e) => setFormData({...formData, inComp: e.target.value})}  placeholder="请选择" readOnly className="pointer-events-none" />
+               <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
+             </div>
             </div>
             <div className="flex min-h-[40px]">
               <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">成本中心(输入)</div>
@@ -3523,55 +3523,52 @@ const ExpenseAccountRuleView = () => {
                 <Input value={formData.outComp} onChange={(e) => setFormData({...formData, outComp: e.target.value})}  placeholder="请选择" readOnly className="pointer-events-none" />
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
               </div>
-              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">板块(输出)</div>
-              <div className="w-[35%] p-2 flex items-center relative">
-                <Input value={formData.outPlate} onChange={(e) => setFormData({...formData, outPlate: e.target.value})}  placeholder="请选择" readOnly className="pointer-events-none" />
+             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">板块(输出)</div>
+              <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsOutPlateModalOpen(true)}>
+               <Input value={formData.outPlate} onChange={(e) => setFormData({...formData, outPlate: e.target.value})}  placeholder="请选择" readOnly className="pointer-events-none" />
+               <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
+             </div>
+            </div>
+            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">成本中心(输出)</div>
+             <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsOutCostModalOpen(true)}>
+               <Input value={formData.outCost} onChange={(e) => setFormData({...formData, outCost: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
+             </div>
+             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">科目(输出)</div>
+              <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsOutSubjModalOpen(true)}>
+                <Input value={formData.outSubj} onChange={(e) => setFormData({...formData, outSubj: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
               </div>
             </div>
-            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">成本中心(输出)</div>
-              <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsOutCostModalOpen(true)}>
-                <Input value={formData.outCost} onChange={(e) => setFormData({...formData, outCost: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
-              </div>
-              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">科目(输出)</div>
-              <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsOutSubSubjModalOpen(true)}>
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
-                <Input value={formData.outSubj} onChange={(e) => setFormData({...formData, outSubj: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
-              </div>
-            </div>
-            <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
-              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">子目(输出)</div>
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
-              <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsOutLineModalOpen(true)}>
+           <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">子目(输出)</div>
+              <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsOutSubSubjModalOpen(true)}>
                 <Input value={formData.outSubSubj} onChange={(e) => setFormData({...formData, outSubSubj: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
               </div>
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
-              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">业务线(输出)</div>
-              <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsOutProjModalOpen(true)}>
+             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">业务线(输出)</div>
+              <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsOutLineModalOpen(true)}>
                 <Input value={formData.outLine} onChange={(e) => setFormData({...formData, outLine: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
               </div>
             </div>
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
             <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
               <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">项目(输出)</div>
               <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsOutProjModalOpen(true)}>
                 <Input value={formData.outProj} onChange={(e) => setFormData({...formData, outProj: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
               </div>
-              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">往来(输出)</div>
-              <div className="w-[35%] p-2 flex items-center relative">
-                <Input value={formData.outTrans} onChange={(e) => setFormData({...formData, outTrans: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
-              </div>
+             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">往来(输出)</div>
+              <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsOutTransModalOpen(true)}>
+               <Input value={formData.outTrans} onChange={(e) => setFormData({...formData, outTrans: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
+               <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
+             </div>
             </div>
             <div className="flex min-h-[40px]">
-              <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">备用(输出)</div>
-              <div className="w-[35%] p-2 flex items-center">
-                <Input value={formData.outMisc} onChange={(e) => setFormData({...formData, outMisc: e.target.value})} placeholder="请选择" />
+             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">备用(输出)</div>
+              <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsOutMiscModalOpen(true)}>
+                <Input value={formData.outMisc} onChange={(e) => setFormData({...formData, outMisc: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
               </div>
               <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8]"></div>
