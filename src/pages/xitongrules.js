@@ -183,16 +183,7 @@ const SidebarTreeNode = ({ node, level = 0, expandedKeys, toggleExpand, selected
 // ==========================================
 // 3. 页面容器与各个子视图
 // ==========================================
-const OrgAndUserContainer = () => {
-  const [activeTab, setActiveTab] = useState('user'); // 'user' | 'org'
-  const [viewingUserId, setViewingUserId] = useState(null); // null 或者 用户ID
-
-  // --- 用户管理视图所需 State ---
-  const [expandedKeys, setExpandedKeys] = useState(['D0001', 'D0002']);
-  const [selectedKey, setSelectedKey] = useState('D0002');
-  const [selectedRows, setSelectedRows] = useState([]);
-
-  // --- 组织管理树形表格所需 State ---
+const OrgManagementView = () => {
   const [tableExpandedKeys, setTableExpandedKeys] = useState(['D0001']);
   
   const toggleTableExpand = (key) => setTableExpandedKeys(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
@@ -214,168 +205,8 @@ const OrgAndUserContainer = () => {
   };
   const flatOrgData = getFlattenedData(mockTreeData);
 
-  // === 视图A：用户信息详情页 ===
-  if (viewingUserId) {
-    return (
-      <div className="bg-white rounded-md shadow-sm border border-gray-200 p-6 flex flex-col h-full overflow-y-auto">
-        <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-100 pb-3 mb-6">用户信息</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 text-sm flex-1">
-          {/* 左侧列 */}
-          <div className="space-y-6">
-            <div className="flex"><div className="w-24 text-gray-500">姓名</div><div className="flex-1 text-gray-900 font-medium">{mockUserDetail.name}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">所在部门</div><div className="flex-1 text-gray-900">{mockUserDetail.dept}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">登录名</div><div className="flex-1 text-gray-900">{mockUserDetail.loginName}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">移动电话</div><div className="flex-1 text-gray-900">{mockUserDetail.mobile || '-'}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">拥有的角色</div><div className="flex-1 text-gray-900">{mockUserDetail.roles || '-'}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">员工职级</div><div className="flex-1 text-gray-900">{mockUserDetail.level}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">公司</div><div className="flex-1 text-gray-900">{mockUserDetail.company}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">成本中心</div><div className="flex-1 text-gray-900">{mockUserDetail.costCenter || '-'}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">HR公司</div><div className="flex-1 text-gray-900">{mockUserDetail.hrCompany}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">部门全称</div><div className="flex-1 text-gray-900">{mockUserDetail.fullDeptName}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">办公区</div><div className="flex-1 text-gray-900">{mockUserDetail.office}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">职位</div><div className="flex-1 text-gray-900">{mockUserDetail.position}</div></div>
-          </div>
-          {/* 右侧列 */}
-          <div className="space-y-6">
-            <div className="flex"><div className="w-24 text-gray-500">联系电话</div><div className="flex-1 text-gray-900">{mockUserDetail.phone}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">状态有效</div><div className="flex-1 text-gray-900">{mockUserDetail.statusValid}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">性别</div><div className="flex-1 text-gray-900">{mockUserDetail.gender}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">Email地址</div><div className="flex-1 text-gray-900">{mockUserDetail.email}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">上级领导</div><div className="flex-1 text-gray-900">{mockUserDetail.manager}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">职类</div><div className="flex-1 text-gray-900">{mockUserDetail.jobCategory || '-'}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">职目</div><div className="flex-1 text-gray-900">{mockUserDetail.jobSubCategory || '-'}</div></div>
-          </div>
-        </div>
 
-        <div className="mt-8 flex justify-center pt-4 border-t border-gray-100">
-          <AntButton
-            type="default"
-            onClick={() => setViewingUserId(null)}
-          >
-            返回
-          </AntButton>
-        </div>
-      </div>
-    );
-  }
-
-  // === 视图B & C：主面板 (含内部 Tabs) ===
   return (
-    <div className="flex-1 flex flex-col bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden min-h-0">
-      
-      {/* 内部 Tabs 头部 */}
-      <div className="flex items-center px-4 pt-3 border-b border-gray-200 bg-[#fafafa]">
-        <div 
-          className={`px-4 py-2 text-sm font-medium cursor-pointer border-b-2 transition-colors ${activeTab === 'user' ? 'border-[#1677ff] text-[#1677ff] bg-white' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
-          onClick={() => setActiveTab('user')}
-        >
-          用户管理
-        </div>
-        <div 
-          className={`px-4 py-2 text-sm font-medium cursor-pointer border-b-2 transition-colors ${activeTab === 'org' ? 'border-[#1677ff] text-[#1677ff] bg-white' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
-          onClick={() => setActiveTab('org')}
-        >
-          组织管理
-        </div>
-      </div>
-
-      {/* 内部容器区 */}
-      <div className="flex-1 min-h-0 relative">
-
-        {/* --- 视图B：用户管理 (拆分窗格) --- */}
-        {activeTab === 'user' && (
-          <div className="absolute inset-0 flex">
-            {/* 左侧架构树 */}
-            <div className="w-64 border-r border-gray-200 flex flex-col bg-white shrink-0">
-              <div className="p-3 border-b border-gray-100">
-                <div className="relative">
-                  <input type="text" placeholder="输入组织关键字" className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 transition-shadow"/>
-                  <Search className="absolute left-2.5 top-2 text-gray-400" size={14} />
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
-                {mockTreeData.map(node => (
-                  <SidebarTreeNode 
-                    key={node.key} node={node} 
-                    expandedKeys={expandedKeys} toggleExpand={(k) => setExpandedKeys(p => p.includes(k) ? p.filter(x => x !== k) : [...p, k])}
-                    selectedKey={selectedKey} setSelectedKey={setSelectedKey}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* 右侧用户表格 */}
-            <div className="flex-1 flex flex-col min-w-0 bg-white">
-              <div className="p-4 border-b border-gray-100 flex flex-wrap gap-4 items-center">
-                <input type="text" placeholder="请输入员工姓名" className="w-48 px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                <AntButton type="primary" icon={<Search size={14} />}>查询</AntButton>
-              </div>
-              
-              <div className="px-4 py-3 flex gap-2">
-                <AntButton type="primary" icon={<Plus size={14} />}>新增人员</AntButton>
-                <AntButton type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</AntButton>
-                <AntButton type="danger" icon={<XCircle size={14} />}>停用</AntButton>
-                <AntButton type="default" icon={<Trash2 size={14} />}>批量删除</AntButton>
-              </div>
-
-              <div className="flex-1 overflow-auto px-4 pb-4">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-[#fafafa] border-b border-gray-200">
-                      <th className="py-3 px-3 w-12 text-center"><input type="checkbox" className="rounded border-gray-300" /></th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">工号</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">姓名</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">邮箱</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">职级</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">职务序列</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">员工状态</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">使用状态</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600 text-right">操作</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 text-sm">
-                    {mockUserData.map((user) => (
-                      <tr key={user.id} className="hover:bg-blue-50/50">
-                        <td className="py-2.5 px-3 text-center"><input type="checkbox" className="rounded border-gray-300" /></td>
-                        <td className="py-2.5 px-3">
-                          {/* 将工号设置为超链接 */}
-                          <a 
-                            onClick={() => setViewingUserId(user.id)}
-                            className="text-[#1677ff] hover:underline cursor-pointer font-medium"
-                          >
-                            {user.id}
-                          </a>
-                        </td>
-                        <td className="py-2.5 px-3 text-gray-800">{user.name}</td>
-                        <td className="py-2.5 px-3 text-gray-500">{user.email}</td>
-                        <td className="py-2.5 px-3 text-gray-600">{user.level}</td>
-                        <td className="py-2.5 px-3 text-gray-600">{user.isTech}</td>
-                        <td className="py-2.5 px-3">
-                          <span className={`px-2 py-0.5 rounded text-xs ${user.empStatus === 'employed' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
-                            {user.empStatus === 'employed' ? '在职' : '离职'}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <span className={`px-2 py-0.5 rounded text-xs ${user.usageStatus === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            {user.usageStatus === 'active' ? '启用' : '停用'}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-right">
-                           <AntButton type="link">编辑</AntButton>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* --- 视图C：组织管理 (树形表格) --- */}
-        {activeTab === 'org' && (
-          <div className="absolute inset-0 flex flex-col">
             {/* 顶部工具栏 */}
             <div className="p-4 border-b border-gray-100 flex flex-wrap justify-between items-center gap-4">
               <div className="flex gap-2">
@@ -472,6 +303,150 @@ const OrgAndUserContainer = () => {
             </div>
           </div>
         )}
+  );
+};
+
+const UserManagementView = () => {
+  const [viewingUserId, setViewingUserId] = useState(null); // null 或者 用户ID
+
+  // --- 用户管理视图所需 State ---
+  const [expandedKeys, setExpandedKeys] = useState(['D0001', 'D0002']);
+
+  if (viewingUserId) {
+    return (
+      <div className="bg-white rounded-md shadow-sm border border-gray-200 p-6 flex flex-col h-full overflow-y-auto">
+        <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-100 pb-3 mb-6">用户信息</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 text-sm flex-1">
+          {/* 左侧列 */}
+          <div className="space-y-6">
+            <div className="flex"><div className="w-24 text-gray-500">姓名</div><div className="flex-1 text-gray-900 font-medium">{mockUserDetail.name}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">所在部门</div><div className="flex-1 text-gray-900">{mockUserDetail.dept}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">登录名</div><div className="flex-1 text-gray-900">{mockUserDetail.loginName}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">移动电话</div><div className="flex-1 text-gray-900">{mockUserDetail.mobile || '-'}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">拥有的角色</div><div className="flex-1 text-gray-900">{mockUserDetail.roles || '-'}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">员工职级</div><div className="flex-1 text-gray-900">{mockUserDetail.level}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">公司</div><div className="flex-1 text-gray-900">{mockUserDetail.company}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">成本中心</div><div className="flex-1 text-gray-900">{mockUserDetail.costCenter || '-'}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">HR公司</div><div className="flex-1 text-gray-900">{mockUserDetail.hrCompany}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">部门全称</div><div className="flex-1 text-gray-900">{mockUserDetail.fullDeptName}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">办公区</div><div className="flex-1 text-gray-900">{mockUserDetail.office}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">职位</div><div className="flex-1 text-gray-900">{mockUserDetail.position}</div></div>
+          </div>
+          {/* 右侧列 */}
+          <div className="space-y-6">
+            <div className="flex"><div className="w-24 text-gray-500">联系电话</div><div className="flex-1 text-gray-900">{mockUserDetail.phone}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">状态有效</div><div className="flex-1 text-gray-900">{mockUserDetail.statusValid}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">性别</div><div className="flex-1 text-gray-900">{mockUserDetail.gender}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">Email地址</div><div className="flex-1 text-gray-900">{mockUserDetail.email}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">上级领导</div><div className="flex-1 text-gray-900">{mockUserDetail.manager}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">职类</div><div className="flex-1 text-gray-900">{mockUserDetail.jobCategory || '-'}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">职目</div><div className="flex-1 text-gray-900">{mockUserDetail.jobSubCategory || '-'}</div></div>
+          </div>
+        </div>
+
+        <div className="mt-8 flex justify-center pt-4 border-t border-gray-100">
+          <AntButton
+            type="default"
+            onClick={() => setViewingUserId(null)}
+          >
+            返回
+          </AntButton>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+            {/* 左侧架构树 */}
+            <div className="w-64 border-r border-gray-200 flex flex-col bg-white shrink-0">
+              <div className="p-3 border-b border-gray-100">
+                <div className="relative">
+                  <input type="text" placeholder="输入组织关键字" className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 transition-shadow"/>
+                  <Search className="absolute left-2.5 top-2 text-gray-400" size={14} />
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
+                {mockTreeData.map(node => (
+                  <SidebarTreeNode 
+                    key={node.key} node={node} 
+                    expandedKeys={expandedKeys} toggleExpand={(k) => setExpandedKeys(p => p.includes(k) ? p.filter(x => x !== k) : [...p, k])}
+                    selectedKey={selectedKey} setSelectedKey={setSelectedKey}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* 右侧用户表格 */}
+            <div className="flex-1 flex flex-col min-w-0 bg-white">
+              <div className="p-4 border-b border-gray-100 flex flex-wrap gap-4 items-center">
+                <input type="text" placeholder="请输入员工姓名" className="w-48 px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                <AntButton type="primary" icon={<Search size={14} />}>查询</AntButton>
+              </div>
+              
+              <div className="px-4 py-3 flex gap-2">
+                <AntButton type="primary" icon={<Plus size={14} />}>新增人员</AntButton>
+                <AntButton type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</AntButton>
+                <AntButton type="danger" icon={<XCircle size={14} />}>停用</AntButton>
+                <AntButton type="default" icon={<Trash2 size={14} />}>批量删除</AntButton>
+              </div>
+
+              <div className="flex-1 overflow-auto px-4 pb-4">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#fafafa] border-b border-gray-200">
+                      <th className="py-3 px-3 w-12 text-center"><input type="checkbox" className="rounded border-gray-300" /></th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">工号</th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">姓名</th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">邮箱</th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">职级</th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">职务序列</th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">员工状态</th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">使用状态</th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600 text-right">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 text-sm">
+                    {mockUserData.map((user) => (
+                      <tr key={user.id} className="hover:bg-blue-50/50">
+                        <td className="py-2.5 px-3 text-center"><input type="checkbox" className="rounded border-gray-300" /></td>
+                        <td className="py-2.5 px-3">
+                          {/* 将工号设置为超链接 */}
+                          <a 
+                            onClick={() => setViewingUserId(user.id)}
+                            className="text-[#1677ff] hover:underline cursor-pointer font-medium"
+                          >
+                            {user.id}
+                          </a>
+                        </td>
+                        <td className="py-2.5 px-3 text-gray-800">{user.name}</td>
+                        <td className="py-2.5 px-3 text-gray-500">{user.email}</td>
+                        <td className="py-2.5 px-3 text-gray-600">{user.level}</td>
+                        <td className="py-2.5 px-3 text-gray-600">{user.isTech}</td>
+                        <td className="py-2.5 px-3">
+                          <span className={`px-2 py-0.5 rounded text-xs ${user.empStatus === 'employed' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+                            {user.empStatus === 'employed' ? '在职' : '离职'}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className={`px-2 py-0.5 rounded text-xs ${user.usageStatus === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {user.usageStatus === 'active' ? '启用' : '停用'}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-right">
+                           <AntButton type="link">编辑</AntButton>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+  );
+};
+
       </div>
 
     </div>
@@ -570,7 +545,7 @@ function App() {
 
           {/* 注入业务组件 */}
           <div className="flex-1 min-h-[500px]">
-             <OrgAndUserContainer />
+              <UserManagementView />
           </div>
         </main>
 
@@ -579,5 +554,4 @@ function App() {
   );
 }
 
-// 导出内容组件，不包含外层布局
-export default OrgAndUserContainer;
+export { UserManagementView, OrgManagementView };

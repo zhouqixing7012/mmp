@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import {
   Search, Plus, CheckCircle, XCircle, Download, Edit, Settings,
@@ -6,7 +6,7 @@ import {
   Menu, User, Bell, ChevronRight, MoreHorizontal, Trash2, RefreshCcw, MinusSquare, X, Upload, ArrowLeft
 } from 'lucide-react';
 // 导入 xitongrules.js 中的组织与用户管理组件
-import OrgAndUserContainer from './xitongrules';
+import { UserManagementView, OrgManagementView } from './xitongrules';
 import { Button, Input, Select, Modal, Table, Radio, Card, Tag, DatePicker } from 'antd';
 import StatusTag from '../components/StatusTag';
 import SelectModal from '../components/SelectModal';
@@ -3392,8 +3392,8 @@ const AccountBookContentView = () => {
    { title: '公司', dataIndex: 'company' },
     { title: '板块', dataIndex: 'plate' },
     { title: '账套名称', dataIndex: 'name' },
-    { title: '账套名称中文', dataIndex: 'cnName' },
-    { title: '账套名称英文', dataIndex: 'enName' },
+    { title: '标签名中文', dataIndex: 'cnName' },
+    { title: '标签名英文', dataIndex: 'enName' },
     { title: '操作', dataIndex: 'action', render: (_, record) => <Button type="link" onClick={() => handleEdit(record)}>编辑</Button> }
   ];
   const data = mockAccountBookContentData;
@@ -3435,15 +3435,15 @@ const AccountBookContentView = () => {
             <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
               <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="请输入账套名称" />
             </div>
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">账套名称中文</div>
+            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">标签名中文</div>
             <div className="w-[35%] p-2 flex items-center">
-              <Input value={formData.cnName} onChange={(e) => setFormData({...formData, cnName: e.target.value})} placeholder="请输入账套名称中文" />
+              <Input value={formData.cnName} onChange={(e) => setFormData({...formData, cnName: e.target.value})} placeholder="请输入标签名中文" />
             </div>
           </div>
           <div className="flex min-h-[40px]">
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">账套名称英文</div>
+            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">标签名英文</div>
             <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
-              <Input value={formData.enName} onChange={(e) => setFormData({...formData, enName: e.target.value})} placeholder="请输入账套名称英文" />
+              <Input value={formData.enName} onChange={(e) => setFormData({...formData, enName: e.target.value})} placeholder="请输入标签名英文" />
             </div>
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700"></div>
             <div className="w-[35%] p-2 flex items-center"></div>
@@ -4365,7 +4365,6 @@ export default function App() {
     if (sub === '费用账户规则') setActiveTab('费用账户规则');
     // if (sub === '资产折旧规则管理') setActiveTab('资产折旧规则管理');
     if (sub === '账套内容维护') setActiveTab('账套内容维护');
-    if (sub === '组织与用户管理') setActiveTab('组织与用户管理');
   };
   return (
     <div className="flex h-screen w-full bg-[#f0f2f5] font-sans text-gray-800 overflow-hidden">
@@ -4487,10 +4486,16 @@ export default function App() {
               </div>
             )}
             <div className="p-4 md:p-5 bg-[#fafafa] flex-1 flex flex-col relative">
-              {/* 组织与用户管理 */}
-              {activeSubMenu === '组织与用户管理' && (
+              {/* 用户管理 */}
+              {activeSubMenu === '用户管理' && (
                 <div className="flex-1 flex flex-col relative">
-                  <OrgAndUserContainer />
+                  <UserManagementView />
+                </div>
+              )}
+              {/* 组织管理 */}
+              {activeSubMenu === '组织管理' && (
+                <div className="flex-1 flex flex-col relative">
+                  <OrgManagementView />
                 </div>
               )}
               {/* 业务基础数据维护 - 只在后台基础配置下显示 */}
