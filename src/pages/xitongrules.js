@@ -26,6 +26,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
+import { Input, Select } from 'antd';
 
 // --- 统一的Ant Button组件 ---
 const AntButton = ({ children, type = 'default', icon, className = '', ...props }) => {
@@ -233,34 +234,26 @@ const OrgManagementView = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="bg-white border border-[#f0f0f0] rounded p-4 flex flex-wrap gap-4 items-end">
-        <div className="flex items-center gap-2">
-          <span className="w-16 text-right text-sm text-gray-600">组织编码:</span>
-          <input type="text" placeholder="请输入组织编码" className="w-40 px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            value={query.code} onChange={(e) => setQuery({...query, code: e.target.value})} />
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-16 text-right text-sm text-gray-600">组织名称:</span>
-          <input type="text" placeholder="请输入组织名称" className="w-40 px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            value={query.name} onChange={(e) => setQuery({...query, name: e.target.value})} />
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-16 text-right text-sm text-gray-600">组织全称:</span>
-          <input type="text" placeholder="请输入组织全称" className="w-40 px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            value={query.fullName} onChange={(e) => setQuery({...query, fullName: e.target.value})} />
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-16 text-right text-sm text-gray-600">是否启用:</span>
-          <select className="w-28 px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            value={query.enabled} onChange={(e) => setQuery({...query, enabled: e.target.value})}>
-            <option value="">全部</option>
-            <option value="1">是</option>
-            <option value="0">否</option>
-          </select>
-        </div>
-        <AntButton type="primary" icon={<Search size={14} />}>查询</AntButton>
-        <AntButton type="default" onClick={() => setQuery({ code: '', name: '', fullName: '', enabled: '' })}>重置</AntButton>
-      </div>
+     <div className="bg-white border border-[#f0f0f0] rounded p-4 flex flex-wrap gap-4 items-end">
+       <div className="flex items-center gap-2">
+          <span className="w-20 text-right text-sm text-gray-600">组织编码:</span>
+          <Input style={{ width: 160 }} placeholder="请输入组织编码" value={query.code} onChange={(e) => setQuery({...query, code: e.target.value})} />
+       </div>
+       <div className="flex items-center gap-2">
+          <span className="w-20 text-right text-sm text-gray-600">组织名称:</span>
+          <Input style={{ width: 160 }} placeholder="请输入组织名称" value={query.name} onChange={(e) => setQuery({...query, name: e.target.value})} />
+       </div>
+       <div className="flex items-center gap-2">
+          <span className="w-20 text-right text-sm text-gray-600">组织全称:</span>
+          <Input style={{ width: 160 }} placeholder="请输入组织全称" value={query.fullName} onChange={(e) => setQuery({...query, fullName: e.target.value})} />
+       </div>
+       <div className="flex items-center gap-2">
+          <span className="w-20 text-right text-sm text-gray-600">是否启用:</span>
+          <Select style={{ width: 120 }} placeholder="全部" allowClear value={query.enabled || undefined} onChange={(v) => setQuery({...query, enabled: v || ''})} options={[{label:'是', value:'1'}, {label:'否', value:'0'}]} />
+       </div>
+       <AntButton type="primary" icon={<Search size={14} />}>查询</AntButton>
+       <AntButton type="default" onClick={() => setQuery({ code: '', name: '', fullName: '', enabled: '' })}>重置</AntButton>
+     </div>
 
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
