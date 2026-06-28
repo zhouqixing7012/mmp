@@ -30,6 +30,9 @@ import {
   mockCostCenterPlateMappingData, mockCityBusinessLineMappingData,
   mockDeptBusinessLineMappingData, mockAssetAllocationRuleData,
   mockExcludeSubCats,
+  mockExpenseSubjects, mockExpenseDescs, mockRemarks, mockSortOrders,
+  mockCostCenters, mockPlates, mockSubjects, mockSubSubjects,
+  mockLines, mockProjects, mockTrans, mockMisc,
   mockMaterialRequestLimitData, mockAssetDepreciationRuleData,
   mockAccountBookContentData, mockExpenseAccountRuleData,
   mockCostCenterSubjectMappingData, mockMaterialSubSubjectMappingData,
@@ -3407,6 +3410,17 @@ const ExpenseAccountRuleView = () => {
   const [modalMode, setModalMode] = useState('add');
   const [isMaterialCategoryModalOpen, setIsMaterialCategoryModalOpen] = useState(false);
   const [formData, setFormData] = useState({ inCat: '', inComp: '', inCost: '', outComp: '', outPlate: '', outCost: '', outSubj: '', outSubSubj: '', outLine: '', outProj: '', outTrans: '', outMisc: '', enabled: '1' });
+  const [isInCompModalOpen, setIsInCompModalOpen] = useState(false);
+  const [isInCostModalOpen, setIsInCostModalOpen] = useState(false);
+  const [isOutCompModalOpen, setIsOutCompModalOpen] = useState(false);
+  const [isOutPlateModalOpen, setIsOutPlateModalOpen] = useState(false);
+  const [isOutCostModalOpen, setIsOutCostModalOpen] = useState(false);
+  const [isOutSubjModalOpen, setIsOutSubjModalOpen] = useState(false);
+  const [isOutSubSubjModalOpen, setIsOutSubSubjModalOpen] = useState(false);
+  const [isOutLineModalOpen, setIsOutLineModalOpen] = useState(false);
+  const [isOutProjModalOpen, setIsOutProjModalOpen] = useState(false);
+  const [isOutTransModalOpen, setIsOutTransModalOpen] = useState(false);
+  const [isOutMiscModalOpen, setIsOutMiscModalOpen] = useState(false);
   const handleAdd = () => {
     setModalMode('add');
     setFormData({ inCat: '', inComp: '', inCost: '', outComp: '', outPlate: '', outCost: '', outSubj: '', outSubSubj: '', outLine: '', outProj: '', outTrans: '', outMisc: '', enabled: '1' });
@@ -3451,11 +3465,14 @@ const ExpenseAccountRuleView = () => {
         <span className="w-28 text-right text-sm text-gray-600">成本中心(输入):</span>
         <Input placeholder="请输入成本中心" />
       </div>
+      <div className="flex items-center gap-2">
+        <span className="w-20 text-right text-sm text-gray-600">是否启用:</span>
+        <Select style={{ width: '100%' }} allowClear options={[{label:'是', value:'1'}, {label:'否', value:'0'}]} placeholder="全部" />
+      </div>
       </QueryBar>
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
           <Button type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</Button>
           <Button type="default" className="text-red-500" icon={<XCircle size={14} />}>停用</Button>
         </div>
@@ -3476,22 +3493,24 @@ const ExpenseAccountRuleView = () => {
               </div>
               <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>公司(输入)</div>
               <div className="w-[35%] p-2 flex items-center relative">
-                <Input value={formData.inComp} onChange={(e) => setFormData({...formData, inComp: e.target.value})} placeholder="请选择" />
+                <Input value={formData.inComp} onChange={(e) => setFormData({...formData, inComp: e.target.value})}  placeholder="请选择" readOnly className="pointer-events-none" />
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
               </div>
             </div>
             <div className="flex min-h-[40px]">
               <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">成本中心(输入)</div>
-              <div className="w-[35%] p-2 flex items-center">
-                <Input value={formData.inCost} onChange={(e) => setFormData({...formData, inCost: e.target.value})} placeholder="请选择" />
+              <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsInCostModalOpen(true)}>
+                <Input value={formData.inCost} onChange={(e) => setFormData({...formData, inCost: e.target.value})}  placeholder="请选择" readOnly className="pointer-events-none" />
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
               </div>
               <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>是否启用</div>
               <div className="w-[35%] p-2 flex items-center">
                 <Select value={formData.enabled} onChange={(value) => setFormData({...formData, enabled: value})} options={[{label:'是', value:'1'}, {label:'否', value:'0'}]}  placeholder="请选择" allowClear />
-              </div>
+              <Radio checked={formData.enabled === '1'} onChange={() => setFormData({...formData, enabled: '1'})} label="是" />
+              <Radio checked={formData.enabled === '0'} onChange={() => setFormData({...formData, enabled: '0'})} label="否" />
             </div>
           </div>
+        </div>
         </div>
         {/* 输出属性信息 */}
         <div className="mb-4">
@@ -3501,44 +3520,53 @@ const ExpenseAccountRuleView = () => {
           <div className="border border-t-0 border-[#e8e8e8] text-sm">
             <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
               <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>公司(输出)</div>
-              <div className="w-[35%] p-2 flex items-center">
-                <Input value={formData.outComp} onChange={(e) => setFormData({...formData, outComp: e.target.value})} placeholder="请选择" />
+              <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsOutCompModalOpen(true)}>
+                <Input value={formData.outComp} onChange={(e) => setFormData({...formData, outComp: e.target.value})}  placeholder="请选择" readOnly className="pointer-events-none" />
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
               </div>
               <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">板块(输出)</div>
               <div className="w-[35%] p-2 flex items-center relative">
-                <Input value={formData.outPlate} onChange={(e) => setFormData({...formData, outPlate: e.target.value})} placeholder="请选择" />
+                <Input value={formData.outPlate} onChange={(e) => setFormData({...formData, outPlate: e.target.value})}  placeholder="请选择" readOnly className="pointer-events-none" />
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
               </div>
             </div>
             <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
               <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">成本中心(输出)</div>
-              <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
-                <Input value={formData.outCost} onChange={(e) => setFormData({...formData, outCost: e.target.value})} />
+              <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsOutCostModalOpen(true)}>
+                <Input value={formData.outCost} onChange={(e) => setFormData({...formData, outCost: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
               </div>
               <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">科目(输出)</div>
-              <div className="w-[35%] p-2 flex items-center">
-                <Input value={formData.outSubj} onChange={(e) => setFormData({...formData, outSubj: e.target.value})} />
+              <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsOutSubSubjModalOpen(true)}>
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+                <Input value={formData.outSubj} onChange={(e) => setFormData({...formData, outSubj: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
               </div>
             </div>
             <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
               <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">子目(输出)</div>
-              <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
-                <Input value={formData.outSubSubj} onChange={(e) => setFormData({...formData, outSubSubj: e.target.value})} />
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+              <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsOutLineModalOpen(true)}>
+                <Input value={formData.outSubSubj} onChange={(e) => setFormData({...formData, outSubSubj: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
               </div>
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
               <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">业务线(输出)</div>
-              <div className="w-[35%] p-2 flex items-center">
-                <Input value={formData.outLine} onChange={(e) => setFormData({...formData, outLine: e.target.value})} />
+              <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsOutProjModalOpen(true)}>
+                <Input value={formData.outLine} onChange={(e) => setFormData({...formData, outLine: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
               </div>
             </div>
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
             <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
               <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">项目(输出)</div>
-              <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
-                <Input value={formData.outProj} onChange={(e) => setFormData({...formData, outProj: e.target.value})} />
+              <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => setIsOutProjModalOpen(true)}>
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" placeholder="请选择" readOnly className="pointer-events-none" />
+                <Input value={formData.outProj} onChange={(e) => setFormData({...formData, outProj: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
               </div>
               <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">往来(输出)</div>
               <div className="w-[35%] p-2 flex items-center relative">
-                <Input value={formData.outTrans} onChange={(e) => setFormData({...formData, outTrans: e.target.value})} placeholder="请选择" />
+                <Input value={formData.outTrans} onChange={(e) => setFormData({...formData, outTrans: e.target.value})} placeholder="请选择" readOnly className="pointer-events-none" />
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] cursor-pointer" />
               </div>
             </div>
@@ -3571,6 +3599,171 @@ const ExpenseAccountRuleView = () => {
           inCat: record.desc
           });
           setIsMaterialCategoryModalOpen(false);
+        }}
+      />
+      <SelectModal
+        open={isInCompModalOpen}
+        title="选择公司(输入)"
+        dataSource={mockCompanies}
+        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsInCompModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          inComp: record.desc
+          });
+          setIsInCompModalOpen(false);
+        }}
+      />
+      <SelectModal
+        open={isInCostModalOpen}
+        title="选择成本中心(输入)"
+        dataSource={mockCostCenters}
+        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsInCostModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          inCost: record.desc
+          });
+          setIsInCostModalOpen(false);
+        }}
+      />
+      <SelectModal
+        open={isOutCompModalOpen}
+        title="选择公司(输出)"
+        dataSource={mockCompanies}
+        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsOutCompModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          outComp: record.desc
+          });
+          setIsOutCompModalOpen(false);
+        }}
+      />
+      <SelectModal
+        open={isOutPlateModalOpen}
+        title="选择板块(输出)"
+        dataSource={mockPlates}
+        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsOutPlateModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          outPlate: record.desc
+          });
+          setIsOutPlateModalOpen(false);
+        }}
+      />
+      <SelectModal
+        open={isOutCostModalOpen}
+        title="选择成本中心(输出)"
+        dataSource={mockCostCenters}
+        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsOutCostModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          outCost: record.desc
+          });
+          setIsOutCostModalOpen(false);
+        }}
+      />
+      <SelectModal
+        open={isOutSubjModalOpen}
+        title="选择科目(输出)"
+        dataSource={mockSubjects}
+        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsOutSubjModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          outSubj: record.desc
+          });
+          setIsOutSubjModalOpen(false);
+        }}
+      />
+      <SelectModal
+        open={isOutSubSubjModalOpen}
+        title="选择子目(输出)"
+        dataSource={mockSubSubjects}
+        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsOutSubSubjModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          outSubSubj: record.desc
+          });
+          setIsOutSubSubjModalOpen(false);
+        }}
+      />
+      <SelectModal
+        open={isOutLineModalOpen}
+        title="选择业务线(输出)"
+        dataSource={mockLines}
+        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsOutLineModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          outLine: record.desc
+          });
+          setIsOutLineModalOpen(false);
+        }}
+      />
+      <SelectModal
+        open={isOutProjModalOpen}
+        title="选择项目(输出)"
+        dataSource={mockProjects}
+        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsOutProjModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          outProj: record.desc
+          });
+          setIsOutProjModalOpen(false);
+        }}
+      />
+      <SelectModal
+        open={isOutTransModalOpen}
+        title="选择往来(输出)"
+        dataSource={mockTrans}
+        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsOutTransModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          outTrans: record.desc
+          });
+          setIsOutTransModalOpen(false);
+        }}
+      />
+      <SelectModal
+        open={isOutMiscModalOpen}
+        title="选择备用(输出)"
+        dataSource={mockMisc}
+        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
+        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        onCancel={() => setIsOutMiscModalOpen(false)}
+        onConfirm={(record) => {
+          setFormData({
+          ...formData,
+          outMisc: record.desc
+          });
+          setIsOutMiscModalOpen(false);
         }}
       />
     </div>

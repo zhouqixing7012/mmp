@@ -249,6 +249,49 @@ export const mockAccountBookContentData = [
     { id: 1, company: '搜狐干线', plate: 'SAAS', name: '搜狐干线', cnName: '搜狐干线', enName: 'FOCUS XinGanXian' },
   ];
 // yewurules.js 页面 - Expense Account Rule 表格数据
+// 成本中心
+export const mockCostCenters = [
+  { id: 1, code: '112064', desc: '112064_新媒体成本中心' },
+  { id: 2, code: '112065', desc: '112065_媒体成本中心' },
+];
+
+// 板块
+export const mockPlates = [
+  { id: 1, code: '17', desc: '17_Corporate' },
+  { id: 2, code: '18', desc: '18_Media' },
+];
+
+// 科目
+export const mockSubjects = [
+  { id: 1, code: '909003', desc: '909003_费用科目' },
+  { id: 2, code: '909004', desc: '909004_收入科目' },
+];
+
+// 子目
+export const mockSubSubjects = [
+  { id: 1, code: 'S001', desc: 'S001_子目A' },
+];
+
+// 业务线
+export const mockLines = [
+  { id: 1, code: 'L001', desc: 'L001_业务线A' },
+];
+
+// 项目
+export const mockProjects = [
+  { id: 1, code: 'P001', desc: 'P001_项目A' },
+];
+
+// 往来
+export const mockTrans = [
+  { id: 1, code: 'T001', desc: 'T001_往来A' },
+];
+
+// 备用
+export const mockMisc = [
+  { id: 1, code: 'M001', desc: 'M001_备用A' },
+];
+
 export const mockExpenseAccountRuleData = [
     { id: 1, inCat: '16.FURNITURE', inComp: '114_新媒体', inCost: '112064', outComp: '', outPlate: '17_Corporate', outCost: '909003', outSubj: '', outSubSubj: '', outLine: '', outProj: '', outTrans: '', outMisc: '', enabled: true },
   ];
