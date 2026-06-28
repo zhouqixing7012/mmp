@@ -206,8 +206,9 @@ const OrgManagementView = () => {
   const flatOrgData = getFlattenedData(mockTreeData);
 
 
-  return (
-            {/* 顶部工具栏 */}
+ return (
+    <div className="absolute inset-0 flex flex-col">
+           {/* 顶部工具栏 */}
             <div className="p-4 border-b border-gray-100 flex flex-wrap justify-between items-center gap-4">
               <div className="flex gap-2">
                 <AntButton type="primary" icon={<Plus size={14} />}>新增</AntButton>
@@ -301,9 +302,8 @@ const OrgManagementView = () => {
             <div className="p-3 border-t border-gray-100 flex justify-end text-sm text-gray-500 bg-white">
               共 5 条记录
             </div>
-          </div>
-        )}
-  );
+         </div>
+ );
 };
 
 const UserManagementView = () => {
@@ -357,8 +357,9 @@ const UserManagementView = () => {
     );
   }
 
-  return (
-            {/* 左侧架构树 */}
+ return (
+    <div className="absolute inset-0 flex">
+           {/* 左侧架构树 */}
             <div className="w-64 border-r border-gray-200 flex flex-col bg-white shrink-0">
               <div className="p-3 border-b border-gray-100">
                 <div className="relative">
@@ -442,9 +443,8 @@ const UserManagementView = () => {
                 </table>
               </div>
             </div>
-          </div>
-        )}
-  );
+         </div>
+ );
 };
 
       </div>
