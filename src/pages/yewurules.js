@@ -3864,21 +3864,19 @@ const CostCenterSubjectMappingView = () => {
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>是否启用</div>
             <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
               <Radio checked={formData.enabled === '1'} onChange={() => setFormData({...formData, enabled: '1'})} label="是" />
-              <Radio checked={formData.enabled === '0'} onChange={() => setFormData({...formData, enabled: '0'})} label="否" />
-            </div>
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700"></div>
-            <div className="w-[35%] p-2 flex items-center"></div>
-          </div>
-            </div>
-          </div>
-        </div>
-        <div className="flex justify-center gap-3 mt-6">
-          <Button type="primary" onClick={() => setIsModalOpen(false)} className="px-6">保存</Button>
-          <Button type="default" onClick={() => setIsModalOpen(false)} className="px-6">返回</Button>
-        </div>
-      </Modal>
-      <SelectModal
-        open={isCompanyModalOpen}
+             <Radio checked={formData.enabled === '0'} onChange={() => setFormData({...formData, enabled: '0'})} label="否" />
+           </div>
+           <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700"></div>
+           <div className="w-[35%] p-2 flex items-center"></div>
+         </div>
+       </div>
+       <div className="flex justify-center gap-3 mt-6">
+         <Button type="primary" onClick={() => setIsModalOpen(false)} className="px-6">保存</Button>
+         <Button type="default" onClick={() => setIsModalOpen(false)} className="px-6">返回</Button>
+       </div>
+     </Modal>
+     <SelectModal
+       open={isCompanyModalOpen}
         title="选择公司"
         dataSource={mockCompanies}
         columns={[{ title: '公司编码', dataIndex: 'code' }, { title: '公司描述', dataIndex: 'desc' }]}
