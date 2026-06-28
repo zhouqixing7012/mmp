@@ -70,9 +70,10 @@ const mockTreeData = [
         leader: '张朝阳',
         code: 'D0002',
         status: '已启用',
+        parentCode: 'D0001',
         children: [
-          { key: 'D0003', title: '财务中心', type: '部门', direct: 0, total: 45, leader: '李明', code: 'D0003', status: '已启用' },
-          { key: 'D0004', title: '法律中心', type: '部门', direct: 0, total: 12, leader: '王强', code: 'D0004', status: '已启用' },
+          { key: 'D0003', title: '财务中心', type: '部门', direct: 0, total: 45, leader: '李明', code: 'D0003', status: '已启用', parentCode: 'D0002' },
+          { key: 'D0004', title: '法律中心', type: '部门', direct: 0, total: 12, leader: '王强', code: 'D0004', status: '已启用', parentCode: 'D0002' },
         ]
       },
       {
@@ -84,6 +85,7 @@ const mockTreeData = [
         leader: '张朝阳',
         code: 'D0161',
         status: '已启用',
+        parentCode: 'D0001',
       },
       {
         key: 'D0717',
@@ -94,6 +96,7 @@ const mockTreeData = [
         leader: '张朝阳',
         code: 'D0717',
         status: '已启用',
+        parentCode: 'D0001',
       },
       {
         key: 'D0841',
@@ -104,6 +107,7 @@ const mockTreeData = [
         leader: '张雪梅',
         code: 'D0841',
         status: '已启用',
+        parentCode: 'D0001',
       }
     ]
   }
@@ -185,126 +189,148 @@ const SidebarTreeNode = ({ node, level = 0, expandedKeys, toggleExpand, selected
 // ==========================================
 const OrgManagementView = () => {
   const [tableExpandedKeys, setTableExpandedKeys] = useState(['D0001']);
+  const [query, setQuery] = useState({ code: '', name: '', fullName: '', enabled: '' });
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   
-  const toggleTableExpand = (key) => setTableExpandedKeys(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+  const toggleTableExpand = (key) => setTableExpandedKeys(prev => 
+    prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+  );
 
-  // 将嵌套数据展平用于表格渲染
-  const getFlattenedData = (nodes, level = 0, parentExpanded = true) => {
+  const getFlattenedData = (nodes, level = 0, parentExpanded = true, parentPath = '') => {
     let result = [];
     nodes.forEach(node => {
       const isExpanded = tableExpandedKeys.includes(node.key);
       const isVisible = parentExpanded;
       if (isVisible) {
-        result.push({ ...node, level, isExpanded });
+        result.push({ 
+          ...node, 
+          level, 
+          isExpanded, 
+          fullName: parentPath ? parentPath + '/' + node.title : node.title 
+        });
       }
       if (node.children) {
-        result = result.concat(getFlattenedData(node.children, level + 1, isVisible && isExpanded));
+        result = result.concat(
+          getFlattenedData(node.children, level + 1, isVisible && isExpanded, 
+            parentPath ? parentPath + '/' + node.title : node.title)
+        );
       }
     });
     return result;
   };
   const flatOrgData = getFlattenedData(mockTreeData);
+  
+  const filteredData = flatOrgData.filter(node => {
+    if (query.code && !node.code.toLowerCase().includes(query.code.toLowerCase())) return false;
+    if (query.name && !node.title.toLowerCase().includes(query.name.toLowerCase())) return false;
+    if (query.fullName && !node.fullName.toLowerCase().includes(query.fullName.toLowerCase())) return false;
+    if (query.enabled) {
+      if (query.enabled === '1' && node.status !== '已启用') return false;
+      if (query.enabled === '0' && node.status === '已启用') return false;
+    }
+    return true;
+  });
 
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="bg-white border border-[#f0f0f0] rounded p-4 flex flex-wrap gap-4 items-end">
+        <div className="flex items-center gap-2">
+          <span className="w-16 text-right text-sm text-gray-600">组织编码:</span>
+          <input type="text" placeholder="请输入组织编码" className="w-40 px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            value={query.code} onChange={(e) => setQuery({...query, code: e.target.value})} />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-16 text-right text-sm text-gray-600">组织名称:</span>
+          <input type="text" placeholder="请输入组织名称" className="w-40 px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            value={query.name} onChange={(e) => setQuery({...query, name: e.target.value})} />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-16 text-right text-sm text-gray-600">组织全称:</span>
+          <input type="text" placeholder="请输入组织全称" className="w-40 px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            value={query.fullName} onChange={(e) => setQuery({...query, fullName: e.target.value})} />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-16 text-right text-sm text-gray-600">是否启用:</span>
+          <select className="w-28 px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            value={query.enabled} onChange={(e) => setQuery({...query, enabled: e.target.value})}>
+            <option value="">全部</option>
+            <option value="1">是</option>
+            <option value="0">否</option>
+          </select>
+        </div>
+        <AntButton type="primary" icon={<Search size={14} />}>查询</AntButton>
+        <AntButton type="default" onClick={() => setQuery({ code: '', name: '', fullName: '', enabled: '' })}>重置</AntButton>
+      </div>
 
- return (
-    <div className="absolute inset-0 flex flex-col">
-           {/* 顶部工具栏 */}
-            <div className="p-4 border-b border-gray-100 flex flex-wrap justify-between items-center gap-4">
-              <div className="flex gap-2">
-                <AntButton type="primary" icon={<Plus size={14} />}>新增</AntButton>
-                <AntButton type="default">导出</AntButton>
-                <AntButton type="default" icon={<Edit size={14} />}>批量操作</AntButton>
-                <AntButton type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</AntButton>
-                <AntButton type="danger" icon={<XCircle size={14} />}>停用</AntButton>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center text-sm text-gray-600 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded cursor-pointer">
-                  展开1级 <ChevronDown size={14} className="ml-2" />
-                </div>
-                <div className="relative">
-                  <input type="text" placeholder="请输入组织名称" className="w-56 pl-3 pr-8 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#1677ff]" />
-                  <Search className="absolute right-2.5 top-2 text-gray-400" size={14} />
-                </div>
-                <AntButton type="default" icon={<Settings size={18} />}></AntButton>
-              </div>
-            </div>
+      <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
+        <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
+          <AntButton type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</AntButton>
+          <AntButton type="danger" icon={<XCircle size={14} />}>停用</AntButton>
+        </div>
 
-            {/* 树形表格区 */}
-            <div className="flex-1 overflow-auto pb-4">
-              <table className="w-full text-left border-collapse min-w-[900px]">
-                <thead className="sticky top-0 bg-[#fafafa] z-10 shadow-sm">
-                  <tr className="border-b border-gray-200">
-                    <th className="py-3 px-4 w-12 text-center"><input type="checkbox" className="rounded border-gray-300" /></th>
-                    <th className="py-3 px-4 text-xs font-semibold text-gray-600 w-1/4">组织机构</th>
-                    <th className="py-3 px-4 text-xs font-semibold text-gray-600 text-center w-16">架构图</th>
-                    <th className="py-3 px-4 text-xs font-semibold text-gray-600">组织类别</th>
-                    <th className="py-3 px-4 text-xs font-semibold text-gray-600">在职 (直属/总共)</th>
-                    <th className="py-3 px-4 text-xs font-semibold text-gray-600">部门负责人</th>
-                    <th className="py-3 px-4 text-xs font-semibold text-gray-600">部门编码</th>
-                    <th className="py-3 px-4 text-xs font-semibold text-gray-600">状态</th>
-                    <th className="py-3 px-4 text-xs font-semibold text-gray-600 text-right">操作</th>
+        <div className="overflow-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead className="sticky top-0 bg-[#fafafa] z-10 shadow-sm">
+              <tr className="border-b border-gray-200">
+                <th className="py-3 px-4 w-12 text-center"><input type="checkbox" className="rounded border-gray-300" /></th>
+                <th className="py-3 px-4 text-xs font-semibold text-gray-600">组织名称</th>
+                <th className="py-3 px-4 text-xs font-semibold text-gray-600">组织编码</th>
+                <th className="py-3 px-4 text-xs font-semibold text-gray-600">部门负责人</th>
+                <th className="py-3 px-4 text-xs font-semibold text-gray-600">部门全称</th>
+                <th className="py-3 px-4 text-xs font-semibold text-gray-600">上级部门编码</th>
+                <th className="py-3 px-4 text-xs font-semibold text-gray-600">状态</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-sm">
+              {filteredData.map((node, index) => {
+                const hasChildren = node.children && node.children.length > 0;
+                return (
+                  <tr key={node.key} className="hover:bg-blue-50/50 transition-colors group">
+                    <td className="py-2.5 px-4 text-center">
+                      <span className="text-gray-300 text-xs mr-2">{index + 1}</span>
+                      <input type="checkbox" className="rounded border-gray-300" />
+                    </td>
+                    <td className="py-2.5 px-4">
+                      <div className="flex items-center" style={{ paddingLeft: `${node.level * 24}px` }}>
+                        <span 
+                          className="w-5 h-5 flex items-center justify-center mr-1 cursor-pointer"
+                          onClick={() => { if(hasChildren) toggleTableExpand(node.key); }}
+                        >
+                          {hasChildren ? (
+                            node.isExpanded ? <ChevronDown size={14} className="text-gray-500 hover:text-blue-500" /> 
+                                            : <ChevronRight size={14} className="text-gray-500 hover:text-blue-500" />
+                          ) : <span className="w-[14px]"></span>}
+                        </span>
+                        {node.type === '公司' ? (
+                           <Building2 size={16} className="text-[#1677ff] mr-2" />
+                        ) : (
+                           <FolderOpen size={16} className="text-yellow-500 mr-2" />
+                        )}
+                        <span className="font-medium text-gray-800">{node.title}</span>
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-4 text-gray-600">{node.code}</td>
+                    <td className="py-2.5 px-4 text-gray-600">{node.leader}</td>
+                    <td className="py-2.5 px-4 text-gray-600">{node.fullName}</td>
+                    <td className="py-2.5 px-4 text-gray-600">{node.parentCode || '-'}</td>
+                    <td className="py-2.5 px-4">
+                      <span className={`px-2 py-0.5 rounded text-xs ${node.status === '已启用' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{node.status}</span>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-sm">
-                  {flatOrgData.map((node, index) => {
-                    const hasChildren = node.children && node.children.length > 0;
-                    return (
-                      <tr key={node.key} className="hover:bg-blue-50/50 transition-colors group">
-                        <td className="py-2.5 px-4 text-center">
-                          <span className="text-gray-300 text-xs mr-2">{index + 1}</span>
-                          <input type="checkbox" className="rounded border-gray-300" />
-                        </td>
-                        <td className="py-2.5 px-4">
-                          <div 
-                            className="flex items-center" 
-                            style={{ paddingLeft: `${node.level * 24}px` }}
-                          >
-                            <span 
-                              className="w-5 h-5 flex items-center justify-center mr-1 cursor-pointer"
-                              onClick={() => { if(hasChildren) toggleTableExpand(node.key); }}
-                            >
-                              {hasChildren ? (
-                                node.isExpanded ? <ChevronDown size={14} className="text-gray-500 hover:text-blue-500" /> 
-                                                : <ChevronRight size={14} className="text-gray-500 hover:text-blue-500" />
-                              ) : <span className="w-[14px]"></span>}
-                            </span>
-                            {node.type === '公司' ? (
-                               <Building2 size={16} className="text-[#1677ff] mr-2" />
-                            ) : (
-                               <FolderOpen size={16} className="text-yellow-500 mr-2" />
-                            )}
-                            <span className="font-medium text-gray-800">{node.title}</span>
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-4 text-center">
-                          <Network size={16} className="text-blue-400 mx-auto cursor-pointer hover:text-blue-600" />
-                        </td>
-                        <td className="py-2.5 px-4 text-gray-600">{node.type}</td>
-                        <td className="py-2.5 px-4 text-gray-600">
-                          {node.direct} / <span className="text-red-500">{node.total}</span>
-                        </td>
-                        <td className="py-2.5 px-4 text-gray-600">{node.leader}</td>
-                        <td className="py-2.5 px-4 text-gray-600">{node.code}</td>
-                        <td className="py-2.5 px-4">
-                          <span className={`px-2 py-0.5 rounded text-xs ${node.status === '已启用' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{node.status}</span>
-                        </td>
-                        <td className="py-2.5 px-4 text-right whitespace-nowrap">
-                           <AntButton type="link">编辑</AntButton>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            
-            {/* 底部简易分页栏 */}
-            <div className="p-3 border-t border-gray-100 flex justify-end text-sm text-gray-500 bg-white">
-              共 5 条记录
-            </div>
-         </div>
- );
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="p-3 border-t border-gray-100 flex justify-end text-sm text-gray-500 bg-white">
+          共 {filteredData.length} 条记录
+        </div>
+      </div>
+    </div>
+  );
 };
+
 
 const UserManagementView = () => {
   const [viewingUserId, setViewingUserId] = useState(null); // null 或者 用户ID
