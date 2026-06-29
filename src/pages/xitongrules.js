@@ -369,6 +369,9 @@ const UserManagementView = () => {
             <div className="flex"><div className="w-24 text-gray-500">登录名</div><div className="flex-1 text-gray-900">{mockUserDetail.loginName}</div></div>
             <div className="flex"><div className="w-24 text-gray-500">移动电话</div><div className="flex-1 text-gray-900">{mockUserDetail.mobile || '-'}</div></div>
            <div className="flex"><div className="w-24 text-gray-500">拥有的角色</div><div className="flex-1 text-gray-900">{mockUserDetail.roles || '-'}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">员工职级</div><div className="flex-1 text-gray-900">{mockUserDetail.level}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">公司</div><div className="flex-1 text-gray-900">{mockUserDetail.company}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">成本中心</div><div className="flex-1 text-gray-900">{mockUserDetail.costCenter || '-'}</div></div>
            <div className="flex"><div className="w-24 text-gray-500">HR公司</div><div className="flex-1 text-gray-900">{mockUserDetail.hrCompany}</div></div>
            <div className="flex"><div className="w-24 text-gray-500">部门全称</div><div className="flex-1 text-gray-900">{mockUserDetail.fullDeptName}</div></div>
            <div className="flex"><div className="w-24 text-gray-500">办公区</div><div className="flex-1 text-gray-900">{mockUserDetail.office}</div></div>
@@ -381,18 +384,9 @@ const UserManagementView = () => {
             <div className="flex"><div className="w-24 text-gray-500">性别</div><div className="flex-1 text-gray-900">{mockUserDetail.gender}</div></div>
             <div className="flex"><div className="w-24 text-gray-500">Email地址</div><div className="flex-1 text-gray-900">{mockUserDetail.email}</div></div>
            <div className="flex"><div className="w-24 text-gray-500">职目</div><div className="flex-1 text-gray-900">{mockUserDetail.jobSubCategory || '-'}</div></div>
-            <div className="flex gap-4">
-              <div className="flex flex-1"><div className="w-24 text-gray-500 shrink-0">员工职级</div><div className="flex-1 text-gray-900">{mockUserDetail.level}</div></div>
-              <div className="flex flex-1"><div className="w-24 text-gray-500 shrink-0">上级领导</div><div className="flex-1 text-gray-900">{mockUserDetail.manager}</div></div>
-            </div>
-            <div className="flex gap-4">
-              <div className="flex flex-1"><div className="w-24 text-gray-500 shrink-0">公司</div><div className="flex-1 text-gray-900">{mockUserDetail.company}</div></div>
-              <div className="flex flex-1"><div className="w-24 text-gray-500 shrink-0">板块</div><div className="flex-1 text-gray-900">{mockUserDetail.plate || '-'}</div></div>
-            </div>
-            <div className="flex gap-4">
-              <div className="flex flex-1"><div className="w-24 text-gray-500 shrink-0">成本中心</div><div className="flex-1 text-gray-900">{mockUserDetail.costCenter || '-'}</div></div>
-              <div className="flex flex-1"><div className="w-24 text-gray-500 shrink-0">项目</div><div className="flex-1 text-gray-900">{mockUserDetail.proj || '-'}</div></div>
-            </div>
+            <div className="flex"><div className="w-24 text-gray-500">上级领导</div><div className="flex-1 text-gray-900">{mockUserDetail.manager}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">板块</div><div className="flex-1 text-gray-900">{mockUserDetail.plate || '-'}</div></div>
+            <div className="flex"><div className="w-24 text-gray-500">项目</div><div className="flex-1 text-gray-900">{mockUserDetail.proj || '-'}</div></div>
          </div>
        </div>
 
