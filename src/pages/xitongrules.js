@@ -59,6 +59,7 @@ const mockTreeData = [
     direct: 1,
     total: 2743,
     leader: '张朝阳',
+        leaderCode: '10001',
     code: 'D0001',
     status: '已启用',
     children: [
@@ -69,12 +70,13 @@ const mockTreeData = [
         direct: 0,
         total: 543,
         leader: '张朝阳',
+        leaderCode: '10001',
         code: 'D0002',
         status: '已启用',
         parentCode: 'D0001',
         children: [
-          { key: 'D0003', title: '财务中心', type: '部门', direct: 0, total: 45, leader: '李明', code: 'D0003', status: '已启用', parentCode: 'D0002' },
-          { key: 'D0004', title: '法律中心', type: '部门', direct: 0, total: 12, leader: '王强', code: 'D0004', status: '已启用', parentCode: 'D0002' },
+          { key: 'D0003', title: '财务中心', type: '部门', direct: 0, total: 45, leader: '李明', leaderCode: '10003', code: 'D0003', status: '已启用', parentCode: 'D0002' },
+          { key: 'D0004', title: '法律中心', type: '部门', direct: 0, total: 12, leader: '王强', leaderCode: '10004', code: 'D0004', status: '已启用', parentCode: 'D0002' },
         ]
       },
       {
@@ -84,6 +86,7 @@ const mockTreeData = [
         direct: 0,
         total: 1357,
         leader: '张朝阳',
+        leaderCode: '10001',
         code: 'D0161',
         status: '已启用',
         parentCode: 'D0001',
@@ -95,6 +98,7 @@ const mockTreeData = [
         direct: 0,
         total: 797,
         leader: '张朝阳',
+        leaderCode: '10001',
         code: 'D0717',
         status: '已启用',
         parentCode: 'D0001',
@@ -106,6 +110,7 @@ const mockTreeData = [
         direct: 0,
         total: 45,
         leader: '张雪梅',
+        leaderCode: '10002',
         code: 'D0841',
         status: '已启用',
         parentCode: 'D0001',
@@ -203,11 +208,12 @@ const OrgManagementView = () => {
       const isExpanded = tableExpandedKeys.includes(node.key);
       const isVisible = parentExpanded;
       if (isVisible) {
+                const cleanTitle = node.title.replace(/\s*\([^)]*\)\s*$/, '').trim();
         result.push({ 
           ...node, 
           level, 
           isExpanded, 
-          fullName: parentPath ? parentPath + '/' + node.title : node.title 
+          fullName: parentPath ? parentPath + '/' + cleanTitle : cleanTitle 
         });
       }
       if (node.children) {
@@ -319,7 +325,7 @@ const OrgManagementView = () => {
                       </div>
                     </td>
                     <td className="py-2.5 px-4 text-gray-600">{node.code}</td>
-                    <td className="py-2.5 px-4 text-gray-600">{node.leader}</td>
+                    <td className="py-2.5 px-4 text-gray-600">{node.leader}{node.leaderCode ? " (" + node.leaderCode + ")" : ""}</td>
                     <td className="py-2.5 px-4 text-gray-600">{node.fullName}</td>
                     <td className="py-2.5 px-4 text-gray-600">{node.parentCode || '-'}</td>
                     <td className="py-2.5 px-4">
