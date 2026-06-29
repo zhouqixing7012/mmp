@@ -147,7 +147,9 @@ const mockUserDetail = {
   email: 'weiyang205266@sohu-inc.com',
   manager: '117313 李少鹏',
   jobCategory: '',
-  jobSubCategory: ''
+  jobSubCategory: '',
+  plate: 'SAAS',
+  proj: 'P001_项目A'
 };
 
 
@@ -219,7 +221,7 @@ const OrgManagementView = () => {
       if (node.children) {
         result = result.concat(
           getFlattenedData(node.children, level + 1, isVisible && isExpanded, 
-            parentPath ? parentPath + '/' + node.title : node.title)
+            parentPath ? parentPath + '/' + cleanTitle : cleanTitle)
         );
       }
     });
@@ -367,9 +369,18 @@ const UserManagementView = () => {
             <div className="flex"><div className="w-24 text-gray-500">登录名</div><div className="flex-1 text-gray-900">{mockUserDetail.loginName}</div></div>
             <div className="flex"><div className="w-24 text-gray-500">移动电话</div><div className="flex-1 text-gray-900">{mockUserDetail.mobile || '-'}</div></div>
             <div className="flex"><div className="w-24 text-gray-500">拥有的角色</div><div className="flex-1 text-gray-900">{mockUserDetail.roles || '-'}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">员工职级</div><div className="flex-1 text-gray-900">{mockUserDetail.level}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">公司</div><div className="flex-1 text-gray-900">{mockUserDetail.company}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">成本中心</div><div className="flex-1 text-gray-900">{mockUserDetail.costCenter || '-'}</div></div>
+            <div className="flex gap-4">
+              <div className="flex flex-1"><div className="w-24 text-gray-500 shrink-0">员工职级</div><div className="flex-1 text-gray-900">{mockUserDetail.level}</div></div>
+              <div className="flex flex-1"><div className="w-24 text-gray-500 shrink-0">上级领导</div><div className="flex-1 text-gray-900">{mockUserDetail.manager}</div></div>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex flex-1"><div className="w-24 text-gray-500 shrink-0">公司</div><div className="flex-1 text-gray-900">{mockUserDetail.company}</div></div>
+              <div className="flex flex-1"><div className="w-24 text-gray-500 shrink-0">板块</div><div className="flex-1 text-gray-900">{mockUserDetail.plate || '-'}</div></div>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex flex-1"><div className="w-24 text-gray-500 shrink-0">成本中心</div><div className="flex-1 text-gray-900">{mockUserDetail.costCenter || '-'}</div></div>
+              <div className="flex flex-1"><div className="w-24 text-gray-500 shrink-0">项目</div><div className="flex-1 text-gray-900">{mockUserDetail.proj || '-'}</div></div>
+            </div>
             <div className="flex"><div className="w-24 text-gray-500">HR公司</div><div className="flex-1 text-gray-900">{mockUserDetail.hrCompany}</div></div>
             <div className="flex"><div className="w-24 text-gray-500">部门全称</div><div className="flex-1 text-gray-900">{mockUserDetail.fullDeptName}</div></div>
             <div className="flex"><div className="w-24 text-gray-500">办公区</div><div className="flex-1 text-gray-900">{mockUserDetail.office}</div></div>
@@ -381,8 +392,6 @@ const UserManagementView = () => {
             <div className="flex"><div className="w-24 text-gray-500">状态有效</div><div className="flex-1 text-gray-900">{mockUserDetail.statusValid}</div></div>
             <div className="flex"><div className="w-24 text-gray-500">性别</div><div className="flex-1 text-gray-900">{mockUserDetail.gender}</div></div>
             <div className="flex"><div className="w-24 text-gray-500">Email地址</div><div className="flex-1 text-gray-900">{mockUserDetail.email}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">上级领导</div><div className="flex-1 text-gray-900">{mockUserDetail.manager}</div></div>
-            <div className="flex"><div className="w-24 text-gray-500">职类</div><div className="flex-1 text-gray-900">{mockUserDetail.jobCategory || '-'}</div></div>
             <div className="flex"><div className="w-24 text-gray-500">职目</div><div className="flex-1 text-gray-900">{mockUserDetail.jobSubCategory || '-'}</div></div>
           </div>
         </div>
@@ -442,11 +451,10 @@ const UserManagementView = () => {
                       <th className="py-3 px-3 text-xs font-semibold text-gray-600">工号</th>
                       <th className="py-3 px-3 text-xs font-semibold text-gray-600">姓名</th>
                       <th className="py-3 px-3 text-xs font-semibold text-gray-600">邮箱</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">职级</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">职务序列</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">员工状态</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">使用状态</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600 text-right">操作</th>
+                     <th className="py-3 px-3 text-xs font-semibold text-gray-600">职级</th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">部门</th>
+                     <th className="py-3 px-3 text-xs font-semibold text-gray-600">使用状态</th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600 text-right">角色</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-sm">
@@ -464,21 +472,16 @@ const UserManagementView = () => {
                         </td>
                         <td className="py-2.5 px-3 text-gray-800">{user.name}</td>
                         <td className="py-2.5 px-3 text-gray-500">{user.email}</td>
-                        <td className="py-2.5 px-3 text-gray-600">{user.level}</td>
-                        <td className="py-2.5 px-3 text-gray-600">{user.isTech}</td>
-                        <td className="py-2.5 px-3">
-                          <span className={`px-2 py-0.5 rounded text-xs ${user.empStatus === 'employed' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
-                            {user.empStatus === 'employed' ? '在职' : '离职'}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <span className={`px-2 py-0.5 rounded text-xs ${user.usageStatus === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            {user.usageStatus === 'active' ? '启用' : '停用'}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-right">
-                           <AntButton type="link">编辑</AntButton>
-                        </td>
+                       <td className="py-2.5 px-3 text-gray-600">{user.level}</td>
+                        <td className="py-2.5 px-3 text-gray-600">{user.dept}</td>
+                       <td className="py-2.5 px-3">
+                         <span className={`px-2 py-0.5 rounded text-xs ${user.usageStatus === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                           {user.usageStatus === 'active' ? '启用' : '停用'}
+                         </span>
+                       </td>
+                       <td className="py-2.5 px-3 text-right">
+                           <AntButton type="link">分配</AntButton>
+                       </td>
                       </tr>
                     ))}
                   </tbody>
