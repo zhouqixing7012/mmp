@@ -209,9 +209,9 @@ const OrgManagementView = () => {
     nodes.forEach(node => {
       const isExpanded = tableExpandedKeys.includes(node.key);
       const isVisible = parentExpanded;
+      const cleanTitle = node.title.replace(/\s*\([^)]*\)\s*$/, '').trim();
       if (isVisible) {
-                const cleanTitle = node.title.replace(/\s*\([^)]*\)\s*$/, '').trim();
-        result.push({ 
+        result.push({
           ...node, 
           level, 
           isExpanded, 
