@@ -26,7 +26,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
-import { Input, Select } from 'antd';
+import { Input, Select, Button, Modal, Table } from 'antd';
 
 // --- 统一的Ant Button组件 ---
 const AntButton = ({ children, type = 'default', icon, className = '', ...props }) => {
@@ -152,6 +152,25 @@ const mockUserDetail = {
   proj: 'P001_项目A'
 };
 
+// 模拟角色数据
+const mockRoles = [
+  { id: 'R001', name: '系统管理员', responsibility: '系统配置管理、用户管理、权限分配' },
+  { id: 'R002', name: '资产管理员', responsibility: '资产管理、资产入库、资产盘点' },
+  { id: 'R003', name: '采购专员', responsibility: '采购订单管理、供应商管理' },
+  { id: 'R004', name: '财务审核', responsibility: '费用审核、资产折旧' },
+  { id: 'R005', name: '部门主管', responsibility: '部门资产申请审批' },
+  { id: 'R006', name: '普通员工', responsibility: '资产领用申请、查看个人资产' },
+];
+
+// 用户已有角色 (key: 用户ID, value: 角色ID数组)
+const mockUserRoleAssignments = {
+  '117687': ['R001', 'R002'],
+  '201672': ['R003'],
+  '120074': ['R005', 'R006'],
+  '130008': ['R006'],
+  '200026': ['R004', 'R005'],
+  '214644': ['R003', 'R006'],
+};
 
 // ==========================================
 // 2. 左侧树组件 (用于用户管理)
@@ -188,7 +207,7 @@ const SidebarTreeNode = ({ node, level = 0, expandedKeys, toggleExpand, selected
         </div>
       )}
     </div>
-  );
+ );
 };
 
 
@@ -250,8 +269,9 @@ const OrgManagementView = () => {
                 <span className="w-24 text-right text-sm text-gray-600 shrink-0">组织编码:</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <Input placeholder="请输入组织编码" value={query.code} onChange={(e) => setQuery({...query, code: e.target.value})} />
-                </div>
-              </div>
+          </div>
+            </div>
+
               <div className="flex items-center gap-2" style={{ minWidth: 0 }}>
                 <span className="w-24 text-right text-sm text-gray-600 shrink-0">组织名称:</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -355,8 +375,27 @@ const UserManagementView = () => {
   // --- 用户管理视图所需 State ---
  const [expandedKeys, setExpandedKeys] = useState(['D0001', 'D0002']);
   const [selectedKey, setSelectedKey] = useState('D0002');
-  const [selectedRows, setSelectedRows] = useState([]);
- if (viewingUserId) {
+ const [selectedRows, setSelectedRows] = useState([]);
+  // --- 角色分配弹窗 State ---
+  const [roleModalVisible, setRoleModalVisible] = useState(false);
+  const [roleView, setRoleView] = useState('list'); // 'list' | 'select'
+  const [selectedUserForRole, setSelectedUserForRole] = useState(null);
+  const [currentUserRoles, setCurrentUserRoles] = useState([]);
+  const [selectedRoleKeys, setSelectedRoleKeys] = useState([]);
+  const [tempSelectedRoleKeys, setTempSelectedRoleKeys] = useState([]);
+  const [roleSearchText, setRoleSearchText] = useState('');
+
+  // 打开角色分配弹窗：根据用户ID获取已分配的角色
+  const handleRoleAssign = (user) => {
+    setSelectedUserForRole(user);
+    const assignedRoleIds = mockUserRoleAssignments[user.id] || [];
+    const assignedRoles = mockRoles.filter(r => assignedRoleIds.includes(r.id));
+    setCurrentUserRoles(assignedRoles);
+    setSelectedRoleKeys([]);
+    setRoleModalVisible(true);
+  };
+
+if (viewingUserId) {
     return (
       <div className="bg-white rounded-md shadow-sm border border-gray-200 p-6 flex flex-col h-full overflow-y-auto">
         <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-100 pb-3 mb-6">用户信息</h2>
@@ -431,10 +470,8 @@ const UserManagementView = () => {
               </div>
               
               <div className="px-4 py-3 flex gap-2">
-                <AntButton type="primary" icon={<Plus size={14} />}>新增人员</AntButton>
                 <AntButton type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</AntButton>
                 <AntButton type="danger" icon={<XCircle size={14} />}>停用</AntButton>
-                <AntButton type="default" icon={<Trash2 size={14} />}>批量删除</AntButton>
               </div>
 
               <div className="flex-1 overflow-auto px-4 pb-4">
@@ -474,7 +511,7 @@ const UserManagementView = () => {
                          </span>
                        </td>
                        <td className="py-2.5 px-3 text-right">
-                           <AntButton type="link">分配</AntButton>
+                           <AntButton type="link" onClick={() => handleRoleAssign(user)}>分配</AntButton>
                        </td>
                       </tr>
                     ))}
@@ -482,6 +519,80 @@ const UserManagementView = () => {
                 </table>
               </div>
             </div>
+      {/* 角色分配弹窗 */}
+      <Modal
+        title={`角色分配 - ${selectedUserForRole?.name || ''}`}
+        open={roleModalVisible}
+        onCancel={() => { setRoleModalVisible(false); setRoleView('list'); }}
+        footer={null}
+        width={roleView === 'list' ? 600 : 500}
+      >
+        {roleView === 'list' ? (
+          <>
+            <div className="border-b border-[#f0f0f0] px-4 py-3 flex gap-2 bg-[#fafafa]">
+              <Button type="primary" icon={<Plus size={14} />} onClick={() => { setRoleSearchText(''); setTempSelectedRoleKeys([]); setRoleView('select'); }}>新增</Button>
+              <Button danger icon={<Trash2 size={14} />} onClick={() => {
+                setCurrentUserRoles(prev => prev.filter(r => !selectedRoleKeys.includes(r.id)));
+                setSelectedRoleKeys([]);
+              }}>删除</Button>
+            </div>
+            <Table
+              rowKey="id"
+              rowSelection={{ type: 'checkbox', selectedRowKeys: selectedRoleKeys, onChange: setSelectedRoleKeys }}
+              columns={[
+                { title: '角色名称', dataIndex: 'name', key: 'name' },
+                { title: '职责', dataIndex: 'responsibility', key: 'responsibility' },
+              ]}
+              dataSource={currentUserRoles}
+              pagination={false}
+              size="small"
+            />
+            <div className="flex justify-center gap-3 border-t border-[#f0f0f0] px-4 py-3 bg-[#fafafa]">
+              <Button type="primary" onClick={() => { setRoleModalVisible(false); setRoleView('list'); }} className="px-6">确定</Button>
+              <Button type="default" onClick={() => { setRoleModalVisible(false); setRoleView('list'); }} className="px-6">返回</Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="mb-3">
+              <Input
+                placeholder="请输入角色名称"
+                prefix={<Search size={14} />}
+                value={roleSearchText}
+                onChange={(e) => setRoleSearchText(e.target.value)}
+              />
+            </div>
+            <Table
+              rowKey="id"
+              rowSelection={{ type: 'checkbox', selectedRowKeys: tempSelectedRoleKeys, onChange: setTempSelectedRoleKeys }}
+              columns={[
+                { title: '角色名称', dataIndex: 'name', key: 'name' },
+                { title: '职责', dataIndex: 'responsibility', key: 'responsibility' },
+              ]}
+              dataSource={mockRoles.filter(r =>
+                !currentUserRoles.find(ur => ur.id === r.id) &&
+                r.name.includes(roleSearchText)
+              )}
+              pagination={false}
+              size="small"
+            />
+            <div className="flex justify-center gap-3 border-t border-[#f0f0f0] px-4 py-3 bg-[#fafafa]">
+              <Button type="primary" onClick={() => {
+                const newRoles = mockRoles.filter(r => tempSelectedRoleKeys.includes(r.id));
+                setCurrentUserRoles(prev => {
+                  const merged = [...prev, ...newRoles];
+                  const seen = new Set();
+                  return merged.filter(r => { const dup = seen.has(r.id); seen.add(r.id); return !dup; });
+                });
+                setTempSelectedRoleKeys([]);
+                setRoleView('list');
+              }} className="px-6">确定</Button>
+              <Button type="default" onClick={() => { setTempSelectedRoleKeys([]); setRoleView('list'); }} className="px-6">返回</Button>
+            </div>
+          </>
+        )}
+      </Modal>
+
          </div>
  );
 };

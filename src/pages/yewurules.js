@@ -656,15 +656,6 @@ const MaterialCategoryView = () => {
             <div className="w-[35%] p-2 flex items-center gap-4 px-3">
             </div>
           </div>
-          <div className="flex min-h-[40px]">
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>是否启用</div>
-            <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center gap-4 px-3">
-              <Radio checked={formData.enabled === '1'} onChange={() => setFormData({...formData, enabled: '1'})} label="是" />
-              <Radio checked={formData.enabled === '0'} onChange={() => setFormData({...formData, enabled: '0'})} label="否" />
-            </div>
-            <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700"></div>
-            <div className="w-[35%] p-2 flex items-center"></div>
-          </div>
         </div>
         <div className="flex justify-center gap-3 mt-6">
           <Button type="primary" onClick={() => setIsModalOpen(false)} className="px-6">保存</Button>
@@ -4329,7 +4320,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('物料大类');
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const baseDataTabs = ['物料维度组合', '物料大类', '物料小类', '品牌', '型号', '配置'];  //, 'NO服务'
-  const mappingTabs = ['办公区与仓库映射', 'PS新员工领用物料映射', 'NO地点与资产地点映射', '虚拟库管员映射', '板块与账簿映射'];
+  const mappingTabs = ['办公区与仓库映射', 'PS新员工领用物料映射', 'NO地点与资产地点映射', '虚拟库管员映射', '板块与账簿映射', '公司板块领取资产权限', '机房资产领取权限'];
   const authTabs = ['公司板块提取资产权限', 'NO设备提取资产权限', '公司归属权限'];
   const warehouseTabs = ['仓库信息', '仓库用途', '仓库权限'];
   const locationTabs = ['地点基础数据维护'];
@@ -4531,9 +4522,8 @@ export default function App() {
               {activeMenu === '后台基础配置' && activeTab === 'NO地点与资产地点映射' && <NOLocationMappingView />}
               {activeMenu === '后台基础配置' && activeTab === '虚拟库管员映射' && <VirtualWarehouseManagerMappingView />}
               {activeMenu === '后台基础配置' && activeTab === '板块与账簿映射' && <PlateLedgerMappingView />}
-              {/* 业务权限规则管理 - 只在后台基础配置下显示 */}
-              {activeMenu === '后台基础配置' && activeTab === '公司板块提取资产权限' && <CompanyPlateAssetAuthView />}
-              {activeMenu === '后台基础配置' && activeTab === 'NO设备提取资产权限' && <NODeviceAssetAuthView />}
+              {activeMenu === '后台基础配置' && activeTab === '公司板块领取资产权限' && <CompanyPlateAssetAuthView />}
+              {activeMenu === '后台基础配置' && activeTab === '机房资产领取权限' && <NODeviceAssetAuthView />}
               {activeMenu === '后台基础配置' && activeTab === '公司归属权限' && <CompanyBelongingAuthView />}
               {/* 仓库基础数据维护 - 只在后台基础配置下显示 */}
               {activeMenu === '后台基础配置' && activeTab === '仓库信息' && <WarehouseInfoView />}
