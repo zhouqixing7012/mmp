@@ -155,12 +155,17 @@ export const mockRealAdmins = [
  ];
  
  export const mockCompanyPlateAuthData = [
-   { id: 1, company: '114_搜狐媒体', plate: '17_Corporate', materialCategory: '140_搜狐媒体_武汉', empCompany: '', empPlate: '' },
+   { id: 1, company: '114_搜狐媒体', plate: '17_Corporate', materialCategory: '140_搜狐媒体_武汉', empCompany: '', empPlate: '', enabled: '1' },
+    { id: 2, company: '122_焦点直销', plate: '52_房产', materialCategory: '142_焦点_北京', empCompany: '122_焦点直销', empPlate: '52_房产', enabled: '1' },
+    { id: 3, company: '203_焦点新干线', plate: '33_SAAS', materialCategory: '140_搜狐媒体_武汉', empCompany: '203_焦点新干线', empPlate: '33_SAAS', enabled: '0' },
+    { id: 4, company: '114_搜狐媒体', plate: '17_Corporate', materialCategory: '160_机房_北京', empCompany: '114_搜狐媒体', empPlate: '17_Corporate', enabled: '1' },
  ];
  
  export const mockNODeviceAuthData = [
-   { id: 1, type: '服务器', owner: '220314-刘帅' },
- ];
+  { id: 1, type: '服务器', owner: '220314-刘帅', enabled: '1' },
+  { id: 2, type: '网络设备', owner: '210415-王强', enabled: '1' },
+  { id: 3, type: '服务器', owner: '190621-李娜', enabled: '0' },
+];
  
  export const mockCompanyBelongingAuthData = [
    { id: 1, belonging: '焦点', company: '122_焦点直销', plate: '52_房产' },

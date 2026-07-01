@@ -76,6 +76,13 @@
 - 父容器添加 `cursor-pointer` 和 `onClick` 事件
 
 **示例**：
+
+**原位替换弹窗（替代嵌套弹窗）**：
+- 适合"列表→选择"两步操作，不需要两层 Modal 堆叠
+- 用 `roleView` 状态控制当前显示视图（如 `'list'` / `'select'`）
+- 底部按钮栏统一用 `<div className="flex justify-center gap-3 mt-6">`，无 `border-t` / `pt-4` 装饰
+- 按钮用 `className="px-6"`，主按钮 `type="primary"` / 次按钮 `type="default"`
+- 新增时只添加 `ArrowLeft` 返回链接（可选），不保留"返回列表"和"取消"两个重复按钮
 ```jsx
 <div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsModalOpen(true)}>
   <AntInput value={formData.brand} onChange={(e) => setFormData({...formData, brand: e.target.value})} placeholder="请选择品牌" readOnly className="pointer-events-none" />
