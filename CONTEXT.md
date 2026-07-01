@@ -1,19 +1,22 @@
-﻿# 当前状态
-yewurules.js 完成费用账户规则和成本中心与科目映射页签改造：
+# 当前状态
+rolemgt.js 角色管理页面完成，接入 yewurules.js 后台基础配置菜单。
 
-- 费用账户规则(ExpenseAccountRuleView)：查询条件新增"是否启用"下拉框，
-  操作栏去掉删除按钮，是否启用改为单选按钮，全部输入字段改为弹窗选择，
-  新增 mock 参考数据(mockCostCenters/mockPlates等8组)
-- 成本中心与科目映射(CostCenterSubjectMappingView)：精简为成本中心/大类/公司/科目/
-  是否启用 5个字段，全部字段弹窗选择，是否启用单选按钮
+角色管理页面包含：
+- 查询条件：角色名称（Input）+ 是否启用（Select）
+- 表格列：角色名称、职责、关联用户（带"关联"按钮）、菜单权限（带"分配"按钮）、状态
+- 操作栏：新增、启用、停用
 
-SelectModal 组件新增 multiple 属性支持多选。
+三个弹窗/页面：
+1. 新增/编辑角色弹窗（角色名称、状态、职责）
+2. 关联用户弹窗（SelectModal 风格，搜索条件：工号/姓名/部门，表格：工号/姓名/部门，支持多选+分页+全选）
+3. 菜单权限分配页面（viewMode 切换，三列表格：二级菜单|三级菜单|功能点，含全选和功能点复选框）
+
+样式规范：启用/停用标签使用 bg-green-100/text-green-700 / bg-red-100/text-red-700
 
 # 上次停的位置
-成本中心页面bug修复完成（闭合标签+重复Search图标），提交代码变更。
+角色管理页面初步完成，构建通过（warnings）。
 
-# 关键决定（新增）
-- 费用账户规则弹窗字段使用 SelectModal 弹窗选择，referenced by 11个弹窗组件
-- 成本中心表格列用 "编码.描述" 格式显示（onConfirm 存 record.code + '.' + record.desc）
-- Python 脚本写文件需用 [System.IO.File]::WriteAllText 保证 UTF-8 编码
-- apply_patch 只匹配 context（空格前缀）时不会修改文件，需用 -/+ 前缀做实际变更
+# 关键决定
+- 关联用户弹窗：宽度 800px，分页 5 条/页，支持全选
+- 菜单权限分配：用 viewMode 切换（非弹窗），点击"分配"切换到权限页面，确定/取消返回列表
+- mockPermissionData 含 23 条菜单权限数据

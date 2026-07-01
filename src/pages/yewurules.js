@@ -8,6 +8,7 @@ import {
 // 导入 xitongrules.js 中的组织与用户管理组件
 import { UserManagementView, OrgManagementView } from './xitongrules';
 import DictManagementView from "./dictmanagement";
+import RoleManagementView from "./rolemgt";
 import { Button, Input, Select, Modal, Table, Radio, Card, Tag, DatePicker } from 'antd';
 import StatusTag from '../components/StatusTag';
 import SelectModal from '../components/SelectModal';
@@ -4501,6 +4502,12 @@ export default function App() {
               {activeSubMenu === '组织管理' && (
                 <div className="flex-1 flex flex-col relative">
                   <OrgManagementView />
+                </div>
+              )}
+              {/* 角色管理 */}
+              {activeSubMenu === '角色管理' && (
+                <div className="flex-1 flex flex-col relative">
+                  <RoleManagementView />
                 </div>
               )}
               {/* 字典管理 */}

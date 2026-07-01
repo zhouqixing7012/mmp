@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Input, Select, Table, Modal, Form, InputNumber, Tag } from 'antd';
+import { Button, Input, Select, Table, Modal, InputNumber, Tag } from 'antd';
 import { Plus, CheckCircle, XCircle, ArrowLeft, Search } from 'lucide-react';
 import QueryBar, { QueryItem } from '../components/QueryBar';
 
@@ -23,68 +23,91 @@ const mockDictItemData = [
 ];
 
 function DictAddModal({ open, onClose }) {
-  const [form] = Form.useForm();
+  const [values, setValues] = useState({ dictCode: '', dictName: '', description: '' });
   const handleSave = () => {
-    form.validateFields().then(values => {
-      console.log('Save:', values);
-      form.resetFields();
-      onClose();
-    });
+    if (!values.dictCode || !values.dictName) return;
+    console.log('Save:', values);
+    setValues({ dictCode: '', dictName: '', description: '' });
+    onClose();
   };
   return (
-    <Modal open={open} onCancel={onClose} footer={null} title="字典-新增" width={600} destroyOnClose>
-      <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-        <Form.Item label="字典编码" name="dictCode" rules={[{ required: true, message: '请输入字典编码' }]}>
-          <Input placeholder="请输入字典编码" />
-        </Form.Item>
-        <Form.Item label="字典名称" name="dictName" rules={[{ required: true, message: '请输入字典名称' }]}>
-          <Input placeholder="请输入字典名称" />
-        </Form.Item>
-        <Form.Item label="描述" name="description">
-          <Input.TextArea rows={4} placeholder="请输入描述" />
-        </Form.Item>
-      </Form>
-      <div style={{ textAlign: 'center', marginTop: 16 }}>
-        <Button type="primary" onClick={handleSave} style={{ marginRight: 8 }}>保存</Button>
-        <Button onClick={onClose}>返回</Button>
+    <Modal open={open} onCancel={onClose} footer={null} title="字典-新增" width="900px" destroyOnClose>
+      <div className="border border-[#e8e8e8] text-sm mb-4">
+        <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>字典编码</div>
+          <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
+            <Input value={values.dictCode} onChange={(e) => setValues({...values, dictCode: e.target.value})} placeholder="请输入字典编码" />
+          </div>
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>字典名称</div>
+          <div className="w-[35%] p-2 flex items-center">
+            <Input value={values.dictName} onChange={(e) => setValues({...values, dictName: e.target.value})} placeholder="请输入字典名称" />
+          </div>
+        </div>
+        <div className="flex min-h-[40px]">
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">描述</div>
+          <div className="w-[85%] p-2 flex items-center">
+            <Input.TextArea rows={4} value={values.description} onChange={(e) => setValues({...values, description: e.target.value})} placeholder="请输入描述" />
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-center gap-3 mt-6">
+        <Button type="primary" onClick={handleSave} className="px-6">保存</Button>
+        <Button type="default" onClick={onClose} className="px-6">返回</Button>
       </div>
     </Modal>
   );
 }
 
 function DictItemAddModal({ open, onClose, dictCode, dictName }) {
-  const [form] = Form.useForm();
+  const [values, setValues] = useState({ itemCode: '', itemName: '', priority: 0, status: '启用', description: '' });
   const handleSave = () => {
-    form.validateFields().then(values => {
-      console.log('Save item:', values);
-      form.resetFields();
-      onClose();
-    });
+    if (!values.itemCode || !values.itemName) return;
+    console.log('Save item:', { ...values, dictCode, dictName });
+    onClose();
   };
   return (
-    <Modal open={open} onCancel={onClose} footer={null} title="字典项-新增" width={600} destroyOnClose>
-      <Form form={form} layout="vertical" style={{ marginTop: 16 }} initialValues={{ dictCode, dictName, status: '启用', priority: 0 }}>
-        <Form.Item label="字典编码" name="dictCode"><Input disabled /></Form.Item>
-        <Form.Item label="字典名称" name="dictName"><Input disabled /></Form.Item>
-        <Form.Item label="字典项编码" name="itemCode" rules={[{ required: true, message: '请输入字典项编码' }]}>
-          <Input placeholder="请输入字典项编码" />
-        </Form.Item>
-        <Form.Item label="字典项名称" name="itemName" rules={[{ required: true, message: '请输入字典项名称' }]}>
-          <Input placeholder="请输入字典项名称" />
-        </Form.Item>
-        <Form.Item label="字典优先级" name="priority">
-          <InputNumber min={0} style={{ width: '100%' }} />
-        </Form.Item>
-        <Form.Item label="状态" name="status">
-          <Select options={[{ label: '启用', value: '启用' }, { label: '停用', value: '停用' }]} />
-        </Form.Item>
-        <Form.Item label="描述" name="description">
-          <Input.TextArea rows={4} placeholder="请输入描述" />
-        </Form.Item>
-      </Form>
-      <div style={{ textAlign: 'center', marginTop: 16 }}>
-        <Button type="primary" onClick={handleSave} style={{ marginRight: 8 }}>保存</Button>
-        <Button onClick={onClose}>返回</Button>
+    <Modal open={open} onCancel={onClose} footer={null} title="字典项-新增" width="900px" destroyOnClose>
+      <div className="border border-[#e8e8e8] text-sm mb-4">
+        <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>字典编码</div>
+          <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
+            <Input value={dictCode} disabled />
+          </div>
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>字典名称</div>
+          <div className="w-[35%] p-2 flex items-center">
+            <Input value={dictName} disabled />
+          </div>
+        </div>
+        <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>字典项编码</div>
+          <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
+            <Input value={values.itemCode} onChange={(e) => setValues({...values, itemCode: e.target.value})} placeholder="请输入字典项编码" />
+          </div>
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>字典项名称</div>
+          <div className="w-[35%] p-2 flex items-center">
+            <Input value={values.itemName} onChange={(e) => setValues({...values, itemName: e.target.value})} placeholder="请输入字典项名称" />
+          </div>
+        </div>
+        <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">字典优先级</div>
+          <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
+            <InputNumber min={0} value={values.priority} onChange={(val) => setValues({...values, priority: val})} style={{ width: '100%' }} />
+          </div>
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">状态</div>
+          <div className="w-[35%] p-2 flex items-center">
+            <Select value={values.status} onChange={(val) => setValues({...values, status: val})} style={{ width: '100%' }} options={[{ label: '启用', value: '启用' }, { label: '停用', value: '停用' }]} />
+          </div>
+        </div>
+        <div className="flex min-h-[40px]">
+          <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">描述</div>
+          <div className="w-[85%] p-2 flex items-center">
+            <Input.TextArea rows={4} value={values.description} onChange={(e) => setValues({...values, description: e.target.value})} placeholder="请输入描述" />
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-center gap-3 mt-6">
+        <Button type="primary" onClick={handleSave} className="px-6">保存</Button>
+        <Button type="default" onClick={onClose} className="px-6">返回</Button>
       </div>
     </Modal>
   );
@@ -149,9 +172,6 @@ export default function DictManagementView() {
   return (
     <div className="flex flex-col gap-4">
       <QueryBar buttons={<Button type="primary" icon={<Search size={14} />} onClick={() => {}}>查询</Button>}>
-        <QueryItem label="查询">
-          <Select style={{ width: '100%' }} defaultValue="dictCode" options={[{ label: '字典编码', value: 'dictCode' }, { label: '字典名称', value: 'dictName' }]} />
-        </QueryItem>
         <QueryItem label="字典编码">
           <Input placeholder="请输入字典编码" />
         </QueryItem>

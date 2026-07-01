@@ -21,3 +21,13 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# project-specific
+*.backup
+_fix_*.py
+*.pyc
+__pycache__/
+.assistant/
+.claude/
+.codex/
+mmp/
