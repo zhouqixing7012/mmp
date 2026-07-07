@@ -151,38 +151,12 @@ export default function ResponsiblePersonPhysicalApproval() {
           </div>
 
           {}
-          {/* 3. 转出资产信息 (原转移资产信息，已全部置为只读) */}
-          <div>
-            <SectionHeader title="转出资产信息" />
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs border-collapse border border-gray-300">
-                <thead>
-                  <tr className="bg-[#f8f9fa]">
-                    <th className="border border-gray-300 py-2 font-normal text-left pl-4 w-[16%]">资产标签号</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[12%]">序列号</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[6%]">关系</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[12%]">资产说明</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[5%]">数量</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[8%]">City</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[10%]">Building</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[7%]">Floor</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[8%]">资产大类</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[8%]">资产小类</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[8%]">资产状态</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {renderTableRows()}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          {/* 3. 转出资产信息 (已注释) */}
 
           {}
-          {/* 4. 接收资产信息 (已根据要求全部置为只读) */}
+          {/* 4. 转移物资信息 (已根据要求全部置为只读) */}
           <div>
-            <SectionHeader title="接收资产信息" />
+            <SectionHeader title="转移物资信息" />
             {/* <div className="text-red-600 text-sm font-bold mb-3">
               请确认接收资产的存放与使用地点。
             </div> */}

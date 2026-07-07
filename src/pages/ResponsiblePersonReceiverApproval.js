@@ -153,89 +153,14 @@ export default function ResponsiblePersonReceiverApproval() {
               </div>
             </div>
           </div>
+          {/* 3. 转出资产信息 (已注释) */}
 
-          {/* 3. 转出资产信息 (原转移资产信息，已全部置为只读) */}
-          <div>
-            <SectionHeader title="转出资产信息" />
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs border-collapse border border-gray-300">
-                <thead>
-                  <tr className="bg-[#f8f9fa]">
-                    <th className="border border-gray-300 py-2 font-normal">资产标签号</th>
-                    <th className="border border-gray-300 py-2 font-normal">序列号</th>
-                    <th className="border border-gray-300 py-2 font-normal">关系</th>
-                    <th className="border border-gray-300 py-2 font-normal">资产说明</th>
-                    <th className="border border-gray-300 py-2 font-normal">数量</th>
-                    <th className="border border-gray-300 py-2 font-normal">City</th>
-                    <th className="border border-gray-300 py-2 font-normal">Building</th>
-                    <th className="border border-gray-300 py-2 font-normal">Floor</th>
-                    <th className="border border-gray-300 py-2 font-normal">资产大类</th>
-                    <th className="border border-gray-300 py-2 font-normal">资产小类</th>
-                    <th className="border border-gray-300 py-2 font-normal">资产状态</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {assets.map(item => (
-                    <React.Fragment key={item.id}>
-                      <tr className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-2 text-left">
-                          <div className="flex items-center">
-                            {item.children && (
-                              <button
-                                onClick={() => toggleRow(item.id)}
-                                className="mr-2 flex items-center justify-center w-4 h-4 border border-gray-300 rounded text-gray-500 hover:bg-gray-100 bg-white shadow-sm transition-colors"
-                              >
-                                {expandedRows.includes(item.id) ? <ChevronDown size={12} strokeWidth={2.5} /> : <ChevronRight size={12} strokeWidth={2.5} />}
-                              </button>
-                            )}
-                            {item.tag}
-                          </div>
-                        </td>
-                        <td className="border border-gray-300 p-2">{item.sn}</td>
-                        <td className="border border-gray-300 p-2"><RelationBadge type={item.relation} /></td>
-                        <td className="border border-gray-300 p-2 text-left">{item.description}</td>
-                        <td className="border border-gray-300 p-2">{item.quantity}</td>
-                        <td className="border border-gray-300 p-2">{item.city}</td>
-                        <td className="border border-gray-300 p-2">{item.building}</td>
-                        <td className="border border-gray-300 p-2">{item.floor}</td>
-                        <td className="border border-gray-300 p-2">{item.major}</td>
-                        <td className="border border-gray-300 p-2">{item.minor}</td>
-                        <td className="border border-gray-300 p-2">{item.status}</td>
-                      </tr>
-                      {expandedRows.includes(item.id) && item.children?.map(child => (
-                        <tr key={child.id} className="hover:bg-gray-50">
-                          <td className="border border-gray-300 p-2 text-left">
-                            <div className="flex items-center pl-6">
-                              <div className="w-3 h-3 border-l-2 border-b-2 border-gray-300 mr-2 -translate-y-1"></div>
-                              <span className="text-gray-600">{child.tag}</span>
-                            </div>
-                          </td>
-                          <td className="border border-gray-300 p-2 text-gray-600">{child.sn}</td>
-                          <td className="border border-gray-300 p-2"><RelationBadge type={child.relation} /></td>
-                          <td className="border border-gray-300 p-2 text-left text-gray-600">{child.description}</td>
-                          <td className="border border-gray-300 p-2 text-gray-600">{child.quantity}</td>
-                          <td className="border border-gray-300 p-2 text-gray-600">{child.city}</td>
-                          <td className="border border-gray-300 p-2 text-gray-600">{child.building}</td>
-                          <td className="border border-gray-300 p-2 text-gray-600">{child.floor}</td>
-                          <td className="border border-gray-300 p-2 text-gray-600">{child.major}</td>
-                          <td className="border border-gray-300 p-2 text-gray-600">{child.minor}</td>
-                          <td className="border border-gray-300 p-2 text-gray-600">{child.status}</td>
-                        </tr>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* 4. 接收资产信息 (新增模块，指定字段可编辑) */}
+          {/* 4. 转移物资信息 (新增模块，指定字段可编辑) */}
           <div>
             <div className="flex justify-between items-center mb-3 mt-6 border-b border-gray-100 pb-1">
               <div className="flex items-center text-[#0088cc] font-bold text-base">
                 <FileText className="w-5 h-5 mr-2" />
-                接收资产信息
+                转移物资信息
               </div>
               {/* <button
                 onClick={() => {
