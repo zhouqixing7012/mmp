@@ -28,12 +28,36 @@ const RelBadge = ({ type }) => {
   return <span className="inline-block px-[10px] py-[2px] border border-gray-200 text-gray-500 rounded-[3px] text-xs bg-white">备</span>;
 };
 
+// 位置变更 diff 展示组件（参考位置变更审批页样式）
+const renderLocationField = (fieldData) => {
+  if (!fieldData) return <span className="text-gray-400">-</span>;
+  const hasChanged = fieldData.old !== fieldData.new;
+  
+  if (hasChanged) {
+    return (
+      <div className="flex flex-col gap-[4px] items-start">
+        <span className="text-[rgba(0,0,0,0.35)] text-[12px] line-through decoration-1 leading-none">
+          {fieldData.old}
+        </span>
+        <span className="inline-block px-2 py-[2px] bg-[#fffbe6] border border-[#ffe58f] text-[#faad14] rounded-[4px] font-medium text-[13px] leading-tight">
+          {fieldData.new}
+        </span>
+      </div>
+    );
+  }
+  return <span className="text-[rgba(0,0,0,0.88)]">{fieldData.new}</span>;
+};
+
 // 新增：提取的统一测试数据，方便两张表同步渲染并展示树状结构
 const assetData = [
-  { id: '114141605224', sn: 'SN-M-2023001', rel: '主', desc: '服务器主机', qty: 1, city: '北京市', bldg: '搜狐媒体大厦', floor: '8层', cat: 'IT设备', subcat: '服务器', status: '在用-使用中', isChild: false },
-  { id: 'PART-NIC-001', sn: 'SN-P-001122', rel: '备', desc: '网卡', qty: 1, city: '北京市', bldg: '搜狐媒体大厦', floor: '8层', cat: 'IT设备', subcat: '网络设备', status: '在用-使用中', isChild: true, parentId: '114141605224' },
-  { id: 'PART-MEM-009', sn: 'SN-P-003344', rel: '备', desc: '内存条', qty: 1, city: '北京市', bldg: '搜狐媒体大厦', floor: '8层', cat: 'IT设备', subcat: '服务器配件', status: '在用-使用中', isChild: true, parentId: '114141605224' },
-  { id: 'PART-HDD-012', sn: 'SN-P-005566', rel: '备', desc: '硬盘', qty: 1, city: '北京市', bldg: '搜狐媒体大厦', floor: '8层', cat: 'IT设备', subcat: '服务器配件', status: '在用-使用中', isChild: true, parentId: '114141605224' },
+  { id: '114141605224', sn: 'SN-M-2023001', rel: '主', desc: '服务器主机', qty: 1, city: '北京市', bldg: '搜狐媒体大厦', floor: '8层', cat: 'IT设备', subcat: '服务器', status: '在用-使用中', isChild: false,
+    locationChange: { city: { old: '上海市', new: '北京市' }, building: { old: '张江大厦', new: '搜狐媒体大厦' }, floor: { old: '5层', new: '8层' } } },
+  { id: 'PART-NIC-001', sn: 'SN-P-001122', rel: '备', desc: '网卡', qty: 1, city: '北京市', bldg: '搜狐媒体大厦', floor: '8层', cat: 'IT设备', subcat: '网络设备', status: '在用-使用中', isChild: true, parentId: '114141605224',
+    locationChange: { city: { old: '上海市', new: '北京市' }, building: { old: '张江大厦', new: '搜狐媒体大厦' }, floor: { old: '5层', new: '8层' } } },
+  { id: 'PART-MEM-009', sn: 'SN-P-003344', rel: '备', desc: '内存条', qty: 1, city: '北京市', bldg: '搜狐媒体大厦', floor: '8层', cat: 'IT设备', subcat: '服务器配件', status: '在用-使用中', isChild: true, parentId: '114141605224',
+    locationChange: { city: { old: '上海市', new: '北京市' }, building: { old: '张江大厦', new: '搜狐媒体大厦' }, floor: { old: '5层', new: '8层' } } },
+  { id: 'PART-HDD-012', sn: 'SN-P-005566', rel: '备', desc: '硬盘', qty: 1, city: '北京市', bldg: '搜狐媒体大厦', floor: '8层', cat: 'IT设备', subcat: '服务器配件', status: '在用-使用中', isChild: true, parentId: '114141605224',
+    locationChange: { city: { old: '上海市', new: '北京市' }, building: { old: '张江大厦', new: '搜狐媒体大厦' }, floor: { old: '5层', new: '8层' } } },
 ];
 
 export default function ResponsiblePersonPhysicalApproval() {
@@ -81,9 +105,9 @@ export default function ResponsiblePersonPhysicalApproval() {
           </td>
           <td className="border border-gray-300 py-3 px-2 text-left">{row.desc}</td>
           <td className="border border-gray-300 py-3 px-2">{row.qty}</td>
-          <td className="border border-gray-300 py-3 px-2">{row.city}</td>
-          <td className="border border-gray-300 py-3 px-2">{row.bldg}</td>
-          <td className="border border-gray-300 py-3 px-2">{row.floor}</td>
+          <td className="border border-gray-300 py-2 px-2 text-[13px]">{renderLocationField(row.locationChange?.city)}</td>
+          <td className="border border-gray-300 py-2 px-2 text-[13px]">{renderLocationField(row.locationChange?.building)}</td>
+          <td className="border border-gray-300 py-2 px-2 text-[13px]">{renderLocationField(row.locationChange?.floor)}</td>
           <td className="border border-gray-300 py-3 px-2">{row.cat}</td>
           <td className="border border-gray-300 py-3 px-2">{row.subcat}</td>
           <td className="border border-gray-300 py-3 px-2">{row.status}</td>

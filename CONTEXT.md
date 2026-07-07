@@ -1,22 +1,21 @@
 # 当前状态
-rolemgt.js 角色管理页面完成，接入 yewurules.js 后台基础配置菜单。
+责任人变更接收人确认——审批 和 责任人变更实物确认——审批 两个页面完成修改。
 
-角色管理页面包含：
-- 查询条件：角色名称（Input）+ 是否启用（Select）
-- 表格列：角色名称、职责、关联用户（带"关联"按钮）、菜单权限（带"分配"按钮）、状态
-- 操作栏：新增、启用、停用
+## 已完成的修改
 
-三个弹窗/页面：
-1. 新增/编辑角色弹窗（角色名称、状态、职责）
-2. 关联用户弹窗（SelectModal 风格，搜索条件：工号/姓名/部门，表格：工号/姓名/部门，支持多选+分页+全选）
-3. 菜单权限分配页面（viewMode 切换，三列表格：二级菜单|三级菜单|功能点，含全选和功能点复选框）
+### ResponsiblePersonReceiverApproval.js
+- 转出资产信息段注释掉
+- 标题"接收资产信息"改为"转移物资信息"
 
-样式规范：启用/停用标签使用 bg-green-100/text-green-700 / bg-red-100/text-red-700
+### ResponsiblePersonPhysicalApproval.js
+- 转出资产信息段注释掉
+- 标题"接收资产信息"改为"转移物资信息"
+- 添加了 `renderLocationField` diff 展示组件（参考位置变更审批页样式）
+- 资产数据添加 `locationChange` 字段（old/new），城市/建筑物/楼层列改为 diff 显示：有变更时旧值删除线 + 新值黄色标签
 
 # 上次停的位置
-角色管理页面初步完成，构建通过（warnings）。
+ResponsiblePersonPhysicalApproval diff 展示完成，构建通过。
 
 # 关键决定
-- 关联用户弹窗：宽度 800px，分页 5 条/页，支持全选
-- 菜单权限分配：用 viewMode 切换（非弹窗），点击"分配"切换到权限页面，确定/取消返回列表
-- mockPermissionData 含 23 条菜单权限数据
+- diff 展示直接复用位置变更审批页的 renderLocationField 方案
+- 数据层添加 locationChange 字段，不影响原有 city/bldg/floor
