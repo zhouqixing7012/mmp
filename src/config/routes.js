@@ -26,8 +26,8 @@ const routes = [
   { path: '/Peoplejieshou', name: '责任人变更接收人确认——审批', nav: true },
   { path: '/Peopleshiwu', name: '责任人变更实物确认——审批', nav: true },
   { path: '/yewurules', name: '业务规则编辑页', nav: true },
-  { path: '/applylist', name: '申请单列表', nav: true }
+  { path: '/applylist', name: '申请单列表', nav: true },
+  { path: '/BaofeiShenqing', name: '报废申请单编辑', nav: true },
 ];
-
 export const navRoutes = routes.filter(r => r.nav);
 export default routes;

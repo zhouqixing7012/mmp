@@ -31,6 +31,7 @@ import ResponsiblePersonEdit from './pages/ResponsiblePersonEdit';
 import ResponsiblePersonReceiverApproval from './pages/ResponsiblePersonReceiverApproval';
 import ResponsiblePersonPhysicalApproval from './pages/ResponsiblePersonPhysicalApproval';
 import AccountingScrapEdit from './pages/AccountingScrapEdit';
+import ScrapApplicationEdit from './pages/ScrapApplicationEdit';
 import yewurules from './pages/yewurules';
 import xitongrules from './pages/xitongrules';
 import applylist from './pages/applylist';
@@ -63,6 +64,7 @@ const componentMap = {
   '/Peoplejieshou': ResponsiblePersonReceiverApproval,
   '/Peopleshiwu': ResponsiblePersonPhysicalApproval,
   '/yewurules': yewurules,
+  '/BaofeiShenqing': ScrapApplicationEdit,
   '/xitongrules': xitongrules,
   '/applylist': applylist,
 };
