@@ -35,3 +35,14 @@
 - TODO: 业务映射规则管理现有 PRD 已更新追加页面6、7
 - 用户管理角色分配弹窗采用原位替换设计（step-in-place），避免弹窗嵌套
 - 弹窗按钮栏样式统一：footer={null} + flex justify-center gap-3 mt-6 + px-6 按钮
+
+## 变更记录 (2026-07-15)
+
+- 整合外部项目报废申请单编辑页（ScrapApplicationEdit），独立 CSS 文件，不转 Tailwind
+- 新增路由 /BaofeiShenqing，导航项"报废申请单编辑"
+- 基本信息新增三个必填字段：公司（财务公司 SelectModal弹窗）、资产大类（Antd Select下拉：服务器/网络设备）、资产所在地（Antd Select下拉：北京/非北京）
+- 保存/提交时校验必填字段，校验不通过显示红色错误状态
+- 布局改为三三一一：基础信息(3列) → 必填字段(3列) → 申请日期(1列) → 报废说明(1列)
+- 提交：373bc59
+- 旧 ScrapForm.js（路由文件，不再使用）未删除
+- 相关 PRD 未产出

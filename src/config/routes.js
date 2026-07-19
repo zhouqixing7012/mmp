@@ -27,7 +27,10 @@ const routes = [
   { path: '/Peopleshiwu', name: '责任人变更实物确认——审批', nav: true },
   { path: '/yewurules', name: '业务规则编辑页', nav: true },
   { path: '/applylist', name: '申请单列表', nav: true },
-  { path: '/BaofeiShenqing', name: '报废申请单编辑', nav: true },
+{ path: '/BaofeiShenqing', name: '报废申请单编辑', nav: true },
+  { path: '/zichanshenqing', name: '新增资产申请', nav: true },
+  { path: '/zichanshenqingshenpi', name: '资产申请审批', nav: true },
+  { path: '/zichanpeiji', name: '资产申请配给', nav: true },
 ];
 export const navRoutes = routes.filter(r => r.nav);
 export default routes;

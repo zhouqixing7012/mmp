@@ -35,6 +35,9 @@ import ScrapApplicationEdit from './pages/ScrapApplicationEdit';
 import yewurules from './pages/yewurules';
 import xitongrules from './pages/xitongrules';
 import applylist from './pages/applylist';
+import zichanshenqing from './pages/zichanshenqing';
+import zichanshenqingshenpi from './pages/zichanshenqingshenpi';
+import zichanpeiji from './pages/zichanpeiji';
 
 const componentMap = {
   '/': AccountingScrapEdit,
@@ -67,6 +70,9 @@ const componentMap = {
   '/BaofeiShenqing': ScrapApplicationEdit,
   '/xitongrules': xitongrules,
   '/applylist': applylist,
+  '/zichanshenqing': zichanshenqing,
+  '/zichanshenqingshenpi': zichanshenqingshenpi,
+  '/zichanpeiji': zichanpeiji,
 };
 
 export default function App() {

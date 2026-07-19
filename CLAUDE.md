@@ -3,7 +3,7 @@
 ## 项目信息
 
 - **项目名称**：企业资产管理系统（Asset Management System）
-- **技术栈**：React 18 + Create React App + Tailwind CSS
+- **技术栈**：React 19 + Create React App + Tailwind CSS
 - **主要文件**：src/pages/yewurules.js（后台基础配置 + 业务视图）
 
 ## 代码规范
@@ -173,4 +173,4 @@ npm test
 ## 版本信息
 
 - 创建日期：2026-06-04
-- 最后更新：2026-06-04
+- 最后更新：2026-07-15
