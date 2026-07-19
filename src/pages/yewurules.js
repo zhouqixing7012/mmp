@@ -13,6 +13,8 @@ import AssetApplicationPrototype from "./zichanshenqing";
 import ApprovalPagePrototype from "./zichanshenqingshenpi";
 import AssetAdminApprovalPrototype from "./zichanpeiji";
 import PersonalWorkspace from "./gerengerzuotai";
+import Haoma from "./haoma";
+import Haomakongzhi from "./haomakongzhi";
 import { Button, Input, Select, Modal, Table, Radio, Card, Tag, DatePicker } from 'antd';
 import StatusTag from '../components/StatusTag';
 import SelectModal from '../components/SelectModal';
@@ -4413,6 +4415,18 @@ export default function App() {
                   工作台首页
                 </div>
                 <div
+                  className={`pl-12 pr-5 py-2.5 cursor-pointer text-sm transition-colors ${activeSubMenu === '号码管理' ? 'text-white bg-[#1677ff]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                  onClick={() => setActiveSubMenu('号码管理')}
+                >
+                  号码管理
+                </div>
+                <div
+                  className={`pl-12 pr-5 py-2.5 cursor-pointer text-sm transition-colors ${activeSubMenu === '号码控制' ? 'text-white bg-[#1677ff]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                  onClick={() => setActiveSubMenu('号码控制')}
+                >
+                  号码控制
+                </div>
+                <div
                   className="pl-12 pr-5 py-2.5 cursor-pointer text-sm text-gray-400 hover:text-white hover:bg-white/5"
                   onClick={() => setActiveSubMenu('新增资产申请')}
                 >
@@ -4565,6 +4579,18 @@ export default function App() {
               {activeSubMenu === '工作台首页' && (
                 <div className="flex-1 flex flex-col relative">
                   <PersonalWorkspace />
+                </div>
+              )}
+              {/* 号码管理 */}
+              {activeSubMenu === '号码管理' && (
+                <div className="flex-1 flex flex-col relative">
+                  <Haoma />
+                </div>
+              )}
+              {/* 号码控制 */}
+              {activeSubMenu === '号码控制' && (
+                <div className="flex-1 flex flex-col relative">
+                  <Haomakongzhi />
                 </div>
               )}
                             {/* 新增资产申请 */}

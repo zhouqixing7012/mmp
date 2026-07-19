@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Search, ShoppingCart, Plus, Trash2, Check, 
-  ChevronDown, ChevronRight, LayoutGrid, AlertCircle
+  ChevronDown, ChevronRight, LayoutGrid, AlertCircle, X
 } from 'lucide-react';
 
 // --- Mock Data (支持4层树形结构) ---
@@ -95,6 +95,7 @@ export default function AssetApplicationPrototype() {
   // 业务状态
   const [cart, setCart] = useState([]);
   const [batchReason, setBatchReason] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 安全的全局提示
   const showMessage = (msg) => {
@@ -218,14 +219,20 @@ export default function AssetApplicationPrototype() {
     });
   };
 
-  const renderLeftPanel = () => (
-    <div className="w-[32%] min-w-[360px] max-w-[420px] bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden shrink-0">
+  const renderLeftPanel = (inModal = false) => {
+    const panelClass = inModal 
+      ? 'flex-1 flex flex-col overflow-hidden' 
+      : 'w-[32%] min-w-[360px] max-w-[420px] bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden shrink-0';
+    return (
+      <div className={panelClass}>
       {/* 搜索头与顶部快捷按钮 */}
       <div className="pt-4 border-b border-slate-200 bg-slate-50 flex flex-col gap-3">
+        {!inModal && (
         <h2 className="px-4 font-semibold text-slate-800 flex items-center gap-2">
           <LayoutGrid className="w-5 h-5 text-blue-600" />
           资产商城
         </h2>
+        )}
         
         <div className="px-4 relative">
           <Search className="absolute left-7 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -238,19 +245,21 @@ export default function AssetApplicationPrototype() {
           />
         </div>
 
-        {/* 顶部快捷过滤按钮 */}
-        <div className="flex gap-2 px-4 pb-3">
+        {/* Tab切换 */}
+        <div className="flex border-b border-slate-200 mx-4">
           <button 
             onClick={() => setTopFilter('all')}
-            className={`flex-1 py-1.5 text-sm rounded-md transition-colors font-medium border ${topFilter === 'all' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+            className={`px-4 py-2.5 text-sm font-medium relative transition-colors ${topFilter === 'all' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
           >
             全部资产
+            {topFilter === 'all' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 rounded-t-full" />}
           </button>
           <button 
             onClick={() => setTopFilter('consumable')}
-            className={`flex-1 py-1.5 text-sm rounded-md transition-colors font-medium border ${topFilter === 'consumable' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+            className={`px-4 py-2.5 text-sm font-medium relative transition-colors ${topFilter === 'consumable' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
           >
             申请耗材
+            {topFilter === 'consumable' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 rounded-t-full" />}
           </button>
         </div>
       </div>
@@ -258,7 +267,7 @@ export default function AssetApplicationPrototype() {
       {/* 下半部分：树 + 列表 */}
       <div className="flex-1 flex overflow-hidden">
         {/* 左半区：树形菜单 (定宽以保证4层展示完整) */}
-        <div className="w-[160px] min-w-[160px] shrink-0 bg-slate-50 border-r border-slate-200 overflow-y-auto py-2">
+        <div className="w-[200px] min-w-[200px] shrink-0 bg-slate-50 border-r border-slate-200 overflow-y-auto py-2">
           {renderTreeNodes(TREE_CATEGORIES)}
         </div>
 
@@ -306,21 +315,76 @@ export default function AssetApplicationPrototype() {
         </div>
       </div>
     </div>
-  );
+    );
+  };
+
+
+  const renderAssetModal = () => {
+    if (!isModalOpen) return null;
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}>
+        <div className="bg-white rounded-2xl shadow-2xl w-[90%] max-w-5xl max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between shrink-0">
+            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+              <LayoutGrid className="w-5 h-5 text-blue-600" />
+              资产商城
+            </h2>
+            <button 
+              onClick={() => setIsModalOpen(false)}
+              className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex-1 flex overflow-hidden min-h-0">
+            {renderLeftPanel(true)}
+          </div>
+          <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between shrink-0">
+            <div className="text-sm text-slate-500">
+              已选 <span className="font-bold text-blue-600">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span> 件
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="px-5 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                返回
+              </button>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderRightPanel = () => (
     <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden min-w-[600px]">
       {/* 头部与批量操作 */}
       <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <ShoppingCart className="w-5 h-5 text-blue-600" />
-          本次申请明细
-          {cart.length > 0 && (
-            <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-              {cart.reduce((sum, item) => sum + item.quantity, 0)}
-            </span>
-          )}
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5 text-blue-600" />
+            本次申请明细
+            {cart.length > 0 && (
+              <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                {cart.reduce((sum, item) => sum + item.quantity, 0)}
+              </span>
+            )}
+          </h2>
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-medium transition-colors shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            添加物资
+          </button>
+        </div>
         
         {cart.length > 1 && (
           <div className="flex items-center gap-2 bg-blue-100/50 px-3 py-1.5 rounded-lg border border-blue-200">
@@ -349,7 +413,7 @@ export default function AssetApplicationPrototype() {
         {cart.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-400">
             <ShoppingCart className="w-16 h-16 mb-4 opacity-30 text-slate-300" />
-            <p className="text-sm">请从左侧选择资产添加到申请清单</p>
+            <p className="text-sm">请点击上方「添加物资」按钮选择资产</p>
           </div>
         ) : (
           <table className="w-full text-left border-collapse">
@@ -477,7 +541,7 @@ export default function AssetApplicationPrototype() {
       )}
       
       {/* 左右分栏布局 */}
-      {renderLeftPanel()}
+      {renderAssetModal()}
       {renderRightPanel()}
     </div>
   );
