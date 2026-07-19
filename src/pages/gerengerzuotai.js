@@ -1,0 +1,329 @@
+import React, { useState } from 'react';
+import { 
+  Search, Handshake, Monitor, Hash, PackageOpen, 
+  Plus, Copy, Laptop, ChevronLeft, ChevronRight,
+  Undo2, ArrowRightLeft, Wrench
+} from 'lucide-react';
+
+// --- 模拟数据 ---
+const MOCK_DATA = {
+  user: {
+    name: '周琦星',
+    id: '220784',
+    department: '集团总部'
+  },
+  assets: [
+    {
+      id: '112161100271-V',
+      category: '显示器-标准显示器',
+      name: '戴尔 E2417H显示器',
+      desc: '显示器 · 标准显示器 · 员工用机',
+      config: '23.8英寸 / IPS / 三年质保',
+      quantity: 1,
+      status: 'in-use',
+      usage: '员工用机',
+      icon: 'monitor'
+    },
+    {
+      id: '114122102371',
+      category: '笔记本-技术笔记本',
+      name: '微软 Surface Laptop 4',
+      desc: '笔记本 · 技术笔记本 · 员工用机',
+      config: 'i7-1185G7 / 16G / 256G SSD',
+      quantity: 1,
+      status: 'in-use',
+      usage: '员工用机',
+      icon: 'laptop'
+    },
+    {
+      id: '115083104512',
+      category: '笔记本-轻薄本',
+      name: '苹果 MacBook Air M2',
+      desc: '笔记本 · 轻薄本 · 出差用机',
+      config: 'M2 / 16G / 512G SSD / 13.6英寸',
+      quantity: 1,
+      status: 'in-use',
+      usage: '员工用机',
+      icon: 'laptop'
+    }
+  ],
+  consumables: [
+    {
+      id: 'CON-2023001',
+      category: '移动设备充电插头',
+      name: '苹果 35W 双USB-C 电源适配器',
+      desc: '配件 · 充电插头 · 日常办公',
+      config: '原装 35W',
+      quantity: 1,
+      status: 'in-use',
+      usage: '日常办公',
+      icon: 'package'
+    },
+    {
+      id: 'CON-2023089',
+      category: '外设配件',
+      name: '罗技 MX Master 3S 无线鼠标',
+      desc: '配件 · 无线鼠标 · 日常办公',
+      config: '静音版 8K DPI',
+      quantity: 1,
+      status: 'in-use',
+      usage: '日常办公',
+      icon: 'package'
+    }
+  ],
+  contracts: [
+    {
+      id: 'CT-13800138000',
+      category: '移动通讯合约',
+      name: '中国移动 5G 商务套餐',
+      desc: '通信 · 5G套餐 · 业务联络',
+      config: '199元/月 (100G流量+1000分钟)',
+      quantity: 1,
+      status: 'in-use',
+      usage: '业务联络',
+      icon: 'hash'
+    }
+  ]
+};
+
+export default function PersonalWorkspace() {
+  const [activeTab, setActiveTab] = useState('assets');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // 动态获取当前日期，格式化为类似 "7月19日 星期日"
+  const getTodayString = () => {
+    const today = new Date();
+    const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+    return `${today.getMonth() + 1}月${today.getDate()}日 ${days[today.getDay()]}`;
+  };
+
+  const StatusBadge = ({ status }) => {
+    if (status === 'in-use') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-emerald-600 bg-emerald-50">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          在用·使用中
+        </span>
+      );
+    }
+    return <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium text-slate-600 bg-slate-100">未知状态</span>;
+  };
+
+  const renderItemIcon = (type) => {
+    switch (type) {
+      case 'monitor': return <Monitor className="w-5 h-5" />;
+      case 'laptop': return <Laptop className="w-5 h-5" />;
+      case 'hash': return <Hash className="w-5 h-5" />;
+      default: return <PackageOpen className="w-5 h-5" />;
+    }
+  };
+
+  const renderTopBanner = () => (
+    <div className="relative bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-600 rounded-2xl shadow-sm overflow-hidden flex flex-col md:flex-row md:items-center justify-between px-5 py-4 md:px-6 md:py-5 text-white mb-4">
+      {/* 装饰性背景光晕 */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-white opacity-[0.03] rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-10 w-64 h-64 bg-blue-400 opacity-[0.08] rounded-full blur-2xl translate-y-1/2 pointer-events-none"></div>
+      
+      {/* 左侧：问候语与统计提示 */}
+      <div className="relative z-10 mb-6 md:mb-0">
+        <div className="text-blue-100/80 text-sm font-medium tracking-wider mb-2">
+          {getTodayString()}
+        </div>
+        <h2 className="text-xl md:text-2xl font-bold mb-1.5 tracking-tight">上午好，{MOCK_DATA.user.name}</h2>
+        <p className="text-blue-100/90 text-[14px]">
+          您名下共有 <span className="font-bold text-white">{MOCK_DATA.assets.length + MOCK_DATA.consumables.length}</span> 项资产与耗材运行正常，另有 <span className="font-bold text-amber-300">0 条待办</span> 等待处理。
+        </p>
+      </div>
+
+      {/* 右侧：融入 Banner 的快捷操作按钮 */}
+      <div className="relative z-10 flex items-center gap-2">
+        <button className="px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg text-[14px] font-semibold transition-all shadow-sm flex items-center gap-2 active:scale-95">
+          <Plus className="w-4 h-4" />
+          物资申请
+        </button>
+        <button className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg text-[14px] font-medium transition-all flex items-center gap-2 backdrop-blur-sm active:scale-95">
+          <Handshake className="w-4 h-4" />
+          资产借用
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderTableArea = () => {
+    let displayData = [];
+    if (activeTab === 'assets') displayData = MOCK_DATA.assets;
+    if (activeTab === 'consumables') displayData = MOCK_DATA.consumables;
+    if (activeTab === 'contracts') displayData = MOCK_DATA.contracts;
+
+    return (
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden min-h-[380px]">
+        
+        {/* Tabs & Search Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 px-2 sm:px-6 bg-white pt-2">
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setActiveTab('assets')}
+              className={`px-3 py-2.5 text-[14px] font-semibold transition-all relative flex items-center gap-2 ${activeTab === 'assets' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
+            >
+              <Monitor className="w-4 h-4" />
+              资产
+              <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${activeTab === 'assets' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                {MOCK_DATA.assets.length}
+              </span>
+              {activeTab === 'assets' && <div className="absolute bottom-0 left-0 w-full h-[3px] bg-blue-600 rounded-t-full"></div>}
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('consumables')}
+              className={`px-3 py-2.5 text-[14px] font-semibold transition-all relative flex items-center gap-2 ${activeTab === 'consumables' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
+            >
+              <PackageOpen className="w-4 h-4" />
+              耗材
+              <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${activeTab === 'consumables' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                {MOCK_DATA.consumables.length}
+              </span>
+              {activeTab === 'consumables' && <div className="absolute bottom-0 left-0 w-full h-[3px] bg-blue-600 rounded-t-full"></div>}
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('contracts')}
+              className={`px-3 py-2.5 text-[14px] font-semibold transition-all relative flex items-center gap-2 ${activeTab === 'contracts' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
+            >
+              <Hash className="w-4 h-4" />
+              合约号码
+              <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${activeTab === 'contracts' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                {MOCK_DATA.contracts.length}
+              </span>
+              {activeTab === 'contracts' && <div className="absolute bottom-0 left-0 w-full h-[3px] bg-blue-600 rounded-t-full"></div>}
+            </button>
+          </div>
+
+          <div className="py-2 px-3 sm:px-0 sm:py-0 w-full sm:w-[260px]">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="搜索标签号、名称或分类..." 
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-full text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {}
+        <div className="flex-1 overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[1200px]">
+            <thead>
+              <tr className="bg-white text-slate-500 text-[13px] border-b border-slate-100">
+                <th className="py-3 px-4 font-medium w-10 sticky left-0 bg-white z-30">
+                  <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
+                </th>
+                <th className="py-3 px-2 font-medium w-72 sticky left-[40px] bg-white z-30">资产信息</th>
+                <th className="py-3 px-3 font-medium w-44">资产标签号</th>
+                <th className="py-3 px-3 font-medium">资产配置</th>
+                <th className="py-3 px-3 font-medium w-24 text-center">数量</th>
+                <th className="py-3 px-3 font-medium w-36 text-center">状态</th>
+                <th className="py-3 px-4 font-medium w-64 text-right sticky right-0 bg-white z-30 border-l border-slate-200">操作</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {displayData.map((item, idx) => (
+                <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="py-3.5 px-4 sticky left-0 bg-white z-20 group-hover:bg-slate-50/50">
+                    <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
+                  </td>
+                  <td className="py-3.5 px-2 sticky left-[40px] bg-white z-20 group-hover:bg-slate-50/50">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 shrink-0">
+                        {renderItemIcon(item.icon)}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[14px] font-bold text-slate-800 line-clamp-1 mb-0.5">{item.name}</span>
+                        <span className="text-[12px] text-slate-400 line-clamp-1">{item.desc}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3.5 px-3">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200/60 rounded text-xs font-mono text-slate-600 group/tag cursor-pointer hover:border-slate-300 hover:bg-slate-100 transition-colors">
+                      {item.id}
+                      <Copy className="w-3 h-3 text-slate-300 group-hover/tag:text-slate-500" />
+                    </div>
+                  </td>
+                  <td className="py-3.5 px-3">
+                    <span className="text-[13px] text-slate-500 line-clamp-2" title={item.config}>
+                      {item.config}
+                    </span>
+                  </td>
+                  <td className="py-3 px-3 text-center">
+                    <span className="text-[14px] font-semibold text-slate-700">{item.quantity}</span>
+                  </td>
+                  <td className="py-3 px-3 text-center">
+                    <StatusBadge status={item.status} />
+                  </td>
+                  <td className="py-3.5 px-4 sticky right-0 bg-white z-20 border-l border-slate-100 group-hover:bg-slate-50/50">
+                    <div className="flex items-center justify-end gap-1">
+                      <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all" title="退库">
+                        <Undo2 className="w-3.5 h-3.5" />
+                        <span>退库</span>
+                      </button>
+                      <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all" title="转移">
+                        <ArrowRightLeft className="w-3.5 h-3.5" />
+                        <span>转移</span>
+                      </button>
+                      <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all" title="更换">
+                        <Wrench className="w-3.5 h-3.5" />
+                        <span>更换</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              
+              {displayData.length === 0 && (
+                <tr>
+                  <td colSpan="7" className="py-20 text-center text-slate-400">
+                    <div className="flex flex-col items-center justify-center">
+                      <PackageOpen className="w-12 h-12 mb-3 opacity-20" />
+                      <p className="text-sm">暂无对应的资产数据</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {}
+        <div className="px-4 py-3 border-t border-slate-100 bg-white flex items-center justify-between text-sm text-slate-500 mt-auto">
+          <span>共 {displayData.length} 条记录</span>
+          <div className="flex items-center gap-2">
+            <select className="border-slate-200 rounded-md text-[13px] py-1 pl-2 pr-6 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-600">
+              <option>10 条/页</option>
+              <option>20 条/页</option>
+            </select>
+            <div className="flex items-center gap-1">
+              <button className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-100 bg-white text-slate-400 hover:text-slate-600 hover:bg-slate-50 disabled:opacity-50">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button className="w-7 h-7 flex items-center justify-center rounded-md bg-blue-600 text-white text-[13px] font-medium shadow-sm">1</button>
+              <button className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-100 bg-white text-slate-400 hover:text-slate-600 hover:bg-slate-50">
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="bg-slate-50/50 text-slate-800 font-sans p-3 md:p-5 min-h-screen w-full">
+      <div className="max-w-[1480px] mx-auto w-full">
+        {renderTopBanner()}
+        {renderTableArea()}
+      </div>
+    </div>
+  );
+}

@@ -9,6 +9,10 @@ import {
 import { UserManagementView, OrgManagementView } from './xitongrules';
 import DictManagementView from "./dictmanagement";
 import RoleManagementView from "./rolemgt";
+import AssetApplicationPrototype from "./zichanshenqing";
+import ApprovalPagePrototype from "./zichanshenqingshenpi";
+import AssetAdminApprovalPrototype from "./zichanpeiji";
+import PersonalWorkspace from "./gerengerzuotai";
 import { Button, Input, Select, Modal, Table, Radio, Card, Tag, DatePicker } from 'antd';
 import StatusTag from '../components/StatusTag';
 import SelectModal from '../components/SelectModal';
@@ -4388,8 +4392,48 @@ export default function App() {
           <div className="text-gray-400 text-xs ml-5">2026年05月27日 星期三</div>
         </div>
         <div className="flex-1 py-2">
+          {/* 个人工作台 - 可展开子菜单 */}
+          <div>
+            <div
+              className="flex items-center justify-between px-5 py-3 cursor-pointer text-sm text-gray-300 hover:text-white hover:bg-white/5"
+              onClick={() => setActiveMenu(activeMenu === '个人工作台' ? '' : '个人工作台')}
+            >
+              <div className="flex items-center gap-3">
+                <LayoutDashboard size={16} />
+                <span>个人工作台</span>
+              </div>
+              <ChevronDown size={14} className={`transition-transform ${activeMenu === '个人工作台' ? 'rotate-180' : ''}`} />
+            </div>
+            {activeMenu === '个人工作台' && (
+              <div className="bg-[#000c17] py-1">
+                <div
+                  className={`pl-12 pr-5 py-2.5 cursor-pointer text-sm transition-colors ${activeSubMenu === '工作台首页' ? 'text-white bg-[#1677ff]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                  onClick={() => setActiveSubMenu('工作台首页')}
+                >
+                  工作台首页
+                </div>
+                <div
+                  className="pl-12 pr-5 py-2.5 cursor-pointer text-sm text-gray-400 hover:text-white hover:bg-white/5"
+                  onClick={() => setActiveSubMenu('新增资产申请')}
+                >
+                  新增资产申请
+                </div>
+                <div
+                  className="pl-12 pr-5 py-2.5 cursor-pointer text-sm text-gray-400 hover:text-white hover:bg-white/5"
+                  onClick={() => setActiveSubMenu('资产申请审批')}
+                >
+                  资产申请审批
+                </div>
+                <div
+                  className="pl-12 pr-5 py-2.5 cursor-pointer text-sm text-gray-400 hover:text-white hover:bg-white/5"
+                  onClick={() => setActiveSubMenu('资产申请配给')}
+                >
+                  资产申请配给
+                </div>
+              </div>
+            )}
+          </div>
           {[
-            { id: '个人工作台', icon: <LayoutDashboard size={16} /> },
             { id: '资产管理', icon: <Monitor size={16} /> },
             { id: '无形资产', icon: <Layers size={16} /> },
             { id: '资产盘点', icon: <ClipboardList size={16} /> },
@@ -4515,6 +4559,30 @@ export default function App() {
               {activeSubMenu === "字典管理" && (
                 <div className="flex-1 flex flex-col relative">
                   <DictManagementView />
+                </div>
+              )}
+              {/* 工作台首页 */}
+              {activeSubMenu === '工作台首页' && (
+                <div className="flex-1 flex flex-col relative">
+                  <PersonalWorkspace />
+                </div>
+              )}
+                            {/* 新增资产申请 */}
+              {activeSubMenu === '新增资产申请' && (
+                <div className="flex-1 flex flex-col relative">
+                  <AssetApplicationPrototype />
+                </div>
+              )}
+              {/* 资产申请审批 */}
+              {activeSubMenu === '资产申请审批' && (
+                <div className="flex-1 flex flex-col relative">
+                  <ApprovalPagePrototype />
+                </div>
+              )}
+              {/* 资产申请配给 */}
+              {activeSubMenu === '资产申请配给' && (
+                <div className="flex-1 flex flex-col relative">
+                  <AssetAdminApprovalPrototype />
                 </div>
               )}
               {/* 业务基础数据维护 - 只在后台基础配置下显示 */}

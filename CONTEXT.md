@@ -1,4 +1,11 @@
 # 当前状态
+新增资产申请页（zichanshenqing），由用户创建页面组件，配置路由和个人工作台子菜单。
+页面路径：/zichanshenqing，导航显示为"新增资产申请"。
+侧边栏"个人工作台"改为可展开，下含"新增资产申请"子菜单（点击跳转）。
+
+新增工作台首页页（gerengerzuotai），由用户上传的个人工作台页面转译嵌入。
+作为"个人工作台"下第一个子菜单"工作台首页"，包含资产/耗材/合约号码三分类标签页及操作确认弹窗。
+
 新增报废申请单编辑页（ScrapApplicationEdit），从外部项目整合。
 新页面路径：/BaofeiShenqing，导航显示为"报废申请单编辑"。
 旧报废申请单（/，AccountingScrapEdit）仍保留。
@@ -24,7 +31,8 @@
 - 保存/提交时校验必填字段
 
 # 上次停的位置
-ResponsiblePersonPhysicalApproval diff 展示完成，构建通过。
+新子菜单"工作台首页"已整合，TypeScript 转译完成，构建通过。
+报废申请单编辑页已整合，基本信息已添加三个必填字段并完成布局调整，构建通过。已提交 git commit 373bc59。
 
 # 关键决定
 - diff 展示直接复用位置变更审批页的 renderLocationField 方案
