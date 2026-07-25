@@ -43,3 +43,20 @@
 - 多行replace匹配first occurrence，容易改错组件，推荐行号或unique marker定位
 - 行号偏移问题: insert操作后field_lines字典需重新计算
 - PowerShell @''@ heredoc中文管道会乱码，须避免pipe直接写文件
+
+## 2026-07-19 页面精简与弹窗改造
+
+### 页面区块移除
+- 从大页面中移除区块时，避免用全局正则替换（会破坏 JSX），优先用 Python 逐行处理 + 明确的行范围
+- 布局结构调整时注意外层 `<div>` 和内层 `<div>` 的闭合关系，移除外层开头后需同步确认结尾 `</div>` 是否匹配
+- TSX 转 JS 时：`type`/`interface` 声明、`<Type>` 泛型、`as Type` 断言需要逐类处理
+
+### 弹窗改造（左侧面板→Modal）
+- 将侧边面板转为弹窗时，给渲染函数加 `inModal` 参数控制容器样式（去掉边框/圆角/背景）
+- 弹窗需要独立处理点击背景关闭（`stopPropagation`）、确定/返回按钮、已选数量提示
+- 注意函数签名从 `() => (...)`（隐式 return）改为 `() => { ... return (...); }`（显式 return）时，结尾 `);` 需同步改为 `};`
+
+### 组件复用模式
+- 角色管理页（rolemgt.js）的 UserLinkModal 可直接复制到其他页面，适配 mockAllUsers 数据和 onConfirm 回调即可
+- StatusTag 组件（src/components/StatusTag.jsx）统一管理状态标签样式，避免各页面重复写 Tag
+- 弹窗按钮栏样式统一：`flex justify-center gap-3 + Button type="primary" + Button`

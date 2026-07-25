@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Button,
   Card,
@@ -10,22 +10,11 @@ import {
   Table,
   Typography,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 
 const { RangePicker } = DatePicker;
 const { Link } = Typography;
 
-interface ApplyRecord {
-  key: string;
-  index: number;
-  applyNo: string;
-  billType: string;
-  applyTime: string;
-  materialCount: number;
-  status: string;
-}
-
-const dataSource: ApplyRecord[] = [
+const dataSource = [
   {
     key: '1',
     index: 1,
@@ -130,15 +119,17 @@ export default function ApplyListPage() {
     form.resetFields();
   };
 
-  const handleOpenApply = (record: ApplyRecord) => {
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
+
+  const handleOpenApply = (record) => {
     console.log('打开申请单：', record);
   };
 
-  const handleOpenStatus = (record: ApplyRecord) => {
+  const handleOpenStatus = (record) => {
     console.log('查看单据状态：', record);
   };
 
-  const columns: ColumnsType<ApplyRecord> = [
+  const columns = [
     {
       title: '序号',
       dataIndex: 'index',
@@ -290,11 +281,11 @@ export default function ApplyListPage() {
           dataSource={dataSource}
           scroll={{ x: 1000 }}
           pagination={{
-            current: 2,
-            pageSize: 10,
-            total: 319,
+            ...pagination,
+            total: dataSource.length,
             showSizeChanger: true,
             showTotal: (total) => `共 ${total} 条`,
+            onChange: (current, pageSize) => setPagination({ current, pageSize }),
           }}
         />
       </Card>

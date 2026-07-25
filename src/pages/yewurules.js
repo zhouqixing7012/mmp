@@ -45,6 +45,7 @@ import {
   mockAccountBookContentData, mockExpenseAccountRuleData,
   mockCostCenterSubjectMappingData, mockMaterialSubSubjectMappingData,
   mockNOServiceSubjectMappingData, mockEmployeeProjectMappingData,
+  mockPSNewEmployeeMappingData,
 } from '../mock/businessRulesMock';
 // --- 选择物料大类弹窗组件 ---
 // 模拟物料大类数据
@@ -100,7 +101,7 @@ const MaterialComprehensiveView = () => {
     { title: '单位', dataIndex: 'unit', width: 80 },
     { title: '参考价格', dataIndex: 'refPrice', width: 100, render: (val) => val || '0.00' },
     { title: '是否启用', dataIndex: 'enabled', width: 90, render: (val) => <StatusTag value={val} type="enabled" /> },
-    { title: '是否停产', dataIndex: 'isStop', width: 90, render: (val) => <StatusTag value={val} /> },
+    { title: '是否停产', dataIndex: 'isStop', width: 90, render: (val) => <StatusTag value={val} type="stop" /> },
     { title: '正式员工可申请', dataIndex: 'formalCanApply', width: 120, render: (val) => val || '-' },
     { title: '实习生可申请', dataIndex: 'internCanApply', width: 110, render: (val) => val || '-' },
     { title: '是否允许退库', dataIndex: 'allowReturn', width: 110, render: (val) => <StatusTag value={val} /> },
@@ -316,11 +317,11 @@ const MaterialComprehensiveView = () => {
             <div className="flex min-h-[40px]">
               <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">启用日期</div>
               <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center">
-                <DatePicker value={formData.enableDate} onChange={(date, dateString) => setFormData({...formData, enableDate: dateString})} placeholder={'请选择启用日期'} className="w-full" />
+                <DatePicker value={formData.enableDate ? dayjs(formData.enableDate) : null} onChange={(date, dateString) => setFormData({...formData, enableDate: dateString})} placeholder={'请选择启用日期'} className="w-full" />
               </div>
               <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">停用日期</div>
               <div className="w-[37.5%] p-2 flex items-center">
-                <DatePicker value={formData.stopDate} onChange={(date, dateString) => setFormData({...formData, stopDate: dateString})} placeholder={'请选择停用日期'} className="w-full" />
+                <DatePicker value={formData.stopDate ? dayjs(formData.stopDate) : null} onChange={(date, dateString) => setFormData({...formData, stopDate: dateString})} placeholder={'请选择停用日期'} className="w-full" />
               </div>
             </div>
           </div>
@@ -628,7 +629,7 @@ const MaterialCategoryView = () => {
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
           <Button type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</Button>
-          <Button danger icon={<XCircle disabled={selectedRowKeys.length === 0} size={14} />}>停用</Button>
+          <Button danger disabled={selectedRowKeys.length === 0} icon={<XCircle size={14} />}>停用</Button>
           <Button type="default" icon={<Edit size={14} />} onClick={() => setIsBatchModalOpen(true)}>批量修改</Button>
         </div>
         <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
@@ -738,7 +739,7 @@ const MaterialSubCategoryView = () => {
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
           <Button type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</Button>
-          <Button danger icon={<XCircle disabled={selectedRowKeys.length === 0} size={14} />}>停用</Button>
+          <Button danger disabled={selectedRowKeys.length === 0} icon={<XCircle size={14} />}>停用</Button>
           <Button type="default" icon={<Edit size={14} />} onClick={() => setIsBatchModalOpen(true)}>批量修改</Button>
         </div>
         <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
@@ -854,7 +855,7 @@ const BrandView = () => {
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
           <Button type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</Button>
-          <Button danger icon={<XCircle disabled={selectedRowKeys.length === 0} size={14} />}>停用</Button>
+          <Button danger disabled={selectedRowKeys.length === 0} icon={<XCircle size={14} />}>停用</Button>
           <Button type="default" icon={<Edit size={14} />} onClick={() => setIsBatchModalOpen(true)}>批量修改</Button>
         </div>
         <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
@@ -952,7 +953,7 @@ const ModelView = () => {
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
           <Button type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</Button>
-          <Button danger icon={<XCircle disabled={selectedRowKeys.length === 0} size={14} />}>停用</Button>
+          <Button danger disabled={selectedRowKeys.length === 0} icon={<XCircle size={14} />}>停用</Button>
           <Button type="default" icon={<Edit size={14} />} onClick={() => setIsBatchModalOpen(true)}>批量修改</Button>
         </div>
         <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
@@ -1002,18 +1003,7 @@ const ModelView = () => {
           </div>
         </div>
       </Modal>
-      <SelectModal
-        open={isBrandModalOpen}
-        title="选择品牌"
-        dataSource={mockBrands}
-        columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
-        searchFields={[{ label: '编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
-        onCancel={() => setIsBrandModalOpen(false)}
-        onConfirm={(record) => {
-          setFormData({ ...formData, brand: record.desc });
-          setIsBrandModalOpen(false);
-        }}
-      />
+      
     </div>
   );
 };
@@ -1079,7 +1069,7 @@ const ConfigView = () => {
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
           <Button type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</Button>
-          <Button danger icon={<XCircle disabled={selectedRowKeys.length === 0} size={14} />}>停用</Button>
+          <Button danger disabled={selectedRowKeys.length === 0} icon={<XCircle size={14} />}>停用</Button>
           <Button type="default" icon={<Edit size={14} />} onClick={() => setIsBatchModalOpen(true)}>批量修改</Button>
         </div>
         <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
@@ -1430,7 +1420,7 @@ const PSNewEmployeeMappingView = () => {
     { title: '是否启用', dataIndex: 'enabled', render: (val) => <StatusTag value={val} type="enabled" /> },
     { title: '操作', dataIndex: 'action', render: (_, record) => <Button type="link" onClick={() => handleEdit(record)}>编辑</Button> }
   ];
-  const data = mockNOLocationData;
+  const data = mockPSNewEmployeeMappingData;
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   return (
     <div className="flex flex-col gap-4">
@@ -2255,7 +2245,7 @@ const CompanyBelongingAuthView = () => {
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
+          <Button danger disabled={selectedRowKeys.length === 0} icon={<Trash2 size={14} />}>删除</Button>
           <Button type="default" icon={<Edit size={14} />} onClick={() => setIsBatchModalOpen(true)}>批量修改</Button>
         </div>
         <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
@@ -2371,7 +2361,7 @@ const WarehouseInfoView = () => {
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex flex-col overflow-hidden">
         <div className="px-3 py-2 border-b border-[#f0f0f0] bg-white flex gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
+          <Button danger disabled={selectedRowKeys.length === 0} icon={<Trash2 size={14} />}>删除</Button>
           <Button type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</Button>
           <Button type="default" className="text-red-500" icon={<XCircle size={14} />}>停用</Button>
         </div>
@@ -2451,11 +2441,11 @@ const WarehouseInfoView = () => {
           <div className="flex min-h-[40px]">
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">启用日期</div>
             <div className="w-[35%] p-2 border-r border-[#e8e8e8] flex items-center">
-              <DatePicker value={formData.startDate} onChange={(date, dateString) => setFormData({...formData, startDate: dateString})} placeholder="请选择启用日期" className="w-full" />
+              <DatePicker value={formData.startDate ? dayjs(formData.startDate) : null} onChange={(date, dateString) => setFormData({...formData, startDate: dateString})} placeholder="请选择启用日期" className="w-full" />
             </div>
             <div className="w-[15%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">停用日期</div>
             <div className="w-[35%] p-2 flex items-center">
-              <DatePicker value={formData.endDate} onChange={(date, dateString) => setFormData({...formData, endDate: dateString})} placeholder="请选择停用日期" className="w-full" />
+              <DatePicker value={formData.endDate ? dayjs(formData.endDate) : null} onChange={(date, dateString) => setFormData({...formData, endDate: dateString})} placeholder="请选择停用日期" className="w-full" />
             </div>
           </div>
         </div>
@@ -2522,7 +2512,7 @@ const WarehouseUsageView = () => {
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
+          <Button danger disabled={selectedRowKeys.length === 0} icon={<Trash2 size={14} />}>删除</Button>
           <Button type="default" className="text-green-600" icon={<CheckCircle size={14} />}>启用</Button>
           <Button type="default" className="text-red-500" icon={<XCircle size={14} />}>停用</Button>
           <Button type="default" icon={<Edit size={14} />} onClick={() => setIsBatchModalOpen(true)}>批量修改</Button>
@@ -2645,7 +2635,7 @@ const WarehousePermissionView = () => {
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
+          <Button danger disabled={selectedRowKeys.length === 0} icon={<Trash2 size={14} />}>删除</Button>
           <Button type="default" icon={<Edit size={14} />} onClick={() => setIsBatchModalOpen(true)}>批量修改</Button>
         </div>
         <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
@@ -2878,7 +2868,7 @@ const ReceiptRuleManagementView = () => {
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex flex-col h-full relative">
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
+          <Button danger disabled={selectedRowKeys.length === 0} icon={<Trash2 size={14} />}>删除</Button>
         </div>
         <div className="flex-1 overflow-x-auto">
           <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
@@ -3176,7 +3166,7 @@ const AssetAllocationRuleView = () => {
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />}>新增</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
+          <Button danger disabled={selectedRowKeys.length === 0} icon={<Trash2 size={14} />}>删除</Button>
         </div>
         <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
       </div>
@@ -3222,7 +3212,7 @@ const MaterialRequestLimitView = () => {
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
+          <Button danger disabled={selectedRowKeys.length === 0} icon={<Trash2 size={14} />}>删除</Button>
         </div>
         <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
       </div>
@@ -3331,7 +3321,7 @@ const AssetDepreciationRuleView = () => {
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
           <Button type="default" icon={<Edit size={14} />}>编辑</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
+          <Button danger disabled={selectedRowKeys.length === 0} icon={<Trash2 size={14} />}>删除</Button>
         </div>
         <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
       </div>
@@ -3421,7 +3411,7 @@ const AccountBookContentView = () => {
       <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
           <Button type="primary" icon={<Plus size={14} />} onClick={handleAdd}>新增</Button>
-          <Button danger icon={<Trash2 disabled={selectedRowKeys.length === 0} size={14} />}>删除</Button>
+          <Button danger disabled={selectedRowKeys.length === 0} icon={<Trash2 size={14} />}>删除</Button>
         </div>
         <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={data} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
       </div>
@@ -4025,7 +4015,6 @@ const CostCenterSubjectMappingView = () => {
         }}
       />
 
-      />
     </div>
   );
 };

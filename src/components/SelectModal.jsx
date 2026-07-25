@@ -71,7 +71,7 @@ const resetState = () => {
    const handleConfirm = () => {
      if (multiple) {
        if (selectedKeys.length > 0) {
-         const selected = filteredData.filter(item => selectedKeys.includes(String(item[rowKey])));
+         const selected = dataSource.filter(item => selectedKeys.includes(String(item[rowKey])));
          if (selected.length > 0) {
            (onConfirm || onSelect)(selected);
            onCancel();
@@ -80,7 +80,7 @@ const resetState = () => {
        }
      } else {
        if (selectedKey) {
-         const selected = filteredData.find(item => String(item[rowKey]) === String(selectedKey));
+         const selected = dataSource.find(item => String(item[rowKey]) === String(selectedKey));
          if (selected) {
            (onConfirm || onSelect)(selected);
            onCancel();
@@ -157,7 +157,7 @@ const resetState = () => {
                      <tr
                        key={keyVal}
                        className={`border-b border-[#f0f0f0] cursor-pointer transition-colors ${
-                         selectedKey === keyVal ? 'bg-[#e6f7ff]' : 'hover:bg-[#fafafa]'
+                         (multiple ? selectedKeys.includes(keyVal) : selectedKey === keyVal) ? 'bg-[#e6f7ff]' : 'hover:bg-[#fafafa]'
                        }`}
                        onClick={() => { if (multiple) { setSelectedKeys(prev => prev.includes(keyVal) ? prev.filter(k => k !== keyVal) : [...prev, keyVal]); } else { setSelectedKey(keyVal); } }}
                      >
@@ -166,6 +166,7 @@ const resetState = () => {
                            type={multiple ? "checkbox" : "radio"}
                            className="w-3.5 h-3.5"
                            checked={multiple ? selectedKeys.includes(keyVal) : selectedKey === keyVal}
+                           onClick={(e) => e.stopPropagation()}
                            onChange={() => {
                              if (multiple) {
                                setSelectedKeys(prev =>

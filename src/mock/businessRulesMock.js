@@ -123,7 +123,14 @@ export const mockEmployeeMappingData = [
   { id: 1, company: 'WJS_北京搜狐互...', dept: 'D0164_搜狐媒体_社会...', office: 'L062_北京-搜狐媒体大厦...', warehouse: 'I0015_资产库(前台库)(互联网)...', enabled: true },
 ];
  
- export const mockNOLocationData = [
+ 
+export const mockPSNewEmployeeMappingData = [
+  { id: 1, company: '搜狐千线', config: '笔记本-ThinkPad X1 Carbon Gen 11', city: '北京', desc: '新员工标配笔记本', qty: 5, dept: '技术部', enabled: true },
+  { id: 2, company: '搜狐媒体', config: '台式机-Dell OptiPlex 7080', city: '北京', desc: '新员工标配台式机', qty: 3, dept: '内容部', enabled: true },
+  { id: 3, company: '搜狐视频', config: '笔记本-MacBook Pro 14"', city: '上海', desc: '新员工标配开发机', qty: 2, dept: '研发部', enabled: true },
+];
+
+export const mockNOLocationData = [
   { id: 1, code: 'SDZZ_CH1', desc: '枣庄联通机房', info: '山东省市中区长白山路2666号联通数据中心', city: '68.山东省-枣庄市', building: '206.联通数据中心', floor: '3层', enabled: true },
   { id: 2, code: 'SDZZ_CU1', desc: '青岛联通', info: '青岛市苗岭路11号4楼 秦岭路IDC机房', city: '68.山东省-青岛市', building: '206.缺省', floor: '缺省', enabled: true },
  ];
