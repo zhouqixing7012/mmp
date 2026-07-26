@@ -15,7 +15,7 @@
 - Recharts
 - Playwright
 
-说明：`package.json` 是当前依赖版本的准绳，文档中的技术栈必须和它保持一致。
+`package.json` 是当前依赖版本的准绳。
 
 ## 项目结构
 
@@ -23,30 +23,28 @@
 src/
 ├── components/                 # 通用组件，如 Navbar、StatusTag、SelectModal、QueryBar
 ├── config/                     # 路由和导航配置
-│   └── routes.js               # 所有页面路由，含导航分组
-├── mock/                       # 演示数据，后续页面数据应统一从这里出发
-│   └── assetApplicationMock.js # 资产申请链路演示数据
-├── services/                   # 演示数据读写服务，统一封装 localStorage
-│   └── demoStorage.js          # 通用演示数据存储服务
-├── pages/                      # 页面组件
-│   ├── yewurules.js            # 后台基础配置入口与剩余业务视图
+├── mock/                       # 统一演示数据
+├── services/                   # 演示数据读写服务
+├── pages/
+│   ├── yewurules.js            # 后台基础配置组合入口，约 200 行
 │   ├── yewurules/
-│   │   ├── components/         # 后台侧边栏、页签、内容区、个人工作台组件
-│   │   ├── config/             # 后台菜单、页签、个人工作台页面配置
+│   │   ├── components/         # 后台侧边栏、顶部栏、内容区和个人工作台组件
+│   │   ├── config/             # 菜单、页签和个人工作台配置
 │   │   └── modules/
-│   │       ├── material/       # 物料基础数据页面
-│   │       ├── mapping/        # 业务映射页面
-│   │       ├── warehouse/      # 仓库数据页面
-│   │       └── location/       # 地点数据页面
+│   │       ├── material/       # 物料基础数据
+│   │       ├── mapping/        # 业务映射
+│   │       ├── warehouse/      # 仓库数据
+│   │       ├── location/       # 地点数据
+│   │       ├── permission/     # 领取权限、单据规则和配给规则
+│   │       ├── accounting/     # 会计映射、折旧、账套和科目映射
+│   │       └── expense/        # 超标配置和费用账户规则
 │   ├── xitongrules.js          # 组织与用户管理
 │   ├── zichanshenqing.js       # 新增资产申请
 │   ├── zichanshenqingshenpi.js # 资产申请审批
 │   └── ...                     # 其他业务页面
-├── prototype-annotations/      # 原型标注层
-├── App.js                      # 应用入口，直接消费 routes.js
-└── index.js                    # React 启动入口
+├── App.js
+└── index.js
 
-docs/                           # 产品需求文档
 AI_RULES.md                     # AI Agent 行为约束
 CLAUDE.md                       # 项目编码约定
 CONTEXT.md                      # 当前进度和关键决定
@@ -57,55 +55,35 @@ ARCHITECTURE.md                 # 代码结构说明
 
 ### 个人工作台
 
-- 工作台首页：资产、耗材、合约号码分类查看。
-- 新增资产申请：资产商城选品并生成申请明细。
-- 资产申请审批：审批员工提交的资产申请。
-- 资产申请配给：处理资产配给相关流程。
-- 统一申请汇总-资产：统一查看资产申请汇总及单据详情。
-- 号码管理：电话卡申请表单。
-- 号码控制：申请人员白名单管理。
-
-### 报废管理
-
-- 报废申请单编辑。
-- 账面报废申请单。
-- 报废申请单审批。
-- 报废申请单内审。
-- 报废申请单采购流程。
-
-### 机房资产
-
-- 机房资产大盘。
-- 机房资产管理。
-- 机房资产维护查询列表。
-- 主备维护。
-- 责任人变更。
-- 位置变更。
-- 序列号变更。
-- 采购订单编辑。
+- 工作台首页
+- 新增资产申请
+- 资产申请审批
+- 资产申请配给
+- 统一申请汇总-资产
+- 号码管理
+- 号码控制
 
 ### 后台配置
 
-- 业务基础数据维护。
-- 业务映射规则管理。
-- 业务权限规则管理。
-- 仓库基础数据维护。
-- 会计映射规则管理。
-- 资产配给规则管理。
-- 费用账户规则管理。
-- 组织与用户管理。
+- 物料基础数据维护
+- 业务映射规则管理
+- 业务权限规则管理
+- 仓库与地点数据维护
+- 会计映射规则管理
+- 资产配给与折旧规则管理
+- 费用账户规则管理
+- 组织、用户、角色和字典管理
+
+### 其他资产流程
+
+- 报废申请、审批、内审和采购流程
+- 机房资产大盘、管理和维护查询
+- 主备维护、责任人变更、位置变更和序列号变更
 
 ## 本地运行
 
-### 安装依赖
-
 ```bash
 npm install
-```
-
-### 启动开发环境
-
-```bash
 npm start
 ```
 
@@ -115,13 +93,13 @@ npm start
 http://localhost:3000
 ```
 
-### 构建生产包
+生产构建：
 
 ```bash
 npm run build
 ```
 
-### 测试命令
+测试：
 
 ```bash
 npm test
@@ -131,26 +109,22 @@ npm test
 
 ### 已完成
 
-- `App.js` 已改为直接消费 `routes.js` 中的 `Page` 字段，减少手工维护映射。
-- `routes.js` 已增加模块分组字段 `group`，并导出 `navGroups`。
-- `Navbar.js` 已从所有页面平铺展示改为按模块下拉展示，点击具体页面后会自动收起菜单。
-- 新增 `ARCHITECTURE.md`，记录目录和模块职责。
-- `README.md` 已修正技术栈，和 `package.json` 保持一致。
-- 新增 `src/mock/assetApplicationMock.js`，将新增资产申请页的大块 mock 数据迁出页面。
-- 新增 `src/services/demoStorage.js`，统一封装演示数据的 localStorage 读写。
-- `zichanshenqing.js` 提交申请时已写入统一演示数据服务，并补充耗材关联主资产校验。
-- 已完成 `yewurules.js` 第一阶段拆分：后台框架、菜单、页签和个人工作台页面映射已迁出。
-- 已完成物料基础数据模块拆分，相关页面迁入 `modules/material/`。
-- 已完成仓库、地点及首批业务映射模块拆分，相关页面迁入 `modules/warehouse/`、`modules/location/` 和 `modules/mapping/`。
-- `yewurules.js` 已由约 4655 行逐步降低到约 2028 行。
+- `App.js` 直接消费 `routes.js` 中的 `Page` 字段。
+- `routes.js` 增加模块分组字段并导出导航分组。
+- `Navbar.js` 按模块展示导航。
+- 新增统一 mock 与演示数据存储服务。
+- 新增“统一申请汇总-资产”，并接入个人工作台内部菜单。
+- 完成 `yewurules.js` 后台框架、菜单、页签和个人工作台映射拆分。
+- 完成物料、业务映射、仓库、地点、权限、会计和费用账户模块拆分。
+- `yewurules.js` 从约 4655 行降至约 200 行，只保留状态、页面映射和框架组合。
 
-### 仍需逐步处理
+### 后续处理
 
-- `zichanshenqingshenpi.js` 还需要接入 `getAssetApplications()`，让审批页读取同一份申请数据。
-- `applylist.js` 还需要接入同源申请数据，形成提交申请、申请列表、审批的完整链路。
-- `yewurules.js` 已开始按业务域拆分，后续继续迁移权限、会计、费用账户和其他剩余配置页面。
-- 部分页面仍有页面内 mock 数据，应逐步迁移到 `src/mock/`。
-- 部分业务操作仍停留在演示状态，应统一走 mock service 和 localStorage。
+- 本地执行 `npm run build`，完整验收后台配置全部页签。
+- 继续将大型模块内部页面拆到 300 行以内。
+- 将剩余页面内 mock 数据逐步迁移到统一 mock 入口。
+- 让申请、列表和审批页面读取同一份申请数据。
+- 将演示操作逐步统一到 mock service 和 localStorage。
 
 ## 开发约定
 
@@ -162,9 +136,3 @@ npm test
 - 查询区域优先使用 `QueryBar` 和 `QueryItem`。
 - 页面组件建议不超过 300 行。
 - 不直接在页面组件中操作 localStorage。
-
-## 搜索记录
-
-- 本次整改没有新增外部技术方案；依据项目现有 `AI_RULES.md`、`CLAUDE.md`、`package.json`、`routes.js` 和页面结构完成。
-- 未访问 skills.sh。
-- 未做 GitHub 外部方案搜索。
