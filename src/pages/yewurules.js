@@ -9,12 +9,11 @@ import {
 import { UserManagementView, OrgManagementView } from './xitongrules';
 import DictManagementView from "./dictmanagement";
 import RoleManagementView from "./rolemgt";
-import AssetApplicationPrototype from "./zichanshenqing";
-import ApprovalPagePrototype from "./zichanshenqingshenpi";
-import AssetAdminApprovalPrototype from "./zichanpeiji";
-import PersonalWorkspace from "./gerengerzuotai";
-import Haoma from "./haoma";
-import Haomakongzhi from "./haomakongzhi";
+import AdminSidebar from './yewurules/components/AdminSidebar';
+import AdminHeader from './yewurules/components/AdminHeader';
+import AdminContent from './yewurules/components/AdminContent';
+import WorkspaceContent from './yewurules/components/WorkspaceContent';
+import { getDefaultTabBySubMenu, getTabsBySubMenu } from './yewurules/config/tabConfig';
 import { Button, Input, Select, Modal, Table, Radio, Card, Tag, DatePicker } from 'antd';
 import StatusTag from '../components/StatusTag';
 import SelectModal from '../components/SelectModal';
@@ -4323,332 +4322,112 @@ export default function App() {
   const [activeMenu, setActiveMenu] = useState('后台基础配置');
   const [activeSubMenu, setActiveSubMenu] = useState('物料数据维护');
   const [activeTab, setActiveTab] = useState('物料大类');
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const baseDataTabs = ['物料维度组合', '物料大类', '物料小类', '品牌', '型号', '配置'];  //, 'NO服务'
-  const mappingTabs = ['办公区与仓库映射', 'PS新员工领用物料映射', 'NO地点与资产地点映射', '虚拟库管员映射', '板块与账簿映射', '公司板块领取资产权限', '机房资产领取权限'];
-  const authTabs = ['公司板块提取资产权限', 'NO设备提取资产权限', '公司归属权限'];
-  const warehouseTabs = ['仓库信息', '仓库用途', '仓库权限'];
-  const locationTabs = ['地点基础数据维护'];
-  const receiptRuleTabs = ['单据编号规则管理'];
-  const accountingTabs = ['HR公司与财务公司映射', '部门与成本中心映射', '成本中心与板块映射', '城市与业务线映射', '部门与业务线映射'];
-  const assetAllocationTabs = ['电脑配给方案', '影像器材配给方案', '配给规则'];
-  const materialLimitTabs = ['超标规则'];
-  const expenseAccountTabs = ['费用账户规则', '成本中心与科目映射', '物料大类与子目映射', 'NO一级服务与科目映射', '员工与项目映射'];
-  const depreciationTabs = ['资产折旧规则管理'];
-  const accountBookTabs = ['账套内容维护'];
-  
-  const tabs = activeSubMenu === '物料数据维护' ? baseDataTabs : 
-               activeSubMenu === '业务映射规则' ? mappingTabs : 
-               activeSubMenu === '业务权限规则管理' ? authTabs : 
-               activeSubMenu === '仓库数据维护' ? warehouseTabs : 
-               activeSubMenu === '地点数据维护' ? locationTabs : 
-              //  activeSubMenu === '单据编号规则管理' ? receiptRuleTabs : 
-               activeSubMenu === '会计映射规则' ? accountingTabs : 
-              //  activeSubMenu === '资产配给规则' ? assetAllocationTabs : 
-               activeSubMenu === '物资申请超标配置' ? materialLimitTabs : 
-               activeSubMenu === '费用账户规则' ? expenseAccountTabs :
-               activeSubMenu === '资产折旧规则管理' ? depreciationTabs : 
-               activeSubMenu === '账套内容维护' ? accountBookTabs : [];
-  const handleSubMenuClick = (sub) => {
-    setActiveSubMenu(sub);
-    if (sub === '物料数据维护') setActiveTab('物料大类');
-    if (sub === '业务映射规则') setActiveTab('办公区与仓库映射');
-    // if (sub === '业务权限规则管理') setActiveTab('公司板块提取资产权限');
-    if (sub === '仓库数据维护') setActiveTab('仓库信息');
-    if (sub === '地点数据维护') setActiveTab('地点基础数据维护');
-    // if (sub === '单据编号规则管理') setActiveTab('单据编号规则管理');
-    if (sub === '会计映射规则') setActiveTab('HR公司与财务公司映射');
-    // if (sub === '资产配给规则管理') setActiveTab('影像器材配给方案');
-    if (sub === '物资申请超标配置') setActiveTab('超标规则');
-    if (sub === '费用账户规则') setActiveTab('费用账户规则');
-    // if (sub === '资产折旧规则管理') setActiveTab('资产折旧规则管理');
-    if (sub === '账套内容维护') setActiveTab('账套内容维护');
-    if (sub === '用户管理') setActiveTab('');
-    if (sub === '组织管理') setActiveTab('');
-    if (sub === '角色管理') setActiveTab('');
-    if (sub === '字典管理') setActiveTab('');
+
+  const tabs = getTabsBySubMenu(activeSubMenu);
+
+  const handleMenuToggle = (menuKey, collapsible = true) => {
+    setActiveMenu((currentMenu) => {
+      if (collapsible && currentMenu === menuKey) {
+        return '';
+      }
+      return menuKey;
+    });
   };
+
+  const handleSubMenuSelect = (subMenu) => {
+    setActiveSubMenu(subMenu);
+    setActiveTab(getDefaultTabBySubMenu(subMenu));
+  };
+
   return (
     <div className="flex h-screen w-full bg-[#f0f2f5] font-sans text-gray-800 overflow-hidden">
-      <div className="w-56 bg-[#001529] text-white flex flex-col transition-all duration-300 shadow-xl z-20 relative">
-        <div className="h-14 flex items-center gap-3 px-4 shadow-[0_1px_2px_rgba(0,0,0,0.3)] z-10 bg-[#002140]">
-          <div className="w-8 h-8 rounded bg-[#1677ff] flex items-center justify-center font-bold text-lg shadow-sm">E</div>
-          <span className="font-semibold text-base tracking-wide text-white">企业资产管理系统</span>
-        </div>
-        <div className="py-4 px-5 border-b border-white/10 flex flex-col gap-1 text-sm bg-[#001529]">
-          <div className="flex items-center gap-2 text-gray-300">
-            <User size={14} />
-            <span className="font-medium text-white">系统管理员 (admin)</span>
-          </div>
-          <div className="text-gray-400 text-xs ml-5">2026年05月27日 星期三</div>
-        </div>
-        <div className="flex-1 py-2">
-          {/* 个人工作台 - 可展开子菜单 */}
-          <div>
-            <div
-              className="flex items-center justify-between px-5 py-3 cursor-pointer text-sm text-gray-300 hover:text-white hover:bg-white/5"
-              onClick={() => setActiveMenu(activeMenu === '个人工作台' ? '' : '个人工作台')}
-            >
-              <div className="flex items-center gap-3">
-                <LayoutDashboard size={16} />
-                <span>个人工作台</span>
-              </div>
-              <ChevronDown size={14} className={`transition-transform ${activeMenu === '个人工作台' ? 'rotate-180' : ''}`} />
-            </div>
-            {activeMenu === '个人工作台' && (
-              <div className="bg-[#000c17] py-1">
-                <div
-                  className={`pl-12 pr-5 py-2.5 cursor-pointer text-sm transition-colors ${activeSubMenu === '工作台首页' ? 'text-white bg-[#1677ff]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                  onClick={() => setActiveSubMenu('工作台首页')}
-                >
-                  工作台首页
-                </div>
-                <div
-                  className={`pl-12 pr-5 py-2.5 cursor-pointer text-sm transition-colors ${activeSubMenu === '号码管理' ? 'text-white bg-[#1677ff]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                  onClick={() => setActiveSubMenu('号码管理')}
-                >
-                  号码管理
-                </div>
-                <div
-                  className={`pl-12 pr-5 py-2.5 cursor-pointer text-sm transition-colors ${activeSubMenu === '号码控制' ? 'text-white bg-[#1677ff]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                  onClick={() => setActiveSubMenu('号码控制')}
-                >
-                  号码控制
-                </div>
-                <div
-                  className="pl-12 pr-5 py-2.5 cursor-pointer text-sm text-gray-400 hover:text-white hover:bg-white/5"
-                  onClick={() => setActiveSubMenu('新增资产申请')}
-                >
-                  新增资产申请
-                </div>
-                <div
-                  className="pl-12 pr-5 py-2.5 cursor-pointer text-sm text-gray-400 hover:text-white hover:bg-white/5"
-                  onClick={() => setActiveSubMenu('资产申请审批')}
-                >
-                  资产申请审批
-                </div>
-                <div
-                  className="pl-12 pr-5 py-2.5 cursor-pointer text-sm text-gray-400 hover:text-white hover:bg-white/5"
-                  onClick={() => setActiveSubMenu('资产申请配给')}
-                >
-                  资产申请配给
-                </div>
-              </div>
-            )}
-          </div>
-          {[
-            { id: '资产管理', icon: <Monitor size={16} /> },
-            { id: '无形资产', icon: <Layers size={16} /> },
-            { id: '资产盘点', icon: <ClipboardList size={16} /> },
-          ].map(item => (
-             <div 
-               key={item.id}
-               className={`flex items-center gap-3 px-5 py-3 cursor-pointer text-sm transition-colors hover:text-white ${activeMenu === item.id ? 'text-white bg-[#1677ff]' : 'text-gray-300 hover:bg-white/5'}`}
-               onClick={() => setActiveMenu(item.id)}
-             >
-               {item.icon}
-               <span>{item.id}</span>
-             </div>
-          ))}
-          <div className="mt-1">
-            <div
-              className={`flex items-center justify-between px-5 py-3 cursor-pointer text-sm text-gray-300 hover:text-white hover:bg-white/5`}
-              onClick={() => setActiveMenu(activeMenu === '后台基础配置' ? '' : '后台基础配置')}
-            >
-              <div className="flex items-center gap-3">
-                <Settings size={16} />
-                <span>后台基础配置</span>
-              </div>
-              <ChevronDown size={14} className={`transition-transform ${activeMenu === '后台基础配置' ? 'rotate-180' : ''}`} />
-            </div>
-            {activeMenu === '后台基础配置' && (
-              <div className="bg-[#000c17] py-1">
-                {[
-                  '物料数据维护',
-                  '业务映射规则',
-                  // '业务权限规则管理',
-                  '仓库数据维护',
-                  '地点数据维护',
-                  // '单据编号规则管理',
-                  '会计映射规则',
-                  // '资产配给规则管理',
-                  '物资申请超标配置',
-                  '费用账户规则',
-                  // '资产折旧规则管理',
-                  '账套内容维护',
-                  '组织管理',
-                  '用户管理',
-                  '角色管理',
-                  '字典管理',
-                ].map(sub => (
-                  <div
-                    key={sub}
-                    className={`pl-12 pr-5 py-2.5 cursor-pointer text-sm transition-colors ${activeSubMenu === sub ? 'text-white bg-[#1677ff]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                    onClick={() => handleSubMenuClick(sub)}
-                  >
-                    {sub}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <AdminSidebar
+        activeMenu={activeMenu}
+        activeSubMenu={activeSubMenu}
+        onMenuToggle={handleMenuToggle}
+        onSubMenuSelect={handleSubMenuSelect}
+      />
+
       <div className="flex-1 flex flex-col min-w-0 bg-[#f0f2f5]">
-        <div className="h-14 bg-white shadow-[0_1px_4px_rgba(0,21,41,0.08)] flex items-center justify-between px-4 z-10">
-          <div className="flex items-center gap-4">
-            <div className="p-1 cursor-pointer text-gray-500 hover:bg-gray-100 rounded transition-colors">
-              <Menu size={20} />
+        <AdminHeader activeSubMenu={activeSubMenu} />
+
+        <AdminContent
+          activeMenu={activeMenu}
+          activeSubMenu={activeSubMenu}
+          activeTab={activeTab}
+          tabs={tabs}
+          onTabChange={setActiveTab}
+        >
+          {/* 用户与组织管理 */}
+          {activeSubMenu === '用户管理' && (
+            <div className="flex-1 flex flex-col relative">
+              <UserManagementView />
             </div>
-            <div className="flex items-end h-full pt-3 gap-1">
-               <div className="px-4 py-1.5 bg-[#fafafa] border border-b-0 border-[#f0f0f0] rounded-t-md text-sm text-gray-500 cursor-pointer flex items-center gap-2 hover:bg-gray-50">
-                 我的资产
-                 <XCircle size={12} className="hover:text-red-500" />
-               </div>
-               <div className="px-4 py-1.5 bg-[#e6f4ff] border border-b-0 border-[#1677ff] rounded-t-md text-sm text-[#1677ff] font-medium cursor-pointer flex items-center gap-2 relative top-[1px]">
-                 {activeSubMenu}
-                 <XCircle size={12} className="hover:text-[#1677ff]" />
-               </div>
+          )}
+          {activeSubMenu === '组织管理' && (
+            <div className="flex-1 flex flex-col relative">
+              <OrgManagementView />
             </div>
-          </div>
-          <div className="flex items-center gap-4 text-gray-500">
-            <Bell size={18} className="cursor-pointer hover:text-gray-800 transition-colors" />
-            <div className="w-7 h-7 rounded-full bg-[#1677ff] text-white flex items-center justify-center text-xs shadow-sm cursor-pointer hover:opacity-90">A</div>
-          </div>
-        </div>
-        <div className="flex-1 p-4 md:p-6 overflow-y-auto">
-          <div className="mb-4 flex items-center gap-2 text-sm text-gray-500">
-             <span>首页</span>
-             <ChevronRight size={14} />
-             <span>{activeMenu}</span>
-             <ChevronRight size={14} />
-             <span className="text-gray-800 font-medium">{activeSubMenu}</span>
-          </div>
-          <div className="bg-white rounded-md shadow-sm border border-[#f0f0f0] min-h-[calc(100vh-140px)] flex flex-col">
-            {tabs.length > 0 && (
-              <div className="flex items-center border-b border-[#f0f0f0] px-4 pt-2 overflow-x-auto custom-scrollbar bg-white rounded-t-md">
-                {tabs.map(tab => (
-                  <div
-                    key={tab}
-                    className={`px-5 py-3 text-sm cursor-pointer whitespace-nowrap transition-colors relative ${activeTab === tab ? 'text-[#1677ff] font-medium' : 'text-gray-600 hover:text-[#1677ff]'}`}
-                    onClick={() => setActiveTab(tab)}
-                  >
-                    {tab}
-                    {activeTab === tab && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#1677ff]" />}
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="p-4 md:p-5 bg-[#fafafa] flex-1 flex flex-col relative">
-              {/* 用户管理 */}
-              {activeSubMenu === '用户管理' && (
-                <div className="flex-1 flex flex-col relative">
-                  <UserManagementView />
-                </div>
-              )}
-              {/* 组织管理 */}
-              {activeSubMenu === '组织管理' && (
-                <div className="flex-1 flex flex-col relative">
-                  <OrgManagementView />
-                </div>
-              )}
-              {/* 角色管理 */}
-              {activeSubMenu === '角色管理' && (
-                <div className="flex-1 flex flex-col relative">
-                  <RoleManagementView />
-                </div>
-              )}
-              {/* 字典管理 */}
-              {activeSubMenu === "字典管理" && (
-                <div className="flex-1 flex flex-col relative">
-                  <DictManagementView />
-                </div>
-              )}
-              {/* 工作台首页 */}
-              {activeSubMenu === '工作台首页' && (
-                <div className="flex-1 flex flex-col relative">
-                  <PersonalWorkspace />
-                </div>
-              )}
-              {/* 号码管理 */}
-              {activeSubMenu === '号码管理' && (
-                <div className="flex-1 flex flex-col relative">
-                  <Haoma />
-                </div>
-              )}
-              {/* 号码控制 */}
-              {activeSubMenu === '号码控制' && (
-                <div className="flex-1 flex flex-col relative">
-                  <Haomakongzhi />
-                </div>
-              )}
-                            {/* 新增资产申请 */}
-              {activeSubMenu === '新增资产申请' && (
-                <div className="flex-1 flex flex-col relative">
-                  <AssetApplicationPrototype />
-                </div>
-              )}
-              {/* 资产申请审批 */}
-              {activeSubMenu === '资产申请审批' && (
-                <div className="flex-1 flex flex-col relative">
-                  <ApprovalPagePrototype />
-                </div>
-              )}
-              {/* 资产申请配给 */}
-              {activeSubMenu === '资产申请配给' && (
-                <div className="flex-1 flex flex-col relative">
-                  <AssetAdminApprovalPrototype />
-                </div>
-              )}
-              {/* 业务基础数据维护 - 只在后台基础配置下显示 */}
-              {activeMenu === '后台基础配置' && activeTab === '物料维度组合' && <MaterialComprehensiveView />}
-              {activeMenu === '后台基础配置' && activeTab === '物料大类' && <MaterialCategoryView />}
-              {activeMenu === '后台基础配置' && activeTab === '物料小类' && <MaterialSubCategoryView />}
-              {activeMenu === '后台基础配置' && activeTab === '品牌' && <BrandView />}
-              {activeMenu === '后台基础配置' && activeTab === '型号' && <ModelView />}
-              {activeMenu === '后台基础配置' && activeTab === '配置' && <ConfigView />}
-              {/* {activeMenu === '后台基础配置' && activeTab === 'NO服务' && <NOServiceView />} */}
-              
-              {/* 业务映射规则管理 - 只在后台基础配置下显示 */}
-              {activeMenu === '后台基础配置' && activeTab === '办公区与仓库映射' && <OfficeWarehouseMappingView />}
-              {activeMenu === '后台基础配置' && activeTab === 'PS新员工领用物料映射' && <PSNewEmployeeMappingView />}
-              {activeMenu === '后台基础配置' && activeTab === 'NO地点与资产地点映射' && <NOLocationMappingView />}
-              {activeMenu === '后台基础配置' && activeTab === '虚拟库管员映射' && <VirtualWarehouseManagerMappingView />}
-              {activeMenu === '后台基础配置' && activeTab === '板块与账簿映射' && <PlateLedgerMappingView />}
-              {activeMenu === '后台基础配置' && activeTab === '公司板块领取资产权限' && <CompanyPlateAssetAuthView />}
-              {activeMenu === '后台基础配置' && activeTab === '机房资产领取权限' && <NODeviceAssetAuthView />}
-              {activeMenu === '后台基础配置' && activeTab === '公司归属权限' && <CompanyBelongingAuthView />}
-              {/* 仓库基础数据维护 - 只在后台基础配置下显示 */}
-              {activeMenu === '后台基础配置' && activeTab === '仓库信息' && <WarehouseInfoView />}
-              {activeMenu === '后台基础配置' && activeTab === '仓库用途' && <WarehouseUsageView />}
-              {activeMenu === '后台基础配置' && activeTab === '仓库权限' && <WarehousePermissionView />}
-              {/* 地点基础数据维护 - 只在后台基础配置下显示 */}
-              {activeMenu === '后台基础配置' && activeTab === '地点基础数据维护' && <LocationBasicDataView />}
-              {/* 单据编号规则管理 - 只在后台基础配置下显示 */}
-              {activeMenu === '后台基础配置' && activeTab === '单据编号规则管理' && <ReceiptRuleManagementView />}
-              {/* 会计映射规则管理 - 只在后台基础配置下显示 */}
-              {activeMenu === '后台基础配置' && activeTab === 'HR公司与财务公司映射' && <HRCompanyFinanceMappingView />}
-              {activeMenu === '后台基础配置' && activeTab === '部门与成本中心映射' && <DeptCostCenterMappingView />}
-              {activeMenu === '后台基础配置' && activeTab === '成本中心与板块映射' && <CostCenterPlateMappingView />}
-              {activeMenu === '后台基础配置' && activeTab === '城市与业务线映射' && <CityBusinessLineMappingView />}
-              {activeMenu === '后台基础配置' && activeTab === '部门与业务线映射' && <DeptBusinessLineMappingView />}
-              {/* 资产配给规则管理 - 只在后台基础配置下显示 */}
-              {activeMenu === '后台基础配置' && activeTab === '影像器材配给方案' && <AssetAllocationRuleView />}
-              {/* 物资申请超标配置 - 只在后台基础配置下显示 */}
-              {activeMenu === '后台基础配置' && activeTab === '超标规则' && <MaterialRequestLimitView />}
-              {/* 费用账户规则管理 - 只在后台基础配置下显示 */}
-              {activeMenu === '后台基础配置' && activeTab === '费用账户规则' && <ExpenseAccountRuleView />}
-              {activeMenu === '后台基础配置' && activeTab === '成本中心与科目映射' && <CostCenterSubjectMappingView />}
-              {activeMenu === '后台基础配置' && activeTab === '物料大类与子目映射' && <MaterialSubSubjectMappingView />}
-              {activeMenu === '后台基础配置' && activeTab === 'NO一级服务与科目映射' && <NOServiceSubjectMappingView />}
-              {activeMenu === '后台基础配置' && activeTab === '员工与项目映射' && <EmployeeProjectMappingView />}
-              {/* 资产折旧规则管理 - 只在后台基础配置下显示 */}
-              {activeMenu === '后台基础配置' && activeTab === '资产折旧规则管理' && <AssetDepreciationRuleView />}
-              {/* 账套内容维护 - 只在后台基础配置下显示 */}
-              {activeMenu === '后台基础配置' && activeTab === '账套内容维护' && <AccountBookContentView />}
+          )}
+          {activeSubMenu === '角色管理' && (
+            <div className="flex-1 flex flex-col relative">
+              <RoleManagementView />
             </div>
-          </div>
-        </div>
+          )}
+          {activeSubMenu === '字典管理' && (
+            <div className="flex-1 flex flex-col relative">
+              <DictManagementView />
+            </div>
+          )}
+
+          {/* 个人工作台页面 */}
+          {activeMenu === '个人工作台' && (
+            <WorkspaceContent activeSubMenu={activeSubMenu} />
+          )}
+
+          {/* 业务基础数据维护 */}
+          {activeMenu === '后台基础配置' && activeTab === '物料维度组合' && <MaterialComprehensiveView />}
+          {activeMenu === '后台基础配置' && activeTab === '物料大类' && <MaterialCategoryView />}
+          {activeMenu === '后台基础配置' && activeTab === '物料小类' && <MaterialSubCategoryView />}
+          {activeMenu === '后台基础配置' && activeTab === '品牌' && <BrandView />}
+          {activeMenu === '后台基础配置' && activeTab === '型号' && <ModelView />}
+          {activeMenu === '后台基础配置' && activeTab === '配置' && <ConfigView />}
+
+          {/* 业务映射规则管理 */}
+          {activeMenu === '后台基础配置' && activeTab === '办公区与仓库映射' && <OfficeWarehouseMappingView />}
+          {activeMenu === '后台基础配置' && activeTab === 'PS新员工领用物料映射' && <PSNewEmployeeMappingView />}
+          {activeMenu === '后台基础配置' && activeTab === 'NO地点与资产地点映射' && <NOLocationMappingView />}
+          {activeMenu === '后台基础配置' && activeTab === '虚拟库管员映射' && <VirtualWarehouseManagerMappingView />}
+          {activeMenu === '后台基础配置' && activeTab === '板块与账簿映射' && <PlateLedgerMappingView />}
+          {activeMenu === '后台基础配置' && activeTab === '公司板块领取资产权限' && <CompanyPlateAssetAuthView />}
+          {activeMenu === '后台基础配置' && activeTab === '机房资产领取权限' && <NODeviceAssetAuthView />}
+          {activeMenu === '后台基础配置' && activeTab === '公司归属权限' && <CompanyBelongingAuthView />}
+
+          {/* 仓库与地点数据维护 */}
+          {activeMenu === '后台基础配置' && activeTab === '仓库信息' && <WarehouseInfoView />}
+          {activeMenu === '后台基础配置' && activeTab === '仓库用途' && <WarehouseUsageView />}
+          {activeMenu === '后台基础配置' && activeTab === '仓库权限' && <WarehousePermissionView />}
+          {activeMenu === '后台基础配置' && activeTab === '地点基础数据维护' && <LocationBasicDataView />}
+          {activeMenu === '后台基础配置' && activeTab === '单据编号规则管理' && <ReceiptRuleManagementView />}
+
+          {/* 会计映射规则 */}
+          {activeMenu === '后台基础配置' && activeTab === 'HR公司与财务公司映射' && <HRCompanyFinanceMappingView />}
+          {activeMenu === '后台基础配置' && activeTab === '部门与成本中心映射' && <DeptCostCenterMappingView />}
+          {activeMenu === '后台基础配置' && activeTab === '成本中心与板块映射' && <CostCenterPlateMappingView />}
+          {activeMenu === '后台基础配置' && activeTab === '城市与业务线映射' && <CityBusinessLineMappingView />}
+          {activeMenu === '后台基础配置' && activeTab === '部门与业务线映射' && <DeptBusinessLineMappingView />}
+
+          {/* 规则与账套维护 */}
+          {activeMenu === '后台基础配置' && activeTab === '影像器材配给方案' && <AssetAllocationRuleView />}
+          {activeMenu === '后台基础配置' && activeTab === '超标规则' && <MaterialRequestLimitView />}
+          {activeMenu === '后台基础配置' && activeTab === '费用账户规则' && <ExpenseAccountRuleView />}
+          {activeMenu === '后台基础配置' && activeTab === '成本中心与科目映射' && <CostCenterSubjectMappingView />}
+          {activeMenu === '后台基础配置' && activeTab === '物料大类与子目映射' && <MaterialSubSubjectMappingView />}
+          {activeMenu === '后台基础配置' && activeTab === 'NO一级服务与科目映射' && <NOServiceSubjectMappingView />}
+          {activeMenu === '后台基础配置' && activeTab === '员工与项目映射' && <EmployeeProjectMappingView />}
+          {activeMenu === '后台基础配置' && activeTab === '资产折旧规则管理' && <AssetDepreciationRuleView />}
+          {activeMenu === '后台基础配置' && activeTab === '账套内容维护' && <AccountBookContentView />}
+        </AdminContent>
       </div>
     </div>
   );
