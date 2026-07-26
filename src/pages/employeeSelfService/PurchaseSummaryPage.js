@@ -15,6 +15,7 @@ import {
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { DEPARTMENT_ASSET_USAGE } from '../../mock/employeeSelfServiceWorkflowMock';
 import {
+  completePurchaseSummary,
   syncPurchaseSummaries,
   updatePurchaseSummary,
 } from '../../services/employeeSelfServiceWorkflowService';
@@ -87,6 +88,7 @@ export default function EmployeePurchaseSummaryPage() {
       status: submit ? '已汇总' : selectedSummary.status,
       submittedAt: submit ? new Date().toLocaleString('zh-CN', { hour12: false }) : selectedSummary.submittedAt,
     });
+    if (submit) completePurchaseSummary(selectedSummary.id);
     refresh();
     messageApi.success(submit ? '汇总申请已提交采购系统' : '汇总内容已保存');
     if (submit) setSelectedId('');
