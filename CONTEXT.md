@@ -2,61 +2,72 @@
 
 项目是产品演示用的企业资产管理前端，不是生产系统。
 
-已确认当前版本包含 `AI_RULES.md` 和 `CLAUDE.md`：
-- `AI_RULES.md` 管 AI Agent 行为边界。
-- `CLAUDE.md` 管项目编码约定。
-- 后续任务开始前必须先读这两个文件。
+任务开始前必须先阅读：
+- `AI_RULES.md`
+- `CLAUDE.md`
+- `CONTEXT.md`
 
 # 本次完成
 
-完成第七轮整改：继续拆分 `yewurules.js` 中的后台业务视图。
+完成第八轮整改：完成 `yewurules.js` 后台业务视图主体拆分。
 
-1. 完成物料基础数据模块拆分
-   - 新增 `src/pages/yewurules/modules/material/`。
-   - 已迁出物料综合、物料大类、物料小类、品牌、型号和配置页面。
-   - 物料综合页进一步拆出表单弹窗、选择弹窗、批量操作弹窗和列配置。
+1. 新增权限模块 `src/pages/yewurules/modules/permission/`
+   - 公司板块领取资产权限
+   - 机房资产领取权限
+   - 公司归属权限
+   - 单据编号规则
+   - 资产配给规则
 
-2. 完成仓库模块拆分
-   - 新增 `src/pages/yewurules/modules/warehouse/`。
-   - 已迁出仓库信息、仓库用途和仓库权限页面。
+2. 新增会计模块 `src/pages/yewurules/modules/accounting/`
+   - HR 公司与财务公司映射
+   - 部门与成本中心映射
+   - 成本中心与板块映射
+   - 城市与业务线映射
+   - 部门与业务线映射
+   - 资产折旧规则
+   - 账套内容维护
+   - 成本中心与科目映射
+   - 物料大类与子科目映射
+   - NO 服务与科目映射
+   - 员工与项目映射
 
-3. 完成地点模块拆分
-   - 新增 `src/pages/yewurules/modules/location/`。
-   - 已迁出地点基础数据页面。
+3. 新增费用模块 `src/pages/yewurules/modules/expense/`
+   - 物资申请超标配置
+   - 费用账户规则
 
-4. 完成首批业务映射模块拆分
-   - 新增 `src/pages/yewurules/modules/mapping/`。
-   - 已迁出办公区与仓库映射、PS新员工领用物料映射、NO地点与资产地点映射、虚拟库管员映射、板块与账簿映射页面。
+4. 更新 `src/pages/yewurules.js`
+   - 已直接提交到 `feat/business-rule-updates`。
+   - 入口仅保留后台状态、页面映射和框架组合。
+   - 文件由约 4655 行降低到约 200 行。
 
-5. 修改版 `yewurules.js`
-   - 改为从 `material / warehouse / location / mapping` 模块统一导入页面。
-   - 原组件定义已从入口文件移除。
-   - 文件由约 4655 行逐步降低到约 2028 行。
-   - 需要用户将生成文件替换到 `src/pages/yewurules.js` 后提交。
+5. 更新 `README.md`
+   - 补充 permission、accounting、expense 模块结构。
+   - 更新入口文件规模和后续整改方向。
 
-6. 更新 `README.md`
-   - 补充后台组件、配置和业务模块目录结构。
-   - 增加“统一申请汇总-资产”说明。
-   - 更新当前拆分进度和后续待处理模块。
+# 已完成的后台拆分
 
-# 上次完成
-
-完成第六轮整改：拆分 `yewurules.js` 的后台框架、菜单配置、页签配置和个人工作台页面映射。
-
-- 已迁出后台侧边栏、顶部页签、内容容器、个人工作台菜单和页面映射。
-- “统一申请汇总-资产”已接入后台配置中的个人工作台。
-- 用户已完成第一阶段和物料模块阶段的本地构建验收。
+- 后台框架：`components/`
+- 菜单与页签配置：`config/`
+- 个人工作台映射
+- 物料模块：`modules/material/`
+- 业务映射模块：`modules/mapping/`
+- 仓库模块：`modules/warehouse/`
+- 地点模块：`modules/location/`
+- 权限模块：`modules/permission/`
+- 会计模块：`modules/accounting/`
+- 费用模块：`modules/expense/`
 
 # 近期关键决定
 
-- 保留旧系统截图中的业务字段和操作顺序，视觉统一为当前 Ant Design 管理台风格。
-- 页面数据统一放在 mock 文件，不在组件中直接维护大块数据。
-- 不修改 `package.json`，不新增依赖，不改动无关业务页面。
-- `yewurules.js` 采用渐进式拆分，每批迁移边界清晰的业务页面，用户本地替换入口文件并执行构建验收。
-- 新模块统一采用一个页面一个文件、目录 `index.js` 统一出口的结构。
+- 不修改 `package.json`，不新增依赖。
+- 保留现有菜单、页签名称和 mock 数据字段。
+- 新模块使用目录 `index.js` 统一出口。
+- 大文件触发连接器限制时，改为一个页面一个文件提交。
+- `yewurules.js` 入口文件最后更新，避免模块未齐时破坏分支构建。
 
 # 下一步建议
 
-1. 将本轮生成的完整修改版替换为 `src/pages/yewurules.js`。
-2. 本地运行 `npm run build`，重点验收仓库、地点和业务映射相关页签。
-3. 下一轮继续拆分权限、会计映射、费用账户和其余配置页面。
+1. 本地执行 `npm run build`。
+2. 重点验收权限、会计、费用账户和账套相关页签。
+3. 继续优化模块内部页面，将普通页面控制在 300 行以内。
+4. 推进申请、列表和审批页面使用同一份申请数据。
