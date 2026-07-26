@@ -40,6 +40,7 @@ import EmployeeAssetAllocationPage from '../pages/employeeSelfService/AssetAlloc
 import EmployeePurchaseSummaryPage from '../pages/employeeSelfService/PurchaseSummaryPage';
 import EmployeeAssetClaimPage from '../pages/employeeSelfService/AssetClaimPage';
 import EmployeeAssetClaimConfirmPage from '../pages/employeeSelfService/AssetClaimConfirmPage';
+import EmployeeMyApplicationsPage from '../pages/employeeSelfService/MyApplicationsPage';
 
 export const routeGroups = [
   { key: 'scrap', name: '报废管理' },
@@ -91,6 +92,7 @@ const routes = [
   { path: '/employee-self-service/purchase-summary', name: '员工自助新版-汇总采购', Page: EmployeePurchaseSummaryPage, nav: true, group: 'workspace' },
   { path: '/employee-self-service/asset-claim', name: '员工自助新版-资产领用', Page: EmployeeAssetClaimPage, nav: true, group: 'workspace' },
   { path: '/employee-self-service/asset-claim-confirm', name: '员工自助新版-领用确认', Page: EmployeeAssetClaimConfirmPage, nav: true, group: 'workspace' },
+  { path: '/employee-self-service/my-applications', name: '员工自助新版-我的申请', Page: EmployeeMyApplicationsPage, nav: true, group: 'workspace' },
   { path: '/yewurules', name: '后台基础配置', Page: yewurules, nav: true, group: 'config' },
   { path: '/xitongrules', name: '组织与用户管理', Page: xitongrules, nav: false, group: 'config' },
 ];
