@@ -6,10 +6,7 @@ import {
   EMPLOYEE_SELF_SERVICE_OUTBOUND_STORAGE_KEY,
 } from '../mock/employeeSelfServiceClaimMock';
 import { readDemoData, writeDemoData } from './demoStorage';
-import {
-  getAllocationOrders,
-  getPurchaseSummaries,
-} from './employeeSelfServiceWorkflowService';
+import { getAllocationOrders, getPurchaseSummaries } from './employeeSelfServiceWorkflowService';
 import { updateEmployeeSelfServiceApplication } from './employeeSelfServiceService';
 
 function nowText() {
@@ -68,18 +65,19 @@ export function saveOutboundOrders(orders) {
 
 export function ensureStockClaimOrders() {
   const allocations = getAllocationOrders().filter((item) => (
-    item.matchingStatus === '库存领用'
-    && item.status === '已配给'
-    && item.matchedAsset
+    item.matchingStatus === '库存领用' && item.status === '已配给' && item.matchedAsset
   ));
   const existing = getClaimOrders();
   const existingSourceIds = new Set(existing.map((item) => item.sourceOrderId));
   const additions = allocations
     .filter((item) => !existingSourceIds.has(item.id))
     .map(buildClaimFromAllocation);
-  if (additions.length === 0) return existing;
-  const next = [...additions, ...existing];
-  saveClaimOrders(next);
+  if (additions.length > 0) saveClaimOrders([...additions, ...existing]);
+
+  let next = additions.length > 0 ? [...additions, ...existing] : existing;
+  getPurchaseSummaries()
+    .filter((summary) => summary.status === '已汇总')
+    .forEach((summary) => { next = simulatePurchaseInbound(summary.id); });
   return next;
 }
 
@@ -195,8 +193,7 @@ export function completeClaimOutbound(orderId, keeperComment) {
     keeperComment,
     createdAt: nowText(),
   };
-  const outbounds = [outbound, ...getOutboundOrders()];
-  saveOutboundOrders(outbounds);
+  saveOutboundOrders([outbound, ...getOutboundOrders()]);
   updateClaimOrder(orderId, {
     status: '已完成',
     keeperReviewStatus: '已复核',
@@ -218,18 +215,10 @@ export function completeClaimOutbound(orderId, keeperComment) {
   });
   const related = getClaimOrders().filter((item) => item.sourceApplicationId === order.sourceApplicationId);
   const allCompleted = related.length > 0 && related.every((item) => item.id === orderId || item.status === '已完成');
-  if (allCompleted) {
-    updateEmployeeSelfServiceApplication(order.sourceApplicationId, {
-      status: '已完成',
-      taskStatus: '已完成',
-      currentNode: '流程结束',
-    });
-  } else {
-    updateEmployeeSelfServiceApplication(order.sourceApplicationId, {
-      status: '处理中',
-      taskStatus: '资产领用中',
-      currentNode: '资产领用',
-    });
-  }
+  updateEmployeeSelfServiceApplication(order.sourceApplicationId, allCompleted ? {
+    status: '已完成', taskStatus: '已完成', currentNode: '流程结束',
+  } : {
+    status: '处理中', taskStatus: '资产领用中', currentNode: '资产领用',
+  });
   return outbound;
 }
