@@ -32,6 +32,8 @@ import zichanshenqing from '../pages/zichanshenqing';
 import zichanshenqingshenpi from '../pages/zichanshenqingshenpi';
 import zichanpeiji from '../pages/zichanpeiji';
 import UnifiedAssetApplySummary from '../pages/UnifiedAssetApplySummary';
+import FrontDeskAssetClaim from '../pages/FrontDeskAssetClaim';
+import EmployeeAssetClaimConfirm from '../pages/EmployeeAssetClaimConfirm';
 
 export const routeGroups = [
   { key: 'scrap', name: '报废管理' },
@@ -83,6 +85,8 @@ const routes = [
   { path: '/zichanshenqing', name: '新增资产申请', Page: zichanshenqing, nav: true, group: 'workspace' },
   { path: '/zichanshenqingshenpi', name: '资产申请审批', Page: zichanshenqingshenpi, nav: true, group: 'workspace' },
   { path: '/zichanpeiji', name: '资产申请配给', Page: zichanpeiji, nav: true, group: 'workspace' },
+  { path: '/FrontDeskAssetClaim', name: 'ES前台领用', Page: FrontDeskAssetClaim, nav: true, group: 'workspace' },
+  { path: '/EmployeeAssetClaimConfirm', name: '员工领用确认', Page: EmployeeAssetClaimConfirm, nav: true, group: 'workspace' },
   { path: '/UnifiedAssetApplySummary', name: '统一申请汇总-资产', Page: UnifiedAssetApplySummary, nav: false, group: 'workspace' },
 
   // 后台配置
