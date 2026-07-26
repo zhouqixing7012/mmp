@@ -70,11 +70,13 @@ export const DEFAULT_EMPLOYEE_SELF_SERVICE_APPLICATIONS = [
     taskStatus: '业务审批',
     currentNode: '直属领导',
     applicant: CURRENT_EMPLOYEE,
+    approvalRoute: ['直属领导', '5级及以上领导', '7级及以上领导', '逐级审批至VP/CFO'],
     materials: [
       {
         id: 'MAT-002',
         assetDesc: '笔记本.苹果.MacBook Pro 14',
         config: 'M3 Pro / 18G / 512G SSD',
+        referencePrice: 14999,
         quantity: 1,
         reason: '新项目需要',
         purpose: '专业用途',
