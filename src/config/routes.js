@@ -34,6 +34,8 @@ import zichanpeiji from '../pages/zichanpeiji';
 import UnifiedAssetApplySummary from '../pages/UnifiedAssetApplySummary';
 import FrontDeskAssetClaim from '../pages/FrontDeskAssetClaim';
 import EmployeeAssetClaimConfirm from '../pages/EmployeeAssetClaimConfirm';
+import EmployeeAssetApplyPage from '../pages/employeeSelfService/AssetApplyPage';
+import EmployeeAssetApprovalPage from '../pages/employeeSelfService/AssetApprovalPage';
 
 export const routeGroups = [
   { key: 'scrap', name: '报废管理' },
@@ -88,6 +90,8 @@ const routes = [
   { path: '/FrontDeskAssetClaim', name: 'ES前台领用', Page: FrontDeskAssetClaim, nav: true, group: 'workspace' },
   { path: '/EmployeeAssetClaimConfirm', name: '员工领用确认', Page: EmployeeAssetClaimConfirm, nav: true, group: 'workspace' },
   { path: '/UnifiedAssetApplySummary', name: '统一申请汇总-资产', Page: UnifiedAssetApplySummary, nav: false, group: 'workspace' },
+  { path: '/employee-self-service/asset-apply', name: '员工自助新版-资产申请', Page: EmployeeAssetApplyPage, nav: true, group: 'workspace' },
+  { path: '/employee-self-service/asset-approval', name: '员工自助新版-业务审批', Page: EmployeeAssetApprovalPage, nav: true, group: 'workspace' },
 
   // 后台配置
   { path: '/yewurules', name: '后台基础配置', Page: yewurules, nav: true, group: 'config' },
