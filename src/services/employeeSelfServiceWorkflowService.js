@@ -153,6 +153,26 @@ export function updatePurchaseSummary(summaryId, updater) {
   return next;
 }
 
+export function completePurchaseSummary(summaryId) {
+  const summary = getPurchaseSummaries().find((item) => item.id === summaryId);
+  if (!summary) return;
+  const applicationIds = [...new Set(summary.items.map((item) => item.applicationId))];
+  applicationIds.forEach((applicationId) => {
+    updateEmployeeSelfServiceApplication(applicationId, (application) => {
+      const hasStockBranch = getAllocationOrders().some((item) => (
+        item.sourceApplicationId === applicationId
+        && item.matchingStatus === '库存领用'
+        && item.status === '已配给'
+      ));
+      return {
+        ...application,
+        taskStatus: hasStockBranch ? '领用/采购流程' : '采购流程',
+        currentNode: hasStockBranch ? '资产领用/采购与PR系统流程' : '采购与PR系统流程',
+      };
+    });
+  });
+}
+
 export function refreshApplicationProgress(applicationId) {
   const relatedOrders = getAllocationOrders().filter((item) => item.sourceApplicationId === applicationId);
   if (relatedOrders.length === 0) return;
