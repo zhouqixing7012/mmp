@@ -9,71 +9,54 @@
 
 # 本次完成
 
-完成第六轮整改：拆分 `yewurules.js` 的后台框架、菜单配置、页签配置和个人工作台页面映射。
+完成第七轮整改：继续拆分 `yewurules.js` 中的后台业务视图。
 
-1. 新增 `src/pages/yewurules/config/workspaceMenuConfig.js`
-   - 统一维护个人工作台菜单和页面组件映射。
-   - 已接入“统一申请汇总-资产”。
+1. 完成物料基础数据模块拆分
+   - 新增 `src/pages/yewurules/modules/material/`。
+   - 已迁出物料综合、物料大类、物料小类、品牌、型号和配置页面。
+   - 物料综合页进一步拆出表单弹窗、选择弹窗、批量操作弹窗和列配置。
 
-2. 新增 `src/pages/yewurules/config/menuConfig.js`
-   - 统一维护后台一级菜单和后台基础配置子菜单。
+2. 完成仓库模块拆分
+   - 新增 `src/pages/yewurules/modules/warehouse/`。
+   - 已迁出仓库信息、仓库用途和仓库权限页面。
 
-3. 新增 `src/pages/yewurules/config/tabConfig.js`
-   - 统一维护各后台子菜单对应的页签和默认页签。
+3. 完成地点模块拆分
+   - 新增 `src/pages/yewurules/modules/location/`。
+   - 已迁出地点基础数据页面。
 
-4. 新增 `src/pages/yewurules/components/WorkspaceMenu.js`
-   - 配置驱动渲染个人工作台子菜单。
+4. 完成首批业务映射模块拆分
+   - 新增 `src/pages/yewurules/modules/mapping/`。
+   - 已迁出办公区与仓库映射、PS新员工领用物料映射、NO地点与资产地点映射、虚拟库管员映射、板块与账簿映射页面。
 
-5. 新增 `src/pages/yewurules/components/WorkspaceContent.js`
-   - 根据个人工作台菜单配置统一渲染页面。
+5. 修改版 `yewurules.js`
+   - 改为从 `material / warehouse / location / mapping` 模块统一导入页面。
+   - 原组件定义已从入口文件移除。
+   - 文件由约 4655 行逐步降低到约 2028 行。
+   - 需要用户将生成文件替换到 `src/pages/yewurules.js` 后提交。
 
-6. 新增 `src/pages/yewurules/components/AdminSidebar.js`
-   - 拆出后台左侧菜单、管理员信息和菜单展开逻辑。
-
-7. 新增 `src/pages/yewurules/components/AdminHeader.js`
-   - 拆出后台顶部页签栏和用户区域。
-
-8. 新增 `src/pages/yewurules/components/AdminContent.js`
-   - 拆出面包屑、业务页签和内容容器。
-
-9. 修改版 `yewurules.js`
-   - 已基于用户上传的完整源文件生成。
-   - 仅保留页面状态、后台业务视图定义和内容映射。
-   - 个人工作台菜单、页面映射、左侧框架、顶部区域和页签配置已迁出。
-   - 需要用户将生成文件替换到 `src/pages/yewurules.js` 后再提交。
+6. 更新 `README.md`
+   - 补充后台组件、配置和业务模块目录结构。
+   - 增加“统一申请汇总-资产”说明。
+   - 更新当前拆分进度和后续待处理模块。
 
 # 上次完成
 
-完成第五轮整改：根据旧 ES 系统截图新增“ES前台领用”和“员工领用确认”两个 Ant Design 演示页面。
+完成第六轮整改：拆分 `yewurules.js` 的后台框架、菜单配置、页签配置和个人工作台页面映射。
 
-1. 新增 `src/mock/assetClaimMock.js`
-   - 统一存放申请人、资产、地点、领用数量和保管职责说明等演示数据。
-
-2. 新增 `src/pages/FrontDeskAssetClaim.js`
-   - 展示申请人信息、资产信息、地点与用途编辑。
-   - 支持资产查看、必填校验、领用确认、弃领、加签、返回和发送领用通知。
-
-3. 新增 `src/pages/EmployeeAssetClaimConfirm.js`
-   - 展示领用人信息、领用物资明细、保管职责和二维码。
-   - 支持员工卡号输入、回车确认和按钮确认。
-
-4. 修改 `src/config/routes.js`
-   - 新增 `/FrontDeskAssetClaim` 和 `/EmployeeAssetClaimConfirm`。
-   - 两个页面均归入“个人工作台”导航分组。
-
-# 上次停的位置
-
-两个领用页面已接入 `feat/business-rule-updates` 分支，使用同一份 mock 数据保持页面内容一致。当前按钮为前端演示反馈，尚未接入真实刷卡设备、通知服务和审批接口。
+- 已迁出后台侧边栏、顶部页签、内容容器、个人工作台菜单和页面映射。
+- “统一申请汇总-资产”已接入后台配置中的个人工作台。
+- 用户已完成第一阶段和物料模块阶段的本地构建验收。
 
 # 近期关键决定
 
 - 保留旧系统截图中的业务字段和操作顺序，视觉统一为当前 Ant Design 管理台风格。
 - 页面数据统一放在 mock 文件，不在组件中直接维护大块数据。
-- 不修改 `package.json`，不新增依赖，不改动现有报废、主备维护和责任人变更页面。
-- `yewurules.js` 采用渐进式拆分：本轮只迁出后台框架、菜单、页签和个人工作台映射；几十个后台业务视图后续按模块逐步迁移，避免一次性大范围重构。
+- 不修改 `package.json`，不新增依赖，不改动无关业务页面。
+- `yewurules.js` 采用渐进式拆分，每批迁移边界清晰的业务页面，用户本地替换入口文件并执行构建验收。
+- 新模块统一采用一个页面一个文件、目录 `index.js` 统一出口的结构。
 
 # 下一步建议
 
-1. 将生成的完整修改版替换为 `src/pages/yewurules.js`。
-2. 本地运行 `npm start`，重点验收个人工作台菜单、统一申请汇总页面和后台基础配置页签。
-3. 后续可按 `material / mapping / warehouse / accounting` 等目录继续迁移后台业务视图。
+1. 将本轮生成的完整修改版替换为 `src/pages/yewurules.js`。
+2. 本地运行 `npm run build`，重点验收仓库、地点和业务映射相关页签。
+3. 下一轮继续拆分权限、会计映射、费用账户和其余配置页面。
