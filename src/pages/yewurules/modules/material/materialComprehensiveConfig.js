@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from 'antd';
-import StatusTag from '../../../components/StatusTag';
+import StatusTag from '../../../../components/StatusTag';
 
 export const initialMaterialComprehensiveForm = {
   mainCatCode: '', mainCatDesc: '', subCatCode: '', subCatDesc: '', brand: '', modelCode: '', modelDesc: '',
