@@ -36,6 +36,8 @@ import FrontDeskAssetClaim from '../pages/FrontDeskAssetClaim';
 import EmployeeAssetClaimConfirm from '../pages/EmployeeAssetClaimConfirm';
 import EmployeeAssetApplyPage from '../pages/employeeSelfService/AssetApplyPage';
 import EmployeeAssetApprovalPage from '../pages/employeeSelfService/AssetApprovalPage';
+import EmployeeAssetAllocationPage from '../pages/employeeSelfService/AssetAllocationPage';
+import EmployeePurchaseSummaryPage from '../pages/employeeSelfService/PurchaseSummaryPage';
 
 export const routeGroups = [
   { key: 'scrap', name: '报废管理' },
@@ -92,6 +94,8 @@ const routes = [
   { path: '/UnifiedAssetApplySummary', name: '统一申请汇总-资产', Page: UnifiedAssetApplySummary, nav: false, group: 'workspace' },
   { path: '/employee-self-service/asset-apply', name: '员工自助新版-资产申请', Page: EmployeeAssetApplyPage, nav: true, group: 'workspace' },
   { path: '/employee-self-service/asset-approval', name: '员工自助新版-业务审批', Page: EmployeeAssetApprovalPage, nav: true, group: 'workspace' },
+  { path: '/employee-self-service/asset-allocation', name: '员工自助新版-资产配给', Page: EmployeeAssetAllocationPage, nav: true, group: 'workspace' },
+  { path: '/employee-self-service/purchase-summary', name: '员工自助新版-汇总采购', Page: EmployeePurchaseSummaryPage, nav: true, group: 'workspace' },
 
   // 后台配置
   { path: '/yewurules', name: '后台基础配置', Page: yewurules, nav: true, group: 'config' },
