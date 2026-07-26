@@ -25,6 +25,9 @@ src/
 ├── config/                     # 路由和导航配置
 │   └── routes.js               # 所有页面路由，含导航分组
 ├── mock/                       # 演示数据，后续页面数据应统一从这里出发
+│   └── assetApplicationMock.js # 资产申请链路演示数据
+├── services/                   # 演示数据读写服务，统一封装 localStorage
+│   └── demoStorage.js          # 通用演示数据存储服务
 ├── pages/                      # 页面组件
 │   ├── yewurules.js            # 后台基础配置主页面，当前仍偏大
 │   ├── xitongrules.js          # 组织与用户管理
@@ -121,16 +124,20 @@ npm test
 
 - `App.js` 已改为直接消费 `routes.js` 中的 `Page` 字段，减少手工维护映射。
 - `routes.js` 已增加模块分组字段 `group`，并导出 `navGroups`。
-- `Navbar.js` 已从所有页面平铺展示改为按模块下拉展示。
+- `Navbar.js` 已从所有页面平铺展示改为按模块下拉展示，点击具体页面后会自动收起菜单。
 - 新增 `ARCHITECTURE.md`，记录目录和模块职责。
 - `README.md` 已修正技术栈，和 `package.json` 保持一致。
+- 新增 `src/mock/assetApplicationMock.js`，将新增资产申请页的大块 mock 数据迁出页面。
+- 新增 `src/services/demoStorage.js`，统一封装演示数据的 localStorage 读写。
+- `zichanshenqing.js` 提交申请时已写入统一演示数据服务，并补充耗材关联主资产校验。
 
 ### 仍需逐步处理
 
+- `zichanshenqingshenpi.js` 还需要接入 `getAssetApplications()`，让审批页读取同一份申请数据。
+- `applylist.js` 还需要接入同源申请数据，形成提交申请、申请列表、审批的完整链路。
 - `yewurules.js` 仍然过大，应按业务配置子模块拆分。
 - 部分页面仍有页面内 mock 数据，应逐步迁移到 `src/mock/`。
 - 部分业务操作仍停留在演示状态，应统一走 mock service 和 localStorage。
-- 导航分组已完成第一步，后续可继续收敛页面命名。
 
 ## 开发约定
 
