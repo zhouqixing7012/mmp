@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Plus, CheckCircle, XCircle, Download, Edit, Upload } from 'lucide-react';
 import { Button, Input, Select, Modal, Table, Radio } from 'antd';
-import StatusTag from '../../../components/StatusTag';
-import QueryBar, { QueryItem } from '../../../components/QueryBar';
+import StatusTag from '../../../../components/StatusTag';
+import QueryBar, { QueryItem } from '../../../../components/QueryBar';
 import {
   mockBrandListData,
-} from '../../../mock/businessRulesMock';
+} from '../../../../mock/businessRulesMock';
 
 const BrandView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
