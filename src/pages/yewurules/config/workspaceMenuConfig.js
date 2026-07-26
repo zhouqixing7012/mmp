@@ -9,6 +9,8 @@ import EmployeeAssetApplyPage from '../../employeeSelfService/AssetApplyPage';
 import EmployeeAssetApprovalPage from '../../employeeSelfService/AssetApprovalPage';
 import EmployeeAssetAllocationPage from '../../employeeSelfService/AssetAllocationPage';
 import EmployeePurchaseSummaryPage from '../../employeeSelfService/PurchaseSummaryPage';
+import EmployeeAssetClaimPage from '../../employeeSelfService/AssetClaimPage';
+import EmployeeAssetClaimConfirmPage from '../../employeeSelfService/AssetClaimConfirmPage';
 
 export const WORKSPACE_MENU_ITEMS = [
   { key: '工作台首页', label: '工作台首页', Page: PersonalWorkspace },
@@ -22,6 +24,8 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: '员工自助新版-业务审批', label: '员工自助新版-业务审批', Page: EmployeeAssetApprovalPage },
   { key: '员工自助新版-资产配给', label: '员工自助新版-资产配给', Page: EmployeeAssetAllocationPage },
   { key: '员工自助新版-汇总采购', label: '员工自助新版-汇总采购', Page: EmployeePurchaseSummaryPage },
+  { key: '员工自助新版-资产领用', label: '员工自助新版-资产领用', Page: EmployeeAssetClaimPage },
+  { key: '员工自助新版-领用确认', label: '员工自助新版-领用确认', Page: EmployeeAssetClaimConfirmPage },
 ];
 
 export function getWorkspacePage(menuKey) {
