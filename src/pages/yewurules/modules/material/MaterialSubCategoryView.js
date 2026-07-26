@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Search, Plus, CheckCircle, XCircle, Download, Edit, Upload } from 'lucide-react';
 import { Button, Input, Select, Modal, Table, Radio } from 'antd';
-import StatusTag from '../../../components/StatusTag';
-import SelectModal from '../../../components/SelectModal';
-import QueryBar, { QueryItem } from '../../../components/QueryBar';
+import StatusTag from '../../../../components/StatusTag';
+import SelectModal from '../../../../components/SelectModal';
+import QueryBar, { QueryItem } from '../../../../components/QueryBar';
 import {
   mockMaterialCategories, mockSubCategoryData,
-} from '../../../mock/businessRulesMock';
+} from '../../../../mock/businessRulesMock';
 
 const MaterialSubCategoryView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
