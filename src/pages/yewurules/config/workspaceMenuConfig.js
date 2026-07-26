@@ -5,6 +5,8 @@ import AssetApplicationPrototype from '../../zichanshenqing';
 import ApprovalPagePrototype from '../../zichanshenqingshenpi';
 import AssetAdminApprovalPrototype from '../../zichanpeiji';
 import UnifiedAssetApplySummary from '../../UnifiedAssetApplySummary';
+import EmployeeAssetApplyPage from '../../employeeSelfService/AssetApplyPage';
+import EmployeeAssetApprovalPage from '../../employeeSelfService/AssetApprovalPage';
 
 export const WORKSPACE_MENU_ITEMS = [
   { key: '工作台首页', label: '工作台首页', Page: PersonalWorkspace },
@@ -14,6 +16,8 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: '资产申请审批', label: '资产申请审批', Page: ApprovalPagePrototype },
   { key: '资产申请配给', label: '资产申请配给', Page: AssetAdminApprovalPrototype },
   { key: '统一申请汇总-资产', label: '统一申请汇总-资产', Page: UnifiedAssetApplySummary },
+  { key: '员工自助新版-资产申请', label: '员工自助新版-资产申请', Page: EmployeeAssetApplyPage },
+  { key: '员工自助新版-业务审批', label: '员工自助新版-业务审批', Page: EmployeeAssetApprovalPage },
 ];
 
 export function getWorkspacePage(menuKey) {
