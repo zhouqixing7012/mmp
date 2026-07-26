@@ -29,7 +29,15 @@ src/
 ├── services/                   # 演示数据读写服务，统一封装 localStorage
 │   └── demoStorage.js          # 通用演示数据存储服务
 ├── pages/                      # 页面组件
-│   ├── yewurules.js            # 后台基础配置主页面，当前仍偏大
+│   ├── yewurules.js            # 后台基础配置入口与剩余业务视图
+│   ├── yewurules/
+│   │   ├── components/         # 后台侧边栏、页签、内容区、个人工作台组件
+│   │   ├── config/             # 后台菜单、页签、个人工作台页面配置
+│   │   └── modules/
+│   │       ├── material/       # 物料基础数据页面
+│   │       ├── mapping/        # 业务映射页面
+│   │       ├── warehouse/      # 仓库数据页面
+│   │       └── location/       # 地点数据页面
 │   ├── xitongrules.js          # 组织与用户管理
 │   ├── zichanshenqing.js       # 新增资产申请
 │   ├── zichanshenqingshenpi.js # 资产申请审批
@@ -53,6 +61,7 @@ ARCHITECTURE.md                 # 代码结构说明
 - 新增资产申请：资产商城选品并生成申请明细。
 - 资产申请审批：审批员工提交的资产申请。
 - 资产申请配给：处理资产配给相关流程。
+- 统一申请汇总-资产：统一查看资产申请汇总及单据详情。
 - 号码管理：电话卡申请表单。
 - 号码控制：申请人员白名单管理。
 
@@ -130,12 +139,16 @@ npm test
 - 新增 `src/mock/assetApplicationMock.js`，将新增资产申请页的大块 mock 数据迁出页面。
 - 新增 `src/services/demoStorage.js`，统一封装演示数据的 localStorage 读写。
 - `zichanshenqing.js` 提交申请时已写入统一演示数据服务，并补充耗材关联主资产校验。
+- 已完成 `yewurules.js` 第一阶段拆分：后台框架、菜单、页签和个人工作台页面映射已迁出。
+- 已完成物料基础数据模块拆分，相关页面迁入 `modules/material/`。
+- 已完成仓库、地点及首批业务映射模块拆分，相关页面迁入 `modules/warehouse/`、`modules/location/` 和 `modules/mapping/`。
+- `yewurules.js` 已由约 4655 行逐步降低到约 2028 行。
 
 ### 仍需逐步处理
 
 - `zichanshenqingshenpi.js` 还需要接入 `getAssetApplications()`，让审批页读取同一份申请数据。
 - `applylist.js` 还需要接入同源申请数据，形成提交申请、申请列表、审批的完整链路。
-- `yewurules.js` 仍然过大，应按业务配置子模块拆分。
+- `yewurules.js` 已开始按业务域拆分，后续继续迁移权限、会计、费用账户和其他剩余配置页面。
 - 部分页面仍有页面内 mock 数据，应逐步迁移到 `src/mock/`。
 - 部分业务操作仍停留在演示状态，应统一走 mock service 和 localStorage。
 
