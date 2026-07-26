@@ -9,41 +9,45 @@
 
 # 本次完成
 
-完成第一轮低风险整改：
+完成第二轮整改：建立资产申请链路的数据层样板，并修复导航收起问题。
 
-1. 修正 `README.md`
-   - 技术栈改为当前真实依赖：React 19、React Router 7、Ant Design 6、Create React App。
-   - 增加当前模块说明、整改记录、开发约定和搜索记录。
+1. 新增 `src/mock/assetApplicationMock.js`
+   - 统一放置新增资产申请页使用的分类树、资产库、已有资产、申请原因。
+   - 增加默认资产申请单，作为后续审批页接入同源数据的基础。
 
-2. 新增 `ARCHITECTURE.md`
-   - 说明顶层文件职责。
-   - 说明 `src/` 下主要目录职责。
-   - 说明 `App.js`、`routes.js`、`Navbar.js` 的调用关系。
+2. 新增 `src/services/demoStorage.js`
+   - 统一封装 localStorage 的读、写、重置。
+   - 提供资产申请数据的读取、保存、新增和重置方法。
+   - 页面不再直接操作 localStorage。
 
-3. 整理 `src/config/routes.js`
-   - 为路由增加 `group` 字段。
-   - 导出 `routeGroups` 和 `navGroups`。
-   - 保留原有路径和页面组件，不删除现有页面。
+3. 修改 `src/pages/zichanshenqing.js`
+   - 页面内的大块 mock 数据已迁出到 `src/mock/assetApplicationMock.js`。
+   - 提交审批时调用 `addAssetApplication` 写入统一演示数据。
+   - 增加耗材必须关联主资产的提交校验。
 
-4. 整理 `src/components/Navbar.js`
-   - 顶部导航从所有页面平铺改为按模块分组展示。
-   - 导航数据来自 `navGroups`，减少后续维护成本。
+4. 修改 `src/components/Navbar.js`
+   - 模块菜单由受控状态管理。
+   - 点击下拉菜单中的页面入口后，菜单会自动收起。
+
+5. 更新 `ARCHITECTURE.md`
+   - 补充 `src/services/` 职责。
+   - 补充资产申请页、mock 数据、service 的调用关系。
 
 # 上次停的位置
 
-第一轮结构整改已完成，尚未拆分业务页面和 mock 数据。
+资产申请页已经接入统一演示数据服务，但审批页 `zichanshenqingshenpi.js` 还没有改为从同一份数据读取。
 
 # 近期关键决定
 
-- 先做低风险结构整理，不直接重构大页面。
-- 不修改 `package.json`，因为 `AI_RULES.md` 已要求未经明确允许不改构建工具和依赖。
-- 不拆 `yewurules.js`，因为它影响范围大，需要单独作为下一阶段处理。
-- 路由仍保留原路径，避免影响已有演示入口。
+- 先用“新增资产申请”作为数据层样板，不直接拆 `yewurules.js`。
+- 页面组件不直接操作 localStorage，统一通过 `src/services/demoStorage.js`。
+- mock 数据继续留在前端，符合产品演示项目定位。
+- 导航改为受控下拉，避免点击页面后菜单仍悬浮。
 
 # 下一步建议
 
 下一阶段优先处理：
 
-1. 选一个页面做样板，把页面内 mock 数据迁到 `src/mock/`。
-2. 建立 service 层统一读写演示数据，避免页面直接操作 localStorage。
-3. 再拆 `yewurules.js`，按业务配置子模块拆分。
+1. 修改 `zichanshenqingshenpi.js`，让审批页读取 `getAssetApplications()`。
+2. 审批同意/驳回后，通过 service 更新同一份资产申请数据。
+3. 再让 `applylist.js` 接入同源申请数据，形成“提交申请 → 申请列表 → 审批”的完整链路。
