@@ -9,36 +9,36 @@
 
 # 本次完成
 
-完成第三轮整改：收敛新增资产申请页前端风格，保持产品演示能力，不新增顶部说明区。
+完成第四轮整改：把“统一申请汇总-资产”接入当前 React 项目，并按 Ant Design 管理台风格重做前端样式。
 
-1. 修改 `src/pages/zichanshenqing.js`
-   - 将手写按钮、输入框、下拉框、弹窗、表格，替换为 Ant Design 的 `Button`、`Input`、`InputNumber`、`Select`、`Modal`、`Table`、`Card`、`Empty`。
-   - 将页面内自定义 Toast 改为 Ant Design `message`。
-   - 保留资产商城弹窗、资产分类树、资产搜索、耗材筛选、申请明细、批量设置原因、提交审批等原有演示功能。
-   - 保留提交时写入 `addAssetApplication` 的统一演示数据服务。
-   - 未新增用户提出不需要的“页面顶部演示说明区”。
+1. 新增 `src/mock/unifiedAssetSummaryMock.js`
+   - 统一放置统一申请汇总列表、申请人明细、ES汇总说明、部门汇总、非超标申请等演示数据。
+   - 数据来自用户最早提供的三张页面截图。
 
-2. 保持不变
-   - 未修改路由。
-   - 未修改 `package.json`。
-   - 未改审批页 `zichanshenqingshenpi.js`。
-   - 未拆 `yewurules.js`。
+2. 新增 `src/pages/UnifiedAssetApplySummary.js`
+   - 实现三段演示流程：汇总列表 → 申请明细 → ES汇总说明。
+   - 使用 Ant Design 的 `Card`、`Tabs`、`Table`、`Button`、`Input.TextArea`、`Upload`、`Empty`、`message`。
+   - 保留查看、驳回、下一步、保存、返回、提交、修改、上传附件等演示操作。
+   - 页面风格与当前项目的 Ant Design 管理台风格保持一致。
+
+3. 修改 `src/config/routes.js`
+   - 引入 `UnifiedAssetApplySummary` 页面。
+   - 新增路由 `/UnifiedAssetApplySummary`。
+   - 导航名称为“统一申请汇总-资产”，归入“个人工作台”分组。
 
 # 上次停的位置
 
-新增资产申请页已经从“手写原型风”收敛到 Ant Design 管理台风格。审批页仍未接入同源申请数据。
+“统一申请汇总-资产”已加入项目，作为独立路由页面存在。当前是前端演示页面，尚未和新增资产申请、申请列表、审批页做真实数据联动。
 
 # 近期关键决定
 
-- 产品演示优先，不急于打通审批数据闭环。
-- 页面风格优先向 Ant Design 项目规范靠齐。
-- 不给新增资产申请页额外增加顶部演示说明区，避免页面变重。
-- 保持 mock/service 数据层样板不变，后续页面逐步复用。
+- 产品演示优先，统一申请汇总页面先使用独立 mock 数据复刻流程。
+- 页面控件优先使用 Ant Design，不再使用早期 JSP/HTML 风格。
+- 保留原截图的业务内容与流程顺序，但视觉收敛到当前项目风格。
+- 不修改 `package.json`，不新增依赖，不修改审批页和申请列表。
 
 # 下一步建议
 
-下一阶段可选方向：
-
-1. 继续把 `zichanshenqingshenpi.js` 的按钮、状态标签、审批操作收敛到 Ant Design + StatusTag 风格。
-2. 让 `applylist.js` 展示 `getAssetApplications()`，作为“申请单列表”演示入口。
-3. 拆分 `zichanshenqing.js` 中的资产商城 Modal 和申请明细 Table，进一步降低页面文件复杂度。
+1. 本地运行 `npm start`，验收 `/UnifiedAssetApplySummary` 页面流程。
+2. 需要时再把“统一申请汇总-资产”和 `getAssetApplications()` 做数据联动。
+3. 继续收敛其它老原型页面的 Ant Design 风格。
