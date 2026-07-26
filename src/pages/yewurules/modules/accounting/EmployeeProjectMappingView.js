@@ -1,36 +1,41 @@
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
-import { Button, Input, Modal, Table } from 'antd';
+import { RefreshCcw } from 'lucide-react';
+import { Button, Input, Table } from 'antd';
 import QueryBar from '../../../../components/QueryBar';
 import { mockEmployeeProjectMappingData } from '../../../../mock/businessRulesMock';
 
-export default function EmployeeProjectMappingView() {
-  const emptyForm = { empNo: '', empName: '', projName: '' };
-  const [formData, setFormData] = useState(emptyForm);
-  const [open, setOpen] = useState(false);
+const EmployeeProjectMappingView = () => {
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const columns = [
     { title: '序号', dataIndex: 'id' },
     { title: '员工编号', dataIndex: 'empNo' },
     { title: '员工姓名', dataIndex: 'empName' },
     { title: '项目名称', dataIndex: 'projName' },
-    { title: '操作', render: (_, record) => <Button type="link" onClick={() => { setFormData({ ...emptyForm, ...record }); setOpen(true); }}>编辑</Button> },
   ];
-  return <div className="flex flex-col gap-4">
-    <QueryBar>
-      <Input placeholder="请输入员工编号" />
-      <Input placeholder="请输入员工姓名" />
-      <Input placeholder="请输入项目名称" />
-    </QueryBar>
-    <div className="bg-white border border-[#f0f0f0] rounded shadow-sm">
-      <div className="px-4 py-3 border-b border-[#f0f0f0]"><Button type="primary" icon={<Plus size={14} />} onClick={() => { setFormData(emptyForm); setOpen(true); }}>新增</Button></div>
-      <Table rowKey="id" columns={columns} dataSource={mockEmployeeProjectMappingData} pagination={{ pageSize: 10 }} />
-    </div>
-    <Modal open={open} onCancel={() => setOpen(false)} onOk={() => setOpen(false)} title="员工与项目映射">
-      <div className="flex flex-col gap-4 pt-2">
-        <Input value={formData.empNo} onChange={(e) => setFormData({ ...formData, empNo: e.target.value })} placeholder="员工编号" />
-        <Input value={formData.empName} onChange={(e) => setFormData({ ...formData, empName: e.target.value })} placeholder="员工姓名" />
-        <Input value={formData.projName} onChange={(e) => setFormData({ ...formData, projName: e.target.value })} placeholder="项目名称" />
+  return (
+    <div className="flex flex-col gap-4">
+      <QueryBar>
+        <div className="flex items-center gap-2">
+          <span className="w-20 text-right text-sm text-gray-600">员工编号:</span>
+          <Input placeholder="请输入员工编号" />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-20 text-right text-sm text-gray-600">员工姓名:</span>
+          <Input placeholder="请输入员工姓名" />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-20 text-right text-sm text-gray-600">项目名称:</span>
+          <Input placeholder="请输入项目名称" />
+        </div>
+      </QueryBar>
+      <div className="bg-white border border-[#f0f0f0] rounded shadow-sm flex-1">
+        <div className="px-4 py-3 border-b border-[#f0f0f0] flex flex-wrap gap-2">
+          <Button type="default" className="text-green-600 border-[#b7eb8f] bg-[#f6ffed] hover:border-green-500" icon={<RefreshCcw size={14} />}>同步</Button>
+        </div>
+        <Table rowKey="id" rowSelection={{ type: 'checkbox', onChange: setSelectedRowKeys }} columns={columns} dataSource={mockEmployeeProjectMappingData} size="middle" scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
       </div>
-    </Modal>
-  </div>;
-}
+    </div>
+  );
+};
+
+export default EmployeeProjectMappingView;
