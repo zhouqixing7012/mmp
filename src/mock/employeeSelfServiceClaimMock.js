@@ -1,3 +1,5 @@
+export { CURRENT_EMPLOYEE } from './employeeSelfServiceMock';
+
 export const EMPLOYEE_SELF_SERVICE_CLAIM_STORAGE_KEY = 'mmp_demo_employee_self_service_claims';
 export const EMPLOYEE_SELF_SERVICE_OUTBOUND_STORAGE_KEY = 'mmp_demo_employee_self_service_outbounds';
 
