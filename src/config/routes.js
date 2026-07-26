@@ -83,7 +83,7 @@ const routes = [
   { path: '/zichanshenqing', name: '新增资产申请', Page: zichanshenqing, nav: true, group: 'workspace' },
   { path: '/zichanshenqingshenpi', name: '资产申请审批', Page: zichanshenqingshenpi, nav: true, group: 'workspace' },
   { path: '/zichanpeiji', name: '资产申请配给', Page: zichanpeiji, nav: true, group: 'workspace' },
-  { path: '/UnifiedAssetApplySummary', name: '统一申请汇总-资产', Page: UnifiedAssetApplySummary, nav: true, group: 'workspace' },
+  { path: '/UnifiedAssetApplySummary', name: '统一申请汇总-资产', Page: UnifiedAssetApplySummary, nav: false, group: 'workspace' },
 
   // 后台配置
   { path: '/yewurules', name: '后台基础配置', Page: yewurules, nav: true, group: 'config' },
