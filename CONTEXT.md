@@ -9,45 +9,36 @@
 
 # 本次完成
 
-完成第二轮整改：建立资产申请链路的数据层样板，并修复导航收起问题。
+完成第三轮整改：收敛新增资产申请页前端风格，保持产品演示能力，不新增顶部说明区。
 
-1. 新增 `src/mock/assetApplicationMock.js`
-   - 统一放置新增资产申请页使用的分类树、资产库、已有资产、申请原因。
-   - 增加默认资产申请单，作为后续审批页接入同源数据的基础。
+1. 修改 `src/pages/zichanshenqing.js`
+   - 将手写按钮、输入框、下拉框、弹窗、表格，替换为 Ant Design 的 `Button`、`Input`、`InputNumber`、`Select`、`Modal`、`Table`、`Card`、`Empty`。
+   - 将页面内自定义 Toast 改为 Ant Design `message`。
+   - 保留资产商城弹窗、资产分类树、资产搜索、耗材筛选、申请明细、批量设置原因、提交审批等原有演示功能。
+   - 保留提交时写入 `addAssetApplication` 的统一演示数据服务。
+   - 未新增用户提出不需要的“页面顶部演示说明区”。
 
-2. 新增 `src/services/demoStorage.js`
-   - 统一封装 localStorage 的读、写、重置。
-   - 提供资产申请数据的读取、保存、新增和重置方法。
-   - 页面不再直接操作 localStorage。
-
-3. 修改 `src/pages/zichanshenqing.js`
-   - 页面内的大块 mock 数据已迁出到 `src/mock/assetApplicationMock.js`。
-   - 提交审批时调用 `addAssetApplication` 写入统一演示数据。
-   - 增加耗材必须关联主资产的提交校验。
-
-4. 修改 `src/components/Navbar.js`
-   - 模块菜单由受控状态管理。
-   - 点击下拉菜单中的页面入口后，菜单会自动收起。
-
-5. 更新 `ARCHITECTURE.md`
-   - 补充 `src/services/` 职责。
-   - 补充资产申请页、mock 数据、service 的调用关系。
+2. 保持不变
+   - 未修改路由。
+   - 未修改 `package.json`。
+   - 未改审批页 `zichanshenqingshenpi.js`。
+   - 未拆 `yewurules.js`。
 
 # 上次停的位置
 
-资产申请页已经接入统一演示数据服务，但审批页 `zichanshenqingshenpi.js` 还没有改为从同一份数据读取。
+新增资产申请页已经从“手写原型风”收敛到 Ant Design 管理台风格。审批页仍未接入同源申请数据。
 
 # 近期关键决定
 
-- 先用“新增资产申请”作为数据层样板，不直接拆 `yewurules.js`。
-- 页面组件不直接操作 localStorage，统一通过 `src/services/demoStorage.js`。
-- mock 数据继续留在前端，符合产品演示项目定位。
-- 导航改为受控下拉，避免点击页面后菜单仍悬浮。
+- 产品演示优先，不急于打通审批数据闭环。
+- 页面风格优先向 Ant Design 项目规范靠齐。
+- 不给新增资产申请页额外增加顶部演示说明区，避免页面变重。
+- 保持 mock/service 数据层样板不变，后续页面逐步复用。
 
 # 下一步建议
 
-下一阶段优先处理：
+下一阶段可选方向：
 
-1. 修改 `zichanshenqingshenpi.js`，让审批页读取 `getAssetApplications()`。
-2. 审批同意/驳回后，通过 service 更新同一份资产申请数据。
-3. 再让 `applylist.js` 接入同源申请数据，形成“提交申请 → 申请列表 → 审批”的完整链路。
+1. 继续把 `zichanshenqingshenpi.js` 的按钮、状态标签、审批操作收敛到 Ant Design + StatusTag 风格。
+2. 让 `applylist.js` 展示 `getAssetApplications()`，作为“申请单列表”演示入口。
+3. 拆分 `zichanshenqing.js` 中的资产商城 Modal 和申请明细 Table，进一步降低页面文件复杂度。
