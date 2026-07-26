@@ -9,36 +9,34 @@
 
 # 本次完成
 
-完成第四轮整改：把“统一申请汇总-资产”接入当前 React 项目，并按 Ant Design 管理台风格重做前端样式。
+完成第五轮整改：根据旧 ES 系统截图新增“ES前台领用”和“员工领用确认”两个 Ant Design 演示页面。
 
-1. 新增 `src/mock/unifiedAssetSummaryMock.js`
-   - 统一放置统一申请汇总列表、申请人明细、ES汇总说明、部门汇总、非超标申请等演示数据。
-   - 数据来自用户最早提供的三张页面截图。
+1. 新增 `src/mock/assetClaimMock.js`
+   - 统一存放申请人、资产、地点、领用数量和保管职责说明等演示数据。
 
-2. 新增 `src/pages/UnifiedAssetApplySummary.js`
-   - 实现三段演示流程：汇总列表 → 申请明细 → ES汇总说明。
-   - 使用 Ant Design 的 `Card`、`Tabs`、`Table`、`Button`、`Input.TextArea`、`Upload`、`Empty`、`message`。
-   - 保留查看、驳回、下一步、保存、返回、提交、修改、上传附件等演示操作。
-   - 页面风格与当前项目的 Ant Design 管理台风格保持一致。
+2. 新增 `src/pages/FrontDeskAssetClaim.js`
+   - 展示申请人信息、资产信息、地点与用途编辑。
+   - 支持资产查看、必填校验、领用确认、弃领、加签、返回和发送领用通知。
 
-3. 修改 `src/config/routes.js`
-   - 引入 `UnifiedAssetApplySummary` 页面。
-   - 新增路由 `/UnifiedAssetApplySummary`。
-   - 导航名称为“统一申请汇总-资产”，归入“个人工作台”分组。
+3. 新增 `src/pages/EmployeeAssetClaimConfirm.js`
+   - 展示领用人信息、领用物资明细、保管职责和二维码。
+   - 支持员工卡号输入、回车确认和按钮确认。
+
+4. 修改 `src/config/routes.js`
+   - 新增 `/FrontDeskAssetClaim` 和 `/EmployeeAssetClaimConfirm`。
+   - 两个页面均归入“个人工作台”导航分组。
 
 # 上次停的位置
 
-“统一申请汇总-资产”已加入项目，作为独立路由页面存在。当前是前端演示页面，尚未和新增资产申请、申请列表、审批页做真实数据联动。
+两个领用页面已接入 `feat/business-rule-updates` 分支，使用同一份 mock 数据保持页面内容一致。当前按钮为前端演示反馈，尚未接入真实刷卡设备、通知服务和审批接口。
 
 # 近期关键决定
 
-- 产品演示优先，统一申请汇总页面先使用独立 mock 数据复刻流程。
-- 页面控件优先使用 Ant Design，不再使用早期 JSP/HTML 风格。
-- 保留原截图的业务内容与流程顺序，但视觉收敛到当前项目风格。
-- 不修改 `package.json`，不新增依赖，不修改审批页和申请列表。
+- 保留旧系统截图中的业务字段和操作顺序，视觉统一为当前 Ant Design 管理台风格。
+- 页面数据统一放在 mock 文件，不在组件中直接维护大块数据。
+- 不修改 `package.json`，不新增依赖，不改动现有报废、主备维护和责任人变更页面。
 
 # 下一步建议
 
-1. 本地运行 `npm start`，验收 `/UnifiedAssetApplySummary` 页面流程。
-2. 需要时再把“统一申请汇总-资产”和 `getAssetApplications()` 做数据联动。
-3. 继续收敛其它老原型页面的 Ant Design 风格。
+1. 本地运行 `npm start`，验收两个新路由。
+2. 产品演示时可从“个人工作台”依次进入 ES 前台领用和员工领用确认。
