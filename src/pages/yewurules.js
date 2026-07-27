@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { Button, Input, Table } from 'antd';
 import { UserManagementView, OrgManagementView } from './xitongrules';
@@ -43,9 +44,11 @@ const NOServiceView = () => {
 };
 
 export default function App() {
-  const [activeMenu, setActiveMenu] = useState('后台基础配置');
-  const [activeSubMenu, setActiveSubMenu] = useState('物料数据维护');
-  const [activeTab, setActiveTab] = useState('物料大类');
+  const location = useLocation();
+  const workspaceState = location.state?.workspace;
+  const [activeMenu, setActiveMenu] = useState(workspaceState ? '个人工作台' : '后台基础配置');
+  const [activeSubMenu, setActiveSubMenu] = useState(workspaceState || '物料数据维护');
+  const [activeTab, setActiveTab] = useState(workspaceState || '物料大类');
   const tabs = getTabsBySubMenu(activeSubMenu);
 
   const handleMenuToggle = (menuKey, collapsible = true) => {
