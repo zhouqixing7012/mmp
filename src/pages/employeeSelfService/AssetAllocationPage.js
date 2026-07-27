@@ -15,7 +15,10 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
-import { ALLOCATABLE_ASSETS } from '../../mock/employeeSelfServiceWorkflowMock';
+import {
+  ALLOCATABLE_ASSETS,
+  APPLICANT_CURRENT_ASSETS,
+} from '../../mock/employeeSelfServiceWorkflowMock';
 import { getEmployeeSelfServiceApplications } from '../../services/employeeSelfServiceService';
 import {
   ensureAllocationOrders,
@@ -44,6 +47,19 @@ function enrichAsset(asset, index) {
   };
 }
 
+function enrichApplicantAsset(asset, index) {
+  const parts = asset.assetDesc.split('.');
+  return {
+    ...asset,
+    rowNo: index + 1,
+    materialType: index % 2 === 0 ? '资产' : '低值耐用品',
+    assetCategory: parts[0] || '电脑整机',
+    assetSubCategory: parts[1] || '笔记本-技术笔记本',
+    quantity: 1,
+    component: index % 2 === 0 ? '-' : '内存/硬盘',
+  };
+}
+
 export default function EmployeeAssetAllocationPage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
@@ -53,6 +69,9 @@ export default function EmployeeAssetAllocationPage() {
   const [esComment, setEsComment] = useState('');
   const [matchModalOpen, setMatchModalOpen] = useState(false);
   const [assetListOpen, setAssetListOpen] = useState(false);
+  const [applicantAssetsOpen, setApplicantAssetsOpen] = useState(false);
+  const [applicantAssetKeyword, setApplicantAssetKeyword] = useState('');
+  const [applicantAssetQuery, setApplicantAssetQuery] = useState('');
   const [countersignOpen, setCountersignOpen] = useState(false);
   const [countersignPerson, setCountersignPerson] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -82,6 +101,17 @@ export default function EmployeeAssetAllocationPage() {
   }] : []);
 
   const assetRows = useMemo(() => ALLOCATABLE_ASSETS.map(enrichAsset), []);
+  const applicantAssetRows = useMemo(() => APPLICANT_CURRENT_ASSETS.map(enrichApplicantAsset), []);
+  const filteredApplicantAssets = useMemo(() => {
+    const keyword = applicantAssetQuery.trim().toLowerCase();
+    if (!keyword) return applicantAssetRows;
+    return applicantAssetRows.filter((asset) => (
+      `${asset.materialType} ${asset.assetCategory} ${asset.assetSubCategory} ${asset.assetTag} ${asset.assetDesc} ${asset.config} ${asset.assetStatus} ${asset.component}`
+        .toLowerCase()
+        .includes(keyword)
+    ));
+  }, [applicantAssetRows, applicantAssetQuery]);
+
   const filteredAssets = useMemo(() => assetRows.filter((asset) => (
     (!appliedQuery.assetTag || asset.assetTag.toLowerCase().includes(appliedQuery.assetTag.toLowerCase()))
     && (!appliedQuery.serialNo || asset.serialNo.toLowerCase().includes(appliedQuery.serialNo.toLowerCase()))
@@ -183,6 +213,19 @@ export default function EmployeeAssetAllocationPage() {
     { title: '启用日期', dataIndex: 'enabledDate', width: 110 },
   ];
 
+  const applicantAssetColumns = [
+    { title: '行号', dataIndex: 'rowNo', width: 70, align: 'center' },
+    { title: '物资总类', dataIndex: 'materialType', width: 110 },
+    { title: '资产大类', dataIndex: 'assetCategory', width: 130 },
+    { title: '资产小类', dataIndex: 'assetSubCategory', width: 160 },
+    { title: '资产标签号', dataIndex: 'assetTag', width: 160 },
+    { title: '资产说明', dataIndex: 'assetDesc', width: 220 },
+    { title: '配置', dataIndex: 'config', width: 220 },
+    { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
+    { title: '资产状态', dataIndex: 'assetStatus', width: 130 },
+    { title: '部件', dataIndex: 'component', width: 120 },
+  ];
+
   if (!selectedOrder) {
     return (
       <div className="min-h-screen bg-slate-100 p-4">
@@ -197,8 +240,6 @@ export default function EmployeeAssetAllocationPage() {
     );
   }
 
-  const readonly = selectedOrder.status !== '待配给';
-
   return (
     <div className="min-h-screen bg-slate-100 p-4">
       {contextHolder}
@@ -208,7 +249,11 @@ export default function EmployeeAssetAllocationPage() {
           <Typography.Text type="secondary">申请单号：{selectedOrder.sourceApplicationId}</Typography.Text>
         </div>
 
-        <ApplicantInfoCard applicant={selectedOrder.applicant} applyDate={selectedOrder.applyDate} />
+        <ApplicantInfoCard
+          applicant={selectedOrder.applicant}
+          applyDate={selectedOrder.applyDate}
+          onViewAssets={() => setApplicantAssetsOpen(true)}
+        />
 
         <Card title="申请物资明细" size="small">
           <Table rowKey="id" columns={materialColumns} dataSource={applicationMaterials} pagination={false} scroll={{ x: 1300 }} />
@@ -223,7 +268,6 @@ export default function EmployeeAssetAllocationPage() {
               <Radio.Group
                 className="ml-3"
                 value={matchingStatus}
-                disabled={readonly}
                 onChange={(event) => {
                   setMatchingStatus(event.target.value);
                   setMatchedAsset(null);
@@ -233,7 +277,7 @@ export default function EmployeeAssetAllocationPage() {
                   { label: '统一采购', value: '统一采购' },
                 ]}
               />
-              {!readonly && matchingStatus === '库存领用' && (
+              {matchingStatus === '库存领用' && (
                 <Button className="ml-4" type="primary" ghost onClick={() => setMatchModalOpen(true)}>匹配资产</Button>
               )}
             </div>
@@ -251,24 +295,56 @@ export default function EmployeeAssetAllocationPage() {
                 rows={4}
                 maxLength={400}
                 showCount
-                disabled={readonly}
                 value={esComment}
                 placeholder="请输入 ES 建议，最多400字"
                 onChange={(event) => setEsComment(event.target.value)}
               />
             </div>
 
-            {!readonly && (
-              <div className="flex justify-center gap-3">
-                <Button type="primary" icon={<CheckCircle2 size={14} />} loading={submitting} onClick={submitAllocation}>同意</Button>
-                <Button danger icon={<XCircle size={14} />} onClick={rejectAllocation}>驳回</Button>
-                <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
-                <Button icon={<UserPlus size={14} />} onClick={() => setCountersignOpen(true)}>加签</Button>
-              </div>
-            )}
+            <div className="flex justify-center gap-3">
+              <Button type="primary" icon={<CheckCircle2 size={14} />} loading={submitting} onClick={submitAllocation}>同意</Button>
+              <Button danger icon={<XCircle size={14} />} onClick={rejectAllocation}>驳回</Button>
+              <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+              <Button icon={<UserPlus size={14} />} onClick={() => setCountersignOpen(true)}>加签</Button>
+            </div>
           </Space>
         </Card>
       </Space>
+
+      <Modal
+        title="员工名下资产"
+        open={applicantAssetsOpen}
+        width={1180}
+        footer={null}
+        onCancel={() => setApplicantAssetsOpen(false)}
+      >
+        <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <Typography.Text className="mb-2 block">关键字</Typography.Text>
+              <Input
+                allowClear
+                value={applicantAssetKeyword}
+                placeholder="请输入资产标签号、资产说明、配置或状态"
+                onChange={(event) => setApplicantAssetKeyword(event.target.value)}
+                onPressEnter={() => setApplicantAssetQuery(applicantAssetKeyword)}
+              />
+            </div>
+            <Button type="primary" icon={<Search size={14} />} onClick={() => setApplicantAssetQuery(applicantAssetKeyword)}>查询</Button>
+            <Button onClick={() => {
+              setApplicantAssetKeyword('');
+              setApplicantAssetQuery('');
+            }}>重置</Button>
+          </div>
+        </div>
+        <Table
+          rowKey="id"
+          columns={applicantAssetColumns}
+          dataSource={filteredApplicantAssets}
+          scroll={{ x: 1400, y: 400 }}
+          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
+        />
+      </Modal>
 
       <Modal
         title="库存领用匹配资产"
