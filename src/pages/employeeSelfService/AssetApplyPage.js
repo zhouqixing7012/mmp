@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Eye, Plus, RotateCcw, ShoppingCart, Trash2 } from 'lucide-react';
 import {
   Alert,
   Button,
-  Card,
   Empty,
   Input,
   InputNumber,
@@ -68,6 +68,7 @@ function buildApplication(materials) {
 }
 
 export default function EmployeeAssetApplyPage() {
+  const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [noticeOpen, setNoticeOpen] = useState(true);
   const [storeOpen, setStoreOpen] = useState(false);
@@ -154,6 +155,10 @@ export default function EmployeeAssetApplyPage() {
     } finally {
       setSubmitLoading(false);
     }
+  };
+
+  const returnToWorkspace = () => {
+    navigate('/yewurules', { state: { workspace: '工作台首页' } });
   };
 
   const relatedAssetOptions = useMemo(() => {
@@ -265,17 +270,21 @@ export default function EmployeeAssetApplyPage() {
           description="超标资产申请将自动提交至部门 7 级及以上领导审批，请确认申请内容无误后再提交。"
         />
       )}
-      <Card
-        bodyStyle={{ padding: 0 }}
-        title={(
+
+      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <Space>
             <ShoppingCart size={18} className="text-blue-600" />
-            <span>{isPreview ? '资产申请预览' : '本次申请明细'}</span>
+            <span className="font-medium text-slate-800">{isPreview ? '资产申请预览' : '本次申请明细'}</span>
             <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">{selectedCount} 件</span>
           </Space>
-        )}
-        extra={!isPreview ? <Button type="primary" icon={<Plus size={14} />} disabled={!canApply} onClick={() => setStoreOpen(true)}>添加物资</Button> : null}
-      >
+          {!isPreview && (
+            <Button type="primary" icon={<Plus size={14} />} disabled={!canApply} onClick={() => setStoreOpen(true)}>
+              添加物资
+            </Button>
+          )}
+        </div>
+
         <Table
           rowKey="id"
           columns={columns}
@@ -284,6 +293,7 @@ export default function EmployeeAssetApplyPage() {
           scroll={{ x: 1200 }}
           locale={{ emptyText: <Empty description="请点击右上角“添加物资”选择申请物资" /> }}
         />
+
         <div className="flex justify-center gap-3 border-t border-slate-100 bg-white px-5 py-4">
           {isPreview ? (
             <>
@@ -293,11 +303,11 @@ export default function EmployeeAssetApplyPage() {
           ) : (
             <>
               <Button type="primary" icon={<Eye size={14} />} disabled={!canApply} onClick={() => validate() && setIsPreview(true)}>预览</Button>
-              <Button icon={<RotateCcw size={14} />} onClick={() => window.history.back()}>返回</Button>
+              <Button icon={<RotateCcw size={14} />} onClick={returnToWorkspace}>返回</Button>
             </>
           )}
         </div>
-      </Card>
+      </section>
 
       <Modal title="申请须知" open={noticeOpen} closable={false} maskClosable={false} keyboard={false} footer={null}>
         <Typography.Title level={5}>【申请原则】</Typography.Title>
