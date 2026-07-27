@@ -102,9 +102,11 @@ export default function AssetStoreModal({ open, onCancel, onAdd }) {
       width={1180}
       onCancel={closeModal}
       footer={(
-        <div className="flex items-center justify-between">
-          <Typography.Text>已选择 <b className="text-blue-600">{selectedMaterials.length}</b> 项</Typography.Text>
-          <Space>
+        <div className="flex w-full items-center justify-between px-2">
+          <div className="min-w-[140px] text-left">
+            <Typography.Text>已选择 <b className="text-blue-600">{selectedMaterials.length}</b> 项</Typography.Text>
+          </div>
+          <Space size={12}>
             <Button type="primary" disabled={selectedMaterials.length === 0} onClick={confirmSelection}>确定添加</Button>
             <Button onClick={closeModal}>返回</Button>
           </Space>
@@ -158,7 +160,16 @@ export default function AssetStoreModal({ open, onCancel, onAdd }) {
                       key={option}
                       type="button"
                       className={`mb-1 flex w-full items-center justify-between rounded px-3 py-2 text-left text-sm transition ${selected || checked ? 'bg-blue-50 text-blue-600' : 'text-slate-700 hover:bg-slate-50'}`}
-                      onClick={() => isConfig ? toggleConfiguration(option) : selectLevel(level, option)}
+                      onMouseEnter={() => {
+                        if (!isConfig) selectLevel(level, option);
+                      }}
+                      onFocus={() => {
+                        if (!isConfig) selectLevel(level, option);
+                      }}
+                      onClick={() => {
+                        if (isConfig) toggleConfiguration(option);
+                        else selectLevel(level, option);
+                      }}
                     >
                       <span className="min-w-0 flex-1 truncate">{option}</span>
                       {isConfig ? (
