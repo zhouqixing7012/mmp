@@ -182,8 +182,7 @@ export default function AssetStoreModal({ open, onCancel, onAdd }) {
                   />
                 </div>
                 <Typography.Text strong>{item.assetDesc}</Typography.Text>
-                <div className="mt-1 text-xs text-slate-500">{item.category}</div>
-                <div className="mt-1 text-xs text-slate-600">配置：{item.config}</div>
+                <div className="mt-1 text-xs text-slate-500">{item.config}</div>
               </div>
             ))}
           </div>
