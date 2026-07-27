@@ -115,7 +115,10 @@ export default function EmployeeAssetAllocationPage() {
 
   const assetRows = useMemo(() => ALLOCATABLE_ASSETS.map(enrichAsset), []);
   const applicantAssetRows = useMemo(() => APPLICANT_CURRENT_ASSETS.map(enrichApplicantAsset), []);
-  const borrowedAssetCount = useMemo(() => applicantAssetRows.filter((item) => item.borrowStatus && item.borrowStatus !== '非借用').length, [applicantAssetRows]);
+  const borrowedAssetCount = useMemo(
+    () => applicantAssetRows.filter((item) => item.borrowStatus && item.borrowStatus !== '非借用').length,
+    [applicantAssetRows]
+  );
 
   const filteredAssets = useMemo(() => assetRows.filter((asset) => (
     (!appliedMatchQuery.assetTag || asset.assetTag.toLowerCase().includes(appliedMatchQuery.assetTag.toLowerCase()))
@@ -258,8 +261,6 @@ export default function EmployeeAssetAllocationPage() {
           <Table rowKey="id" columns={materialColumns} dataSource={applicationMaterials} pagination={false} scroll={{ x: 1300 }} />
         </Card>
 
-        <ApprovalHistoryCard records={sourceApplication?.approvalHistory || []} />
-
         <Card title="ES 配给处理" size="small">
           <Space direction="vertical" size={16} className="w-full">
             <div>
@@ -298,6 +299,8 @@ export default function EmployeeAssetAllocationPage() {
             </div>
           </Space>
         </Card>
+
+        <ApprovalHistoryCard records={sourceApplication?.approvalHistory || []} />
       </Space>
 
       <Modal title="员工名下资产明细" open={applicantAssetsOpen} width={1180} footer={null} onCancel={() => setApplicantAssetsOpen(false)}>
