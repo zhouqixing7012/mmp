@@ -117,6 +117,14 @@ export default function FrontDeskAssetClaim() {
 
           <Card title="申请人信息" size="small">
             <Descriptions bordered column={3} size="small">
+              <Descriptions.Item label={<><span className="text-red-500">*</span> 当前仓库</>} span={3}>
+                <Form.Item name="warehouse" rules={[{ required: true, message: '请选择当前仓库' }]} noStyle>
+                  <Select options={[
+                    { label: application.warehouse, value: application.warehouse },
+                    { label: 'I0020-资产集团备用库', value: 'I0020-资产集团备用库' },
+                  ]} />
+                </Form.Item>
+              </Descriptions.Item>
               <Descriptions.Item label="申请人">{application.applicant}</Descriptions.Item>
               <Descriptions.Item label="联系电话">{application.phone}</Descriptions.Item>
               <Descriptions.Item label="邮箱">{application.email}</Descriptions.Item>
@@ -125,15 +133,7 @@ export default function FrontDeskAssetClaim() {
               <Descriptions.Item label="申请日期">{application.applyDate}</Descriptions.Item>
               <Descriptions.Item label="成本中心">{application.costCenter}</Descriptions.Item>
               <Descriptions.Item label="部门" span={2}>{application.department}</Descriptions.Item>
-              <Descriptions.Item label={<><span className="text-red-500">*</span> 当前仓库</>}>
-                <Form.Item name="warehouse" rules={[{ required: true, message: '请选择当前仓库' }]} noStyle>
-                  <Select options={[
-                    { label: application.warehouse, value: application.warehouse },
-                    { label: 'I0020-资产集团备用库', value: 'I0020-资产集团备用库' },
-                  ]} />
-                </Form.Item>
-              </Descriptions.Item>
-              <Descriptions.Item label="单据备注" span={2}>
+              <Descriptions.Item label="单据备注" span={3}>
                 <Form.Item name="remark" noStyle>
                   <TextArea rows={2} placeholder="请输入单据备注" />
                 </Form.Item>
