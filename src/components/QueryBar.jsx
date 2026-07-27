@@ -1,5 +1,5 @@
 ﻿import React from 'react';
-import { Button, Card, Row, Col, Space } from 'antd';
+import { Button, Card, Row, Col } from 'antd';
 import { Search, RefreshCcw } from 'lucide-react';
 
 /**
@@ -26,13 +26,14 @@ export function QueryItem({ label, children, labelWidth = 96 }) {
 
 export default function QueryBar({ children, buttons, labelWidth = 96, onQuery, onReset }) {
   const fields = React.Children.toArray(children);
-    const defaultButtons = (
+  const defaultButtons = (
     <>
       <Button type="primary" icon={<Search size={14} />} onClick={onQuery}>查询</Button>
       <Button icon={<RefreshCcw size={14} />} onClick={onReset}>重置</Button>
     </>
   );
   const finalButtons = buttons !== undefined ? buttons : defaultButtons;
+
   return (
     <Card size="small" style={{ marginBottom: 16 }}>
       <style>{`
@@ -44,6 +45,16 @@ export default function QueryBar({ children, buttons, labelWidth = 96, onQuery, 
         }
         .qw > div > :nth-child(2) {
           width: 100% !important;
+          min-width: 0 !important;
+        }
+        .qw .ant-input,
+        .qw .ant-input-affix-wrapper,
+        .qw .ant-input-number,
+        .qw .ant-picker,
+        .qw .ant-select,
+        .qw .ant-cascader-picker {
+          width: 100% !important;
+          min-width: 0 !important;
         }
       `}</style>
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
