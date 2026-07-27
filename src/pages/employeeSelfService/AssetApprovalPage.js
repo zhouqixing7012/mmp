@@ -1,13 +1,14 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, UserPlus, XCircle } from 'lucide-react';
 import {
-  Alert,
   Button,
   Card,
   Input,
+  Modal,
   Space,
   Table,
   Tag,
+  Typography,
   message as antdMessage,
 } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
@@ -40,6 +41,8 @@ export default function EmployeeAssetApprovalPage() {
   const [queryKeyword, setQueryKeyword] = useState('');
   const [comment, setComment] = useState('同意');
   const [loading, setLoading] = useState(false);
+  const [countersignOpen, setCountersignOpen] = useState(false);
+  const [countersignPerson, setCountersignPerson] = useState('');
 
   const selectedApplication = applications.find((item) => item.id === selectedId);
   const filteredApplications = useMemo(() => applications.filter((item) => {
@@ -113,6 +116,16 @@ export default function EmployeeAssetApprovalPage() {
     }
   };
 
+  const handleCountersign = () => {
+    if (!countersignPerson.trim()) {
+      messageApi.warning('请输入加签人员');
+      return;
+    }
+    messageApi.success(`已加签：${countersignPerson.trim()}`);
+    setCountersignPerson('');
+    setCountersignOpen(false);
+  };
+
   const listColumns = [
     { title: '申请单号', dataIndex: 'id', width: 200 },
     { title: '申请人', dataIndex: ['applicant', 'name'], width: 120 },
@@ -140,17 +153,16 @@ export default function EmployeeAssetApprovalPage() {
 
   const materialColumns = [
     { title: '资产说明', dataIndex: 'assetDesc', width: 220 },
-    { title: '配置', dataIndex: 'config' },
+    { title: '配置', dataIndex: 'config', width: 220 },
     { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
-    { title: '申请原因', dataIndex: 'reason', width: 130 },
-    { title: '申请用途', dataIndex: 'purpose', width: 130 },
+    { title: '申请用途', dataIndex: 'purpose', width: 140 },
     { title: '详细说明', dataIndex: 'detail' },
     {
-      title: '个人超标',
+      title: '是否超标',
       dataIndex: 'overStandard',
       width: 100,
       align: 'center',
-      render: (value) => value ? <Tag color="error">已超标</Tag> : <Tag>未超标</Tag>,
+      render: (value) => value ? <Tag color="error">是</Tag> : <Tag>否</Tag>,
     },
   ];
 
@@ -179,32 +191,55 @@ export default function EmployeeAssetApprovalPage() {
     <div className="min-h-screen bg-slate-100 p-4">
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div>
-          <Button icon={<ArrowLeft size={14} />} onClick={() => setSelectedId('')}>返回列表</Button>
+        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
+          <Typography.Title level={4} className="mb-0">资产申请审批</Typography.Title>
+          <Typography.Text type="secondary">申请单号：{selectedApplication.id}</Typography.Text>
         </div>
-        <Alert
-          type={selectedApplication.materials.some((item) => item.overStandard) ? 'warning' : 'info'}
-          showIcon
-          message={`申请单号：${selectedApplication.id}；当前节点：${selectedApplication.currentNode}`}
-          description={selectedApplication.materials.some((item) => item.overStandard)
-            ? '该申请包含个人超标资产，必须经过直属领导、5级及以上领导和7级及以上领导审批。'
-            : '该申请未发生个人超标。'}
-        />
+
         <ApplicantInfoCard applicant={selectedApplication.applicant} applyDate={selectedApplication.applyDate} />
+
         <Card title="申请资产信息" size="small">
-          <Table rowKey="id" columns={materialColumns} dataSource={selectedApplication.materials} pagination={false} scroll={{ x: 1000 }} />
+          <Table
+            rowKey="id"
+            columns={materialColumns}
+            dataSource={selectedApplication.materials}
+            pagination={false}
+            scroll={{ x: 1000 }}
+          />
         </Card>
+
         <ApprovalHistoryCard records={selectedApplication.approvalHistory} />
+
         {canApprove && (
           <Card title="当前审批操作" size="small">
             <TextArea rows={3} value={comment} placeholder="驳回时必填" onChange={(event) => setComment(event.target.value)} />
             <div className="mt-4 flex justify-center gap-3">
-              <Button danger icon={<XCircle size={14} />} loading={loading} onClick={() => handleDecision('驳回')}>驳回</Button>
               <Button type="primary" icon={<CheckCircle2 size={14} />} loading={loading} onClick={() => handleDecision('同意')}>同意</Button>
+              <Button danger icon={<XCircle size={14} />} loading={loading} onClick={() => handleDecision('驳回')}>驳回</Button>
+              <Button onClick={() => setSelectedId('')}>返回</Button>
+              <Button icon={<UserPlus size={14} />} onClick={() => setCountersignOpen(true)}>加签</Button>
             </div>
           </Card>
         )}
       </Space>
+
+      <Modal
+        title="加签"
+        open={countersignOpen}
+        onOk={handleCountersign}
+        onCancel={() => {
+          setCountersignOpen(false);
+          setCountersignPerson('');
+        }}
+        okText="确认加签"
+        cancelText="取消"
+      >
+        <Input
+          value={countersignPerson}
+          placeholder="请输入加签人员姓名或工号"
+          onChange={(event) => setCountersignPerson(event.target.value)}
+        />
+      </Modal>
     </div>
   );
 }
