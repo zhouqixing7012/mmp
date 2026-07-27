@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, FileText, Save, UploadCloud } from 'lucide-react';
+import { CheckCircle2, Download, FileText, Save, UploadCloud } from 'lucide-react';
 import { Button, Card, Empty, Input, Space, Table, Upload, message as antdMessage } from 'antd';
 import {
   DEPARTMENT_SUMMARY_ROWS,
@@ -10,6 +10,8 @@ import {
 } from '../mock/unifiedAssetSummaryMock';
 
 const { TextArea } = Input;
+const OVER_STANDARD_ROWS = [];
+const SIMPLE_EMPTY_TEXT = <div className="py-6 text-center text-sm text-slate-400">无展示数据</div>;
 
 function formatMoney(value) {
   return Number(value || 0).toLocaleString('zh-CN', {
@@ -22,6 +24,10 @@ function totalBy(rows, field) {
   return rows.reduce((sum, row) => sum + Number(row[field] || 0), 0);
 }
 
+function csvCell(value) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
 function PageHeader({ title }) {
   return (
     <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-800">
@@ -30,8 +36,6 @@ function PageHeader({ title }) {
     </div>
   );
 }
-
-const SIMPLE_EMPTY_TEXT = <div className="py-6 text-center text-sm text-slate-400">无展示数据</div>;
 
 export default function UnifiedAssetApplySummary() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
@@ -120,16 +124,15 @@ export default function UnifiedAssetApplySummary() {
   ];
 
   const applicationColumns = [
-    { title: '序号', dataIndex: 'index', width: 70, align: 'center' },
     { title: '申请人', dataIndex: 'applicant', width: 150 },
     { title: '物资类别', dataIndex: 'category', width: 180 },
-    { title: '资产说明', dataIndex: 'assetDesc', width: 220 },
-    { title: '配置', dataIndex: 'config', width: 100 },
-    { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
-    { title: '预计采购费用(元)', dataIndex: 'amount', width: 160, align: 'right', render: formatMoney },
+    { title: '物料说明', dataIndex: 'assetDesc', width: 220 },
+    { title: '配置', dataIndex: 'config', width: 120 },
+    { title: '采购数量', dataIndex: 'quantity', width: 100, align: 'center' },
+    { title: '预计费用(元)', dataIndex: 'amount', width: 150, align: 'right', render: formatMoney },
     { title: '详细说明', dataIndex: 'detail', width: 180 },
     { title: '在用资产', dataIndex: 'currentAssets', width: 100, align: 'center' },
-    { title: 'ES建议', dataIndex: 'esAdvice', width: 100, align: 'center' },
+    { title: 'ES建议', dataIndex: 'esAdvice', width: 120 },
   ];
 
   const currentUsageColumns = [
@@ -141,6 +144,33 @@ export default function UnifiedAssetApplySummary() {
     { title: '采购后人均用量', dataIndex: 'afterPurchasePerCapita', width: 150, align: 'center' },
     { title: '公司人均用量', dataIndex: 'companyPerCapita', width: 130, align: 'center' },
   ];
+
+  const handleExport = () => {
+    const rows = [...OVER_STANDARD_ROWS, ...NON_OVER_STANDARD_ROWS];
+    const headers = ['申请人', '物资类别', '物料说明', '配置', '采购数量', '预计费用(元)', '详细说明', '在用资产', 'ES建议'];
+    const csvRows = rows.map((row) => [
+      row.applicant,
+      row.category,
+      row.assetDesc,
+      row.config,
+      row.quantity,
+      Number(row.amount || 0).toFixed(2),
+      row.detail,
+      row.currentAssets,
+      row.esAdvice,
+    ]);
+    const csv = `\uFEFF${[headers, ...csvRows].map((row) => row.map(csvCell).join(',')).join('\n')}`;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = '统一申请汇总-申请明细.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    messageApi.success(`已导出 ${rows.length} 条申请明细`);
+  };
 
   const handleReject = (applicant) => {
     messageApi.warning(`${applicant} 已标记为驳回演示状态`);
@@ -195,25 +225,11 @@ export default function UnifiedAssetApplySummary() {
   const renderSummary = () => (
     <Space direction="vertical" size={16} className="w-full">
       <Card title="ES汇总说明" size="small">
-        <TextArea
-          rows={6}
-          value={summaryText}
-          onChange={(event) => setSummaryText(event.target.value)}
-          placeholder="请输入ES汇总说明"
-          maxLength={1000}
-          showCount
-        />
+        <TextArea rows={6} value={summaryText} onChange={(event) => setSummaryText(event.target.value)} placeholder="请输入ES汇总说明" maxLength={1000} showCount />
       </Card>
 
       <Card title="项目用途说明" size="small">
-        <TextArea
-          rows={4}
-          value={projectPurpose}
-          onChange={(event) => setProjectPurpose(event.target.value)}
-          placeholder="请输入项目用途说明"
-          maxLength={300}
-          showCount
-        />
+        <TextArea rows={4} value={projectPurpose} onChange={(event) => setProjectPurpose(event.target.value)} placeholder="请输入项目用途说明" maxLength={300} showCount />
         <div className="mt-2 text-sm text-red-500">备注：此信息会同步至PR系统。</div>
       </Card>
 
@@ -234,16 +250,12 @@ export default function UnifiedAssetApplySummary() {
         <div className="mt-2 text-sm text-red-500">此汇总申请中的价格仅供参考，最终采购价格以PR单为准。</div>
       </Card>
 
-      <Card title="超标申请" size="small">
-        <Table
-          rowKey="key"
-          columns={applicationColumns}
-          dataSource={[]}
-          pagination={false}
-          size="small"
-          scroll={{ x: 1300 }}
-          locale={{ emptyText: SIMPLE_EMPTY_TEXT }}
-        />
+      <Card
+        title="超标申请"
+        size="small"
+        extra={<Button icon={<Download size={14} />} onClick={handleExport}>导出</Button>}
+      >
+        <Table rowKey="key" columns={applicationColumns} dataSource={OVER_STANDARD_ROWS} pagination={false} size="small" scroll={{ x: 1250 }} locale={{ emptyText: SIMPLE_EMPTY_TEXT }} />
       </Card>
 
       <Card title="非超标申请" size="small">
@@ -253,13 +265,13 @@ export default function UnifiedAssetApplySummary() {
           dataSource={NON_OVER_STANDARD_ROWS}
           pagination={false}
           size="small"
-          scroll={{ x: 1300 }}
+          scroll={{ x: 1250 }}
           summary={() => (
             <Table.Summary.Row>
-              <Table.Summary.Cell index={0} colSpan={5} align="center">合计</Table.Summary.Cell>
-              <Table.Summary.Cell index={5} align="center">{nonOverTotals.quantity}</Table.Summary.Cell>
-              <Table.Summary.Cell index={6} align="right">{formatMoney(nonOverTotals.amount)}</Table.Summary.Cell>
-              <Table.Summary.Cell index={7} colSpan={3} />
+              <Table.Summary.Cell index={0} colSpan={4} align="center">合计</Table.Summary.Cell>
+              <Table.Summary.Cell index={4} align="center">{nonOverTotals.quantity}</Table.Summary.Cell>
+              <Table.Summary.Cell index={5} align="right">{formatMoney(nonOverTotals.amount)}</Table.Summary.Cell>
+              <Table.Summary.Cell index={6} colSpan={3} />
             </Table.Summary.Row>
           )}
         />
@@ -272,15 +284,7 @@ export default function UnifiedAssetApplySummary() {
       </Card>
 
       <Card title="部门现资产参考使用量" size="small">
-        <Table
-          rowKey="key"
-          columns={currentUsageColumns}
-          dataSource={[]}
-          pagination={false}
-          size="small"
-          scroll={{ x: 920 }}
-          locale={{ emptyText: SIMPLE_EMPTY_TEXT }}
-        />
+        <Table rowKey="key" columns={currentUsageColumns} dataSource={[]} pagination={false} size="small" scroll={{ x: 920 }} locale={{ emptyText: SIMPLE_EMPTY_TEXT }} />
       </Card>
 
       <Card size="small">
