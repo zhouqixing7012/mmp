@@ -125,6 +125,19 @@ export default function FrontDeskAssetClaim() {
               <Descriptions.Item label="申请日期">{application.applyDate}</Descriptions.Item>
               <Descriptions.Item label="成本中心">{application.costCenter}</Descriptions.Item>
               <Descriptions.Item label="部门" span={2}>{application.department}</Descriptions.Item>
+              <Descriptions.Item label={<><span className="text-red-500">*</span> 当前仓库</>}>
+                <Form.Item name="warehouse" rules={[{ required: true, message: '请选择当前仓库' }]} noStyle>
+                  <Select options={[
+                    { label: application.warehouse, value: application.warehouse },
+                    { label: 'I0020-资产集团备用库', value: 'I0020-资产集团备用库' },
+                  ]} />
+                </Form.Item>
+              </Descriptions.Item>
+              <Descriptions.Item label="单据备注" span={2}>
+                <Form.Item name="remark" noStyle>
+                  <TextArea rows={2} placeholder="请输入单据备注" />
+                </Form.Item>
+              </Descriptions.Item>
             </Descriptions>
           </Card>
 
@@ -146,32 +159,14 @@ export default function FrontDeskAssetClaim() {
               <Descriptions.Item label="公司">{selectedAsset.company}</Descriptions.Item>
               <Descriptions.Item label="板块">{selectedAsset.block}</Descriptions.Item>
               <Descriptions.Item label="启用日期">{selectedAsset.enabledDate}</Descriptions.Item>
-
-              <Descriptions.Item label={<><span className="text-red-500">*</span> 当前仓库</>}>
-                <Form.Item name="warehouse" rules={[{ required: true, message: '请选择当前仓库' }]} noStyle>
-                  <Select options={[
-                    { label: application.warehouse, value: application.warehouse },
-                    { label: 'I0020-资产集团备用库', value: 'I0020-资产集团备用库' },
-                  ]} />
-                </Form.Item>
-              </Descriptions.Item>
               <Descriptions.Item label={<><span className="text-red-500">*</span> 城市</>}>
                 <Form.Item name="city" rules={[{ required: true, message: '请选择城市' }]} noStyle>
-                  <Select
-                    allowClear
-                    options={cityOptions}
-                    onChange={() => form.setFieldsValue({ building: undefined, floor: undefined })}
-                  />
+                  <Select allowClear options={cityOptions} onChange={() => form.setFieldsValue({ building: undefined, floor: undefined })} />
                 </Form.Item>
               </Descriptions.Item>
               <Descriptions.Item label={<><span className="text-red-500">*</span> 建筑</>}>
                 <Form.Item name="building" rules={[{ required: true, message: '请选择建筑' }]} noStyle>
-                  <Select
-                    allowClear
-                    disabled={!city}
-                    options={buildingOptions}
-                    onChange={() => form.setFieldsValue({ floor: undefined })}
-                  />
+                  <Select allowClear disabled={!city} options={buildingOptions} onChange={() => form.setFieldsValue({ floor: undefined })} />
                 </Form.Item>
               </Descriptions.Item>
               <Descriptions.Item label={<><span className="text-red-500">*</span> 楼层</>}>
@@ -184,23 +179,16 @@ export default function FrontDeskAssetClaim() {
                   <Select options={['办公使用', '研发使用', '其他用途'].map((value) => ({ label: value, value }))} />
                 </Form.Item>
               </Descriptions.Item>
-              <Descriptions.Item label="使用说明">
+              <Descriptions.Item label="使用说明" span={2}>
                 <Form.Item name="usageDescription" noStyle>
                   <Input placeholder="请输入使用说明" />
                 </Form.Item>
               </Descriptions.Item>
-              <Descriptions.Item label="单据备注" span={3}>
-                <Form.Item name="remark" noStyle>
-                  <TextArea rows={2} placeholder="请输入单据备注" />
-                </Form.Item>
-              </Descriptions.Item>
-
               <Descriptions.Item label="实际盘点人">{selectedAsset.inventoryOwner}</Descriptions.Item>
               <Descriptions.Item label="盘点状态"><Tag color="error">{selectedAsset.inventoryStatus}</Tag></Descriptions.Item>
               <Descriptions.Item label="申请配置">{selectedAsset.applyConfiguration}</Descriptions.Item>
               <Descriptions.Item label="申请物资说明" span={2}>{selectedAsset.applyMaterialDescription}</Descriptions.Item>
-              <Descriptions.Item label="申请原因">{selectedAsset.applyReason}</Descriptions.Item>
-              <Descriptions.Item label="详细说明" span={3}>{selectedAsset.detailDescription || '-'}</Descriptions.Item>
+              <Descriptions.Item label="详细说明">{selectedAsset.detailDescription || '-'}</Descriptions.Item>
             </Descriptions>
           </Card>
 
