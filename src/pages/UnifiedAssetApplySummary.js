@@ -37,6 +37,14 @@ function PageHeader({ title }) {
   );
 }
 
+function ReadonlyText({ value }) {
+  return (
+    <div className="min-h-[96px] whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-700">
+      {value || '-'}
+    </div>
+  );
+}
+
 export default function UnifiedAssetApplySummary() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [currentView, setCurrentView] = useState('list');
@@ -181,7 +189,8 @@ export default function UnifiedAssetApplySummary() {
   };
 
   const handleSubmit = () => {
-    messageApi.success('统一申请汇总已提交至下一环节');
+    messageApi.success('统一申请汇总已提交至审批');
+    setCurrentView('approval');
   };
 
   const renderList = () => (
@@ -222,38 +231,31 @@ export default function UnifiedAssetApplySummary() {
     </Space>
   );
 
-  const renderSummary = () => (
-    <Space direction="vertical" size={16} className="w-full">
-      <Card title="ES汇总说明" size="small">
-        <TextArea rows={6} value={summaryText} onChange={(event) => setSummaryText(event.target.value)} placeholder="请输入ES汇总说明" maxLength={1000} showCount />
-      </Card>
+  const renderDepartmentSummary = () => (
+    <Card title="部门汇总信息" size="small">
+      <Table
+        rowKey="key"
+        columns={departmentColumns}
+        dataSource={DEPARTMENT_SUMMARY_ROWS}
+        pagination={false}
+        summary={() => (
+          <Table.Summary.Row>
+            <Table.Summary.Cell index={0} colSpan={2} align="center">合计</Table.Summary.Cell>
+            <Table.Summary.Cell index={2} align="center">{departmentTotals.quantity}</Table.Summary.Cell>
+            <Table.Summary.Cell index={3} align="right">{formatMoney(departmentTotals.amount)}</Table.Summary.Cell>
+          </Table.Summary.Row>
+        )}
+      />
+      <div className="mt-2 text-sm text-red-500">此汇总申请中的价格仅供参考，最终采购价格以PR单为准。</div>
+    </Card>
+  );
 
-      <Card title="项目用途说明" size="small">
-        <TextArea rows={4} value={projectPurpose} onChange={(event) => setProjectPurpose(event.target.value)} placeholder="请输入项目用途说明" maxLength={300} showCount />
-        <div className="mt-2 text-sm text-red-500">备注：此信息会同步至PR系统。</div>
-      </Card>
-
-      <Card title="部门汇总信息" size="small">
-        <Table
-          rowKey="key"
-          columns={departmentColumns}
-          dataSource={DEPARTMENT_SUMMARY_ROWS}
-          pagination={false}
-          summary={() => (
-            <Table.Summary.Row>
-              <Table.Summary.Cell index={0} colSpan={2} align="center">合计</Table.Summary.Cell>
-              <Table.Summary.Cell index={2} align="center">{departmentTotals.quantity}</Table.Summary.Cell>
-              <Table.Summary.Cell index={3} align="right">{formatMoney(departmentTotals.amount)}</Table.Summary.Cell>
-            </Table.Summary.Row>
-          )}
-        />
-        <div className="mt-2 text-sm text-red-500">此汇总申请中的价格仅供参考，最终采购价格以PR单为准。</div>
-      </Card>
-
+  const renderApplicationTables = (showExport) => (
+    <>
       <Card
         title="超标申请"
         size="small"
-        extra={<Button icon={<Download size={14} />} onClick={handleExport}>导出</Button>}
+        extra={showExport ? <Button icon={<Download size={14} />} onClick={handleExport}>导出</Button> : null}
       >
         <Table rowKey="key" columns={applicationColumns} dataSource={OVER_STANDARD_ROWS} pagination={false} size="small" scroll={{ x: 1250 }} locale={{ emptyText: SIMPLE_EMPTY_TEXT }} />
       </Card>
@@ -276,6 +278,28 @@ export default function UnifiedAssetApplySummary() {
           )}
         />
       </Card>
+    </>
+  );
+
+  const renderCurrentUsage = () => (
+    <Card title="部门现资产参考使用量" size="small">
+      <Table rowKey="key" columns={currentUsageColumns} dataSource={[]} pagination={false} size="small" scroll={{ x: 920 }} locale={{ emptyText: SIMPLE_EMPTY_TEXT }} />
+    </Card>
+  );
+
+  const renderSummary = () => (
+    <Space direction="vertical" size={16} className="w-full">
+      <Card title="ES汇总说明" size="small">
+        <TextArea rows={6} value={summaryText} onChange={(event) => setSummaryText(event.target.value)} placeholder="请输入ES汇总说明" maxLength={1000} showCount />
+      </Card>
+
+      <Card title="项目用途说明" size="small">
+        <TextArea rows={4} value={projectPurpose} onChange={(event) => setProjectPurpose(event.target.value)} placeholder="请输入项目用途说明" maxLength={300} showCount />
+        <div className="mt-2 text-sm text-red-500">备注：此信息会同步至PR系统。</div>
+      </Card>
+
+      {renderDepartmentSummary()}
+      {renderApplicationTables(true)}
 
       <Card title="附件信息" size="small">
         <Upload fileList={fileList} beforeUpload={() => false} onChange={({ fileList: nextFileList }) => setFileList(nextFileList)}>
@@ -283,9 +307,7 @@ export default function UnifiedAssetApplySummary() {
         </Upload>
       </Card>
 
-      <Card title="部门现资产参考使用量" size="small">
-        <Table rowKey="key" columns={currentUsageColumns} dataSource={[]} pagination={false} size="small" scroll={{ x: 920 }} locale={{ emptyText: SIMPLE_EMPTY_TEXT }} />
-      </Card>
+      {renderCurrentUsage()}
 
       <Card size="small">
         <div className="flex justify-center gap-3">
@@ -296,13 +318,46 @@ export default function UnifiedAssetApplySummary() {
     </Space>
   );
 
+  const renderApproval = () => (
+    <Space direction="vertical" size={16} className="w-full">
+      <Card title="ES汇总说明" size="small">
+        <ReadonlyText value={summaryText} />
+      </Card>
+
+      <Card title="项目用途说明" size="small">
+        <ReadonlyText value={projectPurpose} />
+        <div className="mt-2 text-sm text-red-500">备注：此信息会同步至PR系统。</div>
+      </Card>
+
+      {renderDepartmentSummary()}
+      {renderApplicationTables(false)}
+
+      <Card title="附件信息" size="small">
+        {fileList.length > 0 ? (
+          <div className="space-y-2 text-sm text-slate-700">
+            {fileList.map((file) => <div key={file.uid || file.name}>{file.name}</div>)}
+          </div>
+        ) : SIMPLE_EMPTY_TEXT}
+      </Card>
+
+      {renderCurrentUsage()}
+
+      <Card size="small">
+        <div className="flex justify-center">
+          <Button onClick={() => setCurrentView('summary')}>返回</Button>
+        </div>
+      </Card>
+    </Space>
+  );
+
   return (
     <div className="min-h-screen bg-slate-100 p-4">
       {contextHolder}
-      <PageHeader title="统一申请汇总" />
+      <PageHeader title={currentView === 'approval' ? '统一申请汇总审批' : '统一申请汇总'} />
       {currentView === 'list' && renderList()}
       {currentView === 'detail' && renderDetail()}
       {currentView === 'summary' && renderSummary()}
+      {currentView === 'approval' && renderApproval()}
     </div>
   );
 }
