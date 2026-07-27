@@ -5,13 +5,13 @@ import { BACKEND_CONFIG_MENU_ITEMS, MAIN_MENU_ITEMS } from '../config/menuConfig
 
 export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, onSubMenuSelect }) {
   return (
-    <div className="w-56 bg-[#001529] text-white flex flex-col transition-all duration-300 shadow-xl z-20 relative">
-      <div className="h-14 flex items-center gap-3 px-4 shadow-[0_1px_2px_rgba(0,0,0,0.3)] z-10 bg-[#002140]">
+    <div className="w-56 min-h-0 bg-[#001529] text-white flex flex-col transition-all duration-300 shadow-xl z-20 relative">
+      <div className="h-14 shrink-0 flex items-center gap-3 px-4 shadow-[0_1px_2px_rgba(0,0,0,0.3)] z-10 bg-[#002140]">
         <div className="w-8 h-8 rounded bg-[#1677ff] text-white flex items-center justify-center font-bold text-lg shadow-sm">E</div>
         <span className="font-semibold text-base tracking-wide text-white">企业资产管理系统</span>
       </div>
 
-      <div className="py-4 px-5 border-b border-white/10 flex flex-col gap-1 text-sm bg-[#001529]">
+      <div className="shrink-0 py-4 px-5 border-b border-white/10 flex flex-col gap-1 text-sm bg-[#001529]">
         <div className="flex items-center gap-2 text-gray-300">
           <User size={14} />
           <span className="font-medium text-white">系统管理员 (admin)</span>
@@ -19,7 +19,7 @@ export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, 
         <div className="text-gray-400 text-xs ml-5">2026年05月27日 星期三</div>
       </div>
 
-      <div className="flex-1 py-2">
+      <div className="min-h-0 flex-1 overflow-y-auto py-2">
         <div>
           <div
             className="flex items-center justify-between px-5 py-3 cursor-pointer text-sm text-gray-300 hover:text-white hover:bg-white/5"
