@@ -261,8 +261,8 @@ export default function EmployeeAssetApplyPage() {
           className="mb-4"
           type="error"
           showIcon
-          message={`当前有 ${overStandardCount} 条申请物资已超标`}
-          description="超标申请提交后将进入超标审批流程，请确认申请内容无误后再提交。"
+          message={`当前有 ${overStandardCount} 条申请物资超标`}
+          description="超标资产申请将自动提交至部门 7 级及以上领导审批，请确认申请内容无误后再提交。"
         />
       )}
       <Card
