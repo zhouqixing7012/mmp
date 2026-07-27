@@ -74,15 +74,21 @@ export default function UnifiedAssetApplySummary() {
     []
   );
 
+  const openSummaryDetail = () => setCurrentView('detail');
+
   const listColumns = [
-    { title: '申请部门', dataIndex: 'department' },
+    {
+      title: '申请部门',
+      dataIndex: 'department',
+      render: (value) => <Button type="link" className="p-0" onClick={openSummaryDetail}>{value}</Button>,
+    },
     { title: '申请数量', dataIndex: 'quantity', width: 120, align: 'center' },
     { title: '汇总时间', dataIndex: 'summaryTime', width: 180 },
     {
       title: '操作',
       width: 120,
       align: 'center',
-      render: () => <Button type="link" onClick={() => setCurrentView('detail')}>查看</Button>,
+      render: () => <Button type="link" onClick={openSummaryDetail}>查看</Button>,
     },
   ];
 
@@ -252,11 +258,13 @@ export default function UnifiedAssetApplySummary() {
 
   const renderApplicationTables = (showExport) => (
     <>
-      <Card
-        title="超标申请"
-        size="small"
-        extra={showExport ? <Button icon={<Download size={14} />} onClick={handleExport}>导出</Button> : null}
-      >
+      {showExport && (
+        <div className="flex justify-end">
+          <Button icon={<Download size={14} />} onClick={handleExport}>导出申请明细</Button>
+        </div>
+      )}
+
+      <Card title="超标申请" size="small">
         <Table rowKey="key" columns={applicationColumns} dataSource={OVER_STANDARD_ROWS} pagination={false} size="small" scroll={{ x: 1250 }} locale={{ emptyText: SIMPLE_EMPTY_TEXT }} />
       </Card>
 
