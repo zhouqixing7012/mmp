@@ -290,17 +290,19 @@ export default function EmployeeAssetAllocationPage() {
               <Typography.Text strong>ES 建议：</Typography.Text>
               <TextArea className="mt-2" rows={4} maxLength={400} showCount value={esComment} placeholder="请输入 ES 建议，最多400字" onChange={(event) => setEsComment(event.target.value)} />
             </div>
-
-            <div className="flex justify-center gap-3">
-              <Button type="primary" icon={<CheckCircle2 size={14} />} loading={submitting} onClick={submitAllocation}>同意</Button>
-              <Button danger icon={<XCircle size={14} />} onClick={rejectAllocation}>驳回</Button>
-              <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
-              <Button icon={<UserPlus size={14} />} onClick={() => setCountersignOpen(true)}>加签</Button>
-            </div>
           </Space>
         </Card>
 
         <ApprovalHistoryCard records={sourceApplication?.approvalHistory || []} />
+
+        <Card title="审批操作" size="small">
+          <div className="flex justify-center gap-3">
+            <Button type="primary" icon={<CheckCircle2 size={14} />} loading={submitting} onClick={submitAllocation}>同意</Button>
+            <Button danger icon={<XCircle size={14} />} onClick={rejectAllocation}>驳回</Button>
+            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+            <Button icon={<UserPlus size={14} />} onClick={() => setCountersignOpen(true)}>加签</Button>
+          </div>
+        </Card>
       </Space>
 
       <Modal title="员工名下资产明细" open={applicantAssetsOpen} width={1180} footer={null} onCancel={() => setApplicantAssetsOpen(false)}>
