@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { CheckCircle2, UserPlus, XCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
+  Empty,
   Input,
   Modal,
   Space,
@@ -11,7 +13,6 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
-import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { CURRENT_EMPLOYEE } from '../../mock/employeeSelfServiceMock';
 import {
   getEmployeeSelfServiceApplications,
@@ -34,24 +35,18 @@ function nowText() {
 }
 
 export default function EmployeeAssetApprovalPage() {
+  const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [applications, setApplications] = useState(() => getEmployeeSelfServiceApplications());
-  const [selectedId, setSelectedId] = useState('');
-  const [keyword, setKeyword] = useState('');
-  const [queryKeyword, setQueryKeyword] = useState('');
   const [comment, setComment] = useState('同意');
   const [loading, setLoading] = useState(false);
   const [countersignOpen, setCountersignOpen] = useState(false);
   const [countersignPerson, setCountersignPerson] = useState('');
 
-  const selectedApplication = applications.find((item) => item.id === selectedId);
-  const filteredApplications = useMemo(() => applications.filter((item) => {
-    const text = queryKeyword.trim().toLowerCase();
-    if (!text) return true;
-    return item.id.toLowerCase().includes(text)
-      || item.applicant.name.toLowerCase().includes(text)
-      || item.currentNode.toLowerCase().includes(text);
-  }), [applications, queryKeyword]);
+  const selectedApplication = useMemo(() => (
+    applications.find((item) => item.status === '处理中' && item.currentNode !== '资产配给')
+      || applications[0]
+  ), [applications]);
 
   const refresh = () => setApplications(getEmployeeSelfServiceApplications());
 
@@ -126,31 +121,6 @@ export default function EmployeeAssetApprovalPage() {
     setCountersignOpen(false);
   };
 
-  const listColumns = [
-    { title: '申请单号', dataIndex: 'id', width: 200 },
-    { title: '申请人', dataIndex: ['applicant', 'name'], width: 120 },
-    { title: '申请日期', dataIndex: 'applyDate', width: 120 },
-    {
-      title: '申请数量',
-      width: 100,
-      align: 'center',
-      render: (_, record) => record.materials.reduce((sum, item) => sum + item.quantity, 0),
-    },
-    {
-      title: '当前节点',
-      dataIndex: 'currentNode',
-      width: 160,
-      render: (value) => <Tag color={value === '资产配给' ? 'success' : 'processing'}>{value}</Tag>,
-    },
-    { title: '任务状态', dataIndex: 'taskStatus', width: 120 },
-    {
-      title: '操作',
-      width: 100,
-      align: 'center',
-      render: (_, record) => <Button type="link" onClick={() => setSelectedId(record.id)}>处理</Button>,
-    },
-  ];
-
   const materialColumns = [
     { title: '资产说明', dataIndex: 'assetDesc', width: 220 },
     { title: '配置', dataIndex: 'config', width: 220 },
@@ -162,7 +132,7 @@ export default function EmployeeAssetApprovalPage() {
       dataIndex: 'overStandard',
       width: 100,
       align: 'center',
-      render: (value) => value ? <Tag color="error">是</Tag> : <Tag>否</Tag>,
+      render: (value) => value ? <Tag color="error">已超标</Tag> : <Tag>未超标</Tag>,
     },
   ];
 
@@ -170,16 +140,11 @@ export default function EmployeeAssetApprovalPage() {
     return (
       <div className="min-h-screen bg-slate-100 p-4">
         {contextHolder}
-        <QueryBar
-          onQuery={() => setQueryKeyword(keyword)}
-          onReset={() => { setKeyword(''); setQueryKeyword(''); }}
-        >
-          <QueryItem label="申请单号/人员">
-            <Input value={keyword} placeholder="请输入关键字" onChange={(event) => setKeyword(event.target.value)} />
-          </QueryItem>
-        </QueryBar>
-        <Card title="员工自助新版-资产申请审批">
-          <Table rowKey="id" columns={listColumns} dataSource={filteredApplications} pagination={{ pageSize: 10 }} />
+        <Card>
+          <Empty description="暂无待审批申请" />
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+          </div>
         </Card>
       </div>
     );
@@ -216,7 +181,7 @@ export default function EmployeeAssetApprovalPage() {
             <div className="mt-4 flex justify-center gap-3">
               <Button type="primary" icon={<CheckCircle2 size={14} />} loading={loading} onClick={() => handleDecision('同意')}>同意</Button>
               <Button danger icon={<XCircle size={14} />} loading={loading} onClick={() => handleDecision('驳回')}>驳回</Button>
-              <Button onClick={() => setSelectedId('')}>返回</Button>
+              <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
               <Button icon={<UserPlus size={14} />} onClick={() => setCountersignOpen(true)}>加签</Button>
             </div>
           </Card>
