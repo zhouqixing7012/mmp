@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Button, Card, Descriptions, Form, Input, Modal, Radio, Select, Space, Table, Tag, Typography, message as antdMessage } from 'antd';
-import { BellRing, Building2, MapPin, PackageCheck, Search, UserRound } from 'lucide-react';
+import { BellRing, PackageCheck, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import QueryBar, { QueryItem } from '../components/QueryBar';
 import {
@@ -111,30 +111,11 @@ export default function FrontDeskAssetClaim() {
       >
         <Space direction="vertical" size={16} className="w-full">
           <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                <PackageCheck size={20} />
-              </div>
-              <div>
-                <Typography.Title level={4} className="mb-0">ES前台领用</Typography.Title>
-                <Typography.Text type="secondary">核对申请信息、匹配资产并维护实际领用地点</Typography.Text>
-              </div>
-            </div>
+            <Typography.Title level={4} className="mb-0">ES前台领用</Typography.Title>
             <Typography.Text type="secondary">申请单号：{application.applicationNo}</Typography.Text>
           </div>
 
-          <Card title={<Space><UserRound size={16} />申请人信息</Space>} size="small">
-            <div className="grid grid-cols-3 gap-x-6">
-              <Form.Item label="当前仓库" name="warehouse" rules={[{ required: true, message: '请选择当前仓库' }]}>
-                <Select options={[
-                  { label: application.warehouse, value: application.warehouse },
-                  { label: 'I0020-资产集团备用库', value: 'I0020-资产集团备用库' },
-                ]} />
-              </Form.Item>
-              <Form.Item label="单据备注" name="remark" className="col-span-2">
-                <TextArea rows={1} autoSize={{ minRows: 1, maxRows: 3 }} placeholder="请输入单据备注" />
-              </Form.Item>
-            </div>
+          <Card title="申请人信息" size="small">
             <Descriptions bordered column={3} size="small">
               <Descriptions.Item label="申请人">{application.applicant}</Descriptions.Item>
               <Descriptions.Item label="联系电话">{application.phone}</Descriptions.Item>
@@ -147,71 +128,79 @@ export default function FrontDeskAssetClaim() {
             </Descriptions>
           </Card>
 
-          <Card title={<Space><PackageCheck size={16} />申请资产信息</Space>} size="small">
-            <div className="mb-4 grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <Form.Item label="资产标签号" name="assetTag" rules={[{ required: true, message: '请选择资产标签号' }]} className="mb-0">
-                <Space.Compact className="w-full">
-                  <Input readOnly value={selectedAsset?.tag || ''} placeholder="请选择资产标签号" />
-                  <Button icon={<Search size={14} />} onClick={() => setAssetOpen(true)} />
-                </Space.Compact>
-              </Form.Item>
-              <div>
-                <Typography.Text type="secondary">资产说明</Typography.Text>
-                <div className="mt-2 text-sm text-slate-800">{selectedAsset.description}</div>
-              </div>
-              <div>
-                <Typography.Text type="secondary">所在仓库</Typography.Text>
-                <div className="mt-2 text-sm text-slate-800">{selectedAsset.warehouse}</div>
-              </div>
-            </div>
-
+          <Card title="申请资产信息" size="small">
             <Descriptions bordered column={3} size="small">
+              <Descriptions.Item label={<><span className="text-red-500">*</span> 资产标签号</>}>
+                <Form.Item name="assetTag" rules={[{ required: true, message: '请选择资产标签号' }]} noStyle>
+                  <Space.Compact className="w-full">
+                    <Input readOnly value={selectedAsset?.tag || ''} placeholder="请选择资产标签号" />
+                    <Button icon={<Search size={14} />} onClick={() => setAssetOpen(true)} />
+                  </Space.Compact>
+                </Form.Item>
+              </Descriptions.Item>
               <Descriptions.Item label="序列号">{selectedAsset.serialNumber}</Descriptions.Item>
+              <Descriptions.Item label="所在仓库">{selectedAsset.warehouse}</Descriptions.Item>
+              <Descriptions.Item label="资产说明">{selectedAsset.description}</Descriptions.Item>
+              <Descriptions.Item label="配置">{selectedAsset.configuration}</Descriptions.Item>
               <Descriptions.Item label="部件数量">{selectedAsset.spareQuantity}</Descriptions.Item>
-              <Descriptions.Item label="启用日期">{selectedAsset.enabledDate}</Descriptions.Item>
               <Descriptions.Item label="公司">{selectedAsset.company}</Descriptions.Item>
               <Descriptions.Item label="板块">{selectedAsset.block}</Descriptions.Item>
-              <Descriptions.Item label="配置">{selectedAsset.configuration}</Descriptions.Item>
-            </Descriptions>
-          </Card>
+              <Descriptions.Item label="启用日期">{selectedAsset.enabledDate}</Descriptions.Item>
 
-          <Card title={<Space><MapPin size={16} />实际领用信息</Space>} size="small">
-            <div className="grid grid-cols-3 gap-x-6">
-              <Form.Item label="城市" name="city" rules={[{ required: true, message: '请选择城市' }]}>
-                <Select
-                  allowClear
-                  options={cityOptions}
-                  onChange={() => form.setFieldsValue({ building: undefined, floor: undefined })}
-                />
-              </Form.Item>
-              <Form.Item label="建筑" name="building" rules={[{ required: true, message: '请选择建筑' }]}>
-                <Select
-                  allowClear
-                  disabled={!city}
-                  options={buildingOptions}
-                  onChange={() => form.setFieldsValue({ floor: undefined })}
-                />
-              </Form.Item>
-              <Form.Item label="楼层" name="floor" rules={[{ required: true, message: '请选择楼层' }]}>
-                <Select allowClear disabled={!building} options={floorOptions} />
-              </Form.Item>
-              <Form.Item label="资产用途" name="purpose" rules={[{ required: true, message: '请选择资产用途' }]}>
-                <Select options={['办公使用', '研发使用', '其他用途'].map((value) => ({ label: value, value }))} />
-              </Form.Item>
-              <Form.Item label="使用说明" name="usageDescription" className="col-span-2">
-                <Input placeholder="请输入使用说明" />
-              </Form.Item>
-            </div>
-          </Card>
+              <Descriptions.Item label={<><span className="text-red-500">*</span> 当前仓库</>}>
+                <Form.Item name="warehouse" rules={[{ required: true, message: '请选择当前仓库' }]} noStyle>
+                  <Select options={[
+                    { label: application.warehouse, value: application.warehouse },
+                    { label: 'I0020-资产集团备用库', value: 'I0020-资产集团备用库' },
+                  ]} />
+                </Form.Item>
+              </Descriptions.Item>
+              <Descriptions.Item label={<><span className="text-red-500">*</span> 城市</>}>
+                <Form.Item name="city" rules={[{ required: true, message: '请选择城市' }]} noStyle>
+                  <Select
+                    allowClear
+                    options={cityOptions}
+                    onChange={() => form.setFieldsValue({ building: undefined, floor: undefined })}
+                  />
+                </Form.Item>
+              </Descriptions.Item>
+              <Descriptions.Item label={<><span className="text-red-500">*</span> 建筑</>}>
+                <Form.Item name="building" rules={[{ required: true, message: '请选择建筑' }]} noStyle>
+                  <Select
+                    allowClear
+                    disabled={!city}
+                    options={buildingOptions}
+                    onChange={() => form.setFieldsValue({ floor: undefined })}
+                  />
+                </Form.Item>
+              </Descriptions.Item>
+              <Descriptions.Item label={<><span className="text-red-500">*</span> 楼层</>}>
+                <Form.Item name="floor" rules={[{ required: true, message: '请选择楼层' }]} noStyle>
+                  <Select allowClear disabled={!building} options={floorOptions} />
+                </Form.Item>
+              </Descriptions.Item>
+              <Descriptions.Item label={<><span className="text-red-500">*</span> 资产用途</>}>
+                <Form.Item name="purpose" rules={[{ required: true, message: '请选择资产用途' }]} noStyle>
+                  <Select options={['办公使用', '研发使用', '其他用途'].map((value) => ({ label: value, value }))} />
+                </Form.Item>
+              </Descriptions.Item>
+              <Descriptions.Item label="使用说明">
+                <Form.Item name="usageDescription" noStyle>
+                  <Input placeholder="请输入使用说明" />
+                </Form.Item>
+              </Descriptions.Item>
+              <Descriptions.Item label="单据备注" span={3}>
+                <Form.Item name="remark" noStyle>
+                  <TextArea rows={2} placeholder="请输入单据备注" />
+                </Form.Item>
+              </Descriptions.Item>
 
-          <Card title={<Space><Building2 size={16} />申请参考信息</Space>} size="small">
-            <Descriptions bordered column={2} size="small">
               <Descriptions.Item label="实际盘点人">{selectedAsset.inventoryOwner}</Descriptions.Item>
               <Descriptions.Item label="盘点状态"><Tag color="error">{selectedAsset.inventoryStatus}</Tag></Descriptions.Item>
-              <Descriptions.Item label="申请配置" span={2}>{selectedAsset.applyConfiguration}</Descriptions.Item>
+              <Descriptions.Item label="申请配置">{selectedAsset.applyConfiguration}</Descriptions.Item>
               <Descriptions.Item label="申请物资说明" span={2}>{selectedAsset.applyMaterialDescription}</Descriptions.Item>
-              <Descriptions.Item label="申请原因" span={2}>{selectedAsset.applyReason}</Descriptions.Item>
-              <Descriptions.Item label="详细说明" span={2}>{selectedAsset.detailDescription || '-'}</Descriptions.Item>
+              <Descriptions.Item label="申请原因">{selectedAsset.applyReason}</Descriptions.Item>
+              <Descriptions.Item label="详细说明" span={3}>{selectedAsset.detailDescription || '-'}</Descriptions.Item>
             </Descriptions>
           </Card>
 
