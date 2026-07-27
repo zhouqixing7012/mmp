@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle2, FileText, Save, UploadCloud } from 'lucide-react';
-import { Button, Card, Empty, Input, Space, Table, Tabs, Upload, message as antdMessage } from 'antd';
+import { CheckCircle2, FileText, Save, UploadCloud } from 'lucide-react';
+import { Button, Card, Empty, Input, Space, Table, Upload, message as antdMessage } from 'antd';
 import {
   DEPARTMENT_SUMMARY_ROWS,
   NON_OVER_STANDARD_ROWS,
@@ -22,14 +22,11 @@ function totalBy(rows, field) {
   return rows.reduce((sum, row) => sum + Number(row[field] || 0), 0);
 }
 
-function PageHeader({ title, children }) {
+function PageHeader({ title }) {
   return (
-    <div className="mb-4 flex items-center justify-between">
-      <div className="flex items-center gap-2 text-lg font-semibold text-slate-800">
-        <FileText size={20} className="text-blue-600" />
-        {title}
-      </div>
-      {children}
+    <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-800">
+      <FileText size={20} className="text-blue-600" />
+      {title}
     </div>
   );
 }
@@ -38,7 +35,14 @@ export default function UnifiedAssetApplySummary() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [currentView, setCurrentView] = useState('list');
   const [projectPurpose, setProjectPurpose] = useState('');
+  const [summaryText, setSummaryText] = useState(SUMMARY_TEXT.join('\n'));
   const [fileList, setFileList] = useState([]);
+  const [detailRows, setDetailRows] = useState(() => (
+    UNIFIED_SUMMARY_APPLICANTS.map((record) => ({
+      ...record,
+      items: record.items.map((item) => ({ ...item })),
+    }))
+  ));
 
   const departmentTotals = useMemo(
     () => ({
@@ -64,15 +68,24 @@ export default function UnifiedAssetApplySummary() {
       title: '操作',
       width: 120,
       align: 'center',
-      render: () => (
-        <Button type="link" onClick={() => setCurrentView('detail')}>
-          查看
-        </Button>
-      ),
+      render: () => <Button type="link" onClick={() => setCurrentView('detail')}>查看</Button>,
     },
   ];
 
-  const detailColumns = [
+  const updateEsAdvice = (recordKey, itemKey, value) => {
+    setDetailRows((current) => current.map((record) => (
+      record.key === recordKey
+        ? {
+          ...record,
+          items: record.items.map((item) => (
+            item.key === itemKey ? { ...item, esAdvice: value } : item
+          )),
+        }
+        : record
+    )));
+  };
+
+  const detailColumns = (recordKey) => [
     { title: '物料小类', dataIndex: 'category', width: 180 },
     { title: '资产说明', dataIndex: 'assetDesc', width: 220 },
     { title: '配置', dataIndex: 'config', width: 100 },
@@ -80,7 +93,21 @@ export default function UnifiedAssetApplySummary() {
     { title: '价格', dataIndex: 'price', width: 100, align: 'right', render: formatMoney },
     { title: '超标', dataIndex: 'overStandard', width: 80, align: 'center' },
     { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
-    { title: 'ES建议', dataIndex: 'esAdvice', width: 100, align: 'center' },
+    {
+      title: 'ES建议',
+      dataIndex: 'esAdvice',
+      width: 260,
+      render: (value, item) => (
+        <TextArea
+          value={value}
+          rows={3}
+          maxLength={400}
+          showCount
+          placeholder="请输入ES建议，最多400字"
+          onChange={(event) => updateEsAdvice(recordKey, item.key, event.target.value)}
+        />
+      ),
+    },
   ];
 
   const departmentColumns = [
@@ -90,7 +117,7 @@ export default function UnifiedAssetApplySummary() {
     { title: '预计采购费用(元)', dataIndex: 'amount', width: 180, align: 'right', render: formatMoney },
   ];
 
-  const nonOverColumns = [
+  const applicationColumns = [
     { title: '序号', dataIndex: 'index', width: 70, align: 'center' },
     { title: '申请人', dataIndex: 'applicant', width: 150 },
     { title: '物资类别', dataIndex: 'category', width: 180 },
@@ -116,34 +143,20 @@ export default function UnifiedAssetApplySummary() {
   };
 
   const renderList = () => (
-    <Card>
-      <Tabs
-        activeKey="summary"
-        items={[
-          { key: 'myAsset', label: '我的资产', children: null },
-          { key: 'transfer', label: '转移', children: null },
-          { key: 'scrap', label: '报废', children: null },
-          {
-            key: 'summary',
-            label: '统一申请汇总-资产',
-            children: (
-              <Table
-                rowKey="id"
-                columns={listColumns}
-                dataSource={UNIFIED_SUMMARY_LIST}
-                pagination={false}
-                locale={{ emptyText: <Empty description="暂无汇总数据" /> }}
-              />
-            ),
-          },
-        ]}
+    <Card title="按一级部门汇总的汇总单列表">
+      <Table
+        rowKey="id"
+        columns={listColumns}
+        dataSource={UNIFIED_SUMMARY_LIST}
+        pagination={false}
+        locale={{ emptyText: <Empty description="暂无汇总数据" /> }}
       />
     </Card>
   );
 
   const renderDetail = () => (
     <Space direction="vertical" size={16} className="w-full">
-      {UNIFIED_SUMMARY_APPLICANTS.map((record) => (
+      {detailRows.map((record) => (
         <Card key={record.key} size="small">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-700">
             <Space wrap>
@@ -151,25 +164,17 @@ export default function UnifiedAssetApplySummary() {
               <span>申请单号：{record.formNo}</span>
               <span>申请部门：{record.department}</span>
             </Space>
-            <Button danger onClick={() => handleReject(record.applicant)}>
-              驳回
-            </Button>
+            <Button danger onClick={() => handleReject(record.applicant)}>驳回</Button>
           </div>
-          <Table rowKey="key" columns={detailColumns} dataSource={record.items} pagination={false} size="small" />
+          <Table rowKey="key" columns={detailColumns(record.key)} dataSource={record.items} pagination={false} size="small" scroll={{ x: 1200 }} />
         </Card>
       ))}
 
       <Card size="small">
-        <div className="flex justify-end gap-2">
-          <Button type="primary" onClick={() => setCurrentView('summary')}>
-            下一步
-          </Button>
-          <Button icon={<Save size={14} />} onClick={handleSave}>
-            保存
-          </Button>
-          <Button icon={<ArrowLeft size={14} />} onClick={() => setCurrentView('list')}>
-            返回
-          </Button>
+        <div className="flex justify-center gap-3">
+          <Button type="primary" onClick={() => setCurrentView('summary')}>下一步</Button>
+          <Button icon={<Save size={14} />} onClick={handleSave}>保存</Button>
+          <Button onClick={() => setCurrentView('list')}>返回</Button>
         </div>
       </Card>
     </Space>
@@ -178,13 +183,14 @@ export default function UnifiedAssetApplySummary() {
   const renderSummary = () => (
     <Space direction="vertical" size={16} className="w-full">
       <Card title="ES汇总说明" size="small">
-        <div className="rounded-md bg-slate-50 p-4 text-sm leading-7 text-slate-700">
-          {SUMMARY_TEXT.map((text) => (
-            <p key={text} className="m-0">
-              {text}
-            </p>
-          ))}
-        </div>
+        <TextArea
+          rows={6}
+          value={summaryText}
+          onChange={(event) => setSummaryText(event.target.value)}
+          placeholder="请输入ES汇总说明"
+          maxLength={1000}
+          showCount
+        />
       </Card>
 
       <Card title="项目用途说明" size="small">
@@ -207,15 +213,9 @@ export default function UnifiedAssetApplySummary() {
           pagination={false}
           summary={() => (
             <Table.Summary.Row>
-              <Table.Summary.Cell index={0} colSpan={2} align="center">
-                合计
-              </Table.Summary.Cell>
-              <Table.Summary.Cell index={2} align="center">
-                {departmentTotals.quantity}
-              </Table.Summary.Cell>
-              <Table.Summary.Cell index={3} align="right">
-                {formatMoney(departmentTotals.amount)}
-              </Table.Summary.Cell>
+              <Table.Summary.Cell index={0} colSpan={2} align="center">合计</Table.Summary.Cell>
+              <Table.Summary.Cell index={2} align="center">{departmentTotals.quantity}</Table.Summary.Cell>
+              <Table.Summary.Cell index={3} align="right">{formatMoney(departmentTotals.amount)}</Table.Summary.Cell>
             </Table.Summary.Row>
           )}
         />
@@ -223,28 +223,30 @@ export default function UnifiedAssetApplySummary() {
       </Card>
 
       <Card title="超标申请" size="small">
-        <Empty description="暂无超标申请" />
+        <Table
+          rowKey="key"
+          columns={applicationColumns}
+          dataSource={[]}
+          pagination={false}
+          size="small"
+          scroll={{ x: 1300 }}
+          locale={{ emptyText: <Empty description="暂无超标申请" /> }}
+        />
       </Card>
 
       <Card title="非超标申请" size="small">
         <Table
           rowKey="key"
-          columns={nonOverColumns}
+          columns={applicationColumns}
           dataSource={NON_OVER_STANDARD_ROWS}
           pagination={false}
           size="small"
           scroll={{ x: 1300 }}
           summary={() => (
             <Table.Summary.Row>
-              <Table.Summary.Cell index={0} colSpan={5} align="center">
-                合计
-              </Table.Summary.Cell>
-              <Table.Summary.Cell index={5} align="center">
-                {nonOverTotals.quantity}
-              </Table.Summary.Cell>
-              <Table.Summary.Cell index={6} align="right">
-                {formatMoney(nonOverTotals.amount)}
-              </Table.Summary.Cell>
+              <Table.Summary.Cell index={0} colSpan={5} align="center">合计</Table.Summary.Cell>
+              <Table.Summary.Cell index={5} align="center">{nonOverTotals.quantity}</Table.Summary.Cell>
+              <Table.Summary.Cell index={6} align="right">{formatMoney(nonOverTotals.amount)}</Table.Summary.Cell>
               <Table.Summary.Cell index={7} colSpan={3} />
             </Table.Summary.Row>
           )}
@@ -252,11 +254,7 @@ export default function UnifiedAssetApplySummary() {
       </Card>
 
       <Card title="附件信息" size="small">
-        <Upload
-          fileList={fileList}
-          beforeUpload={() => false}
-          onChange={({ fileList: nextFileList }) => setFileList(nextFileList)}
-        >
+        <Upload fileList={fileList} beforeUpload={() => false} onChange={({ fileList: nextFileList }) => setFileList(nextFileList)}>
           <Button icon={<UploadCloud size={14} />}>上传附件</Button>
         </Upload>
       </Card>
@@ -266,10 +264,8 @@ export default function UnifiedAssetApplySummary() {
       </Card>
 
       <Card size="small">
-        <div className="flex justify-end gap-2">
-          <Button type="primary" icon={<CheckCircle2 size={14} />} onClick={handleSubmit}>
-            提交
-          </Button>
+        <div className="flex justify-center gap-3">
+          <Button type="primary" icon={<CheckCircle2 size={14} />} onClick={handleSubmit}>提交</Button>
           <Button onClick={() => setCurrentView('detail')}>修改</Button>
         </div>
       </Card>
@@ -279,13 +275,7 @@ export default function UnifiedAssetApplySummary() {
   return (
     <div className="min-h-screen bg-slate-100 p-4">
       {contextHolder}
-      <PageHeader title="统一申请汇总">
-        {currentView !== 'list' && (
-          <Button icon={<ArrowLeft size={14} />} onClick={() => setCurrentView(currentView === 'summary' ? 'detail' : 'list')}>
-            返回上一步
-          </Button>
-        )}
-      </PageHeader>
+      <PageHeader title="统一申请汇总" />
       {currentView === 'list' && renderList()}
       {currentView === 'detail' && renderDetail()}
       {currentView === 'summary' && renderSummary()}
