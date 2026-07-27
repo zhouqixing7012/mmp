@@ -5,16 +5,17 @@ import {
   Button,
   Card,
   Empty,
-  Form,
   Input,
   Modal,
   Radio,
+  Select,
   Space,
   Table,
   Tag,
   Typography,
   message as antdMessage,
 } from 'antd';
+import QueryBar, { QueryItem } from '../../components/QueryBar';
 import {
   ALLOCATABLE_ASSETS,
   APPLICANT_CURRENT_ASSETS,
@@ -31,15 +32,24 @@ import ApprovalHistoryCard from './ApprovalHistoryCard';
 
 const { TextArea } = Input;
 
+const EMPTY_MATCH_QUERY = { assetTag: '', serialNo: '', block: '', assetDesc: '' };
+const EMPTY_APPLICANT_QUERY = {
+  assetTag: '',
+  materialType: '',
+  assetStatus: '',
+  assetDesc: '',
+  assetPurpose: '',
+  locked: '',
+};
+
 function enrichAsset(asset, index) {
-  const [assetCategory = '电脑整机', assetSubCategory = '笔记本-技术笔记本'] = asset.assetDesc.split('.');
-  const brand = asset.assetDesc.split('.')[1] || '联想';
+  const parts = asset.assetDesc.split('.');
   return {
     ...asset,
     serialNo: `SN${String(index + 1).padStart(8, '0')}`,
-    assetCategory,
-    assetSubCategory,
-    brand,
+    assetCategory: parts[0] || '电脑整机',
+    assetSubCategory: parts[1] || '笔记本-技术笔记本',
+    brand: parts[1] || '联想',
     quantity: 1,
     originalValue: [9667.47, 9310.79, 6538.46, 8102.56][index] || 5512.82,
     responsiblePerson: index % 2 === 0 ? 'SOHU01-库房管理员' : '213852-孙志强',
@@ -57,6 +67,8 @@ function enrichApplicantAsset(asset, index) {
     assetSubCategory: parts[1] || '笔记本-技术笔记本',
     quantity: 1,
     component: index % 2 === 0 ? '-' : '内存/硬盘',
+    assetPurpose: index % 2 === 0 ? '员工用机' : '日常办公',
+    locked: index % 2 === 0 ? '否' : '是',
   };
 }
 
@@ -70,13 +82,13 @@ export default function EmployeeAssetAllocationPage() {
   const [matchModalOpen, setMatchModalOpen] = useState(false);
   const [assetListOpen, setAssetListOpen] = useState(false);
   const [applicantAssetsOpen, setApplicantAssetsOpen] = useState(false);
-  const [applicantAssetKeyword, setApplicantAssetKeyword] = useState('');
-  const [applicantAssetQuery, setApplicantAssetQuery] = useState('');
   const [countersignOpen, setCountersignOpen] = useState(false);
   const [countersignPerson, setCountersignPerson] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [query, setQuery] = useState({ assetTag: '', serialNo: '', block: '', assetDesc: '' });
-  const [appliedQuery, setAppliedQuery] = useState({ assetTag: '', serialNo: '', block: '', assetDesc: '' });
+  const [matchQuery, setMatchQuery] = useState(EMPTY_MATCH_QUERY);
+  const [appliedMatchQuery, setAppliedMatchQuery] = useState(EMPTY_MATCH_QUERY);
+  const [applicantQuery, setApplicantQuery] = useState(EMPTY_APPLICANT_QUERY);
+  const [appliedApplicantQuery, setAppliedApplicantQuery] = useState(EMPTY_APPLICANT_QUERY);
 
   const selectedOrder = useMemo(() => (
     orders.find((item) => item.status === '待配给') || orders[0]
@@ -84,7 +96,8 @@ export default function EmployeeAssetAllocationPage() {
 
   const sourceApplication = useMemo(() => {
     if (!selectedOrder) return null;
-    return getEmployeeSelfServiceApplications().find((item) => item.id === selectedOrder.sourceApplicationId) || null;
+    return getEmployeeSelfServiceApplications()
+      .find((item) => item.id === selectedOrder.sourceApplicationId) || null;
   }, [selectedOrder]);
 
   const applicationMaterials = sourceApplication?.materials || (selectedOrder ? [{
@@ -102,22 +115,23 @@ export default function EmployeeAssetAllocationPage() {
 
   const assetRows = useMemo(() => ALLOCATABLE_ASSETS.map(enrichAsset), []);
   const applicantAssetRows = useMemo(() => APPLICANT_CURRENT_ASSETS.map(enrichApplicantAsset), []);
-  const filteredApplicantAssets = useMemo(() => {
-    const keyword = applicantAssetQuery.trim().toLowerCase();
-    if (!keyword) return applicantAssetRows;
-    return applicantAssetRows.filter((asset) => (
-      `${asset.materialType} ${asset.assetCategory} ${asset.assetSubCategory} ${asset.assetTag} ${asset.assetDesc} ${asset.config} ${asset.assetStatus} ${asset.component}`
-        .toLowerCase()
-        .includes(keyword)
-    ));
-  }, [applicantAssetRows, applicantAssetQuery]);
+  const borrowedAssetCount = useMemo(() => applicantAssetRows.filter((item) => item.borrowStatus && item.borrowStatus !== '非借用').length, [applicantAssetRows]);
 
   const filteredAssets = useMemo(() => assetRows.filter((asset) => (
-    (!appliedQuery.assetTag || asset.assetTag.toLowerCase().includes(appliedQuery.assetTag.toLowerCase()))
-    && (!appliedQuery.serialNo || asset.serialNo.toLowerCase().includes(appliedQuery.serialNo.toLowerCase()))
-    && (!appliedQuery.block || asset.block.toLowerCase().includes(appliedQuery.block.toLowerCase()))
-    && (!appliedQuery.assetDesc || asset.assetDesc.toLowerCase().includes(appliedQuery.assetDesc.toLowerCase()))
-  )), [assetRows, appliedQuery]);
+    (!appliedMatchQuery.assetTag || asset.assetTag.toLowerCase().includes(appliedMatchQuery.assetTag.toLowerCase()))
+    && (!appliedMatchQuery.serialNo || asset.serialNo.toLowerCase().includes(appliedMatchQuery.serialNo.toLowerCase()))
+    && (!appliedMatchQuery.block || asset.block.toLowerCase().includes(appliedMatchQuery.block.toLowerCase()))
+    && (!appliedMatchQuery.assetDesc || asset.assetDesc.toLowerCase().includes(appliedMatchQuery.assetDesc.toLowerCase()))
+  )), [assetRows, appliedMatchQuery]);
+
+  const filteredApplicantAssets = useMemo(() => applicantAssetRows.filter((asset) => (
+    (!appliedApplicantQuery.assetTag || asset.assetTag.toLowerCase().includes(appliedApplicantQuery.assetTag.toLowerCase()))
+    && (!appliedApplicantQuery.materialType || asset.materialType === appliedApplicantQuery.materialType)
+    && (!appliedApplicantQuery.assetStatus || asset.assetStatus === appliedApplicantQuery.assetStatus)
+    && (!appliedApplicantQuery.assetDesc || asset.assetDesc.toLowerCase().includes(appliedApplicantQuery.assetDesc.toLowerCase()))
+    && (!appliedApplicantQuery.assetPurpose || asset.assetPurpose === appliedApplicantQuery.assetPurpose)
+    && (!appliedApplicantQuery.locked || asset.locked === appliedApplicantQuery.locked)
+  )), [applicantAssetRows, appliedApplicantQuery]);
 
   const refresh = () => setOrders(ensureAllocationOrders());
 
@@ -180,20 +194,9 @@ export default function EmployeeAssetAllocationPage() {
     { title: '配置', dataIndex: 'config', width: 210 },
     { title: '申请用途', dataIndex: 'purpose', width: 130 },
     { title: '详细说明', dataIndex: 'detail', width: 220, render: (value) => value || '-' },
-    {
-      title: '是否超标',
-      dataIndex: 'overStandard',
-      width: 100,
-      align: 'center',
-      render: (value) => value ? <Tag color="error">已超标</Tag> : <Tag>未超标</Tag>,
-    },
+    { title: '是否超标', dataIndex: 'overStandard', width: 100, align: 'center', render: (value) => value ? <Tag color="error">已超标</Tag> : <Tag>未超标</Tag> },
     { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
-    {
-      title: '主资产说明（耗材独有）',
-      dataIndex: 'relatedAsset',
-      width: 220,
-      render: (value, record) => record.type === 'consumable' ? (value || '-') : '-',
-    },
+    { title: '主资产说明（耗材独有）', dataIndex: 'relatedAsset', width: 220, render: (value, record) => record.type === 'consumable' ? (value || '-') : '-' },
   ];
 
   const assetColumns = [
@@ -249,11 +252,7 @@ export default function EmployeeAssetAllocationPage() {
           <Typography.Text type="secondary">申请单号：{selectedOrder.sourceApplicationId}</Typography.Text>
         </div>
 
-        <ApplicantInfoCard
-          applicant={selectedOrder.applicant}
-          applyDate={selectedOrder.applyDate}
-          onViewAssets={() => setApplicantAssetsOpen(true)}
-        />
+        <ApplicantInfoCard applicant={selectedOrder.applicant} applyDate={selectedOrder.applyDate} onViewAssets={() => setApplicantAssetsOpen(true)} />
 
         <Card title="申请物资明细" size="small">
           <Table rowKey="id" columns={materialColumns} dataSource={applicationMaterials} pagination={false} scroll={{ x: 1300 }} />
@@ -277,9 +276,7 @@ export default function EmployeeAssetAllocationPage() {
                   { label: '统一采购', value: '统一采购' },
                 ]}
               />
-              {matchingStatus === '库存领用' && (
-                <Button className="ml-4" type="primary" ghost onClick={() => setMatchModalOpen(true)}>匹配资产</Button>
-              )}
+              {matchingStatus === '库存领用' && <Button className="ml-4" type="primary" ghost onClick={() => setMatchModalOpen(true)}>匹配资产</Button>}
             </div>
 
             {matchingStatus === '库存领用' && (
@@ -290,15 +287,7 @@ export default function EmployeeAssetAllocationPage() {
 
             <div>
               <Typography.Text strong>ES 建议：</Typography.Text>
-              <TextArea
-                className="mt-2"
-                rows={4}
-                maxLength={400}
-                showCount
-                value={esComment}
-                placeholder="请输入 ES 建议，最多400字"
-                onChange={(event) => setEsComment(event.target.value)}
-              />
+              <TextArea className="mt-2" rows={4} maxLength={400} showCount value={esComment} placeholder="请输入 ES 建议，最多400字" onChange={(event) => setEsComment(event.target.value)} />
             </div>
 
             <div className="flex justify-center gap-3">
@@ -311,63 +300,35 @@ export default function EmployeeAssetAllocationPage() {
         </Card>
       </Space>
 
-      <Modal
-        title="员工名下资产"
-        open={applicantAssetsOpen}
-        width={1180}
-        footer={null}
-        onCancel={() => setApplicantAssetsOpen(false)}
-      >
-        <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <div className="flex items-end gap-3">
-            <div className="flex-1">
-              <Typography.Text className="mb-2 block">关键字</Typography.Text>
-              <Input
-                allowClear
-                value={applicantAssetKeyword}
-                placeholder="请输入资产标签号、资产说明、配置或状态"
-                onChange={(event) => setApplicantAssetKeyword(event.target.value)}
-                onPressEnter={() => setApplicantAssetQuery(applicantAssetKeyword)}
-              />
-            </div>
-            <Button type="primary" icon={<Search size={14} />} onClick={() => setApplicantAssetQuery(applicantAssetKeyword)}>查询</Button>
-            <Button onClick={() => {
-              setApplicantAssetKeyword('');
-              setApplicantAssetQuery('');
-            }}>重置</Button>
-          </div>
+      <Modal title="员工名下资产明细" open={applicantAssetsOpen} width={1180} footer={null} onCancel={() => setApplicantAssetsOpen(false)}>
+        <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+          {selectedOrder.applicant.name}同学，名下共有资产 <b>{applicantAssetRows.length}</b> 条，其中借用资产 <b>{borrowedAssetCount}</b> 条。
         </div>
-        <Table
-          rowKey="id"
-          columns={applicantAssetColumns}
-          dataSource={filteredApplicantAssets}
-          scroll={{ x: 1400, y: 400 }}
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
-        />
+        <QueryBar
+          onQuery={() => setAppliedApplicantQuery(applicantQuery)}
+          onReset={() => {
+            setApplicantQuery(EMPTY_APPLICANT_QUERY);
+            setAppliedApplicantQuery(EMPTY_APPLICANT_QUERY);
+          }}
+        >
+          <QueryItem label="资产标签号"><Input allowClear value={applicantQuery.assetTag} onChange={(event) => setApplicantQuery({ ...applicantQuery, assetTag: event.target.value })} /></QueryItem>
+          <QueryItem label="物资总类"><Select allowClear value={applicantQuery.materialType || undefined} options={[{ label: '资产', value: '资产' }, { label: '低值耐用品', value: '低值耐用品' }]} onChange={(value) => setApplicantQuery({ ...applicantQuery, materialType: value || '' })} /></QueryItem>
+          <QueryItem label="资产状态"><Select allowClear value={applicantQuery.assetStatus || undefined} options={[...new Set(applicantAssetRows.map((item) => item.assetStatus))].map((value) => ({ label: value, value }))} onChange={(value) => setApplicantQuery({ ...applicantQuery, assetStatus: value || '' })} /></QueryItem>
+          <QueryItem label="资产说明"><Input allowClear value={applicantQuery.assetDesc} onChange={(event) => setApplicantQuery({ ...applicantQuery, assetDesc: event.target.value })} /></QueryItem>
+          <QueryItem label="资产用途"><Select allowClear value={applicantQuery.assetPurpose || undefined} options={[{ label: '员工用机', value: '员工用机' }, { label: '日常办公', value: '日常办公' }]} onChange={(value) => setApplicantQuery({ ...applicantQuery, assetPurpose: value || '' })} /></QueryItem>
+          <QueryItem label="是否锁定"><Select allowClear value={applicantQuery.locked || undefined} options={[{ label: '是', value: '是' }, { label: '否', value: '否' }]} onChange={(value) => setApplicantQuery({ ...applicantQuery, locked: value || '' })} /></QueryItem>
+        </QueryBar>
+        <Table rowKey="id" columns={applicantAssetColumns} dataSource={filteredApplicantAssets} scroll={{ x: 1400, y: 400 }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
       </Modal>
 
-      <Modal
-        title="库存领用匹配资产"
-        open={matchModalOpen}
-        width={860}
-        footer={null}
-        onCancel={() => setMatchModalOpen(false)}
-      >
+      <Modal title="库存领用匹配资产" open={matchModalOpen} width={860} footer={null} onCancel={() => setMatchModalOpen(false)}>
         <Table
           rowKey="id"
           pagination={false}
           dataSource={applicationMaterials}
           columns={[
             { title: '申请物资说明', dataIndex: 'assetDesc', width: 320 },
-            {
-              title: '资产标签号',
-              render: () => (
-                <Space>
-                  <Input readOnly value={matchedAsset?.assetTag || ''} placeholder="请选择匹配资产" />
-                  <Button icon={<Search size={14} />} onClick={() => setAssetListOpen(true)} />
-                </Space>
-              ),
-            },
+            { title: '资产标签号', render: () => <Space><Input readOnly value={matchedAsset?.assetTag || ''} placeholder="请选择匹配资产" /><Button icon={<Search size={14} />} onClick={() => setAssetListOpen(true)} /></Space> },
             { title: '匹配资产描述', render: () => matchedAsset?.assetDesc || '-' },
           ]}
         />
@@ -377,40 +338,26 @@ export default function EmployeeAssetAllocationPage() {
         </div>
       </Modal>
 
-      <Modal
-        title="物资列表"
-        open={assetListOpen}
-        width={1280}
-        footer={null}
-        onCancel={() => setAssetListOpen(false)}
-      >
-        <Form layout="vertical">
-          <div className="grid grid-cols-4 gap-x-4">
-            <Form.Item label="标签号"><Input value={query.assetTag} onChange={(event) => setQuery({ ...query, assetTag: event.target.value })} /></Form.Item>
-            <Form.Item label="序列号"><Input value={query.serialNo} onChange={(event) => setQuery({ ...query, serialNo: event.target.value })} /></Form.Item>
-            <Form.Item label="板块"><Input value={query.block} onChange={(event) => setQuery({ ...query, block: event.target.value })} /></Form.Item>
-            <Form.Item label="资产说明"><Input value={query.assetDesc} onChange={(event) => setQuery({ ...query, assetDesc: event.target.value })} /></Form.Item>
-          </div>
-          <div className="mb-4 flex justify-end gap-2">
-            <Button type="primary" onClick={() => setAppliedQuery(query)}>查询</Button>
-            <Button onClick={() => {
-              const empty = { assetTag: '', serialNo: '', block: '', assetDesc: '' };
-              setQuery(empty);
-              setAppliedQuery(empty);
-            }}>重置</Button>
-          </div>
-        </Form>
-
+      <Modal title="物资列表" open={assetListOpen} width={1280} footer={null} onCancel={() => setAssetListOpen(false)}>
+        <QueryBar
+          onQuery={() => setAppliedMatchQuery(matchQuery)}
+          onReset={() => {
+            setMatchQuery(EMPTY_MATCH_QUERY);
+            setAppliedMatchQuery(EMPTY_MATCH_QUERY);
+          }}
+        >
+          <QueryItem label="标签号"><Input allowClear value={matchQuery.assetTag} onChange={(event) => setMatchQuery({ ...matchQuery, assetTag: event.target.value })} /></QueryItem>
+          <QueryItem label="序列号"><Input allowClear value={matchQuery.serialNo} onChange={(event) => setMatchQuery({ ...matchQuery, serialNo: event.target.value })} /></QueryItem>
+          <QueryItem label="板块"><Input allowClear value={matchQuery.block} onChange={(event) => setMatchQuery({ ...matchQuery, block: event.target.value })} /></QueryItem>
+          <QueryItem label="资产说明"><Input allowClear value={matchQuery.assetDesc} onChange={(event) => setMatchQuery({ ...matchQuery, assetDesc: event.target.value })} /></QueryItem>
+        </QueryBar>
         <Table
           rowKey="id"
           columns={assetColumns}
           dataSource={filteredAssets}
           scroll={{ x: 1850, y: 380 }}
           pagination={{ pageSize: 10, showTotal: (total) => `共${total}项` }}
-          onRow={(record) => ({
-            onClick: () => setMatchedAsset(record),
-            className: matchedAsset?.id === record.id ? 'bg-blue-50 cursor-pointer' : 'cursor-pointer',
-          })}
+          onRow={(record) => ({ onClick: () => setMatchedAsset(record), className: matchedAsset?.id === record.id ? 'bg-blue-50 cursor-pointer' : 'cursor-pointer' })}
         />
         <div className="mt-4 flex justify-center gap-3">
           <Button type="primary" disabled={!matchedAsset} onClick={() => setAssetListOpen(false)}>确定</Button>
