@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { 
-  Search, Handshake, Monitor, Hash, PackageOpen, 
+import { useNavigate } from 'react-router-dom';
+import {
+  Search, Handshake, Monitor, Hash, PackageOpen,
   Plus, Copy, Laptop, ChevronLeft, ChevronRight,
   Undo2, ArrowRightLeft, Wrench
 } from 'lucide-react';
@@ -87,6 +88,7 @@ const MOCK_DATA = {
 };
 
 export default function PersonalWorkspace() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('assets');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -120,24 +122,20 @@ export default function PersonalWorkspace() {
 
   const renderTopBanner = () => (
     <div className="relative bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-600 rounded-2xl shadow-sm overflow-hidden flex flex-col md:flex-row md:items-center justify-between px-5 py-4 md:px-6 md:py-5 text-white mb-4">
-      {/* 装饰性背景光晕 */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-white opacity-[0.03] rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
       <div className="absolute bottom-0 left-10 w-64 h-64 bg-blue-400 opacity-[0.08] rounded-full blur-2xl translate-y-1/2 pointer-events-none"></div>
-      
-      {/* 左侧：问候语与统计提示 */}
       <div className="relative z-10 mb-6 md:mb-0">
-        <div className="text-blue-100/80 text-sm font-medium tracking-wider mb-2">
-          {getTodayString()}
-        </div>
+        <div className="text-blue-100/80 text-sm font-medium tracking-wider mb-2">{getTodayString()}</div>
         <h2 className="text-xl md:text-2xl font-bold mb-1.5 tracking-tight">上午好，{MOCK_DATA.user.name}</h2>
         <p className="text-blue-100/90 text-[14px]">
           您名下共有 <span className="font-bold text-white">{MOCK_DATA.assets.length + MOCK_DATA.consumables.length}</span> 项资产与耗材运行正常，另有 <span className="font-bold text-amber-300">0 条待办</span> 等待处理。
         </p>
       </div>
-
-      {/* 右侧：融入 Banner 的快捷操作按钮 */}
       <div className="relative z-10 flex items-center gap-2">
-        <button className="px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg text-[14px] font-semibold transition-all shadow-sm flex items-center gap-2 active:scale-95">
+        <button
+          className="px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg text-[14px] font-semibold transition-all shadow-sm flex items-center gap-2 active:scale-95"
+          onClick={() => navigate('/employee-self-service/asset-apply')}
+        >
           <Plus className="w-4 h-4" />
           物资申请
         </button>
@@ -157,53 +155,33 @@ export default function PersonalWorkspace() {
 
     return (
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden min-h-[380px]">
-        
-        {/* Tabs & Search Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 px-2 sm:px-6 bg-white pt-2">
           <div className="flex gap-2">
-            <button 
-              onClick={() => setActiveTab('assets')}
-              className={`px-3 py-2.5 text-[14px] font-semibold transition-all relative flex items-center gap-2 ${activeTab === 'assets' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
-            >
+            <button onClick={() => setActiveTab('assets')} className={`px-3 py-2.5 text-[14px] font-semibold transition-all relative flex items-center gap-2 ${activeTab === 'assets' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}>
               <Monitor className="w-4 h-4" />
               资产
-              <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${activeTab === 'assets' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
-                {MOCK_DATA.assets.length}
-              </span>
+              <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${activeTab === 'assets' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>{MOCK_DATA.assets.length}</span>
               {activeTab === 'assets' && <div className="absolute bottom-0 left-0 w-full h-[3px] bg-blue-600 rounded-t-full"></div>}
             </button>
-
-            <button 
-              onClick={() => setActiveTab('consumables')}
-              className={`px-3 py-2.5 text-[14px] font-semibold transition-all relative flex items-center gap-2 ${activeTab === 'consumables' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
-            >
+            <button onClick={() => setActiveTab('consumables')} className={`px-3 py-2.5 text-[14px] font-semibold transition-all relative flex items-center gap-2 ${activeTab === 'consumables' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}>
               <PackageOpen className="w-4 h-4" />
               耗材
-              <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${activeTab === 'consumables' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
-                {MOCK_DATA.consumables.length}
-              </span>
+              <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${activeTab === 'consumables' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>{MOCK_DATA.consumables.length}</span>
               {activeTab === 'consumables' && <div className="absolute bottom-0 left-0 w-full h-[3px] bg-blue-600 rounded-t-full"></div>}
             </button>
-
-            <button 
-              onClick={() => setActiveTab('contracts')}
-              className={`px-3 py-2.5 text-[14px] font-semibold transition-all relative flex items-center gap-2 ${activeTab === 'contracts' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
-            >
+            <button onClick={() => setActiveTab('contracts')} className={`px-3 py-2.5 text-[14px] font-semibold transition-all relative flex items-center gap-2 ${activeTab === 'contracts' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}>
               <Hash className="w-4 h-4" />
               合约号码
-              <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${activeTab === 'contracts' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
-                {MOCK_DATA.contracts.length}
-              </span>
+              <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${activeTab === 'contracts' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>{MOCK_DATA.contracts.length}</span>
               {activeTab === 'contracts' && <div className="absolute bottom-0 left-0 w-full h-[3px] bg-blue-600 rounded-t-full"></div>}
             </button>
           </div>
-
           <div className="py-2 px-3 sm:px-0 sm:py-0 w-full sm:w-[260px]">
             <div className="relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="搜索标签号、名称或分类..." 
+              <input
+                type="text"
+                placeholder="搜索标签号、名称或分类..."
                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-full text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -211,15 +189,11 @@ export default function PersonalWorkspace() {
             </div>
           </div>
         </div>
-
-        {}
         <div className="flex-1 overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1200px]">
             <thead>
               <tr className="bg-white text-slate-500 text-[13px] border-b border-slate-100">
-                <th className="py-3 px-4 font-medium w-10 sticky left-0 bg-white z-30">
-                  <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
-                </th>
+                <th className="py-3 px-4 font-medium w-10 sticky left-0 bg-white z-30"><input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" /></th>
                 <th className="py-3 px-2 font-medium w-72 sticky left-[40px] bg-white z-30">资产信息</th>
                 <th className="py-3 px-3 font-medium w-44">资产标签号</th>
                 <th className="py-3 px-3 font-medium">资产配置</th>
@@ -231,86 +205,43 @@ export default function PersonalWorkspace() {
             <tbody className="divide-y divide-slate-50">
               {displayData.map((item, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="py-3.5 px-4 sticky left-0 bg-white z-20 group-hover:bg-slate-50/50">
-                    <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
-                  </td>
+                  <td className="py-3.5 px-4 sticky left-0 bg-white z-20 group-hover:bg-slate-50/50"><input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" /></td>
                   <td className="py-3.5 px-2 sticky left-[40px] bg-white z-20 group-hover:bg-slate-50/50">
                     <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 shrink-0">
-                        {renderItemIcon(item.icon)}
-                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 shrink-0">{renderItemIcon(item.icon)}</div>
                       <div className="flex flex-col">
                         <span className="text-[14px] font-bold text-slate-800 line-clamp-1 mb-0.5">{item.name}</span>
                         <span className="text-[12px] text-slate-400 line-clamp-1">{item.desc}</span>
                       </div>
                     </div>
                   </td>
-                  <td className="py-3.5 px-3">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200/60 rounded text-xs font-mono text-slate-600 group/tag cursor-pointer hover:border-slate-300 hover:bg-slate-100 transition-colors">
-                      {item.id}
-                      <Copy className="w-3 h-3 text-slate-300 group-hover/tag:text-slate-500" />
-                    </div>
-                  </td>
-                  <td className="py-3.5 px-3">
-                    <span className="text-[13px] text-slate-500 line-clamp-2" title={item.config}>
-                      {item.config}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 text-center">
-                    <span className="text-[14px] font-semibold text-slate-700">{item.quantity}</span>
-                  </td>
-                  <td className="py-3 px-3 text-center">
-                    <StatusBadge status={item.status} />
-                  </td>
+                  <td className="py-3.5 px-3"><div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200/60 rounded text-xs font-mono text-slate-600 group/tag cursor-pointer hover:border-slate-300 hover:bg-slate-100 transition-colors">{item.id}<Copy className="w-3 h-3 text-slate-300 group-hover/tag:text-slate-500" /></div></td>
+                  <td className="py-3.5 px-3"><span className="text-[13px] text-slate-500 line-clamp-2" title={item.config}>{item.config}</span></td>
+                  <td className="py-3 px-3 text-center"><span className="text-[14px] font-semibold text-slate-700">{item.quantity}</span></td>
+                  <td className="py-3 px-3 text-center"><StatusBadge status={item.status} /></td>
                   <td className="py-3.5 px-4 sticky right-0 bg-white z-20 border-l border-slate-100 group-hover:bg-slate-50/50">
                     <div className="flex items-center justify-end gap-1">
-                      <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all" title="退库">
-                        <Undo2 className="w-3.5 h-3.5" />
-                        <span>退库</span>
-                      </button>
-                      <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all" title="转移">
-                        <ArrowRightLeft className="w-3.5 h-3.5" />
-                        <span>转移</span>
-                      </button>
-                      <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all" title="更换">
-                        <Wrench className="w-3.5 h-3.5" />
-                        <span>更换</span>
-                      </button>
+                      <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all" title="退库"><Undo2 className="w-3.5 h-3.5" /><span>退库</span></button>
+                      <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all" title="转移"><ArrowRightLeft className="w-3.5 h-3.5" /><span>转移</span></button>
+                      <button className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all" title="更换"><Wrench className="w-3.5 h-3.5" /><span>更换</span></button>
                     </div>
                   </td>
                 </tr>
               ))}
-              
               {displayData.length === 0 && (
-                <tr>
-                  <td colSpan="7" className="py-20 text-center text-slate-400">
-                    <div className="flex flex-col items-center justify-center">
-                      <PackageOpen className="w-12 h-12 mb-3 opacity-20" />
-                      <p className="text-sm">暂无对应的资产数据</p>
-                    </div>
-                  </td>
-                </tr>
+                <tr><td colSpan="7" className="py-20 text-center text-slate-400"><div className="flex flex-col items-center justify-center"><PackageOpen className="w-12 h-12 mb-3 opacity-20" /><p className="text-sm">暂无对应的资产数据</p></div></td></tr>
               )}
             </tbody>
           </table>
         </div>
-
-        {}
         <div className="px-4 py-3 border-t border-slate-100 bg-white flex items-center justify-between text-sm text-slate-500 mt-auto">
           <span>共 {displayData.length} 条记录</span>
           <div className="flex items-center gap-2">
-            <select className="border-slate-200 rounded-md text-[13px] py-1 pl-2 pr-6 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-600">
-              <option>10 条/页</option>
-              <option>20 条/页</option>
-            </select>
+            <select className="border-slate-200 rounded-md text-[13px] py-1 pl-2 pr-6 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-600"><option>10 条/页</option><option>20 条/页</option></select>
             <div className="flex items-center gap-1">
-              <button className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-100 bg-white text-slate-400 hover:text-slate-600 hover:bg-slate-50 disabled:opacity-50">
-                <ChevronLeft className="w-4 h-4" />
-              </button>
+              <button className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-100 bg-white text-slate-400 hover:text-slate-600 hover:bg-slate-50 disabled:opacity-50"><ChevronLeft className="w-4 h-4" /></button>
               <button className="w-7 h-7 flex items-center justify-center rounded-md bg-blue-600 text-white text-[13px] font-medium shadow-sm">1</button>
-              <button className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-100 bg-white text-slate-400 hover:text-slate-600 hover:bg-slate-50">
-                <ChevronRight className="w-4 h-4" />
-              </button>
+              <button className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-100 bg-white text-slate-400 hover:text-slate-600 hover:bg-slate-50"><ChevronRight className="w-4 h-4" /></button>
             </div>
           </div>
         </div>
