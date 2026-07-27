@@ -31,6 +31,8 @@ function PageHeader({ title }) {
   );
 }
 
+const SIMPLE_EMPTY_TEXT = <div className="py-6 text-center text-sm text-slate-400">无展示数据</div>;
+
 export default function UnifiedAssetApplySummary() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [currentView, setCurrentView] = useState('list');
@@ -130,6 +132,16 @@ export default function UnifiedAssetApplySummary() {
     { title: 'ES建议', dataIndex: 'esAdvice', width: 100, align: 'center' },
   ];
 
+  const currentUsageColumns = [
+    { title: '序号', dataIndex: 'index', width: 80, align: 'center' },
+    { title: '物资类别', dataIndex: 'category', width: 180 },
+    { title: '现使用量', dataIndex: 'currentQuantity', width: 120, align: 'center' },
+    { title: '现人均用量', dataIndex: 'currentPerCapita', width: 130, align: 'center' },
+    { title: '申请采购量', dataIndex: 'purchaseQuantity', width: 130, align: 'center' },
+    { title: '采购后人均用量', dataIndex: 'afterPurchasePerCapita', width: 150, align: 'center' },
+    { title: '公司人均用量', dataIndex: 'companyPerCapita', width: 130, align: 'center' },
+  ];
+
   const handleReject = (applicant) => {
     messageApi.warning(`${applicant} 已标记为驳回演示状态`);
   };
@@ -143,7 +155,7 @@ export default function UnifiedAssetApplySummary() {
   };
 
   const renderList = () => (
-    <Card title="按一级部门汇总的汇总单列表">
+    <Card>
       <Table
         rowKey="id"
         columns={listColumns}
@@ -230,7 +242,7 @@ export default function UnifiedAssetApplySummary() {
           pagination={false}
           size="small"
           scroll={{ x: 1300 }}
-          locale={{ emptyText: <Empty description="暂无超标申请" /> }}
+          locale={{ emptyText: SIMPLE_EMPTY_TEXT }}
         />
       </Card>
 
@@ -260,7 +272,15 @@ export default function UnifiedAssetApplySummary() {
       </Card>
 
       <Card title="部门现资产参考使用量" size="small">
-        <Empty description="暂无参考数据" />
+        <Table
+          rowKey="key"
+          columns={currentUsageColumns}
+          dataSource={[]}
+          pagination={false}
+          size="small"
+          scroll={{ x: 920 }}
+          locale={{ emptyText: SIMPLE_EMPTY_TEXT }}
+        />
       </Card>
 
       <Card size="small">
