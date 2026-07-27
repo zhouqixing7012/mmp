@@ -1,33 +1,96 @@
-import React, { useState } from 'react';
-import { Button, Card, Descriptions, Form, Input, Modal, Select, Space, Tag, Typography, message as antdMessage } from 'antd';
+import React, { useMemo, useState } from 'react';
+import { Button, Card, Descriptions, Form, Input, Modal, Radio, Select, Space, Table, Tag, Typography, message as antdMessage } from 'antd';
 import { Search } from 'lucide-react';
-import { assetClaimApplication } from '../mock/assetClaimMock';
+import { useNavigate } from 'react-router-dom';
+import QueryBar, { QueryItem } from '../components/QueryBar';
+import {
+  assetClaimApplication,
+  assetClaimLocationData,
+  assetClaimSelectableAssets,
+} from '../mock/assetClaimMock';
 
 const { TextArea } = Input;
+const EMPTY_QUERY = { assetTag: '', serialNumber: '', block: '', description: '' };
 
 export default function FrontDeskAssetClaim() {
+  const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [form] = Form.useForm();
   const [assetOpen, setAssetOpen] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState(assetClaimApplication.asset);
+  const [query, setQuery] = useState(EMPTY_QUERY);
+  const [appliedQuery, setAppliedQuery] = useState(EMPTY_QUERY);
   const [submitLoading, setSubmitLoading] = useState(false);
   const application = assetClaimApplication;
 
-  const handleAction = async (action) => {
-    if (action === '领用确认') {
-      try {
-        await form.validateFields();
-      } catch {
-        messageApi.warning('请完善必填信息');
-        return;
-      }
-    }
-    setSubmitLoading(true);
+  const city = Form.useWatch('city', form);
+  const building = Form.useWatch('building', form);
+
+  const cityOptions = useMemo(
+    () => assetClaimLocationData.map((item) => ({ label: item.city, value: item.city })),
+    []
+  );
+
+  const buildingOptions = useMemo(() => {
+    const cityRecord = assetClaimLocationData.find((item) => item.city === city);
+    return (cityRecord?.buildings || []).map((item) => ({ label: item.building, value: item.building }));
+  }, [city]);
+
+  const floorOptions = useMemo(() => {
+    const cityRecord = assetClaimLocationData.find((item) => item.city === city);
+    const buildingRecord = cityRecord?.buildings.find((item) => item.building === building);
+    return (buildingRecord?.floors || []).map((value) => ({ label: value, value }));
+  }, [city, building]);
+
+  const filteredAssets = useMemo(() => assetClaimSelectableAssets.filter((asset) => (
+    (!appliedQuery.assetTag || asset.tag.toLowerCase().includes(appliedQuery.assetTag.toLowerCase()))
+    && (!appliedQuery.serialNumber || asset.serialNumber.toLowerCase().includes(appliedQuery.serialNumber.toLowerCase()))
+    && (!appliedQuery.block || asset.block.toLowerCase().includes(appliedQuery.block.toLowerCase()))
+    && (!appliedQuery.description || asset.description.toLowerCase().includes(appliedQuery.description.toLowerCase()))
+  )), [appliedQuery]);
+
+  const confirmClaim = async () => {
     try {
-      messageApi.success(`${action}操作成功`);
-    } finally {
-      setSubmitLoading(false);
+      await form.validateFields();
+    } catch {
+      messageApi.warning('请完善必填信息');
+      return;
     }
+
+    const currentWarehouse = form.getFieldValue('warehouse');
+    if (selectedAsset.warehouse !== currentWarehouse) {
+      messageApi.error('资产不在当前库，请进行移库操作！');
+      return;
+    }
+
+    Modal.confirm({
+      title: '是否确认领用',
+      okText: '确定',
+      cancelText: '取消',
+      onOk: () => {
+        setSubmitLoading(true);
+        try {
+          navigate('/EmployeeAssetClaimConfirm');
+        } finally {
+          setSubmitLoading(false);
+        }
+      },
+    });
   };
+
+  const handleAction = (action) => {
+    messageApi.success(`${action}操作成功`);
+  };
+
+  const assetColumns = [
+    { title: '选择', width: 60, render: (_, record) => <Radio checked={selectedAsset.id === record.id} /> },
+    { title: '资产标签号', dataIndex: 'tag', width: 160 },
+    { title: '序列号', dataIndex: 'serialNumber', width: 160 },
+    { title: '板块', dataIndex: 'block', width: 100 },
+    { title: '资产说明', dataIndex: 'description', width: 220 },
+    { title: '配置', dataIndex: 'configuration', width: 220 },
+    { title: '所在仓库', dataIndex: 'warehouse', width: 240 },
+  ];
 
   return (
     <div className="min-h-screen bg-slate-100 p-4">
@@ -41,6 +104,7 @@ export default function FrontDeskAssetClaim() {
           layout="vertical"
           initialValues={{
             warehouse: application.warehouse,
+            assetTag: application.asset.tag,
             remark: application.remark,
             city: application.asset.city,
             building: application.asset.building,
@@ -51,7 +115,10 @@ export default function FrontDeskAssetClaim() {
         >
           <Card type="inner" title="申请人信息" className="mb-4">
             <Form.Item label="当前仓库" name="warehouse" rules={[{ required: true, message: '请选择当前仓库' }]}>
-              <Select options={[{ label: application.warehouse, value: application.warehouse }]} />
+              <Select options={[
+                { label: application.warehouse, value: application.warehouse },
+                { label: 'I0020-资产集团备用库', value: 'I0020-资产集团备用库' },
+              ]} />
             </Form.Item>
             <Descriptions bordered column={3} size="small">
               <Descriptions.Item label="申请人">{application.applicant}</Descriptions.Item>
@@ -70,29 +137,41 @@ export default function FrontDeskAssetClaim() {
 
           <Card type="inner" title="申请资产信息">
             <Descriptions bordered column={3} size="small">
-              <Descriptions.Item label="资产标签号">
-                <Button type="link" icon={<Search size={14} />} onClick={() => setAssetOpen(true)}>
-                  {application.asset.tag}
-                </Button>
+              <Descriptions.Item label={<><span className="text-red-500">*</span> 资产标签号</>}>
+                <Form.Item name="assetTag" rules={[{ required: true, message: '请选择资产标签号' }]} noStyle>
+                  <div className="flex items-center gap-2">
+                    <Input readOnly value={selectedAsset?.tag || ''} placeholder="请选择资产标签号" />
+                    <Button icon={<Search size={14} />} onClick={() => setAssetOpen(true)} />
+                  </div>
+                </Form.Item>
               </Descriptions.Item>
-              <Descriptions.Item label="序列号">{application.asset.serialNumber}</Descriptions.Item>
-              <Descriptions.Item label="部件数量">{application.asset.spareQuantity}</Descriptions.Item>
-              <Descriptions.Item label="公司">{application.asset.company}</Descriptions.Item>
-              <Descriptions.Item label="板块">{application.asset.block}</Descriptions.Item>
-              <Descriptions.Item label="启用日期">{application.asset.enabledDate}</Descriptions.Item>
-              <Descriptions.Item label="资产说明">{application.asset.description}</Descriptions.Item>
-              <Descriptions.Item label="配置" span={2}>{application.asset.configuration}</Descriptions.Item>
+              <Descriptions.Item label="序列号">{selectedAsset.serialNumber}</Descriptions.Item>
+              <Descriptions.Item label="部件数量">{selectedAsset.spareQuantity}</Descriptions.Item>
+              <Descriptions.Item label="公司">{selectedAsset.company}</Descriptions.Item>
+              <Descriptions.Item label="板块">{selectedAsset.block}</Descriptions.Item>
+              <Descriptions.Item label="启用日期">{selectedAsset.enabledDate}</Descriptions.Item>
+              <Descriptions.Item label="资产说明">{selectedAsset.description}</Descriptions.Item>
+              <Descriptions.Item label="配置" span={2}>{selectedAsset.configuration}</Descriptions.Item>
             </Descriptions>
 
             <div className="mt-4 grid grid-cols-3 gap-x-6">
               <Form.Item label="城市" name="city" rules={[{ required: true, message: '请选择城市' }]}>
-                <Select options={[{ label: application.asset.city, value: application.asset.city }]} />
+                <Select
+                  allowClear
+                  options={cityOptions}
+                  onChange={() => form.setFieldsValue({ building: undefined, floor: undefined })}
+                />
               </Form.Item>
               <Form.Item label="建筑" name="building" rules={[{ required: true, message: '请选择建筑' }]}>
-                <Select options={[{ label: application.asset.building, value: application.asset.building }]} />
+                <Select
+                  allowClear
+                  disabled={!city}
+                  options={buildingOptions}
+                  onChange={() => form.setFieldsValue({ floor: undefined })}
+                />
               </Form.Item>
               <Form.Item label="楼层" name="floor" rules={[{ required: true, message: '请选择楼层' }]}>
-                <Select options={['6层', '7层', '8层', '9层'].map((value) => ({ label: value, value }))} />
+                <Select allowClear disabled={!building} options={floorOptions} />
               </Form.Item>
               <Form.Item label="资产用途" name="purpose" rules={[{ required: true, message: '请选择资产用途' }]}>
                 <Select options={['办公使用', '研发使用', '其他用途'].map((value) => ({ label: value, value }))} />
@@ -103,18 +182,18 @@ export default function FrontDeskAssetClaim() {
             </div>
 
             <Descriptions bordered column={2} size="small">
-              <Descriptions.Item label="实际盘点人">{application.asset.inventoryOwner}</Descriptions.Item>
-              <Descriptions.Item label="盘点状态"><Tag color="red">{application.asset.inventoryStatus}</Tag></Descriptions.Item>
-              <Descriptions.Item label="申请配置" span={2}>{application.asset.applyConfiguration}</Descriptions.Item>
-              <Descriptions.Item label="申请物资说明" span={2}>{application.asset.applyMaterialDescription}</Descriptions.Item>
-              <Descriptions.Item label="申请原因" span={2}>{application.asset.applyReason}</Descriptions.Item>
-              <Descriptions.Item label="详细说明" span={2}>{application.asset.detailDescription || '-'}</Descriptions.Item>
+              <Descriptions.Item label="实际盘点人">{selectedAsset.inventoryOwner}</Descriptions.Item>
+              <Descriptions.Item label="盘点状态"><Tag color="red">{selectedAsset.inventoryStatus}</Tag></Descriptions.Item>
+              <Descriptions.Item label="申请配置" span={2}>{selectedAsset.applyConfiguration}</Descriptions.Item>
+              <Descriptions.Item label="申请物资说明" span={2}>{selectedAsset.applyMaterialDescription}</Descriptions.Item>
+              <Descriptions.Item label="申请原因" span={2}>{selectedAsset.applyReason}</Descriptions.Item>
+              <Descriptions.Item label="详细说明" span={2}>{selectedAsset.detailDescription || '-'}</Descriptions.Item>
             </Descriptions>
           </Card>
 
           <div className="mt-5 flex justify-center">
             <Space>
-              <Button type="primary" loading={submitLoading} onClick={() => handleAction('领用确认')}>领用确认</Button>
+              <Button type="primary" loading={submitLoading} onClick={confirmClaim}>领用确认</Button>
               <Button onClick={() => handleAction('弃领')}>弃领</Button>
               <Button onClick={() => handleAction('加签')}>加签</Button>
               <Button onClick={() => window.history.back()}>返回</Button>
@@ -124,13 +203,41 @@ export default function FrontDeskAssetClaim() {
         </Form>
       </Card>
 
-      <Modal title="选择资产" open={assetOpen} onCancel={() => setAssetOpen(false)} onOk={() => setAssetOpen(false)} okText="确定" cancelText="取消">
-        <Descriptions bordered column={1} size="small">
-          <Descriptions.Item label="资产标签号">{application.asset.tag}</Descriptions.Item>
-          <Descriptions.Item label="资产说明">{application.asset.description}</Descriptions.Item>
-          <Descriptions.Item label="序列号">{application.asset.serialNumber}</Descriptions.Item>
-          <Descriptions.Item label="资产状态">在用-使用中</Descriptions.Item>
-        </Descriptions>
+      <Modal title="物资列表" open={assetOpen} width={1180} footer={null} onCancel={() => setAssetOpen(false)}>
+        <QueryBar
+          onQuery={() => setAppliedQuery(query)}
+          onReset={() => {
+            setQuery(EMPTY_QUERY);
+            setAppliedQuery(EMPTY_QUERY);
+          }}
+        >
+          <QueryItem label="标签号"><Input allowClear value={query.assetTag} onChange={(event) => setQuery({ ...query, assetTag: event.target.value })} /></QueryItem>
+          <QueryItem label="序列号"><Input allowClear value={query.serialNumber} onChange={(event) => setQuery({ ...query, serialNumber: event.target.value })} /></QueryItem>
+          <QueryItem label="板块"><Input allowClear value={query.block} onChange={(event) => setQuery({ ...query, block: event.target.value })} /></QueryItem>
+          <QueryItem label="资产说明"><Input allowClear value={query.description} onChange={(event) => setQuery({ ...query, description: event.target.value })} /></QueryItem>
+        </QueryBar>
+        <Table
+          rowKey="id"
+          columns={assetColumns}
+          dataSource={filteredAssets}
+          pagination={{ pageSize: 10, showTotal: (total) => `共${total}项` }}
+          scroll={{ x: 1200, y: 380 }}
+          onRow={(record) => ({
+            onClick: () => setSelectedAsset(record),
+            className: selectedAsset.id === record.id ? 'bg-blue-50 cursor-pointer' : 'cursor-pointer',
+          })}
+        />
+        <div className="mt-4 flex justify-center gap-3">
+          <Button
+            type="primary"
+            disabled={!selectedAsset}
+            onClick={() => {
+              form.setFieldValue('assetTag', selectedAsset.tag);
+              setAssetOpen(false);
+            }}
+          >确定</Button>
+          <Button onClick={() => setAssetOpen(false)}>返回</Button>
+        </div>
       </Modal>
     </div>
   );
