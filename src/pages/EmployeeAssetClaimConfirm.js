@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, Button, Card, Descriptions, Input, QRCode, Space, Table, Typography, message as antdMessage } from 'antd';
-import { BadgeCheck, CreditCard, FileCheck2, PackageCheck } from 'lucide-react';
+import { BadgeCheck, CreditCard, PackageCheck } from 'lucide-react';
 import { assetClaimApplication, assetClaimNotice } from '../mock/assetClaimMock';
 
 export default function EmployeeAssetClaimConfirm() {
@@ -44,29 +44,18 @@ export default function EmployeeAssetClaimConfirm() {
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-              <PackageCheck size={20} />
-            </div>
-            <div>
-              <Typography.Title level={4} className="mb-0">员工领用确认</Typography.Title>
-              <Typography.Text type="secondary">请员工核对领用信息后完成刷卡或扫码确认</Typography.Text>
-            </div>
-          </div>
+          <Typography.Title level={4} className="mb-0">员工领用确认</Typography.Title>
           <Typography.Text type="secondary">申请单号：{application.applicationNo}</Typography.Text>
         </div>
 
-        <Card title={<Space><FileCheck2 size={16} />领用人信息</Space>} size="small">
-          <Descriptions bordered column={3} size="small">
+        <Card title="领用人信息" size="small">
+          <Descriptions bordered column={2} size="small">
             <Descriptions.Item label="使用人">{application.applicant}</Descriptions.Item>
-            <Descriptions.Item label="公司">{application.company}</Descriptions.Item>
-            <Descriptions.Item label="联系电话">{application.phone}</Descriptions.Item>
-            <Descriptions.Item label="部门" span={2}>{application.department}</Descriptions.Item>
-            <Descriptions.Item label="办公区">{application.officeArea}</Descriptions.Item>
+            <Descriptions.Item label="部门">{application.department}</Descriptions.Item>
           </Descriptions>
         </Card>
 
-        <Card title={<Space><PackageCheck size={16} />领用物资明细</Space>} size="small">
+        <Card title="领用物资明细" size="small">
           <Table rowKey="key" columns={columns} dataSource={rows} pagination={false} size="small" scroll={{ x: 1200 }} />
         </Card>
 
@@ -76,33 +65,31 @@ export default function EmployeeAssetClaimConfirm() {
           message="提示：我已阅读并确认保管职责说明，特此刷卡确认！"
         />
 
-        <Card title={<Space><CreditCard size={16} />员工身份确认</Space>} size="small">
+        <Card title="员工身份确认" size="small">
           <div className="grid grid-cols-[minmax(0,1fr)_220px] gap-8">
             <div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-                <Typography.Text strong>刷卡领用确认</Typography.Text>
-                <Typography.Paragraph type="secondary" className="mt-1 mb-4">
-                  请刷员工卡，或手工输入员工卡号后确认领用。
-                </Typography.Paragraph>
-                <Space.Compact className="w-full max-w-xl">
-                  <Input
-                    prefix={<CreditCard size={15} className="text-slate-400" />}
-                    value={cardNo}
-                    onChange={(event) => setCardNo(event.target.value)}
-                    onPressEnter={handleConfirm}
-                    placeholder="请输入员工卡号"
-                  />
-                  <Button type="primary" icon={<BadgeCheck size={15} />} onClick={handleConfirm}>确认领用</Button>
-                </Space.Compact>
-              </div>
+              <Typography.Text strong>刷卡领用确认</Typography.Text>
+              <Typography.Paragraph type="secondary" className="mt-1 mb-4">
+                请刷员工卡，或手工输入员工卡号后确认领用。
+              </Typography.Paragraph>
+              <Space.Compact className="w-full max-w-xl">
+                <Input
+                  prefix={<CreditCard size={15} className="text-slate-400" />}
+                  value={cardNo}
+                  onChange={(event) => setCardNo(event.target.value)}
+                  onPressEnter={handleConfirm}
+                  placeholder="请输入员工卡号"
+                />
+                <Button type="primary" icon={<BadgeCheck size={15} />} onClick={handleConfirm}>确认领用</Button>
+              </Space.Compact>
 
-              <div className="mt-4 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm leading-7 text-red-600">
+              <div className="mt-4 rounded border border-red-100 bg-red-50 px-4 py-3 text-sm leading-7 text-red-600">
                 <Typography.Text strong type="danger">保管职责：</Typography.Text>
                 {assetClaimNotice}
               </div>
             </div>
 
-            <div className="flex flex-col items-center justify-center rounded-lg border border-slate-200 bg-white p-5">
+            <div className="flex flex-col items-center justify-center rounded border border-slate-200 bg-slate-50 p-5">
               <QRCode value={`asset-claim:${application.applicationNo}:${application.asset.tag}`} size={156} />
               <Typography.Text strong className="mt-3">扫码确认领用</Typography.Text>
               <Typography.Text type="secondary" className="mt-1 text-center">使用移动端扫码核对并确认领用信息</Typography.Text>
@@ -112,7 +99,7 @@ export default function EmployeeAssetClaimConfirm() {
 
         <Card size="small">
           <div className="flex justify-center">
-            <Button onClick={() => window.history.back()}>返回</Button>
+            <Button icon={<PackageCheck size={14} />} onClick={() => window.history.back()}>返回</Button>
           </div>
         </Card>
       </Space>
