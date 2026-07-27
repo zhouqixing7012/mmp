@@ -85,23 +85,28 @@ export default function EmployeeAssetApplyPage() {
     [materials]
   );
 
-  const addMaterial = (record) => {
+  const addMaterials = (records) => {
+    let addedCount = 0;
     setMaterials((current) => {
-      const existing = current.find((item) => item.id === record.id);
-      if (existing) {
-        return current.map((item) => item.id === record.id
-          ? { ...item, quantity: Number(item.quantity || 0) + 1 }
-          : item);
-      }
-      return [...current, {
-        ...record,
-        quantity: 1,
-        purpose: '',
-        detail: '',
-        relatedAsset: '',
-      }];
+      const existingIds = new Set(current.map((item) => item.id));
+      const additions = records
+        .filter((record) => !existingIds.has(record.id))
+        .map((record) => ({
+          ...record,
+          quantity: 1,
+          purpose: '',
+          detail: '',
+          relatedAsset: '',
+        }));
+      addedCount = additions.length;
+      return [...current, ...additions];
     });
-    messageApi.success(`已添加 ${record.assetDesc}`);
+    setStoreOpen(false);
+    if (addedCount > 0) {
+      messageApi.success(`已添加 ${addedCount} 项物资`);
+    } else {
+      messageApi.info('所选物资已在申请明细中');
+    }
   };
 
   const updateMaterial = (id, field, value) => {
@@ -304,7 +309,7 @@ export default function EmployeeAssetApplyPage() {
         </div>
       </Modal>
 
-      <AssetStoreModal open={storeOpen} onCancel={() => setStoreOpen(false)} onAdd={addMaterial} />
+      <AssetStoreModal open={storeOpen} onCancel={() => setStoreOpen(false)} onAdd={addMaterials} />
     </div>
   );
 }
