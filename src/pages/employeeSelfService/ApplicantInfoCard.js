@@ -16,9 +16,7 @@ export default function ApplicantInfoCard({ applicant, applyDate }) {
             {applicant.employeeStatus}
           </Tag>
         </Descriptions.Item>
-        <Descriptions.Item label="成本中心">{applicant.costCenter}</Descriptions.Item>
-        <Descriptions.Item label="人员类型">{applicant.jobType}</Descriptions.Item>
-        <Descriptions.Item label="部门" span={3}>{applicant.department}</Descriptions.Item>
+        <Descriptions.Item label="部门" span={2}>{applicant.department}</Descriptions.Item>
       </Descriptions>
     </Card>
   );
