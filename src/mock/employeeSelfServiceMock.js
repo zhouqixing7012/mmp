@@ -60,7 +60,7 @@ export const ASSET_MATERIAL_OPTIONS = [
   },
 ];
 
-export const APPLICATION_PURPOSE_OPTIONS = ['设备更新', '新项目需要', '设备损坏', '新增岗位', '其他原因'];
+export const APPLICATION_PURPOSE_OPTIONS = ['员工用机', '部门公用', '其他用途', '专业用途'];
 
 export const DEFAULT_EMPLOYEE_SELF_SERVICE_APPLICATIONS = [
   {
@@ -78,7 +78,7 @@ export const DEFAULT_EMPLOYEE_SELF_SERVICE_APPLICATIONS = [
         config: 'M3 Pro / 18G / 512G SSD',
         referencePrice: 14999,
         quantity: 1,
-        purpose: '新项目需要',
+        purpose: '专业用途',
         reason: '新项目需要',
         detail: '用于移动端设计和视频素材处理',
         overStandard: true,
