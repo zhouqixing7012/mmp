@@ -6,6 +6,9 @@ export default function EmployeeAssetClaimConfirm() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [cardNo, setCardNo] = useState('');
   const application = assetClaimApplication;
+  const applicantName = application.applicant.includes('-')
+    ? application.applicant.split('-').slice(1).join('-')
+    : application.applicant;
 
   const rows = useMemo(() => [{
     key: '1',
@@ -59,7 +62,7 @@ export default function EmployeeAssetClaimConfirm() {
         <Alert
           type="warning"
           showIcon
-          message="提示：我已阅读并确认保管职责说明，待刷卡确认"
+          message={`${applicantName}，特此刷卡确认`}
           className="mb-4"
         />
 
