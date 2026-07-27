@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Button, Card, Descriptions, Form, Input, Modal, Radio, Select, Space, Table, Tag, Typography, message as antdMessage } from 'antd';
-import { Search } from 'lucide-react';
+import { BellRing, Building2, MapPin, PackageCheck, Search, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import QueryBar, { QueryItem } from '../components/QueryBar';
 import {
@@ -95,31 +95,46 @@ export default function FrontDeskAssetClaim() {
   return (
     <div className="min-h-screen bg-slate-100 p-4">
       {contextHolder}
-      <Card
-        title="ES前台领用"
-        extra={<Typography.Text type="secondary">申请单号：{application.applicationNo}</Typography.Text>}
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{
+          warehouse: application.warehouse,
+          assetTag: application.asset.tag,
+          remark: application.remark,
+          city: application.asset.city,
+          building: application.asset.building,
+          floor: application.asset.floor,
+          purpose: application.asset.purpose,
+          usageDescription: application.asset.usageDescription,
+        }}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          initialValues={{
-            warehouse: application.warehouse,
-            assetTag: application.asset.tag,
-            remark: application.remark,
-            city: application.asset.city,
-            building: application.asset.building,
-            floor: application.asset.floor,
-            purpose: application.asset.purpose,
-            usageDescription: application.asset.usageDescription,
-          }}
-        >
-          <Card type="inner" title="申请人信息" className="mb-4">
-            <Form.Item label="当前仓库" name="warehouse" rules={[{ required: true, message: '请选择当前仓库' }]}>
-              <Select options={[
-                { label: application.warehouse, value: application.warehouse },
-                { label: 'I0020-资产集团备用库', value: 'I0020-资产集团备用库' },
-              ]} />
-            </Form.Item>
+        <Space direction="vertical" size={16} className="w-full">
+          <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <PackageCheck size={20} />
+              </div>
+              <div>
+                <Typography.Title level={4} className="mb-0">ES前台领用</Typography.Title>
+                <Typography.Text type="secondary">核对申请信息、匹配资产并维护实际领用地点</Typography.Text>
+              </div>
+            </div>
+            <Typography.Text type="secondary">申请单号：{application.applicationNo}</Typography.Text>
+          </div>
+
+          <Card title={<Space><UserRound size={16} />申请人信息</Space>} size="small">
+            <div className="grid grid-cols-3 gap-x-6">
+              <Form.Item label="当前仓库" name="warehouse" rules={[{ required: true, message: '请选择当前仓库' }]}>
+                <Select options={[
+                  { label: application.warehouse, value: application.warehouse },
+                  { label: 'I0020-资产集团备用库', value: 'I0020-资产集团备用库' },
+                ]} />
+              </Form.Item>
+              <Form.Item label="单据备注" name="remark" className="col-span-2">
+                <TextArea rows={1} autoSize={{ minRows: 1, maxRows: 3 }} placeholder="请输入单据备注" />
+              </Form.Item>
+            </div>
             <Descriptions bordered column={3} size="small">
               <Descriptions.Item label="申请人">{application.applicant}</Descriptions.Item>
               <Descriptions.Item label="联系电话">{application.phone}</Descriptions.Item>
@@ -130,31 +145,38 @@ export default function FrontDeskAssetClaim() {
               <Descriptions.Item label="成本中心">{application.costCenter}</Descriptions.Item>
               <Descriptions.Item label="部门" span={2}>{application.department}</Descriptions.Item>
             </Descriptions>
-            <Form.Item label="单据备注" name="remark" className="mt-4 mb-0">
-              <TextArea rows={2} placeholder="请输入单据备注" />
-            </Form.Item>
           </Card>
 
-          <Card type="inner" title="申请资产信息">
+          <Card title={<Space><PackageCheck size={16} />申请资产信息</Space>} size="small">
+            <div className="mb-4 grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <Form.Item label="资产标签号" name="assetTag" rules={[{ required: true, message: '请选择资产标签号' }]} className="mb-0">
+                <Space.Compact className="w-full">
+                  <Input readOnly value={selectedAsset?.tag || ''} placeholder="请选择资产标签号" />
+                  <Button icon={<Search size={14} />} onClick={() => setAssetOpen(true)} />
+                </Space.Compact>
+              </Form.Item>
+              <div>
+                <Typography.Text type="secondary">资产说明</Typography.Text>
+                <div className="mt-2 text-sm text-slate-800">{selectedAsset.description}</div>
+              </div>
+              <div>
+                <Typography.Text type="secondary">所在仓库</Typography.Text>
+                <div className="mt-2 text-sm text-slate-800">{selectedAsset.warehouse}</div>
+              </div>
+            </div>
+
             <Descriptions bordered column={3} size="small">
-              <Descriptions.Item label={<><span className="text-red-500">*</span> 资产标签号</>}>
-                <Form.Item name="assetTag" rules={[{ required: true, message: '请选择资产标签号' }]} noStyle>
-                  <div className="flex items-center gap-2">
-                    <Input readOnly value={selectedAsset?.tag || ''} placeholder="请选择资产标签号" />
-                    <Button icon={<Search size={14} />} onClick={() => setAssetOpen(true)} />
-                  </div>
-                </Form.Item>
-              </Descriptions.Item>
               <Descriptions.Item label="序列号">{selectedAsset.serialNumber}</Descriptions.Item>
               <Descriptions.Item label="部件数量">{selectedAsset.spareQuantity}</Descriptions.Item>
+              <Descriptions.Item label="启用日期">{selectedAsset.enabledDate}</Descriptions.Item>
               <Descriptions.Item label="公司">{selectedAsset.company}</Descriptions.Item>
               <Descriptions.Item label="板块">{selectedAsset.block}</Descriptions.Item>
-              <Descriptions.Item label="启用日期">{selectedAsset.enabledDate}</Descriptions.Item>
-              <Descriptions.Item label="资产说明">{selectedAsset.description}</Descriptions.Item>
-              <Descriptions.Item label="配置" span={2}>{selectedAsset.configuration}</Descriptions.Item>
+              <Descriptions.Item label="配置">{selectedAsset.configuration}</Descriptions.Item>
             </Descriptions>
+          </Card>
 
-            <div className="mt-4 grid grid-cols-3 gap-x-6">
+          <Card title={<Space><MapPin size={16} />实际领用信息</Space>} size="small">
+            <div className="grid grid-cols-3 gap-x-6">
               <Form.Item label="城市" name="city" rules={[{ required: true, message: '请选择城市' }]}>
                 <Select
                   allowClear
@@ -180,10 +202,12 @@ export default function FrontDeskAssetClaim() {
                 <Input placeholder="请输入使用说明" />
               </Form.Item>
             </div>
+          </Card>
 
+          <Card title={<Space><Building2 size={16} />申请参考信息</Space>} size="small">
             <Descriptions bordered column={2} size="small">
               <Descriptions.Item label="实际盘点人">{selectedAsset.inventoryOwner}</Descriptions.Item>
-              <Descriptions.Item label="盘点状态"><Tag color="red">{selectedAsset.inventoryStatus}</Tag></Descriptions.Item>
+              <Descriptions.Item label="盘点状态"><Tag color="error">{selectedAsset.inventoryStatus}</Tag></Descriptions.Item>
               <Descriptions.Item label="申请配置" span={2}>{selectedAsset.applyConfiguration}</Descriptions.Item>
               <Descriptions.Item label="申请物资说明" span={2}>{selectedAsset.applyMaterialDescription}</Descriptions.Item>
               <Descriptions.Item label="申请原因" span={2}>{selectedAsset.applyReason}</Descriptions.Item>
@@ -191,17 +215,17 @@ export default function FrontDeskAssetClaim() {
             </Descriptions>
           </Card>
 
-          <div className="mt-5 flex justify-center">
-            <Space>
-              <Button type="primary" loading={submitLoading} onClick={confirmClaim}>领用确认</Button>
+          <Card size="small">
+            <div className="flex justify-center gap-3">
+              <Button type="primary" loading={submitLoading} icon={<PackageCheck size={14} />} onClick={confirmClaim}>领用确认</Button>
               <Button onClick={() => handleAction('弃领')}>弃领</Button>
               <Button onClick={() => handleAction('加签')}>加签</Button>
               <Button onClick={() => window.history.back()}>返回</Button>
-              <Button onClick={() => handleAction('发送领用通知')}>发送领用通知</Button>
-            </Space>
-          </div>
-        </Form>
-      </Card>
+              <Button icon={<BellRing size={14} />} onClick={() => handleAction('发送领用通知')}>发送领用通知</Button>
+            </div>
+          </Card>
+        </Space>
+      </Form>
 
       <Modal title="物资列表" open={assetOpen} width={1180} footer={null} onCancel={() => setAssetOpen(false)}>
         <QueryBar
