@@ -18,9 +18,10 @@ export const CURRENT_EMPLOYEE = {
 
 export const APPLICATION_NOTICE = [
   '须以实际业务需求及办公为前提填写申请；',
-  '资产申请以部门为维度，每月汇总提交；',
-  '如资产选择目录缺少所需信息，请联系集团 ES 王英；',
-  '外地分公司员工申请资产，可先联系当地 ES 沟通咨询。',
+  '资产申请以部门为维度，每月汇总提交；耗材申请以公司为维度，每周一汇总提交；',
+  '如资产选择目录缺少您需要的信息，请联系集团ES王英（邮箱：yingwang200620@sohu-inc.com）沟通咨询；',
+  '如耗材选择目录缺少您需要的信息，请联系集团ES刘建（邮箱：jianliubj119039@sohu-inc.com）沟通咨询；',
+  '外地分公司同学申请资产或耗材，可先联系当地ES沟通咨询。',
 ];
 
 export const ASSET_MATERIAL_OPTIONS = [
@@ -59,8 +60,7 @@ export const ASSET_MATERIAL_OPTIONS = [
   },
 ];
 
-export const APPLICATION_REASON_OPTIONS = ['设备更新', '新项目需要', '设备损坏', '新增岗位', '其他原因'];
-export const APPLICATION_PURPOSE_OPTIONS = ['员工用机', '部门公用', '其他用途', '专业用途'];
+export const APPLICATION_PURPOSE_OPTIONS = ['设备更新', '新项目需要', '设备损坏', '新增岗位', '其他原因'];
 
 export const DEFAULT_EMPLOYEE_SELF_SERVICE_APPLICATIONS = [
   {
@@ -78,8 +78,8 @@ export const DEFAULT_EMPLOYEE_SELF_SERVICE_APPLICATIONS = [
         config: 'M3 Pro / 18G / 512G SSD',
         referencePrice: 14999,
         quantity: 1,
+        purpose: '新项目需要',
         reason: '新项目需要',
-        purpose: '专业用途',
         detail: '用于移动端设计和视频素材处理',
         overStandard: true,
         departmentOverStandard: true,
