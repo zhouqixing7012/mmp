@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Eye, Plus, RotateCcw, ShoppingCart, Trash2 } from 'lucide-react';
+import { ArrowLeft, Eye, Plus, RotateCcw, ShoppingCart, Trash2 } from 'lucide-react';
 import {
   Alert,
   Button,
@@ -44,10 +44,7 @@ function buildApplication(materials) {
     taskStatus: '业务审批',
     currentNode: '直属领导',
     applicant: CURRENT_EMPLOYEE,
-    materials: materials.map((item) => ({
-      ...item,
-      reason: item.purpose,
-    })),
+    materials: materials.map((item) => ({ ...item, reason: item.purpose })),
     approvalRoute: overStandard
       ? ['直属领导', '5级及以上领导', '7级及以上领导', ...(requiresVp ? ['逐级审批至VP/CFO'] : [])]
       : ['直属领导', '5级及以上领导'],
@@ -74,7 +71,7 @@ export default function EmployeeAssetApplyPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [noticeOpen, setNoticeOpen] = useState(true);
   const [storeOpen, setStoreOpen] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [materials, setMaterials] = useState([]);
 
@@ -141,35 +138,17 @@ export default function EmployeeAssetApplyPage() {
     return true;
   };
 
-  const openPreview = () => {
-    if (validate()) setPreviewOpen(true);
-  };
-
   const submitApplication = () => {
-    const save = () => {
-      setSubmitLoading(true);
-      try {
-        const application = buildApplication(materials);
-        addEmployeeSelfServiceApplication(application);
-        setMaterials([]);
-        setPreviewOpen(false);
-        messageApi.success(`申请提交成功，申请单号：${application.id}`);
-      } finally {
-        setSubmitLoading(false);
-      }
-    };
-
-    if (overStandardCount > 0) {
-      Modal.confirm({
-        title: '确认提交超标申请',
-        content: `当前有 ${overStandardCount} 条申请物资已超标，申请将进入超标审批流程。是否继续？`,
-        okText: '确定提交',
-        cancelText: '取消',
-        onOk: save,
-      });
-      return;
+    setSubmitLoading(true);
+    try {
+      const application = buildApplication(materials);
+      addEmployeeSelfServiceApplication(application);
+      setMaterials([]);
+      setIsPreview(false);
+      messageApi.success(`申请提交成功，申请单号：${application.id}`);
+    } finally {
+      setSubmitLoading(false);
     }
-    save();
   };
 
   const relatedAssetOptions = useMemo(() => {
@@ -196,30 +175,34 @@ export default function EmployeeAssetApplyPage() {
       title: '数量',
       dataIndex: 'quantity',
       width: 90,
-      render: (value, record) => (
-        <InputNumber min={1} precision={0} value={value} onChange={(next) => updateMaterial(record.id, 'quantity', next || 1)} />
-      ),
+      render: (value, record) => isPreview
+        ? value
+        : <InputNumber min={1} precision={0} value={value} onChange={(next) => updateMaterial(record.id, 'quantity', next || 1)} />,
     },
     {
       title: '申请用途',
       dataIndex: 'purpose',
       width: 150,
-      render: (value, record) => (
-        <Select
-          style={{ width: '100%' }}
-          value={value || undefined}
-          placeholder="请选择"
-          options={APPLICATION_PURPOSE_OPTIONS.map((item) => ({ label: item, value: item }))}
-          onChange={(next) => updateMaterial(record.id, 'purpose', next)}
-        />
-      ),
+      render: (value, record) => isPreview
+        ? value
+        : (
+          <Select
+            style={{ width: '100%' }}
+            value={value || undefined}
+            placeholder="请选择"
+            options={APPLICATION_PURPOSE_OPTIONS.map((item) => ({ label: item, value: item }))}
+            onChange={(next) => updateMaterial(record.id, 'purpose', next)}
+          />
+        ),
     },
     {
       title: '关联主资产',
       dataIndex: 'relatedAsset',
       width: 220,
-      render: (value, record) => record.type === 'consumable'
-        ? (
+      render: (value, record) => {
+        if (record.type !== 'consumable') return <Typography.Text type="secondary">无需关联</Typography.Text>;
+        if (isPreview) return relatedAssetOptions.find((item) => item.value === value)?.label || '-';
+        return (
           <Select
             style={{ width: '100%' }}
             value={value || undefined}
@@ -227,23 +210,25 @@ export default function EmployeeAssetApplyPage() {
             options={relatedAssetOptions}
             onChange={(next) => updateMaterial(record.id, 'relatedAsset', next)}
           />
-        )
-        : <Typography.Text type="secondary">无需关联</Typography.Text>,
+        );
+      },
     },
     {
       title: '详细说明',
       dataIndex: 'detail',
       width: 280,
-      render: (value, record) => (
-        <TextArea
-          value={value}
-          rows={2}
-          maxLength={400}
-          showCount
-          placeholder="必填，最多400字符"
-          onChange={(event) => updateMaterial(record.id, 'detail', event.target.value)}
-        />
-      ),
+      render: (value, record) => isPreview
+        ? <Typography.Paragraph className="mb-0 whitespace-pre-wrap">{value}</Typography.Paragraph>
+        : (
+          <TextArea
+            value={value}
+            rows={2}
+            maxLength={400}
+            showCount
+            placeholder="必填，最多400字符"
+            onChange={(event) => updateMaterial(record.id, 'detail', event.target.value)}
+          />
+        ),
     },
     {
       title: '是否超标',
@@ -252,30 +237,39 @@ export default function EmployeeAssetApplyPage() {
       align: 'center',
       render: (value) => value ? <Tag color="error">已超标</Tag> : <Tag>未超标</Tag>,
     },
-    {
+    ...(!isPreview ? [{
       title: '操作',
       width: 70,
       align: 'center',
       render: (_, record) => (
         <Button danger type="text" icon={<Trash2 size={14} />} onClick={() => setMaterials((current) => current.filter((item) => item.id !== record.id))} />
       ),
-    },
+    }] : []),
   ];
 
   return (
     <div className="min-h-screen bg-slate-100 p-4">
       {contextHolder}
       {!canApply && <Alert className="mb-4" type="error" showIcon message="当前员工身份暂不支持发起资产申请" />}
+      {isPreview && overStandardCount > 0 && (
+        <Alert
+          className="mb-4"
+          type="error"
+          showIcon
+          message={`当前有 ${overStandardCount} 条申请物资已超标`}
+          description="超标申请提交后将进入超标审批流程，请确认申请内容无误后再提交。"
+        />
+      )}
       <Card
         bodyStyle={{ padding: 0 }}
         title={(
           <Space>
             <ShoppingCart size={18} className="text-blue-600" />
-            <span>本次申请明细</span>
+            <span>{isPreview ? '资产申请预览' : '本次申请明细'}</span>
             <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">{selectedCount} 件</span>
           </Space>
         )}
-        extra={<Button type="primary" icon={<Plus size={14} />} disabled={!canApply} onClick={() => setStoreOpen(true)}>添加物资</Button>}
+        extra={!isPreview ? <Button type="primary" icon={<Plus size={14} />} disabled={!canApply} onClick={() => setStoreOpen(true)}>添加物资</Button> : null}
       >
         <Table
           rowKey="id"
@@ -286,8 +280,17 @@ export default function EmployeeAssetApplyPage() {
           locale={{ emptyText: <Empty description="请点击右上角“添加物资”选择申请物资" /> }}
         />
         <div className="flex justify-center gap-3 border-t border-slate-100 bg-white px-5 py-4">
-          <Button type="primary" icon={<Eye size={14} />} disabled={!canApply} onClick={openPreview}>预览</Button>
-          <Button icon={<RotateCcw size={14} />} onClick={() => window.history.back()}>返回</Button>
+          {isPreview ? (
+            <>
+              <Button icon={<ArrowLeft size={14} />} onClick={() => setIsPreview(false)}>上一步</Button>
+              <Button type="primary" loading={submitLoading} onClick={submitApplication}>提交</Button>
+            </>
+          ) : (
+            <>
+              <Button type="primary" icon={<Eye size={14} />} disabled={!canApply} onClick={() => validate() && setIsPreview(true)}>预览</Button>
+              <Button icon={<RotateCcw size={14} />} onClick={() => window.history.back()}>返回</Button>
+            </>
+          )}
         </div>
       </Card>
 
@@ -302,19 +305,6 @@ export default function EmployeeAssetApplyPage() {
       </Modal>
 
       <AssetStoreModal open={storeOpen} onCancel={() => setStoreOpen(false)} onAdd={addMaterial} />
-
-      <Modal
-        title="资产申请预览"
-        open={previewOpen}
-        width={1000}
-        okText="提交申请"
-        cancelText="返回修改"
-        confirmLoading={submitLoading}
-        onOk={submitApplication}
-        onCancel={() => setPreviewOpen(false)}
-      >
-        <Table rowKey="id" columns={columns.filter((item) => item.title !== '操作')} dataSource={materials} pagination={false} scroll={{ x: 1050 }} />
-      </Modal>
     </div>
   );
 }
