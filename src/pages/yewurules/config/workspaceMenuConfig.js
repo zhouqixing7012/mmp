@@ -14,6 +14,14 @@ import {
   BorrowingIssuePage,
   BorrowingConfirmPage,
 } from '../../assetBorrowing';
+import {
+  ReplacementAssetsPage,
+  ReplacementApplyPage,
+  MyReplacementApplicationsPage,
+  ReplacementMisPage,
+  ReplacementHandlingPage,
+  ReplacementConfirmPage,
+} from '../../assetReplacement';
 
 export const WORKSPACE_MENU_ITEMS = [
   { key: '工作台首页', label: '工作台首页', Page: PersonalWorkspace },
@@ -30,6 +38,12 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: '借用审批', label: '借用审批', Page: BorrowingApprovalPage },
   { key: '借用发放', label: '借用发放', Page: BorrowingIssuePage },
   { key: '员工借用确认', label: '员工借用确认', Page: BorrowingConfirmPage },
+  { key: '我的资产', label: '我的资产', Page: ReplacementAssetsPage },
+  { key: '资产更换申请', label: '资产更换申请', Page: ReplacementApplyPage },
+  { key: '我的资产更换申请', label: '我的资产更换申请', Page: MyReplacementApplicationsPage },
+  { key: 'MIS鉴定', label: 'MIS鉴定', Page: ReplacementMisPage },
+  { key: '资产更换办理', label: '资产更换办理', Page: ReplacementHandlingPage },
+  { key: '员工资产确认', label: '员工资产确认', Page: ReplacementConfirmPage },
 ];
 
 export function getWorkspacePage(menuKey) {
