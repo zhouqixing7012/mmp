@@ -1,22 +1,22 @@
 import React, { useMemo, useState } from 'react';
 import { Button, Card, Empty, Input, Select, Space, Table, Tag, Typography } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
-import {
-  getAssetReplacementApplications,
-  getPendingHandlingApplications,
-} from '../../services/assetReplacementService';
+import { getAssetReplacementApplications } from '../../services/assetReplacementService';
 import ReplacementHandlingDetail from './ReplacementHandlingDetail';
 
 const EMPTY_QUERY = { applicationId: '', assetTag: '', applicant: '', currentNode: '' };
+const HANDLING_NODES = ['旧资产退回', '旧资产确认', '新资产发放', '新资产确认'];
 
 export default function ReplacementHandlingPage() {
   const [query, setQuery] = useState(EMPTY_QUERY);
   const [appliedQuery, setAppliedQuery] = useState(EMPTY_QUERY);
   const [selectedId, setSelectedId] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const pendingApplications = useMemo(() => getPendingHandlingApplications(), [refreshKey]);
-  const allApplications = useMemo(() => getAssetReplacementApplications(), [refreshKey]);
-  const selectedApplication = selectedId ? allApplications.find((item) => item.id === selectedId) : null;
+  const [applications, setApplications] = useState(() => getAssetReplacementApplications());
+
+  const pendingApplications = useMemo(() => applications.filter((application) => (
+    application.status === '处理中' && HANDLING_NODES.includes(application.currentNode)
+  )), [applications]);
+  const selectedApplication = selectedId ? applications.find((item) => item.id === selectedId) : null;
 
   const filteredApplications = useMemo(() => pendingApplications.filter((application) => (
     (!appliedQuery.applicationId || application.id.toLowerCase().includes(appliedQuery.applicationId.toLowerCase()))
@@ -43,7 +43,8 @@ export default function ReplacementHandlingPage() {
         application={selectedApplication}
         onBack={() => setSelectedId(null)}
         onUpdated={(applicationId, closeAfter) => {
-          setRefreshKey((value) => value + 1);
+          const nextApplications = getAssetReplacementApplications();
+          setApplications(nextApplications);
           if (closeAfter) setSelectedId(null);
           else setSelectedId(applicationId);
         }}
