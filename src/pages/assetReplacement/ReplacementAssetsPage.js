@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowRightLeft } from 'lucide-react';
+import { ArrowDownToLine, ArrowRightLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, Empty, Input, Select, Space, Table, Tag, Typography, message as antdMessage } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
@@ -9,6 +9,10 @@ import {
   getReplacementEligibility,
   setReplacementDraftAssetIds,
 } from '../../services/assetReplacementService';
+import {
+  getAssetReturnEligibility,
+  setAssetReturnDraftIds,
+} from '../../services/assetReturnService';
 
 const EMPTY_QUERY = { assetTag: '', assetDesc: '', status: '', materialType: '' };
 
@@ -32,8 +36,27 @@ export default function ReplacementAssetsPage() {
       messageApi.warning('请至少选择一条可更换资产');
       return;
     }
+    const invalid = assetIds.map((id) => assets.find((asset) => asset.id === id)).find((asset) => asset && !getReplacementEligibility(asset).allowed);
+    if (invalid) {
+      messageApi.warning(`资产（${invalid.assetTag}）${getReplacementEligibility(invalid).reason}`);
+      return;
+    }
     setReplacementDraftAssetIds(assetIds);
     navigate('/yewurules', { state: { workspace: '资产更换申请' } });
+  };
+
+  const startReturn = (assetIds) => {
+    if (assetIds.length === 0) {
+      messageApi.warning('请至少选择一条可退库资产');
+      return;
+    }
+    const invalid = assetIds.map((id) => assets.find((asset) => asset.id === id)).find((asset) => asset && !getAssetReturnEligibility(asset).allowed);
+    if (invalid) {
+      messageApi.warning(`资产（${invalid.assetTag}）${getAssetReturnEligibility(invalid).reason}`);
+      return;
+    }
+    setAssetReturnDraftIds(assetIds);
+    navigate('/yewurules', { state: { workspace: '资产退库' } });
   };
 
   const columns = [
@@ -55,28 +78,31 @@ export default function ReplacementAssetsPage() {
     { title: '启用日期', dataIndex: 'enabledDate', width: 120 },
     {
       title: '是否允许更换',
-      width: 180,
+      width: 170,
       render: (_, record) => {
         const eligibility = getReplacementEligibility(record);
-        return (
-          <div>
-            <StatusTag value={eligibility.allowed ? '是' : '否'} />
-            {!eligibility.allowed && <div className="mt-1 text-xs text-slate-500">{eligibility.reason}</div>}
-          </div>
-        );
+        return <div><StatusTag value={eligibility.allowed ? '是' : '否'} />{!eligibility.allowed && <div className="mt-1 text-xs text-slate-500">{eligibility.reason}</div>}</div>;
+      },
+    },
+    {
+      title: '是否允许退库',
+      width: 170,
+      render: (_, record) => {
+        const eligibility = getAssetReturnEligibility(record);
+        return <div><StatusTag value={eligibility.allowed ? '是' : '否'} />{!eligibility.allowed && <div className="mt-1 text-xs text-slate-500">{eligibility.reason}</div>}</div>;
       },
     },
     {
       title: '操作',
-      width: 90,
+      width: 130,
       fixed: 'right',
       align: 'center',
-      render: (_, record) => {
-        const eligibility = getReplacementEligibility(record);
-        return eligibility.allowed ? (
-          <Button type="link" className="px-0" onClick={() => startReplacement([record.id])}>更换</Button>
-        ) : '-';
-      },
+      render: (_, record) => (
+        <Space size={4}>
+          <Button type="link" className="px-0" disabled={!getReplacementEligibility(record).allowed} onClick={() => startReplacement([record.id])}>更换</Button>
+          <Button type="link" className="px-0" disabled={!getAssetReturnEligibility(record).allowed} onClick={() => startReturn([record.id])}>退库</Button>
+        </Space>
+      ),
     },
   ];
 
@@ -86,44 +112,24 @@ export default function ReplacementAssetsPage() {
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
           <Typography.Title level={4} className="mb-0">我的资产</Typography.Title>
-          <Typography.Text type="secondary">资产更换入口</Typography.Text>
+          <Typography.Text type="secondary">资产更换 / 资产退库入口</Typography.Text>
         </div>
 
         <Card size="small">
-          <QueryBar
-            onQuery={() => setAppliedQuery(query)}
-            onReset={() => {
-              setQuery(EMPTY_QUERY);
-              setAppliedQuery(EMPTY_QUERY);
-            }}
-          >
-            <QueryItem label="资产标签号">
-              <Input allowClear value={query.assetTag} placeholder="请输入资产标签号" onChange={(event) => setQuery({ ...query, assetTag: event.target.value })} />
-            </QueryItem>
-            <QueryItem label="资产说明">
-              <Input allowClear value={query.assetDesc} placeholder="请输入资产说明或配置" onChange={(event) => setQuery({ ...query, assetDesc: event.target.value })} />
-            </QueryItem>
-            <QueryItem label="资产状态">
-              <Select allowClear value={query.status || undefined} placeholder="全部" options={[...new Set(assets.map((item) => item.status))].map((value) => ({ label: value, value }))} onChange={(value) => setQuery({ ...query, status: value || '' })} />
-            </QueryItem>
-            <QueryItem label="物资总类">
-              <Select allowClear value={query.materialType || undefined} placeholder="全部" options={[...new Set(assets.map((item) => item.materialType))].map((value) => ({ label: value, value }))} onChange={(value) => setQuery({ ...query, materialType: value || '' })} />
-            </QueryItem>
+          <QueryBar onQuery={() => setAppliedQuery(query)} onReset={() => { setQuery(EMPTY_QUERY); setAppliedQuery(EMPTY_QUERY); }}>
+            <QueryItem label="资产标签号"><Input allowClear value={query.assetTag} placeholder="请输入资产标签号" onChange={(event) => setQuery({ ...query, assetTag: event.target.value })} /></QueryItem>
+            <QueryItem label="资产说明"><Input allowClear value={query.assetDesc} placeholder="请输入资产说明或配置" onChange={(event) => setQuery({ ...query, assetDesc: event.target.value })} /></QueryItem>
+            <QueryItem label="资产状态"><Select allowClear value={query.status || undefined} placeholder="全部" options={[...new Set(assets.map((item) => item.status))].map((value) => ({ label: value, value }))} onChange={(value) => setQuery({ ...query, status: value || '' })} /></QueryItem>
+            <QueryItem label="物资总类"><Select allowClear value={query.materialType || undefined} placeholder="全部" options={[...new Set(assets.map((item) => item.materialType))].map((value) => ({ label: value, value }))} onChange={(value) => setQuery({ ...query, materialType: value || '' })} /></QueryItem>
           </QueryBar>
         </Card>
 
         <Card
           size="small"
           title="本人名下资产"
-          extra={(
-            <Button type="primary" icon={<ArrowRightLeft size={14} />} onClick={() => startReplacement(selectedRowKeys)}>
-              批量更换
-            </Button>
-          )}
+          extra={<Space><Button type="primary" icon={<ArrowRightLeft size={14} />} onClick={() => startReplacement(selectedRowKeys)}>批量更换</Button><Button icon={<ArrowDownToLine size={14} />} onClick={() => startReturn(selectedRowKeys)}>批量退库</Button></Space>}
         >
-          <div className="mb-3 rounded border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-700">
-            仅正式员工或实习生本人名下、状态为“在用-使用中”、配置允许更换且未被其他单据锁定的资产可发起更换。
-          </div>
+          <div className="mb-3 rounded border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-700">勾选资产后可按业务条件批量更换或退库；提交时系统会再次校验资产状态及锁定情况。</div>
           <Table
             rowKey="id"
             columns={columns}
@@ -131,10 +137,10 @@ export default function ReplacementAssetsPage() {
             rowSelection={{
               selectedRowKeys,
               onChange: setSelectedRowKeys,
-              getCheckboxProps: (record) => ({ disabled: !getReplacementEligibility(record).allowed }),
+              getCheckboxProps: (record) => ({ disabled: !getReplacementEligibility(record).allowed && !getAssetReturnEligibility(record).allowed }),
             }}
             pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }}
-            scroll={{ x: 1450 }}
+            scroll={{ x: 1650 }}
             locale={{ emptyText: <Empty description="暂无符合条件的资产" /> }}
           />
         </Card>
