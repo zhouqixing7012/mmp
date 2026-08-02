@@ -1,9 +1,33 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, LayoutDashboard, Settings, User } from 'lucide-react';
 import WorkspaceMenu from './WorkspaceMenu';
 import { BACKEND_CONFIG_MENU_ITEMS, MAIN_MENU_ITEMS } from '../config/menuConfig';
 
 export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, onSubMenuSelect }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const onMenuToggleRef = useRef(onMenuToggle);
+  const onSubMenuSelectRef = useRef(onSubMenuSelect);
+
+  useEffect(() => {
+    onMenuToggleRef.current = onMenuToggle;
+    onSubMenuSelectRef.current = onSubMenuSelect;
+  }, [onMenuToggle, onSubMenuSelect]);
+
+  useEffect(() => {
+    const targetMenu = location.state?.workspace;
+    if (!targetMenu) return;
+
+    if (activeMenu !== '个人工作台') {
+      onMenuToggleRef.current?.('个人工作台', false);
+    }
+    if (activeSubMenu !== targetMenu) {
+      onSubMenuSelectRef.current?.(targetMenu);
+    }
+    navigate(location.pathname, { replace: true, state: null });
+  }, [activeMenu, activeSubMenu, location.key, location.pathname, location.state, navigate]);
+
   return (
     <div className="w-56 min-h-0 bg-[#001529] text-white flex flex-col transition-all duration-300 shadow-xl z-20 relative">
       <div className="h-14 shrink-0 flex items-center gap-3 px-4 shadow-[0_1px_2px_rgba(0,0,0,0.3)] z-10 bg-[#002140]">
