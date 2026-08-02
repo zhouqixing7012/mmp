@@ -10,7 +10,6 @@ import {
   Select,
   Space,
   Table,
-  Tag,
   Typography,
   message as antdMessage,
 } from 'antd';
@@ -38,7 +37,10 @@ export default function BorrowingAllocationPage() {
   const [employeeAssetsOpen, setEmployeeAssetsOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const currentDetail = useMemo(() => details.find((item) => item.id === matchDetailId) || null, [details, matchDetailId]);
+  const currentDetail = useMemo(
+    () => details.find((item) => item.id === matchDetailId) || null,
+    [details, matchDetailId]
+  );
 
   const refresh = () => {
     const next = getBorrowingApplicationByNode('ES配给');
@@ -112,33 +114,40 @@ export default function BorrowingAllocationPage() {
     });
   };
 
-  const columns = [
+  const applicationColumns = [
     { title: '资产说明', dataIndex: 'assetDesc', width: 220 },
     { title: '配置', dataIndex: 'config', width: 220 },
-    { title: '借用开始日期', dataIndex: 'startDate', width: 130 },
-    { title: '借用结束日期', dataIndex: 'endDate', width: 130 },
-    { title: '借用原因', dataIndex: 'reason', width: 100 },
-    { title: '需求说明', dataIndex: 'detail', width: 230 },
+    { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
+    { title: '借用日期', width: 220, render: (_, record) => `${record.startDate} 至 ${record.endDate}` },
+    { title: '借用原因', dataIndex: 'reason', width: 110 },
+    { title: '需求说明', dataIndex: 'detail', width: 260 },
+  ];
+
+  const allocationColumns = [
     {
-      title: '资产标签号',
-      width: 180,
+      title: '申请物资说明',
+      width: 320,
       render: (_, record) => (
-        <Button type="link" icon={<Search size={14} />} className="px-0" onClick={() => setMatchDetailId(record.id)}>
-          {record.matchedAsset?.assetTag || '选择资产'}
-        </Button>
+        <div>
+          <div>{record.assetDesc}</div>
+          <Typography.Text type="secondary">{record.config}</Typography.Text>
+        </div>
       ),
     },
-    { title: 'SN号', width: 140, render: (_, record) => record.matchedAsset?.sn || '-' },
-    { title: '公司', width: 220, render: (_, record) => record.matchedAsset?.company || '-' },
-    { title: '板块', width: 90, render: (_, record) => record.matchedAsset?.block || '-' },
-    { title: '资产说明（实物）', width: 230, render: (_, record) => record.matchedAsset?.assetDesc || '-' },
-    { title: '配置（实物）', width: 220, render: (_, record) => record.matchedAsset?.config || '-' },
     {
-      title: '资产状态',
-      width: 120,
-      render: (_, record) => record.matchedAsset ? <Tag color="success">{record.matchedAsset.status}</Tag> : <Tag>待库管员配给</Tag>,
+      title: '资产标签号',
+      width: 300,
+      render: (_, record) => (
+        <Space.Compact className="w-full">
+          <Input readOnly value={record.matchedAsset?.assetTag || ''} placeholder="请选择匹配资产" />
+          <Button icon={<Search size={14} />} onClick={() => setMatchDetailId(record.id)} />
+        </Space.Compact>
+      ),
     },
-    { title: '升级耗材信息', width: 210, render: (_, record) => record.matchedAsset?.upgradeConsumables?.join('；') || '-' },
+    {
+      title: '匹配资产描述',
+      render: (_, record) => record.matchedAsset?.assetDesc || '-',
+    },
   ];
 
   if (!application) {
@@ -147,7 +156,9 @@ export default function BorrowingAllocationPage() {
         {contextHolder}
         <Card>
           <Empty description="暂无待配给的资产借用申请" />
-          <div className="mt-4 flex justify-center"><Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button></div>
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+          </div>
         </Card>
       </div>
     );
@@ -162,21 +173,61 @@ export default function BorrowingAllocationPage() {
           <Typography.Text type="secondary">借用单号：{application.id}</Typography.Text>
         </div>
 
-        <BorrowingApplicantCard applicant={application.applicant} applyDate={application.applyDate} warehouse={warehouse} onViewAssets={() => setEmployeeAssetsOpen(true)} />
+        <BorrowingApplicantCard
+          applicant={application.applicant}
+          applyDate={application.applyDate}
+          onViewAssets={() => setEmployeeAssetsOpen(true)}
+          compact
+        />
 
-        <Card title="ES 配给信息" size="small">
-          <div className="mb-4 flex items-center gap-3">
-            <Typography.Text strong><span className="text-red-500">*</span> 办理仓库：</Typography.Text>
-            <Select style={{ width: 260 }} value={warehouse} options={WAREHOUSE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => {
-              setWarehouse(value);
-              setDetails((current) => current.map((item) => ({ ...item, matchedAsset: item.matchedAsset?.warehouse === value ? item.matchedAsset : null })));
-            }} />
-          </div>
-          <Table rowKey="id" columns={columns} dataSource={details} pagination={false} scroll={{ x: 2300 }} />
-          <div className="mt-4">
-            <Typography.Text strong>ES 配给意见：</Typography.Text>
-            <TextArea className="mt-2" rows={3} maxLength={400} showCount value={comment} placeholder="同意时非必填，驳回时必填" onChange={(event) => setComment(event.target.value)} />
-          </div>
+        <Card title="申请物资明细" size="small">
+          <Table
+            rowKey="id"
+            columns={applicationColumns}
+            dataSource={details}
+            pagination={false}
+            scroll={{ x: 1100 }}
+          />
+        </Card>
+
+        <Card title="ES 配给处理" size="small">
+          <Space direction="vertical" size={16} className="w-full">
+            <div className="flex items-center gap-3">
+              <Typography.Text strong><span className="text-red-500">*</span> 办理仓库：</Typography.Text>
+              <Select
+                style={{ width: 260 }}
+                value={warehouse}
+                options={WAREHOUSE_OPTIONS.map((value) => ({ label: value, value }))}
+                onChange={(value) => {
+                  setWarehouse(value);
+                  setDetails((current) => current.map((item) => ({
+                    ...item,
+                    matchedAsset: item.matchedAsset?.warehouse === value ? item.matchedAsset : null,
+                  })));
+                }}
+              />
+            </div>
+
+            <Table
+              rowKey="id"
+              columns={allocationColumns}
+              dataSource={details}
+              pagination={false}
+            />
+
+            <div>
+              <Typography.Text strong>ES 建议：</Typography.Text>
+              <TextArea
+                className="mt-2"
+                rows={4}
+                maxLength={400}
+                showCount
+                value={comment}
+                placeholder="请输入 ES 建议，最多400字"
+                onChange={(event) => setComment(event.target.value)}
+              />
+            </div>
+          </Space>
         </Card>
 
         <BorrowingApprovalHistory records={application.approvalHistory} />
@@ -197,12 +248,19 @@ export default function BorrowingAllocationPage() {
         currentAsset={currentDetail?.matchedAsset}
         onCancel={() => setMatchDetailId(null)}
         onConfirm={(asset) => {
-          setDetails((current) => current.map((item) => item.id === matchDetailId ? { ...item, matchedAsset: asset } : item));
+          setDetails((current) => current.map((item) => (
+            item.id === matchDetailId ? { ...item, matchedAsset: asset } : item
+          )));
           setMatchDetailId(null);
           messageApi.success(`已匹配资产：${asset.assetTag}`);
         }}
       />
-      <EmployeeAssetsModal open={employeeAssetsOpen} applicant={application.applicant} onCancel={() => setEmployeeAssetsOpen(false)} />
+
+      <EmployeeAssetsModal
+        open={employeeAssetsOpen}
+        applicant={application.applicant}
+        onCancel={() => setEmployeeAssetsOpen(false)}
+      />
     </div>
   );
 }
