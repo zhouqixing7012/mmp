@@ -60,3 +60,10 @@
 - 角色管理页（rolemgt.js）的 UserLinkModal 可直接复制到其他页面，适配 mockAllUsers 数据和 onConfirm 回调即可
 - StatusTag 组件（src/components/StatusTag.jsx）统一管理状态标签样式，避免各页面重复写 Tag
 - 弹窗按钮栏样式统一：`flex justify-center gap-3 + Button type="primary" + Button`
+
+## 2026-08-03 资产借用页面收敛
+
+- 新业务页面不要仅参考 PRD 独立设计，先找到系统内相同角色、相同操作的成熟页面，直接复用其结构和交互。
+- 借用申请应以资产申请为基准：不额外展示申请人信息，物资选择保持同一五级分栏样式，起止日期合并为 RangePicker。
+- 借用配给应以资产配给为基准：申请人字段、页面分区、库存资产选择弹窗保持一致，仅保留借用特有字段。
+- 审批页面默认精简展示，顶部规则提示只有用户明确要求时才增加；关键字段优先排列，非必要的 SN 号、资产状态不要重复展示。
