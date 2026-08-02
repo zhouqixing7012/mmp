@@ -10,6 +10,7 @@ export default function ReplacementAssetSelectModal({ open, oldAsset, warehouse,
   const [appliedQuery, setAppliedQuery] = useState(EMPTY_QUERY);
   const [selectedKey, setSelectedKey] = useState(null);
   const assets = useMemo(() => {
+    if (!open) return [];
     const available = getAvailableReplacementAssets(oldAsset, warehouse);
     if (currentAsset && !available.some((asset) => asset.id === currentAsset.id)) {
       return [currentAsset, ...available];
