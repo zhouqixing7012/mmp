@@ -48,7 +48,7 @@ export default function ContractReturnApplyPage() {
 
   const numberColumns = [
     { title: '合约号码', dataIndex: 'number', width: 140 },
-    { title: '合约机标签号', dataIndex: 'assetTag', width: 150, render: (value) => <Button type="link" className="px-0">{value}</Button> },
+    { title: '合约机标签号', dataIndex: 'assetTag', width: 150, render: (value) => <Typography.Text className="text-blue-600">{value}</Typography.Text> },
     { title: '资产小类', dataIndex: 'category', width: 110 },
     { title: '品牌', dataIndex: 'brand', width: 100 },
     { title: '合约号码说明', dataIndex: 'description', width: 200 },
