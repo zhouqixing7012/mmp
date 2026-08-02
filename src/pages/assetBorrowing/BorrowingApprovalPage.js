@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { CheckCircle2, UserPlus, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Alert,
   Button,
   Card,
   Empty,
@@ -78,21 +77,35 @@ export default function BorrowingApprovalPage() {
   };
 
   const columns = [
-    { title: '资产说明', dataIndex: 'assetDesc', width: 220 },
-    { title: '配置', dataIndex: 'config', width: 220 },
-    { title: '数量', dataIndex: 'quantity', width: 70, align: 'center' },
-    { title: '借用开始日期', dataIndex: 'startDate', width: 130 },
-    { title: '借用结束日期', dataIndex: 'endDate', width: 130 },
-    { title: '借用原因', dataIndex: 'reason', width: 100 },
-    { title: '需求说明', dataIndex: 'detail', width: 230 },
     {
-      title: '配给资产标签号',
+      title: '当前仓库',
+      width: 140,
+      render: () => application?.warehouse || '-',
+    },
+    {
+      title: '资产标签号',
       width: 170,
       render: (_, record) => record.matchedAsset?.assetTag || <Tag>待库管员配给</Tag>,
     },
-    { title: 'SN号', width: 140, render: (_, record) => record.matchedAsset?.sn || '-' },
-    { title: '配给仓库', width: 140, render: (_, record) => record.matchedAsset?.warehouse || application?.warehouse || '-' },
-    { title: '资产状态', width: 120, render: (_, record) => record.matchedAsset ? <Tag color="success">{record.matchedAsset.status}</Tag> : '-' },
+    {
+      title: '资产说明',
+      dataIndex: 'assetDesc',
+      width: 250,
+      render: (value, record) => (
+        <div>
+          <div>{value}</div>
+          <Typography.Text type="secondary">{record.config}</Typography.Text>
+        </div>
+      ),
+    },
+    { title: '数量', dataIndex: 'quantity', width: 70, align: 'center' },
+    {
+      title: '借用日期',
+      width: 220,
+      render: (_, record) => `${record.startDate} 至 ${record.endDate}`,
+    },
+    { title: '借用原因', dataIndex: 'reason', width: 100 },
+    { title: '需求说明', dataIndex: 'detail', width: 260 },
   ];
 
   if (!application) {
@@ -101,7 +114,9 @@ export default function BorrowingApprovalPage() {
         {contextHolder}
         <Card>
           <Empty description="暂无待审批的资产借用申请" />
-          <div className="mt-4 flex justify-center"><Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button></div>
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+          </div>
         </Card>
       </div>
     );
@@ -116,22 +131,29 @@ export default function BorrowingApprovalPage() {
           <Typography.Text type="secondary">借用单号：{application.id}</Typography.Text>
         </div>
 
-        <Alert
-          type="info"
-          showIcon
-          message="审批人按申请人直属汇报链查找 5 级及以上领导"
-          description="如流程需流转至 VP/CEO，必须先经过一名 VP/CEO-1，不允许申请人直接流转至 VP/CEO。"
-        />
-        <BorrowingApplicantCard applicant={application.applicant} applyDate={application.applyDate} warehouse={application.warehouse} />
+        <BorrowingApplicantCard applicant={application.applicant} applyDate={application.applyDate} compact />
 
-        <Card title="申请及配给资产信息" size="small">
-          <Table rowKey="id" columns={columns} dataSource={application.details} pagination={false} scroll={{ x: 1550 }} />
+        <Card title="申请及配给信息" size="small">
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={application.details}
+            pagination={false}
+            scroll={{ x: 1200 }}
+          />
         </Card>
 
         <BorrowingApprovalHistory records={application.approvalHistory} />
 
         <Card title="当前审批操作" size="small">
-          <TextArea rows={3} maxLength={400} showCount value={comment} placeholder="同意时非必填，驳回时必填" onChange={(event) => setComment(event.target.value)} />
+          <TextArea
+            rows={3}
+            maxLength={400}
+            showCount
+            value={comment}
+            placeholder="同意时非必填，驳回时必填"
+            onChange={(event) => setComment(event.target.value)}
+          />
           <div className="mt-4 flex justify-center gap-3">
             <Button type="primary" icon={<CheckCircle2 size={14} />} loading={loading} onClick={() => decide('同意')}>同意</Button>
             <Button danger icon={<XCircle size={14} />} loading={loading} onClick={() => decide('驳回')}>驳回</Button>
