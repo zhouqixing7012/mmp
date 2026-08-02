@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import dayjs from 'dayjs';
 import { Plus, Send, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -6,6 +7,7 @@ import {
   Button,
   Card,
   Checkbox,
+  DatePicker,
   Empty,
   Input,
   InputNumber,
@@ -24,18 +26,17 @@ import {
   CURRENT_BORROWER,
 } from '../../mock/assetBorrowingMock';
 import { addAssetBorrowingApplication } from '../../services/assetBorrowingService';
-import BorrowingApplicantCard from './BorrowingApplicantCard';
 import BorrowMaterialModal from './BorrowMaterialModal';
 import {
   addDate,
   buildBorrowingId,
   isBorrowPeriodValid,
-  maxBorrowEndDate,
   nowText,
   todayText,
 } from './utils';
 
 const { TextArea } = Input;
+const { RangePicker } = DatePicker;
 
 function createDetail(material) {
   const startDate = todayText();
@@ -62,21 +63,31 @@ export default function BorrowingApplyPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const canApply = CURRENT_BORROWER.employeeType === '正式员工';
-  const totalQuantity = useMemo(() => details.reduce((sum, item) => sum + Number(item.quantity || 0), 0), [details]);
-  const maxStartDate = useMemo(() => addDate(todayText(), { days: 30 }), []);
+  const totalQuantity = useMemo(
+    () => details.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+    [details]
+  );
 
   const updateDetail = (rowKey, field, value) => {
-    setDetails((current) => current.map((item) => {
-      if (item.rowKey !== rowKey) return item;
-      if (field === 'startDate') {
-        return {
-          ...item,
-          startDate: value,
-          endDate: value ? addDate(value, { months: 1 }) : '',
-        };
-      }
-      return { ...item, [field]: value };
-    }));
+    setDetails((current) => current.map((item) => (
+      item.rowKey === rowKey ? { ...item, [field]: value } : item
+    )));
+  };
+
+  const updatePeriod = (rowKey, dates) => {
+    const startDate = dates?.[0]?.format('YYYY-MM-DD') || '';
+    const endDate = dates?.[1]?.format('YYYY-MM-DD') || '';
+    setDetails((current) => current.map((item) => (
+      item.rowKey === rowKey ? { ...item, startDate, endDate } : item
+    )));
+  };
+
+  const applyPeriodShortcut = (record, shortcut) => {
+    const start = dayjs(record.startDate || todayText());
+    const end = shortcut.months
+      ? start.add(shortcut.months, 'month')
+      : start.add(shortcut.days, 'day');
+    updatePeriod(record.rowKey, [start, end]);
   };
 
   const addMaterials = (materials) => {
@@ -108,8 +119,18 @@ export default function BorrowingApplyPage() {
       messageApi.warning('借用数量必须为正整数');
       return false;
     }
+
+    const today = dayjs().startOf('day');
+    const maxStartDate = today.add(30, 'day');
+    if (details.some((item) => {
+      const start = dayjs(item.startDate);
+      return !start.isValid() || start.isBefore(today, 'day') || start.isAfter(maxStartDate, 'day');
+    })) {
+      messageApi.warning('借用开始日期仅可选择当前日期至未来 30 天');
+      return false;
+    }
     if (details.some((item) => !isBorrowPeriodValid(item.startDate, item.endDate))) {
-      messageApi.warning('借用期限最长为 3 个月，请重新选择借用结束日期。');
+      messageApi.warning('借用期限最长为 3 个月，请重新选择借用日期。');
       return false;
     }
     if (details.some((item) => !item.reason)) {
@@ -188,59 +209,61 @@ export default function BorrowingApplyPage() {
     {
       title: '资产说明',
       dataIndex: 'assetDesc',
-      width: 220,
+      width: 240,
       render: (value, record) => (
         <div>
           <div className="font-medium text-slate-800">{value}</div>
-          <Typography.Text type="secondary">{record.category} / {record.subCategory}</Typography.Text>
+          <Typography.Text type="secondary">{record.config}</Typography.Text>
         </div>
       ),
     },
-    { title: '配置', dataIndex: 'config', width: 230 },
     {
       title: '借用数量',
       dataIndex: 'quantity',
       width: 110,
       render: (value, record) => (
-        <InputNumber min={1} precision={0} value={value} onChange={(next) => updateDetail(record.rowKey, 'quantity', next || 1)} />
+        <InputNumber
+          min={1}
+          precision={0}
+          value={value}
+          onChange={(next) => updateDetail(record.rowKey, 'quantity', next || 1)}
+        />
       ),
     },
     {
-      title: '借用开始日期',
-      dataIndex: 'startDate',
-      width: 170,
-      render: (value, record) => (
-        <Input type="date" min={todayText()} max={maxStartDate} value={value} onChange={(event) => updateDetail(record.rowKey, 'startDate', event.target.value)} />
-      ),
-    },
-    {
-      title: '借用结束日期',
-      dataIndex: 'endDate',
-      width: 300,
-      render: (value, record) => (
-        <Space direction="vertical" size={6} className="w-full">
-          <Input
-            type="date"
-            disabled={!record.startDate}
-            min={record.startDate}
-            max={record.startDate ? maxBorrowEndDate(record.startDate) : undefined}
-            value={value}
-            onChange={(event) => updateDetail(record.rowKey, 'endDate', event.target.value)}
-          />
-          <Space wrap size={[4, 4]}>
-            {BORROW_PERIOD_SHORTCUTS.map((shortcut) => (
-              <Button
-                key={shortcut.label}
-                type="link"
-                size="small"
-                className="h-auto px-0"
-                onClick={() => updateDetail(record.rowKey, 'endDate', addDate(record.startDate, shortcut))}
-              >
-                {shortcut.label}
-              </Button>
-            ))}
-          </Space>
-        </Space>
+      title: '借用日期',
+      width: 360,
+      render: (_, record) => (
+        <RangePicker
+          className="w-full"
+          allowClear={false}
+          format="YYYY-MM-DD"
+          value={record.startDate && record.endDate ? [dayjs(record.startDate), dayjs(record.endDate)] : null}
+          onChange={(dates) => updatePeriod(record.rowKey, dates)}
+          disabledDate={(current, info) => {
+            if (!current) return false;
+            const today = dayjs().startOf('day');
+            if (!info?.from) {
+              return current.isBefore(today, 'day') || current.isAfter(today.add(30, 'day'), 'day');
+            }
+            const start = info.from.startOf('day');
+            return current.isBefore(start, 'day') || current.isAfter(start.add(3, 'month'), 'day');
+          }}
+          renderExtraFooter={() => (
+            <Space wrap size={[4, 4]}>
+              {BORROW_PERIOD_SHORTCUTS.map((shortcut) => (
+                <Button
+                  key={shortcut.label}
+                  type="link"
+                  size="small"
+                  onClick={() => applyPeriodShortcut(record, shortcut)}
+                >
+                  {shortcut.label}
+                </Button>
+              ))}
+            </Space>
+          )}
+        />
       ),
     },
     {
@@ -260,7 +283,7 @@ export default function BorrowingApplyPage() {
     {
       title: '需求说明',
       dataIndex: 'detail',
-      width: 280,
+      width: 300,
       render: (value, record) => (
         <TextArea
           value={value}
@@ -274,7 +297,7 @@ export default function BorrowingApplyPage() {
     },
     {
       title: '操作',
-      width: 80,
+      width: 70,
       fixed: 'right',
       align: 'center',
       render: (_, record) => (
@@ -282,7 +305,6 @@ export default function BorrowingApplyPage() {
           danger
           type="text"
           icon={<Trash2 size={14} />}
-          disabled={details.length === 1}
           onClick={() => setDetails((current) => current.filter((item) => item.rowKey !== record.rowKey))}
         />
       ),
@@ -292,47 +314,46 @@ export default function BorrowingApplyPage() {
   return (
     <div className="min-h-screen bg-slate-100 p-4">
       {contextHolder}
-      <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
-          <Typography.Title level={4} className="mb-0">资产借用申请</Typography.Title>
-          <Typography.Text type="secondary">仅正式员工可发起</Typography.Text>
+      {!canApply && <Alert className="mb-4" type="error" showIcon message="当前员工类型暂不支持资产借用。" />}
+
+      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <Space>
+            <span className="font-medium text-slate-800">本次借用明细</span>
+            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">{totalQuantity} 件</span>
+          </Space>
+          <Button type="primary" icon={<Plus size={14} />} disabled={!canApply} onClick={() => setMaterialModalOpen(true)}>
+            添加物资
+          </Button>
         </div>
 
-        {!canApply && <Alert type="error" showIcon message="当前员工类型暂不支持资产借用。" />}
-        <BorrowingApplicantCard applicant={CURRENT_BORROWER} applyDate={todayText()} warehouse={CURRENT_BORROWER.defaultWarehouse} />
+        <Table
+          rowKey="rowKey"
+          columns={columns}
+          dataSource={details}
+          pagination={false}
+          scroll={{ x: 1200 }}
+          locale={{ emptyText: <Empty description="请点击右上角“添加物资”选择借用资产" /> }}
+        />
+      </section>
 
-        <Card
-          title={<Space><span>借用资产信息</span><Typography.Text type="secondary">共 {totalQuantity} 件</Typography.Text></Space>}
-          size="small"
-          extra={<Button type="primary" icon={<Plus size={14} />} disabled={!canApply} onClick={() => setMaterialModalOpen(true)}>添加物资</Button>}
-        >
-          <Table
-            rowKey="rowKey"
-            columns={columns}
-            dataSource={details}
-            pagination={false}
-            scroll={{ x: 1600 }}
-            locale={{ emptyText: <Empty description="请点击“添加物资”选择允许借用的资产物料" /> }}
-          />
-        </Card>
+      <Card title="资产保管职责" size="small" className="mt-4">
+        <Typography.Paragraph className="mb-3">{BORROW_CUSTODY_TEXT}</Typography.Paragraph>
+        <Checkbox checked={custodyAccepted} onChange={(event) => setCustodyAccepted(event.target.checked)}>
+          我已阅读并同意资产保管职责
+        </Checkbox>
+      </Card>
 
-        <Card title="资产保管职责" size="small">
-          <Typography.Paragraph className="mb-3">{BORROW_CUSTODY_TEXT}</Typography.Paragraph>
-          <Checkbox checked={custodyAccepted} onChange={(event) => setCustodyAccepted(event.target.checked)}>
-            我已阅读并同意资产保管职责
-          </Checkbox>
-        </Card>
-
-        <div className="flex justify-center gap-3 rounded-lg bg-white px-5 py-4 shadow-sm">
-          <Button type="primary" icon={<Send size={14} />} loading={submitting} onClick={submit}>提交</Button>
-          <Button onClick={cancel}>取消</Button>
-        </div>
-      </Space>
+      <div className="mt-4 flex justify-center gap-3 rounded-lg bg-white px-5 py-4 shadow-sm">
+        <Button type="primary" icon={<Send size={14} />} loading={submitting} onClick={submit}>提交</Button>
+        <Button onClick={cancel}>取消</Button>
+      </div>
 
       <Modal title="申请须知" open={noticeOpen} closable={false} maskClosable={false} keyboard={false} footer={null}>
         {BORROW_NOTICE.map((item, index) => <Typography.Paragraph key={item}>{index + 1}、{item}</Typography.Paragraph>)}
         <div className="flex justify-center pt-2"><Button type="primary" onClick={() => setNoticeOpen(false)}>已阅读</Button></div>
       </Modal>
+
       <BorrowMaterialModal open={materialModalOpen} onCancel={() => setMaterialModalOpen(false)} onConfirm={addMaterials} />
     </div>
   );
