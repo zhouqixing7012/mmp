@@ -6,7 +6,7 @@ import { confirmReturnEmployee, getActiveReturnConfirmation } from '../../servic
 export default function AssetReturnConfirmPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [employeeId, setEmployeeId] = useState('213852');
-  const [version, setVersion] = useState(0);
+  const [, setVersion] = useState(0);
   const application = getActiveReturnConfirmation('asset');
 
   const confirm = (method) => {
