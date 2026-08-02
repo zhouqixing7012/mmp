@@ -13,8 +13,7 @@ export default function MyReplacementApplicationsPage() {
   const [query, setQuery] = useState(EMPTY_QUERY);
   const [appliedQuery, setAppliedQuery] = useState(EMPTY_QUERY);
   const [detailApplication, setDetailApplication] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const applications = useMemo(() => getAssetReplacementApplications(), [refreshKey]);
+  const [applications, setApplications] = useState(() => getAssetReplacementApplications());
 
   const filteredApplications = useMemo(() => applications.filter((application) => {
     const inRange = !appliedQuery.applyRange || (
@@ -46,7 +45,7 @@ export default function MyReplacementApplicationsPage() {
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
           <Typography.Title level={4} className="mb-0">我的资产更换申请</Typography.Title>
-          <Button onClick={() => setRefreshKey((value) => value + 1)}>刷新</Button>
+          <Button onClick={() => setApplications(getAssetReplacementApplications())}>刷新</Button>
         </div>
 
         <Card size="small">
