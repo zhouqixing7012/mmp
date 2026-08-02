@@ -8,7 +8,7 @@ const EMPTY_QUERY = { assetTag: '', materialType: '', status: '', assetDesc: '',
 export default function ReplacementEmployeeAssetsModal({ open, applicant, onCancel }) {
   const [query, setQuery] = useState(EMPTY_QUERY);
   const [appliedQuery, setAppliedQuery] = useState(EMPTY_QUERY);
-  const assets = useMemo(() => getEmployeeReplacementAssets(), [open]);
+  const assets = useMemo(() => (open ? getEmployeeReplacementAssets() : []), [open]);
 
   const filteredAssets = useMemo(() => assets.filter((asset) => (
     (!appliedQuery.assetTag || asset.assetTag.toLowerCase().includes(appliedQuery.assetTag.toLowerCase()))
