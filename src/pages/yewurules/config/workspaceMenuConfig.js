@@ -7,6 +7,13 @@ import EmployeeAssetClaimConfirm from '../../EmployeeAssetClaimConfirm';
 import EmployeeAssetApplyPage from '../../employeeSelfService/AssetApplyPage';
 import EmployeeAssetApprovalPage from '../../employeeSelfService/AssetApprovalPage';
 import EmployeeAssetAllocationPage from '../../employeeSelfService/AssetAllocationPage';
+import {
+  BorrowingApplyPage,
+  BorrowingAllocationPage,
+  BorrowingApprovalPage,
+  BorrowingIssuePage,
+  BorrowingConfirmPage,
+} from '../../assetBorrowing';
 
 export const WORKSPACE_MENU_ITEMS = [
   { key: '工作台首页', label: '工作台首页', Page: PersonalWorkspace },
@@ -18,6 +25,11 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: '统一申请汇总-资产', label: '统一申请汇总-资产', Page: UnifiedAssetApplySummary },
   { key: 'ES前台领用', label: 'ES前台领用', Page: FrontDeskAssetClaim },
   { key: '员工领用确认', label: '员工领用确认', Page: EmployeeAssetClaimConfirm },
+  { key: '资产借用', label: '资产借用', Page: BorrowingApplyPage },
+  { key: '借用配给', label: '借用配给', Page: BorrowingAllocationPage },
+  { key: '借用审批', label: '借用审批', Page: BorrowingApprovalPage },
+  { key: '借用发放', label: '借用发放', Page: BorrowingIssuePage },
+  { key: '员工借用确认', label: '员工借用确认', Page: BorrowingConfirmPage },
 ];
 
 export function getWorkspacePage(menuKey) {
