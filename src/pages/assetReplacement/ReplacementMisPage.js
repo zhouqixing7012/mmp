@@ -18,8 +18,7 @@ export default function ReplacementMisPage() {
   const [description, setDescription] = useState('');
   const [comment, setComment] = useState('同意');
   const [submitting, setSubmitting] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const applications = useMemo(() => getPendingMisApplications(), [refreshKey]);
+  const [applications, setApplications] = useState(() => getPendingMisApplications());
 
   const filteredApplications = useMemo(() => applications.filter((application) => (
     (!appliedQuery.applicationId || application.id.toLowerCase().includes(appliedQuery.applicationId.toLowerCase()))
@@ -63,7 +62,7 @@ export default function ReplacementMisPage() {
       });
       messageApi.success(decision === '同意' ? 'MIS鉴定已通过，单据进入资产更换办理' : '申请已驳回并结束流程');
       setSelectedApplication(null);
-      setRefreshKey((value) => value + 1);
+      setApplications(getPendingMisApplications());
     } finally {
       setSubmitting(false);
     }
