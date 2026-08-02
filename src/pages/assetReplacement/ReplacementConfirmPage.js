@@ -10,14 +10,14 @@ import {
 export default function ReplacementConfirmPage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [applications, setApplications] = useState(() => getAssetReplacementApplications());
   const [confirmedResult, setConfirmedResult] = useState(null);
 
-  const pending = useMemo(() => getAssetReplacementApplications().map((application) => {
+  const pending = useMemo(() => applications.map((application) => {
     if (application.returnProcess.confirmStatus === '待确认') return { application, scene: '旧资产退回' };
     if (application.issueProcess.confirmStatus === '待确认') return { application, scene: '新资产领取' };
     return null;
-  }).find(Boolean) || null, [refreshKey]);
+  }).find(Boolean) || null, [applications]);
 
   const confirm = (method) => {
     if (!pending) return;
@@ -29,7 +29,7 @@ export default function ReplacementConfirmPage() {
     confirmReplacementByEmployee(application.id, scene, method);
     const time = new Date().toLocaleString('zh-CN', { hour12: false });
     setConfirmedResult({ application, scene, method, time });
-    setRefreshKey((value) => value + 1);
+    setApplications(getAssetReplacementApplications());
     messageApi.success(scene === '旧资产退回' ? '旧资产退回确认成功，可由库管员执行入库' : '新资产领取确认成功，可由库管员执行出库');
   };
 
