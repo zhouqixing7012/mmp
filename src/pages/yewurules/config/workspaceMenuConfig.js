@@ -22,6 +22,15 @@ import {
   ReplacementHandlingPage,
   ReplacementConfirmPage,
 } from '../../assetReplacement';
+import {
+  AssetReturnApplyPage,
+  AssetReturnApprovalPage,
+  AssetReturnHandlingPage,
+  AssetReturnConfirmPage,
+  ContractReturnApplyPage,
+  ContractReturnHandlingPage,
+  ContractReturnConfirmPage,
+} from '../../assetReturn';
 
 export const WORKSPACE_MENU_ITEMS = [
   { key: '工作台首页', label: '工作台首页', Page: PersonalWorkspace },
@@ -44,6 +53,13 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: 'MIS鉴定', label: 'MIS鉴定', Page: ReplacementMisPage },
   { key: '资产更换办理', label: '资产更换办理', Page: ReplacementHandlingPage },
   { key: '员工资产确认', label: '员工资产确认', Page: ReplacementConfirmPage },
+  { key: '资产退库', label: '资产退库', Page: AssetReturnApplyPage },
+  { key: '退库审批', label: '退库审批', Page: AssetReturnApprovalPage },
+  { key: '资产退库办理', label: '资产退库办理', Page: AssetReturnHandlingPage },
+  { key: '员工退库确认', label: '员工退库确认', Page: AssetReturnConfirmPage },
+  { key: '合约号码退库', label: '合约号码退库', Page: ContractReturnApplyPage },
+  { key: '合约号码退库办理', label: '合约号码退库办理', Page: ContractReturnHandlingPage },
+  { key: '员工号码退库确认', label: '员工号码退库确认', Page: ContractReturnConfirmPage },
 ];
 
 export function getWorkspacePage(menuKey) {
