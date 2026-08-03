@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { CreditCard, ScanLine } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert,
   Button,
   Card,
-  Checkbox,
+  Descriptions,
   Empty,
   Input,
   QRCode,
@@ -25,21 +25,14 @@ export default function BorrowingConfirmPage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [application, setApplication] = useState(() => getBorrowingApplicationByNode('员工确认'));
-  const [custodyAccepted, setCustodyAccepted] = useState(false);
   const [identityValue, setIdentityValue] = useState('');
   const [completed, setCompleted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const confirmMethod = application?.confirmation?.method || application?.confirmMethod || '狐小e扫码确认';
-
-  const confirm = () => {
+  const confirm = (method) => {
     if (!application) return;
-    if (!custodyAccepted) {
-      messageApi.warning('请阅读并同意资产保管职责。');
-      return;
-    }
-    if (confirmMethod !== '狐小e扫码确认' && identityValue.trim() !== application.applicant.id) {
-      messageApi.error('当前确认人员与借用申请人不一致，无法完成确认。');
+    if (method === '刷卡确认' && identityValue.trim() !== application.applicant.id) {
+      messageApi.error('当前刷卡人员与借用申请人不一致，无法完成确认。');
       return;
     }
 
@@ -51,13 +44,19 @@ export default function BorrowingConfirmPage() {
         currentNode: '库管员发放',
         confirmation: {
           status: '已确认',
-          method: confirmMethod,
+          method,
           confirmedBy: `${record.applicant.id}-${record.applicant.name}`,
           confirmedAt,
         },
         approvalHistory: [
           ...record.approvalHistory,
-          { node: '员工确认', person: `${record.applicant.id}-${record.applicant.name}`, status: '已确认', time: confirmedAt, comment: confirmMethod },
+          {
+            node: '员工确认',
+            person: `${record.applicant.id}-${record.applicant.name}`,
+            status: '已确认',
+            time: confirmedAt,
+            comment: method,
+          },
         ],
       }));
       setCompleted(true);
@@ -69,13 +68,31 @@ export default function BorrowingConfirmPage() {
   };
 
   const columns = [
-    { title: '资产标签号', width: 170, render: (_, record) => record.matchedAsset?.assetTag || '-' },
-    { title: '资产说明', dataIndex: 'assetDesc', width: 230 },
-    { title: '配置', dataIndex: 'config', width: 230 },
-    { title: 'SN号', width: 150, render: (_, record) => record.matchedAsset?.sn || '-' },
-    { title: '借用开始日期', dataIndex: 'startDate', width: 140 },
-    { title: '借用结束日期', dataIndex: 'endDate', width: 140 },
-    { title: '升级耗材信息', width: 220, render: (_, record) => record.matchedAsset?.upgradeConsumables?.join('；') || '-' },
+    {
+      title: '行号',
+      width: 70,
+      align: 'center',
+      render: (_, __, index) => index + 1,
+    },
+    {
+      title: '资产标签号',
+      width: 170,
+      render: (_, record) => record.matchedAsset?.assetTag || '-',
+    },
+    { title: '物资说明', dataIndex: 'assetDesc', width: 240 },
+    { title: '配置', dataIndex: 'config', width: 250, render: (value) => value || '-' },
+    { title: '申请数量', dataIndex: 'quantity', width: 100, align: 'center' },
+    { title: '借用数量', dataIndex: 'quantity', width: 100, align: 'center' },
+    {
+      title: '资产用途',
+      width: 130,
+      render: (_, record) => record.issuePurpose || application?.purpose || '借用',
+    },
+    {
+      title: '使用说明',
+      width: 260,
+      render: (_, record) => record.issueUsageNote || application?.usageNote || '-',
+    },
   ];
 
   if (!application) {
@@ -88,7 +105,9 @@ export default function BorrowingConfirmPage() {
           ) : (
             <Empty description="暂无待确认的资产借用单" />
           )}
-          <div className="mt-4 flex justify-center"><Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button></div>
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
+          </div>
         </Card>
       </div>
     );
@@ -100,44 +119,72 @@ export default function BorrowingConfirmPage() {
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
           <Typography.Title level={4} className="mb-0">员工借用确认</Typography.Title>
-          <Typography.Text type="secondary">借用单号：{application.id}</Typography.Text>
+          <Button onClick={() => navigate('/yewurules', { state: { workspace: '借用发放' } })}>返回</Button>
         </div>
 
-        <Alert type="info" showIcon message={`申请人：${application.applicant.name}（${application.applicant.id}）`} description={`确认方式：${confirmMethod}`} />
-
-        <Card title="借用资产信息" size="small">
-          <Table rowKey="id" columns={columns} dataSource={application.details} pagination={false} scroll={{ x: 1250 }} />
+        <Card title="借用人信息" size="small">
+          <Descriptions bordered size="small" column={2}>
+            <Descriptions.Item label="使用人">{application.applicant.id}-{application.applicant.name}</Descriptions.Item>
+            <Descriptions.Item label="部门">{application.applicant.department}</Descriptions.Item>
+          </Descriptions>
         </Card>
 
-        <Card title="资产保管职责" size="small">
-          <Typography.Paragraph>{BORROW_CUSTODY_TEXT}</Typography.Paragraph>
-          <Checkbox checked={custodyAccepted} onChange={(event) => setCustodyAccepted(event.target.checked)}>
-            我已阅读并同意资产保管职责
-          </Checkbox>
+        <Card title="借用物资明细" size="small">
+          <Table
+            rowKey="id"
+            size="small"
+            bordered
+            columns={columns}
+            dataSource={application.details}
+            pagination={false}
+            scroll={{ x: 1320 }}
+          />
         </Card>
 
-        <Card title={confirmMethod} size="small">
-          <div className="flex min-h-52 flex-col items-center justify-center gap-4">
-            {confirmMethod === '狐小e扫码确认' ? (
-              <>
-                <QRCode value={`asset-borrowing:${application.id}:${application.applicant.id}`} size={160} />
-                <Typography.Text type="secondary">请申请人使用本人狐小e扫描二维码</Typography.Text>
-              </>
-            ) : (
-              <Input
-                style={{ width: 320 }}
-                value={identityValue}
-                placeholder={confirmMethod === '刷卡确认' ? '请刷员工卡或输入读卡结果' : '请输入申请人工号'}
-                onChange={(event) => setIdentityValue(event.target.value)}
-              />
-            )}
+        <Card size="small">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_220px]">
+            <div>
+              <Typography.Paragraph className="mb-3 font-medium text-red-500">
+                提示：我已阅读并确认保管职责说明，特此刷卡确认！
+              </Typography.Paragraph>
+
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <Typography.Text strong>刷卡借用确认：</Typography.Text>
+                <Input
+                  style={{ width: 280 }}
+                  value={identityValue}
+                  placeholder="请刷员工卡或输入申请人工号"
+                  onChange={(event) => setIdentityValue(event.target.value)}
+                  onPressEnter={() => confirm('刷卡确认')}
+                />
+                <Button
+                  type="primary"
+                  icon={<CreditCard size={14} />}
+                  loading={submitting}
+                  onClick={() => confirm('刷卡确认')}
+                >
+                  刷卡确认
+                </Button>
+              </div>
+
+              <Typography.Paragraph className="mb-0 text-red-500">
+                <Typography.Text strong className="text-red-500">保管职责：</Typography.Text>
+                {BORROW_CUSTODY_TEXT}
+              </Typography.Paragraph>
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-3 border-l border-slate-100 pl-0 lg:pl-6">
+              <QRCode value={`asset-borrowing:${application.id}:${application.applicant.id}`} size={150} />
+              <Button
+                icon={<ScanLine size={14} />}
+                loading={submitting}
+                onClick={() => confirm('狐小e扫码确认')}
+              >
+                模拟扫码确认
+              </Button>
+            </div>
           </div>
         </Card>
-
-        <div className="flex justify-center gap-3 rounded-lg bg-white px-5 py-4 shadow-sm">
-          <Button type="primary" icon={<CheckCircle2 size={14} />} loading={submitting} onClick={confirm}>确认借用</Button>
-          <Button onClick={() => navigate('/yewurules', { state: { workspace: '借用发放' } })}>取消</Button>
-        </div>
       </Space>
     </div>
   );
