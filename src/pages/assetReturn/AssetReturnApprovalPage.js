@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, UserPlus, Wrench, XCircle } from 'lucide-react';
+import { CheckCircle2, Wrench, XCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -9,21 +10,18 @@ import {
   Radio,
   Space,
   Table,
-  Tabs,
   Tag,
   Typography,
   message as antdMessage,
 } from 'antd';
 import {
   getAssetReturnApplications,
-  submitAssetReturnLeaderDecision,
   submitAssetReturnMisDecision,
 } from '../../services/assetReturnService';
 
 const { TextArea } = Input;
 
 function DetailCard({ application }) {
-  if (!application) return null;
   const asset = application.asset;
   const componentCount = asset.component && asset.component !== '-' ? 1 : 0;
 
@@ -31,9 +29,7 @@ function DetailCard({ application }) {
     <Space direction="vertical" size={16} className="w-full">
       <Card size="small" title="申请人信息">
         <Descriptions bordered size="small" column={2}>
-          <Descriptions.Item label="申请人">
-            {application.applicant.id}-{application.applicant.name}
-          </Descriptions.Item>
+          <Descriptions.Item label="申请人">{application.applicant.id}-{application.applicant.name}</Descriptions.Item>
           <Descriptions.Item label="申请时间">{application.applyTime}</Descriptions.Item>
           <Descriptions.Item label="联系电话">{application.applicant.phone}</Descriptions.Item>
           <Descriptions.Item label="邮箱">{application.applicant.email}</Descriptions.Item>
@@ -65,7 +61,70 @@ function DetailCard({ application }) {
   );
 }
 
-function ApprovalCard({ application, activeTab, comment, setComment, loading, onSubmit, onBack, messageApi }) {
+export default function AssetReturnApprovalPage() {
+  const navigate = useNavigate();
+  const [messageApi, contextHolder] = antdMessage.useMessage();
+  const [version, setVersion] = useState(0);
+  const [comment, setComment] = useState('');
+  const [misResult, setMisResult] = useState('鉴定通过');
+  const [misDescription, setMisDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+  const applications = useMemo(() => getAssetReturnApplications(), [version]);
+  const selected = applications.find((item) => item.status === '处理中' && item.currentNode === 'MIS鉴定') || null;
+
+  const submit = (decision) => {
+    if (!selected) return;
+    if (decision === '驳回' && !comment.trim()) {
+      messageApi.warning('驳回时请填写审批意见');
+      return;
+    }
+    if (decision === '同意' && misResult !== '鉴定通过') {
+      messageApi.warning('鉴定结果为鉴定通过时方可同意');
+      return;
+    }
+    if (decision === '驳回' && misResult !== '鉴定不通过') {
+      messageApi.warning('鉴定结果为鉴定不通过时方可驳回');
+      return;
+    }
+    if (misResult === '鉴定不通过' && !misDescription.trim()) {
+      messageApi.warning('鉴定不通过时请填写鉴定说明');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      submitAssetReturnMisDecision(selected.id, {
+        result: misResult,
+        description: misDescription.trim(),
+        decision,
+        comment: comment.trim(),
+      });
+      messageApi.success(decision === '同意' ? '鉴定已通过' : '退库申请已驳回');
+      setComment('');
+      setMisDescription('');
+      setMisResult('鉴定通过');
+      setVersion((value) => value + 1);
+    } catch (error) {
+      messageApi.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!selected) {
+    return (
+      <div className="min-h-screen bg-slate-100 p-4">
+        {contextHolder}
+        <Card>
+          <Empty description="暂无MIS鉴定待办" />
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   const historyColumns = [
     { title: '审批环节', dataIndex: 'node', width: 160 },
     { title: '申请人/审批人', dataIndex: 'person', width: 220 },
@@ -85,178 +144,68 @@ function ApprovalCard({ application, activeTab, comment, setComment, loading, on
   ];
 
   return (
-    <Card size="small" title="审批信息">
-      <Table
-        rowKey={(record, index) => `${record.node}-${record.time}-${index}`}
-        columns={historyColumns}
-        dataSource={application.history || []}
-        pagination={false}
-        size="small"
-        bordered
-      />
-
-      <div className="mt-4">
-        <Typography.Text strong>审批意见</Typography.Text>
-        <TextArea
-          className="mt-2"
-          rows={3}
-          maxLength={400}
-          showCount
-          value={comment}
-          placeholder="同意时非必填，驳回时必填"
-          onChange={(event) => setComment(event.target.value)}
-        />
-      </div>
-
-      <div className="mt-4 flex justify-center gap-3">
-        {activeTab === 'mis' ? (
-          <>
-            <Button type="primary" icon={<CheckCircle2 size={14} />} loading={loading} onClick={() => onSubmit('同意')}>
-              鉴定通过
-            </Button>
-            <Button danger icon={<XCircle size={14} />} loading={loading} onClick={() => onSubmit('驳回')}>
-              鉴定不通过
-            </Button>
-            <Button icon={<Wrench size={14} />} onClick={() => messageApi.success('已模拟打开维修记录')}>
-              维修记录
-            </Button>
-            <Button onClick={onBack}>返回</Button>
-          </>
-        ) : (
-          <>
-            <Button type="primary" icon={<CheckCircle2 size={14} />} loading={loading} onClick={() => onSubmit('同意')}>同意</Button>
-            <Button danger icon={<XCircle size={14} />} loading={loading} onClick={() => onSubmit('驳回')}>驳回</Button>
-            <Button onClick={onBack}>返回</Button>
-            <Button icon={<UserPlus size={14} />} onClick={() => messageApi.success('已模拟发起加签')}>加签</Button>
-          </>
-        )}
-      </div>
-    </Card>
-  );
-}
-
-export default function AssetReturnApprovalPage() {
-  const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [activeTab, setActiveTab] = useState('leader');
-  const [selectedId, setSelectedId] = useState('');
-  const [version, setVersion] = useState(0);
-  const [comment, setComment] = useState('');
-  const [misResult, setMisResult] = useState('鉴定通过');
-  const [misDescription, setMisDescription] = useState('');
-  const [loading, setLoading] = useState(false);
-  const applications = useMemo(() => getAssetReturnApplications(), [version]);
-  const list = applications.filter((item) => item.status === '处理中' && item.currentNode === (activeTab === 'leader' ? '领导审批' : 'MIS鉴定'));
-  const selected = applications.find((item) => item.id === selectedId) || null;
-
-  const columns = [
-    { title: '申请单号', dataIndex: 'id', width: 180 },
-    { title: '申请人', width: 120, render: (_, record) => `${record.applicant.name}-${record.applicant.id}` },
-    { title: '资产标签号', width: 150, render: (_, record) => record.asset.assetTag },
-    { title: '资产说明', width: 250, render: (_, record) => record.asset.assetDesc },
-    { title: '资产用途', width: 110, render: (_, record) => record.asset.purpose },
-    { title: '申请时间', dataIndex: 'applyTime', width: 170 },
-    { title: '操作', width: 90, render: (_, record) => <Button type="link" onClick={() => { setSelectedId(record.id); setComment(''); setMisDescription(''); setMisResult('鉴定通过'); }}>处理</Button> },
-  ];
-
-  const submit = async (decision) => {
-    if (!selected) return;
-    if (decision === '驳回' && !comment.trim()) {
-      messageApi.warning('驳回时请填写审批意见');
-      return;
-    }
-    if (activeTab === 'mis') {
-      if (decision === '同意' && misResult !== '鉴定通过') {
-        messageApi.warning('鉴定结果为鉴定通过时方可同意');
-        return;
-      }
-      if (decision === '驳回' && misResult !== '鉴定不通过') {
-        messageApi.warning('鉴定结果为鉴定不通过时方可驳回');
-        return;
-      }
-      if (misResult === '鉴定不通过' && !misDescription.trim()) {
-        messageApi.warning('鉴定不通过时请填写鉴定说明');
-        return;
-      }
-    }
-    setLoading(true);
-    try {
-      if (activeTab === 'leader') {
-        submitAssetReturnLeaderDecision(selected.id, decision, comment.trim());
-      } else {
-        submitAssetReturnMisDecision(selected.id, { result: misResult, description: misDescription.trim(), decision, comment: comment.trim() });
-      }
-      messageApi.success(decision === '同意' ? '审批已同意' : '退库申请已驳回');
-      setSelectedId('');
-      setComment('');
-      setVersion((value) => value + 1);
-    } catch (error) {
-      messageApi.error(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (selected) {
-    return (
-      <div className="min-h-screen bg-slate-100 p-4">
-        {contextHolder}
-        <Space direction="vertical" size={16} className="w-full">
-          <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
-            <Typography.Title level={4} className="mb-0">{activeTab === 'leader' ? '退库审批' : 'MIS 鉴定'}</Typography.Title>
-            <Typography.Text type="secondary">退库单号：{selected.id}</Typography.Text>
-          </div>
-
-          <DetailCard application={selected} />
-
-          {activeTab === 'mis' && (
-            <Card size="small" title="MIS 鉴定处理">
-              <div>
-                <Typography.Text strong><span className="text-red-500">*</span> 鉴定结果：</Typography.Text>
-                <Radio.Group
-                  className="ml-4"
-                  value={misResult}
-                  options={['鉴定通过', '鉴定不通过'].map((value) => ({ label: value, value }))}
-                  onChange={(event) => setMisResult(event.target.value)}
-                />
-              </div>
-              <div className="mt-4">
-                <Typography.Text strong>鉴定说明：</Typography.Text>
-                <TextArea
-                  className="mt-2"
-                  rows={3}
-                  maxLength={400}
-                  showCount
-                  value={misDescription}
-                  onChange={(event) => setMisDescription(event.target.value)}
-                />
-              </div>
-            </Card>
-          )}
-
-          <ApprovalCard
-            application={selected}
-            activeTab={activeTab}
-            comment={comment}
-            setComment={setComment}
-            loading={loading}
-            onSubmit={submit}
-            onBack={() => setSelectedId('')}
-            messageApi={messageApi}
-          />
-        </Space>
-      </div>
-    );
-  }
-
-  return (
     <div className="min-h-screen bg-slate-100 p-4">
       {contextHolder}
-      <Card size="small" title="资产退库审批">
-        <Tabs activeKey={activeTab} onChange={(key) => { setActiveTab(key); setSelectedId(''); }} items={[
-          { key: 'leader', label: '领导审批', children: <Table rowKey="id" columns={columns} dataSource={list} pagination={{ pageSize: 10 }} locale={{ emptyText: <Empty description="暂无领导审批待办" /> }} scroll={{ x: 1100 }} /> },
-          { key: 'mis', label: 'MIS鉴定', children: <Table rowKey="id" columns={columns} dataSource={list} pagination={{ pageSize: 10 }} locale={{ emptyText: <Empty description="暂无MIS鉴定待办" /> }} scroll={{ x: 1100 }} /> },
-        ]} />
-      </Card>
+      <Space direction="vertical" size={16} className="w-full">
+        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
+          <Typography.Title level={4} className="mb-0">MIS 鉴定</Typography.Title>
+          <Typography.Text type="secondary">退库单号：{selected.id}</Typography.Text>
+        </div>
+
+        <DetailCard application={selected} />
+
+        <Card size="small" title="MIS 鉴定处理">
+          <div>
+            <Typography.Text strong><span className="text-red-500">*</span> 鉴定结果：</Typography.Text>
+            <Radio.Group
+              className="ml-4"
+              value={misResult}
+              options={['鉴定通过', '鉴定不通过'].map((value) => ({ label: value, value }))}
+              onChange={(event) => setMisResult(event.target.value)}
+            />
+          </div>
+          <div className="mt-4">
+            <Typography.Text strong>鉴定说明：</Typography.Text>
+            <TextArea
+              className="mt-2"
+              rows={3}
+              maxLength={400}
+              showCount
+              value={misDescription}
+              onChange={(event) => setMisDescription(event.target.value)}
+            />
+          </div>
+        </Card>
+
+        <Card size="small" title="审批信息">
+          <Table
+            rowKey={(record, index) => `${record.node}-${record.time}-${index}`}
+            columns={historyColumns}
+            dataSource={selected.history || []}
+            pagination={false}
+            size="small"
+            bordered
+          />
+          <div className="mt-4">
+            <Typography.Text strong>审批意见</Typography.Text>
+            <TextArea
+              className="mt-2"
+              rows={3}
+              maxLength={400}
+              showCount
+              value={comment}
+              placeholder="同意时非必填，驳回时必填"
+              onChange={(event) => setComment(event.target.value)}
+            />
+          </div>
+          <div className="mt-4 flex justify-center gap-3">
+            <Button type="primary" icon={<CheckCircle2 size={14} />} loading={loading} onClick={() => submit('同意')}>鉴定通过</Button>
+            <Button danger icon={<XCircle size={14} />} loading={loading} onClick={() => submit('驳回')}>鉴定不通过</Button>
+            <Button icon={<Wrench size={14} />} onClick={() => messageApi.success('已模拟打开维修记录')}>维修记录</Button>
+            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+          </div>
+        </Card>
+      </Space>
     </div>
   );
 }
