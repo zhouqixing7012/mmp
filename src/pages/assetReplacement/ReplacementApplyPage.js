@@ -46,8 +46,9 @@ export default function ReplacementApplyPage() {
     setSubmitting(true);
     try {
       const created = createAssetReplacementApplications(selectedAssets.map((asset) => asset.id), reason.trim());
+      setReplacementDraftAssetIds([]);
       messageApi.success(`提交成功，已生成 ${created.length} 张资产更换申请单`);
-      navigate('/yewurules', { state: { workspace: '我的资产更换申请' } });
+      navigate('/yewurules', { state: { workspace: '工作台首页' } });
     } catch (error) {
       messageApi.error(error.message || '提交失败');
     } finally {
@@ -68,7 +69,7 @@ export default function ReplacementApplyPage() {
 
   const back = () => {
     setReplacementDraftAssetIds([]);
-    navigate('/yewurules', { state: { workspace: '我的资产' } });
+    navigate('/yewurules', { state: { workspace: '工作台首页' } });
   };
 
   return (
@@ -105,7 +106,7 @@ export default function ReplacementApplyPage() {
             dataSource={selectedAssets}
             pagination={false}
             scroll={{ x: 1400 }}
-            locale={{ emptyText: <Empty description="请先从“我的资产”选择需要更换的资产" /> }}
+            locale={{ emptyText: <Empty description="当前没有可更换资产" /> }}
           />
         </Card>
 
