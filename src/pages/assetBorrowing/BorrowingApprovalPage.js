@@ -78,34 +78,20 @@ export default function BorrowingApprovalPage() {
 
   const columns = [
     {
-      title: '当前仓库',
-      width: 140,
+      title: '仓库',
+      width: 230,
       render: () => application?.warehouse || '-',
     },
     {
       title: '资产标签号',
-      width: 170,
-      render: (_, record) => record.matchedAsset?.assetTag || <Tag>待库管员配给</Tag>,
+      width: 190,
+      render: (_, record) => record.matchedAsset?.assetTag || <Tag>待配给</Tag>,
     },
-    {
-      title: '资产说明',
-      dataIndex: 'assetDesc',
-      width: 250,
-      render: (value, record) => (
-        <div>
-          <div>{value}</div>
-          <Typography.Text type="secondary">{record.config}</Typography.Text>
-        </div>
-      ),
-    },
-    { title: '数量', dataIndex: 'quantity', width: 70, align: 'center' },
-    {
-      title: '借用日期',
-      width: 220,
-      render: (_, record) => `${record.startDate} 至 ${record.endDate}`,
-    },
-    { title: '借用原因', dataIndex: 'reason', width: 100 },
-    { title: '需求说明', dataIndex: 'detail', width: 260 },
+    { title: '资产说明', dataIndex: 'assetDesc', width: 240 },
+    { title: '借用原因', dataIndex: 'reason', width: 110 },
+    { title: '需求说明', dataIndex: 'detail', width: 220, render: (value) => value || '-' },
+    { title: '借用开始时间', dataIndex: 'startDate', width: 130 },
+    { title: '借用结束时间', dataIndex: 'endDate', width: 130 },
   ];
 
   if (!application) {
@@ -133,20 +119,22 @@ export default function BorrowingApprovalPage() {
 
         <BorrowingApplicantCard applicant={application.applicant} applyDate={application.applyDate} compact />
 
-        <Card title="申请及配给信息" size="small">
+        <Card title="借用资产信息" size="small">
           <Table
             rowKey="id"
+            size="small"
+            bordered
             columns={columns}
             dataSource={application.details}
             pagination={false}
-            scroll={{ x: 1200 }}
+            scroll={{ x: 1250 }}
           />
         </Card>
 
-        <BorrowingApprovalHistory records={application.approvalHistory} />
-
-        <Card title="当前审批操作" size="small">
+        <BorrowingApprovalHistory records={application.approvalHistory}>
+          <Typography.Text strong>审批意见</Typography.Text>
           <TextArea
+            className="mt-2"
             rows={3}
             maxLength={400}
             showCount
@@ -154,13 +142,13 @@ export default function BorrowingApprovalPage() {
             placeholder="同意时非必填，驳回时必填"
             onChange={(event) => setComment(event.target.value)}
           />
-          <div className="mt-4 flex justify-center gap-3">
+          <div className="mt-3 flex justify-center gap-3">
             <Button type="primary" icon={<CheckCircle2 size={14} />} loading={loading} onClick={() => decide('同意')}>同意</Button>
             <Button danger icon={<XCircle size={14} />} loading={loading} onClick={() => decide('驳回')}>驳回</Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
             <Button icon={<UserPlus size={14} />} onClick={() => setCountersignOpen(true)}>加签</Button>
           </div>
-        </Card>
+        </BorrowingApprovalHistory>
       </Space>
 
       <Modal
