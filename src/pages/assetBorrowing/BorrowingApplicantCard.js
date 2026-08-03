@@ -28,19 +28,19 @@ export default function BorrowingApplicantCard({ applicant, applyDate, warehouse
         <Descriptions.Item label="邮箱">{applicant.email}</Descriptions.Item>
         <Descriptions.Item label="公司">{applicant.company}</Descriptions.Item>
         <Descriptions.Item label="办公区">{applicant.officeArea}</Descriptions.Item>
-        <Descriptions.Item label="申请日期">{applyDate}</Descriptions.Item>
-        <Descriptions.Item label="员工状态">
-          <Tag color={employeeStatus === '正式员工' ? 'success' : 'default'}>
-            {employeeStatus}
-          </Tag>
-        </Descriptions.Item>
-        <Descriptions.Item label="部门" span={2}>{applicant.department}</Descriptions.Item>
+        <Descriptions.Item label="申请时间">{applyDate}</Descriptions.Item>
+        <Descriptions.Item label="部门" span={3}>{applicant.department}</Descriptions.Item>
 
         {!compact && (
           <>
+            <Descriptions.Item label="员工状态">
+              <Tag color={employeeStatus === '正式员工' ? 'success' : 'default'}>
+                {employeeStatus}
+              </Tag>
+            </Descriptions.Item>
             <Descriptions.Item label="板块">{applicant.block}</Descriptions.Item>
             <Descriptions.Item label="成本中心">{applicant.costCenter}</Descriptions.Item>
-            <Descriptions.Item label="办理仓库">{warehouse || applicant.defaultWarehouse}</Descriptions.Item>
+            <Descriptions.Item label="办理仓库" span={3}>{warehouse || applicant.defaultWarehouse}</Descriptions.Item>
           </>
         )}
       </Descriptions>
