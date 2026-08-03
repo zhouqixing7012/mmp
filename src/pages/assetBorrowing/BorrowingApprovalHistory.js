@@ -11,18 +11,19 @@ const STATUS_COLOR = {
   已出库: 'success',
 };
 
-export default function BorrowingApprovalHistory({ records = [] }) {
+export default function BorrowingApprovalHistory({ records = [], children }) {
   const columns = [
-    { title: '节点', dataIndex: 'node', width: 160 },
-    { title: '处理人', dataIndex: 'person', width: 190 },
+    { title: '审批环节', dataIndex: 'node', width: 160 },
+    { title: '申请人/审批人', dataIndex: 'person', width: 190 },
+    { title: '代理人', width: 120, render: () => '-' },
     {
-      title: '状态',
+      title: '审批状态',
       dataIndex: 'status',
       width: 120,
       render: (value) => <Tag color={STATUS_COLOR[value] || 'default'}>{value}</Tag>,
     },
-    { title: '处理时间', dataIndex: 'time', width: 180 },
-    { title: '处理意见', dataIndex: 'comment', render: (value) => value || '-' },
+    { title: '审批时间', dataIndex: 'time', width: 180 },
+    { title: '审批意见', dataIndex: 'comment', render: (value) => value || '-' },
   ];
 
   return (
@@ -33,7 +34,9 @@ export default function BorrowingApprovalHistory({ records = [] }) {
         dataSource={records}
         pagination={false}
         size="small"
+        bordered
       />
+      {children && <div className="mt-4">{children}</div>}
     </Card>
   );
 }
