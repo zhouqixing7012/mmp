@@ -11,19 +11,20 @@ const STATUS_COLOR = {
   已驳回: 'error',
 };
 
-export default function ReplacementHistoryCard({ records = [], title = '流程记录' }) {
+export default function ReplacementHistoryCard({ records = [], title = '流程记录', children }) {
   const columns = [
-    { title: '处理环节', dataIndex: 'node', width: 160 },
-    { title: '处理人', dataIndex: 'person', width: 190 },
+    { title: '审批环节', dataIndex: 'node', width: 160 },
+    { title: '申请人/审批人', dataIndex: 'person', width: 190 },
+    { title: '代理人', width: 110, render: () => '-' },
     {
-      title: '状态',
+      title: '审批状态',
       dataIndex: 'status',
-      width: 100,
+      width: 110,
       align: 'center',
       render: (value) => <Tag color={STATUS_COLOR[value] || 'default'}>{value}</Tag>,
     },
-    { title: '处理时间', dataIndex: 'time', width: 180 },
-    { title: '处理说明', dataIndex: 'comment' },
+    { title: '审批时间', dataIndex: 'time', width: 180 },
+    { title: '审批意见', dataIndex: 'comment' },
   ];
 
   return (
@@ -34,7 +35,9 @@ export default function ReplacementHistoryCard({ records = [], title = '流程�
         dataSource={records}
         pagination={false}
         size="small"
+        bordered
       />
+      {children && <div className="mt-4">{children}</div>}
     </Card>
   );
 }
