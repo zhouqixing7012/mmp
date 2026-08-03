@@ -4,12 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
+  Descriptions,
   Empty,
   Input,
   Modal,
   Space,
   Table,
-  Tag,
   Typography,
   message as antdMessage,
 } from 'antd';
@@ -17,7 +17,6 @@ import {
   getBorrowingApplicationByNode,
   updateAssetBorrowingApplication,
 } from '../../services/assetBorrowingService';
-import BorrowingApplicantCard from './BorrowingApplicantCard';
 import BorrowingApprovalHistory from './BorrowingApprovalHistory';
 import { nowText } from './utils';
 
@@ -78,20 +77,15 @@ export default function BorrowingApprovalPage() {
 
   const columns = [
     {
-      title: '仓库',
-      width: 230,
-      render: () => application?.warehouse || '-',
+      title: '资产类别',
+      width: 260,
+      render: (_, record) => [record.category, record.subCategory].filter(Boolean).join('-') || record.assetDesc,
     },
-    {
-      title: '资产标签号',
-      width: 190,
-      render: (_, record) => record.matchedAsset?.assetTag || <Tag>待配给</Tag>,
-    },
-    { title: '资产说明', dataIndex: 'assetDesc', width: 240 },
-    { title: '借用原因', dataIndex: 'reason', width: 110 },
-    { title: '需求说明', dataIndex: 'detail', width: 220, render: (value) => value || '-' },
-    { title: '借用开始时间', dataIndex: 'startDate', width: 130 },
-    { title: '借用结束时间', dataIndex: 'endDate', width: 130 },
+    { title: '借用数量', dataIndex: 'quantity', width: 100, align: 'center' },
+    { title: '借用原因', dataIndex: 'reason', width: 130 },
+    { title: '需求说明', dataIndex: 'detail', width: 260, render: (value) => value || '-' },
+    { title: '借用开始日期', dataIndex: 'startDate', width: 150 },
+    { title: '借用归还日期', dataIndex: 'endDate', width: 150 },
   ];
 
   if (!application) {
@@ -117,7 +111,15 @@ export default function BorrowingApprovalPage() {
           <Typography.Text type="secondary">借用单号：{application.id}</Typography.Text>
         </div>
 
-        <BorrowingApplicantCard applicant={application.applicant} applyDate={application.applyDate} compact />
+        <Card title="借用单信息" size="small">
+          <Descriptions bordered size="small" column={2}>
+            <Descriptions.Item label="申请人">{application.applicant.id}-{application.applicant.name}</Descriptions.Item>
+            <Descriptions.Item label="申请时间">{application.applyDate}</Descriptions.Item>
+            <Descriptions.Item label="联系电话">{application.applicant.phone}</Descriptions.Item>
+            <Descriptions.Item label="邮箱">{application.applicant.email}</Descriptions.Item>
+            <Descriptions.Item label="部门" span={2}>{application.applicant.department}</Descriptions.Item>
+          </Descriptions>
+        </Card>
 
         <Card title="借用资产信息" size="small">
           <Table
@@ -127,7 +129,7 @@ export default function BorrowingApprovalPage() {
             columns={columns}
             dataSource={application.details}
             pagination={false}
-            scroll={{ x: 1250 }}
+            scroll={{ x: 1050 }}
           />
         </Card>
 
