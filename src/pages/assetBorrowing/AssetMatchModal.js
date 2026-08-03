@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Input, Modal, Radio, Table } from 'antd';
+import { Button, Input, Modal, Radio, Table, Tag, Typography } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { BORROW_ALLOCATABLE_ASSETS } from '../../mock/assetBorrowingMock';
 
@@ -18,8 +18,8 @@ function enrichAsset(asset) {
     brand: asset.brand || parts[1] || '-',
     quantity: asset.quantity || 1,
     originalValue: asset.originalValue || '-',
-    responsiblePerson: asset.responsiblePerson || '-',
-    costCenter: asset.costCenter || '-',
+    responsiblePerson: asset.responsiblePerson || 'SOHU01-库房管理员-SOHU',
+    costCenter: asset.costCenter || 'CC1001-集团总部',
     enabledDate: asset.enabledDate || '-',
   };
 }
@@ -58,19 +58,22 @@ export default function AssetMatchModal({ open, materialId, warehouse, currentAs
       title: '选择',
       width: 60,
       fixed: 'left',
+      align: 'center',
       render: (_, record) => <Radio checked={selectedKey === record.id} />,
     },
-    { title: '标签号', dataIndex: 'assetTag', width: 150 },
-    { title: '公司', dataIndex: 'company', width: 220 },
+    { title: '标签号', dataIndex: 'assetTag', width: 150, fixed: 'left', render: (value) => <Typography.Link>{value}</Typography.Link> },
+    { title: 'SN号', dataIndex: 'serialNo', width: 130 },
+    { title: '公司', dataIndex: 'company', width: 210 },
     { title: '板块', dataIndex: 'block', width: 100 },
     { title: '资产大类', dataIndex: 'category', width: 120 },
-    { title: '资产小类', dataIndex: 'subCategory', width: 150 },
-    { title: '资产说明', dataIndex: 'assetDesc', width: 230 },
-    { title: '品牌', dataIndex: 'brand', width: 100 },
+    { title: '资产小类', dataIndex: 'subCategory', width: 140 },
+    { title: '资产说明', dataIndex: 'assetDesc', width: 220 },
+    { title: '品牌', dataIndex: 'brand', width: 90 },
+    { title: '配置', dataIndex: 'config', width: 230 },
     { title: '数量', dataIndex: 'quantity', width: 70, align: 'center' },
     { title: '原值', dataIndex: 'originalValue', width: 100 },
-    { title: '资产责任人', dataIndex: 'responsiblePerson', width: 160 },
-    { title: '资产状态', dataIndex: 'status', width: 120 },
+    { title: '资产责任人', dataIndex: 'responsiblePerson', width: 180 },
+    { title: '资产状态', dataIndex: 'status', width: 120, render: (value) => <Tag color="success">{value}</Tag> },
     { title: '成本中心', dataIndex: 'costCenter', width: 160 },
     { title: '启用日期', dataIndex: 'enabledDate', width: 110 },
   ];
@@ -84,32 +87,59 @@ export default function AssetMatchModal({ open, materialId, warehouse, currentAs
     <Modal
       title="物资列表"
       open={open}
-      width={1280}
+      width="92vw"
       footer={null}
       onCancel={onCancel}
       destroyOnHidden
+      styles={{ body: { paddingTop: 8 } }}
     >
+      <div className="mb-3 rounded bg-blue-500 px-4 py-2 text-sm font-medium text-white">
+        资产查询列表
+      </div>
+
       <QueryBar onQuery={() => setAppliedQuery(query)} onReset={reset}>
         <QueryItem label="标签号">
-          <Input allowClear value={query.assetTag} onChange={(event) => setQuery((current) => ({ ...current, assetTag: event.target.value }))} />
+          <Input
+            allowClear
+            value={query.assetTag}
+            placeholder="请输入资产标签号"
+            onChange={(event) => setQuery((current) => ({ ...current, assetTag: event.target.value }))}
+          />
         </QueryItem>
-        <QueryItem label="序列号">
-          <Input allowClear value={query.serialNo} onChange={(event) => setQuery((current) => ({ ...current, serialNo: event.target.value }))} />
+        <QueryItem label="SN号">
+          <Input
+            allowClear
+            value={query.serialNo}
+            placeholder="请输入SN号"
+            onChange={(event) => setQuery((current) => ({ ...current, serialNo: event.target.value }))}
+          />
         </QueryItem>
         <QueryItem label="板块">
-          <Input allowClear value={query.block} onChange={(event) => setQuery((current) => ({ ...current, block: event.target.value }))} />
+          <Input
+            allowClear
+            value={query.block}
+            placeholder="请输入板块"
+            onChange={(event) => setQuery((current) => ({ ...current, block: event.target.value }))}
+          />
         </QueryItem>
         <QueryItem label="资产说明">
-          <Input allowClear value={query.assetDesc} onChange={(event) => setQuery((current) => ({ ...current, assetDesc: event.target.value }))} />
+          <Input
+            allowClear
+            value={query.assetDesc}
+            placeholder="请输入资产说明或配置"
+            onChange={(event) => setQuery((current) => ({ ...current, assetDesc: event.target.value }))}
+          />
         </QueryItem>
       </QueryBar>
 
       <Table
         rowKey="id"
+        size="small"
+        bordered
         columns={columns}
         dataSource={filteredAssets}
-        scroll={{ x: 1850, y: 380 }}
-        pagination={{ pageSize: 10, showTotal: (total) => `共${total}项` }}
+        scroll={{ x: 1900, y: 380 }}
+        pagination={{ pageSize: 10, showSizeChanger: false, showTotal: (total) => `共 ${total} 条` }}
         onRow={(record) => ({
           onClick: () => setSelectedKey(record.id),
           className: selectedKey === record.id ? 'bg-blue-50 cursor-pointer' : 'cursor-pointer',
@@ -118,7 +148,7 @@ export default function AssetMatchModal({ open, materialId, warehouse, currentAs
 
       <div className="mt-4 flex justify-center gap-3">
         <Button type="primary" disabled={!selectedAsset} onClick={() => onConfirm(selectedAsset)}>确定</Button>
-        <Button onClick={onCancel}>返回</Button>
+        <Button onClick={onCancel}>取消</Button>
       </div>
     </Modal>
   );
