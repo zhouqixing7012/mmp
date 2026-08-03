@@ -288,9 +288,9 @@ export default function BorrowingApplyPage() {
         <TextArea
           value={value}
           rows={2}
-          maxLength={400}
+          maxLength={150}
           showCount
-          placeholder="说明临时办公需求和使用场景"
+          placeholder="请填写需要借用资产的配置需求"
           onChange={(event) => updateDetail(record.rowKey, 'detail', event.target.value)}
         />
       ),
