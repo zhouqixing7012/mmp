@@ -28,6 +28,7 @@ export default function ReplacementApplyPage() {
     const fallback = assets.find((asset) => getReplacementEligibility(asset).allowed);
     return fallback ? [fallback] : [];
   }, [assets]);
+  const totalQuantity = selectedAssets.reduce((sum, asset) => sum + (asset.quantity || 0), 0);
 
   const submit = () => {
     if (selectedAssets.length === 0) {
@@ -76,17 +77,15 @@ export default function ReplacementApplyPage() {
     <div className="min-h-screen bg-slate-100 p-4">
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="rounded-lg bg-white px-5 py-4 shadow-sm">
           <Typography.Title level={4} className="mb-0">资产更换申请</Typography.Title>
-          <Typography.Text type="secondary">批量提交时，一个旧资产生成一张申请单</Typography.Text>
         </div>
 
         <Card title="更换信息说明" size="small">
-          <Descriptions bordered size="small" column={3}>
+          <Descriptions bordered size="small" column={2}>
             <Descriptions.Item label="申请人">{CURRENT_REPLACEMENT_APPLICANT.name}-{CURRENT_REPLACEMENT_APPLICANT.id}</Descriptions.Item>
             <Descriptions.Item label="更换类型">故障更换</Descriptions.Item>
-            <Descriptions.Item label="更换数量">{selectedAssets.length} 项</Descriptions.Item>
-            <Descriptions.Item label="更换原因" span={3}>
+            <Descriptions.Item label={<><span className="text-red-500">*</span> 更换原因</>} span={2}>
               <TextArea
                 rows={4}
                 maxLength={150}
@@ -99,7 +98,11 @@ export default function ReplacementApplyPage() {
           </Descriptions>
         </Card>
 
-        <Card title="退回物资说明" size="small">
+        <Card
+          title="退回物资信息"
+          size="small"
+          extra={<Typography.Text>总计：{totalQuantity} 项</Typography.Text>}
+        >
           <Table
             rowKey="id"
             columns={columns}
@@ -111,12 +114,14 @@ export default function ReplacementApplyPage() {
         </Card>
 
         <Card title="更换须知" size="small">
-          <ul className="mb-4 list-disc space-y-2 pl-5 text-sm text-slate-700">
+          <ul className="mb-4 list-disc space-y-2 pl-5 text-sm text-red-500">
             {REPLACEMENT_NOTICE.map((item) => <li key={item}>{item}</li>)}
           </ul>
-          <Checkbox checked={accepted} onChange={(event) => setAccepted(event.target.checked)}>
-            已阅读并同意
-          </Checkbox>
+          <div className="flex justify-center">
+            <Checkbox checked={accepted} onChange={(event) => setAccepted(event.target.checked)}>
+              已阅读并同意
+            </Checkbox>
+          </div>
         </Card>
 
         <div className="flex justify-center gap-3 rounded-lg bg-white px-5 py-4 shadow-sm">
