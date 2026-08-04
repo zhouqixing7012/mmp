@@ -15,11 +15,16 @@ import {
   message as antdMessage,
 } from 'antd';
 import {
+  addAssetReturnAttachment,
   getAssetReturnApplications,
+  removeAssetReturnAttachment,
   submitAssetReturnMisDecision,
 } from '../../services/assetReturnService';
+import ReturnAttachmentCard from './ReturnAttachmentCard';
 
 const { TextArea } = Input;
+const MIS_NODE = 'MIS鉴定';
+const MIS_UPLOADER = { id: 'CW003379', name: 'CW003379-李木勇' };
 
 function formatDepartment(value) {
   return value ? String(value).replace(/\s*\/\s*/g, '.') : '-';
@@ -81,7 +86,35 @@ export default function AssetReturnApprovalPage() {
   const [repairOpen, setRepairOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const applications = useMemo(() => getAssetReturnApplications(), [version]);
-  const selected = applications.find((item) => item.status === '处理中' && item.currentNode === 'MIS鉴定') || null;
+  const selected = applications.find((item) => item.status === '处理中' && item.currentNode === MIS_NODE) || null;
+
+  const refresh = () => setVersion((value) => value + 1);
+
+  const uploadAttachment = (file) => {
+    if (!selected) return;
+    addAssetReturnAttachment(selected.id, {
+      ...file,
+      node: MIS_NODE,
+      uploaderId: MIS_UPLOADER.id,
+      uploaderName: MIS_UPLOADER.name,
+    });
+    messageApi.success(`附件“${file.name}”上传成功`);
+    refresh();
+  };
+
+  const deleteAttachment = (attachmentId) => {
+    if (!selected) return;
+    try {
+      removeAssetReturnAttachment(selected.id, attachmentId, {
+        node: MIS_NODE,
+        uploaderId: MIS_UPLOADER.id,
+      });
+      messageApi.success('附件已删除');
+      refresh();
+    } catch (error) {
+      messageApi.error(error.message);
+    }
+  };
 
   const submit = (decision) => {
     if (!selected) return;
@@ -101,7 +134,7 @@ export default function AssetReturnApprovalPage() {
       });
       messageApi.success(approved ? '鉴定已通过' : '退库申请已驳回');
       setComment('');
-      setVersion((value) => value + 1);
+      refresh();
     } catch (error) {
       messageApi.error(error.message);
     } finally {
@@ -178,6 +211,14 @@ export default function AssetReturnApprovalPage() {
         </div>
 
         <DetailCard application={selected} onViewRepairs={() => setRepairOpen(true)} />
+
+        <ReturnAttachmentCard
+          attachments={selected.attachments || []}
+          currentNode={MIS_NODE}
+          currentUploader={MIS_UPLOADER}
+          onUpload={uploadAttachment}
+          onDelete={deleteAttachment}
+        />
 
         <Card size="small" title="审批信息">
           <Table
