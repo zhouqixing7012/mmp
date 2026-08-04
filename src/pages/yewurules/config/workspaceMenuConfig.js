@@ -61,7 +61,7 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: '员工退库确认', label: '员工退库确认', Page: AssetReturnConfirmPage },
   { key: '合约号码退库', label: '合约号码退库', Page: ContractReturnApplyPage },
   { key: '合约号码退库办理', label: '合约号码退库办理', Page: ContractReturnHandlingPage },
-  { key: '员工号码退库确认', label: '员工号码退库确认', Page: ContractReturnConfirmPage },
+  { key: '员工合约号码退库确认', label: '员工合约号码退库确认', Page: ContractReturnConfirmPage },
 ];
 
 export function getWorkspacePage(menuKey) {
