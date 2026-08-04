@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -10,25 +9,22 @@ import {
   Modal,
   Space,
   Table,
-  Tag,
   Typography,
   message as antdMessage,
 } from 'antd';
+import StatusTag from '../../components/StatusTag';
 import {
   addAssetReturnAttachment,
   getAssetReturnApplications,
   removeAssetReturnAttachment,
   submitAssetReturnMisDecision,
 } from '../../services/assetReturnService';
+import { formatDateText, formatDepartment } from '../../utils/displayFormat';
 import ReturnAttachmentCard from './ReturnAttachmentCard';
 
 const { TextArea } = Input;
 const MIS_NODE = 'MIS鉴定';
 const MIS_UPLOADER = { id: 'CW003379', name: 'CW003379-李木勇' };
-
-function formatDepartment(value) {
-  return value ? String(value).replace(/\s*\/\s*/g, '.') : '-';
-}
 
 function DetailCard({ application, onViewRepairs }) {
   const asset = application.asset;
@@ -39,12 +35,12 @@ function DetailCard({ application, onViewRepairs }) {
       <Card size="small" title="申请人信息">
         <Descriptions bordered size="small" column={3}>
           <Descriptions.Item label="申请人">{application.applicant.id}-{application.applicant.name}</Descriptions.Item>
-          <Descriptions.Item label="申请时间">{application.applyTime}</Descriptions.Item>
-          <Descriptions.Item label="联系电话">{application.applicant.phone}</Descriptions.Item>
-          <Descriptions.Item label="邮箱">{application.applicant.email}</Descriptions.Item>
-          <Descriptions.Item label="部门" span={2}>{formatDepartment(application.applicant.department)}</Descriptions.Item>
-          <Descriptions.Item label="退库类型">{application.returnType}</Descriptions.Item>
-          <Descriptions.Item label="退库原因" span={2}>{application.reason || '-'}</Descriptions.Item>
+          <Descriptions.Item label="申请日期">{formatDateText(application.applyTime)}</Descriptions.Item>
+          <Descriptions.Item label="联系电话">{application.applicant.phone || '-'}</Descriptions.Item>
+          <Descriptions.Item label="邮箱">{application.applicant.email || '-'}</Descriptions.Item>
+          <Descriptions.Item label="退库类型">{application.returnType || '-'}</Descriptions.Item>
+          <Descriptions.Item label="部门">{formatDepartment(application.applicant.department)}</Descriptions.Item>
+          <Descriptions.Item label="退库原因" span={3}>{application.reason || '-'}</Descriptions.Item>
         </Descriptions>
       </Card>
 
@@ -54,18 +50,18 @@ function DetailCard({ application, onViewRepairs }) {
           <Descriptions.Item label="SN号">{asset.sn || '-'}</Descriptions.Item>
           <Descriptions.Item label="资产标签号">{asset.assetTag || '-'}</Descriptions.Item>
           <Descriptions.Item label="数量">{asset.quantity || 1}</Descriptions.Item>
-          <Descriptions.Item label="资产状态">{asset.status || '-'}</Descriptions.Item>
+          <Descriptions.Item label="资产状态"><StatusTag value={asset.status} type="business" /></Descriptions.Item>
           <Descriptions.Item label="资产大类">{asset.category || '-'}</Descriptions.Item>
           <Descriptions.Item label="资产小类">{asset.subCategory || '-'}</Descriptions.Item>
           <Descriptions.Item label="部件数量">{componentCount}</Descriptions.Item>
           <Descriptions.Item label="配置" span={2}>{asset.config || '-'}</Descriptions.Item>
-          <Descriptions.Item label="启用日期">{asset.enabledDate || '-'}</Descriptions.Item>
+          <Descriptions.Item label="启用日期">{formatDateText(asset.enabledDate)}</Descriptions.Item>
           <Descriptions.Item label="城市">{asset.city || '-'}</Descriptions.Item>
           <Descriptions.Item label="建筑">{asset.building || '-'}</Descriptions.Item>
           <Descriptions.Item label="楼层">{asset.floor || '-'}</Descriptions.Item>
-          <Descriptions.Item label="备注" span={2}>{asset.note || '-'}</Descriptions.Item>
+          <Descriptions.Item label="备注" span={3}>{asset.note || '-'}</Descriptions.Item>
           <Descriptions.Item label="维修记录" span={3}>
-            <Button size="small" onClick={onViewRepairs}>维修记录</Button>
+            <Button type="link" size="small" className="px-0" onClick={onViewRepairs}>维修记录</Button>
           </Descriptions.Item>
         </Descriptions>
       </Card>
@@ -154,16 +150,12 @@ export default function AssetReturnApprovalPage() {
   const historyColumns = [
     { title: '审批环节', dataIndex: 'node', width: 160 },
     { title: '申请人/审批人', dataIndex: 'person', width: 220 },
-    { title: '代理人', width: 120, render: () => '-' },
     {
       title: '审批状态',
       dataIndex: 'status',
       width: 120,
       align: 'center',
-      render: (value) => {
-        const color = value === '已驳回' ? 'error' : value === '待审批' ? 'warning' : value === '已同意' || value === '已提交' ? 'success' : 'default';
-        return <Tag color={color}>{value}</Tag>;
-      },
+      render: (value) => <StatusTag value={value} type="business" />,
     },
     { title: '审批时间', dataIndex: 'time', width: 180 },
     { title: '审批意见', dataIndex: 'comment', render: (value) => value || '-' },
@@ -174,7 +166,7 @@ export default function AssetReturnApprovalPage() {
     { title: '维修时间', dataIndex: 'repairTime', width: 170 },
     { title: '故障描述', dataIndex: 'faultDescription', width: 240 },
     { title: '维修结果', dataIndex: 'repairResult', width: 240 },
-    { title: '维修状态', dataIndex: 'status', width: 100, render: (value) => <Tag color="success">{value}</Tag> },
+    { title: '维修状态', dataIndex: 'status', width: 100, render: (value) => <StatusTag value={value} type="business" /> },
   ];
 
   const repairRecords = [
@@ -237,8 +229,8 @@ export default function AssetReturnApprovalPage() {
             />
           </div>
           <div className="mt-4 flex justify-center gap-3">
-            <Button type="primary" icon={<CheckCircle2 size={14} />} loading={loading} onClick={() => submit('同意')}>鉴定通过</Button>
-            <Button danger icon={<XCircle size={14} />} loading={loading} onClick={() => submit('驳回')}>鉴定不通过</Button>
+            <Button type="primary" loading={loading} onClick={() => submit('同意')}>鉴定通过</Button>
+            <Button danger loading={loading} onClick={() => submit('驳回')}>鉴定不通过</Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
           </div>
         </Card>
