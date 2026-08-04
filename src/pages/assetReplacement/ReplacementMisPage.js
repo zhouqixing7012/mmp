@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -13,6 +12,7 @@ import {
   message as antdMessage,
 } from 'antd';
 import { getPendingMisApplications, submitMisDecision } from '../../services/assetReplacementService';
+import { formatDateText, formatDepartment } from '../../utils/displayFormat';
 import ReplacementHistoryCard from './ReplacementHistoryCard';
 
 const { TextArea } = Input;
@@ -92,20 +92,22 @@ export default function ReplacementMisPage() {
             <Descriptions.Item label="申请人">
               {selectedApplication.applicant.id}-{selectedApplication.applicant.name}
             </Descriptions.Item>
-            <Descriptions.Item label="申请日期">{selectedApplication.applyDate}</Descriptions.Item>
-            <Descriptions.Item label="联系电话">{selectedApplication.applicant.phone}</Descriptions.Item>
-            <Descriptions.Item label="邮箱">{selectedApplication.applicant.email}</Descriptions.Item>
-            <Descriptions.Item label="部门" span={2}>{selectedApplication.applicant.department}</Descriptions.Item>
+            <Descriptions.Item label="申请日期">{formatDateText(selectedApplication.applyDate)}</Descriptions.Item>
+            <Descriptions.Item label="公司">{selectedApplication.applicant.company || '-'}</Descriptions.Item>
+            <Descriptions.Item label="办公区">{selectedApplication.applicant.officeArea || '-'}</Descriptions.Item>
+            <Descriptions.Item label="联系电话">{selectedApplication.applicant.phone || '-'}</Descriptions.Item>
+            <Descriptions.Item label="邮箱">{selectedApplication.applicant.email || '-'}</Descriptions.Item>
+            <Descriptions.Item label="部门" span={3}>{formatDepartment(selectedApplication.applicant.department)}</Descriptions.Item>
             <Descriptions.Item label="更换原因" span={3}>{selectedApplication.reason || '-'}</Descriptions.Item>
           </Descriptions>
         </Card>
 
-        <Card title="更换物资信息" size="small">
+        <Card title="更换资产信息" size="small">
           <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="资产标签号">{selectedApplication.oldAsset.assetTag}</Descriptions.Item>
-            <Descriptions.Item label="资产说明">{selectedApplication.oldAsset.assetDesc}</Descriptions.Item>
-            <Descriptions.Item label="配置">{selectedApplication.oldAsset.config}</Descriptions.Item>
-            <Descriptions.Item label="耗材信息" span={3}>{selectedApplication.oldAsset.consumables}</Descriptions.Item>
+            <Descriptions.Item label="资产标签号">{selectedApplication.oldAsset.assetTag || '-'}</Descriptions.Item>
+            <Descriptions.Item label="资产说明">{selectedApplication.oldAsset.assetDesc || '-'}</Descriptions.Item>
+            <Descriptions.Item label="配置">{selectedApplication.oldAsset.config || '-'}</Descriptions.Item>
+            <Descriptions.Item label="耗材信息" span={3}>{selectedApplication.oldAsset.consumables || '-'}</Descriptions.Item>
           </Descriptions>
         </Card>
 
@@ -139,9 +141,8 @@ export default function ReplacementMisPage() {
         </Card>
 
         <ReplacementHistoryCard
-          title="审批流程"
+          title="审批信息"
           records={selectedApplication.history}
-          showAgent={false}
         >
           <Typography.Text strong>审批意见：</Typography.Text>
           <TextArea
@@ -154,8 +155,8 @@ export default function ReplacementMisPage() {
             onChange={(event) => setComment(event.target.value)}
           />
           <div className="mt-4 flex justify-center gap-3">
-            <Button type="primary" icon={<CheckCircle2 size={14} />} loading={submitting} onClick={() => submitDecision('同意')}>同意</Button>
-            <Button danger icon={<XCircle size={14} />} loading={submitting} onClick={() => submitDecision('驳回')}>驳回</Button>
+            <Button type="primary" loading={submitting} onClick={() => submitDecision('同意')}>同意</Button>
+            <Button danger loading={submitting} onClick={() => submitDecision('驳回')}>驳回</Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
           </div>
         </ReplacementHistoryCard>
