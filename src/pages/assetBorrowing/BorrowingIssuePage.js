@@ -23,7 +23,7 @@ import { nowText } from './utils';
 
 const { TextArea } = Input;
 const WAREHOUSE_OPTIONS = ['北京总部仓', '北京影像器材仓'];
-const PURPOSE_OPTIONS = ['员工用机', '部门公用', '其他用途', '专业用途', '借用'];
+const PURPOSE_OPTIONS = ['员工用机', '部门公用', '其他用途', '专业用途'];
 const LOCATION_OPTIONS = {
   北京市: {
     搜狐媒体大厦: ['5层', '8层', '12层'],
@@ -38,13 +38,17 @@ function createOutOrderNo() {
   return `CK-JY-${String(Date.now()).slice(-10)}`;
 }
 
+function normalizePurpose(value) {
+  return value && value !== '借用' ? value : '';
+}
+
 function hydrateDetails(application) {
   return (application?.details || []).map((item) => ({
     ...item,
     issueCity: item.issueCity || item.matchedAsset?.city || application?.city || '北京市',
     issueBuilding: item.issueBuilding || item.matchedAsset?.building || application?.building || '搜狐媒体大厦',
     issueFloor: item.issueFloor || item.matchedAsset?.floor || application?.floor || '8层',
-    issuePurpose: item.issuePurpose || application?.purpose || '借用',
+    issuePurpose: normalizePurpose(item.issuePurpose || application?.purpose),
     issueUsageNote: item.issueUsageNote || application?.usageNote || '',
   }));
 }
@@ -121,7 +125,7 @@ export default function BorrowingIssuePage() {
         city: firstDetail?.issueCity || record.city,
         building: firstDetail?.issueBuilding || record.building,
         floor: firstDetail?.issueFloor || record.floor,
-        purpose: firstDetail?.issuePurpose || record.purpose,
+        purpose: firstDetail?.issuePurpose || '',
         usageNote: firstDetail?.issueUsageNote || '',
         issueNote: documentNote,
         confirmMethod,
@@ -308,7 +312,8 @@ export default function BorrowingIssuePage() {
                     <Descriptions.Item label={<><span className="text-red-500">*</span> 资产用途</>}>
                       <Select
                         className="w-full"
-                        value={detail.issuePurpose}
+                        value={detail.issuePurpose || undefined}
+                        placeholder="请选择资产用途"
                         options={PURPOSE_OPTIONS.map((value) => ({ label: value, value }))}
                         onChange={(value) => updateDetail(detail.id, { issuePurpose: value })}
                       />
