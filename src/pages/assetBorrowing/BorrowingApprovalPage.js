@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { CheckCircle2, UserPlus, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -17,6 +16,7 @@ import {
   getBorrowingApplicationByNode,
   updateAssetBorrowingApplication,
 } from '../../services/assetBorrowingService';
+import { formatDateText, formatDepartment } from '../../utils/displayFormat';
 import BorrowingApprovalHistory from './BorrowingApprovalHistory';
 import { nowText } from './utils';
 
@@ -79,7 +79,7 @@ export default function BorrowingApprovalPage() {
     {
       title: '资产类别',
       width: 260,
-      render: (_, record) => [record.category, record.subCategory].filter(Boolean).join('-') || record.assetDesc,
+      render: (_, record) => [record.category, record.subCategory].filter(Boolean).join('.') || record.assetDesc,
     },
     { title: '借用数量', dataIndex: 'quantity', width: 100, align: 'center' },
     { title: '借用原因', dataIndex: 'reason', width: 130 },
@@ -95,7 +95,7 @@ export default function BorrowingApprovalPage() {
         <Card>
           <Empty description="暂无待审批的资产借用申请" />
           <div className="mt-4 flex justify-center">
-            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
       </div>
@@ -111,13 +111,15 @@ export default function BorrowingApprovalPage() {
           <Typography.Text type="secondary">借用单号：{application.id}</Typography.Text>
         </div>
 
-        <Card title="借用单信息" size="small">
-          <Descriptions bordered size="small" column={2}>
+        <Card title="申请人信息" size="small">
+          <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="申请人">{application.applicant.id}-{application.applicant.name}</Descriptions.Item>
-            <Descriptions.Item label="申请时间">{application.applyDate}</Descriptions.Item>
-            <Descriptions.Item label="联系电话">{application.applicant.phone}</Descriptions.Item>
-            <Descriptions.Item label="邮箱">{application.applicant.email}</Descriptions.Item>
-            <Descriptions.Item label="部门" span={2}>{application.applicant.department}</Descriptions.Item>
+            <Descriptions.Item label="申请日期">{formatDateText(application.applyDate)}</Descriptions.Item>
+            <Descriptions.Item label="公司">{application.applicant.company || '-'}</Descriptions.Item>
+            <Descriptions.Item label="办公区">{application.applicant.officeArea || '-'}</Descriptions.Item>
+            <Descriptions.Item label="联系电话">{application.applicant.phone || '-'}</Descriptions.Item>
+            <Descriptions.Item label="邮箱">{application.applicant.email || '-'}</Descriptions.Item>
+            <Descriptions.Item label="部门" span={3}>{formatDepartment(application.applicant.department)}</Descriptions.Item>
           </Descriptions>
         </Card>
 
@@ -145,10 +147,10 @@ export default function BorrowingApprovalPage() {
             onChange={(event) => setComment(event.target.value)}
           />
           <div className="mt-3 flex justify-center gap-3">
-            <Button type="primary" icon={<CheckCircle2 size={14} />} loading={loading} onClick={() => decide('同意')}>同意</Button>
-            <Button danger icon={<XCircle size={14} />} loading={loading} onClick={() => decide('驳回')}>驳回</Button>
+            <Button type="primary" loading={loading} onClick={() => decide('同意')}>同意</Button>
+            <Button danger loading={loading} onClick={() => decide('驳回')}>驳回</Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
-            <Button icon={<UserPlus size={14} />} onClick={() => setCountersignOpen(true)}>加签</Button>
+            <Button onClick={() => setCountersignOpen(true)}>加签</Button>
           </div>
         </BorrowingApprovalHistory>
       </Space>
