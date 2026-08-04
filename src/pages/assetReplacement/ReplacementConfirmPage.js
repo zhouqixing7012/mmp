@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert,
@@ -11,14 +10,15 @@ import {
   Space,
   Table,
   Tabs,
-  Tag,
   Typography,
   message as antdMessage,
 } from 'antd';
+import StatusTag from '../../components/StatusTag';
 import {
   confirmReplacementByEmployee,
   getAssetReplacementApplications,
 } from '../../services/assetReplacementService';
+import { formatDateText, formatDepartment } from '../../utils/displayFormat';
 
 const TAB_OLD = '旧资产退回';
 const TAB_NEW = '新资产领取';
@@ -131,7 +131,7 @@ export default function ReplacementConfirmPage() {
         <Card>
           <Empty description="暂无待确认的资产更换任务" />
           <div className="mt-4 flex justify-center">
-            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
       </div>
@@ -144,7 +144,7 @@ export default function ReplacementConfirmPage() {
   const oldAssetColumns = [
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
     { title: '资产标签号', dataIndex: 'assetTag', width: 160 },
-    { title: '物资说明', dataIndex: 'assetDesc', width: 240 },
+    { title: '资产说明', dataIndex: 'assetDesc', width: 240 },
     { title: '配置', dataIndex: 'config', width: 280, render: (value) => value || '-' },
     { title: '数量', dataIndex: 'quantity', width: 90, align: 'center', render: (value) => value || 1 },
     { title: '更换原因', width: 220, render: () => application.reason || '-' },
@@ -154,12 +154,12 @@ export default function ReplacementConfirmPage() {
   const newAssetColumns = [
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
     { title: '资产标签号', dataIndex: 'assetTag', width: 160 },
-    { title: '物资说明', dataIndex: 'assetDesc', width: 240 },
+    { title: '资产说明', dataIndex: 'assetDesc', width: 240 },
     { title: '配置', dataIndex: 'config', width: 280, render: (value) => value || '-' },
     { title: '数量', dataIndex: 'quantity', width: 90, align: 'center', render: (value) => value || 1 },
     { title: '使用说明', width: 220, render: () => application.issueProcess.usageNote || '-' },
-    { title: '借用开始日期', width: 150, render: () => application.issueProcess.startDate || application.applyDate || '-' },
-    { title: '借用结束日期', width: 150, render: () => application.issueProcess.returnDate || '-' },
+    { title: '借用开始日期', width: 150, render: () => formatDateText(application.issueProcess.startDate || application.applyDate) },
+    { title: '借用结束日期', width: 150, render: () => formatDateText(application.issueProcess.returnDate) },
   ];
 
   const responsibilityText = '领用人须承担妥善保管资产的责任，除自然损耗外，不得人为损坏或者疏于维护，否则承担相应的赔偿责任。应公司需要，领用人应当配合及时调换或归还资产；如延迟甚至拒绝交还公司资产，公司保留采取进一步处理措施的权利。';
@@ -171,7 +171,7 @@ export default function ReplacementConfirmPage() {
       label: <span className="text-sm">旧资产退回确认</span>,
       children: (
         <div className="pt-1">
-          <div className="mb-3 text-sm font-medium text-slate-700">维修物资明细</div>
+          <div className="mb-3 text-sm font-medium text-slate-700">维修资产明细</div>
           <Table
             rowKey="id"
             columns={oldAssetColumns}
@@ -190,7 +190,7 @@ export default function ReplacementConfirmPage() {
       label: <span className="text-sm">新资产领取确认</span>,
       children: (
         <div className="pt-1">
-          <div className="mb-3 text-sm font-medium text-slate-700">待发放物资明细</div>
+          <div className="mb-3 text-sm font-medium text-slate-700">待发放资产明细</div>
           <Table
             rowKey="id"
             columns={newAssetColumns}
@@ -215,11 +215,11 @@ export default function ReplacementConfirmPage() {
         </div>
 
         <Card title="资产确认信息" size="small">
-          <Descriptions bordered size="small" column={2}>
+          <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="使用人">
               {application.applicant.id}-{application.applicant.name}
             </Descriptions.Item>
-            <Descriptions.Item label="部门">{application.applicant.department}</Descriptions.Item>
+            <Descriptions.Item label="部门" span={2}>{formatDepartment(application.applicant.department)}</Descriptions.Item>
           </Descriptions>
           <Tabs
             size="small"
@@ -242,8 +242,8 @@ export default function ReplacementConfirmPage() {
         <Card title="刷卡/扫码确认" size="small">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center">
             <div>
-              <Typography.Title level={5}>{cardLabel}</Typography.Title>
-              <Space.Compact className="w-full max-w-xl">
+              <Typography.Text strong>{cardLabel}</Typography.Text>
+              <Space.Compact className="mt-3 w-full max-w-xl">
                 <Input
                   value={employeeId}
                   disabled={Boolean(confirmedResult)}
@@ -253,7 +253,6 @@ export default function ReplacementConfirmPage() {
                 />
                 <Button
                   type="primary"
-                  icon={<CreditCard size={15} />}
                   disabled={Boolean(confirmedResult)}
                   onClick={confirmByEmployeeId}
                 >
@@ -271,11 +270,11 @@ export default function ReplacementConfirmPage() {
 
           {confirmedResult && (
             <div className="mt-5">
-              <Descriptions bordered size="small" column={2}>
+              <Descriptions bordered size="small" column={3}>
                 <Descriptions.Item label="识别员工工号">{application.applicant.id}（{application.applicant.name}）</Descriptions.Item>
                 <Descriptions.Item label="确认时间">{confirmedResult.time}</Descriptions.Item>
                 <Descriptions.Item label="确认方式">{confirmedResult.method}</Descriptions.Item>
-                <Descriptions.Item label="确认结果"><Tag color="success">确认成功</Tag></Descriptions.Item>
+                <Descriptions.Item label="确认结果" span={3}><StatusTag value="已确认" type="business" /></Descriptions.Item>
               </Descriptions>
               <Alert
                 className="mt-4"
