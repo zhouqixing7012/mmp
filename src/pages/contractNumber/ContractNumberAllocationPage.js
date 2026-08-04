@@ -7,7 +7,6 @@ import {
   Empty,
   Input,
   Space,
-  Steps,
   Table,
   Typography,
   message as antdMessage,
@@ -25,6 +24,21 @@ const { TextArea } = Input;
 
 function nowText() {
   return new Date().toLocaleString('zh-CN', { hour12: false }).replaceAll('/', '-');
+}
+
+function downloadAttachment(attachment) {
+  if (!attachment) return;
+  const blob = new Blob([attachment.content || '合约号码申请附件（演示文件）'], {
+    type: 'text/plain;charset=utf-8',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = attachment.name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 export default function ContractNumberAllocationPage() {
@@ -84,8 +98,8 @@ export default function ContractNumberAllocationPage() {
         const approved = action === '同意';
         return {
           ...record,
-          status: approved ? '已完成' : '已驳回',
-          currentNode: '结束',
+          status: approved ? '处理中' : '已驳回',
+          currentNode: approved ? '库管员领用' : '结束',
           history: record.history.map((item) => (
             item.node === 'ES审批' && item.status === '待审批'
               ? {
@@ -95,10 +109,17 @@ export default function ContractNumberAllocationPage() {
                 comment: comment.trim() || '同意',
               }
               : item
-          )),
+          )).concat(approved ? [{
+            id: `warehouse-${Date.now()}`,
+            person: '库管员',
+            node: '库管员领用',
+            time: '',
+            status: '待处理',
+            comment: '',
+          }] : []),
         };
       });
-      messageApi.success(action === '同意' ? '合约号码配给审批已通过' : action === '驳回' ? '申请已驳回' : '已记录延期处理');
+      messageApi.success(action === '同意' ? '审批已通过，已生成库管员领用待办' : action === '驳回' ? '申请已驳回' : '已记录延期处理');
       setComment('');
       refresh();
     } finally {
@@ -134,9 +155,6 @@ export default function ContractNumberAllocationPage() {
     { title: '审批意见', dataIndex: 'comment', render: (value) => value || '-' },
   ];
 
-  const finished = application.status === '已完成';
-  const rejected = application.status === '已驳回';
-
   return (
     <div className="min-h-screen bg-slate-100 p-4">
       {contextHolder}
@@ -160,45 +178,45 @@ export default function ContractNumberAllocationPage() {
         <Card size="small" title="申请信息">
           <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="申请原因" span={3}>{application.applyReason || '-'}</Descriptions.Item>
-            <Descriptions.Item label="身份证号码" span={3}>{application.idCard || '-'}</Descriptions.Item>
+            <Descriptions.Item label="身份证号码" span={2}>{application.idCard || '-'}</Descriptions.Item>
+            <Descriptions.Item label="附件">
+              {application.attachment ? (
+                <Button
+                  type="link"
+                  size="small"
+                  className="px-0"
+                  onClick={() => downloadAttachment(application.attachment)}
+                >
+                  {application.attachment.name}
+                </Button>
+              ) : '-'}
+            </Descriptions.Item>
           </Descriptions>
-          <Typography.Paragraph type="danger" strong className="mb-0 mt-3">
-            {application.notice}
-          </Typography.Paragraph>
         </Card>
 
         <Card size="small" title="号码配给">
           <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="电话号码" span={2}>
+            <Descriptions.Item label="电话号码">
               <Input.Search
                 readOnly
                 value={application.assignedNumber?.phoneNumber || ''}
                 placeholder="请选择电话号码"
                 enterButton="选择号码"
                 disabled={application.status !== '待审批'}
+                style={{ maxWidth: 360 }}
                 onSearch={() => setSelectOpen(true)}
               />
             </Descriptions.Item>
             <Descriptions.Item label="话费套餐">
               {application.assignedNumber?.packageName || '-'}
             </Descriptions.Item>
+            <Descriptions.Item label="号码状态">
+              <StatusTag value={application.assignedNumber?.status || '-'} type="business" />
+            </Descriptions.Item>
           </Descriptions>
         </Card>
 
         <Card size="small" title="审批信息">
-          <Steps
-            className="mb-5"
-            size="small"
-            current={finished ? 3 : 2}
-            status={rejected ? 'error' : finished ? 'finish' : 'process'}
-            items={[
-              { title: '开始', description: application.applicant.name },
-              { title: '申请人确认', description: application.applicant.name },
-              { title: 'ES审批', description: '孙志强' },
-              { title: '结束' },
-            ]}
-          />
-
           <Table
             rowKey="id"
             size="small"
