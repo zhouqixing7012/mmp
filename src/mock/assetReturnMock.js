@@ -1,6 +1,6 @@
 export const ASSET_RETURN_STORAGE_KEY = 'mmp.assetReturn.applications.v1';
 export const ASSET_RETURN_DRAFT_KEY = 'mmp.assetReturn.draft.v1';
-export const CONTRACT_RETURN_STORAGE_KEY = 'mmp.contractReturn.applications.v1';
+export const CONTRACT_RETURN_STORAGE_KEY = 'mmp.contractReturn.applications.v2';
 export const CONTRACT_RETURN_DRAFT_KEY = 'mmp.contractReturn.draft.v1';
 export const RETURN_CONFIRMATION_KEY = 'mmp.return.confirmation.v1';
 
@@ -67,4 +67,58 @@ export const EMPLOYEE_CONTRACT_NUMBERS = [
 ];
 
 export const DEFAULT_ASSET_RETURN_APPLICATIONS = [];
-export const DEFAULT_CONTRACT_RETURN_APPLICATIONS = [];
+
+export const DEFAULT_CONTRACT_RETURN_APPLICATIONS = [
+  {
+    id: 'HTTK-202608040001',
+    status: '处理中',
+    result: '',
+    currentNode: '号码退库办理',
+    applyTime: '2026-08-04 09:15:00',
+    applicant: {
+      id: '213852',
+      name: '孙志强',
+      phone: '138****2852',
+      email: 'sunzhiqiang@sohu-inc.com',
+      company: '搜狐新动力信息技术有限公司',
+      block: '集团',
+      department: '集团 / 资产管理部 / 员工服务中心',
+      officeArea: '北京-搜狐媒体大厦',
+      costCenter: '112060.员工服务中心',
+    },
+    reason: '工作调整，申请退还本人名下合约号码及实体电话卡。',
+    attachment: '合约号码退库说明.pdf',
+    contractNumber: {
+      ...EMPLOYEE_CONTRACT_NUMBERS[0],
+      status: '在用',
+    },
+    handling: {
+      warehouse: '北京总部号码仓',
+      responsiblePerson: '号码库管员',
+      returnDate: '2026-08-04',
+      usageNote: '',
+      opinion: '',
+      confirmationStatus: '未发起',
+      confirmationMethod: '',
+      confirmationEmployeeId: '',
+      confirmationTime: '',
+      inboundOrderNo: '',
+    },
+    history: [
+      {
+        node: '员工提交',
+        status: '已提交',
+        comment: '提交合约号码退库申请',
+        person: '213852-孙志强',
+        time: '2026-08-04 09:15:00',
+      },
+      {
+        node: '号码退库办理',
+        status: '待处理',
+        comment: '-',
+        person: '号码库管员',
+        time: '',
+      },
+    ],
+  },
+];
