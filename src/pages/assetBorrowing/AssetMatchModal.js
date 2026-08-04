@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Input, Modal, Radio, Table, Tag, Typography } from 'antd';
+import { Button, Input, Modal, Radio, Table, Typography } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
+import StatusTag from '../../components/StatusTag';
 import { BORROW_ALLOCATABLE_ASSETS } from '../../mock/assetBorrowingMock';
 
 const EMPTY_QUERY = {
@@ -73,7 +74,7 @@ export default function AssetMatchModal({ open, materialId, warehouse, currentAs
     { title: '数量', dataIndex: 'quantity', width: 70, align: 'center' },
     { title: '原值', dataIndex: 'originalValue', width: 100 },
     { title: '资产责任人', dataIndex: 'responsiblePerson', width: 180 },
-    { title: '资产状态', dataIndex: 'status', width: 120, render: (value) => <Tag color="success">{value}</Tag> },
+    { title: '资产状态', dataIndex: 'status', width: 120, render: (value) => <StatusTag value={value} type="business" /> },
     { title: '成本中心', dataIndex: 'costCenter', width: 160 },
     { title: '启用日期', dataIndex: 'enabledDate', width: 110 },
   ];
