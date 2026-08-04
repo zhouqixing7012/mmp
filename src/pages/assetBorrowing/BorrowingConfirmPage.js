@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CreditCard, ScanLine } from 'lucide-react';
+import { ScanLine } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert,
@@ -19,6 +19,7 @@ import {
   getBorrowingApplicationByNode,
   updateAssetBorrowingApplication,
 } from '../../services/assetBorrowingService';
+import { formatDepartment } from '../../utils/displayFormat';
 import { nowText } from './utils';
 
 export default function BorrowingConfirmPage() {
@@ -79,14 +80,14 @@ export default function BorrowingConfirmPage() {
       width: 170,
       render: (_, record) => record.matchedAsset?.assetTag || '-',
     },
-    { title: '物资说明', dataIndex: 'assetDesc', width: 240 },
+    { title: '资产说明', dataIndex: 'assetDesc', width: 240 },
     { title: '配置', dataIndex: 'config', width: 250, render: (value) => value || '-' },
     { title: '申请数量', dataIndex: 'quantity', width: 100, align: 'center' },
     { title: '借用数量', dataIndex: 'quantity', width: 100, align: 'center' },
     {
       title: '资产用途',
       width: 130,
-      render: (_, record) => record.issuePurpose || application?.purpose || '借用',
+      render: (_, record) => record.issuePurpose || application?.purpose || '-',
     },
     {
       title: '使用说明',
@@ -119,17 +120,17 @@ export default function BorrowingConfirmPage() {
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
           <Typography.Title level={4} className="mb-0">员工借用确认</Typography.Title>
-          <Button onClick={() => navigate('/yewurules', { state: { workspace: '借用发放' } })}>返回</Button>
+          <Typography.Text type="secondary">借用单号：{application.id}</Typography.Text>
         </div>
 
-        <Card title="借用人信息" size="small">
-          <Descriptions bordered size="small" column={2}>
+        <Card title="申请人信息" size="small">
+          <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="使用人">{application.applicant.id}-{application.applicant.name}</Descriptions.Item>
-            <Descriptions.Item label="部门">{application.applicant.department}</Descriptions.Item>
+            <Descriptions.Item label="部门" span={2}>{formatDepartment(application.applicant.department)}</Descriptions.Item>
           </Descriptions>
         </Card>
 
-        <Card title="借用物资明细" size="small">
+        <Card title="借用资产明细" size="small">
           <Table
             rowKey="id"
             size="small"
@@ -141,17 +142,22 @@ export default function BorrowingConfirmPage() {
           />
         </Card>
 
-        <Card size="small">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_220px]">
-            <div>
-              <Typography.Paragraph className="mb-3 font-medium text-red-500">
-                提示：我已阅读并确认保管职责说明，特此刷卡确认！
-              </Typography.Paragraph>
+        <Card title="确认提示及保管职责" size="small">
+          <Typography.Paragraph className="mb-3 font-medium text-red-500">
+            提示：我已阅读并确认保管职责说明，特此刷卡确认！
+          </Typography.Paragraph>
+          <Typography.Paragraph className="mb-0 text-red-500">
+            <Typography.Text strong className="text-red-500">保管职责：</Typography.Text>
+            {BORROW_CUSTODY_TEXT}
+          </Typography.Paragraph>
+        </Card>
 
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <Typography.Text strong>刷卡借用确认：</Typography.Text>
+        <Card title="刷卡/扫码确认" size="small">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_220px] lg:items-center">
+            <div>
+              <Typography.Text strong>刷卡借用确认</Typography.Text>
+              <Space.Compact className="mt-3 w-full max-w-xl">
                 <Input
-                  style={{ width: 280 }}
                   value={identityValue}
                   placeholder="请刷员工卡或输入申请人工号"
                   onChange={(event) => setIdentityValue(event.target.value)}
@@ -159,18 +165,12 @@ export default function BorrowingConfirmPage() {
                 />
                 <Button
                   type="primary"
-                  icon={<CreditCard size={14} />}
                   loading={submitting}
                   onClick={() => confirm('刷卡确认')}
                 >
-                  刷卡确认
+                  确认
                 </Button>
-              </div>
-
-              <Typography.Paragraph className="mb-0 text-red-500">
-                <Typography.Text strong className="text-red-500">保管职责：</Typography.Text>
-                {BORROW_CUSTODY_TEXT}
-              </Typography.Paragraph>
+              </Space.Compact>
             </div>
 
             <div className="flex flex-col items-center justify-center gap-3 border-l border-slate-100 pl-0 lg:pl-6">
@@ -185,6 +185,10 @@ export default function BorrowingConfirmPage() {
             </div>
           </div>
         </Card>
+
+        <div className="flex justify-center rounded-lg bg-white px-5 py-4 shadow-sm">
+          <Button onClick={() => navigate('/yewurules', { state: { workspace: '借用发放' } })}>返回</Button>
+        </div>
       </Space>
     </div>
   );
