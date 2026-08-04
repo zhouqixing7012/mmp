@@ -178,7 +178,7 @@ export default function ContractNumberAllocationPage() {
         <Card size="small" title="申请信息">
           <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="申请原因" span={3}>{application.applyReason || '-'}</Descriptions.Item>
-            <Descriptions.Item label="身份证号码" span={2}>{application.idCard || '-'}</Descriptions.Item>
+            <Descriptions.Item label="身份证号码">{application.idCard || '-'}</Descriptions.Item>
             <Descriptions.Item label="附件">
               {application.attachment ? (
                 <Button
@@ -203,15 +203,12 @@ export default function ContractNumberAllocationPage() {
                 placeholder="请选择电话号码"
                 enterButton="选择号码"
                 disabled={application.status !== '待审批'}
-                style={{ maxWidth: 360 }}
+                style={{ maxWidth: 320 }}
                 onSearch={() => setSelectOpen(true)}
               />
             </Descriptions.Item>
             <Descriptions.Item label="话费套餐">
               {application.assignedNumber?.packageName || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label="号码状态">
-              <StatusTag value={application.assignedNumber?.status || '-'} type="business" />
             </Descriptions.Item>
           </Descriptions>
         </Card>
