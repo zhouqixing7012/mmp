@@ -1,21 +1,12 @@
 import React from 'react';
-import { Card, Table, Tag } from 'antd';
-
-const STATUS_COLOR = {
-  已提交: 'processing',
-  待确认: 'warning',
-  已确认: 'success',
-  已同意: 'success',
-  已完成: 'success',
-  已结束: 'default',
-  已驳回: 'error',
-};
+import { Card, Table } from 'antd';
+import StatusTag from '../../components/StatusTag';
 
 export default function ReplacementHistoryCard({
   records = [],
   title = '流程记录',
   children,
-  showAgent = true,
+  showAgent = false,
 }) {
   const columns = [
     { title: '审批环节', dataIndex: 'node', width: 160 },
@@ -26,10 +17,10 @@ export default function ReplacementHistoryCard({
       dataIndex: 'status',
       width: 110,
       align: 'center',
-      render: (value) => <Tag color={STATUS_COLOR[value] || 'default'}>{value}</Tag>,
+      render: (value) => <StatusTag value={value} type="business" />,
     },
     { title: '审批时间', dataIndex: 'time', width: 180 },
-    { title: '审批意见', dataIndex: 'comment' },
+    { title: '审批意见', dataIndex: 'comment', render: (value) => value || '-' },
   ];
 
   return (
