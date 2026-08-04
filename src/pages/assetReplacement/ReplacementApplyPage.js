@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, Checkbox, Descriptions, Empty, Input, Space, Table, Tag, Typography, message as antdMessage } from 'antd';
+import { Button, Card, Checkbox, Descriptions, Empty, Input, Space, Table, Typography, message as antdMessage } from 'antd';
+import StatusTag from '../../components/StatusTag';
 import { CURRENT_REPLACEMENT_APPLICANT, REPLACEMENT_NOTICE } from '../../mock/assetReplacementMock';
 import {
   createAssetReplacementApplications,
@@ -62,10 +62,10 @@ export default function ReplacementApplyPage() {
     { title: '资产说明', dataIndex: 'assetDesc', width: 250 },
     { title: '配置', dataIndex: 'config', width: 270 },
     { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
-    { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <Tag color="success">{value}</Tag> },
+    { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
     { title: '资产用途', dataIndex: 'purpose', width: 110 },
     { title: '部件', dataIndex: 'component', width: 180 },
-    { title: '耗材信息', dataIndex: 'consumables', width: 220 },
+    { title: '耗材信息', dataIndex: 'consumables', width: 220, render: (value) => value || '-' },
   ];
 
   const back = () => {
@@ -99,7 +99,7 @@ export default function ReplacementApplyPage() {
         </Card>
 
         <Card
-          title="退回物资信息"
+          title="退回资产信息"
           size="small"
           extra={<Typography.Text>总计：{totalQuantity} 项</Typography.Text>}
         >
@@ -108,6 +108,8 @@ export default function ReplacementApplyPage() {
             columns={columns}
             dataSource={selectedAssets}
             pagination={false}
+            size="small"
+            bordered
             scroll={{ x: 1400 }}
             locale={{ emptyText: <Empty description="当前没有可更换资产" /> }}
           />
@@ -125,7 +127,7 @@ export default function ReplacementApplyPage() {
         </Card>
 
         <div className="flex justify-center gap-3 rounded-lg bg-white px-5 py-4 shadow-sm">
-          <Button type="primary" icon={<Send size={14} />} loading={submitting} onClick={submit}>提交</Button>
+          <Button type="primary" loading={submitting} onClick={submit}>提交</Button>
           <Button onClick={back}>返回</Button>
         </div>
       </Space>
