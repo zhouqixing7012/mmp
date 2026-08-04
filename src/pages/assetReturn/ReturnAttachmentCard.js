@@ -1,6 +1,6 @@
 import React from 'react';
-import { DeleteOutlined, UploadOutlined } from '@ant-design/icons';
-import { Button, Card, Popconfirm, Space, Table, Typography, Upload } from 'antd';
+import { Trash2, UploadCloud } from 'lucide-react';
+import { Button, Card, Popconfirm, Table, Typography, Upload } from 'antd';
 
 function formatSize(size = 0) {
   if (!size) return '-';
@@ -36,7 +36,7 @@ export default function ReturnAttachmentCard({
             cancelText="取消"
             onConfirm={() => onDelete(record.id)}
           >
-            <Button danger type="link" icon={<DeleteOutlined />}>删除</Button>
+            <Button danger type="link" icon={<Trash2 size={14} />}>删除</Button>
           </Popconfirm>
         );
       },
@@ -55,7 +55,7 @@ export default function ReturnAttachmentCard({
             return Upload.LIST_IGNORE;
           }}
         >
-          <Button type="primary" icon={<UploadOutlined />}>上传附件</Button>
+          <Button type="primary" icon={<UploadCloud size={14} />}>上传附件</Button>
         </Upload>
       )}
     >
@@ -68,10 +68,6 @@ export default function ReturnAttachmentCard({
         bordered
         locale={{ emptyText: '暂无附件' }}
       />
-      <Space className="mt-3" size={4}>
-        <Typography.Text type="secondary">当前节点：</Typography.Text>
-        <Typography.Text>{currentNode}</Typography.Text>
-      </Space>
     </Card>
   );
 }
