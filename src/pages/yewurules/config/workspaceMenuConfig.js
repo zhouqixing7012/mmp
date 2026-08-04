@@ -8,6 +8,7 @@ import EmployeeAssetApplyPage from '../../employeeSelfService/AssetApplyPage';
 import EmployeeAssetApprovalPage from '../../employeeSelfService/AssetApprovalPage';
 import EmployeeAssetAllocationPage from '../../employeeSelfService/AssetAllocationPage';
 import ContractNumberAllocationPage from '../../contractNumber/ContractNumberAllocationPage';
+import ContractNumberWarehousePage from '../../contractNumber/ContractNumberWarehousePage';
 import {
   BorrowingApplyPage,
   BorrowingAllocationPage,
@@ -36,6 +37,7 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: '号码管理', label: '号码管理', Page: Haoma },
   { key: '号码控制', label: '号码控制', Page: Haomakongzhi },
   { key: '合约号码ES配给', label: '合约号码ES配给', Page: ContractNumberAllocationPage },
+  { key: '合约号码库管员待办', label: '合约号码库管员待办', Page: ContractNumberWarehousePage },
   { key: '资产申请', label: '资产申请', Page: EmployeeAssetApplyPage },
   { key: '业务审批', label: '业务审批', Page: EmployeeAssetApprovalPage },
   { key: '资产配给', label: '资产配给', Page: EmployeeAssetAllocationPage },
