@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, Search, XCircle } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -150,8 +150,8 @@ export default function BorrowingAllocationPage() {
     { title: '资产说明', dataIndex: 'assetDesc', width: 230 },
     { title: '借用原因', dataIndex: 'reason', width: 110 },
     { title: '需求说明', dataIndex: 'detail', width: 220, render: (value) => value || '-' },
-    { title: '借用开始时间', dataIndex: 'startDate', width: 130 },
-    { title: '借用结束时间', dataIndex: 'endDate', width: 130 },
+    { title: '借用开始日期', dataIndex: 'startDate', width: 130 },
+    { title: '借用结束日期', dataIndex: 'endDate', width: 130 },
   ];
 
   if (!application) {
@@ -161,7 +161,7 @@ export default function BorrowingAllocationPage() {
         <Card>
           <Empty description="暂无待配给的资产借用申请" />
           <div className="mt-4 flex justify-center">
-            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
       </div>
@@ -208,8 +208,8 @@ export default function BorrowingAllocationPage() {
             onChange={(event) => setComment(event.target.value)}
           />
           <div className="mt-3 flex justify-center gap-3">
-            <Button type="primary" icon={<CheckCircle2 size={14} />} loading={submitting} onClick={submit}>同意</Button>
-            <Button danger icon={<XCircle size={14} />} onClick={reject}>驳回</Button>
+            <Button type="primary" loading={submitting} onClick={submit}>同意</Button>
+            <Button danger onClick={reject}>驳回</Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
             <Button onClick={() => messageApi.info('转签功能为原型演示')}>转签</Button>
           </div>
