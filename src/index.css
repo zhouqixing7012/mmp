@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 个人工作台由外层统一提供页面背景与留白，避免业务页重复套浅蓝色画布。 */
+.workspace-content > .min-h-screen {
+  min-height: auto !important;
+  padding: 0 !important;
+  background-color: transparent !important;
+}
