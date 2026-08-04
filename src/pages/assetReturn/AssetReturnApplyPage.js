@@ -26,6 +26,10 @@ export default function AssetReturnApplyPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const selectedAssets = selectedIds.map((id) => assets.find((asset) => asset.id === id)).filter(Boolean);
+  const selectedAssetTotal = selectedAssets.reduce((sum, item) => sum + item.quantity, 0);
+  const selectedPurposes = [...new Set(selectedAssets.map((item) => item.purpose).filter(Boolean))];
+  const purposeSummary = selectedPurposes.length ? selectedPurposes.join('、') : '-';
+
   const selectableAssets = useMemo(() => assets.filter((asset) => (
     !selectedIds.includes(asset.id)
     && (!appliedQuery.assetTag || asset.assetTag.toLowerCase().includes(appliedQuery.assetTag.toLowerCase()))
@@ -93,13 +97,22 @@ export default function AssetReturnApplyPage() {
           <div className="grid grid-cols-3 gap-4">
             <div><Typography.Text type="secondary">申请人</Typography.Text><div className="mt-2">孙志强-213852</div></div>
             <div><Typography.Text type="secondary">退库类型</Typography.Text><Select className="mt-2 w-full" value={returnType} options={['资产退库', '离职退还'].map((value) => ({ label: value, value }))} onChange={setReturnType} /></div>
-            <div><Typography.Text type="secondary">退库资产总数</Typography.Text><div className="mt-2 text-lg font-medium">{selectedAssets.reduce((sum, item) => sum + item.quantity, 0)}</div></div>
+            <div><Typography.Text type="secondary">资产用途</Typography.Text><div className="mt-2">{purposeSummary}</div></div>
           </div>
           <div className="mt-4"><Typography.Text strong><span className="text-red-500">*</span> 退库原因</Typography.Text><TextArea className="mt-2" rows={3} maxLength={400} showCount value={reason} placeholder="请填写退库原因，最多400字" onChange={(event) => setReason(event.target.value)} /></div>
           <div className="mt-3 rounded border border-orange-100 bg-orange-50 px-3 py-2 text-sm text-orange-700">资产用途为部门公用时，需直属5级及以上领导审批；主资产存在升级耗材时将随主资产一并退库。</div>
         </Card>
 
-        <Card size="small" title="退库物资明细" extra={<Button type="primary" icon={<Plus size={14} />} onClick={() => setModalOpen(true)}>添加资产</Button>}>
+        <Card
+          size="small"
+          title="退库物资明细"
+          extra={(
+            <Space size={16}>
+              <Typography.Text>退库资产总数：<strong>{selectedAssetTotal}</strong></Typography.Text>
+              <Button type="primary" icon={<Plus size={14} />} onClick={() => setModalOpen(true)}>添加资产</Button>
+            </Space>
+          )}
+        >
           <Table rowKey="id" columns={assetColumns} dataSource={selectedAssets} pagination={false} scroll={{ x: 1350 }} locale={{ emptyText: <Empty description="请添加需要退库的资产" /> }} />
         </Card>
 
