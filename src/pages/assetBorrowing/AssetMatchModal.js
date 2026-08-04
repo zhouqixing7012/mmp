@@ -85,7 +85,7 @@ export default function AssetMatchModal({ open, materialId, warehouse, currentAs
 
   return (
     <Modal
-      title="物资列表"
+      title="选择资产"
       open={open}
       width="92vw"
       footer={null}
@@ -93,10 +93,6 @@ export default function AssetMatchModal({ open, materialId, warehouse, currentAs
       destroyOnHidden
       styles={{ body: { paddingTop: 8 } }}
     >
-      <div className="mb-3 rounded bg-blue-500 px-4 py-2 text-sm font-medium text-white">
-        资产查询列表
-      </div>
-
       <QueryBar onQuery={() => setAppliedQuery(query)} onReset={reset}>
         <QueryItem label="标签号">
           <Input
