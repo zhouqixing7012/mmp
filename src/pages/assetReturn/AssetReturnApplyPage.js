@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Plus, Send, Trash2 } from 'lucide-react';
-import { Button, Card, Empty, Input, Modal, Select, Space, Table, Tag, Typography, message as antdMessage } from 'antd';
+import { Plus, Trash2 } from 'lucide-react';
+import { Button, Card, Descriptions, Empty, Input, Modal, Select, Space, Table, Tag, Typography, message as antdMessage } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
+import StatusTag from '../../components/StatusTag';
 import {
   createAssetReturnApplications,
   getAssetReturnAssets,
@@ -66,18 +67,18 @@ export default function AssetReturnApplyPage() {
     { title: '资产标签号', dataIndex: 'assetTag', width: 150 },
     {
       title: '资产说明', dataIndex: 'assetDesc', width: 240,
-      render: (value, record) => <div><div>{value}</div><Typography.Text type="secondary">{record.category} / {record.subCategory}</Typography.Text></div>,
+      render: (value, record) => <div><div>{value}</div><Typography.Text type="secondary">{record.category}.{record.subCategory}</Typography.Text></div>,
     },
-    { title: '配置', dataIndex: 'config', width: 250, render: (value) => value || '无' },
+    { title: '配置', dataIndex: 'config', width: 250, render: (value) => value || '-' },
     { title: '数量', dataIndex: 'quantity', width: 70, align: 'center' },
-    { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <Tag color="success">{value}</Tag> },
-    { title: '资产用途', dataIndex: 'purpose', width: 110 },
+    { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
+    { title: '资产用途', dataIndex: 'purpose', width: 110, render: (value) => value || '-' },
     { title: '部件数量', width: 90, align: 'center', render: (_, record) => (record.component && record.component !== '-' ? 1 : 0) },
     {
       title: '关联升级耗材', width: 220,
       render: (_, record) => record.relatedConsumables.length
         ? record.relatedConsumables.map((item) => <Tag key={item.assetTag} color="blue">{item.assetTag} {item.assetDesc}</Tag>)
-        : '无',
+        : '-',
     },
     {
       title: '操作', width: 70, fixed: 'right', align: 'center',
@@ -94,18 +95,22 @@ export default function AssetReturnApplyPage() {
         </div>
 
         <Card size="small" title="申请信息">
-          <div className="grid grid-cols-3 gap-4">
-            <div><Typography.Text type="secondary">申请人</Typography.Text><div className="mt-2">孙志强-213852</div></div>
-            <div><Typography.Text type="secondary">退库类型</Typography.Text><Select className="mt-2 w-full" value={returnType} options={['资产退库', '离职退还'].map((value) => ({ label: value, value }))} onChange={setReturnType} /></div>
-            <div><Typography.Text type="secondary">资产用途</Typography.Text><div className="mt-2">{purposeSummary}</div></div>
-          </div>
-          <div className="mt-4"><Typography.Text strong><span className="text-red-500">*</span> 退库原因</Typography.Text><TextArea className="mt-2" rows={3} maxLength={400} showCount value={reason} placeholder="请填写退库原因，最多400字" onChange={(event) => setReason(event.target.value)} /></div>
+          <Descriptions bordered size="small" column={3}>
+            <Descriptions.Item label="申请人">213852-孙志强</Descriptions.Item>
+            <Descriptions.Item label="退库类型">
+              <Select className="w-full" value={returnType} options={['资产退库', '离职退还'].map((value) => ({ label: value, value }))} onChange={setReturnType} />
+            </Descriptions.Item>
+            <Descriptions.Item label="资产用途">{purposeSummary}</Descriptions.Item>
+            <Descriptions.Item label={<><span className="text-red-500">*</span> 退库原因</>} span={3}>
+              <TextArea rows={3} maxLength={400} showCount value={reason} placeholder="请填写退库原因，最多400字" onChange={(event) => setReason(event.target.value)} />
+            </Descriptions.Item>
+          </Descriptions>
           <div className="mt-3 rounded border border-orange-100 bg-orange-50 px-3 py-2 text-sm text-orange-700">资产用途为部门公用时，需直属5级及以上领导审批；主资产存在升级耗材时将随主资产一并退库。</div>
         </Card>
 
         <Card
           size="small"
-          title="退库物资明细"
+          title="退库资产明细"
           extra={(
             <Space size={16}>
               <Typography.Text>退库资产总数：<strong>{selectedAssetTotal}</strong></Typography.Text>
@@ -113,11 +118,11 @@ export default function AssetReturnApplyPage() {
             </Space>
           )}
         >
-          <Table rowKey="id" columns={assetColumns} dataSource={selectedAssets} pagination={false} scroll={{ x: 1350 }} locale={{ emptyText: <Empty description="请添加需要退库的资产" /> }} />
+          <Table rowKey="id" columns={assetColumns} dataSource={selectedAssets} pagination={false} size="small" bordered scroll={{ x: 1350 }} locale={{ emptyText: <Empty description="请添加需要退库的资产" /> }} />
         </Card>
 
         <div className="flex justify-center gap-3 rounded-lg bg-white px-5 py-4 shadow-sm">
-          <Button type="primary" icon={<Send size={14} />} loading={submitting} onClick={submit}>提交</Button>
+          <Button type="primary" loading={submitting} onClick={submit}>提交</Button>
           <Button onClick={() => { setSelectedIds([]); setReason(''); }}>返回</Button>
         </div>
       </Space>
@@ -136,7 +141,7 @@ export default function AssetReturnApplyPage() {
           <QueryItem label="资产用途"><Select value={query.purpose || undefined} allowClear options={[...new Set(assets.map((item) => item.purpose))].map((value) => ({ label: value, value }))} onChange={(value) => setQuery({ ...query, purpose: value || '' })} /></QueryItem>
           <QueryItem label="是否锁定"><Select value={query.locked || undefined} allowClear options={['是', '否'].map((value) => ({ label: value, value }))} onChange={(value) => setQuery({ ...query, locked: value || '' })} /></QueryItem>
         </QueryBar>
-        <Table rowKey="id" columns={assetColumns.filter((column) => column.title !== '操作')} dataSource={selectableAssets} rowSelection={{ selectedRowKeys: modalSelected, onChange: setModalSelected, getCheckboxProps: (record) => ({ disabled: !getAssetReturnEligibility(record).allowed }) }} pagination={{ pageSize: 5 }} scroll={{ x: 1200 }} />
+        <Table rowKey="id" columns={assetColumns.filter((column) => column.title !== '操作')} dataSource={selectableAssets} rowSelection={{ selectedRowKeys: modalSelected, onChange: setModalSelected, getCheckboxProps: (record) => ({ disabled: !getAssetReturnEligibility(record).allowed }) }} pagination={{ pageSize: 5 }} size="small" bordered scroll={{ x: 1200 }} />
       </Modal>
     </div>
   );
