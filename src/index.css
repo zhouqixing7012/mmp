@@ -8,3 +8,20 @@
   padding: 0 !important;
   background-color: transparent !important;
 }
+
+/* 统一个人工作台内 Descriptions 的列网格，保证不同 Card 之间标签列和内容列对齐。 */
+.workspace-content .ant-descriptions-bordered .ant-descriptions-view > table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.workspace-content .ant-descriptions-bordered .ant-descriptions-item-label {
+  width: 112px;
+  min-width: 112px;
+  white-space: nowrap;
+}
+
+.workspace-content .ant-descriptions-bordered .ant-descriptions-item-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
