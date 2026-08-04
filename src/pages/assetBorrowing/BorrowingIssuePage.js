@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, RefreshCcw, Search, Send, XCircle } from 'lucide-react';
+import { RefreshCcw, Search, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -10,14 +10,15 @@ import {
   Modal,
   Select,
   Space,
-  Tag,
   Typography,
   message as antdMessage,
 } from 'antd';
+import StatusTag from '../../components/StatusTag';
 import {
   getBorrowingIssueApplication,
   updateAssetBorrowingApplication,
 } from '../../services/assetBorrowingService';
+import { formatDateText, formatDepartment } from '../../utils/displayFormat';
 import AssetMatchModal from './AssetMatchModal';
 import { nowText } from './utils';
 
@@ -212,7 +213,7 @@ export default function BorrowingIssuePage() {
           <Empty description="暂无待发放的资产借用单，员工确认后可点击刷新状态" />
           <div className="mt-4 flex justify-center gap-3">
             <Button icon={<RefreshCcw size={14} />} onClick={refresh}>刷新状态</Button>
-            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
       </div>
@@ -228,7 +229,7 @@ export default function BorrowingIssuePage() {
           <Typography.Text type="secondary">借用单号：{application.id}</Typography.Text>
         </div>
 
-        <Card title="借用人信息" size="small">
+        <Card title="申请人信息" size="small">
           <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label={<><span className="text-red-500">*</span> 当前仓库</>} span={3}>
               <Select
@@ -245,20 +246,19 @@ export default function BorrowingIssuePage() {
               />
             </Descriptions.Item>
             <Descriptions.Item label="申请人">{application.applicant.id}-{application.applicant.name}</Descriptions.Item>
-            <Descriptions.Item label="联系电话">{application.applicant.phone}</Descriptions.Item>
-            <Descriptions.Item label="邮箱">{application.applicant.email}</Descriptions.Item>
-            <Descriptions.Item label="公司">{application.applicant.company}</Descriptions.Item>
-            <Descriptions.Item label="办公区">{application.applicant.officeArea}</Descriptions.Item>
-            <Descriptions.Item label="申请日期">{application.applyDate}</Descriptions.Item>
-            <Descriptions.Item label="成本中心">{application.applicant.costCenter}</Descriptions.Item>
-            <Descriptions.Item label="部门" span={2}>{application.applicant.department}</Descriptions.Item>
+            <Descriptions.Item label="申请日期">{formatDateText(application.applyDate)}</Descriptions.Item>
+            <Descriptions.Item label="公司">{application.applicant.company || '-'}</Descriptions.Item>
+            <Descriptions.Item label="办公区">{application.applicant.officeArea || '-'}</Descriptions.Item>
+            <Descriptions.Item label="联系电话">{application.applicant.phone || '-'}</Descriptions.Item>
+            <Descriptions.Item label="邮箱">{application.applicant.email || '-'}</Descriptions.Item>
+            <Descriptions.Item label="部门" span={3}>{formatDepartment(application.applicant.department)}</Descriptions.Item>
             <Descriptions.Item label="单据备注" span={3}>
               <TextArea rows={2} maxLength={400} showCount value={documentNote} onChange={(event) => setDocumentNote(event.target.value)} />
             </Descriptions.Item>
           </Descriptions>
         </Card>
 
-        <Card title="借用物资明细" size="small">
+        <Card title="借用资产明细" size="small">
           <Space direction="vertical" size={16} className="w-full">
             {details.map((detail, index) => {
               const asset = detail.matchedAsset;
@@ -268,7 +268,7 @@ export default function BorrowingIssuePage() {
               const inventoryStatus = asset?.inventoryStatus || '未盘';
 
               return (
-                <div key={detail.id} className={index > 0 ? 'border-t border-amber-300 pt-4' : ''}>
+                <div key={detail.id} className={index > 0 ? 'border-t border-slate-200 pt-4' : ''}>
                   <Descriptions bordered size="small" column={3}>
                     <Descriptions.Item label="资产标签号">
                       <Space.Compact className="w-full">
@@ -281,8 +281,8 @@ export default function BorrowingIssuePage() {
                     <Descriptions.Item label="部件数量">{componentCount}</Descriptions.Item>
                     <Descriptions.Item label="公司">{asset?.company || '-'}</Descriptions.Item>
                     <Descriptions.Item label="板块">{asset?.block || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="启用日期">{asset?.enabledDate || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="资产说明">{asset?.assetDesc || detail.assetDesc}</Descriptions.Item>
+                    <Descriptions.Item label="启用日期">{formatDateText(asset?.enabledDate)}</Descriptions.Item>
+                    <Descriptions.Item label="资产说明">{asset?.assetDesc || detail.assetDesc || '-'}</Descriptions.Item>
                     <Descriptions.Item label="配置" span={2}>{asset?.config || detail.config || '-'}</Descriptions.Item>
                     <Descriptions.Item label="备注" span={3}>{asset?.note || '-'}</Descriptions.Item>
                     <Descriptions.Item label={<><span className="text-red-500">*</span> 城市</>}>
@@ -328,11 +328,11 @@ export default function BorrowingIssuePage() {
                       />
                     </Descriptions.Item>
                     <Descriptions.Item label="实际盘点人">{asset?.inventoryPerson || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="盘点状态" span={2}><Tag color="error">{inventoryStatus}</Tag></Descriptions.Item>
-                    <Descriptions.Item label="资产类别" span={3}>{[detail.category, detail.subCategory].filter(Boolean).join('.') || detail.assetDesc}</Descriptions.Item>
-                    <Descriptions.Item label="借用开始时间">{detail.startDate}</Descriptions.Item>
-                    <Descriptions.Item label="借用归还时间">{detail.endDate}</Descriptions.Item>
-                    <Descriptions.Item label="借用原因">{detail.reason}</Descriptions.Item>
+                    <Descriptions.Item label="盘点状态" span={2}><StatusTag value={inventoryStatus} type="business" /></Descriptions.Item>
+                    <Descriptions.Item label="资产类别" span={3}>{[detail.category, detail.subCategory].filter(Boolean).join('.') || detail.assetDesc || '-'}</Descriptions.Item>
+                    <Descriptions.Item label="借用开始日期">{formatDateText(detail.startDate)}</Descriptions.Item>
+                    <Descriptions.Item label="借用归还日期">{formatDateText(detail.endDate)}</Descriptions.Item>
+                    <Descriptions.Item label="借用原因">{detail.reason || '-'}</Descriptions.Item>
                     <Descriptions.Item label="需求说明" span={3}>{detail.detail || '-'}</Descriptions.Item>
                   </Descriptions>
                 </div>
@@ -343,9 +343,9 @@ export default function BorrowingIssuePage() {
 
         <div className="flex justify-center gap-3 rounded-lg bg-white px-5 py-4 shadow-sm">
           {confirmationStatus === '已确认' ? (
-            <Button type="primary" icon={<CheckCircle2 size={14} />} onClick={executeOut}>执行出库</Button>
+            <Button type="primary" onClick={executeOut}>执行出库</Button>
           ) : (
-            <Button type="primary" icon={<Send size={14} />} loading={submitting} onClick={requestConfirmation}>借用确认</Button>
+            <Button type="primary" loading={submitting} onClick={requestConfirmation}>借用确认</Button>
           )}
           <Button danger onClick={abandon}>取消</Button>
           <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
