@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, Eye, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -48,15 +48,7 @@ function DetailCard({ application, onViewRepairs }) {
         </Descriptions>
       </Card>
 
-      <Card
-        size="small"
-        title="资产信息"
-        extra={(
-          <Button type="link" icon={<Eye size={14} />} onClick={onViewRepairs}>
-            查看
-          </Button>
-        )}
-      >
+      <Card size="small" title="资产信息">
         <Descriptions bordered size="small" column={3}>
           <Descriptions.Item label="资产说明" span={3}>{asset.assetDesc || '-'}</Descriptions.Item>
           <Descriptions.Item label="SN号">{asset.sn || '-'}</Descriptions.Item>
@@ -72,6 +64,9 @@ function DetailCard({ application, onViewRepairs }) {
           <Descriptions.Item label="建筑">{asset.building || '-'}</Descriptions.Item>
           <Descriptions.Item label="楼层">{asset.floor || '-'}</Descriptions.Item>
           <Descriptions.Item label="备注" span={2}>{asset.note || '-'}</Descriptions.Item>
+          <Descriptions.Item label="维修记录" span={3}>
+            <Button size="small" onClick={onViewRepairs}>维修记录</Button>
+          </Descriptions.Item>
         </Descriptions>
       </Card>
     </Space>
