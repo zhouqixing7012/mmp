@@ -80,33 +80,46 @@ export default function ContractNumberWarehousePage() {
     try {
       updateContractNumberAllocation(application.id, (record) => {
         const savedRecord = saveHandlingFields(record);
-        const approved = action === '确认领用';
+        const startConfirmation = action === '发起领取确认';
+        const handledAt = nowText();
+
         return {
           ...savedRecord,
-          status: approved ? '已完成' : '已驳回',
-          currentNode: '结束',
+          status: startConfirmation ? '处理中' : '已驳回',
+          currentNode: startConfirmation ? '员工领取确认' : '结束',
           assignedNumber: savedRecord.assignedNumber
-            ? { ...savedRecord.assignedNumber, status: approved ? '已领用' : savedRecord.assignedNumber.status }
+            ? {
+              ...savedRecord.assignedNumber,
+              status: startConfirmation ? '待员工确认' : savedRecord.assignedNumber.status,
+            }
             : null,
           warehouseHandling: {
             ...savedRecord.warehouseHandling,
-            status: approved ? '已完成' : '已驳回',
-            opinion: opinion.trim() || '确认领用',
-            handledAt: nowText(),
+            status: startConfirmation ? '待员工确认' : '已驳回',
+            confirmationStatus: startConfirmation ? '待确认' : savedRecord.warehouseHandling?.confirmationStatus,
+            opinion: opinion.trim() || '已核对号码及领用信息',
+            handledAt,
           },
           history: (savedRecord.history || []).map((item) => (
             item.node === '库管员领用' && item.status === '待处理'
               ? {
                 ...item,
-                status: approved ? '已完成' : '已驳回',
-                time: nowText(),
-                comment: opinion.trim() || '确认领用',
+                status: startConfirmation ? '已处理' : '已驳回',
+                time: handledAt,
+                comment: opinion.trim() || (startConfirmation ? '已发起员工领取确认' : '驳回'),
               }
               : item
-          )),
+          )).concat(startConfirmation ? [{
+            id: `employee-confirm-${Date.now()}`,
+            person: `${savedRecord.applicant.name}(${savedRecord.applicant.id})`,
+            node: '员工领取确认',
+            time: '',
+            status: '待确认',
+            comment: '',
+          }] : []),
         };
       });
-      messageApi.success(action === '确认领用' ? '合约号码领用办理已完成' : '合约号码领用申请已驳回');
+      messageApi.success(action === '发起领取确认' ? '已发起员工合约号码领取确认' : '合约号码领用申请已驳回');
       setOpinion('');
       refresh();
     } finally {
@@ -211,11 +224,11 @@ export default function ContractNumberWarehousePage() {
             maxLength={400}
             showCount
             value={opinion}
-            placeholder="确认领用时可不填写，驳回时必填"
+            placeholder="发起领取确认时可不填写，驳回时必填"
             onChange={(event) => setOpinion(event.target.value)}
           />
           <div className="mt-4 flex justify-center gap-3">
-            <Button type="primary" loading={loadingAction === '确认领用'} onClick={() => submit('确认领用')}>确认领用</Button>
+            <Button type="primary" loading={loadingAction === '发起领取确认'} onClick={() => submit('发起领取确认')}>发起领取确认</Button>
             <Button danger loading={loadingAction === '驳回'} onClick={() => submit('驳回')}>驳回</Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
           </div>
