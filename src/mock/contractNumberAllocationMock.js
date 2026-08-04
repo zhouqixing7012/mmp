@@ -1,4 +1,4 @@
-export const CONTRACT_NUMBER_ALLOCATION_STORAGE_KEY = 'mmp.contractNumberAllocation.applications.v2';
+export const CONTRACT_NUMBER_ALLOCATION_STORAGE_KEY = 'mmp.contractNumberAllocation.applications.v3';
 
 export const CONTRACT_NUMBER_CANDIDATES = [
   { id: 'CN-001', imei: '1', assetTag: 'N-0094', phoneNumber: '18001311393', packageName: '140元套餐', status: '在库' },
@@ -47,6 +47,7 @@ export const DEFAULT_CONTRACT_NUMBER_ALLOCATION_APPLICATIONS = [
       tariffStandard: 180,
       note: '',
       status: '未开始',
+      confirmationStatus: '未发起',
     },
     history: [
       {
@@ -108,6 +109,7 @@ export const DEFAULT_CONTRACT_NUMBER_ALLOCATION_APPLICATIONS = [
       tariffStandard: 180,
       note: '',
       status: '待办理',
+      confirmationStatus: '未发起',
     },
     history: [
       {
@@ -140,6 +142,81 @@ export const DEFAULT_CONTRACT_NUMBER_ALLOCATION_APPLICATIONS = [
         node: '库管员领用',
         time: '',
         status: '待处理',
+        comment: '',
+      },
+    ],
+  },
+  {
+    id: 'CPU-202606180031',
+    status: '处理中',
+    currentNode: '员工领取确认',
+    applyDate: '2026-06-18',
+    applicant: {
+      id: '220784',
+      name: '周琦星',
+      department: '资产管理中心/产品与系统组',
+      level: '5',
+      phone: '13800138000',
+      extension: '010-56601888',
+      entryTime: '2023-04-12 00:00:00',
+      company: '集团总部',
+      block: '职能平台',
+      officeArea: '北京-总部大厦',
+      costCenter: '110020.资产管理中心',
+    },
+    applyReason: '因公通讯使用',
+    idCard: '110***********2088',
+    attachment: DEMO_ATTACHMENT,
+    assignedNumber: {
+      ...CONTRACT_NUMBER_CANDIDATES[5],
+      status: '待员工确认',
+    },
+    delayRecords: [],
+    warehouseHandling: {
+      warehouse: 'I10088-集团合约机库（总部）',
+      documentRemark: '请本人核对号码后完成领取确认',
+      city: '35.北京市',
+      subsidiary: '集团总部',
+      usageReason: '申请',
+      quantity: 1,
+      tariffStandard: 199,
+      note: '',
+      status: '待员工确认',
+      confirmationStatus: '待确认',
+      handledAt: '2026-06-18 10:30:00',
+      opinion: '已核对号码和套餐',
+    },
+    history: [
+      {
+        id: 'confirm-history-1',
+        person: '周琦星(220784)',
+        node: '开始',
+        time: '2026-06-18 09:00:00',
+        status: '已提交',
+        comment: '提交合约号码申请',
+      },
+      {
+        id: 'confirm-history-2',
+        person: '孙志强(213852)',
+        node: 'ES审批',
+        time: '2026-06-18 09:45:00',
+        status: '已同意',
+        comment: '已完成号码配给',
+      },
+      {
+        id: 'confirm-history-3',
+        person: '库管员',
+        node: '库管员领用',
+        time: '2026-06-18 10:30:00',
+        status: '已处理',
+        comment: '已发起员工领取确认',
+      },
+      {
+        id: 'confirm-history-4',
+        person: '周琦星(220784)',
+        node: '员工领取确认',
+        time: '',
+        status: '待确认',
         comment: '',
       },
     ],
