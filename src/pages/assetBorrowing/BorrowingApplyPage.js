@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import { Plus, Send, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert,
@@ -316,26 +316,31 @@ export default function BorrowingApplyPage() {
       {contextHolder}
       {!canApply && <Alert className="mb-4" type="error" showIcon message="当前员工类型暂不支持资产借用。" />}
 
-      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+      <Card
+        title={(
           <Space>
-            <span className="font-medium text-slate-800">本次借用明细</span>
+            <span>借用资产明细</span>
             <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">{totalQuantity} 件</span>
           </Space>
+        )}
+        size="small"
+        extra={(
           <Button type="primary" icon={<Plus size={14} />} disabled={!canApply} onClick={() => setMaterialModalOpen(true)}>
             添加资产
           </Button>
-        </div>
-
+        )}
+      >
         <Table
           rowKey="rowKey"
           columns={columns}
           dataSource={details}
           pagination={false}
+          size="small"
+          bordered
           scroll={{ x: 1200 }}
           locale={{ emptyText: <Empty description="请点击右上角“添加资产”选择借用资产" /> }}
         />
-      </section>
+      </Card>
 
       <Card title="资产保管职责" size="small" className="mt-4">
         <Typography.Paragraph type="danger" className="mb-3">{BORROW_CUSTODY_TEXT}</Typography.Paragraph>
@@ -347,7 +352,7 @@ export default function BorrowingApplyPage() {
       </Card>
 
       <div className="mt-4 flex justify-center gap-3 rounded-lg bg-white px-5 py-4 shadow-sm">
-        <Button type="primary" icon={<Send size={14} />} loading={submitting} onClick={submit}>提交</Button>
+        <Button type="primary" loading={submitting} onClick={submit}>提交</Button>
         <Button onClick={cancel}>取消</Button>
       </div>
 
