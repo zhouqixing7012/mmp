@@ -64,7 +64,28 @@ function renderTag(text, style) {
   );
 }
 
-export default function StatusTag({ value, status, children, type = 'yesNo' }) {
+function renderBusinessTag(value) {
+  const text = typeof value === 'string' ? value : String(value);
+  const tone = BUSINESS_STATUS_TONE[text] || 'default';
+  return renderTag(text, TONE_STYLE[tone]);
+}
+
+function renderYesNoTag(value) {
+  return value === '1' || value === true || value === '是'
+    ? renderTag(STATUS_MAP.yes.text, STATUS_MAP.yes)
+    : renderTag(STATUS_MAP.no.text, STATUS_MAP.no);
+}
+
+function isYesNoValue(value) {
+  return value === true
+    || value === false
+    || value === '1'
+    || value === '0'
+    || value === '是'
+    || value === '否';
+}
+
+export default function StatusTag({ value, status, children, type = 'auto' }) {
   const normalizedValue = normalizeValue(value ?? status ?? children);
 
   if (normalizedValue === '') {
@@ -72,9 +93,7 @@ export default function StatusTag({ value, status, children, type = 'yesNo' }) {
   }
 
   if (type === 'business') {
-    const text = typeof normalizedValue === 'string' ? normalizedValue : String(normalizedValue);
-    const tone = BUSINESS_STATUS_TONE[text] || 'default';
-    return renderTag(text, TONE_STYLE[tone]);
+    return renderBusinessTag(normalizedValue);
   }
 
   if (type === 'enabled') {
@@ -89,7 +108,13 @@ export default function StatusTag({ value, status, children, type = 'yesNo' }) {
       : renderTag('未停产', TONE_STYLE.default);
   }
 
-  return normalizedValue === '1' || normalizedValue === true || normalizedValue === '是'
-    ? renderTag(STATUS_MAP.yes.text, STATUS_MAP.yes)
-    : renderTag(STATUS_MAP.no.text, STATUS_MAP.no);
+  if (type === 'yesNo') {
+    return renderYesNoTag(normalizedValue);
+  }
+
+  if (!isYesNoValue(normalizedValue)) {
+    return renderBusinessTag(normalizedValue);
+  }
+
+  return renderYesNoTag(normalizedValue);
 }
