@@ -18,13 +18,10 @@ export default function ReturnAttachmentCard({
 }) {
   const columns = [
     { title: '附件名称', dataIndex: 'name', render: (value) => value || '-' },
-    { title: '附件大小', dataIndex: 'size', width: 120, render: formatSize },
-    { title: '上传节点', dataIndex: 'node', width: 140 },
-    { title: '上传人', dataIndex: 'uploaderName', width: 160 },
-    { title: '上传时间', dataIndex: 'uploadedAt', width: 180 },
+    { title: '附件大小', dataIndex: 'size', width: 140, render: formatSize },
     {
       title: '操作',
-      width: 100,
+      width: 120,
       align: 'center',
       render: (_, record) => {
         const canDelete = record.node === currentNode && record.uploaderId === currentUploader.id;
