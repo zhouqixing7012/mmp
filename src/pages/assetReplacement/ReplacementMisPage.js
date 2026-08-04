@@ -1,8 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, Descriptions, Empty, Input, Radio, Space, Typography, message as antdMessage } from 'antd';
-import ApplicantInfoCard from '../employeeSelfService/ApplicantInfoCard';
+import {
+  Button,
+  Card,
+  Descriptions,
+  Empty,
+  Input,
+  Radio,
+  Space,
+  Typography,
+  message as antdMessage,
+} from 'antd';
 import { getPendingMisApplications, submitMisDecision } from '../../services/assetReplacementService';
 import ReplacementHistoryCard from './ReplacementHistoryCard';
 
@@ -78,18 +87,25 @@ export default function ReplacementMisPage() {
           <Typography.Text type="secondary">申请单号：{selectedApplication.id}</Typography.Text>
         </div>
 
-        <ApplicantInfoCard applicant={selectedApplication.applicant} applyDate={selectedApplication.applyDate} />
-
-        <Card title="更换原因" size="small">
-          <Typography.Paragraph className="mb-0">{selectedApplication.reason}</Typography.Paragraph>
+        <Card title="申请人信息" size="small">
+          <Descriptions bordered size="small" column={3}>
+            <Descriptions.Item label="申请人">
+              {selectedApplication.applicant.id}-{selectedApplication.applicant.name}
+            </Descriptions.Item>
+            <Descriptions.Item label="申请日期">{selectedApplication.applyDate}</Descriptions.Item>
+            <Descriptions.Item label="联系电话">{selectedApplication.applicant.phone}</Descriptions.Item>
+            <Descriptions.Item label="邮箱">{selectedApplication.applicant.email}</Descriptions.Item>
+            <Descriptions.Item label="部门" span={2}>{selectedApplication.applicant.department}</Descriptions.Item>
+            <Descriptions.Item label="更换原因" span={3}>{selectedApplication.reason || '-'}</Descriptions.Item>
+          </Descriptions>
         </Card>
 
         <Card title="更换物资信息" size="small">
-          <Descriptions bordered size="small" column={4}>
+          <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="资产标签号">{selectedApplication.oldAsset.assetTag}</Descriptions.Item>
             <Descriptions.Item label="资产说明">{selectedApplication.oldAsset.assetDesc}</Descriptions.Item>
             <Descriptions.Item label="配置">{selectedApplication.oldAsset.config}</Descriptions.Item>
-            <Descriptions.Item label="耗材信息">{selectedApplication.oldAsset.consumables}</Descriptions.Item>
+            <Descriptions.Item label="耗材信息" span={3}>{selectedApplication.oldAsset.consumables}</Descriptions.Item>
           </Descriptions>
         </Card>
 
@@ -109,21 +125,40 @@ export default function ReplacementMisPage() {
             </div>
             <div>
               <Typography.Text strong><span className="text-red-500">*</span> 鉴定说明：</Typography.Text>
-              <TextArea className="mt-2" rows={3} maxLength={60} showCount value={description} placeholder="请填写鉴定说明（60字以内）" onChange={(event) => setDescription(event.target.value)} />
-            </div>
-            <div>
-              <Typography.Text strong>审批意见：</Typography.Text>
-              <TextArea className="mt-2" rows={3} maxLength={400} showCount value={comment} placeholder="同意时默认同意，驳回时必填" onChange={(event) => setComment(event.target.value)} />
-            </div>
-            <div className="flex justify-center gap-3">
-              <Button type="primary" icon={<CheckCircle2 size={14} />} loading={submitting} onClick={() => submitDecision('同意')}>同意</Button>
-              <Button danger icon={<XCircle size={14} />} loading={submitting} onClick={() => submitDecision('驳回')}>驳回</Button>
-              <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+              <TextArea
+                className="mt-2"
+                rows={3}
+                maxLength={60}
+                showCount
+                value={description}
+                placeholder="请填写鉴定说明（60字以内）"
+                onChange={(event) => setDescription(event.target.value)}
+              />
             </div>
           </Space>
         </Card>
 
-        <ReplacementHistoryCard records={selectedApplication.history} />
+        <ReplacementHistoryCard
+          title="审批流程"
+          records={selectedApplication.history}
+          showAgent={false}
+        >
+          <Typography.Text strong>审批意见：</Typography.Text>
+          <TextArea
+            className="mt-2"
+            rows={3}
+            maxLength={400}
+            showCount
+            value={comment}
+            placeholder="同意时默认同意，驳回时必填"
+            onChange={(event) => setComment(event.target.value)}
+          />
+          <div className="mt-4 flex justify-center gap-3">
+            <Button type="primary" icon={<CheckCircle2 size={14} />} loading={submitting} onClick={() => submitDecision('同意')}>同意</Button>
+            <Button danger icon={<XCircle size={14} />} loading={submitting} onClick={() => submitDecision('驳回')}>驳回</Button>
+            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+          </div>
+        </ReplacementHistoryCard>
       </Space>
     </div>
   );
