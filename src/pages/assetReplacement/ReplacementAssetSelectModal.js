@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Input, Modal, Select, Table, Tag } from 'antd';
+import { Input, Modal, Select, Table } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
+import StatusTag from '../../components/StatusTag';
 import { getAvailableReplacementAssets } from '../../services/assetReplacementService';
+import { formatDateText } from '../../utils/displayFormat';
 
 const EMPTY_QUERY = { assetTag: '', sn: '', assetDesc: '', block: '' };
 
@@ -44,14 +46,14 @@ export default function ReplacementAssetSelectModal({ open, oldAsset, warehouse,
     { title: '配置', dataIndex: 'config', width: 260 },
     { title: '数量', dataIndex: 'quantity', width: 70, align: 'center' },
     { title: '原值', dataIndex: 'originalValue', width: 100, render: (value) => `¥${Number(value).toLocaleString()}` },
-    { title: '资产状态', dataIndex: 'status', width: 120, render: (value) => <Tag color="success">{value}</Tag> },
+    { title: '资产状态', dataIndex: 'status', width: 120, render: (value) => <StatusTag value={value} type="business" /> },
     { title: '成本中心', dataIndex: 'costCenter', width: 170 },
-    { title: '启用日期', dataIndex: 'enabledDate', width: 120 },
+    { title: '启用日期', dataIndex: 'enabledDate', width: 120, render: formatDateText },
   ];
 
   return (
     <Modal
-      title="待发放资产选择"
+      title="选择资产"
       open={open}
       width={1280}
       okText="确定"
@@ -85,6 +87,7 @@ export default function ReplacementAssetSelectModal({ open, oldAsset, warehouse,
         pagination={{ pageSize: 6, showTotal: (total) => `共 ${total} 条` }}
         scroll={{ x: 1900, y: 380 }}
         size="small"
+        bordered
       />
     </Modal>
   );
