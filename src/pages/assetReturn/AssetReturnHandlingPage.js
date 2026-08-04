@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import { Archive, BadgeCheck, Ban, Eye, Wrench, XCircle } from 'lucide-react';
+import { CheckCircle2, Eye, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
   DatePicker,
+  Descriptions,
   Empty,
   Input,
   Modal,
@@ -18,21 +19,21 @@ import {
 } from 'antd';
 import { RETURN_WAREHOUSES } from '../../mock/assetReturnMock';
 import {
+  addAssetReturnAttachment,
   completeAssetReturn,
   finishAssetReturn,
   getAssetReturnApplications,
-  getAssetReturnAssets,
+  removeAssetReturnAttachment,
   requestAssetReturnConfirmation,
 } from '../../services/assetReturnService';
+import ReturnAttachmentCard from './ReturnAttachmentCard';
 
 const { TextArea } = Input;
-const INSPECTION_OPTIONS = ['鉴定通过', '鉴定不通过'];
+const HANDLING_NODE = 'ES退库办理';
+const HANDLING_UPLOADER = { id: '119039', name: '119039-刘建' };
 
-function joinWithDot(...values) {
-  return values
-    .filter(Boolean)
-    .map((value) => String(value).replace(/\s*\/\s*/g, '.'))
-    .join('.');
+function formatDepartment(value) {
+  return value ? String(value).replace(/\s*\/\s*/g, '.') : '-';
 }
 
 export default function AssetReturnHandlingPage() {
@@ -44,19 +45,16 @@ export default function AssetReturnHandlingPage() {
     item.status === '处理中' && ['ES退库办理', '员工退库确认'].includes(item.currentNode)
   )) || null;
   const [warehouse, setWarehouse] = useState('北京总部资产仓');
-  const [inspectionResult, setInspectionResult] = useState('鉴定通过');
   const [assetMark, setAssetMark] = useState('');
   const [returnDate, setReturnDate] = useState(dayjs());
   const [usageNote, setUsageNote] = useState('');
   const [opinion, setOpinion] = useState('');
-  const [employeeAssetsOpen, setEmployeeAssetsOpen] = useState(false);
   const [repairOpen, setRepairOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!selected) return;
     setWarehouse(selected.handling.warehouse || '北京总部资产仓');
-    setInspectionResult(selected.handling.inspectionResult || selected.mis.result || '鉴定通过');
     setAssetMark(selected.handling.assetMark || '');
     setReturnDate(selected.handling.returnDate ? dayjs(selected.handling.returnDate) : dayjs());
     setUsageNote(selected.handling.usageNote || '');
@@ -65,18 +63,32 @@ export default function AssetReturnHandlingPage() {
 
   const refresh = () => setVersion((value) => value + 1);
 
-  const executeInbound = async () => {
+  const handlingValues = () => ({
+    warehouse,
+    responsiblePerson: selected.handling.responsiblePerson || 'SOHU01-库房管理员-SOHU',
+    assetMark,
+    returnDate: returnDate.format('YYYY-MM-DD'),
+    usageNote,
+    opinion: opinion.trim(),
+  });
+
+  const confirmHandling = async () => {
     if (!selected) return;
     setLoading(true);
     try {
-      completeAssetReturn(selected.id, {
-        warehouse,
-        inspectionResult,
-        assetMark,
-        returnDate: returnDate.format('YYYY-MM-DD'),
-        usageNote,
-      });
-      messageApi.success('入库成功，已生成退库入库单并更新资产台账');
+      if (selected.handling.confirmationStatus === '未发起') {
+        requestAssetReturnConfirmation(selected.id, handlingValues());
+        messageApi.success('已发起员工退库确认，请在“员工退库确认”完成确认后再次提交');
+        refresh();
+        return;
+      }
+      if (selected.handling.confirmationStatus === '待确认') {
+        messageApi.warning('员工退库确认尚未完成');
+        return;
+      }
+      completeAssetReturn(selected.id, handlingValues());
+      messageApi.success('退库确认完成，已生成入库单并更新资产台账');
+      setOpinion('');
       refresh();
     } catch (error) {
       messageApi.error(error.message);
@@ -85,15 +97,42 @@ export default function AssetReturnHandlingPage() {
     }
   };
 
-  const finish = (result) => {
+  const reject = () => {
     if (!selected) return;
     if (!opinion.trim()) {
-      messageApi.warning(`${result === '驳回' ? '驳回' : '放弃退库'}时请填写处理意见`);
+      messageApi.warning('驳回时审批意见必填');
       return;
     }
-    finishAssetReturn(selected.id, result, opinion.trim());
-    messageApi.success(result === '驳回' ? '退库申请已驳回' : '已放弃退库并解除资产锁定');
+    finishAssetReturn(selected.id, '驳回', opinion.trim());
+    messageApi.success('退库申请已驳回');
+    setOpinion('');
     refresh();
+  };
+
+  const uploadAttachment = (file) => {
+    if (!selected) return;
+    addAssetReturnAttachment(selected.id, {
+      ...file,
+      node: HANDLING_NODE,
+      uploaderId: HANDLING_UPLOADER.id,
+      uploaderName: HANDLING_UPLOADER.name,
+    });
+    messageApi.success(`附件“${file.name}”上传成功`);
+    refresh();
+  };
+
+  const deleteAttachment = (attachmentId) => {
+    if (!selected) return;
+    try {
+      removeAssetReturnAttachment(selected.id, attachmentId, {
+        node: HANDLING_NODE,
+        uploaderId: HANDLING_UPLOADER.id,
+      });
+      messageApi.success('附件已删除');
+      refresh();
+    } catch (error) {
+      messageApi.error(error.message);
+    }
   };
 
   if (!selected) {
@@ -110,27 +149,8 @@ export default function AssetReturnHandlingPage() {
     );
   }
 
-  const assetColumns = [
-    { title: '资产标签号', width: 150, render: () => selected.asset.assetTag },
-    { title: 'SN号', width: 130, render: () => selected.asset.sn || '-' },
-    { title: '资产说明', width: 240, render: () => selected.asset.assetDesc },
-    { title: '配置', width: 230, render: () => selected.asset.config || '无' },
-    { title: '资产状态', width: 130, render: () => <Tag color="success">{selected.asset.status}</Tag> },
-    { title: '部件数量', width: 90, align: 'center', render: () => (selected.asset.component && selected.asset.component !== '-' ? 1 : 0) },
-    { title: '城市', width: 100, render: () => selected.asset.city || '-' },
-    { title: '建筑', width: 140, render: () => selected.asset.building || '-' },
-    { title: '楼层', width: 80, render: () => selected.asset.floor || '-' },
-    { title: '备注', width: 180, render: () => selected.asset.note || '-' },
-    {
-      title: '盘点状态',
-      width: 110,
-      render: () => selected.asset.inventoryStatus
-        ? <Tag color={selected.asset.inventoryStatus === '已盘' ? 'success' : 'error'}>{selected.asset.inventoryStatus}</Tag>
-        : '-',
-    },
-    { title: '盘点执行人', width: 150, render: () => selected.asset.inventoryPerson || '-' },
-  ];
-
+  const asset = selected.asset;
+  const componentCount = asset.component && asset.component !== '-' ? 1 : 0;
   const repairColumns = [
     { title: '维修单号', dataIndex: 'orderNo', width: 170 },
     { title: '维修时间', dataIndex: 'repairTime', width: 170 },
@@ -138,7 +158,6 @@ export default function AssetReturnHandlingPage() {
     { title: '维修结果', dataIndex: 'repairResult', width: 240 },
     { title: '维修状态', dataIndex: 'status', width: 100, render: (value) => <Tag color="success">{value}</Tag> },
   ];
-
   const repairRecords = [
     {
       id: 'repair-1',
@@ -168,140 +187,122 @@ export default function AssetReturnHandlingPage() {
         </div>
 
         <Card size="small" title="申请人信息">
-          <div className="grid grid-cols-3 gap-x-8 gap-y-4 text-sm">
-            <div className="flex items-center">
-              <Typography.Text type="secondary">申请人：</Typography.Text>
-              <span>{selected.applicant.id}-{selected.applicant.name}</span>
-              <Button
-                type="link"
-                size="small"
-                className="ml-1 px-0"
-                icon={<Eye size={14} />}
-                onClick={() => setEmployeeAssetsOpen(true)}
-              >
-                查看员工名下资产
-              </Button>
-            </div>
-            <div><Typography.Text type="secondary">公司.板块：</Typography.Text>{joinWithDot(selected.applicant.company, selected.applicant.block)}</div>
-            <div><Typography.Text type="secondary">部门：</Typography.Text>{joinWithDot(selected.applicant.department)}</div>
-            <div><Typography.Text type="secondary">办公区：</Typography.Text>{selected.applicant.officeArea}</div>
-            <div><Typography.Text type="secondary">联系电话：</Typography.Text>{selected.applicant.phone}</div>
-            <div><Typography.Text type="secondary">退库类型：</Typography.Text>{selected.returnType}</div>
-          </div>
-          <div className="mt-4"><Typography.Text type="secondary">退库原因：</Typography.Text>{selected.reason}</div>
+          <Descriptions bordered size="small" column={3}>
+            <Descriptions.Item label="申请人">{selected.applicant.id}-{selected.applicant.name}</Descriptions.Item>
+            <Descriptions.Item label="公司">{selected.applicant.company || '-'}</Descriptions.Item>
+            <Descriptions.Item label="板块">{selected.applicant.block || '-'}</Descriptions.Item>
+            <Descriptions.Item label="部门" span={2}>{formatDepartment(selected.applicant.department)}</Descriptions.Item>
+            <Descriptions.Item label="办公区">{selected.applicant.officeArea || '-'}</Descriptions.Item>
+            <Descriptions.Item label="联系电话">{selected.applicant.phone || '-'}</Descriptions.Item>
+            <Descriptions.Item label="退库类型">{selected.returnType || '-'}</Descriptions.Item>
+            <Descriptions.Item label="申请时间">{selected.applyTime || '-'}</Descriptions.Item>
+            <Descriptions.Item label="退库原因" span={3}>{selected.reason || '-'}</Descriptions.Item>
+          </Descriptions>
         </Card>
 
-        <Card
-          size="small"
-          title="退库资产信息"
-          extra={<Button type="link" icon={<Wrench size={14} />} onClick={() => setRepairOpen(true)}>维修记录</Button>}
-        >
-          <Table rowKey="id" columns={assetColumns} dataSource={[selected.asset]} pagination={false} scroll={{ x: 1750 }} />
-          {selected.relatedConsumables.length > 0 && (
-            <div className="mt-3">
-              <Typography.Text strong>关联耗材：</Typography.Text>
-              {selected.relatedConsumables.map((item) => (
-                <Tag key={item.assetTag} color="blue">{item.assetTag} {item.assetDesc}</Tag>
-              ))}
-            </div>
-          )}
+        <Card size="small" title="退库资产信息">
+          <Descriptions bordered size="small" column={3}>
+            <Descriptions.Item label="资产标签号">{asset.assetTag || '-'}</Descriptions.Item>
+            <Descriptions.Item label="SN号">{asset.sn || '-'}</Descriptions.Item>
+            <Descriptions.Item label="资产说明">{asset.assetDesc || '-'}</Descriptions.Item>
+            <Descriptions.Item label="配置">{asset.config || '-'}</Descriptions.Item>
+            <Descriptions.Item label="资产状态">{asset.status ? <Tag color="success">{asset.status}</Tag> : '-'}</Descriptions.Item>
+            <Descriptions.Item label="资产用途">{asset.purpose || '-'}</Descriptions.Item>
+            <Descriptions.Item label="部件数量">{componentCount}</Descriptions.Item>
+            <Descriptions.Item label="城市">{asset.city || '-'}</Descriptions.Item>
+            <Descriptions.Item label="建筑">{asset.building || '-'}</Descriptions.Item>
+            <Descriptions.Item label="楼层">{asset.floor || '-'}</Descriptions.Item>
+            <Descriptions.Item label="盘点状态">{asset.inventoryStatus || '-'}</Descriptions.Item>
+            <Descriptions.Item label="盘点执行人">{asset.inventoryPerson || '-'}</Descriptions.Item>
+            <Descriptions.Item label="备注" span={3}>{asset.note || '-'}</Descriptions.Item>
+            <Descriptions.Item label="关联耗材" span={3}>
+              {selected.relatedConsumables?.length
+                ? selected.relatedConsumables.map((item) => (
+                  <Tag key={item.assetTag} color="blue">{item.assetTag} {item.assetDesc}</Tag>
+                ))
+                : '-'}
+            </Descriptions.Item>
+          </Descriptions>
         </Card>
 
         <Card size="small" title="退库信息维护">
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Typography.Text strong><span className="text-red-500">*</span> 仓库</Typography.Text>
-              <Select className="mt-2 w-full" value={warehouse} options={RETURN_WAREHOUSES.map((value) => ({ label: value, value }))} onChange={setWarehouse} />
-            </div>
-            <div>
-              <Typography.Text strong>责任人</Typography.Text>
-              <Input className="mt-2" value="SOHU01-库房管理员-SOHU" disabled />
-            </div>
-            <div>
-              <Typography.Text strong><span className="text-red-500">*</span> 退库日期</Typography.Text>
-              <DatePicker className="mt-2 w-full" value={returnDate} onChange={(value) => setReturnDate(value || dayjs())} />
-            </div>
-            <div>
-              <Typography.Text strong>鉴定结果</Typography.Text>
+          <Descriptions bordered size="small" column={3}>
+            <Descriptions.Item label={<><span className="text-red-500">*</span> 仓库</>}>
               <Select
-                className="mt-2 w-full"
-                value={inspectionResult}
-                options={INSPECTION_OPTIONS.map((value) => ({ label: value, value }))}
-                onChange={setInspectionResult}
+                className="w-full"
+                value={warehouse}
+                options={RETURN_WAREHOUSES.map((value) => ({ label: value, value }))}
+                onChange={setWarehouse}
               />
-            </div>
-            <div>
-              <Typography.Text strong>资产标记</Typography.Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="责任人">
+              <Input readOnly value={selected.handling.responsiblePerson || 'SOHU01-库房管理员-SOHU'} />
+            </Descriptions.Item>
+            <Descriptions.Item label="MIS鉴定">
+              <Input readOnly value={asset.returnMisRequired ? '是' : '否'} />
+            </Descriptions.Item>
+            <Descriptions.Item label="鉴定结果">
+              <Input readOnly value={selected.mis.result || '-'} />
+            </Descriptions.Item>
+            <Descriptions.Item label="资产标记">
               <Select
-                className="mt-2 w-full"
+                className="w-full"
                 allowClear
                 value={assetMark || undefined}
                 options={['无', '限制出库', '待维修', '待数据清理'].map((value) => ({ label: value, value }))}
                 onChange={(value) => setAssetMark(value || '')}
               />
-            </div>
-          </div>
-          <div className="mt-4">
-            <Typography.Text strong>使用说明</Typography.Text>
-            <TextArea className="mt-2" rows={3} maxLength={400} showCount value={usageNote} onChange={(event) => setUsageNote(event.target.value)} />
-          </div>
-          <div className="mt-4">
-            <Typography.Text strong>处理意见</Typography.Text>
-            <TextArea className="mt-2" rows={3} maxLength={400} showCount value={opinion} placeholder="驳回或放弃退库时必填" onChange={(event) => setOpinion(event.target.value)} />
-          </div>
+            </Descriptions.Item>
+            <Descriptions.Item label={<><span className="text-red-500">*</span> 退库日期</>}>
+              <DatePicker className="w-full" value={returnDate} onChange={(value) => setReturnDate(value || dayjs())} />
+            </Descriptions.Item>
+            <Descriptions.Item label="鉴定说明" span={3}>
+              <TextArea readOnly rows={2} value={selected.mis.description || '-'} />
+            </Descriptions.Item>
+            <Descriptions.Item label="使用说明" span={3}>
+              <TextArea
+                rows={3}
+                maxLength={400}
+                showCount
+                value={usageNote}
+                onChange={(event) => setUsageNote(event.target.value)}
+              />
+            </Descriptions.Item>
+            <Descriptions.Item label="维修记录">
+              <Button type="link" icon={<Eye size={14} />} onClick={() => setRepairOpen(true)}>查看</Button>
+            </Descriptions.Item>
+          </Descriptions>
         </Card>
 
-        <Card size="small" title="办理操作">
-          <div className="flex justify-center gap-3">
-            <Button
-              type="primary"
-              icon={<BadgeCheck size={14} />}
-              disabled={selected.handling.confirmationStatus === '已确认'}
-              onClick={() => {
-                requestAssetReturnConfirmation(selected.id);
-                messageApi.success('已发起员工退库确认，请前往“员工退库确认”完成扫码、刷卡或工号确认');
-                refresh();
-              }}
-            >
-              申请人退库确认
-            </Button>
-            <Button
-              type="primary"
-              icon={<Archive size={14} />}
-              loading={loading}
-              disabled={selected.handling.confirmationStatus !== '已确认'}
-              onClick={executeInbound}
-            >
-              执行入库
-            </Button>
-            <Button danger icon={<XCircle size={14} />} onClick={() => finish('驳回')}>驳回</Button>
-            <Button icon={<Ban size={14} />} onClick={() => finish('放弃退库')}>放弃退库</Button>
+        <ReturnAttachmentCard
+          attachments={selected.attachments || []}
+          currentNode={HANDLING_NODE}
+          currentUploader={HANDLING_UPLOADER}
+          onUpload={uploadAttachment}
+          onDelete={deleteAttachment}
+        />
+
+        <Card size="small" title="审批操作">
+          <Typography.Text strong>审批意见</Typography.Text>
+          <TextArea
+            className="mt-2"
+            rows={3}
+            maxLength={400}
+            showCount
+            value={opinion}
+            placeholder="确认时非必填，驳回时必填"
+            onChange={(event) => setOpinion(event.target.value)}
+          />
+          <div className="mt-4 flex justify-center gap-3">
+            <Button type="primary" icon={<CheckCircle2 size={14} />} loading={loading} onClick={confirmHandling}>确认</Button>
+            <Button danger icon={<XCircle size={14} />} onClick={reject}>驳回</Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
           </div>
         </Card>
       </Space>
 
-      <Modal title="员工名下资产" open={employeeAssetsOpen} width={1000} footer={null} onCancel={() => setEmployeeAssetsOpen(false)}>
-        <Typography.Paragraph>{selected.applicant.name}同学，名下共有资产 {getAssetReturnAssets().length} 条，其中借用资产 0 条。</Typography.Paragraph>
-        <Table
-          rowKey="id"
-          columns={[
-            { title: '物资总类', dataIndex: 'materialType' },
-            { title: '资产大类', dataIndex: 'category' },
-            { title: '资产小类', dataIndex: 'subCategory' },
-            { title: '资产标签号', dataIndex: 'assetTag' },
-            { title: '资产说明', dataIndex: 'assetDesc' },
-            { title: '配置', dataIndex: 'config' },
-            { title: '资产状态', dataIndex: 'status' },
-          ]}
-          dataSource={getAssetReturnAssets()}
-          pagination={{ pageSize: 5 }}
-          scroll={{ x: 1000 }}
-        />
-      </Modal>
-
       <Modal
-        title={`维修记录（资产标签号：${selected.asset.assetTag}）`}
+        title={`维修记录（资产标签号：${asset.assetTag}）`}
         open={repairOpen}
         width={980}
         footer={<Button onClick={() => setRepairOpen(false)}>关闭</Button>}
