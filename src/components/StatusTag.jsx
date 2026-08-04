@@ -18,6 +18,7 @@ const BUSINESS_STATUS_COLOR = {
   待确认: 'warning',
   等待员工确认: 'warning',
   '在库-待处理': 'warning',
+  待维修: 'warning',
   未发起: 'default',
   未盘: 'error',
   已确认: 'success',
@@ -27,12 +28,17 @@ const BUSINESS_STATUS_COLOR = {
   已出库: 'success',
   已入库: 'success',
   鉴定通过: 'success',
+  正式员工: 'success',
   '在用-使用中': 'success',
+  '在用-借用中': 'success',
   '再利用-使用中': 'success',
   '在库-再利用': 'success',
   已驳回: 'error',
   鉴定不通过: 'error',
+  限制出库: 'error',
   已结束: 'default',
+  外包员工: 'default',
+  实习员工: 'default',
 };
 
 export default function StatusTag({ value, type = 'yesNo' }) {
