@@ -1,13 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { Check, ChevronRight, LayoutGrid, Trash2 } from 'lucide-react';
-import { Button, Checkbox, Empty, Input, Modal, Space, Tabs, Tag, Typography } from 'antd';
+import { Button, Checkbox, Empty, Input, Modal, Space, Tag, Typography } from 'antd';
 import { BORROWABLE_MATERIALS } from '../../mock/assetBorrowingMock';
 
 const LEVEL_NAMES = ['大类', '小类', '品牌', '型号', '配置'];
 
-function getCatalogRecords(type, keyword) {
-  if (type !== 'asset') return [];
-
+function getCatalogRecords(keyword) {
   return BORROWABLE_MATERIALS
     .filter((material) => material.enabled && material.borrowable)
     .map((material) => ({
@@ -27,12 +25,11 @@ function uniqueValues(records, level, selectedPath) {
 }
 
 export default function BorrowMaterialModal({ open, onCancel, onConfirm }) {
-  const [activeType, setActiveType] = useState('asset');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPath, setSelectedPath] = useState([]);
   const [selectedMaterials, setSelectedMaterials] = useState([]);
   const keyword = searchQuery.trim().toLowerCase();
-  const records = useMemo(() => getCatalogRecords(activeType, keyword), [activeType, keyword]);
+  const records = useMemo(() => getCatalogRecords(keyword), [keyword]);
 
   const levelOptions = useMemo(() => LEVEL_NAMES.map((_, level) => (
     level === 0 || selectedPath.length >= level
@@ -55,7 +52,6 @@ export default function BorrowMaterialModal({ open, onCancel, onConfirm }) {
   };
 
   const resetModal = () => {
-    setActiveType('asset');
     setSearchQuery('');
     setSelectedPath([]);
     setSelectedMaterials([]);
@@ -77,7 +73,7 @@ export default function BorrowMaterialModal({ open, onCancel, onConfirm }) {
       title={(
         <Space>
           <LayoutGrid size={18} className="text-blue-600" />
-          <span>添加物资</span>
+          <span>添加资产</span>
         </Space>
       )}
       open={open}
@@ -96,18 +92,6 @@ export default function BorrowMaterialModal({ open, onCancel, onConfirm }) {
       )}
       destroyOnHidden
     >
-      <Tabs
-        activeKey={activeType}
-        onChange={(next) => {
-          setActiveType(next);
-          setSelectedPath([]);
-        }}
-        items={[
-          { key: 'asset', label: '资产' },
-          { key: 'consumable', label: '耗材' },
-        ]}
-      />
-
       <Input.Search
         allowClear
         className="mb-4"
@@ -133,7 +117,7 @@ export default function BorrowMaterialModal({ open, onCancel, onConfirm }) {
                 {levelOptions[level].length === 0 ? (
                   <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={activeType === 'consumable' ? '暂无可借用耗材' : (level === 0 ? '暂无数据' : '请选择上一级')}
+                    description={level === 0 ? '暂无可借用资产' : '请选择上一级'}
                   />
                 ) : levelOptions[level].map((option) => {
                   const selected = selectedPath[level] === option;
@@ -177,13 +161,13 @@ export default function BorrowMaterialModal({ open, onCancel, onConfirm }) {
 
         <div className="flex min-h-[430px] max-h-[500px] flex-col rounded-lg border border-slate-200 bg-slate-50 p-4">
           <div className="mb-3 flex items-center justify-between">
-            <Typography.Title level={5} className="mb-0">已选物资</Typography.Title>
+            <Typography.Title level={5} className="mb-0">已选资产</Typography.Title>
             <Button type="link" disabled={selectedMaterials.length === 0} onClick={() => setSelectedMaterials([])}>清空</Button>
           </div>
 
           <div className="min-h-0 flex-1 overflow-auto">
             {selectedMaterials.length === 0 ? (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂未选择物资" />
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂未选择资产" />
             ) : selectedMaterials.map((item) => (
               <div key={item.id} className="mb-3 rounded-lg border border-slate-200 bg-white p-3 last:mb-0">
                 <div className="mb-2 flex items-start justify-between gap-2">
