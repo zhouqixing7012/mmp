@@ -1,4 +1,4 @@
-export const CONTRACT_NUMBER_ALLOCATION_STORAGE_KEY = 'mmp.contractNumberAllocation.applications.v1';
+export const CONTRACT_NUMBER_ALLOCATION_STORAGE_KEY = 'mmp.contractNumberAllocation.applications.v2';
 
 export const CONTRACT_NUMBER_CANDIDATES = [
   { id: 'CN-001', imei: '1', assetTag: 'N-0094', phoneNumber: '18001311393', packageName: '140元套餐', status: '在库' },
