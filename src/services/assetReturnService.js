@@ -63,6 +63,37 @@ export function getAssetReturnApplications() {
   return readDemoData(ASSET_RETURN_STORAGE_KEY, DEFAULT_ASSET_RETURN_APPLICATIONS);
 }
 
+export function addAssetReturnAttachment(id, attachment) {
+  const record = {
+    id: `${id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    name: attachment.name,
+    size: attachment.size || 0,
+    type: attachment.type || '',
+    node: attachment.node,
+    uploaderId: attachment.uploaderId,
+    uploaderName: attachment.uploaderName,
+    uploadedAt: nowText(),
+  };
+  updateCollection(ASSET_RETURN_STORAGE_KEY, DEFAULT_ASSET_RETURN_APPLICATIONS, id, (application) => ({
+    ...application,
+    attachments: [...(application.attachments || []), record],
+  }));
+  return record;
+}
+
+export function removeAssetReturnAttachment(id, attachmentId, operator) {
+  const application = getAssetReturnApplications().find((item) => item.id === id);
+  const attachment = application?.attachments?.find((item) => item.id === attachmentId);
+  if (!attachment) throw new Error('附件不存在或已被删除');
+  if (attachment.node !== operator.node || attachment.uploaderId !== operator.uploaderId) {
+    throw new Error('只能删除当前节点本人上传的附件');
+  }
+  return updateCollection(ASSET_RETURN_STORAGE_KEY, DEFAULT_ASSET_RETURN_APPLICATIONS, id, (current) => ({
+    ...current,
+    attachments: (current.attachments || []).filter((item) => item.id !== attachmentId),
+  }));
+}
+
 export function getContractReturnApplications() {
   return readDemoData(CONTRACT_RETURN_STORAGE_KEY, DEFAULT_CONTRACT_RETURN_APPLICATIONS);
 }
@@ -128,6 +159,7 @@ export function createAssetReturnApplications(assetIds, values) {
       reason: values.reason,
       asset,
       relatedConsumables: asset.relatedConsumables,
+      attachments: [],
       leader: { decision: '', comment: '', person: '', time: '' },
       mis: { result: '', description: '', decision: '', comment: '', person: '', time: '' },
       handling: {
@@ -179,11 +211,11 @@ export function submitAssetReturnMisDecision(id, values) {
   }));
 }
 
-export function requestAssetReturnConfirmation(id) {
+export function requestAssetReturnConfirmation(id, handlingValues = {}) {
   updateCollection(ASSET_RETURN_STORAGE_KEY, DEFAULT_ASSET_RETURN_APPLICATIONS, id, (application) => ({
     ...application,
     currentNode: '员工退库确认',
-    handling: { ...application.handling, confirmationStatus: '待确认' },
+    handling: { ...application.handling, ...handlingValues, confirmationStatus: '待确认' },
     history: appendHistory(application, '申请人退库确认', '待确认', '已发起扫码、刷卡或工号确认', '119039-刘建'),
   }));
   return writeDemoData(RETURN_CONFIRMATION_KEY, { kind: 'asset', applicationId: id });
