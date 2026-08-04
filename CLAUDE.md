@@ -5,6 +5,7 @@
 - **项目名称**：企业资产管理系统（Asset Management System）
 - **技术栈**：React 19 + Create React App + Tailwind CSS
 - **主要文件**：src/pages/yewurules.js（后台基础配置 + 业务视图）
+- **个人工作台 UI 规范**：`docs/UI_DESIGN_GUIDELINES.md`
 
 ## 代码规范
 
@@ -25,11 +26,14 @@
 />
 ```
 
+工具按钮（新增、搜索、上传、删除、刷新）可以使用图标；提交、同意、驳回、确认、取消、返回、加签、转签等业务流程按钮统一不带图标。
+
 **表格状态列必须使用 `<StatusTag />`**：
 ```jsx
-<StatusTag value={val} />          // 是/否
-<StatusTag value={val} type="enabled" />  // 启用/停用
-<StatusTag value={val} type="stop" />     // 停产/未停产
+<StatusTag value={val} />                 // 是/否
+<StatusTag value={val} type="enabled" /> // 启用/停用
+<StatusTag value={val} type="stop" />    // 停产/未停产
+<StatusTag value={val} type="business" /> // 通用业务状态
 ```
 
 **选择弹窗必须使用 `<SelectModal />`**：
@@ -57,13 +61,27 @@
 ### 1. 状态组件（可沿用）
 
 ```jsx
-<StatusTag value={val} />            // 是/否（绿色/灰色）
-<StatusTag value={val} type="enabled" />  // 启用/停用（绿色/红色）
-<StatusTag value={val} type="stop" />     // 停产/未停产（橙色/灰色）
+<StatusTag value={val} />                 // 是/否（绿色/灰色）
+<StatusTag value={val} type="enabled" /> // 启用/停用（绿色/红色）
+<StatusTag value={val} type="stop" />    // 停产/未停产（橙色/灰色）
+<StatusTag value={val} type="business" /> // 审批、资产、盘点等业务状态
 ```
 
-  - 空值显示 `-`
-  - `value` 兼容 `'1'`、`true`、`'是'`
+- 空值显示 `-`
+- `value` 兼容 `'1'`、true、`'是'`
+- 页面不得自行维护状态颜色映射
+
+### 2. 个人工作台详情页（必须遵守）
+
+- 开发或修改个人工作台页面前，先阅读 `docs/UI_DESIGN_GUIDELINES.md`。
+- 页面区块统一使用 `Card size="small"`，区块间距 16px。
+- 详情默认使用 `Descriptions bordered size="small" column={3}`，长文本 `span={3}`。
+- 申请日期和部门分别使用 `formatDateText`、`formatDepartment`。
+- 只涉及固定资产时统一使用“资产”，同时存在耗材时才使用“物资”。
+- 审批记录无真实代理数据时不得展示代理人列。
+- 字段级查看入口使用小尺寸文字按钮，Card 右上角只放 Card 级操作。
+- 弹窗只保留一个主标题，不增加重复二级标题。
+
 ## 关键设计决策
 
 ### 1. 弹窗选择组件
@@ -127,9 +145,11 @@
 ## 开发流程
 
 ### 1. 新增页面
-1. 在 `src/pages/` 目录下创建新的页面组件
-2. 在 `src/config/routes.js` 中添加路由配置
-3. 在 `src/pages/yewurules.js` 中添加菜单和标签页
+1. 阅读 `AI_RULES.md`、`CLAUDE.md` 和 `docs/UI_DESIGN_GUIDELINES.md`
+2. 在 `src/pages/` 目录下创建新的页面组件
+3. 在 `src/config/routes.js` 中添加路由配置
+4. 在 `src/pages/yewurules.js` 中添加菜单和标签页
+5. 按 UI 规范检查清单完成设计走查后再提交
 
 ### 2. 新增弹窗选择功能
 1. 创建对应的弹窗选择组件（如 `BrandSelectModal`）
@@ -147,6 +167,9 @@
 2. **禁止在 disabled 的 input 上直接绑定 onClick 事件**——使用父容器的 onClick 事件
 3. **禁止在 CLAUDE.md 中添加历史叙事**——只添加项目约定和规则
 4. **禁止在 docs/ 中添加"我记得上次……"**——这是记忆的事
+5. **禁止个人工作台页面自行定义状态颜色、部门格式或日期格式**
+6. **禁止用自定义 section 模拟业务 Card**
+7. **禁止在没有真实代理数据时展示代理人列**
 
 ## 常用命令
 
@@ -169,9 +192,10 @@ npm test
 
 - README.md - 项目说明和架构
 - docs/PRD-*.md - 产品需求文档
+- docs/UI_DESIGN_GUIDELINES.md - 个人工作台业务页面设计规范
 - MEMORY.md - Agent记忆索引
 
 ## 版本信息
 
 - 创建日期：2026-06-04
-- 最后更新：2026-07-19
+- 最后更新：2026-08-04
