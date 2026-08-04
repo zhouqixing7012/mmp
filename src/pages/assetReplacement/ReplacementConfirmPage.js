@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CreditCard, ScanLine } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert,
@@ -70,9 +70,6 @@ function ConfirmationQr({ seed, disabled, onConfirm }) {
           ))}
         </div>
       </button>
-      <Typography.Text type="secondary" className="mt-2 text-center text-xs">
-        管理员完成扫码后，视同员工扫码确认
-      </Typography.Text>
     </div>
   );
 }
@@ -171,10 +168,10 @@ export default function ReplacementConfirmPage() {
   const tabItems = [
     {
       key: TAB_OLD,
-      label: '旧资产退回确认',
+      label: <span className="text-sm">旧资产退回确认</span>,
       children: (
         <div className="pt-1">
-          <Typography.Title level={5}>维修物资明细</Typography.Title>
+          <div className="mb-3 text-sm font-medium text-slate-700">维修物资明细</div>
           <Table
             rowKey="id"
             columns={oldAssetColumns}
@@ -190,10 +187,10 @@ export default function ReplacementConfirmPage() {
     },
     {
       key: TAB_NEW,
-      label: '新资产领取确认',
+      label: <span className="text-sm">新资产领取确认</span>,
       children: (
         <div className="pt-1">
-          <Typography.Title level={5}>待发放物资明细</Typography.Title>
+          <div className="mb-3 text-sm font-medium text-slate-700">待发放物资明细</div>
           <Table
             rowKey="id"
             columns={newAssetColumns}
@@ -213,9 +210,8 @@ export default function ReplacementConfirmPage() {
     <div className="min-h-screen bg-slate-100 p-4">
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="rounded-lg bg-white px-5 py-4 shadow-sm">
           <Typography.Title level={4} className="mb-0">员工资产确认</Typography.Title>
-          <Typography.Text type="secondary">确认工号必须与申请人工号一致</Typography.Text>
         </div>
 
         <Card title="资产确认信息" size="small">
@@ -226,6 +222,7 @@ export default function ReplacementConfirmPage() {
             <Descriptions.Item label="部门">{application.applicant.department}</Descriptions.Item>
           </Descriptions>
           <Tabs
+            size="small"
             className="mt-3"
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -246,9 +243,6 @@ export default function ReplacementConfirmPage() {
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center">
             <div>
               <Typography.Title level={5}>{cardLabel}</Typography.Title>
-              <Typography.Paragraph type="secondary">
-                特殊情况下，管理员输入员工工号并确认，视同员工完成刷卡确认。
-              </Typography.Paragraph>
               <Space.Compact className="w-full max-w-xl">
                 <Input
                   value={employeeId}
@@ -275,30 +269,26 @@ export default function ReplacementConfirmPage() {
             />
           </div>
 
-          <div className="mt-5">
-            {confirmedResult ? (
-              <>
-                <Descriptions bordered size="small" column={2}>
-                  <Descriptions.Item label="识别员工工号">{application.applicant.id}（{application.applicant.name}）</Descriptions.Item>
-                  <Descriptions.Item label="确认时间">{confirmedResult.time}</Descriptions.Item>
-                  <Descriptions.Item label="确认方式">{confirmedResult.method}</Descriptions.Item>
-                  <Descriptions.Item label="确认结果"><Tag color="success">确认成功</Tag></Descriptions.Item>
-                </Descriptions>
-                <Alert
-                  className="mt-4"
-                  type="success"
-                  showIcon
-                  message={scene === TAB_OLD ? '确认成功，已返回库管员页面，可执行入库' : '确认成功，已返回库管员页面，可执行出库'}
-                />
-              </>
-            ) : (
-              <Alert type="info" showIcon message="可由管理员录入员工工号，或扫描右侧二维码完成确认" />
-            )}
-          </div>
+          {confirmedResult && (
+            <div className="mt-5">
+              <Descriptions bordered size="small" column={2}>
+                <Descriptions.Item label="识别员工工号">{application.applicant.id}（{application.applicant.name}）</Descriptions.Item>
+                <Descriptions.Item label="确认时间">{confirmedResult.time}</Descriptions.Item>
+                <Descriptions.Item label="确认方式">{confirmedResult.method}</Descriptions.Item>
+                <Descriptions.Item label="确认结果"><Tag color="success">确认成功</Tag></Descriptions.Item>
+              </Descriptions>
+              <Alert
+                className="mt-4"
+                type="success"
+                showIcon
+                message={scene === TAB_OLD ? '确认成功，已返回库管员页面，可执行入库' : '确认成功，已返回库管员页面，可执行出库'}
+              />
+            </div>
+          )}
         </Card>
 
         <div className="flex justify-center rounded-lg bg-white px-5 py-4 shadow-sm">
-          <Button icon={<ScanLine size={15} />} onClick={() => navigate('/yewurules', { state: { workspace: '资产更换办理' } })}>返回</Button>
+          <Button onClick={() => navigate('/yewurules', { state: { workspace: '资产更换办理' } })}>返回</Button>
         </div>
       </Space>
     </div>
