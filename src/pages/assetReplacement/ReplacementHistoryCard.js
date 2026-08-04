@@ -11,11 +11,16 @@ const STATUS_COLOR = {
   已驳回: 'error',
 };
 
-export default function ReplacementHistoryCard({ records = [], title = '流程记录', children }) {
+export default function ReplacementHistoryCard({
+  records = [],
+  title = '流程记录',
+  children,
+  showAgent = true,
+}) {
   const columns = [
     { title: '审批环节', dataIndex: 'node', width: 160 },
     { title: '申请人/审批人', dataIndex: 'person', width: 190 },
-    { title: '代理人', width: 110, render: () => '-' },
+    ...(showAgent ? [{ title: '代理人', width: 110, render: () => '-' }] : []),
     {
       title: '审批状态',
       dataIndex: 'status',
