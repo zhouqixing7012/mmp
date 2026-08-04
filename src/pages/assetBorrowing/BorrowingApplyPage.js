@@ -97,10 +97,10 @@ export default function BorrowingApplyPage() {
         .filter((item) => !existingIds.has(item.id))
         .map(createDetail);
       if (additions.length === 0) {
-        messageApi.info('所选物资已在借用明细中');
+        messageApi.info('所选资产已在借用明细中');
         return current;
       }
-      messageApi.success(`已添加 ${additions.length} 项借用物资`);
+      messageApi.success(`已添加 ${additions.length} 项借用资产`);
       return [...current, ...additions];
     });
     setMaterialModalOpen(false);
@@ -112,7 +112,7 @@ export default function BorrowingApplyPage() {
       return false;
     }
     if (details.length === 0) {
-      messageApi.warning('请至少添加一项借用物资');
+      messageApi.warning('请至少添加一项借用资产');
       return false;
     }
     if (details.some((item) => !Number.isInteger(item.quantity) || item.quantity < 1)) {
@@ -142,7 +142,7 @@ export default function BorrowingApplyPage() {
       return false;
     }
     if (!custodyAccepted) {
-      messageApi.warning('请阅读并同意资产保管职责。');
+      messageApi.warning('请阅读并确认资产保管职责。');
       return false;
     }
     return true;
@@ -172,7 +172,7 @@ export default function BorrowingApplyPage() {
         city: '北京市',
         building: '搜狐媒体大厦',
         floor: '8层',
-        purpose: '借用',
+        purpose: '',
         usageNote: '',
         confirmMethod: '狐小e扫码确认',
         custodyAccepted: true,
@@ -323,7 +323,7 @@ export default function BorrowingApplyPage() {
             <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">{totalQuantity} 件</span>
           </Space>
           <Button type="primary" icon={<Plus size={14} />} disabled={!canApply} onClick={() => setMaterialModalOpen(true)}>
-            添加物资
+            添加资产
           </Button>
         </div>
 
@@ -333,15 +333,17 @@ export default function BorrowingApplyPage() {
           dataSource={details}
           pagination={false}
           scroll={{ x: 1200 }}
-          locale={{ emptyText: <Empty description="请点击右上角“添加物资”选择借用资产" /> }}
+          locale={{ emptyText: <Empty description="请点击右上角“添加资产”选择借用资产" /> }}
         />
       </section>
 
       <Card title="资产保管职责" size="small" className="mt-4">
-        <Typography.Paragraph className="mb-3">{BORROW_CUSTODY_TEXT}</Typography.Paragraph>
-        <Checkbox checked={custodyAccepted} onChange={(event) => setCustodyAccepted(event.target.checked)}>
-          我已阅读并同意资产保管职责
-        </Checkbox>
+        <Typography.Paragraph type="danger" className="mb-3">{BORROW_CUSTODY_TEXT}</Typography.Paragraph>
+        <div className="flex justify-center">
+          <Checkbox checked={custodyAccepted} onChange={(event) => setCustodyAccepted(event.target.checked)}>
+            我已阅读并确认资产保管职责
+          </Checkbox>
+        </div>
       </Card>
 
       <div className="mt-4 flex justify-center gap-3 rounded-lg bg-white px-5 py-4 shadow-sm">
