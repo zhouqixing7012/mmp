@@ -15,7 +15,6 @@ export default function BorrowingApprovalHistory({ records = [], children }) {
   const columns = [
     { title: '审批环节', dataIndex: 'node', width: 160 },
     { title: '申请人/审批人', dataIndex: 'person', width: 190 },
-    { title: '代理人', width: 120, render: () => '-' },
     {
       title: '审批状态',
       dataIndex: 'status',
