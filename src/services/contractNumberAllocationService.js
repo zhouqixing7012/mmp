@@ -16,7 +16,15 @@ export function saveContractNumberAllocationApplications(applications) {
 }
 
 export function getCurrentContractNumberAllocation() {
-  return getContractNumberAllocationApplications()[0] || null;
+  return getContractNumberAllocationApplications().find((application) => (
+    application.currentNode === 'ES审批' && application.status === '待审批'
+  )) || null;
+}
+
+export function getWarehouseContractNumberAllocation() {
+  return getContractNumberAllocationApplications().find((application) => (
+    application.currentNode === '库管员领用' && application.status === '处理中'
+  )) || null;
 }
 
 export function updateContractNumberAllocation(applicationId, updater) {
