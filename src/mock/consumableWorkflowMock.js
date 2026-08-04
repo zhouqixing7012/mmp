@@ -1,0 +1,323 @@
+export const CONSUMABLE_WORKFLOW_STORAGE_KEY = 'mmp.consumableWorkflow.state.v1';
+
+export const CONSUMABLE_APPLICATION_NOTICE = [
+  '须以实际业务需求及办公为前提填写申请。',
+  '资产申请以部门为维度每月汇总；耗材申请以公司为维度每周一汇总。',
+  '资产目录缺少所需信息时，请联系集团 ES 王英沟通。',
+  '耗材目录缺少所需信息时，请联系集团 ES 刘建沟通。',
+  '外地分公司同学申请资产或耗材，可先联系当地 ES 沟通。',
+];
+
+export const CONSUMABLE_REASON_OPTIONS = [
+  '日常办公使用',
+  '特殊项目采购',
+  '提升电脑配置使用',
+  '部门公共设备使用',
+];
+
+export const CONSUMABLE_APPLICANT = {
+  id: '213852',
+  name: '孙志强',
+  company: '搜狐新动力信息技术有限公司',
+  block: '集团',
+  officeArea: '北京-搜狐媒体大厦',
+  phone: '138****2852',
+  email: 'zhiqiangsun@sohu-inc.com',
+  department: '集团/资产管理部/员工服务中心',
+  level5Leader: '110139-张雪梅',
+};
+
+export const CONSUMABLE_MAIN_ASSETS = [
+  {
+    id: 'asset-1',
+    assetTag: 'ZC-2023001888',
+    assetDesc: '笔记本电脑.联想.ThinkPad T14',
+    category: '笔记本电脑',
+    status: '在用-使用中',
+  },
+  {
+    id: 'asset-2',
+    assetTag: 'ZC-2022000912',
+    assetDesc: '工作站.戴尔.Precision 3660',
+    category: '工作站',
+    status: '在用-使用中',
+  },
+];
+
+export const CONSUMABLE_CATALOG = [
+  {
+    id: 'material-1',
+    materialType: '低值耐用品',
+    category: '电脑配件',
+    subCategory: '内存',
+    brand: '三星',
+    model: 'DDR4 16GB',
+    config: '16GB / 3200MHz',
+    materialDesc: '内存.三星.DDR4 16GB',
+    referencePrice: 329,
+    requiresMis: true,
+    requiresMainAsset: true,
+    mainAssetCategory: '笔记本电脑',
+  },
+  {
+    id: 'material-2',
+    materialType: '低值耐用品',
+    category: '电脑配件',
+    subCategory: '硬盘',
+    brand: '西部数据',
+    model: 'SN770 1TB',
+    config: 'M.2 NVMe / 1TB',
+    materialDesc: '硬盘.西部数据.SN770 1TB',
+    referencePrice: 599,
+    requiresMis: true,
+    requiresMainAsset: true,
+    mainAssetCategory: '笔记本电脑',
+  },
+  {
+    id: 'material-3',
+    materialType: '耗材',
+    category: '办公耗材',
+    subCategory: '键盘',
+    brand: '罗技',
+    model: 'K120',
+    config: 'USB有线键盘',
+    materialDesc: '键盘.罗技.K120',
+    referencePrice: 69,
+    requiresMis: false,
+    requiresMainAsset: false,
+    mainAssetCategory: '',
+  },
+  {
+    id: 'material-4',
+    materialType: '耗材',
+    category: '办公耗材',
+    subCategory: '鼠标',
+    brand: '罗技',
+    model: 'M90',
+    config: 'USB有线鼠标',
+    materialDesc: '鼠标.罗技.M90',
+    referencePrice: 45,
+    requiresMis: false,
+    requiresMainAsset: false,
+    mainAssetCategory: '',
+  },
+];
+
+export const CONSUMABLE_STOCK = [
+  {
+    id: 'stock-1',
+    assetTag: 'HC-202600101',
+    serialNo: 'MEM202608001',
+    materialDesc: '内存.三星.DDR4 16GB',
+    config: '16GB / 3200MHz',
+    company: '搜狐新动力信息技术有限公司',
+    block: '集团',
+    warehouse: '北京总部耗材仓',
+    status: '在库',
+  },
+  {
+    id: 'stock-2',
+    assetTag: 'HC-202600102',
+    serialNo: 'SSD202608002',
+    materialDesc: '硬盘.西部数据.SN770 1TB',
+    config: 'M.2 NVMe / 1TB',
+    company: '搜狐新动力信息技术有限公司',
+    block: '集团',
+    warehouse: '北京总部耗材仓',
+    status: '在库',
+  },
+];
+
+const APP_MIS = {
+  id: 'HCSQ-202608050001',
+  status: '处理中',
+  currentNode: 'MIS鉴定',
+  applyDate: '2026-08-05',
+  applicant: CONSUMABLE_APPLICANT,
+  items: [
+    {
+      id: 'line-mis-1',
+      ...CONSUMABLE_CATALOG[0],
+      quantity: 2,
+      reason: '提升电脑配置使用',
+      detail: '用于研发笔记本升级，现有内存不足。',
+      mainAssetTag: 'ZC-2023001888',
+      mainAssetDesc: '笔记本电脑.联想.ThinkPad T14',
+      lineStatus: '处理中',
+      misOpinion: '',
+      misDescription: '',
+    },
+    {
+      id: 'line-mis-2',
+      ...CONSUMABLE_CATALOG[2],
+      quantity: 1,
+      reason: '日常办公使用',
+      detail: '原键盘按键失灵。',
+      mainAssetTag: '',
+      mainAssetDesc: '',
+      lineStatus: '处理中',
+      misOpinion: '不涉及',
+      misDescription: '-',
+    },
+  ],
+  history: [
+    { node: '员工提交', person: '213852-孙志强', status: '已提交', time: '2026-08-05 09:10:00', comment: '提交耗材申请' },
+    { node: 'MIS鉴定', person: 'CW003379-李木勇', status: '待审批', time: '-', comment: '-' },
+  ],
+};
+
+const APP_LEADER = {
+  id: 'HCSQ-202608040002',
+  status: '处理中',
+  currentNode: '5级审批',
+  applyDate: '2026-08-04',
+  applicant: CONSUMABLE_APPLICANT,
+  items: [
+    {
+      id: 'line-leader-1',
+      ...CONSUMABLE_CATALOG[1],
+      quantity: 1,
+      reason: '提升电脑配置使用',
+      detail: '用于视频素材本地缓存。',
+      mainAssetTag: 'ZC-2023001888',
+      mainAssetDesc: '笔记本电脑.联想.ThinkPad T14',
+      lineStatus: '处理中',
+      misOpinion: '同意申请',
+      misDescription: '型号与主资产兼容。',
+    },
+  ],
+  history: [
+    { node: '员工提交', person: '213852-孙志强', status: '已提交', time: '2026-08-04 10:15:00', comment: '提交耗材申请' },
+    { node: 'MIS鉴定', person: 'CW003379-李木勇', status: '已同意', time: '2026-08-04 11:20:00', comment: '型号与主资产兼容。' },
+    { node: '5级审批', person: '110139-张雪梅', status: '待审批', time: '-', comment: '-' },
+  ],
+};
+
+const ALLOCATION = {
+  id: 'HCPG-202608050001',
+  sourceApplicationId: APP_LEADER.id,
+  sourceLineId: 'line-leader-1',
+  status: '待配给',
+  applyDate: APP_LEADER.applyDate,
+  applicant: CONSUMABLE_APPLICANT,
+  item: APP_LEADER.items[0],
+  matchingStatus: '',
+  rejectType: '',
+  esAdvice: '',
+  matchedStock: null,
+  history: APP_LEADER.history,
+};
+
+const CLAIM = {
+  id: 'HCLY-202608050001',
+  sourceAllocationId: 'HCPG-DEMO-STOCK',
+  status: '处理中',
+  currentNode: '库管员领用',
+  applicant: CONSUMABLE_APPLICANT,
+  applyDate: '2026-08-05',
+  item: {
+    ...CONSUMABLE_CATALOG[0],
+    id: 'claim-line-1',
+    quantity: 1,
+    reason: '提升电脑配置使用',
+    detail: '用于研发笔记本升级。',
+    mainAssetTag: 'ZC-2023001888',
+    mainAssetDesc: '笔记本电脑.联想.ThinkPad T14',
+  },
+  stock: CONSUMABLE_STOCK[0],
+  warehouse: '北京总部耗材仓',
+  documentRemark: '',
+  city: '北京市',
+  building: '搜狐媒体大厦',
+  floor: '8层',
+  usageNote: '',
+  extendScrapDate: false,
+  esPhysicalScrapDate: '2029-08-05',
+  confirmationMode: '狐小e电子签',
+  confirmationStatus: '未发起',
+  confirmationEmployeeId: '',
+  confirmationMethod: '',
+  confirmationTime: '',
+  signatureText: '',
+  history: [
+    { node: '员工提交', person: '213852-孙志强', status: '已提交', time: '2026-08-05 09:10:00', comment: '提交耗材申请' },
+    { node: 'ES配给', person: '119039-刘建', status: '已完成', time: '2026-08-05 13:00:00', comment: '库存领用' },
+    { node: '耗材领用', person: '号码库管员', status: '待处理', time: '-', comment: '-' },
+  ],
+};
+
+const SUMMARY_DRAFT = {
+  id: 'HCHZ-202608050001',
+  status: '草稿',
+  currentNode: 'ES汇总',
+  company: '集团&媒体',
+  period: '2026-08-03至2026-08-09',
+  summaryDescription: '2026年8月3日-8月9日，集团&媒体申请采购耗材共计3件，预计采购费用1087元。',
+  projectPurpose: '2026年8月3日-8月9日集团&媒体耗材采购申请',
+  rows: [
+    {
+      id: 'summary-row-1',
+      department: '集团.资产管理部.员工服务中心',
+      applicationId: 'HCSQ-202608030006',
+      applicant: '王天明(219319)',
+      category: '电脑配件',
+      materialDesc: '硬盘.西部数据.SN770 1TB',
+      quantity: 1,
+      detail: '视频素材缓存盘',
+      estimatedAmount: 599,
+      esAdvice: '建议统一采购',
+      approved: true,
+      purchaseInfo: '',
+    },
+    {
+      id: 'summary-row-2',
+      department: '集团.技术中心.平台研发部',
+      applicationId: 'HCSQ-202608030007',
+      applicant: '李元甲(211650)',
+      category: '办公耗材',
+      materialDesc: '键盘.罗技.K120',
+      quantity: 2,
+      detail: '替换损坏键盘',
+      estimatedAmount: 138,
+      esAdvice: '建议统一采购',
+      approved: true,
+      purchaseInfo: '',
+    },
+    {
+      id: 'summary-row-3',
+      department: '集团.财务中心',
+      applicationId: 'HCSQ-202608030008',
+      applicant: '周小雨(218801)',
+      category: '办公耗材',
+      materialDesc: '鼠标.罗技.M90',
+      quantity: 1,
+      detail: '原鼠标损坏',
+      estimatedAmount: 45,
+      esAdvice: '建议统一采购',
+      approved: true,
+      purchaseInfo: '',
+    },
+  ],
+  poList: [],
+  history: [
+    { node: 'ES汇总', person: '119039-刘建', status: '待处理', time: '-', comment: '-' },
+  ],
+};
+
+const SUMMARY_APPROVAL = {
+  ...SUMMARY_DRAFT,
+  id: 'HCHZ-202608040002',
+  status: '处理中',
+  currentNode: 'ES主管',
+  history: [
+    { node: 'ES汇总', person: '119039-刘建', status: '已提交', time: '2026-08-04 16:30:00', comment: '提交汇总申请' },
+    { node: 'ES主管', person: '110088-刘倩', status: '待审批', time: '-', comment: '-' },
+  ],
+};
+
+export const DEFAULT_CONSUMABLE_WORKFLOW_STATE = {
+  applications: [APP_MIS, APP_LEADER],
+  allocations: [ALLOCATION],
+  claims: [CLAIM],
+  summaries: [SUMMARY_DRAFT, SUMMARY_APPROVAL],
+};
