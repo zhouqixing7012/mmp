@@ -47,7 +47,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
   const [building, setBuilding] = useState(application.issueProcess.building || application.oldAsset.building || '搜狐媒体大厦');
   const [floor, setFloor] = useState(application.issueProcess.floor || application.oldAsset.floor || '8层');
   const [returnDate, setReturnDate] = useState(application.issueProcess.returnDate || dayjs().add(30, 'day').format('YYYY-MM-DD'));
-  const [purpose, setPurpose] = useState(application.issueProcess.purpose || '员工用机');
+  const [purpose, setPurpose] = useState(application.issueProcess.purpose || '');
   const [usageNote, setUsageNote] = useState(application.issueProcess.usageNote || '');
   const [opinion, setOpinion] = useState('同意');
   const [assetModalOpen, setAssetModalOpen] = useState(false);
@@ -63,7 +63,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
     setBuilding(application.issueProcess.building || application.oldAsset.building || '搜狐媒体大厦');
     setFloor(application.issueProcess.floor || application.oldAsset.floor || '8层');
     setReturnDate(application.issueProcess.returnDate || dayjs().add(30, 'day').format('YYYY-MM-DD'));
-    setPurpose(application.issueProcess.purpose || '员工用机');
+    setPurpose(application.issueProcess.purpose || '');
     setUsageNote(application.issueProcess.usageNote || '');
     setOpinion('同意');
   }, [application]);
@@ -201,6 +201,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
 
   const oldAsset = application.oldAsset;
   const componentCount = oldAsset.component && oldAsset.component !== '-' ? 1 : 0;
+  const applyDate = application.applyDate || application.applyTime?.slice(0, 10) || '-';
 
   return (
     <div className="min-h-screen bg-slate-100 p-4">
@@ -212,13 +213,13 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
         </div>
 
         <Card title="申请人信息" size="small">
-          <Descriptions bordered size="small" column={2}>
+          <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="申请人">{application.applicant.id}-{application.applicant.name}</Descriptions.Item>
-            <Descriptions.Item label="申请时间">{application.applyTime || application.applyDate}</Descriptions.Item>
+            <Descriptions.Item label="申请日期">{applyDate}</Descriptions.Item>
             <Descriptions.Item label="联系电话">{application.applicant.phone}</Descriptions.Item>
             <Descriptions.Item label="邮箱">{application.applicant.email}</Descriptions.Item>
             <Descriptions.Item label="部门" span={2}>{application.applicant.department}</Descriptions.Item>
-            <Descriptions.Item label="更换原因" span={2}>{application.reason}</Descriptions.Item>
+            <Descriptions.Item label="更换原因" span={3}>{application.reason}</Descriptions.Item>
           </Descriptions>
         </Card>
 
@@ -234,12 +235,11 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
             <Descriptions.Item label="建筑">{oldAsset.building || '-'}</Descriptions.Item>
             <Descriptions.Item label="楼层">{oldAsset.floor || '-'}</Descriptions.Item>
             <Descriptions.Item label="备注" span={3}>{oldAsset.note || '-'}</Descriptions.Item>
-            <Descriptions.Item label="耗材信息" span={3}>{oldAsset.consumables || '无'}</Descriptions.Item>
+            <Descriptions.Item label="耗材信息" span={3}>{oldAsset.consumables || '-'}</Descriptions.Item>
             <Descriptions.Item label="鉴定结果">
               <Tag color="success">{application.mis.result || '-'}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="业务类型" span={2}>{application.mis.result || application.replacementType || '-'}</Descriptions.Item>
-            <Descriptions.Item label="鉴定说明" span={3}>{application.mis.description || '-'}</Descriptions.Item>
+            <Descriptions.Item label="鉴定说明" span={2}>{application.mis.description || '-'}</Descriptions.Item>
           </Descriptions>
         </Card>
 
@@ -310,7 +310,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
             <Descriptions.Item label={<><span className="text-red-500">*</span> 开始日期</>}>
               <Input readOnly value={startDate} />
             </Descriptions.Item>
-            <Descriptions.Item label={<><span className="text-red-500">*</span> 归还日期</>} span={2}>
+            <Descriptions.Item label={<><span className="text-red-500">*</span> 归还日期</>}>
               <DatePicker
                 className="w-full"
                 value={returnDate ? dayjs(returnDate) : null}
@@ -320,12 +320,13 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
             <Descriptions.Item label={<><span className="text-red-500">*</span> 资产用途</>}>
               <Select
                 className="w-full"
-                value={purpose}
+                value={purpose || undefined}
+                placeholder="请选择资产用途"
                 options={PURPOSE_OPTIONS.map((value) => ({ label: value, value }))}
                 onChange={setPurpose}
               />
             </Descriptions.Item>
-            <Descriptions.Item label="使用说明" span={2}>
+            <Descriptions.Item label="使用说明" span={3}>
               <TextArea
                 rows={2}
                 maxLength={400}
@@ -337,7 +338,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
           </Descriptions>
         </Card>
 
-        <ReplacementHistoryCard records={application.history} title="审批信息">
+        <ReplacementHistoryCard records={application.history} title="审批信息" showAgent={false}>
           <Typography.Text strong>审批意见</Typography.Text>
           <TextArea
             className="mt-2"
