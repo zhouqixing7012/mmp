@@ -2,14 +2,14 @@ import React from 'react';
 import { Tag } from 'antd';
 
 const STATUS_MAP = {
-  yes: { text: '是', color: 'success' },
-  no: { text: '否', color: 'default' },
-  enabled: { text: '启用', color: 'success' },
-  disabled: { text: '停用', color: 'error' },
-  warning: { text: '停产', color: 'warning' },
+  yes: { text: '是', color: '#389e0d', background: '#f6ffed', borderColor: '#b7eb8f' },
+  no: { text: '否', color: '#595959', background: '#fafafa', borderColor: '#d9d9d9' },
+  enabled: { text: '启用', color: '#389e0d', background: '#f6ffed', borderColor: '#b7eb8f' },
+  disabled: { text: '停用', color: '#cf1322', background: '#fff1f0', borderColor: '#ffa39e' },
+  warning: { text: '停产', color: '#d46b08', background: '#fff7e6', borderColor: '#ffd591' },
 };
 
-const BUSINESS_STATUS_COLOR = {
+const BUSINESS_STATUS_TONE = {
   已提交: 'processing',
   处理中: 'processing',
   在库: 'processing',
@@ -41,34 +41,55 @@ const BUSINESS_STATUS_COLOR = {
   实习员工: 'default',
 };
 
-export default function StatusTag({ value, type = 'yesNo' }) {
-  if (value === undefined || value === null || value === '') {
-    return <Tag>-</Tag>;
+const TONE_STYLE = {
+  processing: { color: '#0958d9', background: '#e6f4ff', borderColor: '#91caff' },
+  warning: { color: '#d46b08', background: '#fff7e6', borderColor: '#ffd591' },
+  success: { color: '#389e0d', background: '#f6ffed', borderColor: '#b7eb8f' },
+  error: { color: '#cf1322', background: '#fff1f0', borderColor: '#ffa39e' },
+  default: { color: '#595959', background: '#fafafa', borderColor: '#d9d9d9' },
+};
+
+function normalizeValue(value) {
+  if (value === undefined || value === null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number') return String(value);
+  return value;
+}
+
+function renderTag(text, style) {
+  return (
+    <Tag style={{ ...style, marginInlineEnd: 0 }}>
+      <span>{text}</span>
+    </Tag>
+  );
+}
+
+export default function StatusTag({ value, status, children, type = 'yesNo' }) {
+  const normalizedValue = normalizeValue(value ?? status ?? children);
+
+  if (normalizedValue === '') {
+    return renderTag('-', TONE_STYLE.default);
   }
 
   if (type === 'business') {
-    return <Tag color={BUSINESS_STATUS_COLOR[value] || 'default'}>{value}</Tag>;
+    const text = typeof normalizedValue === 'string' ? normalizedValue : String(normalizedValue);
+    const tone = BUSINESS_STATUS_TONE[text] || 'default';
+    return renderTag(text, TONE_STYLE[tone]);
   }
 
   if (type === 'enabled') {
-    return value === '1' || value === true ? (
-      <Tag color={STATUS_MAP.enabled.color}>{STATUS_MAP.enabled.text}</Tag>
-    ) : (
-      <Tag color={STATUS_MAP.disabled.color}>{STATUS_MAP.disabled.text}</Tag>
-    );
+    return normalizedValue === '1' || normalizedValue === true
+      ? renderTag(STATUS_MAP.enabled.text, STATUS_MAP.enabled)
+      : renderTag(STATUS_MAP.disabled.text, STATUS_MAP.disabled);
   }
 
   if (type === 'stop') {
-    return value === '1' || value === true ? (
-      <Tag color={STATUS_MAP.warning.color}>停产</Tag>
-    ) : (
-      <Tag>未停产</Tag>
-    );
+    return normalizedValue === '1' || normalizedValue === true
+      ? renderTag(STATUS_MAP.warning.text, STATUS_MAP.warning)
+      : renderTag('未停产', TONE_STYLE.default);
   }
 
-  return value === '1' || value === true || value === '是' ? (
-    <Tag color={STATUS_MAP.yes.color}>{STATUS_MAP.yes.text}</Tag>
-  ) : (
-    <Tag>{STATUS_MAP.no.text}</Tag>
-  );
+  return normalizedValue === '1' || normalizedValue === true || normalizedValue === '是'
+    ? renderTag(STATUS_MAP.yes.text, STATUS_MAP.yes)
+    : renderTag(STATUS_MAP.no.text, STATUS_MAP.no);
 }
