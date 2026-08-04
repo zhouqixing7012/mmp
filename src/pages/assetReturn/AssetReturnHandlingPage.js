@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import { CheckCircle2, Eye, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -17,6 +16,7 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
+import StatusTag from '../../components/StatusTag';
 import { RETURN_WAREHOUSES } from '../../mock/assetReturnMock';
 import {
   addAssetReturnAttachment,
@@ -26,15 +26,12 @@ import {
   removeAssetReturnAttachment,
   requestAssetReturnConfirmation,
 } from '../../services/assetReturnService';
+import { formatDateText, formatDepartment } from '../../utils/displayFormat';
 import ReturnAttachmentCard from './ReturnAttachmentCard';
 
 const { TextArea } = Input;
 const HANDLING_NODE = 'ES退库办理';
 const HANDLING_UPLOADER = { id: '119039', name: '119039-刘建' };
-
-function formatDepartment(value) {
-  return value ? String(value).replace(/\s*\/\s*/g, '.') : '-';
-}
 
 export default function AssetReturnHandlingPage() {
   const navigate = useNavigate();
@@ -156,7 +153,7 @@ export default function AssetReturnHandlingPage() {
     { title: '维修时间', dataIndex: 'repairTime', width: 170 },
     { title: '故障描述', dataIndex: 'faultDescription', width: 240 },
     { title: '维修结果', dataIndex: 'repairResult', width: 240 },
-    { title: '维修状态', dataIndex: 'status', width: 100, render: (value) => <Tag color="success">{value}</Tag> },
+    { title: '维修状态', dataIndex: 'status', width: 100, render: (value) => <StatusTag value={value} type="business" /> },
   ];
   const repairRecords = [
     {
@@ -189,13 +186,14 @@ export default function AssetReturnHandlingPage() {
         <Card size="small" title="申请人信息">
           <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="申请人">{selected.applicant.id}-{selected.applicant.name}</Descriptions.Item>
+            <Descriptions.Item label="申请日期">{formatDateText(selected.applyTime)}</Descriptions.Item>
             <Descriptions.Item label="公司">{selected.applicant.company || '-'}</Descriptions.Item>
             <Descriptions.Item label="板块">{selected.applicant.block || '-'}</Descriptions.Item>
-            <Descriptions.Item label="部门" span={2}>{formatDepartment(selected.applicant.department)}</Descriptions.Item>
             <Descriptions.Item label="办公区">{selected.applicant.officeArea || '-'}</Descriptions.Item>
             <Descriptions.Item label="联系电话">{selected.applicant.phone || '-'}</Descriptions.Item>
+            <Descriptions.Item label="邮箱">{selected.applicant.email || '-'}</Descriptions.Item>
             <Descriptions.Item label="退库类型">{selected.returnType || '-'}</Descriptions.Item>
-            <Descriptions.Item label="申请时间">{selected.applyTime || '-'}</Descriptions.Item>
+            <Descriptions.Item label="部门">{formatDepartment(selected.applicant.department)}</Descriptions.Item>
             <Descriptions.Item label="退库原因" span={3}>{selected.reason || '-'}</Descriptions.Item>
           </Descriptions>
         </Card>
@@ -206,13 +204,13 @@ export default function AssetReturnHandlingPage() {
             <Descriptions.Item label="SN号">{asset.sn || '-'}</Descriptions.Item>
             <Descriptions.Item label="资产说明">{asset.assetDesc || '-'}</Descriptions.Item>
             <Descriptions.Item label="配置">{asset.config || '-'}</Descriptions.Item>
-            <Descriptions.Item label="资产状态">{asset.status ? <Tag color="success">{asset.status}</Tag> : '-'}</Descriptions.Item>
+            <Descriptions.Item label="资产状态"><StatusTag value={asset.status} type="business" /></Descriptions.Item>
             <Descriptions.Item label="资产用途">{asset.purpose || '-'}</Descriptions.Item>
             <Descriptions.Item label="部件数量">{componentCount}</Descriptions.Item>
             <Descriptions.Item label="城市">{asset.city || '-'}</Descriptions.Item>
             <Descriptions.Item label="建筑">{asset.building || '-'}</Descriptions.Item>
             <Descriptions.Item label="楼层">{asset.floor || '-'}</Descriptions.Item>
-            <Descriptions.Item label="盘点状态">{asset.inventoryStatus || '-'}</Descriptions.Item>
+            <Descriptions.Item label="盘点状态"><StatusTag value={asset.inventoryStatus} type="business" /></Descriptions.Item>
             <Descriptions.Item label="盘点执行人">{asset.inventoryPerson || '-'}</Descriptions.Item>
             <Descriptions.Item label="备注" span={3}>{asset.note || '-'}</Descriptions.Item>
             <Descriptions.Item label="关联耗材" span={3}>
@@ -268,8 +266,8 @@ export default function AssetReturnHandlingPage() {
                 onChange={(event) => setUsageNote(event.target.value)}
               />
             </Descriptions.Item>
-            <Descriptions.Item label="维修记录">
-              <Button type="link" icon={<Eye size={14} />} onClick={() => setRepairOpen(true)}>查看</Button>
+            <Descriptions.Item label="维修记录" span={3}>
+              <Button type="link" size="small" className="px-0" onClick={() => setRepairOpen(true)}>维修记录</Button>
             </Descriptions.Item>
           </Descriptions>
         </Card>
@@ -294,8 +292,8 @@ export default function AssetReturnHandlingPage() {
             onChange={(event) => setOpinion(event.target.value)}
           />
           <div className="mt-4 flex justify-center gap-3">
-            <Button type="primary" icon={<CheckCircle2 size={14} />} loading={loading} onClick={confirmHandling}>确认</Button>
-            <Button danger icon={<XCircle size={14} />} onClick={reject}>驳回</Button>
+            <Button type="primary" loading={loading} onClick={confirmHandling}>确认</Button>
+            <Button danger onClick={reject}>驳回</Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
           </div>
         </Card>
