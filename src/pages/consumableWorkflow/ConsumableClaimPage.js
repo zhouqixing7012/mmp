@@ -55,19 +55,18 @@ export default function ConsumableClaimPage() {
       extendScrapDate: current.extendScrapDate,
     };
     saveClaimFields(claim.id, savedFields);
-    if (claim.confirmationStatus === '待确认') {
-      messageApi.info('员工尚未完成领用确认');
-      return;
-    }
-    if (claim.confirmationStatus !== '已确认') {
-      startConsumableClaimConfirmation(claim.id, savedFields);
-      messageApi.success('已发起员工耗材领用确认');
+
+    if (claim.confirmationStatus === '已确认') {
+      completeConsumableClaim(claim.id, savedFields);
+      messageApi.success('耗材出库完成，已生成出库单并更新台账');
       setVersion((value) => value + 1);
       return;
     }
-    completeConsumableClaim(claim.id, savedFields);
-    messageApi.success('耗材出库完成，已生成出库单并更新台账');
-    setVersion((value) => value + 1);
+
+    if (claim.confirmationStatus !== '待确认') {
+      startConsumableClaimConfirmation(claim.id, savedFields);
+    }
+    navigate('/yewurules', { state: { workspace: '员工耗材领用确认' } });
   };
 
   const abandon = () => {
@@ -98,11 +97,7 @@ export default function ConsumableClaimPage() {
   const stock = current.stock || {};
   const isLowValue = item.materialType === '低值耐用品';
   const isExtendable = isLowValue && ['内存', '硬盘'].includes(item.subCategory) && item.mainAssetTag;
-  const primaryText = claim.confirmationStatus === '已确认'
-    ? '执行出库'
-    : claim.confirmationStatus === '待确认'
-      ? '等待员工确认'
-      : '发起领用确认';
+  const primaryText = claim.confirmationStatus === '已确认' ? '执行出库' : '领用确认';
   const stockColumns = [
     { title: '耗材标签号', dataIndex: 'assetTag', width: 150 },
     { title: '序列号', dataIndex: 'serialNo', width: 150 },
@@ -184,12 +179,12 @@ export default function ConsumableClaimPage() {
         </Descriptions>
       </Card>
 
-      <Card size="small">
+      <Card size="small" title="审批操作">
         <div className="mb-4">
           <TextArea rows={2} maxLength={400} showCount value={opinion} placeholder="弃领时处理意见必填" onChange={(event) => setOpinion(event.target.value)} />
         </div>
         <div className="flex justify-center gap-3">
-          <Button type="primary" disabled={claim.confirmationStatus === '待确认'} onClick={primary}>{primaryText}</Button>
+          <Button type="primary" onClick={primary}>{primaryText}</Button>
           <Button danger onClick={abandon}>弃领</Button>
           <Button onClick={() => setTransferOpen(true)}>加签</Button>
           <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
