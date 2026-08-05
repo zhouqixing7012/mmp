@@ -5,7 +5,6 @@ import {
   Card,
   Empty,
   Input,
-  Radio,
   Space,
   Table,
   Typography,
@@ -190,18 +189,6 @@ export default function ConsumableSummaryPage() {
     { title: '预计费用（元）', dataIndex: 'estimatedAmount', width: 140, align: 'right', render: money },
     { title: '详细说明', dataIndex: 'detail', width: 220, render: (value) => value || '-' },
     { title: 'ES建议', dataIndex: 'esAdvice', width: 260, render: (value, record) => <Input value={value} onChange={(event) => updateRow(record.id, { esAdvice: event.target.value })} /> },
-    {
-      title: '是否通过',
-      dataIndex: 'approved',
-      width: 150,
-      render: (value, record) => (
-        <Radio.Group
-          value={value}
-          options={[{ label: '通过', value: true }, { label: '驳回', value: false }]}
-          onChange={(event) => updateRow(record.id, { approved: event.target.value })}
-        />
-      ),
-    },
   ];
 
   if (view === 'list') {
@@ -243,7 +230,7 @@ export default function ConsumableSummaryPage() {
               </Space>
               <Button danger onClick={() => rejectApplicant(record)}>驳回</Button>
             </div>
-            <Table rowKey="id" size="small" bordered columns={detailColumns} dataSource={record.items} pagination={false} scroll={{ x: 1300 }} />
+            <Table rowKey="id" size="small" bordered columns={detailColumns} dataSource={record.items} pagination={false} scroll={{ x: 1150 }} />
           </Card>
         ))}
         <Card size="small">
