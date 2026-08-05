@@ -1,4 +1,4 @@
-export const CONSUMABLE_WORKFLOW_STORAGE_KEY = 'mmp.consumableWorkflow.state.v1';
+export const CONSUMABLE_WORKFLOW_STORAGE_KEY = 'mmp.consumableWorkflow.state.v2';
 
 export const CONSUMABLE_APPLICATION_NOTICE = [
   '须以实际业务需求及办公为前提填写申请。',
@@ -233,12 +233,10 @@ const CLAIM = {
   usageNote: '',
   extendScrapDate: false,
   esPhysicalScrapDate: '2029-08-05',
-  confirmationMode: '狐小e电子签',
   confirmationStatus: '未发起',
   confirmationEmployeeId: '',
   confirmationMethod: '',
   confirmationTime: '',
-  signatureText: '',
   history: [
     { node: '员工提交', person: '213852-孙志强', status: '已提交', time: '2026-08-05 09:10:00', comment: '提交耗材申请' },
     { node: 'ES配给', person: '119039-刘建', status: '已完成', time: '2026-08-05 13:00:00', comment: '库存领用' },
