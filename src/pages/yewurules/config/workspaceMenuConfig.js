@@ -10,15 +10,15 @@ import EmployeeAssetAllocationPage from '../../employeeSelfService/AssetAllocati
 import ContractNumberAllocationPage from '../../contractNumber/ContractNumberAllocationPage';
 import ContractNumberWarehousePage from '../../contractNumber/ContractNumberWarehousePage';
 import ContractNumberReceiptConfirmPage from '../../contractNumber/ContractNumberReceiptConfirmPage';
-import { ConsumableClaimConfirmPage } from '../../consumableWorkflow';
 import {
   ConsumableMisApprovalPage,
   ConsumableLeaderApprovalPage,
-  ConsumableAllocationPage,
-  ConsumableClaimPage,
-  ConsumableSummaryPage,
   ConsumableSummaryApprovalPage,
 } from '../../consumableWorkflow/refinedPages';
+import ConsumableAllocationPage from '../../consumableWorkflow/ConsumableAllocationPage';
+import ConsumableClaimPage from '../../consumableWorkflow/ConsumableClaimPage';
+import ConsumableClaimConfirmPage from '../../consumableWorkflow/ConsumableClaimConfirmPage';
+import ConsumableSummaryPage from '../../consumableWorkflow/ConsumableSummaryPage';
 import {
   BorrowingApplyPage,
   BorrowingAllocationPage,
