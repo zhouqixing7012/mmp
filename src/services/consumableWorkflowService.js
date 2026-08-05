@@ -260,12 +260,10 @@ export function submitAllocationDecision(allocationId, values) {
       usageNote: '',
       extendScrapDate: false,
       esPhysicalScrapDate: '2029-08-05',
-      confirmationMode: '狐小e电子签',
       confirmationStatus: '未发起',
       confirmationEmployeeId: '',
       confirmationMethod: '',
       confirmationTime: '',
-      signatureText: '',
       history: [
         ...updatedAllocation.history,
         { node: '耗材领用', person: '号码库管员', status: '待处理', time: '-', comment: '-' },
@@ -327,7 +325,7 @@ export function startConsumableClaimConfirmation(claimId, values) {
   }));
 }
 
-export function confirmConsumableClaim(claimId, employeeId, method, signatureText = '') {
+export function confirmConsumableClaim(claimId, employeeId, method) {
   if (!employeeId) throw new Error('请输入员工工号');
   let confirmed = null;
   updateConsumableWorkflowState((state) => ({
@@ -343,7 +341,6 @@ export function confirmConsumableClaim(claimId, employeeId, method, signatureTex
         confirmationEmployeeId: employeeId,
         confirmationMethod: method,
         confirmationTime,
-        signatureText,
         history: claim.history.map((record) => (
           record.node === '员工领用确认' && record.status === '待确认'
             ? { ...record, status: '已确认', time: confirmationTime, comment: method }
