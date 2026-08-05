@@ -10,16 +10,15 @@ import EmployeeAssetAllocationPage from '../../employeeSelfService/AssetAllocati
 import ContractNumberAllocationPage from '../../contractNumber/ContractNumberAllocationPage';
 import ContractNumberWarehousePage from '../../contractNumber/ContractNumberWarehousePage';
 import ContractNumberReceiptConfirmPage from '../../contractNumber/ContractNumberReceiptConfirmPage';
+import { ConsumableClaimConfirmPage } from '../../consumableWorkflow';
 import {
-  ConsumableApplyPage,
   ConsumableMisApprovalPage,
   ConsumableLeaderApprovalPage,
   ConsumableAllocationPage,
   ConsumableClaimPage,
-  ConsumableClaimConfirmPage,
   ConsumableSummaryPage,
   ConsumableSummaryApprovalPage,
-} from '../../consumableWorkflow';
+} from '../../consumableWorkflow/refinedPages';
 import {
   BorrowingApplyPage,
   BorrowingAllocationPage,
@@ -56,7 +55,6 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: '统一申请汇总-资产', label: '统一申请汇总-资产', Page: UnifiedAssetApplySummary },
   { key: 'ES前台领用', label: 'ES前台领用', Page: FrontDeskAssetClaim },
   { key: '员工领用确认', label: '员工领用确认', Page: EmployeeAssetClaimConfirm },
-  { key: '耗材申请', label: '耗材申请', Page: ConsumableApplyPage },
   { key: '耗材MIS鉴定', label: '耗材MIS鉴定', Page: ConsumableMisApprovalPage },
   { key: '耗材审批', label: '耗材审批', Page: ConsumableLeaderApprovalPage },
   { key: '耗材配给', label: '耗材配给', Page: ConsumableAllocationPage },
