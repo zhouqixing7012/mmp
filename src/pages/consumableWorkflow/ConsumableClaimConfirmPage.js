@@ -9,7 +9,6 @@ import {
   Empty,
   Input,
   Space,
-  Tabs,
   Typography,
   message as antdMessage,
 } from 'antd';
@@ -69,7 +68,6 @@ export default function ConsumableClaimConfirmPage() {
   const [version, setVersion] = useState(0);
   const [employeeId, setEmployeeId] = useState('');
   const [read, setRead] = useState(false);
-  const [signatureText, setSignatureText] = useState('');
   const [confirmedResult, setConfirmedResult] = useState(null);
   const claim = useMemo(
     () => getConsumableWorkflowState().claims.find((item) => (
@@ -81,7 +79,7 @@ export default function ConsumableClaimConfirmPage() {
   );
   const current = claim || confirmedResult;
 
-  const confirm = (method, targetEmployeeId, signature = '') => {
+  const confirm = (method, targetEmployeeId) => {
     if (!claim) return;
     if (!read) {
       messageApi.warning('请先阅读并确认耗材保管职责');
@@ -92,7 +90,7 @@ export default function ConsumableClaimConfirmPage() {
       return;
     }
     try {
-      const updated = confirmConsumableClaim(claim.id, targetEmployeeId, method, signature);
+      const updated = confirmConsumableClaim(claim.id, targetEmployeeId, method);
       setConfirmedResult(updated);
       setEmployeeId('');
       setVersion((value) => value + 1);
@@ -118,59 +116,6 @@ export default function ConsumableClaimConfirmPage() {
 
   const confirmed = Boolean(confirmedResult) || current.confirmationStatus === '已确认';
   const responsibility = '领用人确认已收到上述耗材，认同公司耗材仅作为工作用途使用。如无使用需要，应置于公司办公场所保存。领用人应承担妥善保管耗材的责任，除自然损耗外，不得人为损坏或者疏于维护。';
-  const confirmTabs = [
-    {
-      key: '电子签确认',
-      label: '电子签确认',
-      children: (
-        <div className="pt-1">
-          <div className="flex min-h-[150px] items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 text-xl text-slate-500">
-            {signatureText || '电子签名区域'}
-          </div>
-          <div className="mt-3 flex justify-center gap-3">
-            <Button disabled={confirmed} onClick={() => setSignatureText('')}>清除</Button>
-            <Button
-              type="primary"
-              disabled={confirmed}
-              onClick={() => {
-                const signature = signatureText || `${current.applicant.name}（电子签名）`;
-                setSignatureText(signature);
-                confirm('狐小e电子签', current.applicant.id, signature);
-              }}
-            >
-              确认签名
-            </Button>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: '刷卡/扫码确认',
-      label: '刷卡/扫码确认',
-      children: (
-        <div className="grid gap-8 pt-1 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center">
-          <div>
-            <Typography.Text strong>刷卡领用确认</Typography.Text>
-            <Space.Compact className="mt-3 w-full max-w-xl">
-              <Input
-                value={employeeId}
-                disabled={confirmed}
-                placeholder="请输入员工工号"
-                onPressEnter={() => confirm('刷卡确认', employeeId.trim())}
-                onChange={(event) => setEmployeeId(event.target.value)}
-              />
-              <Button type="primary" disabled={confirmed} onClick={() => confirm('刷卡确认', employeeId.trim())}>确认</Button>
-            </Space.Compact>
-          </div>
-          <ConfirmationQr
-            seed={`${current.id}-${current.item.materialDesc}`}
-            disabled={confirmed}
-            onConfirm={() => confirm('狐小e扫码确认', current.applicant.id)}
-          />
-        </div>
-      ),
-    },
-  ];
 
   return (
     <Space direction="vertical" size={16} className="w-full">
@@ -203,8 +148,27 @@ export default function ConsumableClaimConfirmPage() {
         </div>
       </Card>
 
-      <Card size="small" title="领用确认">
-        <Tabs size="small" defaultActiveKey="电子签确认" items={confirmTabs} />
+      <Card size="small" title="刷卡/扫码确认">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center">
+          <div>
+            <Typography.Text strong>刷卡领用确认</Typography.Text>
+            <Space.Compact className="mt-3 w-full max-w-xl">
+              <Input
+                value={employeeId}
+                disabled={confirmed}
+                placeholder="请输入员工工号"
+                onPressEnter={() => confirm('刷卡确认', employeeId.trim())}
+                onChange={(event) => setEmployeeId(event.target.value)}
+              />
+              <Button type="primary" disabled={confirmed} onClick={() => confirm('刷卡确认', employeeId.trim())}>确认</Button>
+            </Space.Compact>
+          </div>
+          <ConfirmationQr
+            seed={`${current.id}-${current.item.materialDesc}`}
+            disabled={confirmed}
+            onConfirm={() => confirm('狐小e扫码确认', current.applicant.id)}
+          />
+        </div>
 
         {confirmed && (
           <div className="mt-5">
