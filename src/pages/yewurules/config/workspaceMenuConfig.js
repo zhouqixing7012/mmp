@@ -20,6 +20,10 @@ import ConsumableClaimPage from '../../consumableWorkflow/ConsumableClaimPage';
 import ConsumableClaimConfirmPage from '../../consumableWorkflow/ConsumableClaimConfirmPage';
 import ConsumableSummaryPage from '../../consumableWorkflow/ConsumableSummaryPage';
 import {
+  ConsumableClaimMaterialCodePage,
+  ConsumableClaimAssetTagPage,
+} from '../../consumableWorkflow/ConsumableClaimAlternatives';
+import {
   BorrowingApplyPage,
   BorrowingAllocationPage,
   BorrowingApprovalPage,
@@ -59,6 +63,8 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: '耗材审批', label: '耗材审批', Page: ConsumableLeaderApprovalPage },
   { key: '耗材配给', label: '耗材配给', Page: ConsumableAllocationPage },
   { key: '耗材领用', label: '耗材领用', Page: ConsumableClaimPage },
+  { key: '耗材领用方案一', label: '耗材领用方案一', Page: ConsumableClaimMaterialCodePage },
+  { key: '耗材领用方案二', label: '耗材领用方案二', Page: ConsumableClaimAssetTagPage },
   { key: '员工耗材领用确认', label: '员工耗材领用确认', Page: ConsumableClaimConfirmPage },
   { key: '耗材汇总', label: '耗材汇总', Page: ConsumableSummaryPage },
   { key: '耗材汇总审批', label: '耗材汇总审批', Page: ConsumableSummaryApprovalPage },
