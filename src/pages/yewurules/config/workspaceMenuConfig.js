@@ -8,6 +8,7 @@ import EmployeeAssetApplyPage from '../../employeeSelfService/AssetApplyPage';
 import EmployeeAssetApprovalPage from '../../employeeSelfService/AssetApprovalPage';
 import EmployeeAssetAllocationPage from '../../employeeSelfService/AssetAllocationPage';
 import ContractNumberAllocationPage from '../../contractNumber/ContractNumberAllocationPage';
+import ContractNumberSupervisorApprovalPage from '../../contractNumber/ContractNumberSupervisorApprovalPage';
 import ContractNumberWarehousePage from '../../contractNumber/ContractNumberWarehousePage';
 import ContractNumberReceiptConfirmPage from '../../contractNumber/ContractNumberReceiptConfirmPage';
 import {
@@ -51,6 +52,7 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: '号码管理', label: '号码管理', Page: Haoma },
   { key: '号码控制', label: '号码控制', Page: Haomakongzhi },
   { key: '合约号码ES配给', label: '合约号码ES配给', Page: ContractNumberAllocationPage },
+  { key: '合约号码配给主管审批', label: '合约号码配给主管审批', Page: ContractNumberSupervisorApprovalPage },
   { key: '合约号码库管员待办', label: '合约号码库管员待办', Page: ContractNumberWarehousePage },
   { key: '员工合约号码领取确认', label: '员工合约号码领取确认', Page: ContractNumberReceiptConfirmPage },
   { key: '资产申请', label: '资产申请', Page: EmployeeAssetApplyPage },
