@@ -8,6 +8,7 @@ import EmployeeAssetInfoQueryPage from './EmployeeAssetInfoQueryPage';
 import DocumentListPage from './DocumentListPage';
 import ScrapApplicationEdit from '../ScrapApplicationEdit';
 import AccountingScrapEdit from '../AccountingScrapEdit';
+import './embeddedPages.css';
 
 export const ASSET_MANAGEMENT_SUB_MENUS = [
   '资产维护',
@@ -26,6 +27,23 @@ function PendingAssetManagementPage({ title }) {
     <Card size="small" title={title}>
       <Empty description={`${title}页面内容将在对应字段确认后补充`} />
     </Card>
+  );
+}
+
+function EmbeddedAccountingScrapPage({ onBack }) {
+  const handleClickCapture = (event) => {
+    const button = event.target.closest?.('button');
+    if (button && button.textContent?.trim() === '返回') {
+      event.preventDefault();
+      event.stopPropagation();
+      onBack();
+    }
+  };
+
+  return (
+    <div className="assetManagement-embeddedAccounting" onClickCapture={handleClickCapture}>
+      <AccountingScrapEdit />
+    </div>
   );
 }
 
@@ -68,7 +86,7 @@ export function AssetManagementContent({ activeSubMenu }) {
 
   if (activeSubMenu === '账面报废') {
     if (embeddedPage === 'accountingScrap') {
-      return <AccountingScrapEdit embedded onBack={() => setEmbeddedPage(null)} />;
+      return <EmbeddedAccountingScrapPage onBack={() => setEmbeddedPage(null)} />;
     }
 
     return (
