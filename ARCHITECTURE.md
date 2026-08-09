@@ -22,16 +22,40 @@
 | `src/App.js` | 生成应用路由。 |
 | `src/config/routes.js` | 独立页面路由配置。 |
 | `src/components/QueryBar.jsx` | 统一查询区域。 |
-| `src/components/StatusTag.jsx` | 统一是/否、启用/停用状态展示。 |
-| `src/components/SelectModal.js` | 通用选择弹窗。 |
+| `src/components/StatusTag.jsx` | 统一是/否、启用/停用和业务状态展示。 |
+| `src/components/SelectModal.jsx` | 通用选择弹窗。 |
 | `src/services/demoStorage.js` | localStorage 统一读写。 |
 | `src/pages/yewurules/` | 后台框架、侧边栏和个人工作台菜单。 |
+| `src/pages/assetManagement/` | 后台资产管理子菜单和资产维护页面。 |
 | `src/pages/employeeSelfService/` | 资产申请、审批、配给及复用组件。 |
 | `src/pages/assetBorrowing/` | 资产借用流程页面。 |
 | `src/pages/assetReplacement/` | 资产更换流程页面。 |
 | `src/pages/assetReturn/` | 资产退库和合约号码退库流程页面。 |
+| `src/mock/assetManagementMock.js` | 后台资产维护演示数据。 |
+| `src/services/assetManagementService.js` | 后台资产维护演示数据读写。 |
 | `src/mock/` | 各业务模块演示数据。 |
 | `src/services/` | 各业务模块状态读写和流程操作。 |
+
+## 后台资产管理导航
+
+一级菜单“资产管理”由 `src/pages/yewurules/config/menuConfig.js` 统一配置为可展开菜单：
+
+```text
+资产管理
+├─ 资产维护
+├─ 耗材维护
+├─ 合约号码维护
+├─ 标签打印
+├─ 公司间转移
+├─ 资产报废
+├─ 账面报废
+├─ 资产处置
+└─ 员工资产信息查询
+```
+
+`AdminSidebar` 负责展开和选中子菜单，`yewurules.js` 将资产管理场景交给 `AssetManagementContent`，由 `src/pages/assetManagement/index.js` 根据子菜单渲染对应页面。点击一级菜单时默认进入“资产维护”。
+
+当前只有“资产维护”已有正式页面，其他菜单只建立入口，等待截图和字段确认后再补充业务页面。
 
 ## 个人工作台导航
 
@@ -70,6 +94,27 @@ MIS鉴定
 `WorkspaceMenu` 根据菜单 key 渲染对应 Page。页面内部跳转通过 `/yewurules` 的 `location.state.workspace` 切换菜单状态。
 
 ## 核心模块调用关系
+
+### 后台资产维护
+
+```text
+AdminSidebar
+  ↓ 资产管理 / 资产维护
+AssetManagementContent
+  ↓
+AssetMaintenancePage
+  ↓ assetManagementService
+  ↓ demoStorage
+assetManagementMock / localStorage
+```
+
+资产维护页职责：
+
+- `QueryBar + QueryItem`：14 个查询条件。
+- `SelectModal`：公司、部门、资产责任人、资产类别、资产状态、成本中心、仓库选择。
+- `Table`：展示用户确认的资产字段，并保留最左侧选择列。
+- 编辑：单选资产后修改演示数据，通过 service 持久化。
+- 导出：按当前查询结果生成 CSV。
 
 ### 资产申请与领用
 
@@ -173,6 +218,7 @@ assetReturnService
 
 - 页面只能通过 service 读取和修改业务数据。
 - service 通过 `demoStorage` 持久化演示数据。
+- 后台资产维护当前查询数据读取 `assetManagementService`，编辑后仍写回同一份演示资产数据。
 - 批量资产退库按一项主资产一张单据拆分；关联耗材保存在主单内。
 - 批量合约号码退库按一号一单拆分。
 - 申请、审批、办理、员工确认和结果列表读取同一份申请数据。
@@ -183,14 +229,15 @@ assetReturnService
 
 - 查询列表使用 `QueryBar`、`QueryItem` 和 Ant Design Table。
 - 申请、审批和办理页面使用 Card、Table 分区。
-- 选择资产使用 Modal 和多选 Table。
+- 选择资产和基础数据使用统一选择弹窗。
 - 操作完成后显示 message 反馈并刷新同源数据。
-- 状态展示使用统一 Tag 语义：处理中蓝色、已处理绿色、已驳回红色。
+- 状态展示使用统一 `StatusTag`。
 
 ## 当前演示边界
 
 以下能力仍为前端模拟：
 
+- 后台资产维护当前使用演示台账数据，尚未接真实资产查询/编辑接口。
 - 服务号通知。
 - 真实狐小 e 扫码和刷卡硬件。
 - 并发资产/号码锁定。
