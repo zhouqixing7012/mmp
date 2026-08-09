@@ -1,0 +1,13 @@
+.assetManagement-embeddedAccounting > .min-h-screen {
+  min-height: auto !important;
+  background: transparent !important;
+  padding-bottom: 0 !important;
+}
+
+.assetManagement-embeddedAccounting > .min-h-screen > .fixed.bottom-0.left-0.w-full {
+  position: sticky !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: 0 !important;
+  margin-top: 16px;
+}
