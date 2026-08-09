@@ -252,7 +252,7 @@ export default function LedgerMaintenancePage({
     const commonProps = { disabled: field.disabled };
     let control = <Input {...commonProps} placeholder={field.placeholder} />;
     if (field.type === 'number') {
-      control = <InputNumber {...commonProps} min={0} precision={0} style={{ width: '100%' }} />;
+      control = <InputNumber {...commonProps} min={field.min ?? 1} precision={0} style={{ width: '100%' }} />;
     } else if (field.type === 'select') {
       control = (
         <Select
