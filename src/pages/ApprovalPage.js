@@ -3,6 +3,7 @@ import { Download, Paperclip } from 'lucide-react';
 import {
   Button,
   Card,
+  Collapse,
   Descriptions,
   Input,
   Space,
@@ -129,8 +130,16 @@ const formatMoney = (value) => Number(value || 0).toLocaleString('zh-CN', {
   maximumFractionDigits: 2,
 });
 
+const sectionTitle = (title) => (
+  <div className="flex items-center gap-2.5 py-0.5">
+    <span className="w-1 h-5 rounded-full bg-[#1677ff]" />
+    <span className="text-[16px] font-semibold text-gray-900">{title}</span>
+  </div>
+);
+
 export default function ApprovalPage() {
   const [activeTab, setActiveTab] = useState('已到报废期');
+  const [expandedGroupKeys, setExpandedGroupKeys] = useState([]);
   const [approvalComment, setApprovalComment] = useState('');
 
   const availableTabs = useMemo(() => ['已到报废期', '未到报废期', '丢失'].filter(
@@ -179,7 +188,7 @@ export default function ApprovalPage() {
   ], []);
 
   const transferColumns = useMemo(() => [
-    { title: '资产标签号', dataIndex: 'tagNo', width: 160, fixed: 'left', render: (value) => <Text className="font-mono text-[#1677ff]">{value}</Text> },
+    { title: '资产标签号', dataIndex: 'tagNo', width: 160, fixed: 'left', render: (value) => <Text className="font-mono text-gray-900">{value}</Text> },
     { title: '新责任人', dataIndex: 'newResponsiblePerson', width: 150 },
     { title: '新公司', dataIndex: 'newCompany', width: 160 },
     { title: '新板块', dataIndex: 'newPlate', width: 140 },
@@ -189,6 +198,19 @@ export default function ApprovalPage() {
     { title: 'Floor', dataIndex: 'floor', width: 120 },
     { title: '调账后仓库', dataIndex: 'adjustedWarehouse', width: 240 },
   ], []);
+
+  const handleDownloadAttachment = (file) => {
+    const blob = new Blob([`账面报废审批演示附件：${file.name}`], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    message.success(`已开始下载 ${file.name}`);
+  };
 
   const handleApprove = () => {
     message.success('审批已同意');
@@ -201,6 +223,35 @@ export default function ApprovalPage() {
     }
     message.success('审批已驳回');
   };
+
+  const groupCollapseItems = useMemo(() => Object.entries(groupedData).map(([groupName, items]) => {
+    const groupQty = items.reduce((sum, item) => sum + item.qty, 0);
+    const groupOriginal = items.reduce((sum, item) => sum + item.originalValue, 0);
+    const groupNet = items.reduce((sum, item) => sum + item.netValue, 0);
+
+    return {
+      key: groupName,
+      label: <Text strong className="text-[14px]">{groupName}</Text>,
+      extra: (
+        <Space size={20} wrap>
+          <Text type="secondary">数量：<Text strong>{groupQty}</Text></Text>
+          <Text type="secondary">原值合计：<Text strong>{formatMoney(groupOriginal)}</Text></Text>
+          <Text type="secondary">净值合计：<Text strong>{formatMoney(groupNet)}</Text></Text>
+        </Space>
+      ),
+      children: (
+        <Table
+          rowKey="id"
+          size="small"
+          bordered
+          columns={assetColumns}
+          dataSource={items}
+          pagination={false}
+          scroll={{ x: 2650 }}
+        />
+      ),
+    };
+  }), [assetColumns, groupedData]);
 
   return (
     <div className="pb-24">
@@ -215,7 +266,7 @@ export default function ApprovalPage() {
           </Space>
         </div>
 
-        <Card size="small" title="基本信息" className="shadow-sm">
+        <Card size="small" title={sectionTitle('基本信息')} className="shadow-sm">
           <Descriptions bordered size="small" column={3} labelStyle={{ width: 128 }}>
             <Descriptions.Item label="申请单号"><Text className="font-mono">{approvalData.docNo}</Text></Descriptions.Item>
             <Descriptions.Item label="公司">{approvalData.company}</Descriptions.Item>
@@ -228,10 +279,21 @@ export default function ApprovalPage() {
               {approvalData.attachments.length > 0 ? (
                 <Space wrap>
                   {approvalData.attachments.map((file) => (
-                    <span key={file.name} className="inline-flex items-center gap-2 px-3 py-1.5 border border-[#e5e7eb] rounded-md bg-[#fafafa]">
+                    <span
+                      key={file.name}
+                      className="group inline-flex items-center gap-2 px-3 py-1.5 border border-[#e5e7eb] rounded-md bg-[#fafafa] hover:border-[#91caff] hover:bg-white transition-colors"
+                    >
                       <Paperclip size={14} className="text-gray-400" />
                       <span>{file.name}</span>
                       <Text type="secondary" className="text-xs">{file.size}</Text>
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<Download size={14} />}
+                        className="!px-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="下载附件"
+                        onClick={() => handleDownloadAttachment(file)}
+                      />
                     </span>
                   ))}
                 </Space>
@@ -240,7 +302,7 @@ export default function ApprovalPage() {
           </Descriptions>
         </Card>
 
-        <Card size="small" title="报废原因" className="shadow-sm">
+        <Card size="small" title={sectionTitle('报废原因')} className="shadow-sm">
           <Descriptions bordered size="small" column={1} labelStyle={{ width: 180 }}>
             <Descriptions.Item label="已到报废期报废原因">{approvalData.expiredReason || '-'}</Descriptions.Item>
             <Descriptions.Item label="未到报废期报废原因">{approvalData.unexpiredReason || '-'}</Descriptions.Item>
@@ -248,10 +310,13 @@ export default function ApprovalPage() {
           </Descriptions>
         </Card>
 
-        <Card size="small" title="报废资产明细" className="shadow-sm">
+        <Card size="small" title={sectionTitle('报废资产明细')} className="shadow-sm">
           <Tabs
             activeKey={activeTab}
-            onChange={setActiveTab}
+            onChange={(nextTab) => {
+              setActiveTab(nextTab);
+              setExpandedGroupKeys([]);
+            }}
             items={availableTabs.map((type) => {
               const count = approvalData.items
                 .filter((item) => item.scrapType === type)
@@ -266,39 +331,17 @@ export default function ApprovalPage() {
             <span>净值合计：<Text strong className="text-green-600">{formatMoney(tabTotals.netValue)}</Text></span>
           </div>
 
-          <Space direction="vertical" size={16} className="w-full">
-            {Object.entries(groupedData).map(([groupName, items]) => {
-              const groupQty = items.reduce((sum, item) => sum + item.qty, 0);
-              const groupOriginal = items.reduce((sum, item) => sum + item.originalValue, 0);
-              const groupNet = items.reduce((sum, item) => sum + item.netValue, 0);
-
-              return (
-                <div key={groupName} className="border border-[#f0f0f0] rounded-md overflow-hidden">
-                  <div className="px-4 py-2.5 bg-[#fafafa] border-b border-[#f0f0f0] flex items-center justify-between gap-4">
-                    <Text strong>{groupName}</Text>
-                    <Space size={20} wrap>
-                      <Text type="secondary">数量：<Text strong>{groupQty}</Text></Text>
-                      <Text type="secondary">原值合计：<Text strong>{formatMoney(groupOriginal)}</Text></Text>
-                      <Text type="secondary">净值合计：<Text strong>{formatMoney(groupNet)}</Text></Text>
-                    </Space>
-                  </div>
-                  <Table
-                    rowKey="id"
-                    size="small"
-                    bordered
-                    columns={assetColumns}
-                    dataSource={items}
-                    pagination={false}
-                    scroll={{ x: 2650 }}
-                  />
-                </div>
-              );
-            })}
-          </Space>
+          <Collapse
+            size="small"
+            activeKey={expandedGroupKeys}
+            onChange={(keys) => setExpandedGroupKeys(Array.isArray(keys) ? keys : [keys])}
+            items={groupCollapseItems}
+            className="bg-white"
+          />
         </Card>
 
         {approvalData.intercompanyTransfer === '是' && (
-          <Card size="small" title="公司间转移明细" className="shadow-sm">
+          <Card size="small" title={sectionTitle('公司间转移明细')} className="shadow-sm">
             <Table
               rowKey="assetId"
               size="small"
@@ -311,7 +354,7 @@ export default function ApprovalPage() {
           </Card>
         )}
 
-        <Card size="small" title="审批意见" className="shadow-sm">
+        <Card size="small" title={sectionTitle('审批意见')} className="shadow-sm">
           <Input.TextArea
             value={approvalComment}
             onChange={(e) => setApprovalComment(e.target.value)}
