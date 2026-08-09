@@ -170,12 +170,7 @@ export default function ContractNumberSupervisorApprovalPage() {
             <Descriptions.Item label="话费套餐">
               {application.assignedNumber?.packageName || '-'}
             </Descriptions.Item>
-          </Descriptions>
-        </Card>
-
-        <Card size="small" title="附件信息">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="附件" span={3}>
+            <Descriptions.Item label="附件信息" span={3}>
               {application.allocationAttachment?.name || '-'}
             </Descriptions.Item>
           </Descriptions>
