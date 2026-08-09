@@ -24,7 +24,6 @@ function PageTitle({ children }) {
 export default function WarehouseWorkbenchPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
-  const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const assetTagRef = useRef(null);
   const employeeCardRef = useRef(null);
 
@@ -52,77 +51,73 @@ export default function WarehouseWorkbenchPage() {
           <Button icon={<ScanLine size={14} />} onClick={() => assetTagRef.current?.focus()}>扫码</Button>
           <Button onClick={() => employeeCardRef.current?.focus()}>刷卡</Button>
           <Button icon={<UserRound size={14} />} onClick={() => messageApi.info('员工页面字段待确认')}>员工页面</Button>
-          <Button icon={<RefreshCcw size={14} />} onClick={() => messageApi.success('员工页面已刷新（原型）')}>刷新员工页面</Button>
+          <Button icon={<RefreshCcw size={14} />} onClick={() => messageApi.info('员工页面已刷新')}>刷新员工页面</Button>
         </Space>
       </div>
 
       <Card size="small">
         <Tabs activeKey="asset-io" items={[{ key: 'asset-io', label: '资产出入库' }]} />
+      </Card>
 
-        <QueryBar buttons={null}>
-          <QueryItem label="资产标签号">
-            <Input
-              ref={assetTagRef}
-              value={draftFilters.assetTag}
-              allowClear
-              placeholder="扫描/输入资产标签号"
-              onChange={(event) => updateFilter('assetTag', event.target.value)}
-            />
-          </QueryItem>
-          <QueryItem label="员工卡号">
-            <Input
-              ref={employeeCardRef}
-              value={draftFilters.employeeCard}
-              allowClear
-              placeholder="刷卡/输入员工编号"
-              onChange={(event) => updateFilter('employeeCard', event.target.value)}
-            />
-          </QueryItem>
-          <QueryItem label="员工姓名">
-            <Input
-              value={draftFilters.employeeName}
-              allowClear
-              placeholder="请输入员工姓名"
-              onChange={(event) => updateFilter('employeeName', event.target.value)}
-            />
-          </QueryItem>
-          <QueryItem label="资产名称">
-            <Input
-              value={draftFilters.assetName}
-              allowClear
-              placeholder="请输入资产名称"
-              onChange={(event) => updateFilter('assetName', event.target.value)}
-            />
-          </QueryItem>
-          <QueryItem label="单据编号">
-            <Input
-              value={draftFilters.documentNo}
-              allowClear
-              placeholder="请输入单据编号"
-              onChange={(event) => updateFilter('documentNo', event.target.value)}
-            />
-          </QueryItem>
-          <QueryItem label="单据类型">
-            <Select
-              value={draftFilters.documentType || undefined}
-              allowClear
-              placeholder="请选择"
-              options={[]}
-              onChange={(value) => updateFilter('documentType', value)}
-            />
-          </QueryItem>
-        </QueryBar>
+      <QueryBar buttons={null}>
+        <QueryItem label="资产标签号">
+          <Input
+            ref={assetTagRef}
+            value={draftFilters.assetTag}
+            allowClear
+            placeholder="扫描/输入资产标签号"
+            onChange={(event) => updateFilter('assetTag', event.target.value)}
+          />
+        </QueryItem>
+        <QueryItem label="员工卡号">
+          <Input
+            ref={employeeCardRef}
+            value={draftFilters.employeeCard}
+            allowClear
+            placeholder="刷卡/输入员工编号"
+            onChange={(event) => updateFilter('employeeCard', event.target.value)}
+          />
+        </QueryItem>
+        <QueryItem label="员工姓名">
+          <Input
+            value={draftFilters.employeeName}
+            allowClear
+            placeholder="请输入员工姓名"
+            onChange={(event) => updateFilter('employeeName', event.target.value)}
+          />
+        </QueryItem>
+        <QueryItem label="资产名称">
+          <Input
+            value={draftFilters.assetName}
+            allowClear
+            placeholder="请输入资产名称"
+            onChange={(event) => updateFilter('assetName', event.target.value)}
+          />
+        </QueryItem>
+        <QueryItem label="单据编号">
+          <Input
+            value={draftFilters.documentNo}
+            allowClear
+            placeholder="请输入单据编号"
+            onChange={(event) => updateFilter('documentNo', event.target.value)}
+          />
+        </QueryItem>
+        <QueryItem label="单据类型">
+          <Select
+            value={draftFilters.documentType || undefined}
+            allowClear
+            placeholder="请选择"
+            options={[]}
+            onChange={(value) => updateFilter('documentType', value)}
+          />
+        </QueryItem>
+      </QueryBar>
 
-        <div className="-mt-2 mb-4 flex justify-center">
-          <Button
-            type="primary"
-            icon={<Search size={14} />}
-            onClick={() => setAppliedFilters({ ...draftFilters })}
-          >
-            查询
-          </Button>
-        </div>
+      <div className="-mt-3 flex justify-center">
+        <Button type="primary" icon={<Search size={14} />}>查询</Button>
+      </div>
 
+      <Card size="small" title="资产出入库单据" extra={<Typography.Text type="secondary">共 0 条</Typography.Text>}>
         <Table
           rowKey="id"
           size="small"
@@ -138,8 +133,6 @@ export default function WarehouseWorkbenchPage() {
           locale={{ emptyText: '暂无数据' }}
         />
       </Card>
-
-      <span className="hidden">{JSON.stringify(appliedFilters)}</span>
     </Space>
   );
 }
