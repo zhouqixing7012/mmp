@@ -6,6 +6,10 @@ import {
   CONSUMABLE_MAINTENANCE_STORAGE_KEY,
   DEFAULT_CONSUMABLE_MAINTENANCE_ROWS,
 } from '../mock/consumableMaintenanceMock';
+import {
+  CONTRACT_NUMBER_MAINTENANCE_STORAGE_KEY,
+  DEFAULT_CONTRACT_NUMBER_MAINTENANCE_ROWS,
+} from '../mock/contractNumberMaintenanceMock';
 import { readDemoData, writeDemoData } from './demoStorage';
 
 export function getAssetMaintenanceRows() {
@@ -31,5 +35,18 @@ export function updateConsumableMaintenanceRow(id, patch) {
     row.id === id ? { ...row, ...patch } : row
   ));
   writeDemoData(CONSUMABLE_MAINTENANCE_STORAGE_KEY, nextRows);
+  return nextRows;
+}
+
+export function getContractNumberMaintenanceRows() {
+  return readDemoData(CONTRACT_NUMBER_MAINTENANCE_STORAGE_KEY, DEFAULT_CONTRACT_NUMBER_MAINTENANCE_ROWS);
+}
+
+export function updateContractNumberMaintenanceRow(id, patch) {
+  const rows = getContractNumberMaintenanceRows();
+  const nextRows = rows.map((row) => (
+    row.id === id ? { ...row, ...patch } : row
+  ));
+  writeDemoData(CONTRACT_NUMBER_MAINTENANCE_STORAGE_KEY, nextRows);
   return nextRows;
 }
