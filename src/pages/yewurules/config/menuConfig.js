@@ -12,9 +12,20 @@ export const ASSET_MANAGEMENT_MENU_ITEMS = [
   '员工资产信息查询',
 ];
 
+export const INVENTORY_MANAGEMENT_MENU_ITEMS = [
+  '资产接收',
+  '耗材接收',
+  '入库',
+  '出库',
+  '移库',
+  '转移',
+  '库管员工作台',
+];
+
 export const MAIN_MENU_ITEMS = [
   { key: '资产管理', label: '资产管理', icon: Monitor, children: ASSET_MANAGEMENT_MENU_ITEMS },
   { key: '无形资产', label: '无形资产', icon: Layers },
+  { key: '库存管理', label: '库存管理', icon: Layers, children: INVENTORY_MANAGEMENT_MENU_ITEMS },
   { key: '资产盘点', label: '资产盘点', icon: ClipboardList },
 ];
 
