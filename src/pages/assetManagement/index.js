@@ -6,6 +6,7 @@ import ContractNumberMaintenancePage from './ContractNumberMaintenancePage';
 import TagPrintingPage from './TagPrintingPage';
 import EmployeeAssetInfoQueryPage from './EmployeeAssetInfoQueryPage';
 import DocumentListPage from './DocumentListPage';
+import AssetDisposalEditPage from './AssetDisposalEditPage';
 import ScrapApplicationEdit from '../ScrapApplicationEdit';
 import AccountingScrapEdit from '../AccountingScrapEdit';
 import './embeddedPages.css';
@@ -94,10 +95,19 @@ export function AssetManagementContent({ activeSubMenu }) {
   }
 
   if (activeSubMenu === '资产处置') {
+    if (embeddedPage === 'assetDisposal') {
+      return (
+        <EmbeddedPage>
+          <AssetDisposalEditPage onBack={() => setEmbeddedPage(null)} />
+        </EmbeddedPage>
+      );
+    }
+
     return (
       <DocumentListPage
         title="资产处置"
         createLabel="创建资产处置申请单"
+        onCreate={() => setEmbeddedPage('assetDisposal')}
       />
     );
   }
@@ -119,3 +129,4 @@ export { default as ContractNumberMaintenancePage } from './ContractNumberMainte
 export { default as TagPrintingPage } from './TagPrintingPage';
 export { default as EmployeeAssetInfoQueryPage } from './EmployeeAssetInfoQueryPage';
 export { default as DocumentListPage } from './DocumentListPage';
+export { default as AssetDisposalEditPage } from './AssetDisposalEditPage';
