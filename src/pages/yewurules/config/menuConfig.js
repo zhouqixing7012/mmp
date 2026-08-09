@@ -1,7 +1,19 @@
 import { ClipboardList, Layers, Monitor } from 'lucide-react';
 
+export const ASSET_MANAGEMENT_MENU_ITEMS = [
+  '资产维护',
+  '耗材维护',
+  '合约号码维护',
+  '标签打印',
+  '公司间转移',
+  '资产报废',
+  '账面报废',
+  '资产处置',
+  '员工资产信息查询',
+];
+
 export const MAIN_MENU_ITEMS = [
-  { key: '资产管理', label: '资产管理', icon: Monitor },
+  { key: '资产管理', label: '资产管理', icon: Monitor, children: ASSET_MANAGEMENT_MENU_ITEMS },
   { key: '无形资产', label: '无形资产', icon: Layers },
   { key: '资产盘点', label: '资产盘点', icon: ClipboardList },
 ];
