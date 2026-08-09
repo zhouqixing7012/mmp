@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "build",
+      "label": "build",
+      "paths": [
+        "build/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: build",
+      "createdBy": "system"
+    },
+    {
+      "id": "docs",
+      "label": "docs",
+      "paths": [
+        "docs/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: docs",
+      "createdBy": "system"
+    },
+    {
+      "id": "inbox",
+      "label": "Inbox",
+      "paths": [
+        "Inbox/"
+      ],
+      "role": "inbox",
+      "confidence": 0.9,
+      "source": "learned",
+      "description": "Auto-detected inbox directory",
+      "createdBy": "system"
+    },
+    {
+      "id": "memory",
+      "label": "memory",
+      "paths": [
+        "memory/"
+      ],
+      "role": "memory",
+      "confidence": 0.9,
+      "source": "learned",
+      "description": "Auto-detected memory directory",
+      "createdBy": "system"
+    },
+    {
+      "id": "node-modules",
+      "label": "node_modules",
+      "paths": [
+        "node_modules/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: node_modules",
+      "createdBy": "system"
+    },
+    {
+      "id": "public",
+      "label": "public",
+      "paths": [
+        "public/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: public",
+      "createdBy": "system"
+    },
+    {
+      "id": "src",
+      "label": "src",
+      "paths": [
+        "src/"
+      ],
+      "role": "unknown",
+      "confidence": 0.3,
+      "source": "learned",
+      "description": "Unknown directory: src",
+      "createdBy": "system"
+    }
+  ],
+  "evolutionRules": {
+    "allowAutoCreateCategory": false,
+    "allowAutoArchive": false,
+    "requireConfirmationForMoves": true
+  }
+}

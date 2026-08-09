@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 个人工作台由外层统一提供页面背景与留白，避免业务页重复套浅蓝色画布。 */
+.workspace-content > .min-h-screen {
+  min-height: auto !important;
+  padding: 0 !important;
+  background-color: transparent !important;
+}
+
+/* 统一个人工作台内 Descriptions 的列网格，保证不同 Card 之间标签列和内容列对齐。 */
+.workspace-content .ant-descriptions-bordered .ant-descriptions-view > table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.workspace-content .ant-descriptions-bordered .ant-descriptions-item-label {
+  width: 112px;
+  min-width: 112px;
+  white-space: nowrap;
+}
+
+.workspace-content .ant-descriptions-bordered .ant-descriptions-item-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 账面报废编辑页分区标题与审批页保持一致：蓝色竖条 + 16px 加粗标题。 */
+div.min-h-screen[class*="bg-[#f5f7fa]"] .ant-card-head-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+div.min-h-screen[class*="bg-[#f5f7fa]"] .ant-card-head-title::before {
+  content: '';
+  width: 4px;
+  height: 20px;
+  flex: 0 0 4px;
+  border-radius: 9999px;
+  background: #1677ff;
+}

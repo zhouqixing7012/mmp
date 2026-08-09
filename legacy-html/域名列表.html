@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>域名管理</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1890ff', // Ant Design Blue
+                        primaryHover: '#40a9ff',
+                        textMain: '#333333',
+                        textSecondary: '#666666',
+                        borderLight: '#d9d9d9',
+                        bgLight: '#f5f5f5',
+                        warningBg: '#fffbe6',
+                        warningText: '#faad14',
+                        warningBorder: '#ffe58f'
+                    },
+                    fontFamily: {
+                        sans:['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Flatpickr (轻量级日期选择器) CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <style>
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        
+        /* 优化后的自定义滚动条 */
+        .table-container {
+            max-height: calc(100vh - 360px);
+            overflow-y: auto;
+        }
+        .table-container::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #d9d9d9; 
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #bfbfbf; 
+        }
+
+        /* 保证内容在水印上方 */
+        .content-layer {
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 表格基础样式优化 */
+        .ant-table th {
+            background-color: #fafafa;
+            font-weight: 500;
+            color: rgba(0, 0, 0, 0.85);
+            padding: 14px 16px;
+            border-bottom: 1px solid #f0f0f0;
+            text-align: left;
+            position: sticky; /* 固定表头 */
+            top: 0;
+            z-index: 10;
+        }
+        .ant-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f0f0f0;
+            color: rgba(0, 0, 0, 0.65);
+        }
+        .ant-table tr:hover > td {
+            background-color: #fafafa;
+        }
+
+        /* 模拟 Ant Design 表单元素 */
+        .ant-input {
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            padding: 4px 11px;
+            transition: all 0.3s;
+        }
+        .ant-input:focus, .ant-input:hover, .ant-input-wrap:hover {
+            border-color: #40a9ff;
+            outline: 0;
+        }
+        .ant-input:focus {
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+        
+        /* 按钮样式 */
+        .ant-btn {
+            line-height: 1.5715;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 400;
+            white-space: nowrap;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+            height: 32px;
+            padding: 4px 15px;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+        .ant-btn-primary {
+            color: #fff;
+            background: #1890ff;
+            border-color: #1890ff;
+            text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.12);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.045);
+        }
+        .ant-btn-primary:hover {
+            background: #40a9ff;
+            border-color: #40a9ff;
+        }
+        .ant-btn-default {
+            color: rgba(0, 0, 0, 0.65);
+            background: #fff;
+            border-color: #d9d9d9;
+        }
+        .ant-btn-default:hover {
+            color: #40a9ff;
+            border-color: #40a9ff;
+        }
+
+        /* 分页器样式 */
+        .pagination-item {
+            min-width: 32px;
+            height: 32px;
+            line-height: 30px;
+            text-align: center;
+            list-style: none;
+            background-color: #fff;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all .3s;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .pagination-item:hover, .pagination-item.active {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+        .disabled-btn {
+            cursor: not-allowed;
+            color: #d9d9d9;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6 min-h-screen">
+
+    <div class="max-w-screen-xl mx-auto content-layer space-y-4">
+        
+        <!-- Header -->
+        <div class="flex items-center mb-4 pl-2">
+            <div class="w-1 h-5 bg-primary mr-2 rounded-sm"></div>
+            <h1 class="text-xl font-bold text-textMain tracking-wide">域名</h1>
+        </div>
+
+        <!-- 动态统计卡片 -->
+        <div class="bg-white rounded-md border border-borderLight flex mb-4 shadow-sm overflow-hidden flex-wrap">
+            <div class="flex-1 p-4 md:p-6 border-r border-borderLight relative group hover:shadow-md transition-shadow min-w-[120px]">
+                <div class="text-textSecondary mb-2 md:mb-3 text-sm">域名总数</div>
+                <div id="stat-total" class="text-primary text-2xl md:text-3xl font-normal tracking-tight">0</div>
+            </div>
+            <div class="flex-1 p-4 md:p-6 border-r border-borderLight relative group hover:shadow-md transition-shadow min-w-[120px]">
+                <div class="text-textSecondary mb-2 md:mb-3 text-sm flex items-center gap-1">
+                    正常
+                    <i class="fa-regular fa-circle-question text-gray-400 text-xs cursor-pointer hover:text-gray-600" title="状态为正常的域名数量"></i>
+                </div>
+                <div id="stat-normal" class="text-primary text-2xl md:text-3xl font-normal tracking-tight">0</div>
+            </div>
+            <div class="flex-1 p-4 md:p-6 relative group hover:shadow-md transition-shadow min-w-[120px]">
+                <div class="text-textSecondary mb-2 md:mb-3 text-sm flex items-center gap-1">
+                    即将过期
+                    <i class="fa-regular fa-circle-question text-gray-400 text-xs cursor-pointer hover:text-gray-600" title="距离到期不足30天的域名"></i>
+                </div>
+                <div id="stat-expiring" class="text-primary text-2xl md:text-3xl font-normal tracking-tight">0</div>
+            </div>
+        </div>
+
+        <!-- 过滤条件区域 (响应式优化) -->
+        <div class="bg-white rounded-md border border-borderLight p-4 md:p-6 shadow-sm mb-4">
+            <form id="search-form" class="flex flex-col gap-4">
+                <div class="flex flex-wrap items-center gap-4 md:gap-6">
+                    <!-- 域名名称 (增加 label for) -->
+                    <div class="flex items-center gap-2">
+                        <label for="filter-name" class="text-textSecondary text-sm whitespace-nowrap w-[70px] text-right">域名名称：</label>
+                        <input type="text" id="filter-name" placeholder="请输入" class="ant-input w-48 text-sm placeholder-gray-300">
+                    </div>
+
+                    <!-- 注册时间 (引入 Flatpickr 范围选择) -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-textSecondary text-sm whitespace-nowrap w-[70px] text-right">注册时间：</label>
+                        <div class="flex items-center ant-input ant-input-wrap w-64 bg-white px-2 cursor-pointer">
+                            <input type="text" id="filter-reg-date" placeholder="开始日期 ~ 结束日期" class="w-full text-sm border-none outline-none placeholder-gray-300 bg-transparent cursor-pointer" readonly>
+                            <i class="fa-regular fa-calendar ml-2 text-gray-300"></i>
+                        </div>
+                    </div>
+
+                    <!-- 到期时间 -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-textSecondary text-sm whitespace-nowrap w-[70px] text-right">到期时间：</label>
+                        <div class="flex items-center ant-input ant-input-wrap w-64 bg-white px-2 cursor-pointer">
+                            <input type="text" id="filter-exp-date" placeholder="开始日期 ~ 结束日期" class="w-full text-sm border-none outline-none placeholder-gray-300 bg-transparent cursor-pointer" readonly>
+                            <i class="fa-regular fa-calendar ml-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <!-- 状态选择 -->
+                    <div class="flex items-center gap-2">
+                        <label for="filter-status" class="text-textSecondary text-sm whitespace-nowrap w-[70px] text-right">状态：</label>
+                        <div class="relative w-48">
+                            <select id="filter-status" class="ant-input w-full text-sm appearance-none cursor-pointer bg-white text-gray-600">
+                                <option value="" selected>全部</option>
+                                <option value="正常">正常</option>
+                                <option value="即将过期">即将过期</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-300">
+                                <i class="fa-solid fa-chevron-down text-xs scale-75"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作按钮 (明确 type="button") -->
+                    <div class="flex gap-2">
+                        <button type="button" id="btn-search" class="ant-btn ant-btn-primary w-[72px]">查 询</button>
+                        <button type="button" id="btn-reset" class="ant-btn ant-btn-default w-[72px]">重 置</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 数据表格区域 -->
+        <div class="bg-white rounded-md border border-borderLight pt-2 pb-4 shadow-sm">
+            <div class="table-container">
+                <table class="w-full ant-table text-sm border-collapse min-w-[800px]">
+                    <!-- 取消 hidden，显示真实表头 -->
+                    <thead class="bg-gray-50 text-gray-700">
+                        <tr>
+                            <th class="w-1/5 pl-6">域名</th>
+                            <th class="w-1/4">注册时间</th>
+                            <th class="w-1/4">到期时间</th>
+                            <th class="w-1/6">状态</th>
+                            <th class="w-1/6 text-right pr-6">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- JS动态填充 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 动态分页器 -->
+            <div class="flex flex-wrap justify-end items-center px-6 mt-4 text-sm text-gray-600 gap-2" id="pagination-container">
+                <!-- 由 JS 渲染 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
+
+    <script>
+        // 1. 动态生成全局 Canvas 水印 (不影响布局，更稳定)
+        function initWatermark() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 250;
+            canvas.height = 180;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.03)'; // 极淡的水印
+            ctx.font = '16px "Microsoft YaHei", sans-serif';
+            ctx.rotate(-20 * Math.PI / 180);
+            ctx.fillText('周星 220784', 10, 120);
+            document.body.style.backgroundImage = `url(${canvas.toDataURL('image/png')})`;
+            document.body.style.backgroundRepeat = 'repeat';
+        }
+
+        // 2. 模拟后端生成 35 条测试数据，用于测试分页
+        const generateMockData = () => {
+            const data =[];
+            const statuses = ['正常', '即将过期'];
+            for (let i = 1; i <= 35; i++) {
+                data.push({
+                    id: i,
+                    name: `domain-test-${i.toString().padStart(3, '0')}.com`,
+                    regDate: `20${Math.floor(10 + Math.random() * 10)}-06-${Math.floor(10 + Math.random() * 20)} 10:00:00`,
+                    expDate: `20${Math.floor(24 + Math.random() * 4)}-06-${Math.floor(10 + Math.random() * 20)} 10:00:00`,
+                    status: statuses[Math.floor(Math.random() * 2)]
+                });
+            }
+            return data;
+        };
+
+        const allData = generateMockData();
+        let filteredData = [...allData];
+        
+        // 分页状态
+        let currentPage = 1;
+        let pageSize = 10;
+
+        // 3. 初始化日期选择器 (Flatpickr)
+        flatpickr("#filter-reg-date", { mode: "range", locale: "zh" });
+        flatpickr("#filter-exp-date", { mode: "range", locale: "zh" });
+
+        // 4. 更新顶部统计卡片
+        function updateStats() {
+            document.getElementById('stat-total').innerText = allData.length;
+            document.getElementById('stat-normal').innerText = allData.filter(d => d.status === '正常').length;
+            document.getElementById('stat-expiring').innerText = allData.filter(d => d.status === '即将过期').length;
+        }
+
+        // 5. 渲染表格数据
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            // 空状态 (Empty State)
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-16 text-gray-400">
+                            <i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-300"></i>
+                            <p>暂无符合条件的域名数据</p>
+                        </td>
+                    </tr>`;
+                renderPagination();
+                return;
+            }
+
+            // 分页切割数据
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageData = filteredData.slice(start, end);
+
+            pageData.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'transition-colors duration-200';
+                
+                // 状态标签的样式区分
+                let statusHtml = item.status === '即将过期' 
+                    ? `<span class="bg-warningBg border border-warningBorder text-warningText px-2 py-0.5 text-xs rounded-sm whitespace-nowrap">${item.status}</span>`
+                    : `<span class="bg-blue-50 border border-blue-200 text-blue-500 px-2 py-0.5 text-xs rounded-sm whitespace-nowrap">${item.status}</span>`;
+
+                tr.innerHTML = `
+                    <td class="w-1/5 pl-6 font-medium text-textMain">${item.name}</td>
+                    <td class="w-1/4">${item.regDate}</td>
+                    <td class="w-1/4">${item.expDate}</td>
+                    <td class="w-1/6">${statusHtml}</td>
+                    <td class="w-1/6 text-right pr-6">
+                        <button type="button" class="text-primary hover:text-primaryHover transition-colors text-sm">变更记录</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            renderPagination();
+        }
+
+        // 6. 渲染动态分页组件
+        function renderPagination() {
+            const container = document.getElementById('pagination-container');
+            const total = filteredData.length;
+            const totalPages = Math.ceil(total / pageSize) || 1;
+
+            if (total === 0) {
+                container.innerHTML = `<span class="mr-4">共 0 条</span>`;
+                return;
+            }
+
+            let html = `<span class="mr-4 hidden md:inline">共 ${total} 条</span>`;
+            
+            // 上一页
+            const prevDisabled = currentPage === 1 ? 'disabled-btn' : 'text-gray-600 hover:text-primary cursor-pointer';
+            html += `<button onclick="changePage(${currentPage - 1})" class="w-8 h-8 flex items-center justify-center ${prevDisabled}" ${currentPage === 1 ? 'disabled' : ''}>
+                        <i class="fa-solid fa-angle-left text-xs"></i>
+                     </button>`;
+
+            // 页码 (简化逻辑，显示全部，实际生产会用省略号)
+            for (let i = 1; i <= totalPages; i++) {
+                const activeClass = i === currentPage ? 'active' : '';
+                html += `<span onclick="changePage(${i})" class="pagination-item ${activeClass}">${i}</span>`;
+            }
+
+            // 下一页
+            const nextDisabled = currentPage === totalPages ? 'disabled-btn' : 'text-gray-600 hover:text-primary cursor-pointer';
+            html += `<button onclick="changePage(${currentPage + 1})" class="w-8 h-8 flex items-center justify-center ${nextDisabled}" ${currentPage === totalPages ? 'disabled' : ''}>
+                        <i class="fa-solid fa-angle-right text-xs"></i>
+                     </button>`;
+
+            // 切换每页条数
+            html += `
+                <div class="ml-4 flex items-center relative hidden md:flex">
+                    <select onchange="changePageSize(this.value)" class="ant-input w-24 h-8 px-2 text-sm appearance-none cursor-pointer bg-white">
+                        <option value="10" ${pageSize===10?'selected':''}>10 条/页</option>
+                        <option value="20" ${pageSize===20?'selected':''}>20 条/页</option>
+                        <option value="50" ${pageSize===50?'selected':''}>50 条/页</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                        <i class="fa-solid fa-chevron-down text-xs scale-75"></i>
+                    </div>
+                </div>`;
+
+            container.innerHTML = html;
+        }
+
+        // 分页控制方法
+        window.changePage = (page) => {
+            const totalPages = Math.ceil(filteredData.length / pageSize);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                renderTable();
+            }
+        };
+
+        window.changePageSize = (size) => {
+            pageSize = parseInt(size);
+            currentPage = 1;
+            renderTable();
+        };
+
+        // 7. 搜索与重置逻辑
+        document.getElementById('btn-search').addEventListener('click', () => {
+            const nameKeyword = document.getElementById('filter-name').value.toLowerCase().trim();
+            const status = document.getElementById('filter-status').value;
+            
+            // 简单实现过滤逻辑（注：日期范围由于字符串格式较复杂，这里做简化，核心过滤名字和状态）
+            filteredData = allData.filter(item => {
+                const matchName = item.name.toLowerCase().includes(nameKeyword);
+                const matchStatus = status ? item.status === status : true;
+                return matchName && matchStatus;
+            });
+            
+            currentPage = 1;
+            renderTable();
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            document.getElementById('search-form').reset();
+            // 手动清空 flatpickr
+            document.getElementById('filter-reg-date')._flatpickr.clear();
+            document.getElementById('filter-exp-date')._flatpickr.clear();
+            
+            filteredData = [...allData];
+            currentPage = 1;
+            renderTable();
+        });
+
+        // 绑定回车搜索
+        document.getElementById('filter-name').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // 防止触发表单默认提交
+                document.getElementById('btn-search').click();
+            }
+        });
+
+        // 8. 页面加载初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initWatermark();
+            updateStats();
+            renderTable();
+        });
+    </script>
+</body>
+</html>

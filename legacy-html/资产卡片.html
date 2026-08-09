@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资产卡片信息</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Styles for Enterprise UI Look */
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+        }
+        
+        .watermark-overlay {
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><g transform='rotate(-20 150 100)' fill='rgba(0,0,0,0.03)' font-family='sans-serif' text-anchor='middle'><text x='50%' y='45%' font-size='22' font-weight='bold'>系统管理员</text><text x='50%' y='60%' font-size='18'>admin</text></g></svg>");
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        .table-cell-label {
+            border: 1px solid #e5e7eb;
+            background-color: #fafafa;
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: bold;
+            color: #333;
+            width: 12%;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .table-cell-value {
+            border: 1px solid #e5e7eb;
+            background-color: #ffffff;
+            padding: 8px 12px;
+            text-align: left;
+            color: #333;
+            width: 21%;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .collapse-header {
+            border: 1px solid #e5e7eb;
+            background-color: #f9f9f9;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: #37A0D3;
+            margin-top: 10px;
+            border-bottom: none;
+        }
+
+        .collapse-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #999;
+            color: #666;
+            font-size: 10px;
+            margin-right: 6px;
+            background: linear-gradient(to bottom, #fff, #eee);
+            line-height: 1;
+            padding-bottom: 2px;
+            cursor: pointer;
+        }
+        
+        .nav-tab {
+            padding: 8px 24px;
+            font-size: 14px;
+            cursor: pointer;
+            border-right: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+            background-color: #f9f9f9;
+            color: #555;
+        }
+        
+        .nav-tab.active {
+            background-color: #37A0D3;
+            color: white;
+            border-bottom: none;
+            border-right: none;
+        }
+
+        .main-container {
+            border: 1px solid #c0c0c0;
+            background: white;
+            position: relative;
+        }
+    </style>
+</head>
+<body class="p-4">
+
+<div class="max-w-[1200px] mx-auto shadow-sm">
+    
+    <!-- Top Header -->
+    <div class="bg-[#37A0D3] text-white px-4 py-2 font-bold text-sm tracking-wider border border-[#37A0D3]">
+        资产卡片信息
+    </div>
+
+    <div class="main-container">
+        <!-- Watermark Overlay -->
+        <div class="watermark-overlay"></div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex border-b border-gray-200 bg-[#f9f9f9] relative z-20">
+            <div class="nav-tab active">详细信息</div>
+            <div class="nav-tab">价值信息</div>
+            <div class="nav-tab">资产维修记录</div>
+            <div class="nav-tab">资产盘点历史</div>
+            <div class="nav-tab">资产操作历史</div>
+            <div class="nav-tab border-r-0">RFID资产操作历史</div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="p-4 relative z-20">
+            
+            <!-- 基础信息 -->
+            <div class="font-bold text-lg mb-2 text-gray-800">基础信息</div>
+            <table class="w-full border-collapse">
+                <tbody>
+                    <tr>
+                        <td class="table-cell-label">资产说明:</td>
+                        <td class="table-cell-value" colspan="5">赛门铁克.邮件网关</td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">资产大类:</td>
+                        <td class="table-cell-value">SERVER</td>
+                        <td class="table-cell-label">资产小类:</td>
+                        <td class="table-cell-value">服务器-服务器主机</td>
+                        <td class="table-cell-label">公司:</td>
+                        <td class="table-cell-value">新媒体</td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">标签号:</td>
+                        <td class="table-cell-value">202604889921</td>
+                        <td class="table-cell-label">序列号:</td>
+                        <td class="table-cell-value">C02XT889MD6R</td>
+                        <td class="table-cell-label">
+                            <div class="flex items-center relative group w-max">
+                                原值:
+                                <svg viewBox="64 64 896 896" focusable="false" fill="currentColor" class="w-3.5 h-3.5 ml-1 text-gray-400 group-hover:text-[#37A0D3] transition-colors duration-200 cursor-help outline-none"><path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"></path><path d="M464 336a48 48 0 1096 0 48 48 0 10-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z"></path></svg>
+                                <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block px-3 py-1.5 bg-[#1f2937] text-white text-[12px] rounded shadow-lg z-50 whitespace-nowrap">
+                                    新增入库或数据初始化时资产价值，为EBS原值
+                                    <div style="border-width: 5px 5px 0; border-color: #1f2937 transparent transparent transparent;" class="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="table-cell-value">28,500.00</td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">数量:</td>
+                        <td class="table-cell-value">1</td>
+                        <td class="table-cell-label">资产状态:</td>
+                        <td class="table-cell-value">在用-使用中</td>
+                        <td class="table-cell-label"></td>
+                        <td class="table-cell-value"></td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">购买日期:</td>
+                        <td class="table-cell-value">2025-11-11</td>
+                        <td class="table-cell-label">维保开始日期:</td>
+                        <td class="table-cell-value">2025-11-12</td>
+                        <td class="table-cell-label">维保结束日期:</td>
+                        <td class="table-cell-value">2028-11-11</td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">员工信息:</td>
+                        <td class="table-cell-value">952700.周琦星</td>
+                        <td class="table-cell-label">新增类型:</td>
+                        <td class="table-cell-value">采购新增</td>
+                        <td class="table-cell-label"></td>
+                        <td class="table-cell-value"></td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">City:</td>
+                        <td class="table-cell-value">深圳市</td>
+                        <td class="table-cell-label">Building:</td>
+                        <td class="table-cell-value">未来科技城A座</td>
+                        <td class="table-cell-label">Floor:</td>
+                        <td class="table-cell-value">42层</td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">启用日期:</td>
+                        <td class="table-cell-value">2025-11-15</td>
+                        <td class="table-cell-label">级别:</td>
+                        <td class="table-cell-value">缺省</td>
+                        <td class="table-cell-label">用途:</td>
+                        <td class="table-cell-value"></td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">成本中心:</td>
+                        <td class="table-cell-value">172057.技术中心</td>
+                        <td class="table-cell-label"></td>
+                        <td class="table-cell-value"></td>
+                        <td class="table-cell-label">单位:</td>
+                        <td class="table-cell-value">台</td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">板块:</td>
+                        <td class="table-cell-value">17.Corporate</td>
+                        <td class="table-cell-label">品牌:</td>
+                        <td class="table-cell-value">Apple</td>
+                        <td class="table-cell-label">PR单号:</td>
+                        <td class="table-cell-value">PR2511010088</td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">申请单号:</td>
+                        <td class="table-cell-value">CA-2025110500123</td>
+                        <td class="table-cell-label">入库单号:</td>
+                        <td class="table-cell-value">PI-202511120005</td>
+                        <td class="table-cell-label">PO单号:</td>
+                        <td class="table-cell-value">PO2511080033</td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">资产编号:</td>
+                        <td class="table-cell-value">800998877</td>
+                        <td class="table-cell-label">业务线:</td>
+                        <td class="table-cell-value"></td>
+                        <td class="table-cell-label">项目:</td>
+                        <td class="table-cell-value"></td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label font-bold text-black">主资产标签号</td>
+                        <td class="table-cell-value" colspan="5"></td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">部门:</td>
+                        <td class="table-cell-value" colspan="3">集团总部.系统运维部</td>
+                        <td class="table-cell-label">印刷号:</td>
+                        <td class="table-cell-value"></td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">使用说明:</td>
+                        <td class="table-cell-value" colspan="5"></td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">仓库:</td>
+                        <td class="table-cell-value" colspan="5"></td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">费用账户:</td>
+                        <td class="table-cell-value" colspan="3">880.05.990011.55102.E9901.1.1.0.0</td>
+                        <td class="table-cell-label">盘点标识:</td>
+                        <td class="table-cell-value">2025</td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">内部费用账户:</td>
+                        <td class="table-cell-value" colspan="5">880.05.990011.55102.E9901.1.1.0.0</td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">备注:</td>
+                        <td class="table-cell-value" colspan="5"></td>
+                    </tr>
+                    <tr>
+                        <td class="table-cell-label">ES实物报废期:</td>
+                        <td class="table-cell-value"></td>
+                        <td class="table-cell-label">升级日期:</td>
+                        <td class="table-cell-value"></td>
+                        <td class="table-cell-label">升级金额:</td>
+                        <td class="table-cell-value"></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- 备件信息 -->
+            <div class="collapse-header cursor-pointer select-none" onclick="toggleCollapseSection('icon-parts', 'content-parts')">
+                <span class="collapse-icon" id="icon-parts">-</span> 备件信息
+            </div>
+            <div id="content-parts" class="border border-gray-200 border-t-0 p-3 bg-white">
+                
+                <!-- 硬盘 -->
+                <div class="bg-[#f9f9f9] border border-gray-200 px-3 py-1.5 flex items-center text-[13px] text-[#333] cursor-pointer select-none border-b-0 hover:bg-gray-100" onclick="toggleCollapseSection('icon-hdd', 'content-hdd')">
+                    <span class="collapse-icon bg-white" id="icon-hdd">-</span> 硬盘
+                </div>
+                <table class="w-full border-collapse mb-4" id="content-hdd">
+                    <thead>
+                        <tr>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[15%]">备件标签号</th>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[20%]">备件序列号</th>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[30%]">资产说明</th>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[20%]">
+                                <div class="flex items-center justify-center relative group">
+                                    配置参考价值
+                                    <svg viewBox="64 64 896 896" focusable="false" fill="currentColor" class="w-3.5 h-3.5 ml-1 text-gray-400 group-hover:text-[#37A0D3] transition-colors duration-200 cursor-help outline-none"><path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"></path><path d="M464 336a48 48 0 1096 0 48 48 0 10-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z"></path></svg>
+                                    <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block px-3 py-1.5 bg-[#1f2937] text-white text-[12px] rounded shadow-lg z-50 whitespace-nowrap font-normal">
+                                        根据采购部提供拆分比例计算得出
+                                        <div style="border-width: 5px 5px 0; border-color: #1f2937 transparent transparent transparent;" class="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0"></div>
+                                    </div>
+                                </div>
+                            </th>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[15%]">启用日期</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800">SP-2026-S02</td>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800 font-mono">WD-WX41A89E23X</td>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800">西部数据 4TB WD Red Plus NAS级机械硬盘</td>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800">850.00</td>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800">2025-11-15</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- 内存 -->
+                <div class="bg-[#f9f9f9] border border-gray-200 px-3 py-1.5 flex items-center text-[13px] text-[#333] cursor-pointer select-none border-b-0 hover:bg-gray-100" onclick="toggleCollapseSection('icon-ram', 'content-ram')">
+                    <span class="collapse-icon bg-white" id="icon-ram">-</span> 内存
+                </div>
+                <table class="w-full border-collapse mb-4" id="content-ram">
+                    <thead>
+                        <tr>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[15%]">备件标签号</th>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[20%]">备件序列号</th>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[30%]">资产说明</th>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[20%]">
+                                <div class="flex items-center justify-center relative group">
+                                    配置参考价值
+                                    <svg viewBox="64 64 896 896" focusable="false" fill="currentColor" class="w-3.5 h-3.5 ml-1 text-gray-400 group-hover:text-[#37A0D3] transition-colors duration-200 cursor-help outline-none"><path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"></path><path d="M464 336a48 48 0 1096 0 48 48 0 10-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z"></path></svg>
+                                    <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block px-3 py-1.5 bg-[#1f2937] text-white text-[12px] rounded shadow-lg z-50 whitespace-nowrap font-normal">
+                                        根据采购部提供拆分比例计算得出
+                                        <div style="border-width: 5px 5px 0; border-color: #1f2937 transparent transparent transparent;" class="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0"></div>
+                                    </div>
+                                </div>
+                            </th>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[15%]">启用日期</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800">SP-2026-M01</td>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800"></td>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800">三星 64GB DDR5 4800MHz 服务器内存</td>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800">1,200.00</td>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800">2025-11-15</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- 其他 -->
+                <div class="bg-[#f9f9f9] border border-gray-200 px-3 py-1.5 flex items-center text-[13px] text-[#333] cursor-pointer select-none border-b-0 hover:bg-gray-100" onclick="toggleCollapseSection('icon-other', 'content-other')">
+                    <span class="collapse-icon bg-white" id="icon-other">-</span> 其他
+                </div>
+                <table class="w-full border-collapse" id="content-other">
+                    <thead>
+                        <tr>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[15%]">备件标签号</th>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[20%]">备件序列号</th>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[30%]">资产说明</th>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[20%]">
+                                <div class="flex items-center justify-center relative group">
+                                    配置参考价值
+                                    <svg viewBox="64 64 896 896" focusable="false" fill="currentColor" class="w-3.5 h-3.5 ml-1 text-gray-400 group-hover:text-[#37A0D3] transition-colors duration-200 cursor-help outline-none"><path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"></path><path d="M464 336a48 48 0 1096 0 48 48 0 10-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z"></path></svg>
+                                    <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block px-3 py-1.5 bg-[#1f2937] text-white text-[12px] rounded shadow-lg z-50 whitespace-nowrap font-normal">
+                                        根据采购部提供拆分比例计算得出
+                                        <div style="border-width: 5px 5px 0; border-color: #1f2937 transparent transparent transparent;" class="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0"></div>
+                                    </div>
+                                </div>
+                            </th>
+                            <th class="border border-gray-200 bg-white py-2 text-center text-sm font-bold text-gray-800 w-[15%]">启用日期</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800">SP-2026-P03</td>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800"></td>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800">长城 1250W 猎金部落 金牌全模组 ATX3.0 电源</td>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800">1,099.00</td>
+                            <td class="border border-gray-200 bg-white py-2 px-3 text-center text-sm text-gray-800">2026-03-01</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 更多 / 其它信息 -->
+            <div class="collapse-header">
+                <span class="collapse-icon">-</span> 更多
+            </div>
+            <div class="border border-gray-200 border-t-0 p-4 bg-white">
+                <div class="font-bold text-lg mb-2 text-gray-800">其它信息</div>
+                <table class="w-full border-collapse">
+                    <tbody>
+                        <tr>
+                            <td class="table-cell-label">配置:</td>
+                            <td class="table-cell-value leading-relaxed" colspan="5">
+                                Apple M3 Max 芯片(16核CPU/40核GPU)/128GB 统一内存/4TB SSD 固态硬盘/16.2英寸 Liquid 视网膜 XDR 显示屏/带触控 ID 的背光妙控键盘/深空黑色
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="table-cell-label">报废原因:</td>
+                            <td class="table-cell-value"></td>
+                            <td class="table-cell-label">报废日期:</td>
+                            <td class="table-cell-value"></td>
+                            <td class="table-cell-label">报废类型:</td>
+                            <td class="table-cell-value"></td>
+                        </tr>
+                        <tr>
+                            <td class="table-cell-label">资产标记:</td>
+                            <td class="table-cell-value">机密级资产</td>
+                            <td class="table-cell-label">服务:</td>
+                            <td class="table-cell-value">AppleCare+ 3年期</td>
+                            <td class="table-cell-label">小服务:</td>
+                            <td class="table-cell-value">优先全球现场支持</td>
+                        </tr>
+                        <tr>
+                            <td class="table-cell-label">NO位置:</td>
+                            <td class="table-cell-value" colspan="5">Desk-R&D-402A</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 部件信息 -->
+            <div class="collapse-header">
+                <span class="collapse-icon">-</span> 部件
+            </div>
+            <div class="border border-gray-200 border-t-0 p-4 bg-white">
+                <div class="font-bold text-lg mb-4 text-gray-800">部件信息</div>
+                <div class="text-center font-bold text-2xl py-6 text-black">
+                    无部件信息
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleCollapseSection(iconId, contentId) {
+        const content = document.getElementById(contentId);
+        const icon = document.getElementById(iconId);
+        if (content.style.display === 'none') {
+            content.style.display = '';
+            icon.textContent = '-';
+        } else {
+            content.style.display = 'none';
+            icon.textContent = '+';
+        }
+    }
+</script>
+
+</body>
+</html>
