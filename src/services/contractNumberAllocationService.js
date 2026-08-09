@@ -25,6 +25,12 @@ export function getCurrentContractNumberAllocation() {
   )) || null;
 }
 
+export function getContractNumberSupervisorApproval() {
+  return getContractNumberAllocationApplications().find((application) => (
+    application.currentNode === '合约号码配给主管审批' && application.status === '待审批'
+  )) || null;
+}
+
 export function getWarehouseContractNumberAllocation() {
   return getContractNumberAllocationApplications().find((application) => (
     application.currentNode === '库管员领用' && application.status === '处理中'
