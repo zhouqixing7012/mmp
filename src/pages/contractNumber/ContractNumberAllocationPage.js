@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { UploadCloud } from 'lucide-react';
 import {
   Button,
   Card,
@@ -9,6 +10,7 @@ import {
   Space,
   Table,
   Typography,
+  Upload,
   message as antdMessage,
 } from 'antd';
 import StatusTag from '../../components/StatusTag';
@@ -41,6 +43,15 @@ function downloadAttachment(attachment) {
   URL.revokeObjectURL(url);
 }
 
+function RequiredLabel({ children }) {
+  return (
+    <span>
+      <span className="mr-1 text-red-500">*</span>
+      {children}
+    </span>
+  );
+}
+
 export default function ContractNumberAllocationPage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
@@ -64,10 +75,29 @@ export default function ContractNumberAllocationPage() {
     refresh();
   };
 
+  const uploadAllocationAttachment = (file) => {
+    if (!application || !file) return Upload.LIST_IGNORE;
+    updateContractNumberAllocation(application.id, {
+      allocationAttachment: {
+        id: `allocation-attachment-${Date.now()}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      },
+    });
+    messageApi.success('附件上传成功');
+    refresh();
+    return Upload.LIST_IGNORE;
+  };
+
   const decide = (action) => {
     if (!application || application.status !== '待审批') return;
     if (action === '同意' && !application.assignedNumber) {
       messageApi.warning('请先选择电话号码');
+      return;
+    }
+    if (action === '同意' && !application.allocationAttachment) {
+      messageApi.warning('请先上传附件信息');
       return;
     }
     if (action !== '同意' && !comment.trim()) {
@@ -98,8 +128,8 @@ export default function ContractNumberAllocationPage() {
         const approved = action === '同意';
         return {
           ...record,
-          status: approved ? '处理中' : '已驳回',
-          currentNode: approved ? '库管员领用' : '结束',
+          status: approved ? '待审批' : '已驳回',
+          currentNode: approved ? '合约号码配给主管审批' : '结束',
           history: record.history.map((item) => (
             item.node === 'ES审批' && item.status === '待审批'
               ? {
@@ -110,16 +140,16 @@ export default function ContractNumberAllocationPage() {
               }
               : item
           )).concat(approved ? [{
-            id: `warehouse-${Date.now()}`,
-            person: '库管员',
-            node: '库管员领用',
+            id: `supervisor-${Date.now()}`,
+            person: '配给主管',
+            node: '合约号码配给主管审批',
             time: '',
-            status: '待处理',
+            status: '待审批',
             comment: '',
           }] : []),
         };
       });
-      messageApi.success(action === '同意' ? '审批已通过，已生成库管员领用待办' : action === '驳回' ? '申请已驳回' : '已记录延期处理');
+      messageApi.success(action === '同意' ? '配给信息已提交主管审批' : action === '驳回' ? '申请已驳回' : '已记录延期处理');
       setComment('');
       refresh();
     } finally {
@@ -129,7 +159,7 @@ export default function ContractNumberAllocationPage() {
 
   if (!application) {
     return (
-      <div className="min-h-screen bg-slate-100 p-4">
+      <>
         {contextHolder}
         <Card size="small">
           <Empty description="暂无合约号码 ES 配给待办" />
@@ -137,13 +167,13 @@ export default function ContractNumberAllocationPage() {
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
-      </div>
+      </>
     );
   }
 
   const historyColumns = [
     { title: '申请人/审批人', dataIndex: 'person', width: 190 },
-    { title: '审批环节', dataIndex: 'node', width: 160 },
+    { title: '审批环节', dataIndex: 'node', width: 180 },
     { title: '审批时间', dataIndex: 'time', width: 180, render: (value) => value || '-' },
     {
       title: '审批状态',
@@ -156,10 +186,10 @@ export default function ContractNumberAllocationPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4">
+    <>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="flex items-center justify-between">
           <Typography.Title level={4} className="mb-0">合约号码 ES 配给</Typography.Title>
           <Typography.Text type="secondary">申请单号：{application.id}</Typography.Text>
         </div>
@@ -196,7 +226,7 @@ export default function ContractNumberAllocationPage() {
 
         <Card size="small" title="号码配给">
           <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="电话号码">
+            <Descriptions.Item label={<RequiredLabel>电话号码</RequiredLabel>}>
               <Input.Search
                 readOnly
                 value={application.assignedNumber?.phoneNumber || ''}
@@ -209,6 +239,29 @@ export default function ContractNumberAllocationPage() {
             </Descriptions.Item>
             <Descriptions.Item label="话费套餐">
               {application.assignedNumber?.packageName || '-'}
+            </Descriptions.Item>
+          </Descriptions>
+        </Card>
+
+        <Card size="small" title="附件信息">
+          <Descriptions bordered size="small" column={3}>
+            <Descriptions.Item label={<RequiredLabel>附件</RequiredLabel>} span={3}>
+              <Space size={12} wrap>
+                <Upload
+                  accept="*"
+                  maxCount={1}
+                  showUploadList={false}
+                  disabled={application.status !== '待审批'}
+                  beforeUpload={uploadAllocationAttachment}
+                >
+                  <Button icon={<UploadCloud size={14} />} disabled={application.status !== '待审批'}>
+                    {application.allocationAttachment ? '重新上传' : '上传附件'}
+                  </Button>
+                </Upload>
+                <Typography.Text type={application.allocationAttachment ? undefined : 'secondary'}>
+                  {application.allocationAttachment?.name || '未上传附件'}
+                </Typography.Text>
+              </Space>
             </Descriptions.Item>
           </Descriptions>
         </Card>
@@ -273,6 +326,6 @@ export default function ContractNumberAllocationPage() {
         onCancel={() => setSelectOpen(false)}
         onConfirm={chooseNumber}
       />
-    </div>
+    </>
   );
 }
