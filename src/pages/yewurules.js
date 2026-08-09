@@ -5,6 +5,7 @@ import { Button, Input, Table } from 'antd';
 import { UserManagementView, OrgManagementView } from './xitongrules';
 import DictManagementView from './dictmanagement';
 import RoleManagementView from './rolemgt';
+import { AssetManagementContent } from './assetManagement';
 import AdminSidebar from './yewurules/components/AdminSidebar';
 import AdminHeader from './yewurules/components/AdminHeader';
 import AdminContent from './yewurules/components/AdminContent';
@@ -52,7 +53,12 @@ export default function App() {
   const tabs = getTabsBySubMenu(activeSubMenu);
 
   const handleMenuToggle = (menuKey, collapsible = true) => {
-    setActiveMenu((currentMenu) => collapsible && currentMenu === menuKey ? '' : menuKey);
+    const isClosing = collapsible && activeMenu === menuKey;
+    if (menuKey === '资产管理' && !isClosing) {
+      setActiveSubMenu('资产维护');
+      setActiveTab('');
+    }
+    setActiveMenu(isClosing ? '' : menuKey);
   };
 
   const handleSubMenuSelect = (subMenu) => {
@@ -71,6 +77,7 @@ export default function App() {
           {activeSubMenu === '角色管理' && <div className="flex-1 flex flex-col relative"><RoleManagementView /></div>}
           {activeSubMenu === '字典管理' && <div className="flex-1 flex flex-col relative"><DictManagementView /></div>}
           {activeMenu === '个人工作台' && <WorkspaceContent activeSubMenu={activeSubMenu} />}
+          {activeMenu === '资产管理' && <AssetManagementContent activeSubMenu={activeSubMenu} />}
 
           {activeMenu === '后台基础配置' && activeTab === '物料维度组合' && <MaterialComprehensiveView />}
           {activeMenu === '后台基础配置' && activeTab === '物料大类' && <MaterialCategoryView />}
