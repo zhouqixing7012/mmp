@@ -37,7 +37,7 @@ function DateFilter({ value, onChange, placeholder }) {
   );
 }
 
-export default function DocumentListPage({ title, createLabel, createPath }) {
+export default function DocumentListPage({ title, createLabel, createPath, onCreate }) {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [rows, setRows] = useState([]);
@@ -57,6 +57,10 @@ export default function DocumentListPage({ title, createLabel, createPath }) {
   };
 
   const handleCreate = () => {
+    if (onCreate) {
+      onCreate();
+      return;
+    }
     if (createPath) {
       navigate(createPath);
       return;
