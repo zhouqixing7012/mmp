@@ -2,15 +2,17 @@ import React, { useMemo, useState } from 'react';
 import {
   Button,
   Card,
-  Empty,
+  DatePicker,
   Input,
+  Modal,
   Select,
   Space,
   Table,
   Typography,
   message as antdMessage,
 } from 'antd';
-import { ArrowLeft, Eye, Printer, Search } from 'lucide-react';
+import dayjs from 'dayjs';
+import { ArrowLeft, Eye, Printer, Search, Tags } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
@@ -20,10 +22,8 @@ const DEFAULT_FILTERS = {
   companyEn: '',
   department: '',
   plateCn: '',
-  plateEn: '',
   assetStatus: '',
   assetTag: '',
-  printNo: '',
   serialNumber: '',
   userId: '',
   userName: '',
@@ -43,8 +43,6 @@ const DEFAULT_ROWS = [
     companyCn: '新媒体上海',
     companyEn: 'New Media SH',
     plateCn: '搜狐网-web',
-    plateEn: '-',
-    printNo: '-',
     serialNumber: '5HF21N2',
     assetCategory: '11217',
     assetStatus: '在用-使用中',
@@ -64,8 +62,6 @@ const DEFAULT_ROWS = [
     companyCn: '新媒体上海',
     companyEn: 'New Media SH',
     plateCn: '搜狐网-web',
-    plateEn: '-',
-    printNo: '-',
     serialNumber: 'CN-03K25V-QDC00-81M-124I-A03',
     assetCategory: '11124',
     assetStatus: '在用-使用中',
@@ -85,8 +81,6 @@ const DEFAULT_ROWS = [
     companyCn: '新媒体上海',
     companyEn: 'New Media SH',
     plateCn: '搜狐网-web',
-    plateEn: '-',
-    printNo: '-',
     serialNumber: 'PC0J3PJC',
     assetCategory: '11217',
     assetStatus: '在用-使用中',
@@ -106,8 +100,6 @@ const DEFAULT_ROWS = [
     companyCn: '飞狐信息',
     companyEn: 'Fox Info',
     plateCn: '视频',
-    plateEn: '-',
-    printNo: '0',
     serialNumber: '213023819',
     assetCategory: '11411',
     assetStatus: '已报废-已处置',
@@ -127,8 +119,6 @@ const DEFAULT_ROWS = [
     companyCn: '飞狐信息',
     companyEn: 'Fox Info',
     plateCn: '视频',
-    plateEn: '-',
-    printNo: '0',
     serialNumber: '213023819-H1',
     assetCategory: '11412',
     assetStatus: '已报废-已处置',
@@ -148,8 +138,6 @@ const DEFAULT_ROWS = [
     companyCn: '飞狐信息',
     companyEn: 'Fox Info',
     plateCn: '视频',
-    plateEn: '-',
-    printNo: '0',
     serialNumber: '213023819-H2',
     assetCategory: '11412',
     assetStatus: '已报废-已处置',
@@ -169,8 +157,6 @@ const DEFAULT_ROWS = [
     companyCn: '飞狐信息',
     companyEn: 'Fox Info',
     plateCn: '视频',
-    plateEn: '-',
-    printNo: '0',
     serialNumber: '213023807',
     assetCategory: '11411',
     assetStatus: '已报废-已处置',
@@ -190,8 +176,6 @@ const DEFAULT_ROWS = [
     companyCn: '飞狐信息',
     companyEn: 'Fox Info',
     plateCn: '视频',
-    plateEn: '-',
-    printNo: '0',
     serialNumber: '213023807-H1',
     assetCategory: '11412',
     assetStatus: '已报废-已处置',
@@ -211,8 +195,6 @@ const DEFAULT_ROWS = [
     companyCn: '飞狐信息',
     companyEn: 'Fox Info',
     plateCn: '视频',
-    plateEn: '-',
-    printNo: '0',
     serialNumber: '213023807-H2',
     assetCategory: '11412',
     assetStatus: '已报废-已处置',
@@ -232,8 +214,6 @@ const DEFAULT_ROWS = [
     companyCn: '飞狐信息',
     companyEn: 'Fox Info',
     plateCn: '视频',
-    plateEn: '-',
-    printNo: '0',
     serialNumber: '213023826',
     assetCategory: '11411',
     assetStatus: '已报废-已处置',
@@ -245,6 +225,49 @@ const DEFAULT_ROWS = [
     printCount: 0,
   },
 ];
+
+const PREPRINT_ROWS = [
+  { id: 'batch-1', batch: 'TPB-202604100001', orderNo: '-', labelCount: 3, printed: '是', creator: '刘建', createdAt: '2026-04-10' },
+  { id: 'batch-2', batch: 'TPB-202603310001', orderNo: '-', labelCount: 4, printed: '是', creator: '刘建', createdAt: '2026-03-31' },
+  { id: 'batch-3', batch: 'TPB-202603200001', orderNo: '-', labelCount: 1, printed: '是', creator: '刘建', createdAt: '2026-03-20' },
+  { id: 'batch-4', batch: 'TPB-202603060021', orderNo: '-', labelCount: 1, printed: '否', creator: '刘建', createdAt: '2026-03-06' },
+  { id: 'batch-5', batch: 'TPB-202603060001', orderNo: '-', labelCount: 1, printed: '否', creator: '刘建', createdAt: '2026-03-06' },
+  { id: 'batch-6', batch: 'TPB-202602090001', orderNo: 'REC-202602090001', labelCount: 3, printed: '是', creator: '刘建', createdAt: '2026-02-09' },
+  { id: 'batch-7', batch: 'TPB-202602060001', orderNo: 'REC-202602060021', labelCount: 1, printed: '是', creator: '刘建', createdAt: '2026-02-06' },
+  { id: 'batch-8', batch: 'TPB-202601290001', orderNo: 'REC-202601290001', labelCount: 2, printed: '是', creator: '刘建', createdAt: '2026-01-29' },
+  { id: 'batch-9', batch: 'TPB-202601270001', orderNo: '-', labelCount: 1, printed: '是', creator: '刘建', createdAt: '2026-01-27' },
+  { id: 'batch-10', batch: 'TPB-202601260001', orderNo: 'REC-202601260001', labelCount: 2, printed: '是', creator: '刘建', createdAt: '2026-01-26' },
+];
+
+const PRINT_HISTORY_ROWS = [
+  { id: 'history-1', batch: 'TPB-202604100001', tag: '114132601682', printedAt: '2026-04-10', printIp: '10.2.156.220', printer: '刘建' },
+  { id: 'history-2', batch: 'TPB-202604100001', tag: '114132601681', printedAt: '2026-04-10', printIp: '10.2.156.220', printer: '刘建' },
+  { id: 'history-3', batch: 'TPB-202604100001', tag: '114132601680', printedAt: '2026-04-10', printIp: '10.2.156.220', printer: '刘建' },
+  { id: 'history-4', batch: 'TPB-202603310001', tag: '114132601679', printedAt: '2026-03-31', printIp: '10.2.156.45', printer: '刘建' },
+  { id: 'history-5', batch: 'TPB-202603310001', tag: '114132601678', printedAt: '2026-03-31', printIp: '10.2.156.45', printer: '刘建' },
+  { id: 'history-6', batch: 'TPB-202603310001', tag: '114132601677', printedAt: '2026-03-31', printIp: '10.2.156.45', printer: '刘建' },
+  { id: 'history-7', batch: 'TPB-202603310001', tag: '114132601676', printedAt: '2026-03-31', printIp: '10.2.156.45', printer: '刘建' },
+  { id: 'history-8', batch: 'TPB-202603200001', tag: '123132600871', printedAt: '2026-03-20', printIp: '10.2.156.45', printer: '刘建' },
+  { id: 'history-9', batch: 'TPB-202602060021', tag: '114152601942', printedAt: '2026-03-10', printIp: '10.2.156.45', printer: '刘建' },
+  { id: 'history-10', batch: 'TPB-202602060021', tag: '114152601941', printedAt: '2026-03-10', printIp: '10.2.156.45', printer: '刘建' },
+];
+
+const DEFAULT_PREPRINT_FILTERS = {
+  batch: '',
+  printed: '',
+  creator: '',
+  orderNo: '',
+  createdFrom: '',
+  createdTo: '',
+};
+
+const DEFAULT_HISTORY_FILTERS = {
+  batch: '',
+  tag: '',
+  printer: '',
+  printedFrom: '',
+  printedTo: '',
+};
 
 function normalizeText(value) {
   return String(value ?? '').trim().toLowerCase();
@@ -263,6 +286,13 @@ function uniqueValues(rows, field) {
   return [...new Set(rows.map((row) => row[field]).filter((value) => value && value !== '-'))];
 }
 
+function inDateRange(value, from, to) {
+  if (!value) return false;
+  if (from && value < from) return false;
+  if (to && value > to) return false;
+  return true;
+}
+
 function LookupInput({ value, placeholder, onOpen }) {
   return (
     <Input
@@ -276,6 +306,17 @@ function LookupInput({ value, placeholder, onOpen }) {
   );
 }
 
+function DateFilter({ value, onChange }) {
+  return (
+    <DatePicker
+      value={value ? dayjs(value) : null}
+      format="YYYY-MM-DD"
+      placeholder="请选择日期"
+      onChange={(date) => onChange(date ? date.format('YYYY-MM-DD') : '')}
+    />
+  );
+}
+
 export default function TagPrintingPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [rows, setRows] = useState(DEFAULT_ROWS);
@@ -284,16 +325,19 @@ export default function TagPrintingPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [lookupKey, setLookupKey] = useState('');
   const [previewMode, setPreviewMode] = useState(false);
+  const [preprintDraftFilters, setPreprintDraftFilters] = useState(DEFAULT_PREPRINT_FILTERS);
+  const [preprintAppliedFilters, setPreprintAppliedFilters] = useState(DEFAULT_PREPRINT_FILTERS);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyDraftFilters, setHistoryDraftFilters] = useState(DEFAULT_HISTORY_FILTERS);
+  const [historyAppliedFilters, setHistoryAppliedFilters] = useState(DEFAULT_HISTORY_FILTERS);
 
   const filteredRows = useMemo(() => rows.filter((row) => (
     includesText(row.companyCn, appliedFilters.companyCn)
     && includesText(row.companyEn, appliedFilters.companyEn)
     && includesText(row.department, appliedFilters.department)
     && includesText(row.plateCn, appliedFilters.plateCn)
-    && includesText(row.plateEn, appliedFilters.plateEn)
     && includesText(row.assetStatus, appliedFilters.assetStatus)
     && includesText(row.assetTag, appliedFilters.assetTag)
-    && includesText(row.printNo, appliedFilters.printNo)
     && includesText(row.serialNumber, appliedFilters.serialNumber)
     && includesText(row.userId, appliedFilters.userId)
     && includesText(row.userName, appliedFilters.userName)
@@ -302,6 +346,21 @@ export default function TagPrintingPage() {
     && includesText(row.labelType, appliedFilters.labelType)
     && includesText(row.city, appliedFilters.city)
   )), [rows, appliedFilters]);
+
+  const filteredPreprintRows = useMemo(() => PREPRINT_ROWS.filter((row) => (
+    includesText(row.batch, preprintAppliedFilters.batch)
+    && includesText(row.printed, preprintAppliedFilters.printed)
+    && includesText(row.creator, preprintAppliedFilters.creator)
+    && includesText(row.orderNo, preprintAppliedFilters.orderNo)
+    && inDateRange(row.createdAt, preprintAppliedFilters.createdFrom, preprintAppliedFilters.createdTo)
+  )), [preprintAppliedFilters]);
+
+  const filteredHistoryRows = useMemo(() => PRINT_HISTORY_ROWS.filter((row) => (
+    includesText(row.batch, historyAppliedFilters.batch)
+    && includesText(row.tag, historyAppliedFilters.tag)
+    && includesText(row.printer, historyAppliedFilters.printer)
+    && inDateRange(row.printedAt, historyAppliedFilters.printedFrom, historyAppliedFilters.printedTo)
+  )), [historyAppliedFilters]);
 
   const statusOptions = useMemo(() => uniqueValues(rows, 'assetStatus').map((value) => ({ label: value, value })), [rows]);
   const cityOptions = useMemo(() => uniqueValues(rows, 'city').map((value) => ({ label: value, value })), [rows]);
@@ -317,6 +376,14 @@ export default function TagPrintingPage() {
     setDraftFilters((current) => ({ ...current, [field]: value || '' }));
   };
 
+  const updatePreprintFilter = (field, value) => {
+    setPreprintDraftFilters((current) => ({ ...current, [field]: value || '' }));
+  };
+
+  const updateHistoryFilter = (field, value) => {
+    setHistoryDraftFilters((current) => ({ ...current, [field]: value || '' }));
+  };
+
   const handlePrint = (targetIds, actionName) => {
     if (targetIds.length === 0) {
       messageApi.warning(actionName === '打印所选' ? '请至少选择一条资产' : '当前没有可打印的数据');
@@ -330,6 +397,13 @@ export default function TagPrintingPage() {
     messageApi.success(`${actionName}已提交，共 ${targetIds.length} 条`);
   };
 
+  const openHistory = (batch) => {
+    const filters = { ...DEFAULT_HISTORY_FILTERS, batch };
+    setHistoryDraftFilters(filters);
+    setHistoryAppliedFilters(filters);
+    setHistoryOpen(true);
+  };
+
   const columns = [
     { title: '资产标签号', dataIndex: 'assetTag', width: 150, fixed: 'left', render: displayText },
     { title: '资产名称', dataIndex: 'assetName', width: 220, render: displayText },
@@ -338,8 +412,6 @@ export default function TagPrintingPage() {
     { title: '公司中文名', dataIndex: 'companyCn', width: 140, render: displayText },
     { title: '公司英文名', dataIndex: 'companyEn', width: 150, render: displayText },
     { title: '版块中文名', dataIndex: 'plateCn', width: 140, render: displayText },
-    { title: '版块英文名', dataIndex: 'plateEn', width: 140, render: displayText },
-    { title: '印刷号', dataIndex: 'printNo', width: 110, render: displayText },
     { title: '序列号', dataIndex: 'serialNumber', width: 220, render: displayText },
     { title: '资产类别', dataIndex: 'assetCategory', width: 110, render: displayText },
     {
@@ -352,6 +424,43 @@ export default function TagPrintingPage() {
     { title: '打印次数', dataIndex: 'printCount', width: 100, align: 'right' },
   ];
 
+  const preprintColumns = [
+    { title: '标签批次', dataIndex: 'batch', width: 190, render: displayText },
+    { title: '订单编号', dataIndex: 'orderNo', width: 190, render: displayText },
+    { title: '生成标签数量', dataIndex: 'labelCount', width: 130, align: 'right' },
+    { title: '是否已打印', dataIndex: 'printed', width: 120, align: 'center', render: (value) => <StatusTag value={value} type="yesNo" /> },
+    { title: '创建人', dataIndex: 'creator', width: 120, render: displayText },
+    { title: '创建时间', dataIndex: 'createdAt', width: 130, render: displayText },
+    {
+      title: '详细',
+      dataIndex: 'detail',
+      width: 110,
+      render: (_, record) => (
+        <Button type="link" size="small" onClick={() => messageApi.info(`${record.batch} 标签清单待补充明细字段`)}>
+          标签清单
+        </Button>
+      ),
+    },
+    {
+      title: '打印历史',
+      dataIndex: 'history',
+      width: 110,
+      render: (_, record) => (
+        <Button type="link" size="small" onClick={() => openHistory(record.batch)}>
+          打印历史
+        </Button>
+      ),
+    },
+  ];
+
+  const historyColumns = [
+    { title: '标签批次', dataIndex: 'batch', width: 190, render: displayText },
+    { title: '标签号', dataIndex: 'tag', width: 180, render: displayText },
+    { title: '打印时间', dataIndex: 'printedAt', width: 140, render: displayText },
+    { title: '打印IP', dataIndex: 'printIp', width: 150, render: displayText },
+    { title: '打印人', dataIndex: 'printer', width: 120, render: displayText },
+  ];
+
   if (previewMode) {
     return (
       <Space direction="vertical" size={16} className="w-full">
@@ -360,9 +469,108 @@ export default function TagPrintingPage() {
           <Button icon={<ArrowLeft size={14} />} onClick={() => setPreviewMode(false)}>返回标签打印</Button>
           <Typography.Title level={4} className="mb-0">预打印</Typography.Title>
         </div>
-        <Card size="small">
-          <Empty description="预打印页面字段待确认" />
+
+        <QueryBar
+          onQuery={() => setPreprintAppliedFilters({ ...preprintDraftFilters })}
+          onReset={() => {
+            setPreprintDraftFilters(DEFAULT_PREPRINT_FILTERS);
+            setPreprintAppliedFilters(DEFAULT_PREPRINT_FILTERS);
+          }}
+        >
+          <QueryItem label="标签批次">
+            <Input value={preprintDraftFilters.batch} allowClear placeholder="请输入标签批次" onChange={(event) => updatePreprintFilter('batch', event.target.value)} />
+          </QueryItem>
+          <QueryItem label="是否已打印">
+            <Select
+              value={preprintDraftFilters.printed || undefined}
+              allowClear
+              placeholder="全部"
+              options={[{ label: '是', value: '是' }, { label: '否', value: '否' }]}
+              onChange={(value) => updatePreprintFilter('printed', value)}
+            />
+          </QueryItem>
+          <QueryItem label="创建人">
+            <Select
+              value={preprintDraftFilters.creator || undefined}
+              allowClear
+              placeholder="请选择"
+              options={uniqueValues(PREPRINT_ROWS, 'creator').map((value) => ({ label: value, value }))}
+              onChange={(value) => updatePreprintFilter('creator', value)}
+            />
+          </QueryItem>
+          <QueryItem label="订单编号">
+            <Input value={preprintDraftFilters.orderNo} allowClear placeholder="请输入订单编号" onChange={(event) => updatePreprintFilter('orderNo', event.target.value)} />
+          </QueryItem>
+          <QueryItem label="创建时间从">
+            <DateFilter value={preprintDraftFilters.createdFrom} onChange={(value) => updatePreprintFilter('createdFrom', value)} />
+          </QueryItem>
+          <QueryItem label="创建时间至">
+            <DateFilter value={preprintDraftFilters.createdTo} onChange={(value) => updatePreprintFilter('createdTo', value)} />
+          </QueryItem>
+        </QueryBar>
+
+        <Card
+          size="small"
+          title="预打印列表"
+          extra={<Typography.Text type="secondary">共 {filteredPreprintRows.length} 条</Typography.Text>}
+        >
+          <div className="mb-3 flex justify-end">
+            <Button type="primary" icon={<Tags size={14} />} onClick={() => messageApi.success('生成标签操作已触发')}>
+              生成标签
+            </Button>
+          </div>
+          <Table
+            rowKey="id"
+            size="small"
+            bordered
+            columns={preprintColumns}
+            dataSource={filteredPreprintRows}
+            scroll={{ x: 'max-content' }}
+            pagination={{ pageSize: 10, showSizeChanger: true }}
+          />
         </Card>
+
+        <Modal
+          title="打印历史"
+          open={historyOpen}
+          width={1100}
+          footer={null}
+          onCancel={() => setHistoryOpen(false)}
+        >
+          <QueryBar
+            onQuery={() => setHistoryAppliedFilters({ ...historyDraftFilters })}
+            onReset={() => {
+              setHistoryDraftFilters(DEFAULT_HISTORY_FILTERS);
+              setHistoryAppliedFilters(DEFAULT_HISTORY_FILTERS);
+            }}
+          >
+            <QueryItem label="标签批次">
+              <Input value={historyDraftFilters.batch} allowClear placeholder="请输入标签批次" onChange={(event) => updateHistoryFilter('batch', event.target.value)} />
+            </QueryItem>
+            <QueryItem label="标签号">
+              <Input value={historyDraftFilters.tag} allowClear placeholder="请输入标签号" onChange={(event) => updateHistoryFilter('tag', event.target.value)} />
+            </QueryItem>
+            <QueryItem label="打印人">
+              <Input value={historyDraftFilters.printer} allowClear placeholder="请输入打印人" onChange={(event) => updateHistoryFilter('printer', event.target.value)} />
+            </QueryItem>
+            <QueryItem label="打印时间从">
+              <DateFilter value={historyDraftFilters.printedFrom} onChange={(value) => updateHistoryFilter('printedFrom', value)} />
+            </QueryItem>
+            <QueryItem label="打印时间至">
+              <DateFilter value={historyDraftFilters.printedTo} onChange={(value) => updateHistoryFilter('printedTo', value)} />
+            </QueryItem>
+          </QueryBar>
+          <div className="mt-4 flex justify-end text-sm text-gray-500">共 {filteredHistoryRows.length} 条</div>
+          <Table
+            className="mt-2"
+            rowKey="id"
+            size="small"
+            bordered
+            columns={historyColumns}
+            dataSource={filteredHistoryRows}
+            pagination={{ pageSize: 10, showSizeChanger: true }}
+          />
+        </Modal>
       </Space>
     );
   }
@@ -396,17 +604,11 @@ export default function TagPrintingPage() {
         <QueryItem label="版块中文名称">
           <Input value={draftFilters.plateCn} allowClear placeholder="请输入版块中文名称" onChange={(event) => updateFilter('plateCn', event.target.value)} />
         </QueryItem>
-        <QueryItem label="版块英文名称">
-          <Input value={draftFilters.plateEn} allowClear placeholder="请输入版块英文名称" onChange={(event) => updateFilter('plateEn', event.target.value)} />
-        </QueryItem>
         <QueryItem label="资产状态">
           <Select value={draftFilters.assetStatus || undefined} allowClear placeholder="全部" options={statusOptions} onChange={(value) => updateFilter('assetStatus', value)} />
         </QueryItem>
         <QueryItem label="资产标签号">
           <Input value={draftFilters.assetTag} allowClear placeholder="请输入资产标签号" onChange={(event) => updateFilter('assetTag', event.target.value)} />
-        </QueryItem>
-        <QueryItem label="印刷号">
-          <Input value={draftFilters.printNo} allowClear placeholder="请输入印刷号" onChange={(event) => updateFilter('printNo', event.target.value)} />
         </QueryItem>
         <QueryItem label="序列号">
           <Input value={draftFilters.serialNumber} allowClear placeholder="请输入序列号" onChange={(event) => updateFilter('serialNumber', event.target.value)} />
@@ -464,10 +666,7 @@ export default function TagPrintingPage() {
             fixed: true,
           }}
           scroll={{ x: 'max-content' }}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-          }}
+          pagination={{ pageSize: 10, showSizeChanger: true }}
         />
       </Card>
 
