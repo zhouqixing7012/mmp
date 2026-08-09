@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, Empty } from 'antd';
 import AssetMaintenancePage from './AssetMaintenancePage';
 import ConsumableMaintenancePage from './ConsumableMaintenancePage';
+import ContractNumberMaintenancePage from './ContractNumberMaintenancePage';
 
 export const ASSET_MANAGEMENT_SUB_MENUS = [
   '资产维护',
@@ -32,6 +33,10 @@ export function AssetManagementContent({ activeSubMenu }) {
     return <ConsumableMaintenancePage />;
   }
 
+  if (activeSubMenu === '合约号码维护') {
+    return <ContractNumberMaintenancePage />;
+  }
+
   if (ASSET_MANAGEMENT_SUB_MENUS.includes(activeSubMenu)) {
     return <PendingAssetManagementPage title={activeSubMenu} />;
   }
@@ -41,3 +46,4 @@ export function AssetManagementContent({ activeSubMenu }) {
 
 export { default as AssetMaintenancePage } from './AssetMaintenancePage';
 export { default as ConsumableMaintenancePage } from './ConsumableMaintenancePage';
+export { default as ContractNumberMaintenancePage } from './ContractNumberMaintenancePage';
