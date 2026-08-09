@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   Col,
+  DatePicker,
   Form,
   Input,
   InputNumber,
@@ -14,6 +15,7 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
+import dayjs from 'dayjs';
 import { Download, Edit3, Search } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
@@ -52,6 +54,12 @@ function uniqueOptions(rows, field) {
 function escapeCsv(value) {
   const text = value === undefined || value === null ? '' : String(value);
   return `"${text.replaceAll('"', '""')}"`;
+}
+
+function normalizeDate(value) {
+  if (!value || value === '-') return '';
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format('YYYY-MM-DD') : '';
 }
 
 function LookupInput({ value, placeholder, onOpen }) {
@@ -109,7 +117,15 @@ export default function LedgerMaintenancePage({
   const filteredRows = useMemo(() => rows.filter((row) => filterDefinitions.every((definition) => {
     const query = appliedFilters[definition.field];
     if (!query) return true;
-    const matchFields = definition.matchFields || [definition.sourceField || definition.field];
+    const sourceField = definition.sourceField || definition.field;
+
+    if (definition.type === 'dateFrom' || definition.type === 'dateTo') {
+      const targetDate = normalizeDate(row[sourceField]);
+      if (!targetDate) return false;
+      return definition.type === 'dateFrom' ? targetDate >= query : targetDate <= query;
+    }
+
+    const matchFields = definition.matchFields || [sourceField];
     return matchFields.some((field) => includesText(row[field], query));
   })), [rows, appliedFilters, filterDefinitions]);
 
@@ -212,6 +228,16 @@ export default function LedgerMaintenancePage({
         />
       );
     }
+    if (definition.type === 'dateFrom' || definition.type === 'dateTo') {
+      return (
+        <DatePicker
+          value={value ? dayjs(value) : null}
+          format="YYYY-MM-DD"
+          placeholder="请选择日期"
+          onChange={(date) => updateDraftFilter(definition.field, date ? date.format('YYYY-MM-DD') : '')}
+        />
+      );
+    }
     return (
       <Input
         value={value}
@@ -226,7 +252,7 @@ export default function LedgerMaintenancePage({
     const commonProps = { disabled: field.disabled };
     let control = <Input {...commonProps} placeholder={field.placeholder} />;
     if (field.type === 'number') {
-      control = <InputNumber {...commonProps} min={1} precision={0} style={{ width: '100%' }} />;
+      control = <InputNumber {...commonProps} min={0} precision={0} style={{ width: '100%' }} />;
     } else if (field.type === 'select') {
       control = (
         <Select
