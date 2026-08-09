@@ -294,14 +294,14 @@ export default function LedgerMaintenancePage({
       <Card
         size="small"
         title={listTitle}
-        extra={(
+        extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}
+      >
+        <div className="mb-3 flex justify-end">
           <Space>
             <Button icon={<Edit3 size={14} />} onClick={handleEdit}>编辑</Button>
             <Button icon={<Download size={14} />} onClick={handleExport}>导出</Button>
           </Space>
-        )}
-      >
-        <div className="mb-3 text-sm text-gray-500">共 {filteredRows.length} 条</div>
+        </div>
         <Table
           rowKey="id"
           size="small"
