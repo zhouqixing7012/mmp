@@ -29,6 +29,7 @@
 | `src/pages/assetManagement/` | 后台资产管理页面。 |
 | `src/pages/inventoryManagement/` | 库存管理菜单与子页面入口。 |
 | `src/pages/employeeSelfService/` | 资产申请、审批、配给等。 |
+| `src/pages/contractNumber/` | 合约号码 ES 配给、主管审批、库管办理和员工领取确认。 |
 | `src/pages/assetBorrowing/` | 资产借用流程。 |
 | `src/pages/assetReplacement/` | 资产更换流程。 |
 | `src/pages/assetReturn/` | 资产退库与合约号码退库流程。 |
@@ -127,6 +128,23 @@ AssetAllocationPage
   └─ 统一采购 → UnifiedAssetApplySummary
 ```
 
+### 合约号码配给与领取
+
+```text
+ContractNumberAllocationPage
+  ↓ 电话号码 + 必填配给附件
+ContractNumberSupervisorApprovalPage
+  ↓ 主管同意
+ContractNumberWarehousePage
+  ↓ 发起员工领取确认
+ContractNumberReceiptConfirmPage
+```
+
+- `contractNumberAllocationService` 根据 `currentNode` 读取当前 ES 配给、主管审批、库管办理和员工确认待办。
+- ES 配给提交前校验电话号码和 `allocationAttachment`；主管审批页只读展示 ES 配给结果。
+- 主管审批通过后继续使用既有“库管员领用”节点，不改变后续员工确认能力。
+- 演示附件只保存文件元数据，不模拟真实文件服务器上传地址。
+
 ### 资产借用
 
 ```text
@@ -164,6 +182,7 @@ ContractReturnApplyPage → ContractReturnHandlingPage ↔ ContractReturnConfirm
 - 查询列表使用 `QueryBar`、`QueryItem` 和 Ant Design Table。
 - 列表“共 X 条”放标题右上角，操作按钮放下一行右侧。
 - 申请、审批、办理页面使用 Card / Table 分区。
+- 个人工作台业务页使用单层画布，不再自行叠加整页灰底、外层内边距和阴影容器。
 - 选择资产和基础数据优先使用统一选择弹窗。
 - 状态优先使用 `StatusTag`。
 
@@ -175,5 +194,6 @@ ContractReturnApplyPage → ContractReturnHandlingPage ↔ ContractReturnConfirm
 - 服务号通知。
 - 狐小 e 扫码和刷卡硬件。
 - 并发资产/号码锁定。
+- 合约号码配给附件真实文件上传与持久化。
 - 真实入库、出库、移库、转移和台账接口。
 - 真实权限匹配与定时任务。
