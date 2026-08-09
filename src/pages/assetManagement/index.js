@@ -3,6 +3,7 @@ import { Card, Empty } from 'antd';
 import AssetMaintenancePage from './AssetMaintenancePage';
 import ConsumableMaintenancePage from './ConsumableMaintenancePage';
 import ContractNumberMaintenancePage from './ContractNumberMaintenancePage';
+import TagPrintingPage from './TagPrintingPage';
 import EmployeeAssetInfoQueryPage from './EmployeeAssetInfoQueryPage';
 
 export const ASSET_MANAGEMENT_SUB_MENUS = [
@@ -38,6 +39,10 @@ export function AssetManagementContent({ activeSubMenu }) {
     return <ContractNumberMaintenancePage />;
   }
 
+  if (activeSubMenu === '标签打印') {
+    return <TagPrintingPage />;
+  }
+
   if (activeSubMenu === '员工资产信息查询') {
     return <EmployeeAssetInfoQueryPage />;
   }
@@ -52,4 +57,5 @@ export function AssetManagementContent({ activeSubMenu }) {
 export { default as AssetMaintenancePage } from './AssetMaintenancePage';
 export { default as ConsumableMaintenancePage } from './ConsumableMaintenancePage';
 export { default as ContractNumberMaintenancePage } from './ContractNumberMaintenancePage';
+export { default as TagPrintingPage } from './TagPrintingPage';
 export { default as EmployeeAssetInfoQueryPage } from './EmployeeAssetInfoQueryPage';
