@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Empty } from 'antd';
 import AssetReceiptPage from './AssetReceiptPage';
+import WarehouseWorkbenchPage from './WarehouseWorkbenchPage';
 import { InboundPage, OutboundPage, MovePage, TransferPage } from './InventoryDocumentPages';
 
 export const INVENTORY_MANAGEMENT_SUB_MENUS = [
@@ -42,6 +43,10 @@ export function InventoryManagementContent({ activeSubMenu }) {
     return <TransferPage />;
   }
 
+  if (activeSubMenu === '库管员工作台') {
+    return <WarehouseWorkbenchPage />;
+  }
+
   if (INVENTORY_MANAGEMENT_SUB_MENUS.includes(activeSubMenu)) {
     return <PendingInventoryPage title={activeSubMenu} />;
   }
@@ -50,4 +55,5 @@ export function InventoryManagementContent({ activeSubMenu }) {
 }
 
 export { default as AssetReceiptPage } from './AssetReceiptPage';
+export { default as WarehouseWorkbenchPage } from './WarehouseWorkbenchPage';
 export { InboundPage, OutboundPage, MovePage, TransferPage } from './InventoryDocumentPages';
