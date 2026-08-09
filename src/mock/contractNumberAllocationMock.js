@@ -1,4 +1,4 @@
-export const CONTRACT_NUMBER_ALLOCATION_STORAGE_KEY = 'mmp.contractNumberAllocation.applications.v3';
+export const CONTRACT_NUMBER_ALLOCATION_STORAGE_KEY = 'mmp.contractNumberAllocation.applications.v4';
 
 export const CONTRACT_NUMBER_CANDIDATES = [
   { id: 'CN-001', imei: '1', assetTag: 'N-0094', phoneNumber: '18001311393', packageName: '140元套餐', status: '在库' },
@@ -16,6 +16,13 @@ const DEMO_ATTACHMENT = {
   name: '身份证复印件（演示）.txt',
   size: '1.2 KB',
   content: '合约号码申请附件演示文件。\n本文件仅用于页面原型中的下载交互，不包含真实身份证信息。',
+};
+
+const DEMO_ALLOCATION_ATTACHMENT = {
+  id: 'allocation-attachment-demo',
+  name: '合约号码配给附件（演示）.pdf',
+  size: 248320,
+  type: 'application/pdf',
 };
 
 export const DEFAULT_CONTRACT_NUMBER_ALLOCATION_APPLICATIONS = [
@@ -36,6 +43,7 @@ export const DEFAULT_CONTRACT_NUMBER_ALLOCATION_APPLICATIONS = [
     idCard: '220***********2079',
     attachment: DEMO_ATTACHMENT,
     assignedNumber: null,
+    allocationAttachment: null,
     delayRecords: [],
     warehouseHandling: {
       warehouse: 'I10086-集团合约机库（新媒体）',
@@ -98,6 +106,7 @@ export const DEFAULT_CONTRACT_NUMBER_ALLOCATION_APPLICATIONS = [
     idCard: '110***********4388',
     attachment: DEMO_ATTACHMENT,
     assignedNumber: CONTRACT_NUMBER_CANDIDATES[7],
+    allocationAttachment: DEMO_ALLOCATION_ATTACHMENT,
     delayRecords: [],
     warehouseHandling: {
       warehouse: 'I10086-集团合约机库（新媒体）',
@@ -137,6 +146,14 @@ export const DEFAULT_CONTRACT_NUMBER_ALLOCATION_APPLICATIONS = [
         comment: '号码已配给',
       },
       {
+        id: 'warehouse-history-supervisor',
+        person: '配给主管',
+        node: '合约号码配给主管审批',
+        time: '2026-06-16 10:15:00',
+        status: '已同意',
+        comment: '同意',
+      },
+      {
         id: 'warehouse-history-4',
         person: '库管员',
         node: '库管员领用',
@@ -171,6 +188,7 @@ export const DEFAULT_CONTRACT_NUMBER_ALLOCATION_APPLICATIONS = [
       ...CONTRACT_NUMBER_CANDIDATES[5],
       status: '待员工确认',
     },
+    allocationAttachment: DEMO_ALLOCATION_ATTACHMENT,
     delayRecords: [],
     warehouseHandling: {
       warehouse: 'I10088-集团合约机库（总部）',
@@ -202,6 +220,14 @@ export const DEFAULT_CONTRACT_NUMBER_ALLOCATION_APPLICATIONS = [
         time: '2026-06-18 09:45:00',
         status: '已同意',
         comment: '已完成号码配给',
+      },
+      {
+        id: 'confirm-history-supervisor',
+        person: '配给主管',
+        node: '合约号码配给主管审批',
+        time: '2026-06-18 09:55:00',
+        status: '已同意',
+        comment: '同意',
       },
       {
         id: 'confirm-history-3',
