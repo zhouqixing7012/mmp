@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { 
-  X, Plus, Save, ArrowLeft, Settings, FileSpreadsheet, 
-  Download, Paperclip, ChevronLeft, ChevronRight, Search, 
-  Trash2, Edit, AlertCircle, Send 
+import React, { useEffect, useState } from 'react';
+import {
+  X, Plus, Save, ArrowLeft, FileSpreadsheet,
+  Download, Paperclip, ChevronLeft, ChevronRight, Search,
+  Trash2, AlertCircle, Send
 } from 'lucide-react';
+import { Input, Radio, Table, message } from 'antd';
+import SelectModal from '../components/SelectModal';
+import { mockCompanies } from '../mock/businessRulesMock';
 
 // --- 模拟初始数据 ---
 const initialData = [
@@ -53,6 +56,29 @@ const initialData = [
   }
 ];
 
+const createTransferDetail = (asset) => ({
+  assetId: asset.id,
+  tagNo: asset.tagNo,
+  newResponsiblePerson: '',
+  newCompany: '',
+  newPlate: '',
+  newCostCenter: '',
+  city: '',
+  building: '',
+  floor: '',
+  adjustedWarehouse: '',
+});
+
+const transferRequiredFields = [
+  ['newResponsiblePerson', '新责任人'],
+  ['newCompany', '新公司'],
+  ['newPlate', '新板块'],
+  ['newCostCenter', '新成本中心'],
+  ['city', 'City'],
+  ['building', 'Building'],
+  ['floor', 'Floor'],
+];
+
 export default function AccountingScrapEdit() {
   const [formData, setFormData] = useState({
     docNo: 'BF-202309280001',
@@ -60,17 +86,37 @@ export default function AccountingScrapEdit() {
     status: '草稿',
     creator: 'admin-系统管理员',
     createDate: '2023-09-28',
+    intercompanyTransfer: '否',
+    expiredReason: '',
+    unexpiredReason: '',
+    lostReason: '',
     remarks: ''
   });
 
   const [tableData, setTableData] = useState(initialData);
   const [selectedRows, setSelectedRows] = useState([]);
   const [attachments, setAttachments] = useState([]);
+  const [companySelectContext, setCompanySelectContext] = useState(null);
+  const [transferDetails, setTransferDetails] = useState(() => initialData.map(createTransferDetail));
+
+  // 资产明细发生增删时，公司间转移明细严格按资产明细一一同步。
+  useEffect(() => {
+    setTransferDetails((current) => tableData.map((asset) => {
+      const existing = current.find((item) => item.assetId === asset.id);
+      return existing
+        ? { ...existing, assetId: asset.id, tagNo: asset.tagNo }
+        : createTransferDetail(asset);
+    }));
+  }, [tableData]);
+
+  const updateFormField = (name, value) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   // --- 事件处理 ---
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    updateFormField(name, value);
   };
 
   const handleSelectAll = (e) => {
@@ -82,7 +128,7 @@ export default function AccountingScrapEdit() {
   };
 
   const handleSelectRow = (id) => {
-    setSelectedRows(prev => 
+    setSelectedRows(prev =>
       prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
     );
   };
@@ -96,18 +142,18 @@ export default function AccountingScrapEdit() {
       responsiblePerson: '测试员', responsiblePersonId: 'EMP999', city: '未知', location: '未知', floor: '1F',
       scrapMethod: '全部报废', scrapType: '已到报废期', reason: '测试原因'
     };
-    setTableData([...tableData, newRow]);
+    setTableData(prev => [...prev, newRow]);
   };
 
   const handleDeleteSelected = () => {
     if (selectedRows.length === 0) return;
-    setTableData(tableData.filter(row => !selectedRows.includes(row.id)));
+    setTableData(prev => prev.filter(row => !selectedRows.includes(row.id)));
     setSelectedRows([]);
   };
 
   const handleDeleteRow = (id) => {
-    setTableData(tableData.filter(row => row.id !== id));
-    setSelectedRows(selectedRows.filter(rowId => rowId !== id));
+    setTableData(prev => prev.filter(row => row.id !== id));
+    setSelectedRows(prev => prev.filter(rowId => rowId !== id));
   };
 
   const handleTableChange = (id, field, value) => {
@@ -118,28 +164,155 @@ export default function AccountingScrapEdit() {
     );
   };
 
+  const updateTransferDetail = (assetId, field, value) => {
+    setTransferDetails((current) => current.map((item) =>
+      item.assetId === assetId ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const handleCompanyConfirm = (record) => {
+    const companyValue = `${record.code}.${record.desc}`;
+    if (companySelectContext?.type === 'form') {
+      updateFormField('company', companyValue);
+    }
+    if (companySelectContext?.type === 'transfer') {
+      updateTransferDetail(companySelectContext.assetId, 'newCompany', companyValue);
+    }
+    setCompanySelectContext(null);
+  };
+
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
     const validFiles = files.filter(file => {
-      // 模拟 20MB 限制 (20 * 1024 * 1024 bytes)
       if (file.size > 20971520) {
-        alert(`文件 "${file.name}" 超过 20MB 限制！`);
+        message.error(`文件“${file.name}”超过 20MB 限制`);
         return false;
       }
       return true;
     });
-    
+
     if (validFiles.length > 0) {
-      setAttachments([...attachments, ...validFiles.map(f => ({ name: f.name, size: (f.size/1024/1024).toFixed(2) + ' MB' }))]);
+      setAttachments(prev => [
+        ...prev,
+        ...validFiles.map(f => ({ name: f.name, size: (f.size / 1024 / 1024).toFixed(2) + ' MB' }))
+      ]);
     }
   };
 
+  const handleSubmit = () => {
+    if (!formData.company) {
+      message.error('请选择公司');
+      return;
+    }
+
+    if (formData.intercompanyTransfer === '是') {
+      for (const detail of transferDetails) {
+        const missingField = transferRequiredFields.find(([field]) => !String(detail[field] || '').trim());
+        if (missingField) {
+          message.error(`资产 ${detail.tagNo} 的${missingField[1]}不能为空`);
+          return;
+        }
+      }
+    }
+
+    message.success('账面报废申请校验通过');
+  };
+
+  const transferColumns = [
+    {
+      title: <><span className="text-red-500">*</span> 资产标签号</>,
+      dataIndex: 'tagNo',
+      key: 'tagNo',
+      width: 150,
+      render: (value) => <span className="font-mono text-blue-600">{value}</span>,
+    },
+    {
+      title: <><span className="text-red-500">*</span> 新责任人</>,
+      dataIndex: 'newResponsiblePerson',
+      key: 'newResponsiblePerson',
+      width: 150,
+      render: (value, record) => (
+        <Input
+          value={value}
+          placeholder="请输入新责任人"
+          onChange={(e) => updateTransferDetail(record.assetId, 'newResponsiblePerson', e.target.value)}
+        />
+      ),
+    },
+    {
+      title: <><span className="text-red-500">*</span> 新公司</>,
+      dataIndex: 'newCompany',
+      key: 'newCompany',
+      width: 180,
+      render: (value, record) => (
+        <div
+          className="relative cursor-pointer"
+          onClick={() => setCompanySelectContext({ type: 'transfer', assetId: record.assetId })}
+        >
+          <Input value={value} readOnly placeholder="请选择新公司" className="pointer-events-none" />
+          <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+        </div>
+      ),
+    },
+    {
+      title: <><span className="text-red-500">*</span> 新板块</>,
+      dataIndex: 'newPlate',
+      key: 'newPlate',
+      width: 150,
+      render: (value, record) => (
+        <Input value={value} placeholder="请输入新板块" onChange={(e) => updateTransferDetail(record.assetId, 'newPlate', e.target.value)} />
+      ),
+    },
+    {
+      title: <><span className="text-red-500">*</span> 新成本中心</>,
+      dataIndex: 'newCostCenter',
+      key: 'newCostCenter',
+      width: 170,
+      render: (value, record) => (
+        <Input value={value} placeholder="请输入新成本中心" onChange={(e) => updateTransferDetail(record.assetId, 'newCostCenter', e.target.value)} />
+      ),
+    },
+    {
+      title: <><span className="text-red-500">*</span> City</>,
+      dataIndex: 'city',
+      key: 'city',
+      width: 130,
+      render: (value, record) => (
+        <Input value={value} placeholder="请输入City" onChange={(e) => updateTransferDetail(record.assetId, 'city', e.target.value)} />
+      ),
+    },
+    {
+      title: <><span className="text-red-500">*</span> Building</>,
+      dataIndex: 'building',
+      key: 'building',
+      width: 150,
+      render: (value, record) => (
+        <Input value={value} placeholder="请输入Building" onChange={(e) => updateTransferDetail(record.assetId, 'building', e.target.value)} />
+      ),
+    },
+    {
+      title: <><span className="text-red-500">*</span> Floor</>,
+      dataIndex: 'floor',
+      key: 'floor',
+      width: 120,
+      render: (value, record) => (
+        <Input value={value} placeholder="请输入Floor" onChange={(e) => updateTransferDetail(record.assetId, 'floor', e.target.value)} />
+      ),
+    },
+    {
+      title: '调账后仓库',
+      dataIndex: 'adjustedWarehouse',
+      key: 'adjustedWarehouse',
+      width: 180,
+      render: (value, record) => (
+        <Input value={value} placeholder="请输入调账后仓库" onChange={(e) => updateTransferDetail(record.assetId, 'adjustedWarehouse', e.target.value)} />
+      ),
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col font-sans text-sm text-gray-800 pb-20">
-      {/* 主要内容区 */}
       <div className="flex-1 p-4 space-y-4">
-        
-        {/* 蓝色标题头 */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
           <div className="bg-gradient-to-r from-blue-500 to-blue-400 px-4 py-2 text-white font-medium flex items-center">
             报废申请单物资列表
@@ -147,8 +320,7 @@ export default function AccountingScrapEdit() {
 
           <div className="p-4 space-y-4">
             <h2 className="text-lg font-bold text-gray-800 pb-2 border-b border-gray-100">账面报废申请单</h2>
-            
-            {/* 表单区域 */}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="flex items-center space-x-3">
                 <label className="text-gray-500 w-24 text-right">申请单号</label>
@@ -156,13 +328,19 @@ export default function AccountingScrapEdit() {
               </div>
               <div className="flex items-center space-x-3">
                 <label className="text-gray-500 w-24 text-right"><span className="text-red-500 mr-1">*</span>公司</label>
-                <input type="text" name="company" value={formData.company} readOnly className="flex-1 bg-gray-50 border border-gray-200 rounded px-3 py-1.5 text-gray-700 outline-none cursor-default" />
+                <div
+                  className="flex-1 relative cursor-pointer"
+                  onClick={() => setCompanySelectContext({ type: 'form' })}
+                >
+                  <Input value={formData.company} readOnly placeholder="请选择公司" className="pointer-events-none" />
+                  <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+                </div>
               </div>
               <div className="flex items-center space-x-3">
                 <label className="text-gray-500 w-24 text-right">单据状态</label>
                 <div className="flex-1 bg-gray-50 border border-gray-200 rounded px-3 py-1.5 text-gray-700">{formData.status}</div>
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 <label className="text-gray-500 w-24 text-right">制单人</label>
                 <div className="flex-1 bg-gray-50 border border-gray-200 rounded px-3 py-1.5 text-gray-700">{formData.creator}</div>
@@ -171,18 +349,56 @@ export default function AccountingScrapEdit() {
                 <label className="text-gray-500 w-24 text-right">制单时间</label>
                 <div className="flex-1 bg-gray-50 border border-gray-200 rounded px-3 py-1.5 text-gray-700">{formData.createDate}</div>
               </div>
-              <div className="col-span-1 md:col-span-3 flex items-start space-x-3 mt-2">
-                <label className="text-gray-500 w-24 text-right pt-1">备注</label>
-                <textarea 
-                  name="remarks" 
-                  value={formData.remarks} 
-                  onChange={handleFormChange} 
-                  placeholder="请输入备注信息..."
-                  className="flex-1 border border-gray-300 rounded px-3 py-2 min-h-[60px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-y" 
+              <div className="flex items-center space-x-3">
+                <label className="text-gray-500 w-24 text-right"><span className="text-red-500 mr-1">*</span>是否公司间转移</label>
+                <Radio.Group
+                  value={formData.intercompanyTransfer}
+                  onChange={(e) => updateFormField('intercompanyTransfer', e.target.value)}
+                >
+                  <Radio value="是">是</Radio>
+                  <Radio value="否">否</Radio>
+                </Radio.Group>
+              </div>
+
+              <div className="col-span-1 md:col-span-3 flex items-start space-x-3">
+                <label className="text-gray-500 w-36 text-right pt-1">已到报废期报废原因</label>
+                <Input.TextArea
+                  value={formData.expiredReason}
+                  onChange={(e) => updateFormField('expiredReason', e.target.value)}
+                  placeholder="请输入已到报废期报废原因"
+                  autoSize={{ minRows: 2, maxRows: 4 }}
                 />
               </div>
-              
-              {/* 简化后的附件字段 */}
+              <div className="col-span-1 md:col-span-3 flex items-start space-x-3">
+                <label className="text-gray-500 w-36 text-right pt-1">未到报废期报废原因</label>
+                <Input.TextArea
+                  value={formData.unexpiredReason}
+                  onChange={(e) => updateFormField('unexpiredReason', e.target.value)}
+                  placeholder="请输入未到报废期报废原因"
+                  autoSize={{ minRows: 2, maxRows: 4 }}
+                />
+              </div>
+              <div className="col-span-1 md:col-span-3 flex items-start space-x-3">
+                <label className="text-gray-500 w-36 text-right pt-1">丢失报废原因</label>
+                <Input.TextArea
+                  value={formData.lostReason}
+                  onChange={(e) => updateFormField('lostReason', e.target.value)}
+                  placeholder="请输入丢失报废原因"
+                  autoSize={{ minRows: 2, maxRows: 4 }}
+                />
+              </div>
+
+              <div className="col-span-1 md:col-span-3 flex items-start space-x-3 mt-2">
+                <label className="text-gray-500 w-24 text-right pt-1">备注</label>
+                <textarea
+                  name="remarks"
+                  value={formData.remarks}
+                  onChange={handleFormChange}
+                  placeholder="请输入备注信息..."
+                  className="flex-1 border border-gray-300 rounded px-3 py-2 min-h-[60px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-y"
+                />
+              </div>
+
               <div className="col-span-1 md:col-span-3 flex items-start space-x-3 mt-2">
                 <label className="text-gray-500 w-24 text-right pt-1.5">附件</label>
                 <div className="flex-1 flex flex-col space-y-2">
@@ -190,7 +406,7 @@ export default function AccountingScrapEdit() {
                     <div className="relative inline-block">
                       <input type="file" multiple onChange={handleFileUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                       <button className="flex items-center px-3 py-1.5 bg-white border border-gray-300 rounded text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors shadow-sm text-sm">
-                        <Paperclip className="w-4 h-4 mr-1.5" /> 
+                        <Paperclip className="w-4 h-4 mr-1.5" />
                         上传附件
                       </button>
                     </div>
@@ -198,8 +414,7 @@ export default function AccountingScrapEdit() {
                       <AlertCircle className="w-3.5 h-3.5 mr-1 text-gray-300" /> 单个文件大小不超过 20MB
                     </span>
                   </div>
-                  
-                  {/* 已上传文件列表 (Chips 形式) */}
+
                   {attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 pt-1">
                       {attachments.map((file, idx) => (
@@ -207,7 +422,7 @@ export default function AccountingScrapEdit() {
                           <Paperclip className="w-3 h-3 text-gray-400 mr-1.5" />
                           <span className="max-w-[150px] truncate mr-2" title={file.name}>{file.name}</span>
                           <span className="text-gray-400 mr-2">{file.size}</span>
-                          <button 
+                          <button
                             onClick={() => setAttachments(attachments.filter((_, i) => i !== idx))}
                             className="text-gray-400 hover:text-red-500 transition-colors"
                             title="删除"
@@ -220,14 +435,11 @@ export default function AccountingScrapEdit() {
                   )}
                 </div>
               </div>
-
             </div>
           </div>
         </div>
 
-        {/* 列表及工具栏区域 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-          {/* 工具栏 */}
           <div className="bg-gray-50 border-b border-gray-200 p-2 flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center space-x-2">
               <button onClick={handleAddRow} className="flex items-center px-3 py-1.5 text-white bg-blue-600 border border-blue-600 rounded hover:bg-blue-700 transition-colors shadow-sm font-medium">
@@ -237,7 +449,7 @@ export default function AccountingScrapEdit() {
                 <Trash2 className="w-4 h-4 mr-1.5" /> 删除物资
               </button>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <button className="flex items-center px-3 py-1.5 text-green-600 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors shadow-sm">
                 <FileSpreadsheet className="w-4 h-4 mr-1.5" /> 导出明细
@@ -251,7 +463,6 @@ export default function AccountingScrapEdit() {
             </div>
           </div>
 
-          {/* 表格容器 */}
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left whitespace-nowrap min-w-[2400px]">
               <thead className="bg-gray-50 border-b border-gray-200 text-gray-600 font-medium">
@@ -336,8 +547,7 @@ export default function AccountingScrapEdit() {
               </tbody>
             </table>
           </div>
-          
-          {/* 分页与底部工具 */}
+
           <div className="bg-gray-50 border-t border-gray-200 p-3 flex items-center justify-end">
             <div className="flex items-center space-x-4 text-sm text-gray-600">
               <div className="flex items-center space-x-1">
@@ -346,12 +556,12 @@ export default function AccountingScrapEdit() {
               </div>
               <span>共 <span className="font-medium text-gray-800">1</span> 页</span>
               <div className="flex items-center">
-                每页 
+                每页
                 <select className="mx-2 border rounded p-1 outline-none focus:ring-1 focus:ring-blue-500 bg-white">
                   <option>10</option>
                   <option>20</option>
                   <option>50</option>
-                </select> 
+                </select>
                 条
               </div>
               <div className="flex items-center">
@@ -364,9 +574,46 @@ export default function AccountingScrapEdit() {
             </div>
           </div>
         </div>
+
+        {formData.intercompanyTransfer === '是' && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-200 font-medium text-gray-800">公司间转移明细</div>
+            <div className="p-4">
+              <Table
+                rowKey="assetId"
+                columns={transferColumns}
+                dataSource={transferDetails}
+                pagination={false}
+                size="small"
+                bordered
+                scroll={{ x: 1380 }}
+                locale={{ emptyText: '资产明细暂无资产' }}
+              />
+              <div className="mt-2 text-xs text-gray-500">
+                资产标签号由上方资产明细自动带入，公司间转移明细不支持新增、删除或修改资产标签号。
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* 底部悬浮操作栏 */}
+      <SelectModal
+        open={Boolean(companySelectContext)}
+        onCancel={() => setCompanySelectContext(null)}
+        onConfirm={handleCompanyConfirm}
+        title="选择公司"
+        dataSource={mockCompanies}
+        rowKey="id"
+        searchFields={[
+          { label: '公司编码', name: 'code', dataIndex: 'code', placeholder: '请输入公司编码' },
+          { label: '公司名称', name: 'desc', dataIndex: 'desc', placeholder: '请输入公司名称' },
+        ]}
+        columns={[
+          { title: '公司编码', dataIndex: 'code' },
+          { title: '公司名称', dataIndex: 'desc' },
+        ]}
+      />
+
       <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.03)] p-4 flex justify-center items-center space-x-6 z-40">
         <button className="flex items-center px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors shadow-sm font-medium">
           <ArrowLeft className="w-4 h-4 mr-2" /> 返回
@@ -374,7 +621,10 @@ export default function AccountingScrapEdit() {
         <button className="flex items-center px-6 py-2 text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors shadow-sm font-medium">
           <Save className="w-4 h-4 mr-2" /> 保存
         </button>
-        <button className="flex items-center px-8 py-2 text-white bg-blue-600 border border-blue-600 rounded hover:bg-blue-700 transition-colors shadow-sm font-medium">
+        <button
+          onClick={handleSubmit}
+          className="flex items-center px-8 py-2 text-white bg-blue-600 border border-blue-600 rounded hover:bg-blue-700 transition-colors shadow-sm font-medium"
+        >
           <Send className="w-4 h-4 mr-2" /> 提交
         </button>
       </div>
