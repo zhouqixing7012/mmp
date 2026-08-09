@@ -240,15 +240,9 @@ export default function ContractNumberAllocationPage() {
             <Descriptions.Item label="话费套餐">
               {application.assignedNumber?.packageName || '-'}
             </Descriptions.Item>
-          </Descriptions>
-        </Card>
-
-        <Card size="small" title="附件信息">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label={<RequiredLabel>附件</RequiredLabel>} span={3}>
+            <Descriptions.Item label={<RequiredLabel>附件信息</RequiredLabel>} span={3}>
               <Space size={12} wrap>
                 <Upload
-                  accept="*"
                   maxCount={1}
                   showUploadList={false}
                   disabled={application.status !== '待审批'}
