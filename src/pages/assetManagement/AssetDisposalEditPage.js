@@ -202,8 +202,7 @@ export default function AssetDisposalEditPage({ onBack }) {
       <Card size="small" title="基本信息" className="shadow-sm">
         <Descriptions bordered size="small" column={3} labelStyle={{ width: 128 }}>
           <Descriptions.Item label="制单人">admin-系统管理员</Descriptions.Item>
-          <Descriptions.Item label="制单时间">{dayjs().format('YYYY-MM-DD')}</Descriptions.Item>
-          <Descriptions.Item label="" />
+          <Descriptions.Item label="制单时间" span={2}>{dayjs().format('YYYY-MM-DD')}</Descriptions.Item>
           <Descriptions.Item label="处置说明" span={3}>
             <Input.TextArea
               value={disposalDescription}
