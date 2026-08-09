@@ -5,6 +5,7 @@ import ConsumableMaintenancePage from './ConsumableMaintenancePage';
 import ContractNumberMaintenancePage from './ContractNumberMaintenancePage';
 import TagPrintingPage from './TagPrintingPage';
 import EmployeeAssetInfoQueryPage from './EmployeeAssetInfoQueryPage';
+import DocumentListPage from './DocumentListPage';
 
 export const ASSET_MANAGEMENT_SUB_MENUS = [
   '资产维护',
@@ -43,6 +44,35 @@ export function AssetManagementContent({ activeSubMenu }) {
     return <TagPrintingPage />;
   }
 
+  if (activeSubMenu === '资产报废') {
+    return (
+      <DocumentListPage
+        title="资产报废"
+        createLabel="创建资产报废申请单"
+        createPath="/BaofeiShenqing"
+      />
+    );
+  }
+
+  if (activeSubMenu === '账面报废') {
+    return (
+      <DocumentListPage
+        title="账面报废"
+        createLabel="创建账面报废申请单"
+        createPath="/"
+      />
+    );
+  }
+
+  if (activeSubMenu === '资产处置') {
+    return (
+      <DocumentListPage
+        title="资产处置"
+        createLabel="创建资产处置申请单"
+      />
+    );
+  }
+
   if (activeSubMenu === '员工资产信息查询') {
     return <EmployeeAssetInfoQueryPage />;
   }
@@ -59,3 +89,4 @@ export { default as ConsumableMaintenancePage } from './ConsumableMaintenancePag
 export { default as ContractNumberMaintenancePage } from './ContractNumberMaintenancePage';
 export { default as TagPrintingPage } from './TagPrintingPage';
 export { default as EmployeeAssetInfoQueryPage } from './EmployeeAssetInfoQueryPage';
+export { default as DocumentListPage } from './DocumentListPage';
