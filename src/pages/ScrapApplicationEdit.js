@@ -42,7 +42,7 @@ function SectionTitle({ children }) {
   );
 }
 
-export default function ScrapApplicationEdit() {
+export default function ScrapApplicationEdit({ embedded = false, onBack }) {
   const [activeTab, setActiveTab] = useState("assets");
   const [description, setDescription] = useState("");
   const [rows, setRows] = useState([]);
@@ -112,6 +112,10 @@ export default function ScrapApplicationEdit() {
   );
 
   const handleExit = () => {
+    if (embedded && onBack) {
+      onBack();
+      return;
+    }
     window.history.back();
   };
 
@@ -141,12 +145,21 @@ export default function ScrapApplicationEdit() {
   };
 
   return (
-    <div className="pageScrap-shell">
-      <header className="pageScrap-topbar">
-        <h1>报废申请单</h1>
+    <div
+      className="pageScrap-shell"
+      style={embedded ? { minHeight: 'auto', paddingBottom: 0, background: 'transparent' } : undefined}
+    >
+      <header
+        className="pageScrap-topbar"
+        style={embedded ? { height: 'auto', padding: '0 0 16px', background: 'transparent', borderBottom: 0 } : undefined}
+      >
+        <h1 style={embedded ? { fontSize: 22 } : undefined}>报废申请单</h1>
       </header>
 
-      <main className="pageScrap-content">
+      <main
+        className="pageScrap-content"
+        style={embedded ? { width: '100%', margin: 0 } : undefined}
+      >
         <section className="pageScrap-card pageScrap-basicCard">
           <SectionTitle>基本信息</SectionTitle>
 
@@ -366,7 +379,10 @@ export default function ScrapApplicationEdit() {
         </section>
       </main>
 
-      <footer className="pageScrap-footerBar">
+      <footer
+        className="pageScrap-footerBar"
+        style={embedded ? { position: 'sticky', left: 'auto', right: 'auto', bottom: 0, marginTop: 16 } : undefined}
+      >
         <button className="pageScrap-bottomBtn pageScrap-saveBtn" onClick={handleSave}>
           <Save size={19} />
           保存
