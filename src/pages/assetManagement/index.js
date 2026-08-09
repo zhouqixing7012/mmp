@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, Empty } from 'antd';
 import AssetMaintenancePage from './AssetMaintenancePage';
 import ConsumableMaintenancePage from './ConsumableMaintenancePage';
@@ -6,6 +6,8 @@ import ContractNumberMaintenancePage from './ContractNumberMaintenancePage';
 import TagPrintingPage from './TagPrintingPage';
 import EmployeeAssetInfoQueryPage from './EmployeeAssetInfoQueryPage';
 import DocumentListPage from './DocumentListPage';
+import ScrapApplicationEdit from '../ScrapApplicationEdit';
+import AccountingScrapEdit from '../AccountingScrapEdit';
 
 export const ASSET_MANAGEMENT_SUB_MENUS = [
   '资产维护',
@@ -28,6 +30,12 @@ function PendingAssetManagementPage({ title }) {
 }
 
 export function AssetManagementContent({ activeSubMenu }) {
+  const [embeddedPage, setEmbeddedPage] = useState(null);
+
+  useEffect(() => {
+    setEmbeddedPage(null);
+  }, [activeSubMenu]);
+
   if (activeSubMenu === '资产维护') {
     return <AssetMaintenancePage />;
   }
@@ -45,21 +53,29 @@ export function AssetManagementContent({ activeSubMenu }) {
   }
 
   if (activeSubMenu === '资产报废') {
+    if (embeddedPage === 'assetScrap') {
+      return <ScrapApplicationEdit embedded onBack={() => setEmbeddedPage(null)} />;
+    }
+
     return (
       <DocumentListPage
         title="资产报废"
         createLabel="创建资产报废申请单"
-        createPath="/BaofeiShenqing"
+        onCreate={() => setEmbeddedPage('assetScrap')}
       />
     );
   }
 
   if (activeSubMenu === '账面报废') {
+    if (embeddedPage === 'accountingScrap') {
+      return <AccountingScrapEdit embedded onBack={() => setEmbeddedPage(null)} />;
+    }
+
     return (
       <DocumentListPage
         title="账面报废"
         createLabel="创建账面报废申请单"
-        createPath="/"
+        onCreate={() => setEmbeddedPage('accountingScrap')}
       />
     );
   }
