@@ -62,10 +62,43 @@ export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, 
 
         {MAIN_MENU_ITEMS.map((item) => {
           const Icon = item.icon;
+          const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+          const isActive = activeMenu === item.key;
+
+          if (hasChildren) {
+            return (
+              <div key={item.key}>
+                <div
+                  className={`flex items-center justify-between px-5 py-3 cursor-pointer text-sm transition-colors hover:text-white ${isActive ? 'text-white bg-white/5' : 'text-gray-300 hover:bg-white/5'}`}
+                  onClick={() => onMenuToggle(item.key)}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon size={16} />
+                    <span>{item.label}</span>
+                  </div>
+                  <ChevronDown size={14} className={`transition-transform ${isActive ? 'rotate-180' : ''}`} />
+                </div>
+                {isActive && (
+                  <div className="bg-[#000c17] py-1">
+                    {item.children.map((subMenu) => (
+                      <div
+                        key={subMenu}
+                        className={`pl-12 pr-5 py-2.5 cursor-pointer text-sm transition-colors ${activeSubMenu === subMenu ? 'text-white bg-[#1677ff]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        onClick={() => onSubMenuSelect(subMenu)}
+                      >
+                        {subMenu}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <div
               key={item.key}
-              className={`flex items-center gap-3 px-5 py-3 cursor-pointer text-sm transition-colors hover:text-white ${activeMenu === item.key ? 'text-white bg-[#1677ff]' : 'text-gray-300 hover:bg-white/5'}`}
+              className={`flex items-center gap-3 px-5 py-3 cursor-pointer text-sm transition-colors hover:text-white ${isActive ? 'text-white bg-[#1677ff]' : 'text-gray-300 hover:bg-white/5'}`}
               onClick={() => onMenuToggle(item.key, false)}
             >
               <Icon size={16} />
