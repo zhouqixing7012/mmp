@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Empty } from 'antd';
 import AssetReceiptPage from './AssetReceiptPage';
+import { InboundPage, OutboundPage, MovePage, TransferPage } from './InventoryDocumentPages';
 
 export const INVENTORY_MANAGEMENT_SUB_MENUS = [
   '资产接收',
@@ -25,6 +26,22 @@ export function InventoryManagementContent({ activeSubMenu }) {
     return <AssetReceiptPage />;
   }
 
+  if (activeSubMenu === '入库') {
+    return <InboundPage />;
+  }
+
+  if (activeSubMenu === '出库') {
+    return <OutboundPage />;
+  }
+
+  if (activeSubMenu === '移库') {
+    return <MovePage />;
+  }
+
+  if (activeSubMenu === '转移') {
+    return <TransferPage />;
+  }
+
   if (INVENTORY_MANAGEMENT_SUB_MENUS.includes(activeSubMenu)) {
     return <PendingInventoryPage title={activeSubMenu} />;
   }
@@ -33,3 +50,4 @@ export function InventoryManagementContent({ activeSubMenu }) {
 }
 
 export { default as AssetReceiptPage } from './AssetReceiptPage';
+export { InboundPage, OutboundPage, MovePage, TransferPage } from './InventoryDocumentPages';
