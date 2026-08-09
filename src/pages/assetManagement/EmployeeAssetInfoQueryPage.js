@@ -68,9 +68,16 @@ const DOCUMENT_ROWS = [
   },
 ];
 
+function normalizeText(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[.\-\s]/g, '');
+}
+
 function includesText(value, query) {
   if (!query) return true;
-  return String(value || '').toLowerCase().includes(String(query).trim().toLowerCase());
+  return normalizeText(value).includes(normalizeText(query));
 }
 
 function displayText(value) {
@@ -278,7 +285,6 @@ export default function EmployeeAssetInfoQueryPage() {
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 条`,
           }}
         />
       </Card>
