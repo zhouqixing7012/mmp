@@ -3,6 +3,7 @@ import {
   AlertCircle,
   Download,
   FileSpreadsheet,
+  Info,
   Paperclip,
   Plus,
   Search,
@@ -20,11 +21,18 @@ import {
   Select,
   Space,
   Table,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
 import SelectModal from '../components/SelectModal';
-import { mockCompanies } from '../mock/businessRulesMock';
+import {
+  mockCompanies,
+  mockCostCenters,
+  mockLocationBasicDataData,
+  mockPlates,
+  mockWarehouseInfoData,
+} from '../mock/businessRulesMock';
 
 const { Text, Title } = Typography;
 
@@ -112,6 +120,16 @@ const requiredTitle = (text) => (
   </span>
 );
 
+const formatCodeDesc = (record) => {
+  if (!record) return '';
+  const code = String(record.code || '').trim();
+  const desc = String(record.desc || '').trim();
+  if (!code) return desc;
+  if (!desc) return code;
+  if (desc.startsWith(code)) return desc;
+  return `${code}.${desc}`;
+};
+
 export default function AccountingScrapEdit() {
   const [formData, setFormData] = useState({
     docNo: 'BF-202309280001',
@@ -129,7 +147,7 @@ export default function AccountingScrapEdit() {
   const [tableData, setTableData] = useState(initialData);
   const [selectedRows, setSelectedRows] = useState([]);
   const [attachments, setAttachments] = useState([]);
-  const [companySelectContext, setCompanySelectContext] = useState(null);
+  const [selectContext, setSelectContext] = useState(null);
   const [transferDetails, setTransferDetails] = useState(() => initialData.map(createTransferDetail));
 
   // 资产明细发生增删时，公司间转移明细严格按资产明细一一同步。
@@ -144,6 +162,12 @@ export default function AccountingScrapEdit() {
 
   const updateFormField = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const updateTransferDetail = (assetId, field, value) => {
+    setTransferDetails((current) => current.map((item) => (
+      item.assetId === assetId ? { ...item, [field]: value } : item
+    )));
   };
 
   const handleAddRow = () => {
@@ -189,23 +213,6 @@ export default function AccountingScrapEdit() {
     )));
   };
 
-  const updateTransferDetail = (assetId, field, value) => {
-    setTransferDetails((current) => current.map((item) => (
-      item.assetId === assetId ? { ...item, [field]: value } : item
-    )));
-  };
-
-  const handleCompanyConfirm = (record) => {
-    const companyValue = `${record.code}.${record.desc}`;
-    if (companySelectContext?.type === 'form') {
-      updateFormField('company', companyValue);
-    }
-    if (companySelectContext?.type === 'transfer') {
-      updateTransferDetail(companySelectContext.assetId, 'newCompany', companyValue);
-    }
-    setCompanySelectContext(null);
-  };
-
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files || []);
     const validFiles = files.filter((file) => {
@@ -247,6 +254,192 @@ export default function AccountingScrapEdit() {
 
     message.success('账面报废申请校验通过');
   };
+
+  const cityData = useMemo(() => (
+    mockLocationBasicDataData
+      .filter((item) => item.enabled)
+      .map((item) => ({ id: item.id, cityName: item.cityName }))
+  ), []);
+
+  const buildingData = useMemo(() => {
+    const detail = transferDetails.find((item) => item.assetId === selectContext?.assetId);
+    const selectedCity = detail?.city || '';
+    const matchedCity = mockLocationBasicDataData.find((item) => item.cityName === selectedCity);
+    const sourceCities = matchedCity ? [matchedCity] : mockLocationBasicDataData.filter((item) => item.enabled);
+
+    return sourceCities.flatMap((city) => (
+      (city.children || [])
+        .filter((building) => building.enabled)
+        .map((building) => ({
+          id: building.id,
+          cityName: city.cityName,
+          buildingName: building.buildingName,
+        }))
+    ));
+  }, [selectContext, transferDetails]);
+
+  const warehouseData = useMemo(() => (
+    mockWarehouseInfoData
+      .filter((item) => item.enabled)
+      .map((item) => ({
+        id: item.id,
+        code: item.code,
+        desc: item.desc,
+        city: item.city,
+      }))
+  ), []);
+
+  const floorOptions = useMemo(() => (
+    Array.from(new Set(tableData.map((item) => item.floor).filter(Boolean)))
+      .map((value) => ({ label: value, value }))
+  ), [tableData]);
+
+  const pickerConfig = useMemo(() => {
+    if (!selectContext) return null;
+
+    const configs = {
+      formCompany: {
+        title: '选择公司',
+        dataSource: mockCompanies,
+        searchFields: [
+          { label: '公司编码', name: 'code', dataIndex: 'code', placeholder: '请输入公司编码' },
+          { label: '公司名称', name: 'desc', dataIndex: 'desc', placeholder: '请输入公司名称' },
+        ],
+        columns: [
+          { title: '公司编码', dataIndex: 'code' },
+          { title: '公司名称', dataIndex: 'desc' },
+        ],
+      },
+      newCompany: {
+        title: '选择新公司',
+        dataSource: mockCompanies,
+        searchFields: [
+          { label: '公司编码', name: 'code', dataIndex: 'code', placeholder: '请输入公司编码' },
+          { label: '公司名称', name: 'desc', dataIndex: 'desc', placeholder: '请输入公司名称' },
+        ],
+        columns: [
+          { title: '公司编码', dataIndex: 'code' },
+          { title: '公司名称', dataIndex: 'desc' },
+        ],
+      },
+      plate: {
+        title: '选择板块',
+        dataSource: mockPlates,
+        searchFields: [
+          { label: '板块编码', name: 'code', dataIndex: 'code', placeholder: '请输入板块编码' },
+          { label: '板块描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入板块描述' },
+        ],
+        columns: [
+          { title: '板块编码', dataIndex: 'code' },
+          { title: '板块描述', dataIndex: 'desc' },
+        ],
+      },
+      costCenter: {
+        title: '选择成本中心',
+        dataSource: mockCostCenters,
+        searchFields: [
+          { label: '成本中心编码', name: 'code', dataIndex: 'code', placeholder: '请输入成本中心编码' },
+          { label: '成本中心描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入成本中心描述' },
+        ],
+        columns: [
+          { title: '成本中心编码', dataIndex: 'code' },
+          { title: '成本中心描述', dataIndex: 'desc' },
+        ],
+      },
+      city: {
+        title: '选择 City',
+        dataSource: cityData,
+        searchFields: [
+          { label: '城市名称', name: 'cityName', dataIndex: 'cityName', placeholder: '请输入城市名称' },
+        ],
+        columns: [
+          { title: '城市名称', dataIndex: 'cityName' },
+        ],
+      },
+      building: {
+        title: '选择 Building',
+        dataSource: buildingData,
+        searchFields: [
+          { label: '城市名称', name: 'cityName', dataIndex: 'cityName', placeholder: '请输入城市名称' },
+          { label: '建筑名称', name: 'buildingName', dataIndex: 'buildingName', placeholder: '请输入建筑名称' },
+        ],
+        columns: [
+          { title: '城市名称', dataIndex: 'cityName' },
+          { title: '建筑名称', dataIndex: 'buildingName' },
+        ],
+      },
+      warehouse: {
+        title: '选择调账后仓库',
+        dataSource: warehouseData,
+        searchFields: [
+          { label: '仓库编码', name: 'code', dataIndex: 'code', placeholder: '请输入仓库编码' },
+          { label: '仓库描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入仓库描述' },
+        ],
+        columns: [
+          { title: '仓库编码', dataIndex: 'code' },
+          { title: '仓库描述', dataIndex: 'desc' },
+          { title: 'City', dataIndex: 'city' },
+        ],
+      },
+    };
+
+    return configs[selectContext.type] || null;
+  }, [buildingData, cityData, selectContext, warehouseData]);
+
+  const handlePickerConfirm = (record) => {
+    if (!selectContext) return;
+
+    if (selectContext.type === 'formCompany') {
+      updateFormField('company', formatCodeDesc(record));
+      setSelectContext(null);
+      return;
+    }
+
+    const { assetId } = selectContext;
+    if (selectContext.type === 'newCompany') {
+      updateTransferDetail(assetId, 'newCompany', formatCodeDesc(record));
+    }
+    if (selectContext.type === 'plate') {
+      updateTransferDetail(assetId, 'newPlate', formatCodeDesc(record));
+    }
+    if (selectContext.type === 'costCenter') {
+      updateTransferDetail(assetId, 'newCostCenter', formatCodeDesc(record));
+    }
+    if (selectContext.type === 'city') {
+      setTransferDetails((current) => current.map((item) => (
+        item.assetId === assetId
+          ? { ...item, city: record.cityName, building: '', floor: '' }
+          : item
+      )));
+    }
+    if (selectContext.type === 'building') {
+      setTransferDetails((current) => current.map((item) => (
+        item.assetId === assetId
+          ? { ...item, building: record.buildingName, floor: '' }
+          : item
+      )));
+    }
+    if (selectContext.type === 'warehouse') {
+      updateTransferDetail(assetId, 'adjustedWarehouse', formatCodeDesc(record));
+    }
+
+    setSelectContext(null);
+  };
+
+  const renderPickerInput = (value, placeholder, context) => (
+    <div
+      className="relative cursor-pointer group"
+      onClick={() => setSelectContext(context)}
+    >
+      <Input
+        value={value}
+        readOnly
+        placeholder={placeholder}
+        className="pointer-events-none pr-9 group-hover:border-[#1677ff]"
+      />
+      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+    </div>
+  );
 
   const assetColumns = useMemo(() => [
     {
@@ -348,85 +541,90 @@ export default function AccountingScrapEdit() {
       dataIndex: 'newCompany',
       key: 'newCompany',
       width: 200,
-      render: (value, record) => (
-        <div
-          className="relative cursor-pointer group"
-          onClick={() => setCompanySelectContext({ type: 'transfer', assetId: record.assetId })}
-        >
-          <Input
-            value={value}
-            readOnly
-            placeholder="请选择新公司"
-            className="pointer-events-none pr-9 group-hover:border-[#1677ff]"
-          />
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
-        </div>
+      render: (value, record) => renderPickerInput(
+        value,
+        '请选择新公司',
+        { type: 'newCompany', assetId: record.assetId },
       ),
     },
     {
       title: requiredTitle('新板块'),
       dataIndex: 'newPlate',
       key: 'newPlate',
-      width: 160,
-      render: (value, record) => (
-        <Input value={value} placeholder="请输入新板块" onChange={(e) => updateTransferDetail(record.assetId, 'newPlate', e.target.value)} />
+      width: 180,
+      render: (value, record) => renderPickerInput(
+        value,
+        '请选择新板块',
+        { type: 'plate', assetId: record.assetId },
       ),
     },
     {
       title: requiredTitle('新成本中心'),
       dataIndex: 'newCostCenter',
       key: 'newCostCenter',
-      width: 180,
-      render: (value, record) => (
-        <Input value={value} placeholder="请输入新成本中心" onChange={(e) => updateTransferDetail(record.assetId, 'newCostCenter', e.target.value)} />
+      width: 200,
+      render: (value, record) => renderPickerInput(
+        value,
+        '请选择新成本中心',
+        { type: 'costCenter', assetId: record.assetId },
       ),
     },
     {
       title: requiredTitle('City'),
       dataIndex: 'city',
       key: 'city',
-      width: 140,
-      render: (value, record) => (
-        <Input value={value} placeholder="请输入 City" onChange={(e) => updateTransferDetail(record.assetId, 'city', e.target.value)} />
+      width: 150,
+      render: (value, record) => renderPickerInput(
+        value,
+        '请选择 City',
+        { type: 'city', assetId: record.assetId },
       ),
     },
     {
       title: requiredTitle('Building'),
       dataIndex: 'building',
       key: 'building',
-      width: 160,
-      render: (value, record) => (
-        <Input value={value} placeholder="请输入 Building" onChange={(e) => updateTransferDetail(record.assetId, 'building', e.target.value)} />
+      width: 180,
+      render: (value, record) => renderPickerInput(
+        value,
+        '请选择 Building',
+        { type: 'building', assetId: record.assetId },
       ),
     },
     {
       title: requiredTitle('Floor'),
       dataIndex: 'floor',
       key: 'floor',
-      width: 130,
+      width: 140,
       render: (value, record) => (
-        <Input value={value} placeholder="请输入 Floor" onChange={(e) => updateTransferDetail(record.assetId, 'floor', e.target.value)} />
+        <Select
+          value={value || undefined}
+          options={floorOptions}
+          placeholder="请选择 Floor"
+          allowClear
+          className="w-full"
+          onChange={(nextValue) => updateTransferDetail(record.assetId, 'floor', nextValue || '')}
+        />
       ),
     },
     {
       title: '调账后仓库',
       dataIndex: 'adjustedWarehouse',
       key: 'adjustedWarehouse',
-      width: 190,
-      render: (value, record) => (
-        <Input value={value} placeholder="请输入调账后仓库" onChange={(e) => updateTransferDetail(record.assetId, 'adjustedWarehouse', e.target.value)} />
+      width: 210,
+      render: (value, record) => renderPickerInput(
+        value,
+        '请选择调账后仓库',
+        { type: 'warehouse', assetId: record.assetId },
       ),
     },
-  ], []);
+  ], [floorOptions]);
 
   return (
     <div className="min-h-screen bg-[#f5f7fa] text-gray-800 pb-24">
       <div className="max-w-[1800px] mx-auto p-5 space-y-4">
         <div className="flex items-start justify-between gap-4 px-1">
-          <div>
-            <Title level={3} className="!mb-1 !text-[22px]">账面报废申请单</Title>
-            <Text type="secondary">填写账面报废信息并维护本次涉及的资产明细。</Text>
-          </div>
+          <Title level={3} className="!mb-0 !text-[22px]">账面报废申请单</Title>
           <div className="text-right pt-1">
             <Text type="secondary" className="block text-xs mb-1">申请单号</Text>
             <Text strong className="font-mono text-[15px]">{formData.docNo}</Text>
@@ -439,17 +637,8 @@ export default function AccountingScrapEdit() {
               <Text className="font-mono">{formData.docNo}</Text>
             </Descriptions.Item>
             <Descriptions.Item label={requiredTitle('公司')}>
-              <div
-                className="relative cursor-pointer group max-w-[360px]"
-                onClick={() => setCompanySelectContext({ type: 'form' })}
-              >
-                <Input
-                  value={formData.company}
-                  readOnly
-                  placeholder="请选择公司"
-                  className="pointer-events-none pr-9 group-hover:border-[#1677ff]"
-                />
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+              <div className="max-w-[360px]">
+                {renderPickerInput(formData.company, '请选择公司', { type: 'formCompany' })}
               </div>
             </Descriptions.Item>
             <Descriptions.Item label="单据状态">
@@ -463,14 +652,11 @@ export default function AccountingScrapEdit() {
             <Descriptions.Item label={requiredTitle('是否公司间转移')}>
               <Radio.Group
                 value={formData.intercompanyTransfer}
-                optionType="button"
-                buttonStyle="solid"
                 onChange={(e) => updateFormField('intercompanyTransfer', e.target.value)}
-                options={[
-                  { label: '否', value: '否' },
-                  { label: '是', value: '是' },
-                ]}
-              />
+              >
+                <Radio value="否">否</Radio>
+                <Radio value="是">是</Radio>
+              </Radio.Group>
             </Descriptions.Item>
             <Descriptions.Item label="备注" span={3}>
               <Input.TextArea
@@ -601,13 +787,16 @@ export default function AccountingScrapEdit() {
         {formData.intercompanyTransfer === '是' && (
           <Card
             size="small"
-            title="公司间转移明细"
+            title={(
+              <span className="inline-flex items-center gap-1.5">
+                公司间转移明细
+                <Tooltip title="与资产明细保持一一对应">
+                  <Info size={15} className="text-gray-400 cursor-help" />
+                </Tooltip>
+              </span>
+            )}
             className="shadow-sm border-[#adc6ff]"
-            extra={<Text type="secondary">与资产明细保持一一对应</Text>}
           >
-            <div className="mb-3 px-3 py-2.5 rounded-md bg-[#f0f5ff] border border-[#d6e4ff] text-sm text-[#34558b]">
-              资产标签号由上方资产明细自动带入，不能修改，也不能在本区域新增或删除资产。除“调账后仓库”外，其余字段均为必填。
-            </div>
             <Table
               rowKey="assetId"
               columns={transferColumns}
@@ -615,29 +804,25 @@ export default function AccountingScrapEdit() {
               pagination={false}
               size="small"
               bordered
-              scroll={{ x: 1480 }}
+              scroll={{ x: 1580 }}
               locale={{ emptyText: '资产明细暂无资产' }}
             />
           </Card>
         )}
       </div>
 
-      <SelectModal
-        open={Boolean(companySelectContext)}
-        onCancel={() => setCompanySelectContext(null)}
-        onConfirm={handleCompanyConfirm}
-        title="选择公司"
-        dataSource={mockCompanies}
-        rowKey="id"
-        searchFields={[
-          { label: '公司编码', name: 'code', dataIndex: 'code', placeholder: '请输入公司编码' },
-          { label: '公司名称', name: 'desc', dataIndex: 'desc', placeholder: '请输入公司名称' },
-        ]}
-        columns={[
-          { title: '公司编码', dataIndex: 'code' },
-          { title: '公司名称', dataIndex: 'desc' },
-        ]}
-      />
+      {pickerConfig && (
+        <SelectModal
+          open={Boolean(selectContext)}
+          onCancel={() => setSelectContext(null)}
+          onConfirm={handlePickerConfirm}
+          title={pickerConfig.title}
+          dataSource={pickerConfig.dataSource}
+          rowKey="id"
+          searchFields={pickerConfig.searchFields}
+          columns={pickerConfig.columns}
+        />
+      )}
 
       <div className="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur border-t border-[#e5e7eb] shadow-[0_-6px_20px_rgba(15,23,42,0.06)] z-40">
         <div className="max-w-[1800px] mx-auto px-5 py-3 flex justify-center gap-3">
