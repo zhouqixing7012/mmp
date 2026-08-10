@@ -37,7 +37,14 @@ function DateFilter({ value, onChange, placeholder }) {
   );
 }
 
-export default function DocumentListPage({ title, createLabel, createPath, onCreate }) {
+export default function DocumentListPage({
+  title,
+  createLabel,
+  createPath,
+  onCreate,
+  secondaryCreateLabel,
+  onSecondaryCreate,
+}) {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [rows, setRows] = useState([]);
@@ -168,8 +175,11 @@ export default function DocumentListPage({ title, createLabel, createPath, onCre
         extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}
       >
         <div className="mb-3 flex justify-end">
-          <Space>
+          <Space wrap>
             <Button type="primary" icon={<Plus size={14} />} onClick={handleCreate}>{createLabel}</Button>
+            {secondaryCreateLabel && onSecondaryCreate && (
+              <Button icon={<Plus size={14} />} onClick={onSecondaryCreate}>{secondaryCreateLabel}</Button>
+            )}
             <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除</Button>
           </Space>
         </div>
