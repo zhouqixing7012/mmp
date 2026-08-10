@@ -5,7 +5,7 @@ export const ASSET_MANAGEMENT_MENU_ITEMS = [
   '耗材维护',
   '合约号码维护',
   '标签打印',
-  '公司间转移',
+  '跨公司转移',
   '资产报废',
   '账面报废',
   '资产处置',
