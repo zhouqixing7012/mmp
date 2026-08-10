@@ -7,7 +7,7 @@ import TagPrintingPage from './TagPrintingPage';
 import EmployeeAssetInfoQueryPage from './EmployeeAssetInfoQueryPage';
 import DocumentListPage from './DocumentListPage';
 import AssetDisposalEditPage from './AssetDisposalEditPage';
-import CompanyTransferEditPage from './CompanyTransferEditPage';
+import CrossCompanyTransferEditPage from './CrossCompanyTransferEditPage';
 import ScrapApplicationEdit from '../ScrapApplicationEdit';
 import AccountingScrapEdit from '../AccountingScrapEdit';
 import './embeddedPages.css';
@@ -17,7 +17,7 @@ export const ASSET_MANAGEMENT_SUB_MENUS = [
   '耗材维护',
   '合约号码维护',
   '标签打印',
-  '公司间转移',
+  '跨公司转移',
   '资产报废',
   '账面报废',
   '资产处置',
@@ -59,20 +59,20 @@ export function AssetManagementContent({ activeSubMenu }) {
     return <TagPrintingPage />;
   }
 
-  if (activeSubMenu === '公司间转移') {
-    if (embeddedPage === 'companyTransfer') {
+  if (activeSubMenu === '跨公司转移') {
+    if (embeddedPage === 'crossCompanyTransfer') {
       return (
         <EmbeddedPage>
-          <CompanyTransferEditPage onBack={() => setEmbeddedPage(null)} />
+          <CrossCompanyTransferEditPage onBack={() => setEmbeddedPage(null)} />
         </EmbeddedPage>
       );
     }
 
     return (
       <DocumentListPage
-        title="公司间转移"
-        createLabel="创建公司间转移申请单"
-        onCreate={() => setEmbeddedPage('companyTransfer')}
+        title="跨公司转移"
+        createLabel="创建跨公司转移申请单"
+        onCreate={() => setEmbeddedPage('crossCompanyTransfer')}
       />
     );
   }
@@ -86,11 +86,24 @@ export function AssetManagementContent({ activeSubMenu }) {
       );
     }
 
+    if (embeddedPage === 'scrapCrossCompanyTransfer') {
+      return (
+        <EmbeddedPage>
+          <CrossCompanyTransferEditPage
+            variant="scrap"
+            onBack={() => setEmbeddedPage(null)}
+          />
+        </EmbeddedPage>
+      );
+    }
+
     return (
       <DocumentListPage
         title="资产报废"
         createLabel="创建资产报废申请单"
         onCreate={() => setEmbeddedPage('assetScrap')}
+        secondaryCreateLabel="创建跨公司转移申请单"
+        onSecondaryCreate={() => setEmbeddedPage('scrapCrossCompanyTransfer')}
       />
     );
   }
@@ -149,4 +162,4 @@ export { default as TagPrintingPage } from './TagPrintingPage';
 export { default as EmployeeAssetInfoQueryPage } from './EmployeeAssetInfoQueryPage';
 export { default as DocumentListPage } from './DocumentListPage';
 export { default as AssetDisposalEditPage } from './AssetDisposalEditPage';
-export { default as CompanyTransferEditPage } from './CompanyTransferEditPage';
+export { default as CrossCompanyTransferEditPage } from './CrossCompanyTransferEditPage';
