@@ -7,6 +7,7 @@ import TagPrintingPage from './TagPrintingPage';
 import EmployeeAssetInfoQueryPage from './EmployeeAssetInfoQueryPage';
 import DocumentListPage from './DocumentListPage';
 import AssetDisposalEditPage from './AssetDisposalEditPage';
+import CompanyTransferEditPage from './CompanyTransferEditPage';
 import ScrapApplicationEdit from '../ScrapApplicationEdit';
 import AccountingScrapEdit from '../AccountingScrapEdit';
 import './embeddedPages.css';
@@ -56,6 +57,24 @@ export function AssetManagementContent({ activeSubMenu }) {
 
   if (activeSubMenu === '标签打印') {
     return <TagPrintingPage />;
+  }
+
+  if (activeSubMenu === '公司间转移') {
+    if (embeddedPage === 'companyTransfer') {
+      return (
+        <EmbeddedPage>
+          <CompanyTransferEditPage onBack={() => setEmbeddedPage(null)} />
+        </EmbeddedPage>
+      );
+    }
+
+    return (
+      <DocumentListPage
+        title="公司间转移"
+        createLabel="创建公司间转移申请单"
+        onCreate={() => setEmbeddedPage('companyTransfer')}
+      />
+    );
   }
 
   if (activeSubMenu === '资产报废') {
@@ -130,3 +149,4 @@ export { default as TagPrintingPage } from './TagPrintingPage';
 export { default as EmployeeAssetInfoQueryPage } from './EmployeeAssetInfoQueryPage';
 export { default as DocumentListPage } from './DocumentListPage';
 export { default as AssetDisposalEditPage } from './AssetDisposalEditPage';
+export { default as CompanyTransferEditPage } from './CompanyTransferEditPage';
