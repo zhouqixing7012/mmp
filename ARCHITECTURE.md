@@ -45,7 +45,7 @@
 ├─ 耗材维护
 ├─ 合约号码维护
 ├─ 标签打印
-├─ 公司间转移
+├─ 跨公司转移
 ├─ 资产报废
 ├─ 账面报废
 ├─ 资产处置
@@ -77,20 +77,35 @@ AssetManagementContent
   ├─ ConsumableMaintenancePage
   ├─ ContractNumberMaintenancePage
   ├─ TagPrintingPage
-  ├─ DocumentListPage（资产报废 / 账面报废 / 资产处置）
+  ├─ DocumentListPage
+  │   ├─ 跨公司转移 → CrossCompanyTransferEditPage
+  │   ├─ 资产报废 → ScrapApplicationEdit
+  │   │              └─ 第二新建入口 → CrossCompanyTransferEditPage(variant="scrap")
+  │   ├─ 账面报废 → AccountingScrapEdit
+  │   └─ 资产处置 → AssetDisposalEditPage
   └─ EmployeeAssetInfoQueryPage
 ```
 
-维护类页面共用 `LedgerMaintenancePage`；报废/处置入口共用 `DocumentListPage`，避免重复实现同结构查询列表。
+维护类页面共用 `LedgerMaintenancePage`；跨公司转移、报废、账面报废和处置入口共用 `DocumentListPage`，避免重复实现同结构查询列表。
 
 ### `DocumentListPage` 职责
 
 - 查询：申请单号、单据状态、公司、制单时间从/至。
 - 列表：申请单、单据状态、公司、制单人、制单时间、资产数量、备注、操作。
-- 操作：对应创建申请单、删除。
-- 资产报废新建复用 `/BaofeiShenqing`。
-- 账面报废新建复用 `/`。
-- 资产处置新建页字段未确认，不自行定义表单。
+- 操作：主创建申请单、可选第二创建入口、删除。
+- 资产报废同时提供“创建资产报废申请单”和“创建跨公司转移申请单”。
+
+### 跨公司转移页面
+
+- `CrossCompanyTransferEditPage` 统一维护跨公司转移明细字段和添加/删除物资交互。
+- 默认模式用于“资产管理 → 跨公司转移”。
+- `variant="scrap"` 用于“资产报废”列表的第二新建入口，基本信息沿用报废申请单口径但隐藏资产大类、资产所在地。
+- 两种模式共用同一套跨公司转移明细，避免字段漂移。
+
+### 报废申请页面
+
+- `ScrapApplicationEdit` 保留原有基本字段、必填校验、导入 Excel、增行、删行、保存、提交、退出。
+- 报废资产明细不再包含“关联配件”页签和对应逻辑。
 
 ## 库存管理调用关系
 
@@ -107,7 +122,7 @@ InventoryManagementContent
   └─ 库管员工作台
 ```
 
-当前库存管理只建立导航和页面入口。每个子页面在截图和字段确认前只展示空状态，不补造业务结构。
+库存管理按用户已确认截图逐页补充；未确认的新建/详情字段不补造。
 
 ## 个人工作台导航
 
