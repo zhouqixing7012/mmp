@@ -8,7 +8,6 @@ import {
   Select,
   Space,
   Table,
-  Tabs,
   Typography,
   message,
 } from 'antd';
@@ -45,7 +44,6 @@ const requiredTitle = (text) => (
 );
 
 export default function ScrapApplicationEdit({ embedded = false, onBack }) {
-  const [activeTab, setActiveTab] = useState('assets');
   const [description, setDescription] = useState('');
   const [rows, setRows] = useState([]);
   const [selected, setSelected] = useState([]);
@@ -57,7 +55,6 @@ export default function ScrapApplicationEdit({ embedded = false, onBack }) {
 
   const addRow = () => {
     setRows((prev) => [...prev, emptyRow(Date.now())]);
-    setActiveTab('assets');
   };
 
   const deleteRows = () => {
@@ -252,15 +249,7 @@ export default function ScrapApplicationEdit({ embedded = false, onBack }) {
           className="shadow-sm"
           extra={<Text type="secondary">共 {rows.length} 条</Text>}
         >
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <Tabs
-              activeKey={activeTab}
-              onChange={setActiveTab}
-              items={[
-                { key: 'assets', label: '报废资产' },
-                { key: 'parts', label: '关联配件' },
-              ]}
-            />
+          <div className="mb-3 flex justify-end">
             <Space wrap>
               <Button
                 icon={<Download size={15} />}
@@ -277,27 +266,21 @@ export default function ScrapApplicationEdit({ embedded = false, onBack }) {
             </Space>
           </div>
 
-          {activeTab === 'assets' ? (
-            <Table
-              rowKey="id"
-              size="small"
-              bordered
-              columns={tableColumns}
-              dataSource={rows}
-              rowSelection={{
-                selectedRowKeys: selected,
-                onChange: setSelected,
-                fixed: true,
-              }}
-              scroll={{ x: 1600 }}
-              pagination={false}
-              locale={{ emptyText: '暂无报废资产，请点击“增行”添加' }}
-            />
-          ) : (
-            <div className="flex min-h-[180px] items-center justify-center rounded border border-[#f0f0f0] text-gray-400">
-              暂无关联配件
-            </div>
-          )}
+          <Table
+            rowKey="id"
+            size="small"
+            bordered
+            columns={tableColumns}
+            dataSource={rows}
+            rowSelection={{
+              selectedRowKeys: selected,
+              onChange: setSelected,
+              fixed: true,
+            }}
+            scroll={{ x: 1600 }}
+            pagination={false}
+            locale={{ emptyText: '暂无报废资产，请点击“增行”添加' }}
+          />
         </Card>
       </div>
 
