@@ -50,7 +50,6 @@ export default function ScrapApplicationEdit({ embedded = false, onBack }) {
   const [rows, setRows] = useState([]);
   const [selected, setSelected] = useState([]);
   const [company, setCompany] = useState('');
-  const [companyId, setCompanyId] = useState(null);
   const [companyModalOpen, setCompanyModalOpen] = useState(false);
   const [assetCategory, setAssetCategory] = useState(undefined);
   const [assetLocation, setAssetLocation] = useState(undefined);
@@ -261,7 +260,6 @@ export default function ScrapApplicationEdit({ embedded = false, onBack }) {
                 { key: 'assets', label: '报废资产' },
                 { key: 'parts', label: '关联配件' },
               ]}
-              className="mb-[-17px]"
             />
             <Space wrap>
               <Button
@@ -319,7 +317,6 @@ export default function ScrapApplicationEdit({ embedded = false, onBack }) {
         onCancel={() => setCompanyModalOpen(false)}
         onConfirm={(record) => {
           setCompany(record.name);
-          setCompanyId(record.id);
           setErrors((prev) => ({ ...prev, company: false }));
           setCompanyModalOpen(false);
         }}
@@ -332,8 +329,6 @@ export default function ScrapApplicationEdit({ embedded = false, onBack }) {
           <Button type="primary" className="min-w-[104px]" onClick={handleSubmit}>提交</Button>
         </div>
       </div>
-
-      <span className="hidden">{companyId}</span>
     </div>
   );
 }
