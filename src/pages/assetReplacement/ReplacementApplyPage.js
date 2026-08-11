@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, Checkbox, Descriptions, Empty, Input, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Button, Card, Checkbox, Empty, Input, Space, Table, Typography, message as antdMessage } from 'antd';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { CURRENT_REPLACEMENT_APPLICANT, REPLACEMENT_NOTICE } from '../../mock/assetReplacementMock';
 import {
@@ -12,6 +13,15 @@ import {
 } from '../../services/assetReplacementService';
 
 const { TextArea } = Input;
+
+function SectionTitle({ children }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="inline-block h-3 w-1 rounded-sm bg-blue-500" />
+      <span>{children}</span>
+    </span>
+  );
+}
 
 export default function ReplacementApplyPage() {
   const navigate = useNavigate();
@@ -58,14 +68,14 @@ export default function ReplacementApplyPage() {
   };
 
   const columns = [
-    { title: '资产标签号', dataIndex: 'assetTag', width: 150 },
-    { title: '资产说明', dataIndex: 'assetDesc', width: 250 },
-    { title: '配置', dataIndex: 'config', width: 270 },
+    { title: '资产标签号', dataIndex: 'assetTag', width: 150, fixed: 'left' },
+    { title: '资产说明', dataIndex: 'assetDesc', width: 250, ellipsis: true },
+    { title: '配置', dataIndex: 'config', width: 270, ellipsis: true },
     { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
     { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
     { title: '资产用途', dataIndex: 'purpose', width: 110 },
-    { title: '部件', dataIndex: 'component', width: 180 },
-    { title: '耗材信息', dataIndex: 'consumables', width: 220, render: (value) => value || '-' },
+    { title: '部件', dataIndex: 'component', width: 180, ellipsis: true },
+    { title: '耗材信息', dataIndex: 'consumables', width: 220, ellipsis: true, render: (value) => value || '-' },
   ];
 
   const back = () => {
@@ -74,18 +84,20 @@ export default function ReplacementApplyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4">
+    <>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="flex items-center justify-between">
           <Typography.Title level={4} className="mb-0">资产更换申请</Typography.Title>
         </div>
 
-        <Card title="更换信息说明" size="small">
-          <Descriptions bordered size="small" column={2}>
-            <Descriptions.Item label="申请人">{CURRENT_REPLACEMENT_APPLICANT.name}-{CURRENT_REPLACEMENT_APPLICANT.id}</Descriptions.Item>
-            <Descriptions.Item label="更换类型">故障更换</Descriptions.Item>
-            <Descriptions.Item label={<><span className="text-red-500">*</span> 更换原因</>} span={2}>
+        <Card title={<SectionTitle>更换信息说明</SectionTitle>} size="small">
+          <DetailGrid>
+            <DetailItem label="申请人">
+              {CURRENT_REPLACEMENT_APPLICANT.name}-{CURRENT_REPLACEMENT_APPLICANT.id}
+            </DetailItem>
+            <DetailItem label="更换类型">故障更换</DetailItem>
+            <DetailItem label="更换原因" span={3}>
               <TextArea
                 rows={4}
                 maxLength={150}
@@ -94,12 +106,12 @@ export default function ReplacementApplyPage() {
                 placeholder="请详细描述更换原因，如设备故障现象、影响工作情况等"
                 onChange={(event) => setReason(event.target.value)}
               />
-            </Descriptions.Item>
-          </Descriptions>
+            </DetailItem>
+          </DetailGrid>
         </Card>
 
         <Card
-          title="退回资产信息"
+          title={<SectionTitle>退回资产信息</SectionTitle>}
           size="small"
           extra={<Typography.Text>总计：{totalQuantity} 项</Typography.Text>}
         >
@@ -115,7 +127,7 @@ export default function ReplacementApplyPage() {
           />
         </Card>
 
-        <Card title="更换须知" size="small">
+        <Card title={<SectionTitle>更换须知</SectionTitle>} size="small">
           <ul className="mb-4 list-disc space-y-2 pl-5 text-sm text-red-500">
             {REPLACEMENT_NOTICE.map((item) => <li key={item}>{item}</li>)}
           </ul>
@@ -126,11 +138,11 @@ export default function ReplacementApplyPage() {
           </div>
         </Card>
 
-        <div className="flex justify-center gap-3 rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="flex justify-center gap-3 py-2">
           <Button type="primary" loading={submitting} onClick={submit}>提交</Button>
           <Button onClick={back}>返回</Button>
         </div>
       </Space>
-    </div>
+    </>
   );
 }
