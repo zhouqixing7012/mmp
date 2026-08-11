@@ -23,6 +23,15 @@ function SectionTitle({ children }) {
   );
 }
 
+function RequiredLabel({ children }) {
+  return (
+    <span>
+      <span className="mr-1 text-red-500">*</span>
+      {children}
+    </span>
+  );
+}
+
 export default function ReplacementApplyPage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
@@ -97,7 +106,7 @@ export default function ReplacementApplyPage() {
               {CURRENT_REPLACEMENT_APPLICANT.name}-{CURRENT_REPLACEMENT_APPLICANT.id}
             </DetailItem>
             <DetailItem label="更换类型">故障更换</DetailItem>
-            <DetailItem label="更换原因" span={3}>
+            <DetailItem label={<RequiredLabel>更换原因</RequiredLabel>} span={3}>
               <TextArea
                 rows={4}
                 maxLength={150}
