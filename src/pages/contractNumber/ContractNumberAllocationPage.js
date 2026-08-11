@@ -23,6 +23,8 @@ import { formatDepartment } from '../../utils/displayFormat';
 import ContractNumberSelectModal from './ContractNumberSelectModal';
 
 const { TextArea } = Input;
+const DESCRIPTION_LABEL_STYLE = { width: '10%', minWidth: 96, whiteSpace: 'nowrap' };
+const DESCRIPTION_CONTENT_STYLE = { width: '23.3333%' };
 
 function nowText() {
   return new Date().toLocaleString('zh-CN', { hour12: false }).replaceAll('/', '-');
@@ -58,6 +60,20 @@ function SectionTitle({ children }) {
       <span className="inline-block h-3 w-1 rounded-sm bg-blue-500" />
       <span>{children}</span>
     </span>
+  );
+}
+
+function DetailDescriptions({ children }) {
+  return (
+    <Descriptions
+      bordered
+      size="small"
+      column={3}
+      labelStyle={DESCRIPTION_LABEL_STYLE}
+      contentStyle={DESCRIPTION_CONTENT_STYLE}
+    >
+      {children}
+    </Descriptions>
   );
 }
 
@@ -204,21 +220,21 @@ export default function ContractNumberAllocationPage() {
         </div>
 
         <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>
-          <Descriptions bordered size="small" column={3}>
+          <DetailDescriptions>
             <Descriptions.Item label="申请人">{application.applicant.name}（{application.applicant.id}）</Descriptions.Item>
             <Descriptions.Item label="部门">{formatDepartment(application.applicant.department)}</Descriptions.Item>
             <Descriptions.Item label="职级">{application.applicant.level || '-'}</Descriptions.Item>
             <Descriptions.Item label="手机">{application.applicant.phone || '-'}</Descriptions.Item>
             <Descriptions.Item label="分机">{application.applicant.extension || '-'}</Descriptions.Item>
             <Descriptions.Item label="入职时间">{application.applicant.entryTime || '-'}</Descriptions.Item>
-          </Descriptions>
+          </DetailDescriptions>
         </Card>
 
         <Card size="small" title={<SectionTitle>申请信息</SectionTitle>}>
-          <Descriptions bordered size="small" column={3}>
+          <DetailDescriptions>
             <Descriptions.Item label="申请原因" span={3}>{application.applyReason || '-'}</Descriptions.Item>
             <Descriptions.Item label="身份证号码">{application.idCard || '-'}</Descriptions.Item>
-            <Descriptions.Item label="附件" span={2}>
+            <Descriptions.Item label="附件">
               {application.attachment ? (
                 <Button
                   type="link"
@@ -230,11 +246,11 @@ export default function ContractNumberAllocationPage() {
                 </Button>
               ) : '-'}
             </Descriptions.Item>
-          </Descriptions>
+          </DetailDescriptions>
         </Card>
 
         <Card size="small" title={<SectionTitle>号码配给</SectionTitle>}>
-          <Descriptions bordered size="small" column={3}>
+          <DetailDescriptions>
             <Descriptions.Item label={<RequiredLabel>电话号码</RequiredLabel>}>
               <Input.Search
                 readOnly
@@ -266,7 +282,7 @@ export default function ContractNumberAllocationPage() {
                 </Typography.Text>
               </Space>
             </Descriptions.Item>
-          </Descriptions>
+          </DetailDescriptions>
         </Card>
 
         <Card size="small" title={<SectionTitle>审批信息</SectionTitle>}>
