@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Descriptions,
   Empty,
   Input,
   Space,
@@ -19,8 +18,8 @@ import {
 import { formatDepartment } from '../../utils/displayFormat';
 
 const { TextArea } = Input;
-const DESCRIPTION_LABEL_STYLE = { width: '10%', minWidth: 96, whiteSpace: 'nowrap' };
-const DESCRIPTION_CONTENT_STYLE = { width: '23.3333%' };
+const DETAIL_LABEL_WIDTH = 96;
+const DETAIL_BORDER_COLOR = '#f0f0f0';
 
 function nowText() {
   return new Date().toLocaleString('zh-CN', { hour12: false }).replaceAll('/', '-');
@@ -50,17 +49,59 @@ function SectionTitle({ children }) {
   );
 }
 
-function DetailDescriptions({ children }) {
+function DetailTable({ children }) {
   return (
-    <Descriptions
-      bordered
-      size="small"
-      column={3}
-      labelStyle={DESCRIPTION_LABEL_STYLE}
-      contentStyle={DESCRIPTION_CONTENT_STYLE}
+    <div className="w-full overflow-x-auto">
+      <table
+        className="w-full border-collapse text-sm"
+        style={{ tableLayout: 'fixed' }}
+      >
+        <colgroup>
+          <col style={{ width: DETAIL_LABEL_WIDTH }} />
+          <col />
+          <col style={{ width: DETAIL_LABEL_WIDTH }} />
+          <col />
+          <col style={{ width: DETAIL_LABEL_WIDTH }} />
+          <col />
+        </colgroup>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
+  );
+}
+
+function DetailLabel({ children }) {
+  return (
+    <th
+      style={{
+        padding: '8px 12px',
+        border: `1px solid ${DETAIL_BORDER_COLOR}`,
+        background: '#fafafa',
+        fontWeight: 400,
+        textAlign: 'left',
+        whiteSpace: 'nowrap',
+        verticalAlign: 'middle',
+      }}
     >
       {children}
-    </Descriptions>
+    </th>
+  );
+}
+
+function DetailValue({ children, colSpan = 1 }) {
+  return (
+    <td
+      colSpan={colSpan}
+      style={{
+        padding: '8px 12px',
+        border: `1px solid ${DETAIL_BORDER_COLOR}`,
+        background: '#fff',
+        verticalAlign: 'middle',
+        wordBreak: 'break-word',
+      }}
+    >
+      {children}
+    </td>
   );
 }
 
@@ -158,47 +199,65 @@ export default function ContractNumberSupervisorApprovalPage() {
         </div>
 
         <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>
-          <DetailDescriptions>
-            <Descriptions.Item label="申请人">{application.applicant.name}（{application.applicant.id}）</Descriptions.Item>
-            <Descriptions.Item label="部门">{formatDepartment(application.applicant.department)}</Descriptions.Item>
-            <Descriptions.Item label="职级">{application.applicant.level || '-'}</Descriptions.Item>
-            <Descriptions.Item label="手机">{application.applicant.phone || '-'}</Descriptions.Item>
-            <Descriptions.Item label="分机">{application.applicant.extension || '-'}</Descriptions.Item>
-            <Descriptions.Item label="入职时间">{application.applicant.entryTime || '-'}</Descriptions.Item>
-          </DetailDescriptions>
+          <DetailTable>
+            <tr>
+              <DetailLabel>申请人</DetailLabel>
+              <DetailValue>{application.applicant.name}（{application.applicant.id}）</DetailValue>
+              <DetailLabel>部门</DetailLabel>
+              <DetailValue>{formatDepartment(application.applicant.department)}</DetailValue>
+              <DetailLabel>职级</DetailLabel>
+              <DetailValue>{application.applicant.level || '-'}</DetailValue>
+            </tr>
+            <tr>
+              <DetailLabel>手机</DetailLabel>
+              <DetailValue>{application.applicant.phone || '-'}</DetailValue>
+              <DetailLabel>分机</DetailLabel>
+              <DetailValue>{application.applicant.extension || '-'}</DetailValue>
+              <DetailLabel>入职时间</DetailLabel>
+              <DetailValue>{application.applicant.entryTime || '-'}</DetailValue>
+            </tr>
+          </DetailTable>
         </Card>
 
         <Card size="small" title={<SectionTitle>申请信息</SectionTitle>}>
-          <DetailDescriptions>
-            <Descriptions.Item label="申请原因" span={3}>{application.applyReason || '-'}</Descriptions.Item>
-            <Descriptions.Item label="身份证号码">{application.idCard || '-'}</Descriptions.Item>
-            <Descriptions.Item label="附件">
-              {application.attachment ? (
-                <Button
-                  type="link"
-                  size="small"
-                  className="px-0"
-                  onClick={() => downloadAttachment(application.attachment)}
-                >
-                  {application.attachment.name}
-                </Button>
-              ) : '-'}
-            </Descriptions.Item>
-          </DetailDescriptions>
+          <DetailTable>
+            <tr>
+              <DetailLabel>申请原因</DetailLabel>
+              <DetailValue colSpan={5}>{application.applyReason || '-'}</DetailValue>
+            </tr>
+            <tr>
+              <DetailLabel>身份证号码</DetailLabel>
+              <DetailValue>{application.idCard || '-'}</DetailValue>
+              <DetailLabel>附件</DetailLabel>
+              <DetailValue colSpan={3}>
+                {application.attachment ? (
+                  <Button
+                    type="link"
+                    size="small"
+                    className="px-0"
+                    onClick={() => downloadAttachment(application.attachment)}
+                  >
+                    {application.attachment.name}
+                  </Button>
+                ) : '-'}
+              </DetailValue>
+            </tr>
+          </DetailTable>
         </Card>
 
         <Card size="small" title={<SectionTitle>号码配给</SectionTitle>}>
-          <DetailDescriptions>
-            <Descriptions.Item label="电话号码">
-              {application.assignedNumber?.phoneNumber || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label="话费套餐">
-              {application.assignedNumber?.packageName || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label="附件信息" span={3}>
-              {application.allocationAttachment?.name || '-'}
-            </Descriptions.Item>
-          </DetailDescriptions>
+          <DetailTable>
+            <tr>
+              <DetailLabel>电话号码</DetailLabel>
+              <DetailValue>{application.assignedNumber?.phoneNumber || '-'}</DetailValue>
+              <DetailLabel>话费套餐</DetailLabel>
+              <DetailValue colSpan={3}>{application.assignedNumber?.packageName || '-'}</DetailValue>
+            </tr>
+            <tr>
+              <DetailLabel>附件信息</DetailLabel>
+              <DetailValue colSpan={5}>{application.allocationAttachment?.name || '-'}</DetailValue>
+            </tr>
+          </DetailTable>
         </Card>
 
         <Card size="small" title={<SectionTitle>审批信息</SectionTitle>}>
