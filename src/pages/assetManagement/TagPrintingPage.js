@@ -3,8 +3,11 @@ import {
   Button,
   Card,
   DatePicker,
+  Descriptions,
   Input,
+  InputNumber,
   Modal,
+  Radio,
   Select,
   Space,
   Table,
@@ -12,10 +15,12 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
-import { ArrowLeft, Eye, Printer, Search, Tags } from 'lucide-react';
+import { ArrowLeft, Eye, Printer, Search, Settings, Tags } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
+
+const { RangePicker } = DatePicker;
 
 const DEFAULT_FILTERS = {
   companyCn: '',
@@ -252,11 +257,23 @@ const PRINT_HISTORY_ROWS = [
   { id: 'history-10', batch: 'TPB-202602060021', tag: '114152601941', printedAt: '2026-03-10', printIp: '10.2.156.45', printer: '刘建' },
 ];
 
+const INITIAL_LABEL_DETAIL_ROWS = [
+  { id: 'label-202501130001-1', batch: 'TPB-202501130001', tag: '114122502032', printCount: 1, printed: '是' },
+  ...PRINT_HISTORY_ROWS.map((row) => ({
+    id: `label-${row.id}`,
+    batch: row.batch,
+    tag: row.tag,
+    printCount: 1,
+    printed: '是',
+  })),
+];
+
 const DEFAULT_PREPRINT_FILTERS = {
   batch: '',
   printed: '',
   creator: '',
   orderNo: '',
+  assetTag: '',
   createdFrom: '',
   createdTo: '',
 };
@@ -267,6 +284,11 @@ const DEFAULT_HISTORY_FILTERS = {
   printer: '',
   printedFrom: '',
   printedTo: '',
+};
+
+const DEFAULT_LABEL_FILTERS = {
+  tag: '',
+  printed: '',
 };
 
 function normalizeText(value) {
@@ -317,6 +339,181 @@ function DateFilter({ value, onChange }) {
   );
 }
 
+function GenerateLabelsPage({ onBack, messageApi }) {
+  const [ledger, setLedger] = useState('101-新时代');
+  const [rule, setRule] = useState('normal');
+  const [assetType, setAssetType] = useState(undefined);
+  const [normalYear, setNormalYear] = useState(null);
+  const [consumableCategory, setConsumableCategory] = useState(undefined);
+  const [consumableSubCategory, setConsumableSubCategory] = useState(undefined);
+  const [consumableYear, setConsumableYear] = useState(null);
+  const [furnitureType, setFurnitureType] = useState(undefined);
+  const [sparePartType, setSparePartType] = useState(undefined);
+  const [labelSize, setLabelSize] = useState('小');
+  const [printCount, setPrintCount] = useState(1);
+  const [sparePartCount, setSparePartCount] = useState(1);
+  const [remark, setRemark] = useState('');
+
+  const renderRuleFields = (active, children) => (
+    <div className={active ? '' : 'opacity-60'}>{children}</div>
+  );
+
+  return (
+    <Space direction="vertical" size={16} className="w-full">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Button icon={<ArrowLeft size={14} />} onClick={onBack}>返回</Button>
+          <Typography.Title level={4} className="mb-0">生成标签</Typography.Title>
+        </div>
+        <Button type="primary" icon={<Tags size={14} />} onClick={() => messageApi.success('生成标签操作已触发')}>
+          生成标签
+        </Button>
+      </div>
+
+      <Card size="small" title="标签设置" className="shadow-sm">
+        <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div>
+            <Typography.Text strong>选择账套</Typography.Text>
+            <Select
+              className="mt-2 w-full"
+              value={ledger}
+              options={[{ label: '101-新时代', value: '101-新时代' }]}
+              onChange={setLedger}
+            />
+          </div>
+        </div>
+
+        <Space direction="vertical" size={12} className="w-full">
+          <div className="rounded-md border border-[#f0f0f0] bg-[#fafafa] p-4">
+            <Radio checked={rule === 'normal'} onChange={() => setRule('normal')}>
+              <Typography.Text strong>常规标签规则</Typography.Text>
+            </Radio>
+            {renderRuleFields(rule === 'normal', (
+              <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <div>
+                  <Typography.Text>选择资产类型</Typography.Text>
+                  <Select className="mt-2 w-full" placeholder="请选择" value={assetType} options={[]} onChange={setAssetType} disabled={rule !== 'normal'} />
+                </div>
+                <div>
+                  <Typography.Text>选择年份</Typography.Text>
+                  <DatePicker className="mt-2 w-full" picker="year" value={normalYear} onChange={setNormalYear} disabled={rule !== 'normal'} />
+                </div>
+                <div>
+                  <Typography.Text>当前最大序号</Typography.Text>
+                  <Input className="mt-2" value="-" readOnly disabled />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-md border border-[#f0f0f0] bg-[#fafafa] p-4">
+            <Radio checked={rule === 'consumable'} onChange={() => setRule('consumable')}>
+              <Typography.Text strong>高耗标签规则</Typography.Text>
+            </Radio>
+            {renderRuleFields(rule === 'consumable', (
+              <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-4">
+                <div>
+                  <Typography.Text>选择高耗大类</Typography.Text>
+                  <Select className="mt-2 w-full" placeholder="请选择" value={consumableCategory} options={[]} onChange={setConsumableCategory} disabled={rule !== 'consumable'} />
+                </div>
+                <div>
+                  <Typography.Text>选择高耗小类</Typography.Text>
+                  <Select className="mt-2 w-full" placeholder="请选择" value={consumableSubCategory} options={[]} onChange={setConsumableSubCategory} disabled={rule !== 'consumable'} />
+                </div>
+                <div>
+                  <Typography.Text>选择年份</Typography.Text>
+                  <DatePicker className="mt-2 w-full" picker="year" value={consumableYear} onChange={setConsumableYear} disabled={rule !== 'consumable'} />
+                </div>
+                <div>
+                  <Typography.Text>当前最大序号</Typography.Text>
+                  <Input className="mt-2" value="-" readOnly disabled />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-md border border-[#f0f0f0] bg-[#fafafa] p-4">
+            <Radio checked={rule === 'furniture'} onChange={() => setRule('furniture')}>
+              <Typography.Text strong>特殊规则-家具</Typography.Text>
+            </Radio>
+            {renderRuleFields(rule === 'furniture', (
+              <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div>
+                  <Typography.Text>选择家具类型</Typography.Text>
+                  <Select className="mt-2 w-full" placeholder="请选择" value={furnitureType} options={[]} onChange={setFurnitureType} disabled={rule !== 'furniture'} />
+                </div>
+                <div>
+                  <Typography.Text>当前最大序号</Typography.Text>
+                  <Input className="mt-2" value="-" readOnly disabled />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-md border border-[#f0f0f0] bg-[#fafafa] p-4">
+            <Radio checked={rule === 'mobile'} onChange={() => setRule('mobile')}>
+              <Typography.Text strong>特殊规则-手机</Typography.Text>
+            </Radio>
+            <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div>
+                <Typography.Text>标签前缀</Typography.Text>
+                <Input className="mt-2" value="NE" readOnly />
+              </div>
+              <div>
+                <Typography.Text>当前最大序号</Typography.Text>
+                <Input className="mt-2" value="3792" readOnly />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-md border border-[#f0f0f0] bg-[#fafafa] p-4">
+            <Radio checked={rule === 'sparePart'} onChange={() => setRule('sparePart')}>
+              <Typography.Text strong>特殊规则-备件</Typography.Text>
+            </Radio>
+            {renderRuleFields(rule === 'sparePart', (
+              <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div>
+                  <Typography.Text>选择备件类型</Typography.Text>
+                  <Select className="mt-2 w-full" placeholder="请选择" value={sparePartType} options={[]} onChange={setSparePartType} disabled={rule !== 'sparePart'} />
+                </div>
+                <div>
+                  <Typography.Text>当前最大序号</Typography.Text>
+                  <Input className="mt-2" value="-" readOnly disabled />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Space>
+      </Card>
+
+      <Card size="small" title="标签生成" className="shadow-sm">
+        <Descriptions bordered size="small" column={3} labelStyle={{ width: 128 }}>
+          <Descriptions.Item label="标签大小">
+            <Radio.Group value={labelSize} onChange={(event) => setLabelSize(event.target.value)}>
+              <Radio value="大">大</Radio>
+              <Radio value="小">小</Radio>
+            </Radio.Group>
+          </Descriptions.Item>
+          <Descriptions.Item label="打印标签数量">
+            <InputNumber min={1} value={printCount} onChange={(value) => setPrintCount(value || 1)} className="w-full" />
+          </Descriptions.Item>
+          <Descriptions.Item label="备件数量">
+            <InputNumber min={1} value={sparePartCount} onChange={(value) => setSparePartCount(value || 1)} className="w-full" />
+          </Descriptions.Item>
+          <Descriptions.Item label="标签批次">
+            <Typography.Text type="danger">生成标签后自动生成</Typography.Text>
+          </Descriptions.Item>
+          <Descriptions.Item label="操作员">系统管理员</Descriptions.Item>
+          <Descriptions.Item label="当前日期">{dayjs().format('YYYY-MM-DD')}</Descriptions.Item>
+          <Descriptions.Item label="备注说明" span={3}>
+            <Input.TextArea value={remark} onChange={(event) => setRemark(event.target.value)} autoSize={{ minRows: 3, maxRows: 6 }} placeholder="请输入备注说明" />
+          </Descriptions.Item>
+        </Descriptions>
+      </Card>
+    </Space>
+  );
+}
+
 export default function TagPrintingPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [rows, setRows] = useState(DEFAULT_ROWS);
@@ -325,11 +522,18 @@ export default function TagPrintingPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [lookupKey, setLookupKey] = useState('');
   const [previewMode, setPreviewMode] = useState(false);
+  const [generateMode, setGenerateMode] = useState(false);
   const [preprintDraftFilters, setPreprintDraftFilters] = useState(DEFAULT_PREPRINT_FILTERS);
   const [preprintAppliedFilters, setPreprintAppliedFilters] = useState(DEFAULT_PREPRINT_FILTERS);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyDraftFilters, setHistoryDraftFilters] = useState(DEFAULT_HISTORY_FILTERS);
   const [historyAppliedFilters, setHistoryAppliedFilters] = useState(DEFAULT_HISTORY_FILTERS);
+  const [labelRows, setLabelRows] = useState(INITIAL_LABEL_DETAIL_ROWS);
+  const [labelListOpen, setLabelListOpen] = useState(false);
+  const [labelBatch, setLabelBatch] = useState('');
+  const [labelDraftFilters, setLabelDraftFilters] = useState(DEFAULT_LABEL_FILTERS);
+  const [labelAppliedFilters, setLabelAppliedFilters] = useState(DEFAULT_LABEL_FILTERS);
+  const [labelSelectedKeys, setLabelSelectedKeys] = useState([]);
 
   const filteredRows = useMemo(() => rows.filter((row) => (
     includesText(row.companyCn, appliedFilters.companyCn)
@@ -347,13 +551,20 @@ export default function TagPrintingPage() {
     && includesText(row.city, appliedFilters.city)
   )), [rows, appliedFilters]);
 
-  const filteredPreprintRows = useMemo(() => PREPRINT_ROWS.filter((row) => (
-    includesText(row.batch, preprintAppliedFilters.batch)
-    && includesText(row.printed, preprintAppliedFilters.printed)
-    && includesText(row.creator, preprintAppliedFilters.creator)
-    && includesText(row.orderNo, preprintAppliedFilters.orderNo)
-    && inDateRange(row.createdAt, preprintAppliedFilters.createdFrom, preprintAppliedFilters.createdTo)
-  )), [preprintAppliedFilters]);
+  const filteredPreprintRows = useMemo(() => {
+    const matchedBatches = preprintAppliedFilters.assetTag
+      ? new Set(labelRows.filter((row) => includesText(row.tag, preprintAppliedFilters.assetTag)).map((row) => row.batch))
+      : null;
+
+    return PREPRINT_ROWS.filter((row) => (
+      includesText(row.batch, preprintAppliedFilters.batch)
+      && includesText(row.printed, preprintAppliedFilters.printed)
+      && includesText(row.creator, preprintAppliedFilters.creator)
+      && includesText(row.orderNo, preprintAppliedFilters.orderNo)
+      && (!matchedBatches || matchedBatches.has(row.batch))
+      && inDateRange(row.createdAt, preprintAppliedFilters.createdFrom, preprintAppliedFilters.createdTo)
+    ));
+  }, [labelRows, preprintAppliedFilters]);
 
   const filteredHistoryRows = useMemo(() => PRINT_HISTORY_ROWS.filter((row) => (
     includesText(row.batch, historyAppliedFilters.batch)
@@ -361,6 +572,12 @@ export default function TagPrintingPage() {
     && includesText(row.printer, historyAppliedFilters.printer)
     && inDateRange(row.printedAt, historyAppliedFilters.printedFrom, historyAppliedFilters.printedTo)
   )), [historyAppliedFilters]);
+
+  const filteredLabelRows = useMemo(() => labelRows.filter((row) => (
+    row.batch === labelBatch
+    && includesText(row.tag, labelAppliedFilters.tag)
+    && includesText(row.printed, labelAppliedFilters.printed)
+  )), [labelAppliedFilters, labelBatch, labelRows]);
 
   const statusOptions = useMemo(() => uniqueValues(rows, 'assetStatus').map((value) => ({ label: value, value })), [rows]);
   const cityOptions = useMemo(() => uniqueValues(rows, 'city').map((value) => ({ label: value, value })), [rows]);
@@ -384,6 +601,10 @@ export default function TagPrintingPage() {
     setHistoryDraftFilters((current) => ({ ...current, [field]: value || '' }));
   };
 
+  const updateLabelFilter = (field, value) => {
+    setLabelDraftFilters((current) => ({ ...current, [field]: value || '' }));
+  };
+
   const handlePrint = (targetIds, actionName) => {
     if (targetIds.length === 0) {
       messageApi.warning(actionName === '打印所选' ? '请至少选择一条资产' : '当前没有可打印的数据');
@@ -397,11 +618,34 @@ export default function TagPrintingPage() {
     messageApi.success(`${actionName}已提交，共 ${targetIds.length} 条`);
   };
 
-  const openHistory = (batch) => {
-    const filters = { ...DEFAULT_HISTORY_FILTERS, batch };
+  const handleLabelPrint = (targetIds, actionName) => {
+    if (targetIds.length === 0) {
+      messageApi.warning(actionName === '打印所选' ? '请至少选择一条标签' : '当前没有可打印的标签');
+      return;
+    }
+    const idSet = new Set(targetIds);
+    setLabelRows((current) => current.map((row) => (
+      idSet.has(row.id)
+        ? { ...row, printCount: Number(row.printCount || 0) + 1, printed: '是' }
+        : row
+    )));
+    setLabelSelectedKeys([]);
+    messageApi.success(`${actionName}已提交，共 ${targetIds.length} 条`);
+  };
+
+  const openHistory = (batch, tag = '') => {
+    const filters = { ...DEFAULT_HISTORY_FILTERS, batch, tag };
     setHistoryDraftFilters(filters);
     setHistoryAppliedFilters(filters);
     setHistoryOpen(true);
+  };
+
+  const openLabelList = (batch) => {
+    setLabelBatch(batch);
+    setLabelDraftFilters(DEFAULT_LABEL_FILTERS);
+    setLabelAppliedFilters(DEFAULT_LABEL_FILTERS);
+    setLabelSelectedKeys([]);
+    setLabelListOpen(true);
   };
 
   const columns = [
@@ -436,7 +680,7 @@ export default function TagPrintingPage() {
       dataIndex: 'detail',
       width: 110,
       render: (_, record) => (
-        <Button type="link" size="small" onClick={() => messageApi.info(`${record.batch} 标签清单待补充明细字段`)}>
+        <Button type="link" size="small" onClick={() => openLabelList(record.batch)}>
           标签清单
         </Button>
       ),
@@ -453,6 +697,21 @@ export default function TagPrintingPage() {
     },
   ];
 
+  const labelColumns = [
+    { title: '标签批次', dataIndex: 'batch', width: 210, render: displayText },
+    { title: '标签号', dataIndex: 'tag', width: 200, render: displayText },
+    { title: '打印次数', dataIndex: 'printCount', width: 120, align: 'right' },
+    { title: '是否已打印', dataIndex: 'printed', width: 130, align: 'center', render: (value) => <StatusTag value={value} type="yesNo" /> },
+    {
+      title: '操作',
+      key: 'action',
+      width: 120,
+      render: (_, record) => (
+        <Button type="link" size="small" onClick={() => openHistory(record.batch, record.tag)}>打印历史</Button>
+      ),
+    },
+  ];
+
   const historyColumns = [
     { title: '标签批次', dataIndex: 'batch', width: 190, render: displayText },
     { title: '标签号', dataIndex: 'tag', width: 180, render: displayText },
@@ -460,6 +719,15 @@ export default function TagPrintingPage() {
     { title: '打印IP', dataIndex: 'printIp', width: 150, render: displayText },
     { title: '打印人', dataIndex: 'printer', width: 120, render: displayText },
   ];
+
+  if (previewMode && generateMode) {
+    return (
+      <>
+        {contextHolder}
+        <GenerateLabelsPage onBack={() => setGenerateMode(false)} messageApi={messageApi} />
+      </>
+    );
+  }
 
   if (previewMode) {
     return (
@@ -501,11 +769,24 @@ export default function TagPrintingPage() {
           <QueryItem label="订单编号">
             <Input value={preprintDraftFilters.orderNo} allowClear placeholder="请输入订单编号" onChange={(event) => updatePreprintFilter('orderNo', event.target.value)} />
           </QueryItem>
-          <QueryItem label="创建时间从">
-            <DateFilter value={preprintDraftFilters.createdFrom} onChange={(value) => updatePreprintFilter('createdFrom', value)} />
+          <QueryItem label="资产标签号">
+            <Input value={preprintDraftFilters.assetTag} allowClear placeholder="请输入资产标签号" onChange={(event) => updatePreprintFilter('assetTag', event.target.value)} />
           </QueryItem>
-          <QueryItem label="创建时间至">
-            <DateFilter value={preprintDraftFilters.createdTo} onChange={(value) => updatePreprintFilter('createdTo', value)} />
+          <QueryItem label="创建时间">
+            <RangePicker
+              className="w-full"
+              value={preprintDraftFilters.createdFrom && preprintDraftFilters.createdTo
+                ? [dayjs(preprintDraftFilters.createdFrom), dayjs(preprintDraftFilters.createdTo)]
+                : null}
+              format="YYYY-MM-DD"
+              onChange={(dates) => {
+                setPreprintDraftFilters((current) => ({
+                  ...current,
+                  createdFrom: dates?.[0] ? dates[0].format('YYYY-MM-DD') : '',
+                  createdTo: dates?.[1] ? dates[1].format('YYYY-MM-DD') : '',
+                }));
+              }}
+            />
           </QueryItem>
         </QueryBar>
 
@@ -515,7 +796,7 @@ export default function TagPrintingPage() {
           extra={<Typography.Text type="secondary">共 {filteredPreprintRows.length} 条</Typography.Text>}
         >
           <div className="mb-3 flex justify-end">
-            <Button type="primary" icon={<Tags size={14} />} onClick={() => messageApi.success('生成标签操作已触发')}>
+            <Button type="primary" icon={<Tags size={14} />} onClick={() => setGenerateMode(true)}>
               生成标签
             </Button>
           </div>
@@ -529,6 +810,67 @@ export default function TagPrintingPage() {
             pagination={{ pageSize: 10, showSizeChanger: true }}
           />
         </Card>
+
+        <Modal
+          title="查看标签"
+          open={labelListOpen}
+          width={1050}
+          footer={null}
+          onCancel={() => setLabelListOpen(false)}
+        >
+          <Space direction="vertical" size={14} className="w-full">
+            <QueryBar
+              onQuery={() => {
+                setLabelAppliedFilters({ ...labelDraftFilters });
+                setLabelSelectedKeys([]);
+              }}
+              onReset={() => {
+                setLabelDraftFilters(DEFAULT_LABEL_FILTERS);
+                setLabelAppliedFilters(DEFAULT_LABEL_FILTERS);
+                setLabelSelectedKeys([]);
+              }}
+            >
+              <QueryItem label="标签号">
+                <Input value={labelDraftFilters.tag} allowClear placeholder="请输入标签号" onChange={(event) => updateLabelFilter('tag', event.target.value)} />
+              </QueryItem>
+              <QueryItem label="是否打印">
+                <Select
+                  value={labelDraftFilters.printed || undefined}
+                  allowClear
+                  placeholder="全部"
+                  options={[{ label: '是', value: '是' }, { label: '否', value: '否' }]}
+                  onChange={(value) => updateLabelFilter('printed', value)}
+                />
+              </QueryItem>
+            </QueryBar>
+
+            <div className="flex items-center justify-between gap-3">
+              <Typography.Text type="secondary">标签批次：{labelBatch || '-'}</Typography.Text>
+              <Space wrap>
+                <Button icon={<Printer size={14} />} onClick={() => handleLabelPrint(labelSelectedKeys, '打印所选')}>打印所选</Button>
+                <Button icon={<Printer size={14} />} onClick={() => handleLabelPrint(filteredLabelRows.map((row) => row.id), '打印全部')}>打印全部</Button>
+                <Button icon={<ArrowLeft size={14} />} onClick={() => setLabelListOpen(false)}>返回</Button>
+                <Button icon={<Settings size={14} />} onClick={() => messageApi.info('配置功能已触发')}>配置</Button>
+              </Space>
+            </div>
+
+            <Table
+              rowKey="id"
+              size="small"
+              bordered
+              columns={labelColumns}
+              dataSource={filteredLabelRows}
+              rowSelection={{
+                selectedRowKeys: labelSelectedKeys,
+                onChange: setLabelSelectedKeys,
+                fixed: true,
+                columnTitle: '选择',
+              }}
+              pagination={{ pageSize: 10, showSizeChanger: true }}
+              locale={{ emptyText: '暂无标签数据' }}
+            />
+          </Space>
+        </Modal>
 
         <Modal
           title="打印历史"
