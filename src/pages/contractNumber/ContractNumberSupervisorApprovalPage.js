@@ -10,6 +10,7 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import {
   getContractNumberSupervisorApproval,
@@ -18,8 +19,6 @@ import {
 import { formatDepartment } from '../../utils/displayFormat';
 
 const { TextArea } = Input;
-const DETAIL_LABEL_WIDTH = 96;
-const DETAIL_BORDER_COLOR = '#f0f0f0';
 
 function nowText() {
   return new Date().toLocaleString('zh-CN', { hour12: false }).replaceAll('/', '-');
@@ -46,62 +45,6 @@ function SectionTitle({ children }) {
       <span className="inline-block h-3 w-1 rounded-sm bg-blue-500" />
       <span>{children}</span>
     </span>
-  );
-}
-
-function DetailTable({ children }) {
-  return (
-    <div className="w-full overflow-x-auto">
-      <table
-        className="w-full border-collapse text-sm"
-        style={{ tableLayout: 'fixed' }}
-      >
-        <colgroup>
-          <col style={{ width: DETAIL_LABEL_WIDTH }} />
-          <col />
-          <col style={{ width: DETAIL_LABEL_WIDTH }} />
-          <col />
-          <col style={{ width: DETAIL_LABEL_WIDTH }} />
-          <col />
-        </colgroup>
-        <tbody>{children}</tbody>
-      </table>
-    </div>
-  );
-}
-
-function DetailLabel({ children }) {
-  return (
-    <th
-      style={{
-        padding: '8px 12px',
-        border: `1px solid ${DETAIL_BORDER_COLOR}`,
-        background: '#fafafa',
-        fontWeight: 400,
-        textAlign: 'left',
-        whiteSpace: 'nowrap',
-        verticalAlign: 'middle',
-      }}
-    >
-      {children}
-    </th>
-  );
-}
-
-function DetailValue({ children, colSpan = 1 }) {
-  return (
-    <td
-      colSpan={colSpan}
-      style={{
-        padding: '8px 12px',
-        border: `1px solid ${DETAIL_BORDER_COLOR}`,
-        background: '#fff',
-        verticalAlign: 'middle',
-        wordBreak: 'break-word',
-      }}
-    >
-      {children}
-    </td>
   );
 }
 
@@ -199,65 +142,41 @@ export default function ContractNumberSupervisorApprovalPage() {
         </div>
 
         <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>
-          <DetailTable>
-            <tr>
-              <DetailLabel>申请人</DetailLabel>
-              <DetailValue>{application.applicant.name}（{application.applicant.id}）</DetailValue>
-              <DetailLabel>部门</DetailLabel>
-              <DetailValue>{formatDepartment(application.applicant.department)}</DetailValue>
-              <DetailLabel>职级</DetailLabel>
-              <DetailValue>{application.applicant.level || '-'}</DetailValue>
-            </tr>
-            <tr>
-              <DetailLabel>手机</DetailLabel>
-              <DetailValue>{application.applicant.phone || '-'}</DetailValue>
-              <DetailLabel>分机</DetailLabel>
-              <DetailValue>{application.applicant.extension || '-'}</DetailValue>
-              <DetailLabel>入职时间</DetailLabel>
-              <DetailValue>{application.applicant.entryTime || '-'}</DetailValue>
-            </tr>
-          </DetailTable>
+          <DetailGrid>
+            <DetailItem label="申请人">{application.applicant.name}（{application.applicant.id}）</DetailItem>
+            <DetailItem label="部门">{formatDepartment(application.applicant.department)}</DetailItem>
+            <DetailItem label="职级">{application.applicant.level || '-'}</DetailItem>
+            <DetailItem label="手机">{application.applicant.phone || '-'}</DetailItem>
+            <DetailItem label="分机">{application.applicant.extension || '-'}</DetailItem>
+            <DetailItem label="入职时间">{application.applicant.entryTime || '-'}</DetailItem>
+          </DetailGrid>
         </Card>
 
         <Card size="small" title={<SectionTitle>申请信息</SectionTitle>}>
-          <DetailTable>
-            <tr>
-              <DetailLabel>申请原因</DetailLabel>
-              <DetailValue colSpan={5}>{application.applyReason || '-'}</DetailValue>
-            </tr>
-            <tr>
-              <DetailLabel>身份证号码</DetailLabel>
-              <DetailValue>{application.idCard || '-'}</DetailValue>
-              <DetailLabel>附件</DetailLabel>
-              <DetailValue colSpan={3}>
-                {application.attachment ? (
-                  <Button
-                    type="link"
-                    size="small"
-                    className="px-0"
-                    onClick={() => downloadAttachment(application.attachment)}
-                  >
-                    {application.attachment.name}
-                  </Button>
-                ) : '-'}
-              </DetailValue>
-            </tr>
-          </DetailTable>
+          <DetailGrid>
+            <DetailItem label="申请原因" span={3}>{application.applyReason || '-'}</DetailItem>
+            <DetailItem label="身份证号码">{application.idCard || '-'}</DetailItem>
+            <DetailItem label="附件" span={2}>
+              {application.attachment ? (
+                <Button
+                  type="link"
+                  size="small"
+                  className="px-0"
+                  onClick={() => downloadAttachment(application.attachment)}
+                >
+                  {application.attachment.name}
+                </Button>
+              ) : '-'}
+            </DetailItem>
+          </DetailGrid>
         </Card>
 
         <Card size="small" title={<SectionTitle>号码配给</SectionTitle>}>
-          <DetailTable>
-            <tr>
-              <DetailLabel>电话号码</DetailLabel>
-              <DetailValue>{application.assignedNumber?.phoneNumber || '-'}</DetailValue>
-              <DetailLabel>话费套餐</DetailLabel>
-              <DetailValue colSpan={3}>{application.assignedNumber?.packageName || '-'}</DetailValue>
-            </tr>
-            <tr>
-              <DetailLabel>附件信息</DetailLabel>
-              <DetailValue colSpan={5}>{application.allocationAttachment?.name || '-'}</DetailValue>
-            </tr>
-          </DetailTable>
+          <DetailGrid>
+            <DetailItem label="电话号码">{application.assignedNumber?.phoneNumber || '-'}</DetailItem>
+            <DetailItem label="话费套餐" span={2}>{application.assignedNumber?.packageName || '-'}</DetailItem>
+            <DetailItem label="附件信息" span={3}>{application.allocationAttachment?.name || '-'}</DetailItem>
+          </DetailGrid>
         </Card>
 
         <Card size="small" title={<SectionTitle>审批信息</SectionTitle>}>
