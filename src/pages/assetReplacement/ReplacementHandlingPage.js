@@ -16,14 +16,12 @@ export default function ReplacementHandlingPage() {
 
   if (!selectedApplication) {
     return (
-      <div className="min-h-screen bg-slate-100 p-4">
-        <Card>
-          <Empty description="暂无资产更换办理待办" />
-          <div className="mt-4 flex justify-center">
-            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
-          </div>
-        </Card>
-      </div>
+      <Card size="small">
+        <Empty description="暂无资产更换办理待办" />
+        <div className="mt-4 flex justify-center">
+          <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
+        </div>
+      </Card>
     );
   }
 
