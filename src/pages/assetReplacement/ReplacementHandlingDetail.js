@@ -5,7 +5,6 @@ import {
   Button,
   Card,
   DatePicker,
-  Descriptions,
   Input,
   Modal,
   Select,
@@ -13,6 +12,7 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import {
   endReplacementApplication,
@@ -38,6 +38,24 @@ const FLOOR_OPTIONS = {
   上海分公司办公区: ['10层', '11层'],
 };
 const PURPOSE_OPTIONS = ['员工用机', '部门公用', '其他用途', '专业用途'];
+
+function SectionTitle({ children }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="inline-block h-3 w-1 rounded-sm bg-blue-500" />
+      <span>{children}</span>
+    </span>
+  );
+}
+
+function RequiredLabel({ children }) {
+  return (
+    <span>
+      <span className="mr-1 text-red-500">*</span>
+      {children}
+    </span>
+  );
+}
 
 export default function ReplacementHandlingDetail({ application, onBack, onUpdated }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
@@ -205,54 +223,63 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
   const applyDate = formatDateText(application.applyDate || application.applyTime);
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4">
+    <>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="flex items-center justify-between">
           <Typography.Title level={4} className="mb-0">资产更换办理</Typography.Title>
           <Typography.Text type="secondary">申请单号：{application.id}</Typography.Text>
         </div>
 
-        <Card title="申请人信息" size="small">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="申请人">{application.applicant.id}-{application.applicant.name}</Descriptions.Item>
-            <Descriptions.Item label="申请日期">{applyDate}</Descriptions.Item>
-            <Descriptions.Item label="公司">{application.applicant.company || '-'}</Descriptions.Item>
-            <Descriptions.Item label="办公区">{application.applicant.officeArea || '-'}</Descriptions.Item>
-            <Descriptions.Item label="联系电话">{application.applicant.phone || '-'}</Descriptions.Item>
-            <Descriptions.Item label="邮箱">{application.applicant.email || '-'}</Descriptions.Item>
-            <Descriptions.Item label="部门" span={3}>{formatDepartment(application.applicant.department)}</Descriptions.Item>
-            <Descriptions.Item label="更换原因" span={3}>{application.reason || '-'}</Descriptions.Item>
-          </Descriptions>
+        <Card title={<SectionTitle>申请人信息</SectionTitle>} size="small">
+          <DetailGrid>
+            <DetailItem label="申请人">{application.applicant.id}-{application.applicant.name}</DetailItem>
+            <DetailItem label="申请日期">{applyDate}</DetailItem>
+            <DetailItem label="公司">{application.applicant.company || '-'}</DetailItem>
+            <DetailItem label="办公区">{application.applicant.officeArea || '-'}</DetailItem>
+            <DetailItem label="联系电话">{application.applicant.phone || '-'}</DetailItem>
+            <DetailItem label="邮箱">{application.applicant.email || '-'}</DetailItem>
+            <DetailItem label="部门" span={3}>{formatDepartment(application.applicant.department)}</DetailItem>
+            <DetailItem label="更换原因" span={3}>{application.reason || '-'}</DetailItem>
+          </DetailGrid>
         </Card>
 
-        <Card title="更换资产信息" size="small">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="资产标签号">{oldAsset.assetTag || '-'}</Descriptions.Item>
-            <Descriptions.Item label="SN号">{oldAsset.sn || '-'}</Descriptions.Item>
-            <Descriptions.Item label="资产说明">{oldAsset.assetDesc || '-'}</Descriptions.Item>
-            <Descriptions.Item label="配置">{oldAsset.config || '-'}</Descriptions.Item>
-            <Descriptions.Item label="资产状态"><StatusTag value={oldAsset.status} type="business" /></Descriptions.Item>
-            <Descriptions.Item label="部件数量">{componentCount}</Descriptions.Item>
-            <Descriptions.Item label="城市">{oldAsset.city || '-'}</Descriptions.Item>
-            <Descriptions.Item label="建筑">{oldAsset.building || '-'}</Descriptions.Item>
-            <Descriptions.Item label="楼层">{oldAsset.floor || '-'}</Descriptions.Item>
-            <Descriptions.Item label="备注" span={3}>{oldAsset.note || '-'}</Descriptions.Item>
-            <Descriptions.Item label="耗材信息" span={3}>{oldAsset.consumables || '-'}</Descriptions.Item>
-            <Descriptions.Item label="鉴定结果"><StatusTag value={application.mis.result} type="business" /></Descriptions.Item>
-            <Descriptions.Item label="鉴定说明" span={2}>{application.mis.description || '-'}</Descriptions.Item>
-          </Descriptions>
+        <Card title={<SectionTitle>更换资产信息</SectionTitle>} size="small">
+          <DetailGrid>
+            <DetailItem label="资产标签号">{oldAsset.assetTag || '-'}</DetailItem>
+            <DetailItem label="SN号">{oldAsset.sn || '-'}</DetailItem>
+            <DetailItem label="资产说明">{oldAsset.assetDesc || '-'}</DetailItem>
+            <DetailItem label="配置">{oldAsset.config || '-'}</DetailItem>
+            <DetailItem label="资产状态"><StatusTag value={oldAsset.status} type="business" /></DetailItem>
+            <DetailItem label="部件数量">{componentCount}</DetailItem>
+            <DetailItem label="城市">{oldAsset.city || '-'}</DetailItem>
+            <DetailItem label="建筑">{oldAsset.building || '-'}</DetailItem>
+            <DetailItem label="楼层">{oldAsset.floor || '-'}</DetailItem>
+            <DetailItem label={<RequiredLabel>退回仓库</RequiredLabel>} span={3}>
+              <Select
+                style={{ width: 320, maxWidth: '100%' }}
+                value={returnWarehouse}
+                disabled={oldInboundDone}
+                options={WAREHOUSE_OPTIONS.map((value) => ({ label: value, value }))}
+                onChange={setReturnWarehouse}
+              />
+            </DetailItem>
+            <DetailItem label="备注" span={3}>{oldAsset.note || '-'}</DetailItem>
+            <DetailItem label="耗材信息" span={3}>{oldAsset.consumables || '-'}</DetailItem>
+            <DetailItem label="鉴定结果"><StatusTag value={application.mis.result} type="business" /></DetailItem>
+            <DetailItem label="鉴定说明" span={2}>{application.mis.description || '-'}</DetailItem>
+          </DetailGrid>
         </Card>
 
         <Card
-          title="待发放资产信息"
+          title={<SectionTitle>待发放资产信息</SectionTitle>}
           size="small"
           extra={newAsset ? (
             <Button danger type="text" icon={<Trash2 size={14} />} onClick={() => setNewAsset(null)}>删除</Button>
           ) : null}
         >
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label={<><span className="text-red-500">*</span> 仓库</>}>
+          <DetailGrid>
+            <DetailItem label={<RequiredLabel>仓库</RequiredLabel>}>
               <Select
                 className="w-full"
                 value={issueWarehouse}
@@ -262,22 +289,22 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
                   if (newAsset?.warehouse !== value) setNewAsset(null);
                 }}
               />
-            </Descriptions.Item>
-            <Descriptions.Item label="资产标签号">
+            </DetailItem>
+            <DetailItem label="资产标签号">
               <Space.Compact className="w-full">
                 <Input readOnly value={newAsset?.assetTag || ''} placeholder="请选择待发放资产" />
                 <Button icon={<Search size={14} />} onClick={() => setAssetModalOpen(true)} />
               </Space.Compact>
-            </Descriptions.Item>
-            <Descriptions.Item label="SN号">{newAsset?.sn || '-'}</Descriptions.Item>
-            <Descriptions.Item label="公司">{newAsset?.company || '-'}</Descriptions.Item>
-            <Descriptions.Item label="板块">{newAsset?.block || '-'}</Descriptions.Item>
-            <Descriptions.Item label="启用日期">{formatDateText(newAsset?.enabledDate)}</Descriptions.Item>
-            <Descriptions.Item label="资产说明">{newAsset?.assetDesc || '-'}</Descriptions.Item>
-            <Descriptions.Item label="配置" span={2}>{newAsset?.config || '-'}</Descriptions.Item>
-            <Descriptions.Item label="备注" span={3}>{newAsset?.note || '-'}</Descriptions.Item>
-            <Descriptions.Item label="耗材信息" span={3}>{newAsset?.consumables || '-'}</Descriptions.Item>
-            <Descriptions.Item label={<><span className="text-red-500">*</span> 城市</>}>
+            </DetailItem>
+            <DetailItem label="SN号">{newAsset?.sn || '-'}</DetailItem>
+            <DetailItem label="公司">{newAsset?.company || '-'}</DetailItem>
+            <DetailItem label="板块">{newAsset?.block || '-'}</DetailItem>
+            <DetailItem label="启用日期">{formatDateText(newAsset?.enabledDate)}</DetailItem>
+            <DetailItem label="资产说明">{newAsset?.assetDesc || '-'}</DetailItem>
+            <DetailItem label="配置" span={2}>{newAsset?.config || '-'}</DetailItem>
+            <DetailItem label="备注" span={3}>{newAsset?.note || '-'}</DetailItem>
+            <DetailItem label="耗材信息" span={3}>{newAsset?.consumables || '-'}</DetailItem>
+            <DetailItem label={<RequiredLabel>城市</RequiredLabel>}>
               <Select
                 className="w-full"
                 value={city}
@@ -288,8 +315,8 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
                   setFloor('');
                 }}
               />
-            </Descriptions.Item>
-            <Descriptions.Item label={<><span className="text-red-500">*</span> 建筑</>}>
+            </DetailItem>
+            <DetailItem label={<RequiredLabel>建筑</RequiredLabel>}>
               <Select
                 className="w-full"
                 value={building || undefined}
@@ -299,26 +326,26 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
                   setFloor('');
                 }}
               />
-            </Descriptions.Item>
-            <Descriptions.Item label={<><span className="text-red-500">*</span> 楼层</>}>
+            </DetailItem>
+            <DetailItem label={<RequiredLabel>楼层</RequiredLabel>}>
               <Select
                 className="w-full"
                 value={floor || undefined}
                 options={(FLOOR_OPTIONS[building] || []).map((value) => ({ label: value, value }))}
                 onChange={setFloor}
               />
-            </Descriptions.Item>
-            <Descriptions.Item label={<><span className="text-red-500">*</span> 开始日期</>}>
+            </DetailItem>
+            <DetailItem label={<RequiredLabel>开始日期</RequiredLabel>}>
               <Input readOnly value={formatDateText(startDate)} />
-            </Descriptions.Item>
-            <Descriptions.Item label={<><span className="text-red-500">*</span> 归还日期</>}>
+            </DetailItem>
+            <DetailItem label={<RequiredLabel>归还日期</RequiredLabel>}>
               <DatePicker
                 className="w-full"
                 value={returnDate ? dayjs(returnDate) : null}
                 onChange={(value) => setReturnDate(value ? value.format('YYYY-MM-DD') : '')}
               />
-            </Descriptions.Item>
-            <Descriptions.Item label={<><span className="text-red-500">*</span> 资产用途</>}>
+            </DetailItem>
+            <DetailItem label={<RequiredLabel>资产用途</RequiredLabel>}>
               <Select
                 className="w-full"
                 value={purpose || undefined}
@@ -326,8 +353,8 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
                 options={PURPOSE_OPTIONS.map((value) => ({ label: value, value }))}
                 onChange={setPurpose}
               />
-            </Descriptions.Item>
-            <Descriptions.Item label="使用说明" span={3}>
+            </DetailItem>
+            <DetailItem label="使用说明" span={3}>
               <TextArea
                 rows={2}
                 maxLength={400}
@@ -335,8 +362,8 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
                 value={usageNote}
                 onChange={(event) => setUsageNote(event.target.value)}
               />
-            </Descriptions.Item>
-          </Descriptions>
+            </DetailItem>
+          </DetailGrid>
         </Card>
 
         <ReplacementHistoryCard records={application.history} title="审批信息">
@@ -393,6 +420,6 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
       >
         <Input value={transferPerson} placeholder="请输入姓名或工号" onChange={(event) => setTransferPerson(event.target.value)} />
       </Modal>
-    </div>
+    </>
   );
 }
