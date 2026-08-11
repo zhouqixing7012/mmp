@@ -134,7 +134,7 @@ export default function ReplacementMisPage() {
             <DetailItem label={<RequiredLabel>鉴定结果</RequiredLabel>} span={3}>
               <Radio.Group
                 value={result}
-                options={['资产维修', '资产更换', '员工取消'].map((value) => ({ label: value, value }))}
+                options={['资产维修', '资产更换'].map((value) => ({ label: value, value }))}
                 onChange={(event) => {
                   setResult(event.target.value);
                   setComment(event.target.value === '资产更换' ? '同意' : '');
