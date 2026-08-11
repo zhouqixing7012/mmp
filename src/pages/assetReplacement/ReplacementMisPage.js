@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Descriptions,
   Empty,
   Input,
   Radio,
@@ -11,11 +10,30 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import { getPendingMisApplications, submitMisDecision } from '../../services/assetReplacementService';
 import { formatDateText, formatDepartment } from '../../utils/displayFormat';
 import ReplacementHistoryCard from './ReplacementHistoryCard';
 
 const { TextArea } = Input;
+
+function SectionTitle({ children }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="inline-block h-3 w-1 rounded-sm bg-blue-500" />
+      <span>{children}</span>
+    </span>
+  );
+}
+
+function RequiredLabel({ children }) {
+  return (
+    <span>
+      <span className="mr-1 text-red-500">*</span>
+      {children}
+    </span>
+  );
+}
 
 export default function ReplacementMisPage() {
   const navigate = useNavigate();
@@ -66,57 +84,55 @@ export default function ReplacementMisPage() {
 
   if (!selectedApplication) {
     return (
-      <div className="min-h-screen bg-slate-100 p-4">
+      <>
         {contextHolder}
-        <Card>
+        <Card size="small">
           <Empty description="暂无待鉴定申请" />
           <div className="mt-4 flex justify-center">
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4">
+    <>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="flex items-center justify-between">
           <Typography.Title level={4} className="mb-0">MIS鉴定</Typography.Title>
           <Typography.Text type="secondary">申请单号：{selectedApplication.id}</Typography.Text>
         </div>
 
-        <Card title="申请人信息" size="small">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="申请人">
+        <Card title={<SectionTitle>申请人信息</SectionTitle>} size="small">
+          <DetailGrid>
+            <DetailItem label="申请人">
               {selectedApplication.applicant.id}-{selectedApplication.applicant.name}
-            </Descriptions.Item>
-            <Descriptions.Item label="申请日期">{formatDateText(selectedApplication.applyDate)}</Descriptions.Item>
-            <Descriptions.Item label="公司">{selectedApplication.applicant.company || '-'}</Descriptions.Item>
-            <Descriptions.Item label="办公区">{selectedApplication.applicant.officeArea || '-'}</Descriptions.Item>
-            <Descriptions.Item label="联系电话">{selectedApplication.applicant.phone || '-'}</Descriptions.Item>
-            <Descriptions.Item label="邮箱">{selectedApplication.applicant.email || '-'}</Descriptions.Item>
-            <Descriptions.Item label="部门" span={3}>{formatDepartment(selectedApplication.applicant.department)}</Descriptions.Item>
-            <Descriptions.Item label="更换原因" span={3}>{selectedApplication.reason || '-'}</Descriptions.Item>
-          </Descriptions>
+            </DetailItem>
+            <DetailItem label="申请日期">{formatDateText(selectedApplication.applyDate)}</DetailItem>
+            <DetailItem label="公司">{selectedApplication.applicant.company || '-'}</DetailItem>
+            <DetailItem label="办公区">{selectedApplication.applicant.officeArea || '-'}</DetailItem>
+            <DetailItem label="联系电话">{selectedApplication.applicant.phone || '-'}</DetailItem>
+            <DetailItem label="邮箱">{selectedApplication.applicant.email || '-'}</DetailItem>
+            <DetailItem label="部门" span={3}>{formatDepartment(selectedApplication.applicant.department)}</DetailItem>
+            <DetailItem label="更换原因" span={3}>{selectedApplication.reason || '-'}</DetailItem>
+          </DetailGrid>
         </Card>
 
-        <Card title="更换资产信息" size="small">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="资产标签号">{selectedApplication.oldAsset.assetTag || '-'}</Descriptions.Item>
-            <Descriptions.Item label="资产说明">{selectedApplication.oldAsset.assetDesc || '-'}</Descriptions.Item>
-            <Descriptions.Item label="配置">{selectedApplication.oldAsset.config || '-'}</Descriptions.Item>
-            <Descriptions.Item label="耗材信息" span={3}>{selectedApplication.oldAsset.consumables || '-'}</Descriptions.Item>
-          </Descriptions>
+        <Card title={<SectionTitle>更换资产信息</SectionTitle>} size="small">
+          <DetailGrid>
+            <DetailItem label="资产标签号">{selectedApplication.oldAsset.assetTag || '-'}</DetailItem>
+            <DetailItem label="资产说明">{selectedApplication.oldAsset.assetDesc || '-'}</DetailItem>
+            <DetailItem label="配置">{selectedApplication.oldAsset.config || '-'}</DetailItem>
+            <DetailItem label="耗材信息" span={3}>{selectedApplication.oldAsset.consumables || '-'}</DetailItem>
+          </DetailGrid>
         </Card>
 
-        <Card title="MIS鉴定处理" size="small">
-          <Space direction="vertical" size={16} className="w-full">
-            <div>
-              <Typography.Text strong><span className="text-red-500">*</span> 鉴定结果：</Typography.Text>
+        <Card title={<SectionTitle>MIS鉴定处理</SectionTitle>} size="small">
+          <DetailGrid>
+            <DetailItem label={<RequiredLabel>鉴定结果</RequiredLabel>} span={3}>
               <Radio.Group
-                className="ml-3"
                 value={result}
                 options={['资产维修', '资产更换', '员工取消'].map((value) => ({ label: value, value }))}
                 onChange={(event) => {
@@ -124,11 +140,9 @@ export default function ReplacementMisPage() {
                   setComment(event.target.value === '资产更换' ? '同意' : '');
                 }}
               />
-            </div>
-            <div>
-              <Typography.Text strong><span className="text-red-500">*</span> 鉴定说明：</Typography.Text>
+            </DetailItem>
+            <DetailItem label={<RequiredLabel>鉴定说明</RequiredLabel>} span={3}>
               <TextArea
-                className="mt-2"
                 rows={3}
                 maxLength={60}
                 showCount
@@ -136,8 +150,8 @@ export default function ReplacementMisPage() {
                 placeholder="请填写鉴定说明（60字以内）"
                 onChange={(event) => setDescription(event.target.value)}
               />
-            </div>
-          </Space>
+            </DetailItem>
+          </DetailGrid>
         </Card>
 
         <ReplacementHistoryCard
@@ -161,6 +175,6 @@ export default function ReplacementMisPage() {
           </div>
         </ReplacementHistoryCard>
       </Space>
-    </div>
+    </>
   );
 }
