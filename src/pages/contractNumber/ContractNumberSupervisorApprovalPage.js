@@ -39,6 +39,15 @@ function downloadAttachment(attachment) {
   URL.revokeObjectURL(url);
 }
 
+function SectionTitle({ children }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="inline-block h-3 w-1 rounded-sm bg-blue-500" />
+      <span>{children}</span>
+    </span>
+  );
+}
+
 export default function ContractNumberSupervisorApprovalPage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
@@ -132,7 +141,7 @@ export default function ContractNumberSupervisorApprovalPage() {
           <Typography.Text type="secondary">申请单号：{application.id}</Typography.Text>
         </div>
 
-        <Card size="small" title="申请人信息">
+        <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>
           <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="申请人">{application.applicant.name}（{application.applicant.id}）</Descriptions.Item>
             <Descriptions.Item label="部门">{formatDepartment(application.applicant.department)}</Descriptions.Item>
@@ -143,11 +152,11 @@ export default function ContractNumberSupervisorApprovalPage() {
           </Descriptions>
         </Card>
 
-        <Card size="small" title="申请信息">
+        <Card size="small" title={<SectionTitle>申请信息</SectionTitle>}>
           <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="申请原因" span={3}>{application.applyReason || '-'}</Descriptions.Item>
             <Descriptions.Item label="身份证号码">{application.idCard || '-'}</Descriptions.Item>
-            <Descriptions.Item label="附件">
+            <Descriptions.Item label="附件" span={2}>
               {application.attachment ? (
                 <Button
                   type="link"
@@ -162,7 +171,7 @@ export default function ContractNumberSupervisorApprovalPage() {
           </Descriptions>
         </Card>
 
-        <Card size="small" title="号码配给">
+        <Card size="small" title={<SectionTitle>号码配给</SectionTitle>}>
           <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="电话号码">
               {application.assignedNumber?.phoneNumber || '-'}
@@ -176,7 +185,7 @@ export default function ContractNumberSupervisorApprovalPage() {
           </Descriptions>
         </Card>
 
-        <Card size="small" title="审批信息">
+        <Card size="small" title={<SectionTitle>审批信息</SectionTitle>}>
           <Table
             rowKey="id"
             size="small"
