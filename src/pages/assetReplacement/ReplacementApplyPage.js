@@ -105,7 +105,7 @@ export default function ReplacementApplyPage() {
             <DetailItem label="申请人">
               {CURRENT_REPLACEMENT_APPLICANT.name}-{CURRENT_REPLACEMENT_APPLICANT.id}
             </DetailItem>
-            <DetailItem label="更换类型">故障更换</DetailItem>
+            <DetailItem label="更换类型" span={2}>故障更换</DetailItem>
             <DetailItem label={<RequiredLabel>更换原因</RequiredLabel>} span={3}>
               <TextArea
                 rows={4}
