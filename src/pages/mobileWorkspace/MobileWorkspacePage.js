@@ -2,11 +2,8 @@ import React, { useMemo, useState } from 'react';
 import {
   ArrowDownToLine,
   ArrowLeft,
-  CalendarDays,
-  Check,
   CheckCircle2,
   ChevronRight,
-  ClipboardCheck,
   ClipboardList,
   Clock3,
   Database,
@@ -14,14 +11,11 @@ import {
   History,
   Home,
   Laptop,
-  Monitor,
   Package,
   Plus,
   Repeat2,
-  RotateCcw,
   ScanLine,
   Search,
-  ShoppingCart,
   Wrench,
   X,
 } from 'lucide-react';
@@ -506,6 +500,7 @@ function MaterialApplyScreen({ onBack }) {
   const [purpose, setPurpose] = useState('');
   const [reason, setReason] = useState('');
   const [relatedAsset, setRelatedAsset] = useState('');
+  const [relatedOpen, setRelatedOpen] = useState(false);
 
   const options = MATERIAL_OPTIONS.filter((item) => item.type === tab);
   return (
@@ -513,7 +508,15 @@ function MaterialApplyScreen({ onBack }) {
       {contextHolder}
       <MobileHeader title="物资申请" onBack={onBack} onClose={onBack} />
       <div className="bg-white p-4">
-        <SegmentedTabs value={tab} onChange={(next) => { setTab(next); setSelected(null); }} items={[{ value: '资产', label: '资产' }, { value: '耗材', label: '耗材' }]} />
+        <SegmentedTabs
+          value={tab}
+          onChange={(next) => {
+            setTab(next);
+            setSelected(null);
+            setRelatedAsset('');
+          }}
+          items={[{ value: '资产', label: '资产' }, { value: '耗材', label: '耗材' }]}
+        />
         <div className="mt-3 space-y-2">
           {options.map((item) => (
             <button
@@ -546,10 +549,14 @@ function MaterialApplyScreen({ onBack }) {
           {tab === '耗材' && (
             <div>
               <div className="mb-2 text-sm text-slate-600"><span className="text-red-500">*</span>关联主资产</div>
-              <select className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" value={relatedAsset} onChange={(event) => setRelatedAsset(event.target.value)}>
-                <option value="">请选择本人名下资产</option>
-                {MY_EXISTING_ASSETS.map((asset) => <option key={asset.id} value={asset.assetTag}>{asset.assetTag}</option>)}
-              </select>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm"
+                onClick={() => setRelatedOpen(true)}
+              >
+                <span className={relatedAsset ? 'text-slate-800' : 'text-slate-400'}>{relatedAsset || '请选择本人名下已有资产'}</span>
+                <ChevronRight size={18} className="text-slate-300" />
+              </button>
             </div>
           )}
           <div>
@@ -570,6 +577,34 @@ function MaterialApplyScreen({ onBack }) {
           >
             预览并提交
           </button>
+        </div>
+      )}
+
+      {relatedOpen && (
+        <div className="absolute inset-0 z-30 flex flex-col bg-[#f7f9fb]">
+          <MobileHeader title="选择关联主资产" onBack={() => setRelatedOpen(false)} onClose={() => setRelatedOpen(false)} />
+          <div className="p-4 text-xs text-slate-400">仅展示当前员工本人名下已有资产</div>
+          <div className="min-h-0 flex-1 space-y-3 overflow-auto px-4 pb-4">
+            {MY_EXISTING_ASSETS.map((asset) => (
+              <button
+                type="button"
+                key={asset.id}
+                className="flex w-full items-center gap-3 rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-slate-100"
+                onClick={() => {
+                  setRelatedAsset(asset.assetTag);
+                  setRelatedOpen(false);
+                }}
+              >
+                <AssetIcon />
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium text-slate-900">{asset.assetDesc || asset.name}</div>
+                  <div className="mt-1 text-sm" style={{ color: PRIMARY }}>{asset.assetTag}</div>
+                  <div className="mt-1 truncate text-xs text-slate-400">{asset.config}</div>
+                </div>
+                {relatedAsset === asset.assetTag ? <CheckCircle2 size={20} style={{ color: PRIMARY }} /> : <ChevronRight size={18} className="text-slate-300" />}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
