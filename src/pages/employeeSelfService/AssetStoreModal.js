@@ -24,7 +24,7 @@ const CATALOG_PATHS = {
   A019: ['电脑配件', '电源适配器', '苹果', 'USB-C 电源适配器', '70W / USB-C接口'],
   A008: ['办公耗材', '鼠标', '罗技', 'MX Master 3S', '静音 / 无线 / 蓝牙 / 黑色'],
   A020: ['办公耗材', '鼠标', '罗技', 'MX Master 3S', '静音 / 无线 / 蓝牙 / 白色'],
-  A021: ['电脑配件', '转接线', '绿联、CELINK、苹果', 'Type-C 多功能转接器', '转接线.绿联、CELINK、苹果.Type-C转（VGA/以太网/USB/Type-C）'],
+  A021: ['电脑配件', '转接线', '绿联', 'Type-C 多功能转接器', '转接线.绿联、CELINK、苹果.Type-C转（VGA/以太网/USB/Type-C）'],
 };
 
 function mapMaterial(asset, path) {
