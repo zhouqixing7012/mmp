@@ -8,6 +8,7 @@ import EmployeeAssetApplyPage from '../../employeeSelfService/AssetApplyPage';
 import EmployeeAssetApprovalPage from '../../employeeSelfService/AssetApprovalPage';
 import EmployeeAssetAllocationPage from '../../employeeSelfService/AssetAllocationPage';
 import NewEmployeeAssetClaimPage from '../../employeeSelfService/NewEmployeeAssetClaimPage';
+import NewEmployeeAssetClaimConfirmPage from '../../employeeSelfService/NewEmployeeAssetClaimConfirmPage';
 import ContractNumberAllocationPage from '../../contractNumber/ContractNumberAllocationPage';
 import ContractNumberSupervisorApprovalPage from '../../contractNumber/ContractNumberSupervisorApprovalPage';
 import ContractNumberWarehousePage from '../../contractNumber/ContractNumberWarehousePage';
@@ -62,6 +63,7 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: '统一申请汇总-资产', label: '统一申请汇总-资产', Page: UnifiedAssetApplySummary },
   { key: 'ES前台领用', label: 'ES前台领用', Page: FrontDeskAssetClaim },
   { key: '新员工领用单', label: '新员工领用单', Page: NewEmployeeAssetClaimPage },
+  { key: '新员工领用员工确认', label: '新员工领用员工确认', Page: NewEmployeeAssetClaimConfirmPage },
   { key: '员工领用确认', label: '员工领用确认', Page: EmployeeAssetClaimConfirm },
   { key: '耗材MIS鉴定', label: '耗材MIS鉴定', Page: ConsumableMisApprovalPage },
   { key: '耗材审批', label: '耗材审批', Page: ConsumableLeaderApprovalPage },
