@@ -7,7 +7,6 @@ import {
   Empty,
   Input,
   InputNumber,
-  Modal,
   Select,
   Space,
   Table,
@@ -17,7 +16,6 @@ import {
 } from 'antd';
 import { MY_EXISTING_ASSETS } from '../../mock/assetApplicationMock';
 import {
-  APPLICATION_NOTICE,
   APPLICATION_PURPOSE_OPTIONS,
   CURRENT_EMPLOYEE,
 } from '../../mock/employeeSelfServiceMock';
@@ -71,7 +69,6 @@ function buildApplication(materials) {
 export default function EmployeeAssetApplyPage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [noticeOpen, setNoticeOpen] = useState(true);
   const [storeOpen, setStoreOpen] = useState(false);
   const [relatedAssetOpen, setRelatedAssetOpen] = useState(false);
   const [relatedMaterialId, setRelatedMaterialId] = useState(null);
@@ -327,16 +324,6 @@ export default function EmployeeAssetApplyPage() {
           )}
         </div>
       </section>
-
-      <Modal title="申请须知" open={noticeOpen} closable={false} maskClosable={false} keyboard={false} footer={null}>
-        <Typography.Title level={5}>【申请原则】</Typography.Title>
-        {APPLICATION_NOTICE.map((item, index) => (
-          <Typography.Paragraph key={item}>{index + 1}、{item}</Typography.Paragraph>
-        ))}
-        <div className="flex justify-center pt-2">
-          <Button type="primary" onClick={() => setNoticeOpen(false)}>已阅读</Button>
-        </div>
-      </Modal>
 
       <AssetStoreModal open={storeOpen} onCancel={() => setStoreOpen(false)} onAdd={addMaterials} />
       <RelatedAssetSelectModal
