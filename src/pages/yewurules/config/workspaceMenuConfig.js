@@ -57,7 +57,7 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: '合约号码配给主管审批', label: '合约号码配给主管审批', Page: ContractNumberSupervisorApprovalPage },
   { key: '合约号码库管员待办', label: '合约号码库管员待办', Page: ContractNumberWarehousePage },
   { key: '员工合约号码领取确认', label: '员工合约号码领取确认', Page: ContractNumberReceiptConfirmPage },
-  { key: '资产申请', label: '资产申请', Page: EmployeeAssetApplyPage },
+  { key: '物资申请', label: '物资申请', Page: EmployeeAssetApplyPage },
   { key: '业务审批', label: '业务审批', Page: EmployeeAssetApprovalPage },
   { key: '资产配给', label: '资产配给', Page: EmployeeAssetAllocationPage },
   { key: '统一申请汇总-资产', label: '统一申请汇总-资产', Page: UnifiedAssetApplySummary },
