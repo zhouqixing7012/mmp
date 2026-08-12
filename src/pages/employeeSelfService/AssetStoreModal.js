@@ -5,13 +5,37 @@ import { ASSET_LIBRARY } from '../../mock/assetApplicationMock';
 
 const LEVEL_NAMES = ['大类', '小类', '品牌', '型号', '配置'];
 const CATALOG_PATHS = {
-  A001: ['电脑整机', '便携式电脑', '联想', 'ThinkPad T14', 'i7 / 16G / 512G'],
-  A002: ['电脑整机', '便携式电脑', '苹果', 'MacBook Pro 14', 'M3 Pro / 18G / 512G'],
-  A004: ['显示设备', '显示器', '戴尔', 'U2723QE', '27英寸 / 4K / Type-C'],
-  A005: ['电脑整机', '台式电脑', '联想', '启天 M430', '商用台式主机 i5'],
-  A006: ['存储耗材', '移动存储', '西部数据', 'Elements 4TB', '2.5英寸 / USB 3.0'],
-  A007: ['电脑配件', '电源适配器', '苹果', '35W 双USB-C', '35W / 双USB-C接口'],
-  A008: ['办公耗材', '鼠标', '罗技', 'MX Master 3S', '静音 / 无线 / 蓝牙'],
+  A001: ['电脑整机', '便携式电脑', '联想', 'ThinkPad T14', 'i7-1360P / 16G / 512G SSD'],
+  A009: ['电脑整机', '便携式电脑', '联想', 'ThinkPad T14', 'Ultra 7 / 32G / 1T SSD'],
+  A010: ['电脑整机', '便携式电脑', '联想', 'ThinkPad X1 Carbon', 'Ultra 7 / 16G / 512G SSD'],
+  A011: ['电脑整机', '便携式电脑', '联想', 'ThinkPad X1 Carbon', 'Ultra 7 / 32G / 1T SSD'],
+  A002: ['电脑整机', '便携式电脑', '苹果', 'MacBook Pro 14', 'M3 Pro / 18G / 512G SSD'],
+  A012: ['电脑整机', '便携式电脑', '苹果', 'MacBook Pro 14', 'M3 Pro / 36G / 1T SSD'],
+  A013: ['电脑整机', '便携式电脑', '苹果', 'MacBook Air 13', 'M3 / 16G / 512G SSD'],
+  A014: ['电脑整机', '便携式电脑', '苹果', 'MacBook Air 13', 'M3 / 24G / 512G SSD'],
+  A004: ['显示设备', '显示器', '戴尔', 'U2723QE', '27英寸 / 4K / Type-C 90W / 银色'],
+  A015: ['显示设备', '显示器', '戴尔', 'U2723QE', '27英寸 / 4K / Type-C 90W / 黑色'],
+  A016: ['显示设备', '显示器', '戴尔', 'P2425H', '23.8英寸 / FHD / IPS / HDMI+DP'],
+  A017: ['显示设备', '显示器', '戴尔', 'P2425H', '23.8英寸 / FHD / IPS / USB Hub'],
+  A005: ['电脑整机', '台式电脑', '联想', '启天 M430', 'i5 / 16G / 512G SSD'],
+  A006: ['存储耗材', '移动存储', '西部数据', 'Elements Portable', '2TB / 2.5英寸 / USB 3.0'],
+  A018: ['存储耗材', '移动存储', '西部数据', 'Elements Portable', '4TB / 2.5英寸 / USB 3.0'],
+  A007: ['电脑配件', '电源适配器', '苹果', '双USB-C 电源适配器', '35W / 双USB-C接口'],
+  A019: ['电脑配件', '电源适配器', '苹果', 'USB-C 电源适配器', '70W / USB-C接口'],
+  A008: ['办公耗材', '鼠标', '罗技', 'MX Master 3S', '静音 / 无线 / 蓝牙 / 黑色'],
+  A020: ['办公耗材', '鼠标', '罗技', 'MX Master 3S', '静音 / 无线 / 蓝牙 / 白色'],
+  A021: ['电脑配件', '转接线', '绿联', 'Type-C 多功能转接器', 'Type-C转VGA'],
+  A022: ['电脑配件', '转接线', '绿联', 'Type-C 多功能转接器', 'Type-C转以太网'],
+  A023: ['电脑配件', '转接线', '绿联', 'Type-C 多功能转接器', 'Type-C转USB'],
+  A024: ['电脑配件', '转接线', '绿联', 'Type-C 多功能转接器', 'Type-C转Type-C'],
+  A025: ['电脑配件', '转接线', 'CELINK', 'Type-C 多功能转接器', 'Type-C转VGA'],
+  A026: ['电脑配件', '转接线', 'CELINK', 'Type-C 多功能转接器', 'Type-C转以太网'],
+  A027: ['电脑配件', '转接线', 'CELINK', 'Type-C 多功能转接器', 'Type-C转USB'],
+  A028: ['电脑配件', '转接线', 'CELINK', 'Type-C 多功能转接器', 'Type-C转Type-C'],
+  A029: ['电脑配件', '转接线', '苹果', 'USB-C 多功能转换器', 'Type-C转VGA'],
+  A030: ['电脑配件', '转接线', '苹果', 'USB-C 多功能转换器', 'Type-C转以太网'],
+  A031: ['电脑配件', '转接线', '苹果', 'USB-C 多功能转换器', 'Type-C转USB'],
+  A032: ['电脑配件', '转接线', '苹果', 'USB-C 多功能转换器', 'Type-C转Type-C'],
 };
 
 function mapMaterial(asset, path) {
@@ -24,9 +48,9 @@ function mapMaterial(asset, path) {
     assetDesc: `${path[1]}.${path[2]}.${path[3]}`,
     config: path[4],
     referencePrice: 0,
-    overStandard: asset.id === 'A002',
-    departmentOverStandard: asset.id === 'A002',
-    requiresVp: asset.id === 'A002',
+    overStandard: asset.id === 'A002' || asset.id === 'A012',
+    departmentOverStandard: asset.id === 'A002' || asset.id === 'A012',
+    requiresVp: asset.id === 'A002' || asset.id === 'A012',
   };
 }
 
