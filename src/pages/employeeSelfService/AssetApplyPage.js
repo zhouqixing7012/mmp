@@ -157,7 +157,7 @@ export default function EmployeeAssetApplyPage() {
       return false;
     }
     if (materials.some((item) => !item.detail.trim())) {
-      messageApi.warning('请确保所有物资都已填写详细说明');
+      messageApi.warning('请确保所有物资都已填写申请原因');
       return false;
     }
     if (materials.some((item) => item.type === 'consumable' && !item.relatedAsset)) {
@@ -243,7 +243,7 @@ export default function EmployeeAssetApplyPage() {
       },
     },
     {
-      title: '详细说明',
+      title: '申请原因',
       dataIndex: 'detail',
       width: 280,
       render: (value, record) => isPreview
@@ -254,7 +254,7 @@ export default function EmployeeAssetApplyPage() {
             rows={2}
             maxLength={400}
             showCount
-            placeholder="必填，最多400字符"
+            placeholder="请填写申请原因，最多400字符"
             onChange={(event) => updateMaterial(record.id, 'detail', event.target.value)}
           />
         ),
