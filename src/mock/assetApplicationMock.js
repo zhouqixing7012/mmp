@@ -61,8 +61,24 @@ export const ASSET_LIBRARY = [
 ];
 
 export const MY_EXISTING_ASSETS = [
-  { id: 'AST-2023-089', name: 'MacBook Pro 14 (已领用)' },
-  { id: 'AST-2022-102', name: '戴尔 U2720Q 显示器 (已领用)' },
+  {
+    id: 'AST-2023-089',
+    name: 'MacBook Pro 14 (已领用)',
+    assetTag: '1121612300089',
+    assetDesc: '苹果 MacBook Pro 14 笔记本电脑',
+    config: 'M2 Pro / 16G / 512G / 14英寸',
+    status: '在用-使用中',
+    purpose: '员工用机',
+  },
+  {
+    id: 'AST-2022-102',
+    name: '戴尔 U2720Q 显示器 (已领用)',
+    assetTag: '1121612200102',
+    assetDesc: '戴尔 U2720Q 27英寸显示器',
+    config: '27英寸 / 4K / Type-C / IPS',
+    status: '在用-使用中',
+    purpose: '员工用机',
+  },
 ];
 
 export const REASON_OPTIONS = ['新员入职', '设备损坏', '项目测试', '日常补充', '其他原因'];
