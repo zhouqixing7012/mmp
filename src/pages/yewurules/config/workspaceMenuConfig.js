@@ -1,5 +1,5 @@
 import PersonalWorkspace from '../../gerengerzuotai';
-import MobileWorkspacePage from '../../mobileWorkspace/MobileWorkspacePage';
+import MobileWorkspacePage from '../../mobileWorkspace/MobileWorkspacePageV2';
 import Haoma from '../../haoma';
 import Haomakongzhi from '../../haomakongzhi';
 import UnifiedAssetApplySummary from '../../UnifiedAssetApplySummary';
