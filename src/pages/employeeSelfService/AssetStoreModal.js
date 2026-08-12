@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Check, ChevronRight, LayoutGrid, Trash2 } from 'lucide-react';
-import { Button, Checkbox, Empty, Input, Modal, Space, Tabs, Tag, Typography } from 'antd';
+import { Button, Checkbox, Empty, Input, Modal, Space, Tabs, Tag, Tooltip, Typography } from 'antd';
 import { ASSET_LIBRARY } from '../../mock/assetApplicationMock';
 
 const LEVEL_NAMES = ['大类', '小类', '品牌', '型号', '配置'];
@@ -159,7 +159,7 @@ export default function AssetStoreModal({ open, onCancel, onAdd }) {
                     <button
                       key={option}
                       type="button"
-                      className={`mb-1 flex w-full items-center justify-between rounded px-3 py-2 text-left text-sm transition ${selected || checked ? 'bg-blue-50 text-blue-600' : 'text-slate-700 hover:bg-slate-50'}`}
+                      className={`mb-1 flex w-full items-start justify-between gap-2 rounded px-3 py-2 text-left text-sm transition ${selected || checked ? 'bg-blue-50 text-blue-600' : 'text-slate-700 hover:bg-slate-50'}`}
                       onMouseEnter={() => {
                         if (!isConfig) selectLevel(level, option);
                       }}
@@ -171,10 +171,14 @@ export default function AssetStoreModal({ open, onCancel, onAdd }) {
                         else selectLevel(level, option);
                       }}
                     >
-                      <span className="min-w-0 flex-1 truncate">{option}</span>
-                      {isConfig ? (
-                        <Checkbox checked={Boolean(checked)} onChange={() => toggleConfiguration(option)} onClick={(event) => event.stopPropagation()} />
-                      ) : selected ? <Check size={14} /> : <ChevronRight size={14} className="text-slate-400" />}
+                      <Tooltip title={option} placement="topLeft" mouseEnterDelay={0.4}>
+                        <span className="min-w-0 flex-1 whitespace-normal break-words leading-5">{option}</span>
+                      </Tooltip>
+                      <span className="mt-0.5 shrink-0">
+                        {isConfig ? (
+                          <Checkbox checked={Boolean(checked)} onChange={() => toggleConfiguration(option)} onClick={(event) => event.stopPropagation()} />
+                        ) : selected ? <Check size={14} /> : <ChevronRight size={14} className="text-slate-400" />}
+                      </span>
                     </button>
                   );
                 })}
