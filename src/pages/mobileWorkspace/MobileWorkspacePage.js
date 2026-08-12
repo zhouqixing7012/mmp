@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   ArrowDownToLine,
   ArrowLeft,
+  ArrowRightLeft,
   CheckCircle2,
   ChevronRight,
   ClipboardList,
@@ -11,7 +12,6 @@ import {
   Home,
   Laptop,
   Package,
-  Phone,
   Plus,
   ScanLine,
   Search,
@@ -27,9 +27,9 @@ import {
   Empty,
   Input,
   InputNumber,
-  Segmented,
   Select,
-  Space,
+  Statistic,
+  Tabs,
   Tag,
   Typography,
   message as antdMessage,
@@ -63,12 +63,12 @@ const CONTRACT_NUMBERS = [
     carrier: '中国移动',
     packageName: '商务畅享 129 元套餐',
     status: '正常使用',
-    owner: '当前员工',
   },
 ];
 
 const HISTORY_RECORDS = [
   { id: 'MA-202608130001', type: '物资申请', title: 'ThinkPad T14 笔记本', status: '处理中', date: '2026-08-13' },
+  { id: 'TR-202608120024', type: '资产转移', title: '戴尔 E2417H显示器', status: '处理中', date: '2026-08-12' },
   { id: 'RP-202608120021', type: '资产更换', title: '微软 Surface Laptop 4', status: '处理中', date: '2026-08-12' },
   { id: 'BR-202608080015', type: '资产借用', title: '戴尔 Latitude 7440', status: '已完成', date: '2026-08-08' },
   { id: 'RT-202608050008', type: '资产退库', title: '戴尔 E2417H显示器', status: '已完成', date: '2026-08-05' },
@@ -95,8 +95,13 @@ const APP_THEME = {
   components: {
     Button: { controlHeight: 38 },
     Input: { controlHeight: 40 },
-    Segmented: { trackBg: '#F2F3F5' },
     Card: { paddingLG: 16 },
+    Tabs: {
+      inkBarColor: PRIMARY,
+      itemSelectedColor: '#1F2329',
+      itemColor: '#8F959E',
+      itemHoverColor: PRIMARY,
+    },
   },
 };
 
@@ -159,32 +164,120 @@ function BottomNav({ active, onChange, onPlus }) {
   );
 }
 
-function CategoryIcon({ type }) {
+function CategoryIcon({ type, size = 'normal' }) {
   const config = {
     asset: { icon: Laptop, bg: '#E8F3FF', color: '#2E7BEF' },
     consumable: { icon: Package, bg: '#FFF4E8', color: '#F07B2D' },
     contract: { icon: Smartphone, bg: '#EAF8F1', color: '#18A058' },
   }[type];
   const Icon = config.icon;
+  const boxClass = size === 'small' ? 'h-8 w-8 rounded-lg' : 'h-11 w-11 rounded-xl';
   return (
-    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: config.bg, color: config.color }}>
-      <Icon size={22} />
+    <span className={`flex ${boxClass} shrink-0 items-center justify-center`} style={{ backgroundColor: config.bg, color: config.color }}>
+      <Icon size={size === 'small' ? 17 : 22} />
     </span>
   );
 }
 
-function Stat({ value, label }) {
+function OverviewCard({ activeTab, onTabChange }) {
+  const stats = [
+    { key: 'asset', label: '资产', value: MY_EXISTING_ASSETS.length, icon: Laptop, bg: '#E8F3FF', color: '#2E7BEF' },
+    { key: 'consumable', label: '耗材', value: CONSUMABLES.length, icon: Package, bg: '#FFF4E8', color: '#F07B2D' },
+    { key: 'contract', label: '合约号码', value: CONTRACT_NUMBERS.length, icon: Smartphone, bg: '#EAF8F1', color: '#18A058' },
+  ];
+
   return (
-    <div className="text-center">
-      <div className="text-lg font-semibold text-slate-900">{value}</div>
-      <div className="mt-0.5 text-[11px] text-slate-500">{label}</div>
+    <Card
+      bordered={false}
+      className="overflow-hidden shadow-[0_6px_22px_rgba(31,35,41,0.05)]"
+      styles={{ body: { padding: 0 } }}
+    >
+      <div className="relative overflow-hidden bg-[linear-gradient(135deg,#F7FAFF_0%,#EEF4FF_55%,#F8FBFF_100%)] px-4 pb-4 pt-5">
+        <div className="absolute -right-10 -top-14 h-36 w-36 rounded-full bg-[#3370FF]/5" />
+        <div className="absolute -bottom-12 right-20 h-28 w-28 rounded-full bg-white/70" />
+        <div className="relative flex items-center justify-between">
+          <div>
+            <div className="text-xs text-slate-500">我的资产服务</div>
+            <div className="mt-1 text-lg font-semibold text-slate-900">物资概览</div>
+          </div>
+          <div className="rounded-full bg-white/80 px-3 py-1 text-[11px] text-slate-500 shadow-sm">在用物资</div>
+        </div>
+
+        <div className="relative mt-4 grid grid-cols-3 gap-2">
+          {stats.map((item) => {
+            const Icon = item.icon;
+            const active = activeTab === item.key;
+            return (
+              <button
+                type="button"
+                key={item.key}
+                className={`rounded-xl bg-white px-2 py-3 text-left shadow-sm transition ${active ? 'ring-1 ring-[#3370FF]/25' : 'ring-1 ring-black/[0.03]'}`}
+                onClick={() => onTabChange(item.key)}
+              >
+                <div className="mb-2 flex items-center gap-1.5">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ backgroundColor: item.bg, color: item.color }}>
+                    <Icon size={15} />
+                  </span>
+                  <span className="truncate text-[11px] text-slate-500">{item.label}</span>
+                </div>
+                <Statistic
+                  value={item.value}
+                  valueStyle={{ fontSize: 22, lineHeight: '26px', color: '#1F2329', fontWeight: 600 }}
+                  suffix={<span className="text-[11px] font-normal text-slate-400">项</span>}
+                />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function LineTabs({ activeKey, onChange, items }) {
+  return (
+    <Tabs
+      activeKey={activeKey}
+      onChange={onChange}
+      items={items.map((item) => ({ key: item.key, label: item.label, children: null }))}
+      tabBarStyle={{ margin: 0 }}
+      animated={{ inkBar: true, tabPane: false }}
+      className="[&_.ant-tabs-nav]:mb-0 [&_.ant-tabs-nav]:px-1 [&_.ant-tabs-nav-list]:w-full [&_.ant-tabs-tab]:flex-1 [&_.ant-tabs-tab]:justify-center [&_.ant-tabs-tab]:py-3 [&_.ant-tabs-tab-btn]:text-center [&_.ant-tabs-ink-bar]:h-[2px]"
+    />
+  );
+}
+
+function BatchActionBar({ count, onCancel, onAction }) {
+  return (
+    <div className="shrink-0 border-t border-slate-100 bg-white px-3 pb-3 pt-2 shadow-[0_-8px_24px_rgba(31,35,41,0.06)]">
+      <div className="mb-2 flex items-center justify-between px-1">
+        <span className="text-xs text-slate-500">已选择 <b className="text-slate-800">{count}</b> 项资产</span>
+        <Button type="link" size="small" onClick={onCancel}>取消批量操作</Button>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <Button icon={<ArrowDownToLine size={15} />} disabled={count === 0} onClick={() => onAction('批量退库')}>批量退库</Button>
+        <Button icon={<ArrowRightLeft size={15} />} disabled={count === 0} onClick={() => onAction('批量转移')}>批量转移</Button>
+        <Button type="primary" icon={<Wrench size={15} />} disabled={count === 0} onClick={() => onAction('批量更换')}>批量更换</Button>
+      </div>
     </div>
   );
 }
 
 function HomeScreen({ onOpen, onBottomNav, onPlus }) {
+  const [messageApi, contextHolder] = antdMessage.useMessage();
   const [tab, setTab] = useState('asset');
   const [keyword, setKeyword] = useState('');
+  const [batchMode, setBatchMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const longPressTimer = useRef(null);
+  const longPressTriggered = useRef(false);
+
+  const switchTab = (next) => {
+    setTab(next);
+    setKeyword('');
+    setBatchMode(false);
+    setSelectedIds([]);
+  };
 
   const data = useMemo(() => {
     if (tab === 'asset') return MY_EXISTING_ASSETS;
@@ -199,52 +292,76 @@ function HomeScreen({ onOpen, onBottomNav, onPlus }) {
     return !keyword.trim() || text.toLowerCase().includes(keyword.trim().toLowerCase());
   });
 
+  const toggleSelected = (assetId) => {
+    setSelectedIds((current) => current.includes(assetId)
+      ? current.filter((id) => id !== assetId)
+      : [...current, assetId]);
+  };
+
+  const startLongPress = (assetId) => {
+    longPressTriggered.current = false;
+    window.clearTimeout(longPressTimer.current);
+    longPressTimer.current = window.setTimeout(() => {
+      longPressTriggered.current = true;
+      setBatchMode(true);
+      setSelectedIds((current) => current.includes(assetId) ? current : [...current, assetId]);
+      messageApi.info('已进入批量操作，可继续选择其他资产');
+    }, 520);
+  };
+
+  const clearLongPress = () => {
+    window.clearTimeout(longPressTimer.current);
+  };
+
+  const handleAssetCardClick = (item) => {
+    if (longPressTriggered.current) {
+      longPressTriggered.current = false;
+      return;
+    }
+    if (batchMode) {
+      toggleSelected(item.id);
+      return;
+    }
+    onOpen('assetDetail', { ...item, assetTag: item.assetTag || item.id });
+  };
+
+  const handleBatchAction = (action) => {
+    messageApi.success(`${action}：已选择 ${selectedIds.length} 项资产`);
+  };
+
   return (
     <>
+      {contextHolder}
       <div className="min-h-0 flex-1 overflow-auto bg-[#F5F6F7]">
         <MobileHeader title="资产服务" home onBack={() => {}} />
 
         <div className="p-4 pb-3">
-          <Card bordered={false} className="overflow-hidden shadow-none" styles={{ body: { padding: 18 } }}>
-            <div className="relative overflow-hidden rounded-xl bg-[linear-gradient(135deg,#EEF4FF_0%,#F8FAFF_100%)] p-4">
-              <div className="absolute -right-7 -top-8 h-28 w-28 rounded-full bg-[#3370FF]/5" />
-              <div className="absolute -bottom-10 right-10 h-24 w-24 rounded-full bg-[#3370FF]/5" />
-              <div className="relative">
-                <div className="text-xs text-slate-500">我的资产服务</div>
-                <div className="mt-1 text-xl font-semibold text-slate-900">你好，当前员工</div>
-                <div className="mt-4 grid grid-cols-3 divide-x divide-slate-200">
-                  <Stat value={MY_EXISTING_ASSETS.length} label="资产" />
-                  <Stat value={CONSUMABLES.length} label="耗材" />
-                  <Stat value={CONTRACT_NUMBERS.length} label="合约号码" />
-                </div>
-              </div>
-            </div>
-          </Card>
+          <OverviewCard activeTab={tab} onTabChange={switchTab} />
         </div>
 
         <div className="sticky top-0 z-10 bg-[#F5F6F7] px-4 pb-3">
-          <Segmented
-            block
-            size="large"
-            value={tab}
-            onChange={(next) => {
-              setTab(next);
-              setKeyword('');
-            }}
-            options={[
-              { label: '资产', value: 'asset' },
-              { label: '耗材', value: 'consumable' },
-              { label: '合约号码', value: 'contract' },
-            ]}
-          />
-          <Input
-            allowClear
-            className="mt-3"
-            prefix={<Search size={16} className="text-slate-400" />}
-            placeholder={tab === 'contract' ? '搜索号码、运营商或套餐' : '搜索物资说明或标签号'}
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-          />
+          <Card bordered={false} className="shadow-none" styles={{ body: { padding: '0 12px 12px' } }}>
+            <LineTabs
+              activeKey={tab}
+              onChange={switchTab}
+              items={[
+                { key: 'asset', label: '资产' },
+                { key: 'consumable', label: '耗材' },
+                { key: 'contract', label: '合约号码' },
+              ]}
+            />
+            <Input
+              allowClear
+              className="mt-2"
+              prefix={<Search size={16} className="text-slate-400" />}
+              placeholder={tab === 'contract' ? '搜索号码、运营商或套餐' : '搜索物资说明或标签号'}
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+            />
+          </Card>
+          {tab === 'asset' && !batchMode && (
+            <div className="mt-2 px-1 text-[11px] text-slate-400">长按任一资产可进入批量退库、转移或更换</div>
+          )}
         </div>
 
         <div className="space-y-3 px-4 pb-5">
@@ -270,31 +387,70 @@ function HomeScreen({ onOpen, onBottomNav, onPlus }) {
               );
             }
 
-            const assetTag = item.assetTag || item.id;
+            if (tab === 'consumable') {
+              return (
+                <Card key={item.id} bordered={false} className="shadow-none" styles={{ body: { padding: 16 } }}>
+                  <div className="flex items-start gap-3">
+                    <CategoryIcon type="consumable" />
+                    <div className="min-w-0 flex-1">
+                      <Text strong className="text-[15px]">{item.name}</Text>
+                      <div className="mt-1 text-sm text-slate-500">数量 {item.quantity}</div>
+                      <div className="mt-1 text-xs leading-5 text-slate-400">{item.desc}</div>
+                      <div className="mt-2 text-xs text-slate-500">关联主资产：{item.relatedAsset}</div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            }
+
+            const selected = selectedIds.includes(item.id);
             return (
-              <Card key={item.id} bordered={false} className="shadow-none" styles={{ body: { padding: 16 } }}>
-                <div className="flex items-start gap-3">
-                  <CategoryIcon type={tab} />
-                  <button
-                    type="button"
-                    className="min-w-0 flex-1 text-left"
-                    onClick={() => tab === 'asset' && onOpen('assetDetail', { ...item, assetTag })}
-                  >
+              <Card
+                key={item.id}
+                bordered={false}
+                className={`shadow-none transition ${selected ? 'ring-1 ring-[#3370FF]/40' : ''}`}
+                styles={{ body: { padding: 16 } }}
+              >
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className="flex cursor-pointer items-start gap-3 select-none"
+                  onPointerDown={() => startLongPress(item.id)}
+                  onPointerUp={clearLongPress}
+                  onPointerLeave={clearLongPress}
+                  onPointerCancel={clearLongPress}
+                  onClick={() => handleAssetCardClick(item)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') handleAssetCardClick(item);
+                  }}
+                >
+                  <CategoryIcon type="asset" />
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <Text strong className="truncate text-[15px]">{item.name}</Text>
-                      {tab === 'asset' && <ChevronRight size={18} className="shrink-0 text-slate-300" />}
+                      {batchMode ? (
+                        <span
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${selected ? 'border-[#3370FF] bg-[#3370FF] text-white' : 'border-slate-300 bg-white'}`}
+                        >
+                          {selected && <CheckCircle2 size={14} />}
+                        </span>
+                      ) : (
+                        <ChevronRight size={18} className="shrink-0 text-slate-300" />
+                      )}
                     </div>
-                    <div className="mt-1 text-sm text-slate-500">{tab === 'asset' ? assetTag : `数量 ${item.quantity}`}</div>
-                    <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-400">{item.assetDesc || item.desc}</div>
-                    {tab === 'consumable' && (
-                      <div className="mt-2 text-xs text-slate-500">关联主资产：{item.relatedAsset}</div>
-                    )}
-                  </button>
+                    <div className="mt-1 text-sm text-slate-500">{item.assetTag || item.id}</div>
+                    <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-400">{item.assetDesc || item.name}</div>
+                  </div>
                 </div>
-                {tab === 'asset' && (
-                  <div className="mt-3 flex justify-end gap-2 border-t border-slate-100 pt-3">
+                {!batchMode && (
+                  <div
+                    className="mt-3 flex justify-end gap-2 border-t border-slate-100 pt-3"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     <Button size="small" onClick={() => onOpen('return', item)}>退库</Button>
-                    <Button size="small" onClick={() => onOpen('replace', item)}>更换</Button>
+                    <Button size="small" onClick={() => onOpen('transfer', item)}>转移</Button>
+                    <Button type="primary" ghost size="small" onClick={() => onOpen('replace', item)}>更换</Button>
                   </div>
                 )}
               </Card>
@@ -303,7 +459,19 @@ function HomeScreen({ onOpen, onBottomNav, onPlus }) {
           {visibleData.length === 0 && <Empty className="py-16" description="暂无相关数据" />}
         </div>
       </div>
-      <BottomNav active="home" onChange={onBottomNav} onPlus={onPlus} />
+
+      {batchMode ? (
+        <BatchActionBar
+          count={selectedIds.length}
+          onCancel={() => {
+            setBatchMode(false);
+            setSelectedIds([]);
+          }}
+          onAction={handleBatchAction}
+        />
+      ) : (
+        <BottomNav active="home" onChange={onBottomNav} onPlus={onPlus} />
+      )}
     </>
   );
 }
@@ -311,7 +479,7 @@ function HomeScreen({ onOpen, onBottomNav, onPlus }) {
 function HistoryScreen({ onBottomNav, onPlus }) {
   const [status, setStatus] = useState('pending');
   const [type, setType] = useState('全部');
-  const types = ['全部', '物资申请', '资产借用', '资产更换', '资产退库', '合约号码退库'];
+  const types = ['全部', '物资申请', '资产借用', '资产转移', '资产更换', '资产退库', '合约号码退库'];
   const records = HISTORY_RECORDS.filter((item) => (
     (status === 'pending' ? item.status !== '已完成' : item.status === '已完成')
     && (type === '全部' || item.type === type)
@@ -321,12 +489,11 @@ function HistoryScreen({ onBottomNav, onPlus }) {
     <>
       <div className="min-h-0 flex-1 overflow-auto bg-[#F5F6F7]">
         <MobileHeader title="我的单据" onBack={() => onBottomNav('home')} onClose={() => onBottomNav('home')} />
-        <div className="bg-white px-4 py-3">
-          <Segmented
-            block
-            value={status}
+        <div className="bg-white px-4 pb-3">
+          <LineTabs
+            activeKey={status}
             onChange={setStatus}
-            options={[{ label: '未完成', value: 'pending' }, { label: '已完成', value: 'done' }]}
+            items={[{ key: 'pending', label: '未完成' }, { key: 'done', label: '已完成' }]}
           />
           <Select
             className="mt-3 w-full"
@@ -341,7 +508,7 @@ function HistoryScreen({ onBottomNav, onPlus }) {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <Text strong>{item.type}</Text>
-                  <div className="mt-2 truncate text-sm text-slate-600">{item.title}</div>
+                  <div className="mt-2 text-sm text-slate-600">{item.title}</div>
                   <div className="mt-1 text-xs text-slate-400">{item.id} · {item.date}</div>
                 </div>
                 <Tag color={item.status === '已完成' ? 'success' : 'processing'} bordered={false}>{item.status}</Tag>
@@ -368,9 +535,9 @@ function InventoryScreen({ onBottomNav, onPlus, onOpen }) {
   return (
     <>
       <div className="min-h-0 flex-1 overflow-auto bg-[#F5F6F7]">
-        <MobileHeader title="资产盘点" onBack={() => onBottomNav('home')} onClose={() => onBottomNav('home')} />
-        <div className="bg-white p-4">
-          <Segmented block value={tab} onChange={setTab} options={[{ label: '未盘', value: 'todo' }, { label: '已盘', value: 'done' }]} />
+        <MobileHeader title="我的资产" onBack={() => onBottomNav('home')} onClose={() => onBottomNav('home')} />
+        <div className="bg-white px-4 pb-3">
+          <LineTabs activeKey={tab} onChange={setTab} items={[{ key: 'todo', label: '未盘' }, { key: 'done', label: '已盘' }]} />
           <Input className="mt-3" prefix={<Search size={16} className="text-slate-400" />} placeholder="输入资产说明、标签号、序列号" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
         </div>
         <div className="px-4 py-3 text-xs text-slate-500">{tab === 'done' ? '已盘' : '未盘'} · 共 {data.length} 条</div>
@@ -396,7 +563,7 @@ function InventoryScreen({ onBottomNav, onPlus, onOpen }) {
               </button>
             </Card>
           ))}
-          {data.length === 0 && <Empty className="py-16" description="暂无数据" />}
+          {data.length === 0 && <Empty className="py-20" description="暂无数据" />}
         </div>
       </div>
       <BottomNav active="inventory" onChange={onBottomNav} onPlus={onPlus} />
@@ -407,33 +574,31 @@ function InventoryScreen({ onBottomNav, onPlus, onOpen }) {
 function ScanScreen({ onBottomNav, onPlus, onOpen }) {
   const [value, setValue] = useState('');
   const [messageApi, contextHolder] = antdMessage.useMessage();
+
   const handleLookup = () => {
     const asset = MY_EXISTING_ASSETS.find((item) => item.assetTag === value.trim());
     if (!asset) {
       messageApi.warning('未找到该资产标签号');
       return;
     }
-    onOpen('assetDetail', asset);
+    onOpen('assetDetail', { ...asset, source: 'asset' });
   };
 
   return (
     <>
       {contextHolder}
-      <div className="min-h-0 flex-1 overflow-auto bg-[#F5F6F7]">
+      <div className="min-h-0 flex-1 overflow-auto bg-slate-950 text-white">
         <MobileHeader title="扫一扫" onBack={() => onBottomNav('home')} onClose={() => onBottomNav('home')} />
-        <div className="p-4">
-          <Card bordered={false} className="shadow-none" styles={{ body: { padding: 20 } }}>
-            <div className="flex flex-col items-center py-8">
-              <div className="flex h-48 w-48 items-center justify-center rounded-3xl border-2 border-dashed border-blue-200 bg-blue-50/60 text-blue-300">
-                <ScanLine size={68} />
-              </div>
-              <div className="mt-5 text-sm text-slate-500">原型使用资产标签号输入模拟扫码</div>
-              <Space.Compact className="mt-4 w-full">
-                <Input placeholder="输入资产标签号" value={value} onChange={(event) => setValue(event.target.value)} onPressEnter={handleLookup} />
-                <Button type="primary" onClick={handleLookup}>查询</Button>
-              </Space.Compact>
-            </div>
-          </Card>
+        <div className="flex min-h-[520px] flex-col items-center justify-center px-8">
+          <div className="relative h-60 w-60 rounded-3xl border-2 border-white/70">
+            <div className="absolute left-6 right-6 top-1/2 h-0.5 bg-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.9)]" />
+            <ScanLine size={68} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white/20" />
+          </div>
+          <div className="mt-8 text-sm text-white/70">原型使用标签号输入模拟扫码</div>
+          <div className="mt-4 flex w-full gap-2">
+            <Input placeholder="输入资产标签号" value={value} onChange={(event) => setValue(event.target.value)} onPressEnter={handleLookup} />
+            <Button type="primary" onClick={handleLookup}>查询</Button>
+          </div>
         </div>
       </div>
       <BottomNav active="scan" onChange={onBottomNav} onPlus={onPlus} />
@@ -443,106 +608,98 @@ function ScanScreen({ onBottomNav, onPlus, onOpen }) {
 
 function AssetDetailScreen({ asset, onBack, onOpen }) {
   const rows = [
-    ['资产标签号', asset.assetTag || asset.id],
-    ['资产说明', asset.assetDesc || asset.name],
+    ['标签号', asset.assetTag || asset.id],
+    ['数量', asset.quantity || 1],
+    ['用途', asset.purpose || '员工用机'],
+    ['使用状态', asset.status || '在用-使用中'],
+    ['说明', asset.assetDesc || asset.name],
     ['配置', asset.config || '-'],
-    ['资产用途', asset.purpose || '员工用机'],
-    ['资产状态', asset.status || '在用-使用中'],
     ['责任人', '当前员工'],
-    ['资产地址', '北京市 · 搜狐媒体大厦 · 17层'],
+    ['资产地址', '北京市-搜狐媒体大厦-17层'],
   ];
+
   return (
     <div className="min-h-0 flex-1 overflow-auto bg-[#F5F6F7]">
       <MobileHeader title="资产详情" onBack={onBack} onClose={onBack} />
-      <div className="p-4">
-        <Card bordered={false} className="shadow-none" styles={{ body: { padding: 16 } }}>
-          <div className="mb-4 flex items-center gap-3">
-            <CategoryIcon type="asset" />
-            <div className="min-w-0">
-              <div className="truncate font-semibold text-slate-900">{asset.name}</div>
-              <Tag className="mt-1" color="success" bordered={false}>{asset.status || '在用-使用中'}</Tag>
-            </div>
+      <Card bordered={false} className="m-4 shadow-none" styles={{ body: { padding: 0 } }}>
+        <div className="flex items-center gap-3 border-b border-slate-100 p-4">
+          <CategoryIcon type="asset" />
+          <div>
+            <div className="font-medium text-slate-900">{asset.name}</div>
+            <div className="mt-1 text-xs text-slate-400">{asset.assetTag || asset.id}</div>
           </div>
-          <div className="divide-y divide-slate-100">
-            {rows.map(([label, value]) => (
-              <div key={label} className="grid grid-cols-[86px_1fr] gap-3 py-3 text-sm">
-                <span className="text-slate-500">{label}</span>
-                <span className="break-words text-slate-900">{value}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <Button size="large" icon={<ArrowDownToLine size={16} />} onClick={() => onOpen('return', asset)}>退库</Button>
-          <Button type="primary" size="large" icon={<Wrench size={16} />} onClick={() => onOpen('replace', asset)}>更换</Button>
         </div>
+        {rows.map(([label, value]) => (
+          <div key={label} className="grid grid-cols-[88px_1fr] gap-3 border-b border-slate-100 px-4 py-3 text-sm last:border-b-0">
+            <div className="text-slate-500">{label}</div>
+            <div className="break-words text-slate-900">{value}</div>
+          </div>
+        ))}
+      </Card>
+      <div className="grid grid-cols-3 gap-2 px-4 pb-4">
+        <Button icon={<ArrowDownToLine size={15} />} onClick={() => onOpen('return', asset)}>退库</Button>
+        <Button icon={<ArrowRightLeft size={15} />} onClick={() => onOpen('transfer', asset)}>转移</Button>
+        <Button type="primary" ghost icon={<Wrench size={15} />} onClick={() => onOpen('replace', asset)}>更换</Button>
       </div>
     </div>
   );
 }
 
-function BusinessForm({ mode, asset, onBack }) {
+function AssetBusinessForm({ mode, asset, onBack }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [reason, setReason] = useState('');
+  const [receiver, setReceiver] = useState('');
   const isReturn = mode === 'return';
+  const isTransfer = mode === 'transfer';
+  const title = isReturn ? '退库信息填写' : isTransfer ? '转移信息填写' : '更换信息填写';
+  const reasonLabel = isReturn ? '退库原因' : isTransfer ? '转出原因' : '更换原因';
+
   return (
     <div className="min-h-0 flex-1 overflow-auto bg-[#F5F6F7]">
       {contextHolder}
-      <MobileHeader title={isReturn ? '资产退库' : '资产更换'} onBack={onBack} onClose={onBack} />
-      <div className="space-y-3 p-4">
-        <Card bordered={false} className="shadow-none" title={isReturn ? '退库信息' : '更换信息'}>
-          <div className="mb-4 text-sm text-slate-500">{isReturn ? '退库类型：资产退库' : '更换类型：故障更换'}</div>
-          <div className="mb-2 text-sm"><span className="text-red-500">*</span>{isReturn ? '退库原因' : '更换原因'}</div>
-          <Input.TextArea rows={5} maxLength={150} showCount value={reason} placeholder={`请填写${isReturn ? '退库' : '更换'}原因`} onChange={(event) => setReason(event.target.value)} />
-        </Card>
-        <Card bordered={false} className="shadow-none" title={asset.name}>
-          <div className="space-y-3 text-sm">
-            <div className="grid grid-cols-[86px_1fr] gap-3"><span className="text-slate-500">资产标签号</span><span>{asset.assetTag || asset.id}</span></div>
-            <div className="grid grid-cols-[86px_1fr] gap-3"><span className="text-slate-500">资产说明</span><span>{asset.assetDesc || asset.name}</span></div>
-            <div className="grid grid-cols-[86px_1fr] gap-3"><span className="text-slate-500">配置</span><span>{asset.config || '-'}</span></div>
+      <MobileHeader title={title} onBack={onBack} onClose={onBack} />
+      <Card bordered={false} className="m-4 shadow-none" styles={{ body: { padding: 16 } }}>
+        <div className="mb-4 text-base font-medium text-slate-900">{isReturn ? '退库信息' : isTransfer ? '转移信息' : '更换信息'}</div>
+        {isTransfer && (
+          <div className="mb-4">
+            <div className="mb-2 text-sm text-slate-600"><span className="text-red-500">*</span>接收人</div>
+            <Input value={receiver} placeholder="请输入接收人工号或姓名" onChange={(event) => setReceiver(event.target.value)} />
           </div>
-        </Card>
+        )}
+        <div className="mb-2 text-sm text-slate-600"><span className="text-red-500">*</span>{reasonLabel}</div>
+        <Input.TextArea rows={5} maxLength={150} showCount value={reason} placeholder={`请填写${reasonLabel}（150字以内）`} onChange={(event) => setReason(event.target.value)} />
+      </Card>
+
+      <Card bordered={false} className="mx-4 shadow-none" styles={{ body: { padding: 16 } }}>
+        <div className="mb-4 flex items-center gap-3">
+          <CategoryIcon type="asset" size="small" />
+          <div>
+            <div className="font-medium text-slate-900">{asset.name}</div>
+            <div className="mt-1 text-xs text-slate-400">{asset.assetTag || asset.id}</div>
+          </div>
+        </div>
+        <div className="space-y-3 text-sm">
+          <div className="grid grid-cols-[82px_1fr] gap-3"><span className="text-slate-500">资产说明</span><span>{asset.assetDesc || asset.name}</span></div>
+          <div className="grid grid-cols-[82px_1fr] gap-3"><span className="text-slate-500">资产用途</span><span>{asset.purpose || '员工用机'}</span></div>
+          <div className="grid grid-cols-[82px_1fr] gap-3"><span className="text-slate-500">资产状态</span><span>{asset.status || '在用-使用中'}</span></div>
+          <div className="grid grid-cols-[82px_1fr] gap-3"><span className="text-slate-500">配置</span><span>{asset.config || '-'}</span></div>
+        </div>
+      </Card>
+
+      <div className="p-4">
         <Button
           block
           type="primary"
-          size="large"
           onClick={() => {
-            if (!reason.trim()) {
-              messageApi.warning(`请填写${isReturn ? '退库' : '更换'}原因`);
+            if ((isTransfer && !receiver.trim()) || !reason.trim()) {
+              messageApi.warning(`请补充${isTransfer && !receiver.trim() ? '接收人及' : ''}${reasonLabel}`);
               return;
             }
-            messageApi.success(`${isReturn ? '退库' : '更换'}申请已提交`);
+            messageApi.success(`${isReturn ? '退库' : isTransfer ? '转移' : '更换'}申请已提交`);
           }}
         >
-          {isReturn ? '提交' : '预览'}
+          {isReturn || isTransfer ? '提交' : '预览'}
         </Button>
-      </div>
-    </div>
-  );
-}
-
-function ContractReturnScreen({ contract, onBack }) {
-  const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [reason, setReason] = useState('');
-  return (
-    <div className="min-h-0 flex-1 overflow-auto bg-[#F5F6F7]">
-      {contextHolder}
-      <MobileHeader title="合约号码退库" onBack={onBack} onClose={onBack} />
-      <div className="space-y-3 p-4">
-        <Card bordered={false} className="shadow-none">
-          <div className="flex items-center gap-3">
-            <CategoryIcon type="contract" />
-            <div>
-              <div className="font-semibold">{contract.phone}</div>
-              <div className="mt-1 text-xs text-slate-500">{contract.carrier} · {contract.packageName}</div>
-            </div>
-          </div>
-        </Card>
-        <Card bordered={false} className="shadow-none" title="退库信息">
-          <div className="mb-2 text-sm"><span className="text-red-500">*</span>退库原因</div>
-          <Input.TextArea rows={5} maxLength={150} showCount value={reason} placeholder="请填写合约号码退库原因" onChange={(event) => setReason(event.target.value)} />
-        </Card>
-        <Button block type="primary" size="large" onClick={() => reason.trim() ? messageApi.success('合约号码退库申请已提交') : messageApi.warning('请填写退库原因')}>提交</Button>
       </div>
     </div>
   );
@@ -551,39 +708,32 @@ function ContractReturnScreen({ contract, onBack }) {
 function InventoryDetailScreen({ asset, onBack }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   return (
-    <div className="min-h-0 flex-1 overflow-auto bg-[#F5F6F7]">
+    <div className="min-h-0 flex-1 overflow-auto bg-white">
       {contextHolder}
       <MobileHeader title="资产盘点" onBack={onBack} onClose={onBack} />
-      <div className="p-4">
-        <Card bordered={false} className="shadow-none">
-          <div className="mb-4 flex items-center gap-3">
-            <CategoryIcon type="asset" />
-            <div><div className="font-semibold">{asset.name}</div><div className="mt-1 text-xs text-slate-500">{asset.assetTag}</div></div>
-          </div>
-          {[
-            ['用途', asset.purpose || '员工用机'],
-            ['使用状态', asset.status || '在用-使用中'],
-            ['说明', asset.assetDesc || asset.name],
-            ['责任人', '当前员工'],
-            ['盘点状态', asset.checked ? '已盘' : '未盘'],
-            ['资产地址', '北京市 · 搜狐媒体大厦 · 17层'],
-          ].map(([label, value]) => (
-            <div key={label} className="grid grid-cols-[86px_1fr] gap-3 border-t border-slate-100 py-3 text-sm">
-              <span className="text-slate-500">{label}</span><span>{value}</span>
-            </div>
-          ))}
-        </Card>
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <Button danger size="large" onClick={() => messageApi.info('已登记报失')}>报失</Button>
-          <Button
-            type="primary"
-            size="large"
-            onClick={() => {
-              asset.onChecked?.();
-              messageApi.success('盘点完成');
-            }}
-          >盘点</Button>
+      {[
+        ['标签号', asset.assetTag],
+        ['数量', 1],
+        ['用途', asset.purpose || '员工用机'],
+        ['使用状态', asset.status || '在用-使用中'],
+        ['说明', asset.assetDesc || asset.name],
+        ['责任人', '当前员工'],
+        ['盘点状态', asset.checked ? '已盘' : '未盘'],
+        ['资产地址', '北京市-搜狐媒体大厦-17层'],
+      ].map(([label, value]) => (
+        <div key={label} className="grid grid-cols-[88px_1fr] gap-3 border-b border-slate-100 px-5 py-4 text-sm">
+          <span className="text-slate-500">{label}</span><span className="text-slate-900">{value}</span>
         </div>
+      ))}
+      <div className="p-4">
+        <Button
+          block
+          type="primary"
+          onClick={() => {
+            asset.onChecked?.();
+            messageApi.success('盘点完成');
+          }}
+        >盘点</Button>
       </div>
     </div>
   );
@@ -597,83 +747,90 @@ function MaterialApplyScreen({ onBack }) {
   const [purpose, setPurpose] = useState('');
   const [reason, setReason] = useState('');
   const [relatedAsset, setRelatedAsset] = useState('');
+
   const options = MATERIAL_OPTIONS.filter((item) => item.type === tab);
 
   return (
     <div className="min-h-0 flex-1 overflow-auto bg-[#F5F6F7]">
       {contextHolder}
       <MobileHeader title="物资申请" onBack={onBack} onClose={onBack} />
-      <div className="space-y-3 p-4">
-        <Card bordered={false} className="shadow-none">
-          <Segmented block value={tab} onChange={(next) => { setTab(next); setSelected(null); }} options={['资产', '耗材']} />
-          <div className="mt-3 space-y-2">
-            {options.map((item) => (
-              <button
-                type="button"
-                key={item.id}
-                className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left ${selected?.id === item.id ? 'border-blue-300 bg-blue-50' : 'border-slate-100 bg-white'}`}
-                onClick={() => setSelected(item)}
-              >
-                <CategoryIcon type={tab === '耗材' ? 'consumable' : 'asset'} />
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium">{item.name}</div>
-                  <div className="mt-1 break-words text-xs leading-5 text-slate-500">{item.config}</div>
-                </div>
-                {selected?.id === item.id && <CheckCircle2 size={20} color={PRIMARY} />}
-              </button>
-            ))}
-          </div>
-        </Card>
-
-        {selected && (
-          <Card bordered={false} className="shadow-none" title="申请信息">
-            <div className="space-y-4">
-              <div>
-                <div className="mb-2 text-sm text-slate-600">数量</div>
-                <InputNumber min={1} precision={0} value={quantity} onChange={(value) => setQuantity(value || 1)} />
-              </div>
-              <div>
-                <div className="mb-2 text-sm text-slate-600"><span className="text-red-500">*</span>申请用途</div>
-                <Select
-                  className="w-full"
-                  value={purpose || undefined}
-                  placeholder="请选择申请用途"
-                  onChange={setPurpose}
-                  options={['员工用机', '部门公用', '其他用途', '专业用途'].map((item) => ({ label: item, value: item }))}
-                />
-              </div>
-              {tab === '耗材' && (
-                <div>
-                  <div className="mb-2 text-sm text-slate-600"><span className="text-red-500">*</span>关联主资产</div>
-                  <Select
-                    className="w-full"
-                    value={relatedAsset || undefined}
-                    placeholder="请选择本人名下资产"
-                    onChange={setRelatedAsset}
-                    options={MY_EXISTING_ASSETS.map((asset) => ({ label: asset.assetTag, value: asset.assetTag }))}
-                  />
-                </div>
-              )}
-              <div>
-                <div className="mb-2 text-sm text-slate-600"><span className="text-red-500">*</span>申请原因</div>
-                <Input.TextArea rows={4} maxLength={400} showCount value={reason} placeholder="请填写申请原因" onChange={(event) => setReason(event.target.value)} />
-              </div>
-              <Button
-                block
-                type="primary"
-                size="large"
-                onClick={() => {
-                  if (!purpose || !reason.trim() || (tab === '耗材' && !relatedAsset)) {
-                    messageApi.warning('请补充必填信息');
-                    return;
-                  }
-                  messageApi.success(`已提交 ${quantity} 件物资申请`);
-                }}
-              >预览并提交</Button>
-            </div>
-          </Card>
-        )}
+      <div className="bg-white px-4 pb-3">
+        <LineTabs
+          activeKey={tab}
+          onChange={(next) => {
+            setTab(next);
+            setSelected(null);
+            setRelatedAsset('');
+          }}
+          items={[{ key: '资产', label: '资产' }, { key: '耗材', label: '耗材' }]}
+        />
       </div>
+      <div className="space-y-3 p-4 pb-2">
+        {options.map((item) => (
+          <Card
+            key={item.id}
+            bordered={false}
+            className={`shadow-none ${selected?.id === item.id ? 'ring-1 ring-[#3370FF]/40' : ''}`}
+            styles={{ body: { padding: 0 } }}
+          >
+            <button type="button" className="flex w-full items-start gap-3 p-4 text-left" onClick={() => setSelected(item)}>
+              <CategoryIcon type={tab === '耗材' ? 'consumable' : 'asset'} />
+              <div className="min-w-0 flex-1">
+                <div className="font-medium text-slate-900">{item.name}</div>
+                <div className="mt-1 break-words text-xs leading-5 text-slate-500">{item.config}</div>
+              </div>
+              {selected?.id === item.id && <CheckCircle2 size={20} style={{ color: PRIMARY }} />}
+            </button>
+          </Card>
+        ))}
+      </div>
+
+      {selected && (
+        <Card bordered={false} className="m-4 mt-2 shadow-none" styles={{ body: { padding: 16 } }}>
+          <div className="grid grid-cols-[82px_1fr] items-center gap-3">
+            <span className="text-sm text-slate-600">数量</span>
+            <InputNumber min={1} precision={0} value={quantity} onChange={(value) => setQuantity(value || 1)} />
+          </div>
+          <div className="mt-4">
+            <div className="mb-2 text-sm text-slate-600"><span className="text-red-500">*</span>申请用途</div>
+            <Select
+              className="w-full"
+              placeholder="请选择申请用途"
+              value={purpose || undefined}
+              onChange={setPurpose}
+              options={['员工用机', '部门公用', '其他用途', '专业用途'].map((item) => ({ label: item, value: item }))}
+            />
+          </div>
+          {tab === '耗材' && (
+            <div className="mt-4">
+              <div className="mb-2 text-sm text-slate-600"><span className="text-red-500">*</span>关联主资产</div>
+              <Select
+                className="w-full"
+                placeholder="请选择本人名下资产"
+                value={relatedAsset || undefined}
+                onChange={setRelatedAsset}
+                options={MY_EXISTING_ASSETS.map((asset) => ({ label: asset.assetTag, value: asset.assetTag }))}
+              />
+            </div>
+          )}
+          <div className="mt-4">
+            <div className="mb-2 text-sm text-slate-600"><span className="text-red-500">*</span>申请原因</div>
+            <Input.TextArea rows={4} maxLength={400} showCount value={reason} placeholder="请填写申请原因" onChange={(event) => setReason(event.target.value)} />
+          </div>
+          <Button
+            block
+            type="primary"
+            className="mt-5"
+            onClick={() => {
+              if (!purpose || !reason.trim() || (tab === '耗材' && !relatedAsset)) {
+                messageApi.warning('请补充必填信息');
+                return;
+              }
+              messageApi.success(`已提交 ${quantity} 件物资申请`);
+            }}
+          >预览并提交</Button>
+        </Card>
+      )}
     </div>
   );
 }
@@ -685,58 +842,74 @@ function BorrowApplyScreen({ onBack }) {
     <div className="min-h-0 flex-1 overflow-auto bg-[#F5F6F7]">
       {contextHolder}
       <MobileHeader title="资产借用" onBack={onBack} onClose={onBack} />
-      <div className="space-y-3 p-4">
-        <Card bordered={false} className="shadow-none" title="借用资产">
-          <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-            <CategoryIcon type="asset" />
-            <div><div className="font-medium">戴尔 Latitude 7440</div><div className="mt-1 text-xs text-slate-400">NOTEBOOK · 标准借用资产</div></div>
+      <Card bordered={false} className="m-4 shadow-none" styles={{ body: { padding: 16 } }}>
+        <div className="mb-3 text-sm font-medium text-slate-700">借用资产</div>
+        <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+          <CategoryIcon type="asset" />
+          <div>
+            <div className="font-medium">戴尔 Latitude 7440</div>
+            <div className="mt-1 text-xs text-slate-400">NOTEBOOK · 标准借用资产</div>
           </div>
-        </Card>
-        <Card bordered={false} className="shadow-none" title="借用信息">
-          <div className="grid grid-cols-2 gap-3">
-            <div><div className="mb-1 text-xs text-slate-500">开始日期</div><input type="date" className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm" /></div>
-            <div><div className="mb-1 text-xs text-slate-500">归还日期</div><input type="date" className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm" /></div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div><div className="mb-1 text-xs text-slate-500">开始日期</div><input type="date" className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm" /></div>
+          <div><div className="mb-1 text-xs text-slate-500">归还日期</div><input type="date" className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm" /></div>
+        </div>
+        <div className="mt-4 text-sm text-slate-600"><span className="text-red-500">*</span>需求说明</div>
+        <Input.TextArea className="mt-2" rows={5} maxLength={150} showCount value={reason} onChange={(event) => setReason(event.target.value)} placeholder="请填写借用需求说明" />
+        <Button block type="primary" className="mt-5" onClick={() => reason.trim() ? messageApi.success('借用申请已提交') : messageApi.warning('请填写需求说明')}>提交</Button>
+      </Card>
+    </div>
+  );
+}
+
+function ContractReturnScreen({ number, onBack }) {
+  const [messageApi, contextHolder] = antdMessage.useMessage();
+  const [reason, setReason] = useState('');
+  return (
+    <div className="min-h-0 flex-1 overflow-auto bg-[#F5F6F7]">
+      {contextHolder}
+      <MobileHeader title="合约号码退库" onBack={onBack} onClose={onBack} />
+      <Card bordered={false} className="m-4 shadow-none" styles={{ body: { padding: 16 } }}>
+        <div className="flex items-center gap-3">
+          <CategoryIcon type="contract" />
+          <div>
+            <div className="font-medium text-slate-900">{number.phone}</div>
+            <div className="mt-1 text-xs text-slate-400">{number.carrier} · {number.packageName}</div>
           </div>
-          <div className="mt-4 text-sm text-slate-600"><span className="text-red-500">*</span>需求说明</div>
-          <Input.TextArea className="mt-2" rows={5} maxLength={150} showCount value={reason} onChange={(event) => setReason(event.target.value)} placeholder="请填写借用需求说明" />
-        </Card>
-        <Button block type="primary" size="large" onClick={() => reason.trim() ? messageApi.success('借用申请已提交') : messageApi.warning('请填写需求说明')}>提交</Button>
-      </div>
+        </div>
+        <div className="mt-5 text-sm text-slate-600"><span className="text-red-500">*</span>退库原因</div>
+        <Input.TextArea className="mt-2" rows={5} maxLength={150} showCount value={reason} onChange={(event) => setReason(event.target.value)} placeholder="请填写号码退库原因" />
+        <Button block type="primary" className="mt-5" onClick={() => reason.trim() ? messageApi.success('合约号码退库申请已提交') : messageApi.warning('请填写退库原因')}>提交</Button>
+      </Card>
     </div>
   );
 }
 
 function QuickActions({ onClose, onOpen }) {
-  const actions = [
-    { key: 'material', label: '物资申请', desc: '申请资产或耗材', icon: ClipboardList, bg: '#E8F3FF', color: '#2E7BEF' },
-    { key: 'borrow', label: '资产借用', desc: '发起临时借用', icon: FileText, bg: '#F2EDFF', color: '#7B61FF' },
-    { key: 'contractReturn', label: '号码退库', desc: '退回本人合约号码', icon: Phone, bg: '#EAF8F1', color: '#18A058' },
-  ];
   return (
-    <div className="absolute inset-0 z-40 flex items-end bg-black/25" onClick={onClose}>
-      <div className="w-full rounded-t-[22px] bg-white p-4 pb-7 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+    <div className="absolute inset-0 z-40 flex items-end bg-black/20 backdrop-blur-[1px]" onClick={onClose}>
+      <Card
+        bordered={false}
+        className="w-full rounded-b-none rounded-t-[22px] shadow-2xl"
+        styles={{ body: { padding: '18px 18px 24px' } }}
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="mb-4 flex items-center justify-between">
-          <Text strong className="text-base">快捷发起</Text>
+          <Text strong>发起申请</Text>
           <Button type="text" shape="circle" icon={<X size={18} />} onClick={onClose} />
         </div>
-        <div className="space-y-2">
-          {actions.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.key}
-                type="button"
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-slate-50"
-                onClick={() => onOpen(item.key, item.key === 'contractReturn' ? CONTRACT_NUMBERS[0] : null)}
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: item.bg, color: item.color }}><Icon size={20} /></span>
-                <span className="min-w-0 flex-1"><span className="block font-medium text-slate-900">{item.label}</span><span className="mt-0.5 block text-xs text-slate-400">{item.desc}</span></span>
-                <ChevronRight size={18} className="text-slate-300" />
-              </button>
-            );
-          })}
+        <div className="grid grid-cols-2 gap-3">
+          <button type="button" className="flex items-center gap-3 rounded-xl bg-[#F5F7FF] p-4 text-left" onClick={() => onOpen('material')}>
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F0FF] text-[#3370FF]"><ClipboardList size={20} /></span>
+            <span><span className="block text-sm font-medium text-slate-800">物资申请</span><span className="mt-1 block text-[11px] text-slate-400">资产 / 耗材</span></span>
+          </button>
+          <button type="button" className="flex items-center gap-3 rounded-xl bg-[#F7F8FA] p-4 text-left" onClick={() => onOpen('borrow')}>
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#646A73] shadow-sm"><FileText size={20} /></span>
+            <span><span className="block text-sm font-medium text-slate-800">资产借用</span><span className="mt-1 block text-[11px] text-slate-400">临时借用资产</span></span>
+          </button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -765,9 +938,10 @@ export default function MobileWorkspacePage() {
   else if (screen === 'inventory') content = <InventoryScreen onBottomNav={bottomNav} onPlus={() => setQuickOpen(true)} onOpen={openScreen} />;
   else if (screen === 'scan') content = <ScanScreen onBottomNav={bottomNav} onPlus={() => setQuickOpen(true)} onOpen={openScreen} />;
   else if (screen === 'assetDetail') content = <AssetDetailScreen asset={payload || {}} onBack={backHome} onOpen={openScreen} />;
-  else if (screen === 'return') content = <BusinessForm mode="return" asset={payload || {}} onBack={backHome} />;
-  else if (screen === 'replace') content = <BusinessForm mode="replace" asset={payload || {}} onBack={backHome} />;
-  else if (screen === 'contractReturn') content = <ContractReturnScreen contract={payload || CONTRACT_NUMBERS[0]} onBack={backHome} />;
+  else if (screen === 'return') content = <AssetBusinessForm mode="return" asset={payload || {}} onBack={backHome} />;
+  else if (screen === 'transfer') content = <AssetBusinessForm mode="transfer" asset={payload || {}} onBack={backHome} />;
+  else if (screen === 'replace') content = <AssetBusinessForm mode="replace" asset={payload || {}} onBack={backHome} />;
+  else if (screen === 'contractReturn') content = <ContractReturnScreen number={payload || {}} onBack={backHome} />;
   else if (screen === 'inventoryDetail') content = <InventoryDetailScreen asset={payload || {}} onBack={() => bottomNav('inventory')} />;
   else if (screen === 'material') content = <MaterialApplyScreen onBack={backHome} />;
   else if (screen === 'borrow') content = <BorrowApplyScreen onBack={backHome} />;
@@ -776,7 +950,7 @@ export default function MobileWorkspacePage() {
   return (
     <ConfigProvider theme={APP_THEME}>
       <div className="flex w-full justify-center py-2">
-        <div className="relative flex h-[820px] w-full max-w-[430px] flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-[#F5F6F7] shadow-xl">
+        <div className="relative flex h-[820px] w-full max-w-[430px] flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-[#F5F6F7] shadow-[0_18px_48px_rgba(31,35,41,0.16)]">
           {content}
           {quickOpen && <QuickActions onClose={() => setQuickOpen(false)} onOpen={openScreen} />}
         </div>
