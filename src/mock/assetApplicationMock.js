@@ -70,18 +70,7 @@ export const ASSET_LIBRARY = [
   { id: 'A019', name: '苹果 70W USB-C 电源适配器', categoryId: 'cat-consumable', type: 'consumable', desc: '70W / USB-C接口' },
   { id: 'A008', name: '罗技 MX Master 3S 黑色', categoryId: 'cat-consumable', type: 'consumable', desc: '静音 / 无线 / 蓝牙 / 黑色' },
   { id: 'A020', name: '罗技 MX Master 3S 白色', categoryId: 'cat-consumable', type: 'consumable', desc: '静音 / 无线 / 蓝牙 / 白色' },
-  { id: 'A021', name: '绿联 Type-C 多功能转接器 VGA', categoryId: 'cat-consumable', type: 'consumable', desc: 'Type-C转VGA' },
-  { id: 'A022', name: '绿联 Type-C 多功能转接器 以太网', categoryId: 'cat-consumable', type: 'consumable', desc: 'Type-C转以太网' },
-  { id: 'A023', name: '绿联 Type-C 多功能转接器 USB', categoryId: 'cat-consumable', type: 'consumable', desc: 'Type-C转USB' },
-  { id: 'A024', name: '绿联 Type-C 多功能转接器 Type-C', categoryId: 'cat-consumable', type: 'consumable', desc: 'Type-C转Type-C' },
-  { id: 'A025', name: 'CELINK Type-C 多功能转接器 VGA', categoryId: 'cat-consumable', type: 'consumable', desc: 'Type-C转VGA' },
-  { id: 'A026', name: 'CELINK Type-C 多功能转接器 以太网', categoryId: 'cat-consumable', type: 'consumable', desc: 'Type-C转以太网' },
-  { id: 'A027', name: 'CELINK Type-C 多功能转接器 USB', categoryId: 'cat-consumable', type: 'consumable', desc: 'Type-C转USB' },
-  { id: 'A028', name: 'CELINK Type-C 多功能转接器 Type-C', categoryId: 'cat-consumable', type: 'consumable', desc: 'Type-C转Type-C' },
-  { id: 'A029', name: '苹果 USB-C 多功能转换器 VGA', categoryId: 'cat-consumable', type: 'consumable', desc: 'Type-C转VGA' },
-  { id: 'A030', name: '苹果 USB-C 多功能转换器 以太网', categoryId: 'cat-consumable', type: 'consumable', desc: 'Type-C转以太网' },
-  { id: 'A031', name: '苹果 USB-C 多功能转换器 USB', categoryId: 'cat-consumable', type: 'consumable', desc: 'Type-C转USB' },
-  { id: 'A032', name: '苹果 USB-C 多功能转换器 Type-C', categoryId: 'cat-consumable', type: 'consumable', desc: 'Type-C转Type-C' },
+  { id: 'A021', name: 'Type-C 多功能转接器长配置示例', categoryId: 'cat-consumable', type: 'consumable', desc: '转接线.绿联、CELINK、苹果.Type-C转（VGA/以太网/USB/Type-C）' },
 ];
 
 export const MY_EXISTING_ASSETS = [
