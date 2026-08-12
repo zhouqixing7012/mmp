@@ -10,7 +10,6 @@ import {
   History,
   Home,
   Laptop,
-  Monitor,
   Package,
   Phone,
   Plus,
@@ -22,7 +21,6 @@ import {
 } from 'lucide-react';
 import {
   Avatar,
-  Badge,
   Button,
   Card,
   ConfigProvider,
@@ -38,7 +36,7 @@ import {
 } from 'antd';
 import { MY_EXISTING_ASSETS } from '../../mock/assetApplicationMock';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const PRIMARY = '#3370FF';
 
 const CONSUMABLES = [
