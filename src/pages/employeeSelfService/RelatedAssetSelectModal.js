@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Input, Modal, Radio, Table, Typography } from 'antd';
 import StatusTag from '../../components/StatusTag';
 import { MY_EXISTING_ASSETS } from '../../mock/assetApplicationMock';
@@ -6,6 +6,13 @@ import { MY_EXISTING_ASSETS } from '../../mock/assetApplicationMock';
 export default function RelatedAssetSelectModal({ open, value, onCancel, onConfirm }) {
   const [keyword, setKeyword] = useState('');
   const [selectedId, setSelectedId] = useState(value || null);
+
+  useEffect(() => {
+    if (open) {
+      setSelectedId(value || null);
+      setKeyword('');
+    }
+  }, [open, value]);
 
   const dataSource = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
