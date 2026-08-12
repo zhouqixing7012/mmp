@@ -228,13 +228,13 @@ export default function EmployeeAssetApplyPage() {
         if (record.type !== 'consumable') return <Typography.Text type="secondary">无需关联</Typography.Text>;
         const relatedAsset = getRelatedAsset(value);
         if (isPreview) {
-          return relatedAsset ? `${relatedAsset.assetTag} / ${relatedAsset.assetDesc}` : '-';
+          return relatedAsset ? relatedAsset.assetTag : '-';
         }
         return (
           <Space.Compact className="w-full">
             <Input
               readOnly
-              value={relatedAsset ? `${relatedAsset.assetTag} / ${relatedAsset.assetDesc}` : ''}
+              value={relatedAsset ? relatedAsset.assetTag : ''}
               placeholder="请选择本人名下已有资产"
             />
             <Button icon={<Search size={14} />} onClick={() => openRelatedAssetSelector(record.id)} />
