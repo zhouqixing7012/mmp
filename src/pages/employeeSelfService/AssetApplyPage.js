@@ -90,26 +90,39 @@ export default function EmployeeAssetApplyPage() {
   );
 
   const addMaterials = (records) => {
-    let addedCount = 0;
+    const existingIds = new Set(materials.map((item) => item.id));
+    const duplicateCount = records.filter((record) => existingIds.has(record.id)).length;
+    const addedCount = records.length - duplicateCount;
+
     setMaterials((current) => {
-      const existingIds = new Set(current.map((item) => item.id));
-      const additions = records
-        .filter((record) => !existingIds.has(record.id))
-        .map((record) => ({
+      const next = current.map((item) => ({ ...item }));
+      records.forEach((record) => {
+        const existingIndex = next.findIndex((item) => item.id === record.id);
+        if (existingIndex >= 0) {
+          next[existingIndex] = {
+            ...next[existingIndex],
+            quantity: Number(next[existingIndex].quantity || 0) + 1,
+          };
+          return;
+        }
+        next.push({
           ...record,
           quantity: 1,
           purpose: '',
           detail: '',
           relatedAsset: '',
-        }));
-      addedCount = additions.length;
-      return [...current, ...additions];
+        });
+      });
+      return next;
     });
+
     setStoreOpen(false);
-    if (addedCount > 0) {
+    if (addedCount > 0 && duplicateCount > 0) {
+      messageApi.success(`已添加 ${addedCount} 项物资；${duplicateCount} 项重复物资已合并，数量自动 +1`);
+    } else if (duplicateCount > 0) {
+      messageApi.info(`${duplicateCount} 项物资已存在申请明细中，已合并到原明细并将数量自动 +1`);
+    } else if (addedCount > 0) {
       messageApi.success(`已添加 ${addedCount} 项物资`);
-    } else {
-      messageApi.info('所选物资已在申请明细中');
     }
   };
 
