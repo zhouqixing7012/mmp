@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Eye, Plus, RotateCcw, ShoppingCart, Trash2 } from 'lucide-react';
+import { ArrowLeft, Eye, Plus, RotateCcw, Search, ShoppingCart, Trash2 } from 'lucide-react';
 import {
   Alert,
   Button,
@@ -23,6 +23,7 @@ import {
 } from '../../mock/employeeSelfServiceMock';
 import { addEmployeeSelfServiceApplication } from '../../services/employeeSelfServiceService';
 import AssetStoreModal from './AssetStoreModal';
+import RelatedAssetSelectModal from './RelatedAssetSelectModal';
 
 const { TextArea } = Input;
 
@@ -72,6 +73,8 @@ export default function EmployeeAssetApplyPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [noticeOpen, setNoticeOpen] = useState(true);
   const [storeOpen, setStoreOpen] = useState(false);
+  const [relatedAssetOpen, setRelatedAssetOpen] = useState(false);
+  const [relatedMaterialId, setRelatedMaterialId] = useState(null);
   const [isPreview, setIsPreview] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [materials, setMaterials] = useState([]);
@@ -116,9 +119,16 @@ export default function EmployeeAssetApplyPage() {
     )));
   };
 
+  const openRelatedAssetSelector = (materialId) => {
+    setRelatedMaterialId(materialId);
+    setRelatedAssetOpen(true);
+  };
+
+  const getRelatedAsset = (assetId) => MY_EXISTING_ASSETS.find((asset) => asset.id === assetId);
+
   const validate = () => {
     if (!canApply) {
-      messageApi.error('当前员工身份暂不支持发起资产申请');
+      messageApi.error('当前员工身份暂不支持发起物资申请');
       return false;
     }
     if (materials.length === 0) {
@@ -161,14 +171,6 @@ export default function EmployeeAssetApplyPage() {
     navigate('/yewurules', { state: { workspace: '工作台首页' } });
   };
 
-  const relatedAssetOptions = useMemo(() => {
-    const existingOptions = MY_EXISTING_ASSETS.map((asset) => ({ label: asset.name, value: asset.id }));
-    const newOptions = materials
-      .filter((item) => item.type === 'main')
-      .map((item) => ({ label: `[本次申请] ${item.assetDesc}`, value: `new-${item.id}` }));
-    return [...existingOptions, ...newOptions];
-  }, [materials]);
-
   const columns = [
     {
       title: '物资说明',
@@ -208,18 +210,22 @@ export default function EmployeeAssetApplyPage() {
     {
       title: '关联主资产',
       dataIndex: 'relatedAsset',
-      width: 220,
+      width: 260,
       render: (value, record) => {
         if (record.type !== 'consumable') return <Typography.Text type="secondary">无需关联</Typography.Text>;
-        if (isPreview) return relatedAssetOptions.find((item) => item.value === value)?.label || '-';
+        const relatedAsset = getRelatedAsset(value);
+        if (isPreview) {
+          return relatedAsset ? `${relatedAsset.assetTag} / ${relatedAsset.assetDesc}` : '-';
+        }
         return (
-          <Select
-            style={{ width: '100%' }}
-            value={value || undefined}
-            placeholder="请选择主资产"
-            options={relatedAssetOptions}
-            onChange={(next) => updateMaterial(record.id, 'relatedAsset', next)}
-          />
+          <Space.Compact className="w-full">
+            <Input
+              readOnly
+              value={relatedAsset ? `${relatedAsset.assetTag} / ${relatedAsset.assetDesc}` : ''}
+              placeholder="请选择本人名下已有资产"
+            />
+            <Button icon={<Search size={14} />} onClick={() => openRelatedAssetSelector(record.id)} />
+          </Space.Compact>
         );
       },
     },
@@ -260,14 +266,14 @@ export default function EmployeeAssetApplyPage() {
   return (
     <div className="min-h-screen bg-slate-100 p-4">
       {contextHolder}
-      {!canApply && <Alert className="mb-4" type="error" showIcon message="当前员工身份暂不支持发起资产申请" />}
+      {!canApply && <Alert className="mb-4" type="error" showIcon message="当前员工身份暂不支持发起物资申请" />}
       {isPreview && overStandardCount > 0 && (
         <Alert
           className="mb-4"
           type="error"
           showIcon
           message={`当前有 ${overStandardCount} 条申请物资超标`}
-          description="超标资产申请将自动提交至部门 7 级及以上领导审批，请确认申请内容无误后再提交。"
+          description="超标物资申请将自动提交至部门 7 级及以上领导审批，请确认申请内容无误后再提交。"
         />
       )}
 
@@ -275,7 +281,7 @@ export default function EmployeeAssetApplyPage() {
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <Space>
             <ShoppingCart size={18} className="text-blue-600" />
-            <span className="font-medium text-slate-800">{isPreview ? '资产申请预览' : '本次申请明细'}</span>
+            <span className="font-medium text-slate-800">{isPreview ? '物资申请预览' : '本次申请明细'}</span>
             <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">{selectedCount} 件</span>
           </Space>
           {!isPreview && (
@@ -290,7 +296,7 @@ export default function EmployeeAssetApplyPage() {
           columns={columns}
           dataSource={materials}
           pagination={false}
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1240 }}
           locale={{ emptyText: <Empty description="请点击右上角“添加物资”选择申请物资" /> }}
         />
 
@@ -320,6 +326,19 @@ export default function EmployeeAssetApplyPage() {
       </Modal>
 
       <AssetStoreModal open={storeOpen} onCancel={() => setStoreOpen(false)} onAdd={addMaterials} />
+      <RelatedAssetSelectModal
+        open={relatedAssetOpen}
+        value={materials.find((item) => item.id === relatedMaterialId)?.relatedAsset || null}
+        onCancel={() => {
+          setRelatedAssetOpen(false);
+          setRelatedMaterialId(null);
+        }}
+        onConfirm={(asset) => {
+          if (relatedMaterialId) updateMaterial(relatedMaterialId, 'relatedAsset', asset.id);
+          setRelatedAssetOpen(false);
+          setRelatedMaterialId(null);
+        }}
+      />
     </div>
   );
 }
