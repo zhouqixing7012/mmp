@@ -228,7 +228,7 @@ export default function ContractNumberWarehousePage() {
             <DetailItem label="序列号">{number?.imei || '-'}</DetailItem>
             <DetailItem label="说明">{number?.packageName || '-'}</DetailItem>
             <DetailItem label="数量">{handling.quantity || 1}</DetailItem>
-            <DetailItem label="金额">{handling.tariffStandard ?? '-'}</DetailItem>
+            <DetailItem label="金额" span={2}>{handling.tariffStandard ?? '-'}</DetailItem>
             <DetailItem label="城市">
               <Input
                 readOnly
@@ -238,7 +238,7 @@ export default function ContractNumberWarehousePage() {
                 onClick={() => setCityModalOpen(true)}
               />
             </DetailItem>
-            <DetailItem label="子公司">
+            <DetailItem label="子公司" span={2}>
               <Input
                 value={subsidiary}
                 maxLength={50}
@@ -246,8 +246,8 @@ export default function ContractNumberWarehousePage() {
                 onChange={(event) => setSubsidiary(event.target.value)}
               />
             </DetailItem>
-            <DetailItem label="申请原因">{handling.usageReason || application.applyReason || '-'}</DetailItem>
-            <DetailItem label="备注">
+            <DetailItem label="申请原因" span={3}>{handling.usageReason || application.applyReason || '-'}</DetailItem>
+            <DetailItem label="备注" span={3}>
               <TextArea
                 rows={2}
                 maxLength={400}
