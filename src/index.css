@@ -9,6 +9,60 @@
   background-color: transparent !important;
 }
 
+/* 桌面业务页不再额外使用白底阴影标题盒，统一回归纯页面标题。 */
+.workspace-content:not([data-workspace-page="工作台首页"]):not([data-workspace-page="移动端工作台"])
+  .rounded-lg.bg-white.px-5.py-4.shadow-sm:has(> h4.ant-typography) {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 历史页面底部的白底阴影操作条统一收口为普通居中操作区。 */
+.workspace-content:not([data-workspace-page="工作台首页"]):not([data-workspace-page="移动端工作台"])
+  .flex.justify-center.gap-3.rounded-lg.bg-white.px-5.py-4.shadow-sm,
+.workspace-content:not([data-workspace-page="工作台首页"]):not([data-workspace-page="移动端工作台"])
+  .flex.justify-center.rounded-lg.bg-white.px-5.py-4.shadow-sm {
+  padding: 8px 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 桌面业务 Card 标题统一为紧凑蓝色竖线分组样式。 */
+.workspace-content:not([data-workspace-page="工作台首页"]):not([data-workspace-page="移动端工作台"])
+  .ant-card-head-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.workspace-content:not([data-workspace-page="工作台首页"]):not([data-workspace-page="移动端工作台"])
+  .ant-card-head-title::before {
+  content: '';
+  width: 4px;
+  height: 14px;
+  flex: 0 0 4px;
+  border-radius: 9999px;
+  background: #1677ff;
+}
+
+/* 已按新规范手写 SectionTitle 的页面隐藏内部竖线，避免重复显示。 */
+.workspace-content:not([data-workspace-page="工作台首页"]):not([data-workspace-page="移动端工作台"])
+  .ant-card-head-title > .inline-flex > .inline-block.h-3.w-1.bg-blue-500 {
+  display: none;
+}
+
+/* 历史页面未显式 size="small" 的表格也统一收紧到 B 端业务密度。 */
+.workspace-content:not([data-workspace-page="工作台首页"]):not([data-workspace-page="移动端工作台"])
+  .ant-table-wrapper .ant-table-thead > tr > th,
+.workspace-content:not([data-workspace-page="工作台首页"]):not([data-workspace-page="移动端工作台"])
+  .ant-table-wrapper .ant-table-tbody > tr > td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
 /* 统一个人工作台内 Descriptions 的列网格，保证不同 Card 之间标签列和内容列对齐。 */
 .workspace-content .ant-descriptions-bordered .ant-descriptions-view > table {
   width: 100%;
