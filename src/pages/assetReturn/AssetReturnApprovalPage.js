@@ -191,12 +191,12 @@ export default function AssetReturnApprovalPage() {
             <DetailItem label="城市">{asset.city || '-'}</DetailItem>
             <DetailItem label="建筑">{asset.building || '-'}</DetailItem>
             <DetailItem label="楼层">{asset.floor || '-'}</DetailItem>
+            <DetailItem label="维修记录">
+              <Button type="link" size="small" className="px-0" onClick={() => setRepairOpen(true)}>维修记录</Button>
+            </DetailItem>
             <DetailItem label="资产说明" span={3}>{asset.assetDesc || '-'}</DetailItem>
             <DetailItem label="配置" span={3}>{asset.config || '-'}</DetailItem>
             <DetailItem label="备注" span={3}>{asset.note || '-'}</DetailItem>
-            <DetailItem label="维修记录" span={3}>
-              <Button type="link" size="small" className="px-0" onClick={() => setRepairOpen(true)}>维修记录</Button>
-            </DetailItem>
           </DetailGrid>
         </Card>
 
