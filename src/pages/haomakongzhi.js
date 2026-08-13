@@ -1,7 +1,18 @@
-import React, { useState } from 'react';
-import { Table, Button, Space, Input, message, Popconfirm, Tag } from 'antd';
-import { PlusOutlined, SearchOutlined, BellOutlined } from '@ant-design/icons';
-import { X } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Button,
+  Card,
+  Input,
+  Modal,
+  Popconfirm,
+  Select,
+  Space,
+  Table,
+  Typography,
+  message as antdMessage,
+} from 'antd';
+import { Bell, Plus } from 'lucide-react';
+import QueryBar, { QueryItem } from '../components/QueryBar';
 import StatusTag from '../components/StatusTag';
 
 const initialData = [
@@ -21,167 +32,188 @@ const mockAllUsers = [
   { id: '208813', name: '王五', dept: '安全中心' },
 ];
 
-function UserLinkModal({ open, onClose, linkedUsers, onConfirm }) {
-  const [searchValues, setSearchValues] = useState({ id: '', name: '', dept: '' });
-  const [selectedKeys, setSelectedKeys] = useState([...new Set(linkedUsers || [])]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 5;
+const EMPTY_MAIN_FILTERS = {
+  keyword: '',
+  authorizationStatus: '',
+};
 
-  const filteredData = mockAllUsers.filter(item => {
-    if (searchValues.id && !item.id.includes(searchValues.id)) return false;
-    if (searchValues.name && !item.name.includes(searchValues.name)) return false;
-    if (searchValues.dept && !item.dept.includes(searchValues.dept)) return false;
-    return true;
-  });
+const EMPTY_USER_FILTERS = {
+  id: '',
+  name: '',
+  dept: '',
+};
 
-  const total = filteredData.length;
-  const totalPages = Math.ceil(total / pageSize);
-  const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const currentPageKeys = paginatedData.map(u => u.id);
-  const allSelected = currentPageKeys.length > 0 && currentPageKeys.every(id => selectedKeys.includes(id));
+function includesText(value, query) {
+  if (!query) return true;
+  return String(value || '').toLowerCase().includes(String(query).trim().toLowerCase());
+}
 
-  const handleSelectAll = () => {
-    if (allSelected) {
-      setSelectedKeys(selectedKeys.filter(id => !currentPageKeys.includes(id)));
-    } else {
-      const newKeys = [...selectedKeys];
-      currentPageKeys.forEach(id => { if (!newKeys.includes(id)) newKeys.push(id); });
-      setSelectedKeys(newKeys);
-    }
-  };
-
-  const handleSave = () => {
-    if (onConfirm) onConfirm(selectedKeys);
-    onClose();
-  };
-
-  const toggleUser = (id) => {
-    setSelectedKeys(prev =>
-      prev.includes(id) ? prev.filter(u => u !== id) : [...prev, id]
-    );
-  };
-
-  if (!open) return null;
-
+function SectionTitle({ children }) {
   return (
-    <div className="fixed inset-0 bg-black/40 z-[1050] flex items-center justify-center p-4">
-      <div className="bg-white rounded-md shadow-xl flex flex-col overflow-hidden" style={{ width: '800px', maxWidth: '100%' }}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#f0f0f0] bg-[#fafafa]">
-          <span className="font-medium text-gray-800">新增授权人员</span>
-          <button onClick={onClose} className="text-gray-400 hover:text-[#ff4d4f] transition-colors">
-            <X size={18} />
-          </button>
-        </div>
-        <div className="p-4">
-          <div className="flex gap-4 mb-4">
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-sm text-gray-600 whitespace-nowrap">工号:</span>
-              <input type="text" value={searchValues.id}
-                onChange={(e) => { setSearchValues({...searchValues, id: e.target.value}); setCurrentPage(1); }}
-                placeholder="请输入工号"
-                className="flex-1 px-3 py-1.5 text-sm bg-white border border-[#d9d9d9] rounded hover:border-[#1677ff] focus:border-[#1677ff] focus:ring-2 focus:ring-[#1677ff] focus:ring-opacity-20 outline-none transition-all" />
-            </div>
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-sm text-gray-600 whitespace-nowrap">姓名:</span>
-              <input type="text" value={searchValues.name}
-                onChange={(e) => { setSearchValues({...searchValues, name: e.target.value}); setCurrentPage(1); }}
-                placeholder="请输入姓名"
-                className="flex-1 px-3 py-1.5 text-sm bg-white border border-[#d9d9d9] rounded hover:border-[#1677ff] focus:border-[#1677ff] focus:ring-2 focus:ring-[#1677ff] focus:ring-opacity-20 outline-none transition-all" />
-            </div>
-          </div>
-          <div className="flex gap-4 mb-4">
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-sm text-gray-600 whitespace-nowrap">部门:</span>
-              <input type="text" value={searchValues.dept}
-                onChange={(e) => { setSearchValues({...searchValues, dept: e.target.value}); setCurrentPage(1); }}
-                placeholder="请输入部门"
-                className="flex-1 px-3 py-1.5 text-sm bg-white border border-[#d9d9d9] rounded hover:border-[#1677ff] focus:border-[#1677ff] focus:ring-2 focus:ring-[#1677ff] focus:ring-opacity-20 outline-none transition-all" />
-            </div>
-            <div className="flex-1" />
-          </div>
-          <div className="border border-[#f0f0f0] rounded overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[#fafafa] border-b border-[#f0f0f0]">
-                  <th className="px-4 py-3 w-12 text-center">
-                    <input type="checkbox" className="w-3.5 h-3.5 cursor-pointer" checked={allSelected}
-                      onChange={handleSelectAll} />
-                  </th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-800">工号</th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-800">姓名</th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-800">部门</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedData.map((user) => {
-                  const isChecked = selectedKeys.includes(user.id);
-                  return (
-                    <tr key={user.id}
-                      className={'border-b border-[#f0f0f0] cursor-pointer transition-colors ' + (isChecked ? 'bg-[#e6f7ff]' : 'hover:bg-[#fafafa]')}
-                      onClick={() => toggleUser(user.id)}
-                    >
-                      <td className="px-4 py-3 text-center">
-                        <input type="checkbox" className="w-3.5 h-3.5" checked={isChecked}
-                          onChange={() => toggleUser(user.id)} />
-                      </td>
-                      <td className="px-4 py-3 text-sm text-[#1677ff]">{user.id}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{user.name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{user.dept}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex items-center justify-between pt-3 text-sm text-gray-500">
-            <span>已选 {selectedKeys.length} 人</span>
-            <div className="flex items-center gap-2">
-              <button className="px-2 py-1 text-xs border border-[#d9d9d9] rounded hover:border-[#1677ff] disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={currentPage <= 1} onClick={() => setCurrentPage(p => p - 1)}>上一页</button>
-              <span>第 {currentPage}/{Math.max(totalPages, 1)} 页</span>
-              <button className="px-2 py-1 text-xs border border-[#d9d9d9] rounded hover:border-[#1677ff] disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={currentPage >= totalPages} onClick={() => setCurrentPage(p => p + 1)}>下一页</button>
-              <span className="ml-1">共 {total} 条</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex justify-center gap-3 px-4 pb-4">
-          <Button type="primary" onClick={handleSave}>确定</Button>
-          <Button onClick={onClose}>取消</Button>
-        </div>
-      </div>
-    </div>
+    <span className="inline-flex items-center gap-2">
+      <span className="inline-block h-4 w-1 rounded-sm bg-[#1677ff]" />
+      <span>{children}</span>
+    </span>
   );
 }
 
-const ContractPermissionAdmin = () => {
+function UserLinkModal({ open, onClose, linkedUsers, onConfirm }) {
+  const [draftFilters, setDraftFilters] = useState(EMPTY_USER_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState(EMPTY_USER_FILTERS);
+  const [selectedKeys, setSelectedKeys] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
+
+  useEffect(() => {
+    if (!open) return;
+    setDraftFilters(EMPTY_USER_FILTERS);
+    setAppliedFilters(EMPTY_USER_FILTERS);
+    setSelectedKeys([...new Set(linkedUsers || [])]);
+    setCurrentPage(1);
+  }, [open, linkedUsers]);
+
+  const filteredData = useMemo(() => mockAllUsers.filter((item) => (
+    includesText(item.id, appliedFilters.id)
+    && includesText(item.name, appliedFilters.name)
+    && includesText(item.dept, appliedFilters.dept)
+  )), [appliedFilters]);
+
+  const handleSave = () => {
+    onConfirm?.(selectedKeys);
+    onClose();
+  };
+
+  const columns = [
+    { title: '工号', dataIndex: 'id', width: 140 },
+    { title: '姓名', dataIndex: 'name', width: 140 },
+    { title: '部门', dataIndex: 'dept' },
+  ];
+
+  return (
+    <Modal
+      title="新增授权人员"
+      open={open}
+      width={820}
+      onCancel={onClose}
+      destroyOnHidden
+      footer={(
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+          <Typography.Text type="secondary" className="text-left">
+            已选 {selectedKeys.length} 人
+          </Typography.Text>
+          <Space size={12}>
+            <Button type="primary" onClick={handleSave}>确定</Button>
+            <Button onClick={onClose}>取消</Button>
+          </Space>
+          <span />
+        </div>
+      )}
+    >
+      <QueryBar
+        labelWidth={64}
+        onQuery={() => {
+          setAppliedFilters({ ...draftFilters });
+          setCurrentPage(1);
+        }}
+        onReset={() => {
+          setDraftFilters(EMPTY_USER_FILTERS);
+          setAppliedFilters(EMPTY_USER_FILTERS);
+          setCurrentPage(1);
+        }}
+      >
+        <QueryItem label="工号" labelWidth={64}>
+          <Input
+            allowClear
+            placeholder="请输入工号"
+            value={draftFilters.id}
+            onChange={(event) => setDraftFilters((current) => ({ ...current, id: event.target.value }))}
+          />
+        </QueryItem>
+        <QueryItem label="姓名" labelWidth={64}>
+          <Input
+            allowClear
+            placeholder="请输入姓名"
+            value={draftFilters.name}
+            onChange={(event) => setDraftFilters((current) => ({ ...current, name: event.target.value }))}
+          />
+        </QueryItem>
+        <QueryItem label="部门" labelWidth={64}>
+          <Input
+            allowClear
+            placeholder="请输入部门"
+            value={draftFilters.dept}
+            onChange={(event) => setDraftFilters((current) => ({ ...current, dept: event.target.value }))}
+          />
+        </QueryItem>
+      </QueryBar>
+
+      <Table
+        rowKey="id"
+        size="small"
+        bordered
+        columns={columns}
+        dataSource={filteredData}
+        rowSelection={{
+          selectedRowKeys: selectedKeys,
+          preserveSelectedRowKeys: true,
+          onChange: setSelectedKeys,
+        }}
+        pagination={{
+          current: currentPage,
+          pageSize,
+          showSizeChanger: false,
+          showTotal: (total) => `共 ${total} 条`,
+          onChange: setCurrentPage,
+        }}
+        onRow={(record) => ({
+          onClick: (event) => {
+            if (event.target.closest('.ant-checkbox-wrapper')) return;
+            setSelectedKeys((current) => current.includes(record.id)
+              ? current.filter((id) => id !== record.id)
+              : [...current, record.id]);
+          },
+          style: { cursor: 'pointer' },
+        })}
+      />
+    </Modal>
+  );
+}
+
+export default function ContractPermissionAdmin() {
+  const [messageApi, contextHolder] = antdMessage.useMessage();
   const [data, setData] = useState(initialData);
-  const [searchText, setSearchText] = useState('');
+  const [draftFilters, setDraftFilters] = useState(EMPTY_MAIN_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState(EMPTY_MAIN_FILTERS);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  const handleToggleStatus = (empId, checked) => {
-    const newData = data.map(item => {
-      if (item.empId === empId) {
-        return { ...item, status: checked };
-      }
-      return item;
-    });
-    setData(newData);
-    message.success(`已${checked ? '启用' : '停用'}该员工的申请权限`);
+  const filteredData = useMemo(() => data.filter((item) => {
+    const keywordMatched = !appliedFilters.keyword
+      || includesText(item.name, appliedFilters.keyword)
+      || includesText(item.empId, appliedFilters.keyword);
+    const statusMatched = !appliedFilters.authorizationStatus
+      || (appliedFilters.authorizationStatus === '已授权' ? item.status : !item.status);
+    return keywordMatched && statusMatched;
+  }), [data, appliedFilters]);
+
+  const handleToggleStatus = (empId, authorized) => {
+    setData((current) => current.map((item) => (
+      item.empId === empId ? { ...item, status: authorized } : item
+    )));
+    messageApi.success(authorized ? '已授权该员工的申请权限' : '已停止授权该员工的申请权限');
   };
 
   const handleSendNotification = (name) => {
-    message.success(`已成功向 ${name} 发送合约号码申请通知！`);
+    messageApi.success(`已成功向 ${name} 发送合约号码申请通知`);
   };
 
   const handleAddUsers = (selectedIds) => {
     const newUsers = selectedIds
-      .filter(id => !data.some(item => item.empId === id))
-      .map(id => {
-        const user = mockAllUsers.find(u => u.id === id);
+      .filter((id) => !data.some((item) => item.empId === id))
+      .map((id) => {
+        const user = mockAllUsers.find((item) => item.id === id);
         if (!user) return null;
         return {
-          key: Date.now().toString() + id,
+          key: `${Date.now()}-${id}`,
           empId: user.id,
           name: user.name,
           department: user.dept,
@@ -191,57 +223,50 @@ const ContractPermissionAdmin = () => {
       .filter(Boolean);
 
     if (newUsers.length > 0) {
-      setData([...newUsers, ...data]);
-      message.success(`已添加 ${newUsers.length} 名授权人员`);
-    } else {
-      message.info('所选人员已在白名单中');
+      setData((current) => [...newUsers, ...current]);
+      messageApi.success(`已添加 ${newUsers.length} 名授权人员`);
+      return;
     }
+    messageApi.info('所选人员已在授权人员列表中');
   };
 
   const columns = [
+    { title: '姓名', dataIndex: 'name', width: 160 },
+    { title: '工号', dataIndex: 'empId', width: 160 },
+    { title: '所属部门', dataIndex: 'department', minWidth: 240 },
     {
-      title: '姓名',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text) => <span className="font-medium text-gray-800">{text}</span>,
-    },
-    {
-      title: '工号',
-      dataIndex: 'empId',
-      key: 'empId',
-      render: (text) => <span className="text-gray-500 font-mono">{text}</span>,
-    },
-    {
-      title: '所属部门',
-      dataIndex: 'department',
-      key: 'department',
-      render: (text) => <Tag color="blue" bordered={false}>{text}</Tag>,
-    },
-    {
-      title: '权限状态',
-      key: 'status',
-      render: (_, record) => (
-        <StatusTag value={record.status} type="enabled" />
-      ),
+      title: '授权状态',
+      dataIndex: 'status',
+      width: 140,
+      render: (value) => <StatusTag type="business" value={value ? '已授权' : '未授权'} />,
     },
     {
       title: '操作',
       key: 'action',
+      width: 220,
+      fixed: 'right',
       render: (_, record) => (
-        <Space size="middle">
-          <Button type="link" icon={<BellOutlined />}
+        <Space size={12}>
+          <Button
+            type="link"
+            size="small"
+            className="px-0"
+            icon={<Bell size={14} />}
+            disabled={!record.status}
             onClick={() => handleSendNotification(record.name)}
-            disabled={!record.status} className="px-0">
+          >
             发送通知
           </Button>
           <Popconfirm
-            title={record.status ? '确定要停用该人员吗？' : '确定要启用该人员吗？'}
+            title={record.status ? '确定停止该人员授权吗？' : '确定授权该人员吗？'}
+            description={record.status ? '停止授权后，该人员将不能继续发起合约号码申请。' : '授权后，该人员可发起合约号码申请。'}
+            okText="确定"
+            cancelText="取消"
+            okButtonProps={record.status ? { danger: true } : undefined}
             onConfirm={() => handleToggleStatus(record.empId, !record.status)}
-            okText="确定" cancelText="取消"
           >
-            <Button type="link" danger={record.status}
-              className={`px-0 ${record.status ? 'text-orange-500' : 'text-green-600'}`}>
-              {record.status ? '停用' : '启用'}
+            <Button type="link" size="small" danger={record.status} className="px-0">
+              {record.status ? '停止授权' : '授权'}
             </Button>
           </Popconfirm>
         </Space>
@@ -249,45 +274,76 @@ const ContractPermissionAdmin = () => {
     },
   ];
 
-  const filteredData = data.filter(item =>
-    item.name.includes(searchText) || item.empId.includes(searchText)
-  );
-
   return (
-    <div className="h-full bg-[#f0f2f5] p-6 text-[14px] overflow-auto">
-      <div className="max-w-[1200px] mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-800 mb-2">合约号码申请人员管理</h1>
-          <p className="text-gray-500">管理允许填写合约号码申请表单的人员白名单，控制权限开关，并可一键发送填报邀请通知。</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-[#f0f0f0] p-6">
-          <div className="flex justify-between items-center mb-6">
-            <Input
-              placeholder="按姓名或工号搜索..."
-              prefix={<SearchOutlined className="text-gray-400" />}
-              value={searchText}
-              onChange={e => setSearchText(e.target.value)}
-              className="w-72"
-              allowClear
-            />
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>
-              新增授权人员
-            </Button>
-          </div>
-          <Table columns={columns} dataSource={filteredData}
-            pagination={{ pageSize: 10, showSizeChanger: false }}
-            className="border border-[#f0f0f0] rounded-md overflow-hidden"
-          />
-        </div>
-        <UserLinkModal
-          open={isModalVisible}
-          onClose={() => setIsModalVisible(false)}
-          linkedUsers={data.map(item => item.empId)}
-          onConfirm={handleAddUsers}
-        />
-      </div>
-    </div>
-  );
-};
+    <Space direction="vertical" size={16} className="w-full">
+      {contextHolder}
 
-export default ContractPermissionAdmin;
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-1.5 rounded bg-[#1677ff]" />
+        <Typography.Title level={3} className="mb-0">号码控制</Typography.Title>
+      </div>
+
+      <QueryBar
+        onQuery={() => setAppliedFilters({ ...draftFilters })}
+        onReset={() => {
+          setDraftFilters(EMPTY_MAIN_FILTERS);
+          setAppliedFilters(EMPTY_MAIN_FILTERS);
+        }}
+      >
+        <QueryItem label="姓名/工号">
+          <Input
+            allowClear
+            placeholder="请输入姓名或工号"
+            value={draftFilters.keyword}
+            onChange={(event) => setDraftFilters((current) => ({ ...current, keyword: event.target.value }))}
+          />
+        </QueryItem>
+        <QueryItem label="授权状态">
+          <Select
+            allowClear
+            placeholder="请选择授权状态"
+            value={draftFilters.authorizationStatus || undefined}
+            options={[
+              { label: '已授权', value: '已授权' },
+              { label: '未授权', value: '未授权' },
+            ]}
+            onChange={(value) => setDraftFilters((current) => ({ ...current, authorizationStatus: value || '' }))}
+          />
+        </QueryItem>
+      </QueryBar>
+
+      <Card
+        size="small"
+        title={<SectionTitle>授权人员列表</SectionTitle>}
+        extra={<Typography.Text type="secondary">共 {filteredData.length} 条</Typography.Text>}
+      >
+        <div className="mb-3 flex justify-end">
+          <Button type="primary" icon={<Plus size={14} />} onClick={() => setIsModalVisible(true)}>
+            新增授权人员
+          </Button>
+        </div>
+
+        <Table
+          rowKey="key"
+          size="small"
+          bordered
+          columns={columns}
+          dataSource={filteredData}
+          scroll={{ x: 'max-content' }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: false,
+            showTotal: (total) => `共 ${total} 条`,
+          }}
+        />
+      </Card>
+
+      <UserLinkModal
+        open={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        linkedUsers={data.map((item) => item.empId)}
+        onConfirm={handleAddUsers}
+      />
+    </Space>
+  );
+}
