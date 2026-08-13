@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Descriptions,
   Empty,
   Input,
   Modal,
@@ -12,6 +11,7 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import {
   getBorrowingApplicationByNode,
   updateAssetBorrowingApplication,
@@ -90,37 +90,37 @@ export default function BorrowingApprovalPage() {
 
   if (!application) {
     return (
-      <div className="min-h-screen bg-slate-100 p-4">
+      <>
         {contextHolder}
-        <Card>
+        <Card size="small">
           <Empty description="暂无待审批的资产借用申请" />
           <div className="mt-4 flex justify-center">
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4">
+    <>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="flex items-center justify-between">
           <Typography.Title level={4} className="mb-0">借用审批</Typography.Title>
           <Typography.Text type="secondary">借用单号：{application.id}</Typography.Text>
         </div>
 
         <Card title="申请人信息" size="small">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="申请人">{application.applicant.id}-{application.applicant.name}</Descriptions.Item>
-            <Descriptions.Item label="申请日期">{formatDateText(application.applyDate)}</Descriptions.Item>
-            <Descriptions.Item label="公司">{application.applicant.company || '-'}</Descriptions.Item>
-            <Descriptions.Item label="办公区">{application.applicant.officeArea || '-'}</Descriptions.Item>
-            <Descriptions.Item label="联系电话">{application.applicant.phone || '-'}</Descriptions.Item>
-            <Descriptions.Item label="邮箱">{application.applicant.email || '-'}</Descriptions.Item>
-            <Descriptions.Item label="部门" span={3}>{formatDepartment(application.applicant.department)}</Descriptions.Item>
-          </Descriptions>
+          <DetailGrid>
+            <DetailItem label="申请人">{application.applicant.id}-{application.applicant.name}</DetailItem>
+            <DetailItem label="申请日期">{formatDateText(application.applyDate)}</DetailItem>
+            <DetailItem label="公司">{application.applicant.company || '-'}</DetailItem>
+            <DetailItem label="办公区">{application.applicant.officeArea || '-'}</DetailItem>
+            <DetailItem label="联系电话">{application.applicant.phone || '-'}</DetailItem>
+            <DetailItem label="邮箱">{application.applicant.email || '-'}</DetailItem>
+            <DetailItem label="部门" span={3}>{formatDepartment(application.applicant.department)}</DetailItem>
+          </DetailGrid>
         </Card>
 
         <Card title="借用资产信息" size="small">
@@ -176,6 +176,6 @@ export default function BorrowingApprovalPage() {
       >
         <Input value={countersignPerson} placeholder="请输入姓名或工号" onChange={(event) => setCountersignPerson(event.target.value)} />
       </Modal>
-    </div>
+    </>
   );
 }
