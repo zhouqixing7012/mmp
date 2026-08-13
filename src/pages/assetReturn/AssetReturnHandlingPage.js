@@ -220,8 +220,6 @@ export default function AssetReturnHandlingPage() {
             <DetailItem label="城市">{asset.city || '-'}</DetailItem>
             <DetailItem label="建筑">{asset.building || '-'}</DetailItem>
             <DetailItem label="楼层">{asset.floor || '-'}</DetailItem>
-            <DetailItem label="盘点状态"><StatusTag value={asset.inventoryStatus} type="business" /></DetailItem>
-            <DetailItem label="盘点执行人">{asset.inventoryPerson || '-'}</DetailItem>
             <DetailItem label="配置" span={3}>{asset.config || '-'}</DetailItem>
             <DetailItem label="备注" span={3}>{asset.note || '-'}</DetailItem>
             <DetailItem label="关联耗材" span={3}>
@@ -231,6 +229,8 @@ export default function AssetReturnHandlingPage() {
                 ))
                 : '-'}
             </DetailItem>
+            <DetailItem label="盘点状态"><StatusTag value={asset.inventoryStatus} type="business" /></DetailItem>
+            <DetailItem label="盘点执行人">{asset.inventoryPerson || '-'}</DetailItem>
           </DetailGrid>
         </Card>
 
