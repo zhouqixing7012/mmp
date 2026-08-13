@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, UserPlus, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -9,10 +8,10 @@ import {
   Modal,
   Space,
   Table,
-  Tag,
   Typography,
   message as antdMessage,
 } from 'antd';
+import StatusTag from '../../components/StatusTag';
 import { CURRENT_EMPLOYEE } from '../../mock/employeeSelfServiceMock';
 import {
   getEmployeeSelfServiceApplications,
@@ -132,7 +131,7 @@ export default function EmployeeAssetApprovalPage() {
       dataIndex: 'overStandard',
       width: 100,
       align: 'center',
-      render: (value) => value ? <Tag color="error">已超标</Tag> : <Tag>未超标</Tag>,
+      render: (value) => <StatusTag value={value ? '已超标' : '未超标'} type="business" />,
     },
   ];
 
@@ -140,10 +139,10 @@ export default function EmployeeAssetApprovalPage() {
     return (
       <div className="min-h-screen bg-slate-100 p-4">
         {contextHolder}
-        <Card>
+        <Card size="small">
           <Empty description="暂无待审批申请" />
           <div className="mt-4 flex justify-center">
-            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
       </div>
@@ -166,6 +165,8 @@ export default function EmployeeAssetApprovalPage() {
         <Card title="申请资产信息" size="small">
           <Table
             rowKey="id"
+            size="small"
+            bordered
             columns={materialColumns}
             dataSource={selectedApplication.materials}
             pagination={false}
@@ -179,10 +180,10 @@ export default function EmployeeAssetApprovalPage() {
           <Card title="当前审批操作" size="small">
             <TextArea rows={3} value={comment} placeholder="驳回时必填" onChange={(event) => setComment(event.target.value)} />
             <div className="mt-4 flex justify-center gap-3">
-              <Button type="primary" icon={<CheckCircle2 size={14} />} loading={loading} onClick={() => handleDecision('同意')}>同意</Button>
-              <Button danger icon={<XCircle size={14} />} loading={loading} onClick={() => handleDecision('驳回')}>驳回</Button>
+              <Button type="primary" loading={loading} onClick={() => handleDecision('同意')}>同意</Button>
+              <Button danger loading={loading} onClick={() => handleDecision('驳回')}>驳回</Button>
               <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
-              <Button icon={<UserPlus size={14} />} onClick={() => setCountersignOpen(true)}>加签</Button>
+              <Button onClick={() => setCountersignOpen(true)}>加签</Button>
             </div>
           </Card>
         )}
