@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Trash2 } from 'lucide-react';
 import {
   Button,
@@ -29,8 +30,7 @@ const WAREHOUSE_MANAGER_MAP = {
   北京总部仓: 'SOHU53-库房管理员-搜狐媒体',
   北京影像器材仓: 'SOHU54-库房管理员-新媒体',
 };
-const ASSET_TAG_OPTIONS = ['无', '限制出库', '待维修', '待数据清理'];
-const INVENTORY_PERIOD_ACTIVE = true;
+const ASSET_MARK_OPTIONS = ['无', '限制出库', '待维修', '待数据清理'];
 const CITY_OPTIONS = ['北京市', '上海市'];
 const BUILDING_OPTIONS = {
   北京市: ['搜狐媒体大厦', '中关村园区'],
@@ -62,9 +62,10 @@ function RequiredLabel({ children }) {
 }
 
 export default function ReplacementHandlingDetail({ application, onBack, onUpdated }) {
+  const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [returnWarehouse, setReturnWarehouse] = useState(application.returnProcess.warehouse || '北京总部仓');
-  const [returnAssetTag, setReturnAssetTag] = useState(application.returnProcess.assetMark || '');
+  const [returnAssetMark, setReturnAssetMark] = useState(application.returnProcess.assetMark || '');
   const [returnUsageNote, setReturnUsageNote] = useState(application.returnProcess.usageNote || '');
   const [issueWarehouse, setIssueWarehouse] = useState(application.issueProcess.warehouse || '北京总部仓');
   const [newAsset, setNewAsset] = useState(application.newAsset || null);
@@ -81,7 +82,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
 
   useEffect(() => {
     setReturnWarehouse(application.returnProcess.warehouse || '北京总部仓');
-    setReturnAssetTag(application.returnProcess.assetMark || '');
+    setReturnAssetMark(application.returnProcess.assetMark || '');
     setReturnUsageNote(application.returnProcess.usageNote || '');
     setIssueWarehouse(application.issueProcess.warehouse || '北京总部仓');
     setNewAsset(application.newAsset || null);
@@ -114,6 +115,10 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
     }
   };
 
+  const openEmployeeConfirmation = () => {
+    navigate('/yewurules', { state: { workspace: '员工资产确认' } });
+  };
+
   const persistReturnData = () => {
     updateAssetReplacementApplication(application.id, (record) => ({
       ...record,
@@ -121,7 +126,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
         ...record.returnProcess,
         warehouse: returnWarehouse,
         responsiblePerson: returnManager,
-        assetMark: returnAssetTag,
+        assetMark: returnAssetMark,
         usageNote: returnUsageNote,
       },
     }));
@@ -148,6 +153,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
       persistReturnData();
       requestReplacementConfirmation(application.id, '旧资产退回', '狐小e扫码确认');
     }, '已发起旧资产退库确认，请员工完成确认');
+    openEmployeeConfirmation();
   };
 
   const executeInbound = () => {
@@ -167,7 +173,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
       return;
     }
     if (oldWaitingConfirmation) {
-      messageApi.warning('员工退库确认尚未完成');
+      openEmployeeConfirmation();
       return;
     }
     if (!oldConfirmed) {
@@ -194,6 +200,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
       persistNewAssetData();
       requestReplacementConfirmation(application.id, '新资产领取', '狐小e扫码确认');
     }, '已发起新资产领用确认，请员工完成确认');
+    openEmployeeConfirmation();
   };
 
   const executeOutbound = () => {
@@ -224,7 +231,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
 
   const handleIssueConfirm = () => {
     if (newWaitingConfirmation) {
-      messageApi.warning('员工领用确认尚未完成');
+      openEmployeeConfirmation();
       return;
     }
     if (!newConfirmed) {
@@ -257,6 +264,8 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
   const oldAsset = application.oldAsset;
   const componentCount = oldAsset.component && oldAsset.component !== '-' ? 1 : 0;
   const applyDate = formatDateText(application.applyDate || application.applyTime);
+  const showOldInventory = Boolean(oldAsset.inventoryPerson && oldAsset.inventoryStatus);
+  const showNewInventory = Boolean(newAsset?.inventoryPerson && newAsset?.inventoryStatus);
 
   return (
     <>
@@ -287,7 +296,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
             <Button
               type="primary"
               loading={submitting}
-              disabled={oldWaitingConfirmation || oldInboundDone}
+              disabled={oldInboundDone}
               onClick={handleReturnConfirm}
             >
               退库确认
@@ -304,8 +313,6 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
             <DetailItem label="城市">{oldAsset.city || '-'}</DetailItem>
             <DetailItem label="建筑">{oldAsset.building || '-'}</DetailItem>
             <DetailItem label="楼层">{oldAsset.floor || '-'}</DetailItem>
-            <DetailItem label="鉴定结果"><StatusTag value={application.mis.result} type="business" /></DetailItem>
-            <DetailItem label="鉴定说明" span={2}>{application.mis.description || '-'}</DetailItem>
             <DetailItem label="备注" span={3}>{oldAsset.note || '-'}</DetailItem>
             <DetailItem label="耗材信息" span={3}>{oldAsset.consumables || '-'}</DetailItem>
             <DetailItem label={<RequiredLabel>仓库</RequiredLabel>}>
@@ -318,14 +325,14 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
               />
             </DetailItem>
             <DetailItem label="责任人">{returnManager}</DetailItem>
-            <DetailItem label="资产标签">
+            <DetailItem label="资产标记">
               <Select
                 className="w-full"
                 allowClear
-                value={returnAssetTag || undefined}
+                value={returnAssetMark || undefined}
                 disabled={oldInboundDone}
-                options={ASSET_TAG_OPTIONS.map((value) => ({ label: value, value }))}
-                onChange={(value) => setReturnAssetTag(value || '')}
+                options={ASSET_MARK_OPTIONS.map((value) => ({ label: value, value }))}
+                onChange={(value) => setReturnAssetMark(value || '')}
               />
             </DetailItem>
             <DetailItem label="退库日期">{confirmedReturnDate}</DetailItem>
@@ -338,12 +345,10 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
                 onChange={(event) => setReturnUsageNote(event.target.value)}
               />
             </DetailItem>
-            {INVENTORY_PERIOD_ACTIVE && (
+            {showOldInventory && (
               <>
-                <DetailItem label="盘点人">{oldAsset.inventoryPerson || '-'}</DetailItem>
-                <DetailItem label="盘点状态">
-                  {oldAsset.inventoryStatus ? <StatusTag value={oldAsset.inventoryStatus} type="business" /> : '-'}
-                </DetailItem>
+                <DetailItem label="盘点人">{oldAsset.inventoryPerson}</DetailItem>
+                <DetailItem label="盘点状态"><StatusTag value={oldAsset.inventoryStatus} type="business" /></DetailItem>
               </>
             )}
           </DetailGrid>
@@ -360,7 +365,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
               <Button
                 type="primary"
                 loading={submitting}
-                disabled={!oldInboundDone || newWaitingConfirmation}
+                disabled={!oldInboundDone}
                 onClick={handleIssueConfirm}
               >
                 领用确认
@@ -442,12 +447,10 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
                 onChange={(event) => setUsageNote(event.target.value)}
               />
             </DetailItem>
-            {INVENTORY_PERIOD_ACTIVE && (
+            {showNewInventory && (
               <>
-                <DetailItem label="盘点人">{newAsset?.inventoryPerson || '-'}</DetailItem>
-                <DetailItem label="盘点状态">
-                  {newAsset?.inventoryStatus ? <StatusTag value={newAsset.inventoryStatus} type="business" /> : '-'}
-                </DetailItem>
+                <DetailItem label="盘点人">{newAsset.inventoryPerson}</DetailItem>
+                <DetailItem label="盘点状态"><StatusTag value={newAsset.inventoryStatus} type="business" /></DetailItem>
               </>
             )}
           </DetailGrid>
