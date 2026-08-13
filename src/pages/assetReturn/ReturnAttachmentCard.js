@@ -9,6 +9,15 @@ function formatSize(size = 0) {
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function SectionTitle({ children }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="inline-block h-3 w-1 rounded-sm bg-blue-500" />
+      <span>{children}</span>
+    </span>
+  );
+}
+
 export default function ReturnAttachmentCard({
   attachments = [],
   currentNode,
@@ -33,7 +42,7 @@ export default function ReturnAttachmentCard({
             cancelText="取消"
             onConfirm={() => onDelete(record.id)}
           >
-            <Button danger type="link" icon={<Trash2 size={14} />}>删除</Button>
+            <Button danger type="link" size="small" className="px-0" icon={<Trash2 size={14} />}>删除</Button>
           </Popconfirm>
         );
       },
@@ -43,7 +52,7 @@ export default function ReturnAttachmentCard({
   return (
     <Card
       size="small"
-      title="附件信息"
+      title={<SectionTitle>附件信息</SectionTitle>}
       extra={(
         <Upload
           showUploadList={false}
