@@ -55,6 +55,7 @@ export default function ReplacementApplyPage() {
     return fallback ? [fallback] : [];
   }, [assets, location.state]);
   const totalQuantity = selectedAssets.reduce((sum, asset) => sum + (asset.quantity || 0), 0);
+  const visibleNotices = REPLACEMENT_NOTICE.filter((item) => !item.includes('苹果笔记本、苹果一体机、组装机、工作站'));
 
   const submit = () => {
     if (selectedAssets.length === 0) {
@@ -145,7 +146,7 @@ export default function ReplacementApplyPage() {
 
         <Card title={<SectionTitle>更换须知</SectionTitle>} size="small">
           <ul className="mb-4 list-disc space-y-2 pl-5 text-sm text-red-500">
-            {REPLACEMENT_NOTICE.map((item) => <li key={item}>{item}</li>)}
+            {visibleNotices.map((item) => <li key={item}>{item}</li>)}
           </ul>
           <div className="flex justify-center">
             <Checkbox checked={accepted} onChange={(event) => setAccepted(event.target.checked)}>
