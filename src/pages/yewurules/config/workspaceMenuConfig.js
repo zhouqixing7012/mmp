@@ -53,7 +53,7 @@ import {
 export const WORKSPACE_MENU_ITEMS = [
   { key: '工作台首页', label: '工作台首页', Page: PersonalWorkspace },
   { key: '移动端工作台', label: '移动端工作台', Page: MobileWorkspacePage },
-  { key: '号码管理', label: '号码管理', Page: Haoma },
+  { key: '合约号码申请', label: '合约号码申请', Page: Haoma },
   { key: '号码控制', label: '号码控制', Page: Haomakongzhi },
   { key: '合约号码ES配给', label: '合约号码ES配给', Page: ContractNumberAllocationPage },
   { key: '合约号码配给主管审批', label: '合约号码配给主管审批', Page: ContractNumberSupervisorApprovalPage },
