@@ -36,7 +36,7 @@ function ApplicantCard({ applicant, applyDate, onViewAssets }) {
         <Descriptions.Item label="申请人">
           <Space size={8}>
             <span>{applicant.id}-{applicant.name}</span>
-            <Button type="link" size="small" className="px-0" onClick={onViewAssets}>查看名下资产</Button>
+            <Button size="small" onClick={onViewAssets}>查看名下资产</Button>
           </Space>
         </Descriptions.Item>
         <Descriptions.Item label="申请日期">{applyDate || '-'}</Descriptions.Item>
