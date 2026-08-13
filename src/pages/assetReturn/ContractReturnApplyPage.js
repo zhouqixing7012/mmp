@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import {
+  Alert,
   Button,
   Card,
   Empty,
   Input,
+  Modal,
   Space,
   Table,
   Typography,
@@ -39,17 +41,35 @@ export default function ContractReturnApplyPage() {
   const numbers = useMemo(() => getEmployeeContractNumbers(), [version]);
   const applyDate = useMemo(() => todayText(), []);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [draftSelectedIds, setDraftSelectedIds] = useState([]);
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const selectedNumbers = useMemo(
+    () => selectedIds.map((id) => numbers.find((item) => item.id === id)).filter(Boolean),
+    [numbers, selectedIds]
+  );
+
+  const openPicker = () => {
+    setDraftSelectedIds(selectedIds);
+    setPickerOpen(true);
+  };
+
+  const confirmPicker = () => {
+    setSelectedIds(draftSelectedIds);
+    setPickerOpen(false);
+  };
+
   const reset = () => {
     setSelectedIds([]);
+    setDraftSelectedIds([]);
     setReason('');
   };
 
   const submit = async () => {
     if (!selectedIds.length) {
-      messageApi.warning('请至少选择一个合约号码');
+      messageApi.warning('请先添加需要退库的合约号码');
       return;
     }
     if (!reason.trim()) {
@@ -84,7 +104,7 @@ export default function ContractReturnApplyPage() {
     {
       title: '号码状态',
       dataIndex: 'status',
-      width: 120,
+      width: 130,
       render: (value) => <StatusTag value={value || '-'} type="business" />,
     },
   ];
@@ -110,36 +130,30 @@ export default function ContractReturnApplyPage() {
                 onChange={(event) => setReason(event.target.value)}
               />
             </DetailItem>
-            <DetailItem label="政策提示" span={3}>
-              <Typography.Text type="secondary">
-                如对电话卡申领政策存在疑问，可咨询 ES 孙志强（213852），分机 010-56601892。
-              </Typography.Text>
-            </DetailItem>
           </DetailGrid>
+          <Alert
+            className="mt-3"
+            type="info"
+            showIcon
+            message="政策提示"
+            description="如对电话卡申领政策存在疑问，可咨询 ES 孙志强（213852），分机 010-56601892。"
+          />
         </Card>
 
-        <Card
-          size="small"
-          title={<SectionTitle>合约号码明细</SectionTitle>}
-          extra={<Typography.Text type="secondary">已选 {selectedIds.length} 项</Typography.Text>}
-        >
+        <Card size="small" title={<SectionTitle>合约号码明细</SectionTitle>}>
+          <div className="mb-3 flex items-center justify-between">
+            <Button type="primary" onClick={openPicker}>添加物资</Button>
+            <Typography.Text type="secondary">已添加 {selectedNumbers.length} 项</Typography.Text>
+          </div>
           <Table
             rowKey="id"
             size="small"
             bordered
             columns={numberColumns}
-            dataSource={numbers}
-            rowSelection={{
-              selectedRowKeys: selectedIds,
-              onChange: setSelectedIds,
-              getCheckboxProps: (record) => {
-                const eligibility = getContractReturnEligibility(record);
-                return { disabled: !eligibility.allowed, title: eligibility.reason || '' };
-              },
-            }}
+            dataSource={selectedNumbers}
             pagination={false}
-            scroll={{ x: 1050 }}
-            locale={{ emptyText: <Empty description="暂无本人名下合约号码" /> }}
+            scroll={{ x: 1060 }}
+            locale={{ emptyText: <Empty description="暂未添加合约号码" /> }}
           />
         </Card>
 
@@ -148,6 +162,38 @@ export default function ContractReturnApplyPage() {
           <Button onClick={reset}>返回</Button>
         </div>
       </Space>
+
+      <Modal
+        title="选择本人名下合约号码"
+        open={pickerOpen}
+        width={1120}
+        onCancel={() => setPickerOpen(false)}
+        footer={(
+          <div className="flex justify-center gap-3">
+            <Button type="primary" onClick={confirmPicker}>确定</Button>
+            <Button onClick={() => setPickerOpen(false)}>取消</Button>
+          </div>
+        )}
+      >
+        <Table
+          rowKey="id"
+          size="small"
+          bordered
+          columns={numberColumns}
+          dataSource={numbers}
+          rowSelection={{
+            selectedRowKeys: draftSelectedIds,
+            onChange: setDraftSelectedIds,
+            getCheckboxProps: (record) => {
+              const eligibility = getContractReturnEligibility(record);
+              return { disabled: !eligibility.allowed, title: eligibility.reason || '' };
+            },
+          }}
+          pagination={false}
+          scroll={{ x: 1060 }}
+          locale={{ emptyText: <Empty description="暂无本人名下合约号码" /> }}
+        />
+      </Modal>
     </>
   );
 }
