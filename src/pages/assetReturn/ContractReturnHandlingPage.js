@@ -5,7 +5,6 @@ import {
   Button,
   Card,
   DatePicker,
-  Descriptions,
   Empty,
   Input,
   Select,
@@ -14,6 +13,7 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { CONTRACT_WAREHOUSES } from '../../mock/assetReturnMock';
 import {
@@ -25,6 +25,15 @@ import {
 import { formatDateText, formatDepartment } from '../../utils/displayFormat';
 
 const { TextArea } = Input;
+
+function SectionTitle({ children }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="inline-block h-3 w-1 rounded-sm bg-blue-500" />
+      <span>{children}</span>
+    </span>
+  );
+}
 
 export default function ContractReturnHandlingPage() {
   const navigate = useNavigate();
@@ -93,6 +102,7 @@ export default function ContractReturnHandlingPage() {
       messageApi.warning('驳回时审批意见必填');
       return;
     }
+
     setLoadingAction('reject');
     try {
       finishContractReturn(selected.id, '驳回', opinion.trim());
@@ -105,7 +115,7 @@ export default function ContractReturnHandlingPage() {
 
   if (!selected) {
     return (
-      <div className="min-h-screen bg-slate-100 p-4">
+      <>
         {contextHolder}
         <Card size="small">
           <Empty description="暂无合约号码退库办理待办" />
@@ -113,7 +123,7 @@ export default function ContractReturnHandlingPage() {
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
-      </div>
+      </>
     );
   }
 
@@ -123,12 +133,11 @@ export default function ContractReturnHandlingPage() {
     ? '确认入库'
     : confirmationStatus === '待确认'
       ? '等待员工确认'
-      : '发起退库确认';
+      : '退库确认';
 
   const historyColumns = [
-    { title: '申请人/审批人', dataIndex: 'person', width: 190 },
     { title: '审批环节', dataIndex: 'node', width: 180 },
-    { title: '审批时间', dataIndex: 'time', width: 180, render: (value) => value || '-' },
+    { title: '申请人/审批人', dataIndex: 'person', width: 200 },
     {
       title: '审批状态',
       dataIndex: 'status',
@@ -136,64 +145,64 @@ export default function ContractReturnHandlingPage() {
       align: 'center',
       render: (value) => <StatusTag value={value} type="business" />,
     },
+    { title: '审批时间', dataIndex: 'time', width: 180, render: (value) => value || '-' },
     { title: '审批意见', dataIndex: 'comment', render: (value) => value || '-' },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4">
+    <>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="flex items-center justify-between">
           <Typography.Title level={4} className="mb-0">合约号码退库办理</Typography.Title>
           <Typography.Text type="secondary">退库单号：{selected.id}</Typography.Text>
         </div>
 
-        <Card size="small" title="申请人信息">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="申请人">{selected.applicant.id}-{selected.applicant.name}</Descriptions.Item>
-            <Descriptions.Item label="申请日期">{formatDateText(selected.applyTime)}</Descriptions.Item>
-            <Descriptions.Item label="联系电话">{selected.applicant.phone || '-'}</Descriptions.Item>
-            <Descriptions.Item label="公司">{selected.applicant.company || '-'}</Descriptions.Item>
-            <Descriptions.Item label="板块">{selected.applicant.block || '-'}</Descriptions.Item>
-            <Descriptions.Item label="办公区">{selected.applicant.officeArea || '-'}</Descriptions.Item>
-            <Descriptions.Item label="成本中心">{selected.applicant.costCenter || '-'}</Descriptions.Item>
-            <Descriptions.Item label="部门" span={2}>{formatDepartment(selected.applicant.department)}</Descriptions.Item>
-            <Descriptions.Item label="退库原因" span={3}>{selected.reason || '-'}</Descriptions.Item>
-            <Descriptions.Item label="申请附件" span={3}>{selected.attachment || '-'}</Descriptions.Item>
-          </Descriptions>
+        <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>
+          <DetailGrid>
+            <DetailItem label="申请人">{selected.applicant.id}-{selected.applicant.name}</DetailItem>
+            <DetailItem label="申请日期">{formatDateText(selected.applyTime)}</DetailItem>
+            <DetailItem label="联系电话">{selected.applicant.phone || '-'}</DetailItem>
+            <DetailItem label="公司">{selected.applicant.company || '-'}</DetailItem>
+            <DetailItem label="板块">{selected.applicant.block || '-'}</DetailItem>
+            <DetailItem label="办公区">{selected.applicant.officeArea || '-'}</DetailItem>
+            <DetailItem label="成本中心">{selected.applicant.costCenter || '-'}</DetailItem>
+            <DetailItem label="部门" span={2}>{formatDepartment(selected.applicant.department)}</DetailItem>
+            <DetailItem label="退库原因" span={3}>{selected.reason || '-'}</DetailItem>
+          </DetailGrid>
         </Card>
 
-        <Card size="small" title="退库合约号码信息">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="电话号码">{number.number || '-'}</Descriptions.Item>
-            <Descriptions.Item label="标签号">{number.assetTag || '-'}</Descriptions.Item>
-            <Descriptions.Item label="资产小类">{number.category || '-'}</Descriptions.Item>
-            <Descriptions.Item label="品牌">{number.brand || '-'}</Descriptions.Item>
-            <Descriptions.Item label="资费标准">{number.amount ? `${number.amount}元/月` : '-'}</Descriptions.Item>
-            <Descriptions.Item label="号码状态"><StatusTag value={number.status || '-'} type="business" /></Descriptions.Item>
-            <Descriptions.Item label="号码说明" span={3}>{number.description || '-'}</Descriptions.Item>
-            <Descriptions.Item label="话费套餐" span={3}>{number.packageContent || '-'}</Descriptions.Item>
-          </Descriptions>
+        <Card size="small" title={<SectionTitle>退库合约号码信息</SectionTitle>}>
+          <DetailGrid>
+            <DetailItem label="合约号码">{number.number || '-'}</DetailItem>
+            <DetailItem label="标签号">{number.assetTag || '-'}</DetailItem>
+            <DetailItem label="号码状态"><StatusTag value={number.status || '-'} type="business" /></DetailItem>
+            <DetailItem label="金额">{number.amount === undefined || number.amount === null ? '-' : `¥${number.amount}`}</DetailItem>
+            <DetailItem label="合约号码说明" span={2}>{number.description || '-'}</DetailItem>
+            <DetailItem label="套餐内容" span={3}>{number.packageContent || '-'}</DetailItem>
+          </DetailGrid>
         </Card>
 
-        <Card size="small" title="退库信息维护">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label={<span><span className="text-red-500">*</span> 退库仓库</span>}>
+        <Card size="small" title={<SectionTitle>退库信息维护</SectionTitle>}>
+          <DetailGrid>
+            <DetailItem label={<><span className="text-red-500">*</span> 退库仓库</>}>
               <Select
                 className="w-full"
                 value={warehouse}
                 options={CONTRACT_WAREHOUSES.map((value) => ({ label: value, value }))}
                 onChange={setWarehouse}
               />
-            </Descriptions.Item>
-            <Descriptions.Item label="责任人">{selected.handling.responsiblePerson || '号码库管员'}</Descriptions.Item>
-            <Descriptions.Item label={<span><span className="text-red-500">*</span> 退库日期</span>}>
-              <DatePicker className="w-full" value={returnDate} onChange={(value) => setReturnDate(value || dayjs())} />
-            </Descriptions.Item>
-            <Descriptions.Item label="确认状态" span={3}>
-              <StatusTag value={confirmationStatus} type="business" />
-            </Descriptions.Item>
-            <Descriptions.Item label="使用说明" span={3}>
+            </DetailItem>
+            <DetailItem label="责任人">{selected.handling.responsiblePerson || '号码库管员'}</DetailItem>
+            <DetailItem label={<><span className="text-red-500">*</span> 退库日期</>}>
+              <DatePicker
+                className="w-full"
+                value={returnDate}
+                format="YYYY-MM-DD"
+                onChange={(value) => setReturnDate(value || dayjs())}
+              />
+            </DetailItem>
+            <DetailItem label="使用说明" span={3}>
               <TextArea
                 rows={3}
                 maxLength={400}
@@ -202,11 +211,11 @@ export default function ContractReturnHandlingPage() {
                 placeholder="请输入退库情况或其他补充说明"
                 onChange={(event) => setUsageNote(event.target.value)}
               />
-            </Descriptions.Item>
-          </Descriptions>
+            </DetailItem>
+          </DetailGrid>
         </Card>
 
-        <Card size="small" title="审批信息">
+        <Card size="small" title={<SectionTitle>审批信息</SectionTitle>}>
           <Table
             rowKey={(record, index) => `${record.node}-${index}`}
             size="small"
@@ -214,6 +223,7 @@ export default function ContractReturnHandlingPage() {
             columns={historyColumns}
             dataSource={selected.history || []}
             pagination={false}
+            scroll={{ x: 980 }}
           />
 
           <div className="mt-4">
@@ -243,6 +253,6 @@ export default function ContractReturnHandlingPage() {
           </div>
         </Card>
       </Space>
-    </div>
+    </>
   );
 }
