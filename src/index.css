@@ -29,6 +29,28 @@
   box-shadow: none !important;
 }
 
+/* 统一申请汇总历史页头使用自定义 div，这里收口为普通页面标题视觉。 */
+.workspace-content[data-workspace-page="统一申请汇总-资产"]
+  > .min-h-screen
+  > .mb-4.flex.items-center.gap-2.text-lg.font-semibold.text-slate-800 {
+  font-size: 20px !important;
+  line-height: 28px !important;
+  font-weight: 600 !important;
+  color: rgba(0, 0, 0, 0.88) !important;
+}
+
+.workspace-content[data-workspace-page="统一申请汇总-资产"]
+  > .min-h-screen
+  > .mb-4.flex.items-center.gap-2.text-lg.font-semibold.text-slate-800
+  > svg {
+  display: none;
+}
+
+.workspace-content[data-workspace-page="统一申请汇总-资产"] .ant-btn .lucide-check-circle-2,
+.workspace-content[data-workspace-page="统一申请汇总-资产"] .ant-btn .lucide-save {
+  display: none;
+}
+
 /* 桌面业务 Card 标题统一为紧凑蓝色竖线分组样式。 */
 .workspace-content:not([data-workspace-page="工作台首页"]):not([data-workspace-page="移动端工作台"])
   .ant-card-head-title {
