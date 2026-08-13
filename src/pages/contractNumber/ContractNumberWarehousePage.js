@@ -1,17 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Descriptions,
   Empty,
   Input,
-  Select,
+  Modal,
   Space,
+  Table,
   Typography,
   message as antdMessage,
 } from 'antd';
-import StatusTag from '../../components/StatusTag';
+import { Search } from 'lucide-react';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import {
   getWarehouseContractNumberAllocation,
   updateContractNumberAllocation,
@@ -20,14 +21,69 @@ import { formatDepartment } from '../../utils/displayFormat';
 
 const { TextArea } = Input;
 
-const WAREHOUSE_OPTIONS = [
-  'I10086-集团合约机库（新媒体）',
-  'I10087-集团合约机库（搜狐网）',
-  'I10088-集团合约机库（总部）',
+const CITY_OPTIONS = [
+  { key: '35.北京市', code: '35', name: '北京市' },
+  { key: '36.上海市', code: '36', name: '上海市' },
+  { key: '37.广州市', code: '37', name: '广州市' },
+  { key: '38.深圳市', code: '38', name: '深圳市' },
+  { key: '39.杭州市', code: '39', name: '杭州市' },
 ];
 
 function nowText() {
   return new Date().toLocaleString('zh-CN', { hour12: false }).replaceAll('/', '-');
+}
+
+function SectionTitle({ children }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="inline-block h-3 w-1 rounded-sm bg-blue-500" />
+      <span>{children}</span>
+    </span>
+  );
+}
+
+function CitySelectModal({ open, value, onCancel, onConfirm }) {
+  const [selectedKey, setSelectedKey] = useState(value || '');
+
+  useEffect(() => {
+    if (open) setSelectedKey(value || '');
+  }, [open, value]);
+
+  const columns = useMemo(() => [
+    { title: '城市编码', dataIndex: 'code', width: 140 },
+    { title: '城市', dataIndex: 'name' },
+  ], []);
+
+  return (
+    <Modal
+      title="选择城市"
+      open={open}
+      width={560}
+      onCancel={onCancel}
+      footer={(
+        <div className="flex justify-center gap-3">
+          <Button type="primary" disabled={!selectedKey} onClick={() => onConfirm(selectedKey)}>确定</Button>
+          <Button onClick={onCancel}>取消</Button>
+        </div>
+      )}
+      destroyOnHidden
+    >
+      <Table
+        rowKey="key"
+        size="small"
+        bordered
+        pagination={false}
+        columns={columns}
+        dataSource={CITY_OPTIONS}
+        rowSelection={{
+          type: 'radio',
+          selectedRowKeys: selectedKey ? [selectedKey] : [],
+          onChange: (keys) => setSelectedKey(keys[0] || ''),
+        }}
+        onRow={(record) => ({ onClick: () => setSelectedKey(record.key) })}
+      />
+    </Modal>
+  );
 }
 
 export default function ContractNumberWarehousePage() {
@@ -35,8 +91,8 @@ export default function ContractNumberWarehousePage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [application, setApplication] = useState(() => getWarehouseContractNumberAllocation());
   const [warehouse, setWarehouse] = useState('');
-  const [documentRemark, setDocumentRemark] = useState('');
   const [city, setCity] = useState('');
+  const [cityModalOpen, setCityModalOpen] = useState(false);
   const [subsidiary, setSubsidiary] = useState('');
   const [note, setNote] = useState('');
   const [opinion, setOpinion] = useState('');
@@ -45,7 +101,6 @@ export default function ContractNumberWarehousePage() {
   useEffect(() => {
     if (!application) return;
     setWarehouse(application.warehouseHandling?.warehouse || '');
-    setDocumentRemark(application.warehouseHandling?.documentRemark || '');
     setCity(application.warehouseHandling?.city || '');
     setSubsidiary(application.warehouseHandling?.subsidiary || '');
     setNote(application.warehouseHandling?.note || '');
@@ -58,7 +113,6 @@ export default function ContractNumberWarehousePage() {
     warehouseHandling: {
       ...record.warehouseHandling,
       warehouse,
-      documentRemark,
       city,
       subsidiary,
       note,
@@ -68,11 +122,11 @@ export default function ContractNumberWarehousePage() {
   const submit = (action) => {
     if (!application) return;
     if (!warehouse) {
-      messageApi.warning('请选择当前仓库');
+      messageApi.warning('当前仓库为空，请检查单据数据');
       return;
     }
     if (action === '驳回' && !opinion.trim()) {
-      messageApi.warning('驳回时办理意见必填');
+      messageApi.warning('驳回时审批意见必填');
       return;
     }
 
@@ -80,7 +134,7 @@ export default function ContractNumberWarehousePage() {
     try {
       updateContractNumberAllocation(application.id, (record) => {
         const savedRecord = saveHandlingFields(record);
-        const startConfirmation = action === '发起领取确认';
+        const startConfirmation = action === '领用确认';
         const handledAt = nowText();
 
         return {
@@ -119,7 +173,7 @@ export default function ContractNumberWarehousePage() {
           }] : []),
         };
       });
-      messageApi.success(action === '发起领取确认' ? '已发起员工合约号码领取确认' : '合约号码领用申请已驳回');
+      messageApi.success(action === '领用确认' ? '已发起员工合约号码领取确认' : '合约号码领用申请已驳回');
       setOpinion('');
       refresh();
     } finally {
@@ -129,7 +183,7 @@ export default function ContractNumberWarehousePage() {
 
   if (!application) {
     return (
-      <div className="min-h-screen bg-slate-100 p-4">
+      <>
         {contextHolder}
         <Card size="small">
           <Empty description="暂无合约号码库管员待办" />
@@ -137,7 +191,7 @@ export default function ContractNumberWarehousePage() {
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
-      </div>
+      </>
     );
   }
 
@@ -146,94 +200,91 @@ export default function ContractNumberWarehousePage() {
   const handling = application.warehouseHandling || {};
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4">
+    <>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="flex items-center justify-between">
           <Typography.Title level={4} className="mb-0">合约号码领用办理</Typography.Title>
           <Typography.Text type="secondary">申请单号：{application.id}</Typography.Text>
         </div>
 
-        <Card size="small" title="申请人信息">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label={<span><span className="text-red-500">*</span> 当前仓库</span>} span={3}>
-              <Select
-                value={warehouse || undefined}
-                placeholder="请选择当前仓库"
-                style={{ width: 420, maxWidth: '100%' }}
-                options={WAREHOUSE_OPTIONS.map((value) => ({ label: value, value }))}
-                onChange={setWarehouse}
-              />
-            </Descriptions.Item>
-            <Descriptions.Item label="使用人">{applicant.id}-{applicant.name}</Descriptions.Item>
-            <Descriptions.Item label="联系电话">{applicant.phone || '-'}</Descriptions.Item>
-            <Descriptions.Item label="申请日期">{application.applyDate || '-'}</Descriptions.Item>
-            <Descriptions.Item label="公司">{applicant.company || '-'}</Descriptions.Item>
-            <Descriptions.Item label="板块">{applicant.block || '-'}</Descriptions.Item>
-            <Descriptions.Item label="办公区">{applicant.officeArea || '-'}</Descriptions.Item>
-            <Descriptions.Item label="成本中心">{applicant.costCenter || '-'}</Descriptions.Item>
-            <Descriptions.Item label="部门" span={2}>{formatDepartment(applicant.department)}</Descriptions.Item>
-            <Descriptions.Item label="单据备注" span={3}>
-              <TextArea
-                rows={2}
-                maxLength={400}
-                showCount
-                value={documentRemark}
-                placeholder="请输入单据备注"
-                onChange={(event) => setDocumentRemark(event.target.value)}
-              />
-            </Descriptions.Item>
-          </Descriptions>
+        <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>
+          <DetailGrid>
+            <DetailItem label="当前仓库" span={3}>{warehouse || '-'}</DetailItem>
+            <DetailItem label="使用人">{applicant.id}-{applicant.name}</DetailItem>
+            <DetailItem label="联系电话">{applicant.phone || '-'}</DetailItem>
+            <DetailItem label="申请日期">{application.applyDate || '-'}</DetailItem>
+            <DetailItem label="公司">{applicant.company || '-'}</DetailItem>
+            <DetailItem label="板块">{applicant.block || '-'}</DetailItem>
+            <DetailItem label="办公区">{applicant.officeArea || '-'}</DetailItem>
+            <DetailItem label="成本中心">{applicant.costCenter || '-'}</DetailItem>
+            <DetailItem label="部门" span={2}>{formatDepartment(applicant.department)}</DetailItem>
+          </DetailGrid>
         </Card>
 
-        <Card size="small" title="申请合约号码信息">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="标签号">{number?.assetTag || '-'}</Descriptions.Item>
-            <Descriptions.Item label="序列号">{number?.imei || '-'}</Descriptions.Item>
-            <Descriptions.Item label="说明">{number?.packageName || '-'}</Descriptions.Item>
-            <Descriptions.Item label="城市">
-              <Input value={city} placeholder="请输入城市" onChange={(event) => setCity(event.target.value)} />
-            </Descriptions.Item>
-            <Descriptions.Item label="领用原因">{handling.usageReason || '-'}</Descriptions.Item>
-            <Descriptions.Item label="数量">{handling.quantity || 1}</Descriptions.Item>
-            <Descriptions.Item label="子公司">
-              <Input value={subsidiary} maxLength={50} placeholder="请输入子公司" onChange={(event) => setSubsidiary(event.target.value)} />
-            </Descriptions.Item>
-            <Descriptions.Item label="资费标准">{handling.tariffStandard || '-'}</Descriptions.Item>
-            <Descriptions.Item label="号码状态">
-              <StatusTag value={number?.status || '-'} type="business" />
-            </Descriptions.Item>
-            <Descriptions.Item label="备注" span={3}>
+        <Card size="small" title={<SectionTitle>申请合约号码信息</SectionTitle>}>
+          <DetailGrid>
+            <DetailItem label="标签号">{number?.assetTag || '-'}</DetailItem>
+            <DetailItem label="序列号">{number?.imei || '-'}</DetailItem>
+            <DetailItem label="说明">{number?.packageName || '-'}</DetailItem>
+            <DetailItem label="数量">{handling.quantity || 1}</DetailItem>
+            <DetailItem label="金额">{handling.tariffStandard ?? '-'}</DetailItem>
+            <DetailItem label="城市">
+              <Input
+                readOnly
+                value={city}
+                placeholder="请选择城市"
+                suffix={<Search size={14} className="text-slate-400" />}
+                onClick={() => setCityModalOpen(true)}
+              />
+            </DetailItem>
+            <DetailItem label="子公司">
+              <Input
+                value={subsidiary}
+                maxLength={50}
+                placeholder="请输入子公司"
+                onChange={(event) => setSubsidiary(event.target.value)}
+              />
+            </DetailItem>
+            <DetailItem label="申请原因">{handling.usageReason || application.applyReason || '-'}</DetailItem>
+            <DetailItem label="备注">
               <TextArea
                 rows={2}
                 maxLength={400}
-                showCount
                 value={note}
                 placeholder="请输入备注"
                 onChange={(event) => setNote(event.target.value)}
               />
-            </Descriptions.Item>
-          </Descriptions>
+            </DetailItem>
+          </DetailGrid>
         </Card>
 
-        <Card size="small" title="办理操作">
-          <Typography.Text strong>办理意见</Typography.Text>
+        <Card size="small" title={<SectionTitle>审批意见</SectionTitle>}>
           <TextArea
-            className="mt-2"
             rows={3}
             maxLength={400}
             showCount
             value={opinion}
-            placeholder="发起领取确认时可不填写，驳回时必填"
+            placeholder="领用确认时可不填写，驳回时必填"
             onChange={(event) => setOpinion(event.target.value)}
           />
           <div className="mt-4 flex justify-center gap-3">
-            <Button type="primary" loading={loadingAction === '发起领取确认'} onClick={() => submit('发起领取确认')}>发起领取确认</Button>
+            <Button type="primary" loading={loadingAction === '领用确认'} onClick={() => submit('领用确认')}>领用确认</Button>
             <Button danger loading={loadingAction === '驳回'} onClick={() => submit('驳回')}>驳回</Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
           </div>
         </Card>
       </Space>
-    </div>
+
+      <CitySelectModal
+        open={cityModalOpen}
+        value={city}
+        onCancel={() => setCityModalOpen(false)}
+        onConfirm={(value) => {
+          setCity(value);
+          setCityModalOpen(false);
+        }}
+      />
+    </>
   );
 }
