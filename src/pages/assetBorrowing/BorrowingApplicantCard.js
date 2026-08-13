@@ -9,12 +9,7 @@ function ApplicantValue({ applicant, onViewAssets }) {
     <Space size={8}>
       <span>{applicant.id}-{applicant.name}</span>
       {onViewAssets && (
-        <Button
-          type="link"
-          size="small"
-          className="px-0"
-          onClick={onViewAssets}
-        >
+        <Button size="small" onClick={onViewAssets}>
           查看名下资产
         </Button>
       )}
@@ -29,9 +24,7 @@ export default function BorrowingApplicantCard({ applicant, applyDate, warehouse
     return (
       <Card title="申请人信息" size="small">
         <DetailGrid>
-          <DetailItem label="申请人">
-            <ApplicantValue applicant={applicant} onViewAssets={onViewAssets} />
-          </DetailItem>
+          <DetailItem label="申请人"><ApplicantValue applicant={applicant} onViewAssets={onViewAssets} /></DetailItem>
           <DetailItem label="申请日期">{formatDateText(applyDate)}</DetailItem>
           <DetailItem label="公司">{applicant.company || '-'}</DetailItem>
           <DetailItem label="办公区">{applicant.officeArea || '-'}</DetailItem>
@@ -46,9 +39,7 @@ export default function BorrowingApplicantCard({ applicant, applyDate, warehouse
   return (
     <Card title="申请人信息" size="small">
       <DetailGrid>
-        <DetailItem label="申请人">
-          <ApplicantValue applicant={applicant} onViewAssets={onViewAssets} />
-        </DetailItem>
+        <DetailItem label="申请人"><ApplicantValue applicant={applicant} onViewAssets={onViewAssets} /></DetailItem>
         <DetailItem label="申请日期">{formatDateText(applyDate)}</DetailItem>
         <DetailItem label="公司">{applicant.company || '-'}</DetailItem>
         <DetailItem label="办公区">{applicant.officeArea || '-'}</DetailItem>
