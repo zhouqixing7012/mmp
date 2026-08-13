@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import dayjs from 'dayjs';
 import { Search, Trash2 } from 'lucide-react';
 import {
   Button,
   Card,
-  DatePicker,
   Input,
   Modal,
   Select,
@@ -27,6 +25,12 @@ import ReplacementHistoryCard from './ReplacementHistoryCard';
 
 const { TextArea } = Input;
 const WAREHOUSE_OPTIONS = ['北京总部仓', '北京影像器材仓'];
+const WAREHOUSE_MANAGER_MAP = {
+  北京总部仓: 'SOHU53-库房管理员-搜狐媒体',
+  北京影像器材仓: 'SOHU54-库房管理员-新媒体',
+};
+const ASSET_TAG_OPTIONS = ['无', '限制出库', '待维修', '待数据清理'];
+const INVENTORY_PERIOD_ACTIVE = true;
 const CITY_OPTIONS = ['北京市', '上海市'];
 const BUILDING_OPTIONS = {
   北京市: ['搜狐媒体大厦', '中关村园区'],
@@ -60,39 +64,44 @@ function RequiredLabel({ children }) {
 export default function ReplacementHandlingDetail({ application, onBack, onUpdated }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [returnWarehouse, setReturnWarehouse] = useState(application.returnProcess.warehouse || '北京总部仓');
+  const [returnAssetTag, setReturnAssetTag] = useState(application.returnProcess.assetMark || '');
+  const [returnUsageNote, setReturnUsageNote] = useState(application.returnProcess.usageNote || '');
   const [issueWarehouse, setIssueWarehouse] = useState(application.issueProcess.warehouse || '北京总部仓');
   const [newAsset, setNewAsset] = useState(application.newAsset || null);
   const [city, setCity] = useState(application.issueProcess.city || application.oldAsset.city || '北京市');
   const [building, setBuilding] = useState(application.issueProcess.building || application.oldAsset.building || '搜狐媒体大厦');
   const [floor, setFloor] = useState(application.issueProcess.floor || application.oldAsset.floor || '8层');
-  const [returnDate, setReturnDate] = useState(application.issueProcess.returnDate || dayjs().add(30, 'day').format('YYYY-MM-DD'));
   const [purpose, setPurpose] = useState(application.issueProcess.purpose || '');
   const [usageNote, setUsageNote] = useState(application.issueProcess.usageNote || '');
-  const [opinion, setOpinion] = useState('同意');
+  const [opinion, setOpinion] = useState('');
   const [assetModalOpen, setAssetModalOpen] = useState(false);
-  const [transferOpen, setTransferOpen] = useState(false);
-  const [transferPerson, setTransferPerson] = useState('');
+  const [addSignOpen, setAddSignOpen] = useState(false);
+  const [addSignPerson, setAddSignPerson] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setReturnWarehouse(application.returnProcess.warehouse || '北京总部仓');
+    setReturnAssetTag(application.returnProcess.assetMark || '');
+    setReturnUsageNote(application.returnProcess.usageNote || '');
     setIssueWarehouse(application.issueProcess.warehouse || '北京总部仓');
     setNewAsset(application.newAsset || null);
     setCity(application.issueProcess.city || application.oldAsset.city || '北京市');
     setBuilding(application.issueProcess.building || application.oldAsset.building || '搜狐媒体大厦');
     setFloor(application.issueProcess.floor || application.oldAsset.floor || '8层');
-    setReturnDate(application.issueProcess.returnDate || dayjs().add(30, 'day').format('YYYY-MM-DD'));
     setPurpose(application.issueProcess.purpose || '');
     setUsageNote(application.issueProcess.usageNote || '');
-    setOpinion('同意');
+    setOpinion('');
   }, [application]);
 
   const oldInboundDone = application.returnProcess.inboundStatus === '已入库';
   const oldConfirmed = application.returnProcess.confirmStatus === '已确认';
+  const oldWaitingConfirmation = application.returnProcess.confirmStatus === '待确认';
   const newConfirmed = application.issueProcess.confirmStatus === '已确认';
-  const startDate = application.issueProcess.startDate
-    || application.returnProcess.inboundAt?.slice(0, 10)
-    || application.applyDate;
+  const newWaitingConfirmation = application.issueProcess.confirmStatus === '待确认';
+  const returnManager = WAREHOUSE_MANAGER_MAP[returnWarehouse] || '-';
+  const confirmedReturnDate = application.returnProcess.confirmedAt
+    ? formatDateText(application.returnProcess.confirmedAt)
+    : '-';
 
   const processUpdate = (action, successText, closeAfter = false) => {
     setSubmitting(true);
@@ -105,6 +114,19 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
     }
   };
 
+  const persistReturnData = () => {
+    updateAssetReplacementApplication(application.id, (record) => ({
+      ...record,
+      returnProcess: {
+        ...record.returnProcess,
+        warehouse: returnWarehouse,
+        responsiblePerson: returnManager,
+        assetMark: returnAssetTag,
+        usageNote: returnUsageNote,
+      },
+    }));
+  };
+
   const persistNewAssetData = () => {
     updateAssetReplacementApplication(application.id, (record) => ({
       ...record,
@@ -115,8 +137,6 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
         city,
         building,
         floor,
-        startDate,
-        returnDate,
         purpose,
         usageNote,
       },
@@ -125,39 +145,55 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
 
   const requestOldConfirmation = () => {
     processUpdate(() => {
-      persistNewAssetData();
-      updateAssetReplacementApplication(application.id, (record) => ({
-        ...record,
-        returnProcess: { ...record.returnProcess, warehouse: returnWarehouse },
-      }));
+      persistReturnData();
       requestReplacementConfirmation(application.id, '旧资产退回', '狐小e扫码确认');
-    }, '已发起旧资产退回确认，请员工完成确认');
+    }, '已发起旧资产退库确认，请员工完成确认');
   };
 
   const executeInbound = () => {
     if (!oldConfirmed) {
-      messageApi.warning('员工未完成旧资产退回确认');
+      messageApi.warning('员工未完成旧资产退库确认');
       return;
     }
-    processUpdate(
-      () => executeReplacementInbound(application.id, returnWarehouse),
-      '旧资产已入库，可继续办理待发放资产'
-    );
+    processUpdate(() => {
+      persistReturnData();
+      executeReplacementInbound(application.id, returnWarehouse);
+    }, '旧资产退库确认完成，已入库，可继续办理待发放资产');
+  };
+
+  const handleReturnConfirm = () => {
+    if (oldInboundDone) {
+      messageApi.info('旧资产退库已确认完成');
+      return;
+    }
+    if (oldWaitingConfirmation) {
+      messageApi.warning('员工退库确认尚未完成');
+      return;
+    }
+    if (!oldConfirmed) {
+      requestOldConfirmation();
+      return;
+    }
+    executeInbound();
   };
 
   const requestNewConfirmation = () => {
+    if (!oldInboundDone) {
+      messageApi.warning('请先完成旧资产退库确认');
+      return;
+    }
     if (!newAsset) {
       messageApi.warning('请选择待发放资产');
       return;
     }
-    if (!issueWarehouse || !city || !building || !floor || !returnDate || !purpose) {
+    if (!issueWarehouse || !city || !building || !floor || !purpose) {
       messageApi.warning('请补齐待发放资产信息');
       return;
     }
     processUpdate(() => {
       persistNewAssetData();
       requestReplacementConfirmation(application.id, '新资产领取', '狐小e扫码确认');
-    }, '已发起新资产领取确认，请员工完成确认');
+    }, '已发起新资产领用确认，请员工完成确认');
   };
 
   const executeOutbound = () => {
@@ -166,7 +202,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
       return;
     }
     if (!newConfirmed) {
-      messageApi.warning('员工未完成新资产领取确认');
+      messageApi.warning('员工未完成新资产领用确认');
       return;
     }
     processUpdate(
@@ -177,25 +213,25 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
           city,
           building,
           floor,
-          startDate,
-          returnDate,
           purpose,
           usageNote,
         },
       }),
-      '新资产已出库，资产更换流程完成',
+      '新资产领用确认完成，已出库，资产更换流程完成',
       true
     );
   };
 
-  const proceed = () => {
-    if (!oldInboundDone) {
-      if (!oldConfirmed) requestOldConfirmation();
-      else executeInbound();
+  const handleIssueConfirm = () => {
+    if (newWaitingConfirmation) {
+      messageApi.warning('员工领用确认尚未完成');
       return;
     }
-    if (!newConfirmed) requestNewConfirmation();
-    else executeOutbound();
+    if (!newConfirmed) {
+      requestNewConfirmation();
+      return;
+    }
+    executeOutbound();
   };
 
   const reject = () => {
@@ -244,7 +280,20 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
           </DetailGrid>
         </Card>
 
-        <Card title={<SectionTitle>更换资产信息</SectionTitle>} size="small">
+        <Card
+          title={<SectionTitle>更换物资信息</SectionTitle>}
+          size="small"
+          extra={(
+            <Button
+              type="primary"
+              loading={submitting}
+              disabled={oldWaitingConfirmation || oldInboundDone}
+              onClick={handleReturnConfirm}
+            >
+              退库确认
+            </Button>
+          )}
+        >
           <DetailGrid>
             <DetailItem label="资产标签号">{oldAsset.assetTag || '-'}</DetailItem>
             <DetailItem label="SN号">{oldAsset.sn || '-'}</DetailItem>
@@ -255,28 +304,69 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
             <DetailItem label="城市">{oldAsset.city || '-'}</DetailItem>
             <DetailItem label="建筑">{oldAsset.building || '-'}</DetailItem>
             <DetailItem label="楼层">{oldAsset.floor || '-'}</DetailItem>
-            <DetailItem label={<RequiredLabel>退回仓库</RequiredLabel>} span={3}>
+            <DetailItem label="鉴定结果"><StatusTag value={application.mis.result} type="business" /></DetailItem>
+            <DetailItem label="鉴定说明" span={2}>{application.mis.description || '-'}</DetailItem>
+            <DetailItem label="备注" span={3}>{oldAsset.note || '-'}</DetailItem>
+            <DetailItem label="耗材信息" span={3}>{oldAsset.consumables || '-'}</DetailItem>
+            <DetailItem label={<RequiredLabel>仓库</RequiredLabel>}>
               <Select
-                style={{ width: 320, maxWidth: '100%' }}
+                className="w-full"
                 value={returnWarehouse}
                 disabled={oldInboundDone}
                 options={WAREHOUSE_OPTIONS.map((value) => ({ label: value, value }))}
                 onChange={setReturnWarehouse}
               />
             </DetailItem>
-            <DetailItem label="备注" span={3}>{oldAsset.note || '-'}</DetailItem>
-            <DetailItem label="耗材信息" span={3}>{oldAsset.consumables || '-'}</DetailItem>
-            <DetailItem label="鉴定结果"><StatusTag value={application.mis.result} type="business" /></DetailItem>
-            <DetailItem label="鉴定说明" span={2}>{application.mis.description || '-'}</DetailItem>
+            <DetailItem label="责任人">{returnManager}</DetailItem>
+            <DetailItem label="资产标签">
+              <Select
+                className="w-full"
+                allowClear
+                value={returnAssetTag || undefined}
+                disabled={oldInboundDone}
+                options={ASSET_TAG_OPTIONS.map((value) => ({ label: value, value }))}
+                onChange={(value) => setReturnAssetTag(value || '')}
+              />
+            </DetailItem>
+            <DetailItem label="退库日期">{confirmedReturnDate}</DetailItem>
+            <DetailItem label="使用说明" span={2}>
+              <Input
+                maxLength={200}
+                value={returnUsageNote}
+                disabled={oldInboundDone}
+                placeholder="请输入使用说明"
+                onChange={(event) => setReturnUsageNote(event.target.value)}
+              />
+            </DetailItem>
+            {INVENTORY_PERIOD_ACTIVE && (
+              <>
+                <DetailItem label="盘点人">{oldAsset.inventoryPerson || '-'}</DetailItem>
+                <DetailItem label="盘点状态">
+                  {oldAsset.inventoryStatus ? <StatusTag value={oldAsset.inventoryStatus} type="business" /> : '-'}
+                </DetailItem>
+              </>
+            )}
           </DetailGrid>
         </Card>
 
         <Card
           title={<SectionTitle>待发放资产信息</SectionTitle>}
           size="small"
-          extra={newAsset ? (
-            <Button danger type="text" icon={<Trash2 size={14} />} onClick={() => setNewAsset(null)}>删除</Button>
-          ) : null}
+          extra={(
+            <Space size={8}>
+              {newAsset && (
+                <Button danger type="text" icon={<Trash2 size={14} />} onClick={() => setNewAsset(null)}>删除</Button>
+              )}
+              <Button
+                type="primary"
+                loading={submitting}
+                disabled={!oldInboundDone || newWaitingConfirmation}
+                onClick={handleIssueConfirm}
+              >
+                领用确认
+              </Button>
+            </Space>
+          )}
         >
           <DetailGrid>
             <DetailItem label={<RequiredLabel>仓库</RequiredLabel>}>
@@ -335,16 +425,6 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
                 onChange={setFloor}
               />
             </DetailItem>
-            <DetailItem label={<RequiredLabel>开始日期</RequiredLabel>}>
-              <Input readOnly value={formatDateText(startDate)} />
-            </DetailItem>
-            <DetailItem label={<RequiredLabel>归还日期</RequiredLabel>}>
-              <DatePicker
-                className="w-full"
-                value={returnDate ? dayjs(returnDate) : null}
-                onChange={(value) => setReturnDate(value ? value.format('YYYY-MM-DD') : '')}
-              />
-            </DetailItem>
             <DetailItem label={<RequiredLabel>资产用途</RequiredLabel>}>
               <Select
                 className="w-full"
@@ -354,15 +434,22 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
                 onChange={setPurpose}
               />
             </DetailItem>
-            <DetailItem label="使用说明" span={3}>
-              <TextArea
-                rows={2}
-                maxLength={400}
-                showCount
+            <DetailItem label="使用说明" span={2}>
+              <Input
+                maxLength={200}
                 value={usageNote}
+                placeholder="请输入使用说明"
                 onChange={(event) => setUsageNote(event.target.value)}
               />
             </DetailItem>
+            {INVENTORY_PERIOD_ACTIVE && (
+              <>
+                <DetailItem label="盘点人">{newAsset?.inventoryPerson || '-'}</DetailItem>
+                <DetailItem label="盘点状态">
+                  {newAsset?.inventoryStatus ? <StatusTag value={newAsset.inventoryStatus} type="business" /> : '-'}
+                </DetailItem>
+              </>
+            )}
           </DetailGrid>
         </Card>
 
@@ -374,14 +461,13 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
             maxLength={400}
             showCount
             value={opinion}
-            placeholder="同意时非必填，驳回时必填"
+            placeholder="驳回时必填"
             onChange={(event) => setOpinion(event.target.value)}
           />
           <div className="mt-3 flex justify-center gap-3">
-            <Button type="primary" loading={submitting} onClick={proceed}>同意</Button>
-            <Button danger onClick={reject}>驳回</Button>
+            <Button danger disabled={submitting} onClick={reject}>驳回</Button>
             <Button onClick={onBack}>返回</Button>
-            <Button onClick={() => setTransferOpen(true)}>转签</Button>
+            <Button onClick={() => setAddSignOpen(true)}>加签</Button>
           </div>
         </ReplacementHistoryCard>
       </Space>
@@ -400,25 +486,25 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
       />
 
       <Modal
-        title="转签"
-        open={transferOpen}
-        okText="确认转签"
+        title="加签"
+        open={addSignOpen}
+        okText="确认加签"
         cancelText="取消"
         onOk={() => {
-          if (!transferPerson.trim()) {
-            messageApi.warning('请输入转签人员');
+          if (!addSignPerson.trim()) {
+            messageApi.warning('请输入加签人员');
             return;
           }
-          messageApi.success(`已转签：${transferPerson.trim()}`);
-          setTransferOpen(false);
-          setTransferPerson('');
+          messageApi.success(`已加签：${addSignPerson.trim()}`);
+          setAddSignOpen(false);
+          setAddSignPerson('');
         }}
         onCancel={() => {
-          setTransferOpen(false);
-          setTransferPerson('');
+          setAddSignOpen(false);
+          setAddSignPerson('');
         }}
       >
-        <Input value={transferPerson} placeholder="请输入姓名或工号" onChange={(event) => setTransferPerson(event.target.value)} />
+        <Input value={addSignPerson} placeholder="请输入姓名或工号" onChange={(event) => setAddSignPerson(event.target.value)} />
       </Modal>
     </>
   );
