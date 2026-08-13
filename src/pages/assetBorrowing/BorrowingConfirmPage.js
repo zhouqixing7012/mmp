@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { ScanLine } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert,
   Button,
   Card,
-  Descriptions,
   Empty,
   Input,
   QRCode,
@@ -14,6 +12,7 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import { BORROW_CUSTODY_TEXT } from '../../mock/assetBorrowingMock';
 import {
   getBorrowingApplicationByNode,
@@ -98,9 +97,9 @@ export default function BorrowingConfirmPage() {
 
   if (!application) {
     return (
-      <div className="min-h-screen bg-slate-100 p-4">
+      <>
         {contextHolder}
-        <Card>
+        <Card size="small">
           {completed ? (
             <Alert type="success" showIcon message="借用确认已完成" description="库管员可返回借用发放页面执行出库。" />
           ) : (
@@ -110,24 +109,24 @@ export default function BorrowingConfirmPage() {
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4">
+    <>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="flex items-center justify-between">
           <Typography.Title level={4} className="mb-0">员工借用确认</Typography.Title>
           <Typography.Text type="secondary">借用单号：{application.id}</Typography.Text>
         </div>
 
         <Card title="申请人信息" size="small">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="使用人">{application.applicant.id}-{application.applicant.name}</Descriptions.Item>
-            <Descriptions.Item label="部门" span={2}>{formatDepartment(application.applicant.department)}</Descriptions.Item>
-          </Descriptions>
+          <DetailGrid>
+            <DetailItem label="使用人">{application.applicant.id}-{application.applicant.name}</DetailItem>
+            <DetailItem label="部门" span={2}>{formatDepartment(application.applicant.department)}</DetailItem>
+          </DetailGrid>
         </Card>
 
         <Card title="借用资产明细" size="small">
@@ -153,10 +152,13 @@ export default function BorrowingConfirmPage() {
         </Card>
 
         <Card title="刷卡/扫码确认" size="small">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_220px] lg:items-center">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px] lg:items-center">
             <div>
               <Typography.Text strong>刷卡借用确认</Typography.Text>
-              <Space.Compact className="mt-3 w-full max-w-xl">
+              <Typography.Paragraph type="secondary" className="mt-1 mb-3">
+                请刷员工卡，或由管理员录入借用人员工工号后确认。
+              </Typography.Paragraph>
+              <Space.Compact className="w-full max-w-xl">
                 <Input
                   value={identityValue}
                   placeholder="请刷员工卡或输入申请人工号"
@@ -173,10 +175,11 @@ export default function BorrowingConfirmPage() {
               </Space.Compact>
             </div>
 
-            <div className="flex flex-col items-center justify-center gap-3 border-l border-slate-100 pl-0 lg:pl-6">
-              <QRCode value={`asset-borrowing:${application.id}:${application.applicant.id}`} size={150} />
+            <div className="flex flex-col items-center justify-center">
+              <QRCode value={`asset-borrowing:${application.id}:${application.applicant.id}`} size={156} />
+              <Typography.Text strong className="mt-3">狐小 e 扫码确认</Typography.Text>
               <Button
-                icon={<ScanLine size={14} />}
+                className="mt-3"
                 loading={submitting}
                 onClick={() => confirm('狐小e扫码确认')}
               >
@@ -186,10 +189,10 @@ export default function BorrowingConfirmPage() {
           </div>
         </Card>
 
-        <div className="flex justify-center rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="flex justify-center py-2">
           <Button onClick={() => navigate('/yewurules', { state: { workspace: '借用发放' } })}>返回</Button>
         </div>
       </Space>
-    </div>
+    </>
   );
 }
