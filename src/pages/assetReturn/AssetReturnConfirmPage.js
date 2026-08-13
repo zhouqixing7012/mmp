@@ -1,70 +1,28 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert,
   Button,
   Card,
-  Descriptions,
   Empty,
   Input,
+  QRCode,
   Space,
   Table,
   Typography,
   message as antdMessage,
 } from 'antd';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { confirmReturnEmployee, getActiveReturnConfirmation } from '../../services/assetReturnService';
 import { formatDepartment } from '../../utils/displayFormat';
 
-const QR_SIZE = 21;
-
-function isFinderCell(row, column, startRow, startColumn) {
-  const localRow = row - startRow;
-  const localColumn = column - startColumn;
-  if (localRow < 0 || localRow > 6 || localColumn < 0 || localColumn > 6) return false;
-  const border = localRow === 0 || localRow === 6 || localColumn === 0 || localColumn === 6;
-  const core = localRow >= 2 && localRow <= 4 && localColumn >= 2 && localColumn <= 4;
-  return border || core;
-}
-
-function buildQrCells(seed = '') {
-  const safeSeed = seed || 'asset-return-confirm';
-  return Array.from({ length: QR_SIZE * QR_SIZE }, (_, index) => {
-    const row = Math.floor(index / QR_SIZE);
-    const column = index % QR_SIZE;
-    const finder = isFinderCell(row, column, 0, 0)
-      || isFinderCell(row, column, 0, QR_SIZE - 7)
-      || isFinderCell(row, column, QR_SIZE - 7, 0);
-    if (finder) return true;
-    if (row === 6 || column === 6) return (row + column) % 2 === 0;
-    const code = safeSeed.charCodeAt((row * QR_SIZE + column) % safeSeed.length);
-    return ((row * 11) + (column * 7) + code) % 9 < 4;
-  });
-}
-
-function ConfirmationQr({ seed, disabled, onConfirm }) {
-  const cells = useMemo(() => buildQrCells(seed), [seed]);
-
+function SectionTitle({ children }) {
   return (
-    <div className="flex flex-col items-center">
-      <Typography.Text strong>扫码确认</Typography.Text>
-      <button
-        type="button"
-        aria-label="扫码确认"
-        disabled={disabled}
-        className="mt-3 rounded-md border border-slate-200 bg-white p-3 shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-        onClick={onConfirm}
-      >
-        <div
-          className="grid h-[168px] w-[168px] bg-white"
-          style={{ gridTemplateColumns: `repeat(${QR_SIZE}, minmax(0, 1fr))` }}
-        >
-          {cells.map((dark, index) => (
-            <span key={index} className={dark ? 'bg-black' : 'bg-white'} />
-          ))}
-        </div>
-      </button>
-    </div>
+    <span className="inline-flex items-center gap-2">
+      <span className="inline-block h-3 w-1 rounded-sm bg-blue-500" />
+      <span>{children}</span>
+    </span>
   );
 }
 
@@ -94,7 +52,7 @@ export default function AssetReturnConfirmPage() {
 
   if (!application) {
     return (
-      <div className="min-h-screen bg-slate-100 p-4">
+      <>
         {contextHolder}
         <Card size="small">
           <Empty description="暂无待确认的资产退库单" />
@@ -102,103 +60,107 @@ export default function AssetReturnConfirmPage() {
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
-      </div>
+      </>
     );
   }
 
   const confirmed = application.handling.confirmationStatus === '已确认';
   const asset = application.asset;
+  const rows = asset ? [{ ...asset, returnReason: application.reason || '-', usageNote: application.handling.usageNote || '-' }] : [];
   const columns = [
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
-    { title: '资产标签号', dataIndex: 'assetTag', width: 160, render: (value) => value || '-' },
+    { title: '资产标签号', dataIndex: 'assetTag', width: 170, render: (value) => value || '-' },
     { title: '物资说明', dataIndex: 'assetDesc', width: 250, render: (value) => value || '-' },
-    { title: '配置', dataIndex: 'config', width: 260, render: (value) => value || '-' },
+    { title: '配置', dataIndex: 'config', width: 280, render: (value) => value || '-' },
     { title: '数量', dataIndex: 'quantity', width: 90, align: 'center', render: (value) => value || 1 },
-    { title: '退库原因', width: 220, render: () => application.reason || '-' },
-    { title: '使用说明', width: 240, render: () => application.handling.usageNote || '-' },
+    { title: '退库原因', dataIndex: 'returnReason', width: 220, render: (value) => value || '-' },
+    { title: '使用说明', dataIndex: 'usageNote', width: 240, render: (value) => value || '-' },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4">
+    <>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="flex items-center justify-between">
           <Typography.Title level={4} className="mb-0">员工退库确认</Typography.Title>
+          <Typography.Text type="secondary">退库单号：{application.id}</Typography.Text>
         </div>
 
-        <Card size="small" title="退库确认信息">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="使用人">
-              {application.applicant.id}-{application.applicant.name}
-            </Descriptions.Item>
-            <Descriptions.Item label="部门" span={2}>
-              {formatDepartment(application.applicant.department)}
-            </Descriptions.Item>
-          </Descriptions>
+        <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>
+          <DetailGrid>
+            <DetailItem label="申请人">{application.applicant.id}-{application.applicant.name}</DetailItem>
+            <DetailItem label="部门" span={2}>{formatDepartment(application.applicant.department)}</DetailItem>
+          </DetailGrid>
+        </Card>
 
-          <div className="mb-3 mt-4 text-sm font-medium text-slate-700">退库物资明细</div>
+        <Card size="small" title={<SectionTitle>退库资产明细</SectionTitle>}>
           <Table
             rowKey="id"
             columns={columns}
-            dataSource={asset ? [asset] : []}
+            dataSource={rows}
             pagination={false}
             size="small"
             bordered
-            scroll={{ x: 1300 }}
+            scroll={{ x: 1320 }}
             locale={{ emptyText: <Empty description="暂无退库资产信息" /> }}
           />
         </Card>
 
-        <Card size="small" title="退库确认提示">
-          <Typography.Paragraph type="danger" strong className="mb-0">
-            提示：请核对以上资产信息，确认无误后进行刷卡确认！
+        <Card size="small" title={<SectionTitle>刷卡/扫码确认</SectionTitle>}>
+          <Typography.Paragraph type="danger" strong className="mb-4">
+            提示：请核对以上退库资产信息，确认无误后通过刷卡或狐小 e 扫码完成退库确认。
           </Typography.Paragraph>
-        </Card>
 
-        <Card size="small" title="刷卡/扫码确认">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center">
             <div>
               <Typography.Text strong>刷卡退库确认</Typography.Text>
-              <Space.Compact className="mt-3 w-full max-w-xl">
+              <Typography.Paragraph type="secondary" className="mt-1 mb-3">
+                请刷员工卡，或由管理员录入申请人员工工号后确认。
+              </Typography.Paragraph>
+              <Space.Compact className="w-full max-w-xl">
                 <Input
                   value={employeeId}
                   disabled={confirmed}
                   placeholder="请输入员工工号"
-                  onPressEnter={() => confirm('刷卡确认')}
+                  onPressEnter={() => confirm('刷卡/工号确认')}
                   onChange={(event) => setEmployeeId(event.target.value)}
                 />
-                <Button type="primary" disabled={confirmed} onClick={() => confirm('刷卡确认')}>确认</Button>
+                <Button type="primary" disabled={confirmed} onClick={() => confirm('刷卡/工号确认')}>确认退库</Button>
               </Space.Compact>
             </div>
 
-            <ConfirmationQr
-              seed={`${application.id}-${asset?.assetTag || ''}`}
-              disabled={confirmed}
-              onConfirm={() => confirm('狐小e扫码确认', application.applicant.id)}
-            />
+            <div className="flex flex-col items-center justify-center">
+              <QRCode value={`asset-return:${application.id}:${application.applicant.id}`} size={156} />
+              <Typography.Text strong className="mt-3">狐小 e 扫码确认</Typography.Text>
+              <Button
+                className="mt-3"
+                disabled={confirmed}
+                onClick={() => confirm('狐小 e 扫码确认', application.applicant.id)}
+              >
+                模拟扫码确认
+              </Button>
+            </div>
           </div>
 
           {confirmed && (
             <div className="mt-5">
-              <Descriptions bordered size="small" column={3}>
-                <Descriptions.Item label="识别员工工号">
-                  {application.handling.confirmationEmployeeId}（{application.applicant.name}）
-                </Descriptions.Item>
-                <Descriptions.Item label="确认时间">{application.handling.confirmationTime || '-'}</Descriptions.Item>
-                <Descriptions.Item label="确认方式">{application.handling.confirmationMethod || '-'}</Descriptions.Item>
-                <Descriptions.Item label="确认结果" span={3}>
+              <DetailGrid>
+                <DetailItem label="识别员工">{application.handling.confirmationEmployeeId}-{application.applicant.name}</DetailItem>
+                <DetailItem label="确认时间">{application.handling.confirmationTime || '-'}</DetailItem>
+                <DetailItem label="确认方式">{application.handling.confirmationMethod || '-'}</DetailItem>
+                <DetailItem label="确认结果" span={3}>
                   <StatusTag value="已确认" type="business" />
-                </Descriptions.Item>
-              </Descriptions>
+                </DetailItem>
+              </DetailGrid>
               <Alert className="mt-4" type="success" showIcon message="确认成功，库管员可继续执行资产入库" />
             </div>
           )}
         </Card>
 
-        <div className="flex justify-center rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="flex justify-center py-2">
           <Button onClick={() => navigate('/yewurules', { state: { workspace: '资产退库办理' } })}>返回</Button>
         </div>
       </Space>
-    </div>
+    </>
   );
 }
