@@ -12,12 +12,7 @@ export default function ApplicantInfoCard({ applicant, applyDate, onViewAssets }
           <Space size={8}>
             <span>{applicant.id}-{applicant.name}</span>
             {onViewAssets && (
-              <Button
-                type="link"
-                size="small"
-                className="px-0"
-                onClick={onViewAssets}
-              >
+              <Button size="small" onClick={onViewAssets}>
                 查看名下资产
               </Button>
             )}
