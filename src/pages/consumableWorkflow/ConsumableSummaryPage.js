@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -20,6 +21,10 @@ function money(value) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+function csvCell(value) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
 }
 
 function PageHeader({ title, number }) {
@@ -74,7 +79,7 @@ function DepartmentSummaryCard({ rows }) {
   );
 }
 
-function SummaryApplicationTable({ rows }) {
+function SummaryApplicationTable({ rows, onExport }) {
   const approvedRows = rows.filter((row) => row.approved);
   const totalQuantity = approvedRows.reduce((sum, row) => sum + Number(row.quantity || 0), 0);
   const totalAmount = approvedRows.reduce((sum, row) => sum + Number(row.estimatedAmount || 0), 0);
@@ -91,7 +96,11 @@ function SummaryApplicationTable({ rows }) {
     { title: 'ES建议', dataIndex: 'esAdvice', width: 170, render: (value) => value || '-' },
   ];
   return (
-    <Card size="small" title="申请明细">
+    <Card
+      size="small"
+      title="申请明细"
+      extra={<Button icon={<Download size={14} />} onClick={onExport}>导出</Button>}
+    >
       <Table
         rowKey="id"
         size="small"
@@ -138,6 +147,38 @@ export default function ConsumableSummaryPage() {
         : row
     )));
     messageApi.warning(`${record.applicant} 已标记为驳回`);
+  };
+
+  const exportApplicationDetails = () => {
+    const exportRows = rows.filter((row) => row.approved);
+    if (!exportRows.length) {
+      messageApi.warning('暂无可导出的申请明细');
+      return;
+    }
+    const headers = ['序号', '部门', '申请单号', '申请人', '物资类别', '物料说明', '采购数量', '预计费用（元）', '申请原因', 'ES建议'];
+    const csvRows = exportRows.map((row, index) => [
+      index + 1,
+      row.department,
+      row.applicationId,
+      row.applicant,
+      row.category,
+      row.materialDesc,
+      row.quantity,
+      Number(row.estimatedAmount || 0).toFixed(2),
+      row.detail || '',
+      row.esAdvice || '',
+    ]);
+    const csv = `\uFEFF${[headers, ...csvRows].map((row) => row.map(csvCell).join(',')).join('\n')}`;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `耗材汇总-${summary.id}-申请明细.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    messageApi.success(`已导出 ${exportRows.length} 条申请明细`);
   };
 
   const save = () => {
@@ -220,6 +261,9 @@ export default function ConsumableSummaryPage() {
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
         <PageHeader title="耗材汇总明细" number={summary.id} />
+        <div className="flex justify-end">
+          <Button icon={<Download size={14} />} onClick={exportApplicationDetails}>导出申请明细</Button>
+        </div>
         {groupedApplicants.map((record) => (
           <Card key={record.key} size="small">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-700">
@@ -256,7 +300,7 @@ export default function ConsumableSummaryPage() {
         <div className="mt-2 text-sm text-red-500">备注：此信息会同步至 PR 系统。</div>
       </Card>
       <DepartmentSummaryCard rows={rows} />
-      <SummaryApplicationTable rows={rows} />
+      <SummaryApplicationTable rows={rows} onExport={exportApplicationDetails} />
       <Card size="small" title="附件信息">
         <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: next }) => setFileList(next)}>
           <Button>上传附件</Button>
