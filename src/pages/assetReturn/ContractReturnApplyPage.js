@@ -104,8 +104,8 @@ export default function ContractReturnApplyPage() {
     {
       title: '号码状态',
       dataIndex: 'status',
-      width: 130,
-      render: (value) => <StatusTag value={value || '-'} type="business" />,
+      width: 140,
+      render: () => <StatusTag value="在用-使用中" type="business" />,
     },
   ];
 
@@ -152,7 +152,7 @@ export default function ContractReturnApplyPage() {
             columns={numberColumns}
             dataSource={selectedNumbers}
             pagination={false}
-            scroll={{ x: 1060 }}
+            scroll={{ x: 1080 }}
             locale={{ emptyText: <Empty description="暂未添加合约号码" /> }}
           />
         </Card>
@@ -190,7 +190,7 @@ export default function ContractReturnApplyPage() {
             },
           }}
           pagination={false}
-          scroll={{ x: 1060 }}
+          scroll={{ x: 1080 }}
           locale={{ emptyText: <Empty description="暂无本人名下合约号码" /> }}
         />
       </Modal>
