@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Card, Descriptions, Form, Input, Modal, Radio, Select, Space, Table, Tag, Typography, message as antdMessage } from 'antd';
-import { BellRing, PackageCheck, Search } from 'lucide-react';
+import { Button, Card, Descriptions, Form, Input, Modal, Radio, Select, Space, Table, Typography, message as antdMessage } from 'antd';
+import { BellRing, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import QueryBar, { QueryItem } from '../components/QueryBar';
+import StatusTag from '../components/StatusTag';
 import {
   assetClaimApplication,
   assetClaimLocationData,
@@ -185,7 +186,7 @@ export default function FrontDeskAssetClaim() {
                 </Form.Item>
               </Descriptions.Item>
               <Descriptions.Item label="实际盘点人">{selectedAsset.inventoryOwner}</Descriptions.Item>
-              <Descriptions.Item label="盘点状态"><Tag color="error">{selectedAsset.inventoryStatus}</Tag></Descriptions.Item>
+              <Descriptions.Item label="盘点状态"><StatusTag value={selectedAsset.inventoryStatus} type="business" /></Descriptions.Item>
               <Descriptions.Item label="申请配置">{selectedAsset.applyConfiguration}</Descriptions.Item>
               <Descriptions.Item label="申请物资说明" span={2}>{selectedAsset.applyMaterialDescription}</Descriptions.Item>
               <Descriptions.Item label="详细说明">{selectedAsset.detailDescription || '-'}</Descriptions.Item>
@@ -194,7 +195,7 @@ export default function FrontDeskAssetClaim() {
 
           <Card size="small">
             <div className="flex justify-center gap-3">
-              <Button type="primary" loading={submitLoading} icon={<PackageCheck size={14} />} onClick={confirmClaim}>领用确认</Button>
+              <Button type="primary" loading={submitLoading} onClick={confirmClaim}>领用确认</Button>
               <Button onClick={() => handleAction('弃领')}>弃领</Button>
               <Button onClick={() => handleAction('加签')}>加签</Button>
               <Button onClick={() => window.history.back()}>返回</Button>
@@ -204,7 +205,7 @@ export default function FrontDeskAssetClaim() {
         </Space>
       </Form>
 
-      <Modal title="物资列表" open={assetOpen} width={1180} footer={null} onCancel={() => setAssetOpen(false)}>
+      <Modal title="选择资产" open={assetOpen} width={1180} footer={null} onCancel={() => setAssetOpen(false)}>
         <QueryBar
           onQuery={() => setAppliedQuery(query)}
           onReset={() => {
@@ -219,6 +220,8 @@ export default function FrontDeskAssetClaim() {
         </QueryBar>
         <Table
           rowKey="id"
+          size="small"
+          bordered
           columns={assetColumns}
           dataSource={filteredAssets}
           pagination={{ pageSize: 10, showTotal: (total) => `共${total}项` }}
@@ -237,7 +240,7 @@ export default function FrontDeskAssetClaim() {
               setAssetOpen(false);
             }}
           >确定</Button>
-          <Button onClick={() => setAssetOpen(false)}>返回</Button>
+          <Button onClick={() => setAssetOpen(false)}>取消</Button>
         </div>
       </Modal>
     </div>
