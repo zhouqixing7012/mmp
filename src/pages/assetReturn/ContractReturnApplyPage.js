@@ -135,8 +135,13 @@ export default function ContractReturnApplyPage() {
             className="mt-3"
             type="info"
             showIcon
-            message="政策提示"
-            description="如对电话卡申领政策存在疑问，可咨询 ES 孙志强（213852），分机 010-56601892。"
+            style={{ padding: '5px 12px' }}
+            message={(
+              <span>
+                <Typography.Text strong>政策提示：</Typography.Text>
+                <Typography.Text>如对电话卡申领政策存在疑问，可咨询 ES 孙志强（213852），分机 010-56601892。</Typography.Text>
+              </span>
+            )}
           />
         </Card>
 
