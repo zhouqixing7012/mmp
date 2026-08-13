@@ -130,7 +130,7 @@ const formatCodeDesc = (record) => {
   return `${code}.${desc}`;
 };
 
-export default function AccountingScrapEdit() {
+export default function AccountingScrapEdit({ embedded = false, onBack }) {
   const [formData, setFormData] = useState({
     docNo: 'BF-202309280001',
     company: '114.新媒体',
@@ -255,6 +255,14 @@ export default function AccountingScrapEdit() {
     message.success('账面报废申请校验通过');
   };
 
+  const handleBack = () => {
+    if (embedded && onBack) {
+      onBack();
+      return;
+    }
+    window.history.back();
+  };
+
   const cityData = useMemo(() => (
     mockLocationBasicDataData
       .filter((item) => item.enabled)
@@ -296,7 +304,6 @@ export default function AccountingScrapEdit() {
 
   const pickerConfig = useMemo(() => {
     if (!selectContext) return null;
-
     const configs = {
       formCompany: {
         title: '选择公司',
@@ -621,7 +628,7 @@ export default function AccountingScrapEdit() {
   ], [floorOptions]);
 
   return (
-    <div className="min-h-screen bg-[#f5f7fa] text-gray-800 pb-24">
+    <div className={embedded ? 'text-gray-800 pb-4' : 'min-h-screen bg-[#f5f7fa] text-gray-800 pb-24'}>
       <div className="max-w-[1800px] mx-auto p-5 space-y-4">
         <div className="flex items-start justify-between gap-4 px-1">
           <Title level={3} className="!mb-0 !text-[22px]">账面报废申请单</Title>
@@ -824,9 +831,9 @@ export default function AccountingScrapEdit() {
         />
       )}
 
-      <div className="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur border-t border-[#e5e7eb] shadow-[0_-6px_20px_rgba(15,23,42,0.06)] z-40">
+      <div className={`${embedded ? 'sticky' : 'fixed left-0'} bottom-0 w-full bg-white/95 backdrop-blur border-t border-[#e5e7eb] shadow-[0_-6px_20px_rgba(15,23,42,0.06)] z-40`}>
         <div className="max-w-[1800px] mx-auto px-5 py-3 flex justify-center gap-3">
-          <Button className="min-w-[88px]">返回</Button>
+          <Button className="min-w-[88px]" onClick={handleBack}>返回</Button>
           <Button className="min-w-[88px]">保存</Button>
           <Button type="primary" className="min-w-[104px]" onClick={handleSubmit}>提交</Button>
         </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, Empty } from 'antd';
 import AssetMaintenancePage from './AssetMaintenancePage';
 import ConsumableMaintenancePage from './ConsumableMaintenancePage';
@@ -6,13 +6,18 @@ import ContractNumberMaintenancePage from './ContractNumberMaintenancePage';
 import TagPrintingPage from './TagPrintingPage';
 import EmployeeAssetInfoQueryPage from './EmployeeAssetInfoQueryPage';
 import DocumentListPage from './DocumentListPage';
+import AssetDisposalEditPage from './AssetDisposalEditPage';
+import CrossCompanyTransferEditPage from './CrossCompanyTransferEditPage';
+import ScrapApplicationEdit from '../ScrapApplicationEdit';
+import AccountingScrapEdit from '../AccountingScrapEdit';
+import './embeddedPages.css';
 
 export const ASSET_MANAGEMENT_SUB_MENUS = [
   '资产维护',
   '耗材维护',
   '合约号码维护',
   '标签打印',
-  '公司间转移',
+  '跨公司转移',
   '资产报废',
   '账面报废',
   '资产处置',
@@ -27,7 +32,17 @@ function PendingAssetManagementPage({ title }) {
   );
 }
 
+function EmbeddedPage({ children }) {
+  return <div className="assetManagement-embeddedPage">{children}</div>;
+}
+
 export function AssetManagementContent({ activeSubMenu }) {
+  const [embeddedPage, setEmbeddedPage] = useState(null);
+
+  useEffect(() => {
+    setEmbeddedPage(null);
+  }, [activeSubMenu]);
+
   if (activeSubMenu === '资产维护') {
     return <AssetMaintenancePage />;
   }
@@ -44,31 +59,87 @@ export function AssetManagementContent({ activeSubMenu }) {
     return <TagPrintingPage />;
   }
 
+  if (activeSubMenu === '跨公司转移') {
+    if (embeddedPage === 'crossCompanyTransfer') {
+      return (
+        <EmbeddedPage>
+          <CrossCompanyTransferEditPage onBack={() => setEmbeddedPage(null)} />
+        </EmbeddedPage>
+      );
+    }
+
+    return (
+      <DocumentListPage
+        title="跨公司转移"
+        createLabel="创建跨公司转移申请单"
+        onCreate={() => setEmbeddedPage('crossCompanyTransfer')}
+      />
+    );
+  }
+
   if (activeSubMenu === '资产报废') {
+    if (embeddedPage === 'assetScrap') {
+      return (
+        <EmbeddedPage>
+          <ScrapApplicationEdit embedded onBack={() => setEmbeddedPage(null)} />
+        </EmbeddedPage>
+      );
+    }
+
+    if (embeddedPage === 'scrapCrossCompanyTransfer') {
+      return (
+        <EmbeddedPage>
+          <CrossCompanyTransferEditPage
+            variant="scrap"
+            onBack={() => setEmbeddedPage(null)}
+          />
+        </EmbeddedPage>
+      );
+    }
+
     return (
       <DocumentListPage
         title="资产报废"
         createLabel="创建资产报废申请单"
-        createPath="/BaofeiShenqing"
+        onCreate={() => setEmbeddedPage('assetScrap')}
+        secondaryCreateLabel="创建跨公司转移申请单"
+        onSecondaryCreate={() => setEmbeddedPage('scrapCrossCompanyTransfer')}
       />
     );
   }
 
   if (activeSubMenu === '账面报废') {
+    if (embeddedPage === 'accountingScrap') {
+      return (
+        <EmbeddedPage>
+          <AccountingScrapEdit embedded onBack={() => setEmbeddedPage(null)} />
+        </EmbeddedPage>
+      );
+    }
+
     return (
       <DocumentListPage
         title="账面报废"
         createLabel="创建账面报废申请单"
-        createPath="/"
+        onCreate={() => setEmbeddedPage('accountingScrap')}
       />
     );
   }
 
   if (activeSubMenu === '资产处置') {
+    if (embeddedPage === 'assetDisposal') {
+      return (
+        <EmbeddedPage>
+          <AssetDisposalEditPage onBack={() => setEmbeddedPage(null)} />
+        </EmbeddedPage>
+      );
+    }
+
     return (
       <DocumentListPage
         title="资产处置"
         createLabel="创建资产处置申请单"
+        onCreate={() => setEmbeddedPage('assetDisposal')}
       />
     );
   }
@@ -90,3 +161,5 @@ export { default as ContractNumberMaintenancePage } from './ContractNumberMainte
 export { default as TagPrintingPage } from './TagPrintingPage';
 export { default as EmployeeAssetInfoQueryPage } from './EmployeeAssetInfoQueryPage';
 export { default as DocumentListPage } from './DocumentListPage';
+export { default as AssetDisposalEditPage } from './AssetDisposalEditPage';
+export { default as CrossCompanyTransferEditPage } from './CrossCompanyTransferEditPage';
