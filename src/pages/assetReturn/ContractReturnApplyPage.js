@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import {
-  Alert,
   Button,
   Card,
   Empty,
@@ -29,10 +28,16 @@ function SectionTitle({ children }) {
   );
 }
 
+function todayText() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
 export default function ContractReturnApplyPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [version, setVersion] = useState(0);
   const numbers = useMemo(() => getEmployeeContractNumbers(), [version]);
+  const applyDate = useMemo(() => todayText(), []);
   const [selectedIds, setSelectedIds] = useState([]);
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -90,19 +95,11 @@ export default function ContractReturnApplyPage() {
       <Space direction="vertical" size={16} className="w-full">
         <Typography.Title level={4} className="mb-0">合约号码退库</Typography.Title>
 
-        <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>
-          <DetailGrid>
-            <DetailItem label="申请人">213852-孙志强</DetailItem>
-            <DetailItem label="公司">搜狐新动力信息技术有限公司</DetailItem>
-            <DetailItem label="板块">集团</DetailItem>
-            <DetailItem label="部门">集团.资产管理部.员工服务中心</DetailItem>
-            <DetailItem label="办公区">北京-搜狐媒体大厦</DetailItem>
-            <DetailItem label="联系电话">138****2852</DetailItem>
-          </DetailGrid>
-        </Card>
-
         <Card size="small" title={<SectionTitle>申请信息</SectionTitle>}>
           <DetailGrid>
+            <DetailItem label="申请人">213852-孙志强</DetailItem>
+            <DetailItem label="部门">集团.资产管理部.员工服务中心</DetailItem>
+            <DetailItem label="申请日期">{applyDate}</DetailItem>
             <DetailItem label={<><span className="text-red-500">*</span> 退库原因</>} span={3}>
               <TextArea
                 rows={3}
@@ -113,16 +110,19 @@ export default function ContractReturnApplyPage() {
                 onChange={(event) => setReason(event.target.value)}
               />
             </DetailItem>
+            <DetailItem label="政策提示" span={3}>
+              <Typography.Text type="secondary">
+                如对电话卡申领政策存在疑问，可咨询 ES 孙志强（213852），分机 010-56601892。
+              </Typography.Text>
+            </DetailItem>
           </DetailGrid>
-          <Alert
-            className="mt-3"
-            type="info"
-            showIcon
-            message="如对电话卡申领政策存在疑问，可咨询 ES 孙志强（213852），分机 010-56601892。"
-          />
         </Card>
 
-        <Card size="small" title={<SectionTitle>合约号码明细</SectionTitle>} extra={<Typography.Text type="secondary">已选 {selectedIds.length} 项</Typography.Text>}>
+        <Card
+          size="small"
+          title={<SectionTitle>合约号码明细</SectionTitle>}
+          extra={<Typography.Text type="secondary">已选 {selectedIds.length} 项</Typography.Text>}
+        >
           <Table
             rowKey="id"
             size="small"
