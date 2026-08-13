@@ -115,8 +115,14 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
     }
   };
 
-  const openEmployeeConfirmation = () => {
-    navigate('/yewurules', { state: { workspace: '员工资产确认' } });
+  const openEmployeeConfirmation = (scene) => {
+    navigate('/yewurules', {
+      state: {
+        workspace: '员工资产确认',
+        replacementConfirmScene: scene,
+        replacementApplicationId: application.id,
+      },
+    });
   };
 
   const persistReturnData = () => {
@@ -153,7 +159,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
       persistReturnData();
       requestReplacementConfirmation(application.id, '旧资产退回', '狐小e扫码确认');
     }, '已发起旧资产退库确认，请员工完成确认');
-    openEmployeeConfirmation();
+    openEmployeeConfirmation('旧资产退回');
   };
 
   const executeInbound = () => {
@@ -173,7 +179,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
       return;
     }
     if (oldWaitingConfirmation) {
-      openEmployeeConfirmation();
+      openEmployeeConfirmation('旧资产退回');
       return;
     }
     if (!oldConfirmed) {
@@ -200,7 +206,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
       persistNewAssetData();
       requestReplacementConfirmation(application.id, '新资产领取', '狐小e扫码确认');
     }, '已发起新资产领用确认，请员工完成确认');
-    openEmployeeConfirmation();
+    openEmployeeConfirmation('新资产领取');
   };
 
   const executeOutbound = () => {
@@ -235,7 +241,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
       return;
     }
     if (newWaitingConfirmation) {
-      openEmployeeConfirmation();
+      openEmployeeConfirmation('新资产领取');
       return;
     }
     if (!newConfirmed) {
