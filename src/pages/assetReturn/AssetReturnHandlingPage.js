@@ -244,15 +244,9 @@ export default function AssetReturnHandlingPage() {
                 onChange={setWarehouse}
               />
             </DetailItem>
-            <DetailItem label="责任人">
-              <Input readOnly value={selected.handling.responsiblePerson || 'SOHU01-库房管理员-SOHU'} />
-            </DetailItem>
-            <DetailItem label="MIS鉴定">
-              <Input readOnly value={asset.returnMisRequired ? '是' : '否'} />
-            </DetailItem>
-            <DetailItem label="鉴定结果">
-              <Input readOnly value={selected.mis.result || '-'} />
-            </DetailItem>
+            <DetailItem label="责任人">{selected.handling.responsiblePerson || 'SOHU01-库房管理员-SOHU'}</DetailItem>
+            <DetailItem label="MIS鉴定">{asset.returnMisRequired ? '是' : '否'}</DetailItem>
+            <DetailItem label="鉴定结果">{selected.mis.result || '-'}</DetailItem>
             <DetailItem label="资产标记">
               <Select
                 className="w-full"
@@ -270,9 +264,7 @@ export default function AssetReturnHandlingPage() {
                 onChange={(value) => setReturnDate(value || dayjs())}
               />
             </DetailItem>
-            <DetailItem label="鉴定说明" span={3}>
-              <TextArea readOnly rows={2} value={selected.mis.description || '-'} />
-            </DetailItem>
+            <DetailItem label="鉴定说明" span={3}>{selected.mis.description || '-'}</DetailItem>
             <DetailItem label="使用说明" span={3}>
               <TextArea
                 rows={3}
