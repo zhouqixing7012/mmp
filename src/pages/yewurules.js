@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { Button, Input, Table } from 'antd';
@@ -53,6 +53,13 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(workspaceState || '物料大类');
   const tabs = getTabsBySubMenu(activeSubMenu);
 
+  useEffect(() => {
+    if (!workspaceState) return;
+    setActiveMenu('个人工作台');
+    setActiveSubMenu(workspaceState);
+    setActiveTab(getDefaultTabBySubMenu(workspaceState));
+  }, [workspaceState, location.key]);
+
   const handleMenuToggle = (menuKey, collapsible = true) => {
     const isClosing = collapsible && activeMenu === menuKey;
     if (menuKey === '资产管理' && !isClosing) {
@@ -84,7 +91,6 @@ export default function App() {
           {activeMenu === '个人工作台' && <WorkspaceContent activeSubMenu={activeSubMenu} />}
           {activeMenu === '资产管理' && <AssetManagementContent activeSubMenu={activeSubMenu} />}
           {activeMenu === '库存管理' && <InventoryManagementContent activeSubMenu={activeSubMenu} />}
-
           {activeMenu === '后台基础配置' && activeTab === '物料维度组合' && <MaterialComprehensiveView />}
           {activeMenu === '后台基础配置' && activeTab === '物料大类' && <MaterialCategoryView />}
           {activeMenu === '后台基础配置' && activeTab === '物料小类' && <MaterialSubCategoryView />}
@@ -92,7 +98,6 @@ export default function App() {
           {activeMenu === '后台基础配置' && activeTab === '型号' && <ModelView />}
           {activeMenu === '后台基础配置' && activeTab === '配置' && <ConfigView />}
           {activeMenu === '后台基础配置' && activeTab === 'NO服务' && <NOServiceView />}
-
           {activeMenu === '后台基础配置' && activeTab === '办公区与仓库映射' && <OfficeWarehouseMappingView />}
           {activeMenu === '后台基础配置' && activeTab === 'PS新员工领用物料映射' && <PSNewEmployeeMappingView />}
           {activeMenu === '后台基础配置' && activeTab === 'NO地点与资产地点映射' && <NOLocationMappingView />}
@@ -101,19 +106,16 @@ export default function App() {
           {activeMenu === '后台基础配置' && activeTab === '公司板块领取资产权限' && <CompanyPlateAssetAuthView />}
           {activeMenu === '后台基础配置' && activeTab === '机房资产领取权限' && <NODeviceAssetAuthView />}
           {activeMenu === '后台基础配置' && activeTab === '公司归属权限' && <CompanyBelongingAuthView />}
-
           {activeMenu === '后台基础配置' && activeTab === '仓库信息' && <WarehouseInfoView />}
           {activeMenu === '后台基础配置' && activeTab === '仓库用途' && <WarehouseUsageView />}
           {activeMenu === '后台基础配置' && activeTab === '仓库权限' && <WarehousePermissionView />}
           {activeMenu === '后台基础配置' && activeTab === '地点基础数据维护' && <LocationBasicDataView />}
           {activeMenu === '后台基础配置' && activeTab === '单据编号规则管理' && <ReceiptRuleManagementView />}
-
           {activeMenu === '后台基础配置' && activeTab === 'HR公司与财务公司映射' && <HRCompanyFinanceMappingView />}
           {activeMenu === '后台基础配置' && activeTab === '部门与成本中心映射' && <DeptCostCenterMappingView />}
           {activeMenu === '后台基础配置' && activeTab === '成本中心与板块映射' && <CostCenterPlateMappingView />}
           {activeMenu === '后台基础配置' && activeTab === '城市与业务线映射' && <CityBusinessLineMappingView />}
           {activeMenu === '后台基础配置' && activeTab === '部门与业务线映射' && <DeptBusinessLineMappingView />}
-
           {activeMenu === '后台基础配置' && activeTab === '影像器材配给方案' && <AssetAllocationRuleView />}
           {activeMenu === '后台基础配置' && activeTab === '超标规则' && <MaterialRequestLimitView />}
           {activeMenu === '后台基础配置' && activeTab === '费用账户规则' && <ExpenseAccountRuleView />}
