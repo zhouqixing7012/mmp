@@ -261,9 +261,6 @@ export default function ConsumableSummaryPage() {
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
         <PageHeader title="耗材汇总明细" number={summary.id} />
-        <div className="flex justify-end">
-          <Button icon={<Download size={14} />} onClick={exportApplicationDetails}>导出申请明细</Button>
-        </div>
         {groupedApplicants.map((record) => (
           <Card key={record.key} size="small">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-700">
