@@ -7,7 +7,10 @@ export default function WorkspaceContent({ activeSubMenu }) {
   if (!Page) return null;
 
   return (
-    <div className="workspace-content flex-1 flex flex-col relative">
+    <div
+      className="workspace-content flex-1 flex flex-col relative"
+      data-workspace-page={activeSubMenu}
+    >
       <Page />
     </div>
   );
