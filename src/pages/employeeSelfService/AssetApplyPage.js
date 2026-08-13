@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Eye, Plus, RotateCcw, Search, ShoppingCart, Trash2 } from 'lucide-react';
+import { Plus, Search, Trash2 } from 'lucide-react';
 import {
   Alert,
   Button,
+  Card,
   Empty,
   Input,
   InputNumber,
@@ -277,56 +278,61 @@ export default function EmployeeAssetApplyPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4">
+    <>
       {contextHolder}
-      {!canApply && <Alert className="mb-4" type="error" showIcon message="当前员工身份暂不支持发起物资申请" />}
-      {isPreview && overStandardCount > 0 && (
-        <Alert
-          className="mb-4"
-          type="error"
-          showIcon
-          message={`当前有 ${overStandardCount} 条申请物资超标`}
-          description="超标物资申请将自动提交至部门 7 级及以上领导审批，请确认申请内容无误后再提交。"
-        />
-      )}
+      <Space direction="vertical" size={16} className="w-full">
+        <Typography.Title level={4} className="mb-0">物资申请</Typography.Title>
 
-      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <Space>
-            <ShoppingCart size={18} className="text-blue-600" />
-            <span className="font-medium text-slate-800">{isPreview ? '物资申请预览' : '本次申请明细'}</span>
-            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">{selectedCount} 件</span>
-          </Space>
-          {!isPreview && (
-            <Button type="primary" icon={<Plus size={14} />} disabled={!canApply} onClick={() => setStoreOpen(true)}>
-              添加物资
-            </Button>
+        {!canApply && <Alert type="error" showIcon message="当前员工身份暂不支持发起物资申请" />}
+        {isPreview && overStandardCount > 0 && (
+          <Alert
+            type="error"
+            showIcon
+            message={`当前有 ${overStandardCount} 条申请物资超标`}
+            description="超标物资申请将自动提交至部门 7 级及以上领导审批，请确认申请内容无误后再提交。"
+          />
+        )}
+
+        <Card
+          size="small"
+          title={isPreview ? '物资申请预览' : '本次申请明细'}
+          extra={(
+            <Space size={12}>
+              <Typography.Text type="secondary">共 {selectedCount} 件</Typography.Text>
+              {!isPreview && (
+                <Button type="primary" icon={<Plus size={14} />} disabled={!canApply} onClick={() => setStoreOpen(true)}>
+                  添加物资
+                </Button>
+              )}
+            </Space>
           )}
-        </div>
+        >
+          <Table
+            rowKey="id"
+            size="small"
+            bordered
+            columns={columns}
+            dataSource={materials}
+            pagination={false}
+            scroll={{ x: 1240 }}
+            locale={{ emptyText: <Empty description="请点击右上角“添加物资”选择申请物资" /> }}
+          />
 
-        <Table
-          rowKey="id"
-          columns={columns}
-          dataSource={materials}
-          pagination={false}
-          scroll={{ x: 1240 }}
-          locale={{ emptyText: <Empty description="请点击右上角“添加物资”选择申请物资" /> }}
-        />
-
-        <div className="flex justify-center gap-3 border-t border-slate-100 bg-white px-5 py-4">
-          {isPreview ? (
-            <>
-              <Button icon={<ArrowLeft size={14} />} onClick={() => setIsPreview(false)}>上一步</Button>
-              <Button type="primary" loading={submitLoading} onClick={submitApplication}>提交</Button>
-            </>
-          ) : (
-            <>
-              <Button type="primary" icon={<Eye size={14} />} disabled={!canApply} onClick={() => validate() && setIsPreview(true)}>预览</Button>
-              <Button icon={<RotateCcw size={14} />} onClick={returnToWorkspace}>返回</Button>
-            </>
-          )}
-        </div>
-      </section>
+          <div className="mt-4 flex justify-center gap-3">
+            {isPreview ? (
+              <>
+                <Button onClick={() => setIsPreview(false)}>上一步</Button>
+                <Button type="primary" loading={submitLoading} onClick={submitApplication}>提交</Button>
+              </>
+            ) : (
+              <>
+                <Button type="primary" disabled={!canApply} onClick={() => validate() && setIsPreview(true)}>预览</Button>
+                <Button onClick={returnToWorkspace}>返回</Button>
+              </>
+            )}
+          </div>
+        </Card>
+      </Space>
 
       <Modal title="申请须知" open={noticeOpen} closable={false} maskClosable={false} keyboard={false} footer={null}>
         {APPLICATION_NOTICE.map((item, index) => (
@@ -351,6 +357,6 @@ export default function EmployeeAssetApplyPage() {
           setRelatedMaterialId(null);
         }}
       />
-    </div>
+    </>
   );
 }
