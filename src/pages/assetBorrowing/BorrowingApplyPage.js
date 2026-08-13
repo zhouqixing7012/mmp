@@ -208,14 +208,8 @@ export default function BorrowingApplyPage() {
   const columns = [
     {
       title: '资产说明',
-      dataIndex: 'assetDesc',
       width: 240,
-      render: (value, record) => (
-        <div>
-          <div className="font-medium text-slate-800">{value}</div>
-          <Typography.Text type="secondary">{record.config}</Typography.Text>
-        </div>
-      ),
+      render: (_, record) => `${record.category || '-'}\.${record.subCategory || '-'}`,
     },
     {
       title: '借用数量',
