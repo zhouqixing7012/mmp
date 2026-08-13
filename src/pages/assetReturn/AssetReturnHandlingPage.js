@@ -5,7 +5,6 @@ import {
   Button,
   Card,
   DatePicker,
-  Descriptions,
   Empty,
   Input,
   Modal,
@@ -16,6 +15,7 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { RETURN_WAREHOUSES } from '../../mock/assetReturnMock';
 import {
@@ -32,6 +32,15 @@ import ReturnAttachmentCard from './ReturnAttachmentCard';
 const { TextArea } = Input;
 const HANDLING_NODE = 'ES退库办理';
 const HANDLING_UPLOADER = { id: '119039', name: '119039-刘建' };
+
+function SectionTitle({ children }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="inline-block h-3 w-1 rounded-sm bg-blue-500" />
+      <span>{children}</span>
+    </span>
+  );
+}
 
 export default function AssetReturnHandlingPage() {
   const navigate = useNavigate();
@@ -134,20 +143,21 @@ export default function AssetReturnHandlingPage() {
 
   if (!selected) {
     return (
-      <div className="min-h-screen bg-slate-100 p-4">
+      <>
         {contextHolder}
-        <Card>
+        <Card size="small">
           <Empty description="暂无资产退库办理待办" />
           <div className="mt-4 flex justify-center">
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
-      </div>
+      </>
     );
   }
 
   const asset = selected.asset;
   const componentCount = asset.component && asset.component !== '-' ? 1 : 0;
+
   const repairColumns = [
     { title: '维修单号', dataIndex: 'orderNo', width: 170 },
     { title: '维修时间', dataIndex: 'repairTime', width: 170 },
@@ -155,6 +165,7 @@ export default function AssetReturnHandlingPage() {
     { title: '维修结果', dataIndex: 'repairResult', width: 240 },
     { title: '维修状态', dataIndex: 'status', width: 100, render: (value) => <StatusTag value={value} type="business" /> },
   ];
+
   const repairRecords = [
     {
       id: 'repair-1',
@@ -175,74 +186,74 @@ export default function AssetReturnHandlingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4">
+    <>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
+        <div className="flex items-center justify-between">
           <Typography.Title level={4} className="mb-0">资产退库办理</Typography.Title>
           <Typography.Text type="secondary">申请单号：{selected.id}</Typography.Text>
         </div>
 
-        <Card size="small" title="申请人信息">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="申请人">{selected.applicant.id}-{selected.applicant.name}</Descriptions.Item>
-            <Descriptions.Item label="申请日期">{formatDateText(selected.applyTime)}</Descriptions.Item>
-            <Descriptions.Item label="公司">{selected.applicant.company || '-'}</Descriptions.Item>
-            <Descriptions.Item label="板块">{selected.applicant.block || '-'}</Descriptions.Item>
-            <Descriptions.Item label="办公区">{selected.applicant.officeArea || '-'}</Descriptions.Item>
-            <Descriptions.Item label="联系电话">{selected.applicant.phone || '-'}</Descriptions.Item>
-            <Descriptions.Item label="邮箱">{selected.applicant.email || '-'}</Descriptions.Item>
-            <Descriptions.Item label="退库类型">{selected.returnType || '-'}</Descriptions.Item>
-            <Descriptions.Item label="部门">{formatDepartment(selected.applicant.department)}</Descriptions.Item>
-            <Descriptions.Item label="退库原因" span={3}>{selected.reason || '-'}</Descriptions.Item>
-          </Descriptions>
+        <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>
+          <DetailGrid>
+            <DetailItem label="申请人">{selected.applicant.id}-{selected.applicant.name}</DetailItem>
+            <DetailItem label="申请日期">{formatDateText(selected.applyTime)}</DetailItem>
+            <DetailItem label="公司">{selected.applicant.company || '-'}</DetailItem>
+            <DetailItem label="板块">{selected.applicant.block || '-'}</DetailItem>
+            <DetailItem label="办公区">{selected.applicant.officeArea || '-'}</DetailItem>
+            <DetailItem label="联系电话">{selected.applicant.phone || '-'}</DetailItem>
+            <DetailItem label="邮箱">{selected.applicant.email || '-'}</DetailItem>
+            <DetailItem label="退库类型">{selected.returnType || '-'}</DetailItem>
+            <DetailItem label="部门">{formatDepartment(selected.applicant.department)}</DetailItem>
+            <DetailItem label="退库原因" span={3}>{selected.reason || '-'}</DetailItem>
+          </DetailGrid>
         </Card>
 
-        <Card size="small" title="退库资产信息">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="资产标签号">{asset.assetTag || '-'}</Descriptions.Item>
-            <Descriptions.Item label="SN号">{asset.sn || '-'}</Descriptions.Item>
-            <Descriptions.Item label="资产说明">{asset.assetDesc || '-'}</Descriptions.Item>
-            <Descriptions.Item label="配置">{asset.config || '-'}</Descriptions.Item>
-            <Descriptions.Item label="资产状态"><StatusTag value={asset.status} type="business" /></Descriptions.Item>
-            <Descriptions.Item label="资产用途">{asset.purpose || '-'}</Descriptions.Item>
-            <Descriptions.Item label="部件数量">{componentCount}</Descriptions.Item>
-            <Descriptions.Item label="城市">{asset.city || '-'}</Descriptions.Item>
-            <Descriptions.Item label="建筑">{asset.building || '-'}</Descriptions.Item>
-            <Descriptions.Item label="楼层">{asset.floor || '-'}</Descriptions.Item>
-            <Descriptions.Item label="盘点状态"><StatusTag value={asset.inventoryStatus} type="business" /></Descriptions.Item>
-            <Descriptions.Item label="盘点执行人">{asset.inventoryPerson || '-'}</Descriptions.Item>
-            <Descriptions.Item label="备注" span={3}>{asset.note || '-'}</Descriptions.Item>
-            <Descriptions.Item label="关联耗材" span={3}>
+        <Card size="small" title={<SectionTitle>退库资产信息</SectionTitle>}>
+          <DetailGrid>
+            <DetailItem label="资产标签号">{asset.assetTag || '-'}</DetailItem>
+            <DetailItem label="SN号">{asset.sn || '-'}</DetailItem>
+            <DetailItem label="资产说明">{asset.assetDesc || '-'}</DetailItem>
+            <DetailItem label="资产状态"><StatusTag value={asset.status} type="business" /></DetailItem>
+            <DetailItem label="资产用途">{asset.purpose || '-'}</DetailItem>
+            <DetailItem label="部件数量">{componentCount}</DetailItem>
+            <DetailItem label="城市">{asset.city || '-'}</DetailItem>
+            <DetailItem label="建筑">{asset.building || '-'}</DetailItem>
+            <DetailItem label="楼层">{asset.floor || '-'}</DetailItem>
+            <DetailItem label="盘点状态"><StatusTag value={asset.inventoryStatus} type="business" /></DetailItem>
+            <DetailItem label="盘点执行人">{asset.inventoryPerson || '-'}</DetailItem>
+            <DetailItem label="配置" span={3}>{asset.config || '-'}</DetailItem>
+            <DetailItem label="备注" span={3}>{asset.note || '-'}</DetailItem>
+            <DetailItem label="关联耗材" span={3}>
               {selected.relatedConsumables?.length
                 ? selected.relatedConsumables.map((item) => (
-                  <Tag key={item.assetTag} color="blue">{item.assetTag} {item.assetDesc}</Tag>
+                  <Tag key={item.assetTag}>{item.assetTag} {item.assetDesc}</Tag>
                 ))
                 : '-'}
-            </Descriptions.Item>
-          </Descriptions>
+            </DetailItem>
+          </DetailGrid>
         </Card>
 
-        <Card size="small" title="退库信息维护">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label={<><span className="text-red-500">*</span> 仓库</>}>
+        <Card size="small" title={<SectionTitle>退库信息维护</SectionTitle>}>
+          <DetailGrid>
+            <DetailItem label={<><span className="text-red-500">*</span> 仓库</>}>
               <Select
                 className="w-full"
                 value={warehouse}
                 options={RETURN_WAREHOUSES.map((value) => ({ label: value, value }))}
                 onChange={setWarehouse}
               />
-            </Descriptions.Item>
-            <Descriptions.Item label="责任人">
+            </DetailItem>
+            <DetailItem label="责任人">
               <Input readOnly value={selected.handling.responsiblePerson || 'SOHU01-库房管理员-SOHU'} />
-            </Descriptions.Item>
-            <Descriptions.Item label="MIS鉴定">
+            </DetailItem>
+            <DetailItem label="MIS鉴定">
               <Input readOnly value={asset.returnMisRequired ? '是' : '否'} />
-            </Descriptions.Item>
-            <Descriptions.Item label="鉴定结果">
+            </DetailItem>
+            <DetailItem label="鉴定结果">
               <Input readOnly value={selected.mis.result || '-'} />
-            </Descriptions.Item>
-            <Descriptions.Item label="资产标记">
+            </DetailItem>
+            <DetailItem label="资产标记">
               <Select
                 className="w-full"
                 allowClear
@@ -250,14 +261,19 @@ export default function AssetReturnHandlingPage() {
                 options={['无', '限制出库', '待维修', '待数据清理'].map((value) => ({ label: value, value }))}
                 onChange={(value) => setAssetMark(value || '')}
               />
-            </Descriptions.Item>
-            <Descriptions.Item label={<><span className="text-red-500">*</span> 退库日期</>}>
-              <DatePicker className="w-full" value={returnDate} onChange={(value) => setReturnDate(value || dayjs())} />
-            </Descriptions.Item>
-            <Descriptions.Item label="鉴定说明" span={3}>
+            </DetailItem>
+            <DetailItem label={<><span className="text-red-500">*</span> 退库日期</>}>
+              <DatePicker
+                className="w-full"
+                value={returnDate}
+                format="YYYY-MM-DD"
+                onChange={(value) => setReturnDate(value || dayjs())}
+              />
+            </DetailItem>
+            <DetailItem label="鉴定说明" span={3}>
               <TextArea readOnly rows={2} value={selected.mis.description || '-'} />
-            </Descriptions.Item>
-            <Descriptions.Item label="使用说明" span={3}>
+            </DetailItem>
+            <DetailItem label="使用说明" span={3}>
               <TextArea
                 rows={3}
                 maxLength={400}
@@ -265,11 +281,11 @@ export default function AssetReturnHandlingPage() {
                 value={usageNote}
                 onChange={(event) => setUsageNote(event.target.value)}
               />
-            </Descriptions.Item>
-            <Descriptions.Item label="维修记录" span={3}>
+            </DetailItem>
+            <DetailItem label="维修记录" span={3}>
               <Button type="link" size="small" className="px-0" onClick={() => setRepairOpen(true)}>维修记录</Button>
-            </Descriptions.Item>
-          </Descriptions>
+            </DetailItem>
+          </DetailGrid>
         </Card>
 
         <ReturnAttachmentCard
@@ -280,10 +296,8 @@ export default function AssetReturnHandlingPage() {
           onDelete={deleteAttachment}
         />
 
-        <Card size="small" title="审批操作">
-          <Typography.Text strong>审批意见</Typography.Text>
+        <Card size="small" title={<SectionTitle>审批意见</SectionTitle>}>
           <TextArea
-            className="mt-2"
             rows={3}
             maxLength={400}
             showCount
@@ -293,7 +307,7 @@ export default function AssetReturnHandlingPage() {
           />
           <div className="mt-4 flex justify-center gap-3">
             <Button type="primary" loading={loading} onClick={confirmHandling}>确认</Button>
-            <Button danger onClick={reject}>驳回</Button>
+            <Button danger disabled={loading} onClick={reject}>驳回</Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
           </div>
         </Card>
@@ -303,7 +317,7 @@ export default function AssetReturnHandlingPage() {
         title={`维修记录（资产标签号：${asset.assetTag}）`}
         open={repairOpen}
         width={980}
-        footer={<Button onClick={() => setRepairOpen(false)}>关闭</Button>}
+        footer={<div className="flex justify-center"><Button onClick={() => setRepairOpen(false)}>关闭</Button></div>}
         onCancel={() => setRepairOpen(false)}
       >
         <Table
@@ -316,6 +330,6 @@ export default function AssetReturnHandlingPage() {
           scroll={{ x: 920 }}
         />
       </Modal>
-    </div>
+    </>
   );
 }
