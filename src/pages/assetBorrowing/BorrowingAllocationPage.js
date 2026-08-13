@@ -25,6 +25,17 @@ import { nowText } from './utils';
 
 const { TextArea } = Input;
 
+function isMatchedAssetValid(detail, warehouse) {
+  if (!detail.matchedAsset) return true;
+  const typeMatched = detail.category && detail.subCategory
+    ? detail.matchedAsset.category === detail.category && detail.matchedAsset.subCategory === detail.subCategory
+    : detail.matchedAsset.materialId === detail.materialId;
+  return typeMatched
+    && detail.matchedAsset.warehouse === warehouse
+    && ['在库-新增', '在库-待处理', '在库-再利用'].includes(detail.matchedAsset.status)
+    && !detail.matchedAsset.locked;
+}
+
 export default function BorrowingAllocationPage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
@@ -64,14 +75,7 @@ export default function BorrowingAllocationPage() {
 
   const submit = () => {
     if (!application) return;
-    const invalidMatch = details.find((item) => (
-      item.matchedAsset && (
-        item.matchedAsset.materialId !== item.materialId
-        || item.matchedAsset.warehouse !== warehouse
-        || !['在库-新增', '在库-待处理', '在库-再利用'].includes(item.matchedAsset.status)
-        || item.matchedAsset.locked
-      )
-    ));
+    const invalidMatch = details.find((item) => !isMatchedAssetValid(item, warehouse));
     if (invalidMatch) {
       messageApi.error(`资产（资产标签号：${invalidMatch.matchedAsset.assetTag}）不满足配给条件，请重新选择。`);
       return;
@@ -226,6 +230,8 @@ export default function BorrowingAllocationPage() {
       <AssetMatchModal
         open={Boolean(currentDetail)}
         materialId={currentDetail?.materialId}
+        category={currentDetail?.category}
+        subCategory={currentDetail?.subCategory}
         warehouse={warehouse}
         currentAsset={currentDetail?.matchedAsset}
         onCancel={() => setMatchDetailId(null)}
