@@ -12,6 +12,7 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
+import { BORROWABLE_MATERIALS } from '../../mock/assetBorrowingMock';
 import {
   getBorrowingApplicationByNode,
   updateAssetBorrowingApplication,
@@ -34,6 +35,25 @@ function isMatchedAssetValid(detail, warehouse) {
     && detail.matchedAsset.warehouse === warehouse
     && ['在库-新增', '在库-待处理', '在库-再利用'].includes(detail.matchedAsset.status)
     && !detail.matchedAsset.locked;
+}
+
+function getRequestedAssetDescription(detail) {
+  if (detail.category && detail.subCategory) return `${detail.category}.${detail.subCategory}`;
+  const material = BORROWABLE_MATERIALS.find((item) => item.id === detail.materialId);
+  if (material) return `${material.category}.${material.subCategory}`;
+  return detail.assetDesc || '-';
+}
+
+function getMatchedAssetDescription(asset) {
+  if (!asset) return '';
+  const parts = String(asset.assetDesc || '').split('.').filter(Boolean);
+  const brand = asset.brand || parts[1] || '-';
+  const model = asset.model || parts.slice(2).join('.') || '-';
+  return `${brand}.${model}`;
+}
+
+function getAssetDescription(detail) {
+  return detail.matchedAsset ? getMatchedAssetDescription(detail.matchedAsset) : getRequestedAssetDescription(detail);
 }
 
 export default function BorrowingAllocationPage() {
@@ -151,7 +171,7 @@ export default function BorrowingAllocationPage() {
         </Space.Compact>
       ),
     },
-    { title: '资产说明', dataIndex: 'assetDesc', width: 230 },
+    { title: '资产说明', width: 230, render: (_, record) => getAssetDescription(record) },
     { title: '借用原因', dataIndex: 'reason', width: 110 },
     { title: '需求说明', dataIndex: 'detail', width: 220, render: (value) => value || '-' },
     { title: '借用开始日期', dataIndex: 'startDate', width: 130 },
