@@ -9,7 +9,7 @@ import {
   Upload,
   message as antdMessage,
 } from 'antd';
-import { Paperclip, UploadCloud } from 'lucide-react';
+import { UploadCloud } from 'lucide-react';
 import DetailGrid, { DetailItem } from '../components/DetailGrid';
 
 const { TextArea } = Input;
