@@ -1,19 +1,20 @@
 import React from 'react';
-import { Eye } from 'lucide-react';
-import { Button, Card, Descriptions, Space, Tag } from 'antd';
+import { Button, Card, Space } from 'antd';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
+import StatusTag from '../../components/StatusTag';
+import { formatDepartment } from '../../utils/displayFormat';
 
 export default function ApplicantInfoCard({ applicant, applyDate, onViewAssets }) {
   return (
     <Card title="申请人信息" size="small">
-      <Descriptions bordered size="small" column={3}>
-        <Descriptions.Item label="申请人">
+      <DetailGrid>
+        <DetailItem label="申请人">
           <Space size={8}>
             <span>{applicant.id}-{applicant.name}</span>
             {onViewAssets && (
               <Button
                 type="link"
                 size="small"
-                icon={<Eye size={14} />}
                 className="px-0"
                 onClick={onViewAssets}
               >
@@ -21,19 +22,15 @@ export default function ApplicantInfoCard({ applicant, applyDate, onViewAssets }
               </Button>
             )}
           </Space>
-        </Descriptions.Item>
-        <Descriptions.Item label="联系电话">{applicant.phone}</Descriptions.Item>
-        <Descriptions.Item label="邮箱">{applicant.email}</Descriptions.Item>
-        <Descriptions.Item label="公司">{applicant.company}</Descriptions.Item>
-        <Descriptions.Item label="办公区">{applicant.officeArea}</Descriptions.Item>
-        <Descriptions.Item label="申请日期">{applyDate}</Descriptions.Item>
-        <Descriptions.Item label="员工状态">
-          <Tag color={applicant.employeeStatus === '正式员工' ? 'success' : 'default'}>
-            {applicant.employeeStatus}
-          </Tag>
-        </Descriptions.Item>
-        <Descriptions.Item label="部门" span={2}>{applicant.department}</Descriptions.Item>
-      </Descriptions>
+        </DetailItem>
+        <DetailItem label="申请日期">{applyDate || '-'}</DetailItem>
+        <DetailItem label="公司">{applicant.company || '-'}</DetailItem>
+        <DetailItem label="办公区">{applicant.officeArea || '-'}</DetailItem>
+        <DetailItem label="联系电话">{applicant.phone || '-'}</DetailItem>
+        <DetailItem label="邮箱">{applicant.email || '-'}</DetailItem>
+        <DetailItem label="部门" span={3}>{formatDepartment(applicant.department)}</DetailItem>
+        <DetailItem label="员工状态"><StatusTag value={applicant.employeeStatus || '-'} type="business" /></DetailItem>
+      </DetailGrid>
     </Card>
   );
 }
