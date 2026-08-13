@@ -44,8 +44,20 @@ const MOCK_DATA = {
     },
   ],
   consumables: [
-    { id: 'CON-2023001', brandModel: '苹果.35W 双USB-C 电源适配器', categorySub: '电脑配件-充电插头', config: '原装 35W', quantity: 1, status: '在用-使用中' },
-    { id: 'CON-2023089', brandModel: '罗技.MX Master 3S', categorySub: '电脑配件-无线鼠标', config: '静音版 8K DPI', quantity: 1, status: '在用-使用中' },
+    {
+      id: 'CON-2023001',
+      description: '苹果.35W 双USB-C 电源适配器',
+      subCategory: '充电插头',
+      mainAssetTag: 'A2024001234',
+      mainAssetDesc: '联想.ThinkPad T14',
+    },
+    {
+      id: 'CON-2023089',
+      description: '罗技.MX Master 3S 无线鼠标',
+      subCategory: '无线鼠标',
+      mainAssetTag: 'A2024002345',
+      mainAssetDesc: '戴尔.P2422H',
+    },
   ],
   contracts: EMPLOYEE_CONTRACT_NUMBERS.map((item) => ({
     id: item.number,
@@ -71,10 +83,16 @@ export default function PersonalWorkspace() {
   const [activeTab, setActiveTab] = useState('assets');
   const [keyword, setKeyword] = useState('');
   const [selectedAssetIds, setSelectedAssetIds] = useState([]);
+  const [selectedContractIds, setSelectedContractIds] = useState([]);
 
   const selectedAssets = useMemo(
     () => MOCK_DATA.assets.filter((item) => selectedAssetIds.includes(item.id)),
     [selectedAssetIds]
+  );
+
+  const selectedContracts = useMemo(
+    () => MOCK_DATA.contracts.filter((item) => selectedContractIds.includes(item.id)),
+    [selectedContractIds]
   );
 
   const batchPermissions = useMemo(() => ({
@@ -94,6 +112,18 @@ export default function PersonalWorkspace() {
       return;
     }
     navigate('/People', { state: { prefillAssetTags: assetTags, source: 'personal-workspace' } });
+  };
+
+  const startContractReturn = (rows) => {
+    const contractNumbers = rows.map((item) => item.contractNumber);
+    if (!contractNumbers.length) return;
+    navigate('/yewurules', {
+      state: {
+        workspace: '合约号码退库',
+        prefillContractNumbers: contractNumbers,
+        source: 'personal-workspace',
+      },
+    });
   };
 
   const assetColumns = [
@@ -132,19 +162,18 @@ export default function PersonalWorkspace() {
 
   const consumableColumns = [
     {
-      title: '资产信息',
-      width: 260,
+      title: '耗材信息',
+      width: 300,
       render: (_, record) => (
         <div>
-          <div className="font-semibold text-slate-800">{record.brandModel}</div>
-          <Typography.Text type="secondary" className="text-xs">{record.categorySub}</Typography.Text>
+          <div className="font-semibold text-slate-800">{record.description}</div>
+          <Typography.Text type="secondary" className="text-xs">{record.subCategory}</Typography.Text>
         </div>
       ),
     },
-    { title: '资产标签号', dataIndex: 'id', width: 180 },
-    { title: '资产配置', dataIndex: 'config' },
-    { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
-    { title: '状态', dataIndex: 'status', width: 140, render: (value) => <StatusTag value={value} type="business" /> },
+    { title: '耗材标签号', dataIndex: 'id', width: 190 },
+    { title: '主资产标签号', dataIndex: 'mainAssetTag', width: 190, render: (value) => value || '-' },
+    { title: '主资产说明', dataIndex: 'mainAssetDesc', render: (value) => value || '-' },
   ];
 
   const contractColumns = [
@@ -155,22 +184,21 @@ export default function PersonalWorkspace() {
       width: 120,
       align: 'right',
       render: (_, record) => (
-        <Button
-          type="link"
-          size="small"
-          onClick={() => navigate('/yewurules', { state: { workspace: '合约号码退库', prefillContractNumbers: [record.contractNumber], source: 'personal-workspace' } })}
-        >
-          退库
-        </Button>
+        <Button type="link" size="small" onClick={() => startContractReturn([record])}>退库</Button>
       ),
     },
   ];
 
   const source = activeTab === 'assets' ? MOCK_DATA.assets : activeTab === 'consumables' ? MOCK_DATA.consumables : MOCK_DATA.contracts;
   const filtered = source.filter((item) => {
-    const text = activeTab === 'contracts'
-      ? `${item.contractNumber} ${item.description}`
-      : `${item.id} ${item.brandModel} ${item.categorySub} ${item.config}`;
+    let text = '';
+    if (activeTab === 'contracts') {
+      text = `${item.contractNumber} ${item.description}`;
+    } else if (activeTab === 'consumables') {
+      text = `${item.id} ${item.description} ${item.subCategory} ${item.mainAssetTag} ${item.mainAssetDesc}`;
+    } else {
+      text = `${item.id} ${item.brandModel} ${item.categorySub} ${item.config} ${item.usage}`;
+    }
     return text.toLowerCase().includes(keyword.trim().toLowerCase());
   });
 
@@ -193,7 +221,12 @@ export default function PersonalWorkspace() {
         <div className="mb-3 flex items-center justify-between gap-4">
           <Tabs
             activeKey={activeTab}
-            onChange={(key) => { setActiveTab(key); setKeyword(''); setSelectedAssetIds([]); }}
+            onChange={(key) => {
+              setActiveTab(key);
+              setKeyword('');
+              setSelectedAssetIds([]);
+              setSelectedContractIds([]);
+            }}
             items={[
               { key: 'assets', label: `资产 ${MOCK_DATA.assets.length}` },
               { key: 'consumables', label: `耗材 ${MOCK_DATA.consumables.length}` },
@@ -205,8 +238,14 @@ export default function PersonalWorkspace() {
             allowClear
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            placeholder={activeTab === 'contracts' ? '搜索合约号码或说明' : '搜索标签号、资产说明或配置'}
-            style={{ width: 280 }}
+            placeholder={
+              activeTab === 'contracts'
+                ? '搜索合约号码或说明'
+                : activeTab === 'consumables'
+                  ? '搜索耗材标签号、耗材说明或主资产'
+                  : '搜索标签号、资产说明或配置'
+            }
+            style={{ width: 300 }}
           />
         </div>
 
@@ -221,15 +260,28 @@ export default function PersonalWorkspace() {
           </div>
         )}
 
+        {activeTab === 'contracts' && selectedContracts.length > 1 && (
+          <div className="mb-3 flex items-center justify-between rounded bg-blue-50 px-3 py-2">
+            <Typography.Text>已选择 {selectedContracts.length} 个合约号码</Typography.Text>
+            <Button type="link" size="small" onClick={() => startContractReturn(selectedContracts)}>批量退库</Button>
+          </div>
+        )}
+
         <Table
           rowKey="id"
           size="small"
           bordered
           dataSource={filtered}
           columns={activeTab === 'assets' ? assetColumns : activeTab === 'consumables' ? consumableColumns : contractColumns}
-          rowSelection={activeTab === 'assets' ? { selectedRowKeys: selectedAssetIds, onChange: setSelectedAssetIds } : undefined}
+          rowSelection={
+            activeTab === 'assets'
+              ? { selectedRowKeys: selectedAssetIds, onChange: setSelectedAssetIds }
+              : activeTab === 'contracts'
+                ? { selectedRowKeys: selectedContractIds, onChange: setSelectedContractIds }
+                : undefined
+          }
           pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }}
-          scroll={{ x: activeTab === 'assets' ? 1270 : undefined }}
+          scroll={{ x: activeTab === 'assets' ? 1270 : activeTab === 'consumables' ? 900 : undefined }}
         />
       </Card>
     </Space>
