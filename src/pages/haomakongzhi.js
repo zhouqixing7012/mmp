@@ -11,7 +11,7 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
-import { Bell, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import QueryBar, { QueryItem } from '../components/QueryBar';
 import StatusTag from '../components/StatusTag';
 
@@ -51,7 +51,7 @@ function includesText(value, query) {
 function SectionTitle({ children }) {
   return (
     <span className="inline-flex items-center gap-2">
-      <span className="inline-block h-4 w-1 rounded-sm bg-[#1677ff]" />
+      <span className="inline-block h-3 w-1 rounded-sm bg-blue-500" />
       <span>{children}</span>
     </span>
   );
@@ -97,15 +97,9 @@ function UserLinkModal({ open, onClose, linkedUsers, onConfirm }) {
       onCancel={onClose}
       destroyOnHidden
       footer={(
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center">
-          <Typography.Text type="secondary" className="text-left">
-            已选 {selectedKeys.length} 人
-          </Typography.Text>
-          <Space size={12}>
-            <Button type="primary" onClick={handleSave}>确定</Button>
-            <Button onClick={onClose}>取消</Button>
-          </Space>
-          <span />
+        <div className="flex justify-center gap-3">
+          <Button type="primary" onClick={handleSave}>确定</Button>
+          <Button onClick={onClose}>取消</Button>
         </div>
       )}
     >
@@ -146,6 +140,10 @@ function UserLinkModal({ open, onClose, linkedUsers, onConfirm }) {
           />
         </QueryItem>
       </QueryBar>
+
+      <div className="mb-3 flex justify-end">
+        <Typography.Text type="secondary">已选 {selectedKeys.length} 人</Typography.Text>
+      </div>
 
       <Table
         rowKey="id"
@@ -231,9 +229,9 @@ export default function ContractPermissionAdmin() {
   };
 
   const columns = [
-    { title: '姓名', dataIndex: 'name', width: 160 },
-    { title: '工号', dataIndex: 'empId', width: 160 },
-    { title: '所属部门', dataIndex: 'department', minWidth: 240 },
+    { title: '工号', dataIndex: 'empId', width: 150 },
+    { title: '姓名', dataIndex: 'name', width: 150 },
+    { title: '所属部门', dataIndex: 'department', minWidth: 260 },
     {
       title: '授权状态',
       dataIndex: 'status',
@@ -243,7 +241,7 @@ export default function ContractPermissionAdmin() {
     {
       title: '操作',
       key: 'action',
-      width: 220,
+      width: 190,
       fixed: 'right',
       render: (_, record) => (
         <Space size={12}>
@@ -251,7 +249,6 @@ export default function ContractPermissionAdmin() {
             type="link"
             size="small"
             className="px-0"
-            icon={<Bell size={14} />}
             disabled={!record.status}
             onClick={() => handleSendNotification(record.name)}
           >
@@ -275,75 +272,76 @@ export default function ContractPermissionAdmin() {
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <>
       {contextHolder}
-
-      <div className="flex items-center gap-2">
-        <div className="h-8 w-1.5 rounded bg-[#1677ff]" />
-        <Typography.Title level={3} className="mb-0">号码控制</Typography.Title>
-      </div>
-
-      <QueryBar
-        onQuery={() => setAppliedFilters({ ...draftFilters })}
-        onReset={() => {
-          setDraftFilters(EMPTY_MAIN_FILTERS);
-          setAppliedFilters(EMPTY_MAIN_FILTERS);
-        }}
-      >
-        <QueryItem label="姓名/工号">
-          <Input
-            allowClear
-            placeholder="请输入姓名或工号"
-            value={draftFilters.keyword}
-            onChange={(event) => setDraftFilters((current) => ({ ...current, keyword: event.target.value }))}
-          />
-        </QueryItem>
-        <QueryItem label="授权状态">
-          <Select
-            allowClear
-            placeholder="请选择授权状态"
-            value={draftFilters.authorizationStatus || undefined}
-            options={[
-              { label: '已授权', value: '已授权' },
-              { label: '未授权', value: '未授权' },
-            ]}
-            onChange={(value) => setDraftFilters((current) => ({ ...current, authorizationStatus: value || '' }))}
-          />
-        </QueryItem>
-      </QueryBar>
-
-      <Card
-        size="small"
-        title={<SectionTitle>授权人员列表</SectionTitle>}
-        extra={<Typography.Text type="secondary">共 {filteredData.length} 条</Typography.Text>}
-      >
-        <div className="mb-3 flex justify-end">
-          <Button type="primary" icon={<Plus size={14} />} onClick={() => setIsModalVisible(true)}>
-            新增授权人员
-          </Button>
+      <Space direction="vertical" size={16} className="w-full">
+        <div className="flex items-center justify-between">
+          <Typography.Title level={4} className="mb-0">号码控制</Typography.Title>
         </div>
 
-        <Table
-          rowKey="key"
-          size="small"
-          bordered
-          columns={columns}
-          dataSource={filteredData}
-          scroll={{ x: 'max-content' }}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: false,
-            showTotal: (total) => `共 ${total} 条`,
+        <QueryBar
+          onQuery={() => setAppliedFilters({ ...draftFilters })}
+          onReset={() => {
+            setDraftFilters(EMPTY_MAIN_FILTERS);
+            setAppliedFilters(EMPTY_MAIN_FILTERS);
           }}
-        />
-      </Card>
+        >
+          <QueryItem label="姓名/工号">
+            <Input
+              allowClear
+              placeholder="请输入姓名或工号"
+              value={draftFilters.keyword}
+              onChange={(event) => setDraftFilters((current) => ({ ...current, keyword: event.target.value }))}
+            />
+          </QueryItem>
+          <QueryItem label="授权状态">
+            <Select
+              allowClear
+              placeholder="请选择授权状态"
+              value={draftFilters.authorizationStatus || undefined}
+              options={[
+                { label: '已授权', value: '已授权' },
+                { label: '未授权', value: '未授权' },
+              ]}
+              onChange={(value) => setDraftFilters((current) => ({ ...current, authorizationStatus: value || '' }))}
+            />
+          </QueryItem>
+        </QueryBar>
 
-      <UserLinkModal
-        open={isModalVisible}
-        onClose={() => setIsModalVisible(false)}
-        linkedUsers={data.map((item) => item.empId)}
-        onConfirm={handleAddUsers}
-      />
-    </Space>
+        <Card
+          size="small"
+          title={<SectionTitle>授权人员列表</SectionTitle>}
+          extra={<Typography.Text type="secondary">共 {filteredData.length} 条</Typography.Text>}
+        >
+          <div className="mb-3 flex justify-end">
+            <Button type="primary" icon={<Plus size={14} />} onClick={() => setIsModalVisible(true)}>
+              新增授权人员
+            </Button>
+          </div>
+
+          <Table
+            rowKey="key"
+            size="small"
+            bordered
+            columns={columns}
+            dataSource={filteredData}
+            scroll={{ x: 'max-content' }}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50'],
+              showTotal: (total) => `共 ${total} 条`,
+            }}
+          />
+        </Card>
+
+        <UserLinkModal
+          open={isModalVisible}
+          onClose={() => setIsModalVisible(false)}
+          linkedUsers={data.map((item) => item.empId)}
+          onConfirm={handleAddUsers}
+        />
+      </Space>
+    </>
   );
 }
