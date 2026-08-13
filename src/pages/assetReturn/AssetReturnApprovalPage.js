@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Descriptions,
   Empty,
   Input,
   Modal,
@@ -12,6 +11,7 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import {
   addAssetReturnAttachment,
@@ -26,46 +26,12 @@ const { TextArea } = Input;
 const MIS_NODE = 'MIS鉴定';
 const MIS_UPLOADER = { id: 'CW003379', name: 'CW003379-李木勇' };
 
-function DetailCard({ application, onViewRepairs }) {
-  const asset = application.asset;
-  const componentCount = asset.component && asset.component !== '-' ? 1 : 0;
-
+function SectionTitle({ children }) {
   return (
-    <Space direction="vertical" size={16} className="w-full">
-      <Card size="small" title="申请人信息">
-        <Descriptions bordered size="small" column={3}>
-          <Descriptions.Item label="申请人">{application.applicant.id}-{application.applicant.name}</Descriptions.Item>
-          <Descriptions.Item label="申请日期">{formatDateText(application.applyTime)}</Descriptions.Item>
-          <Descriptions.Item label="联系电话">{application.applicant.phone || '-'}</Descriptions.Item>
-          <Descriptions.Item label="邮箱">{application.applicant.email || '-'}</Descriptions.Item>
-          <Descriptions.Item label="退库类型">{application.returnType || '-'}</Descriptions.Item>
-          <Descriptions.Item label="部门">{formatDepartment(application.applicant.department)}</Descriptions.Item>
-          <Descriptions.Item label="退库原因" span={3}>{application.reason || '-'}</Descriptions.Item>
-        </Descriptions>
-      </Card>
-
-      <Card size="small" title="资产信息">
-        <Descriptions bordered size="small" column={3}>
-          <Descriptions.Item label="资产说明" span={3}>{asset.assetDesc || '-'}</Descriptions.Item>
-          <Descriptions.Item label="SN号">{asset.sn || '-'}</Descriptions.Item>
-          <Descriptions.Item label="资产标签号">{asset.assetTag || '-'}</Descriptions.Item>
-          <Descriptions.Item label="数量">{asset.quantity || 1}</Descriptions.Item>
-          <Descriptions.Item label="资产状态"><StatusTag value={asset.status} type="business" /></Descriptions.Item>
-          <Descriptions.Item label="资产大类">{asset.category || '-'}</Descriptions.Item>
-          <Descriptions.Item label="资产小类">{asset.subCategory || '-'}</Descriptions.Item>
-          <Descriptions.Item label="部件数量">{componentCount}</Descriptions.Item>
-          <Descriptions.Item label="配置" span={2}>{asset.config || '-'}</Descriptions.Item>
-          <Descriptions.Item label="启用日期">{formatDateText(asset.enabledDate)}</Descriptions.Item>
-          <Descriptions.Item label="城市">{asset.city || '-'}</Descriptions.Item>
-          <Descriptions.Item label="建筑">{asset.building || '-'}</Descriptions.Item>
-          <Descriptions.Item label="楼层">{asset.floor || '-'}</Descriptions.Item>
-          <Descriptions.Item label="备注" span={3}>{asset.note || '-'}</Descriptions.Item>
-          <Descriptions.Item label="维修记录" span={3}>
-            <Button type="link" size="small" className="px-0" onClick={onViewRepairs}>维修记录</Button>
-          </Descriptions.Item>
-        </Descriptions>
-      </Card>
-    </Space>
+    <span className="inline-flex items-center gap-2">
+      <span className="inline-block h-3 w-1 rounded-sm bg-blue-500" />
+      <span>{children}</span>
+    </span>
   );
 }
 
@@ -135,17 +101,20 @@ export default function AssetReturnApprovalPage() {
 
   if (!selected) {
     return (
-      <div className="min-h-screen bg-slate-100 p-4">
+      <>
         {contextHolder}
-        <Card>
-          <Empty description="暂无MIS鉴定待办" />
+        <Card size="small">
+          <Empty description="暂无退库审批待办" />
           <div className="mt-4 flex justify-center">
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
-      </div>
+      </>
     );
   }
+
+  const asset = selected.asset;
+  const componentCount = asset.component && asset.component !== '-' ? 1 : 0;
 
   const historyColumns = [
     { title: '审批环节', dataIndex: 'node', width: 160 },
@@ -157,7 +126,7 @@ export default function AssetReturnApprovalPage() {
       align: 'center',
       render: (value) => <StatusTag value={value} type="business" />,
     },
-    { title: '审批时间', dataIndex: 'time', width: 180 },
+    { title: '审批时间', dataIndex: 'time', width: 180, render: (value) => value || '-' },
     { title: '审批意见', dataIndex: 'comment', render: (value) => value || '-' },
   ];
 
@@ -189,15 +158,47 @@ export default function AssetReturnApprovalPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4">
+    <>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
-          <Typography.Title level={4} className="mb-0">MIS 鉴定</Typography.Title>
+        <div className="flex items-center justify-between">
+          <Typography.Title level={4} className="mb-0">退库审批</Typography.Title>
           <Typography.Text type="secondary">退库单号：{selected.id}</Typography.Text>
         </div>
 
-        <DetailCard application={selected} onViewRepairs={() => setRepairOpen(true)} />
+        <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>
+          <DetailGrid>
+            <DetailItem label="申请人">{selected.applicant.id}-{selected.applicant.name}</DetailItem>
+            <DetailItem label="申请日期">{formatDateText(selected.applyTime)}</DetailItem>
+            <DetailItem label="联系电话">{selected.applicant.phone || '-'}</DetailItem>
+            <DetailItem label="邮箱">{selected.applicant.email || '-'}</DetailItem>
+            <DetailItem label="退库类型">{selected.returnType || '-'}</DetailItem>
+            <DetailItem label="部门">{formatDepartment(selected.applicant.department)}</DetailItem>
+            <DetailItem label="退库原因" span={3}>{selected.reason || '-'}</DetailItem>
+          </DetailGrid>
+        </Card>
+
+        <Card size="small" title={<SectionTitle>退库资产信息</SectionTitle>}>
+          <DetailGrid>
+            <DetailItem label="资产标签号">{asset.assetTag || '-'}</DetailItem>
+            <DetailItem label="SN号">{asset.sn || '-'}</DetailItem>
+            <DetailItem label="数量">{asset.quantity || 1}</DetailItem>
+            <DetailItem label="资产大类">{asset.category || '-'}</DetailItem>
+            <DetailItem label="资产小类">{asset.subCategory || '-'}</DetailItem>
+            <DetailItem label="资产状态"><StatusTag value={asset.status} type="business" /></DetailItem>
+            <DetailItem label="部件数量">{componentCount}</DetailItem>
+            <DetailItem label="启用日期">{formatDateText(asset.enabledDate)}</DetailItem>
+            <DetailItem label="城市">{asset.city || '-'}</DetailItem>
+            <DetailItem label="建筑">{asset.building || '-'}</DetailItem>
+            <DetailItem label="楼层">{asset.floor || '-'}</DetailItem>
+            <DetailItem label="资产说明" span={3}>{asset.assetDesc || '-'}</DetailItem>
+            <DetailItem label="配置" span={3}>{asset.config || '-'}</DetailItem>
+            <DetailItem label="备注" span={3}>{asset.note || '-'}</DetailItem>
+            <DetailItem label="维修记录" span={3}>
+              <Button type="link" size="small" className="px-0" onClick={() => setRepairOpen(true)}>维修记录</Button>
+            </DetailItem>
+          </DetailGrid>
+        </Card>
 
         <ReturnAttachmentCard
           attachments={selected.attachments || []}
@@ -207,7 +208,7 @@ export default function AssetReturnApprovalPage() {
           onDelete={deleteAttachment}
         />
 
-        <Card size="small" title="审批信息">
+        <Card size="small" title={<SectionTitle>审批信息</SectionTitle>}>
           <Table
             rowKey={(record, index) => `${record.node}-${record.time}-${index}`}
             columns={historyColumns}
@@ -215,7 +216,9 @@ export default function AssetReturnApprovalPage() {
             pagination={false}
             size="small"
             bordered
+            scroll={{ x: 980 }}
           />
+
           <div className="mt-4">
             <Typography.Text strong>审批意见</Typography.Text>
             <TextArea
@@ -228,6 +231,7 @@ export default function AssetReturnApprovalPage() {
               onChange={(event) => setComment(event.target.value)}
             />
           </div>
+
           <div className="mt-4 flex justify-center gap-3">
             <Button type="primary" loading={loading} onClick={() => submit('同意')}>鉴定通过</Button>
             <Button danger loading={loading} onClick={() => submit('驳回')}>鉴定不通过</Button>
@@ -237,10 +241,10 @@ export default function AssetReturnApprovalPage() {
       </Space>
 
       <Modal
-        title={`维修记录（资产标签号：${selected.asset.assetTag}）`}
+        title={`维修记录（资产标签号：${asset.assetTag}）`}
         open={repairOpen}
         width={980}
-        footer={<Button onClick={() => setRepairOpen(false)}>关闭</Button>}
+        footer={<div className="flex justify-center"><Button onClick={() => setRepairOpen(false)}>关闭</Button></div>}
         onCancel={() => setRepairOpen(false)}
       >
         <Table
@@ -253,6 +257,6 @@ export default function AssetReturnApprovalPage() {
           scroll={{ x: 920 }}
         />
       </Modal>
-    </div>
+    </>
   );
 }
