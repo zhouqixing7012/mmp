@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, Search, UserPlus, XCircle } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -11,11 +11,11 @@ import {
   Select,
   Space,
   Table,
-  Tag,
   Typography,
   message as antdMessage,
 } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
+import StatusTag from '../../components/StatusTag';
 import {
   ALLOCATABLE_ASSETS,
   APPLICANT_CURRENT_ASSETS,
@@ -197,7 +197,7 @@ export default function EmployeeAssetAllocationPage() {
     { title: '配置', dataIndex: 'config', width: 210 },
     { title: '申请用途', dataIndex: 'purpose', width: 130 },
     { title: '详细说明', dataIndex: 'detail', width: 220, render: (value) => value || '-' },
-    { title: '是否超标', dataIndex: 'overStandard', width: 100, align: 'center', render: (value) => value ? <Tag color="error">已超标</Tag> : <Tag>未超标</Tag> },
+    { title: '是否超标', dataIndex: 'overStandard', width: 100, align: 'center', render: (value) => <StatusTag value={value ? '已超标' : '未超标'} type="business" /> },
     { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
     { title: '主资产说明（耗材独有）', dataIndex: 'relatedAsset', width: 220, render: (value, record) => record.type === 'consumable' ? (value || '-') : '-' },
   ];
@@ -214,7 +214,7 @@ export default function EmployeeAssetAllocationPage() {
     { title: '数量', dataIndex: 'quantity', width: 70, align: 'center' },
     { title: '原值', dataIndex: 'originalValue', width: 100, render: (value) => Number(value).toFixed(2) },
     { title: '资产责任人', dataIndex: 'responsiblePerson', width: 170 },
-    { title: '资产状态', dataIndex: 'assetStatus', width: 120 },
+    { title: '资产状态', dataIndex: 'assetStatus', width: 120, render: (value) => <StatusTag value={value} type="business" /> },
     { title: '成本中心', dataIndex: 'costCenter', width: 160 },
     { title: '启用日期', dataIndex: 'enabledDate', width: 110 },
   ];
@@ -228,7 +228,7 @@ export default function EmployeeAssetAllocationPage() {
     { title: '资产说明', dataIndex: 'assetDesc', width: 220 },
     { title: '配置', dataIndex: 'config', width: 220 },
     { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
-    { title: '资产状态', dataIndex: 'assetStatus', width: 130 },
+    { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
     { title: '部件', dataIndex: 'component', width: 120 },
   ];
 
@@ -236,10 +236,10 @@ export default function EmployeeAssetAllocationPage() {
     return (
       <div className="min-h-screen bg-slate-100 p-4">
         {contextHolder}
-        <Card>
+        <Card size="small">
           <Empty description="暂无待配给申请" />
           <div className="mt-4 flex justify-center">
-            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+            <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回工作台</Button>
           </div>
         </Card>
       </div>
@@ -258,7 +258,7 @@ export default function EmployeeAssetAllocationPage() {
         <ApplicantInfoCard applicant={selectedOrder.applicant} applyDate={selectedOrder.applyDate} onViewAssets={() => setApplicantAssetsOpen(true)} />
 
         <Card title="申请物资明细" size="small">
-          <Table rowKey="id" columns={materialColumns} dataSource={applicationMaterials} pagination={false} scroll={{ x: 1300 }} />
+          <Table rowKey="id" size="small" bordered columns={materialColumns} dataSource={applicationMaterials} pagination={false} scroll={{ x: 1300 }} />
         </Card>
 
         <Card title="ES 配给处理" size="small">
@@ -297,10 +297,10 @@ export default function EmployeeAssetAllocationPage() {
 
         <Card title="审批操作" size="small">
           <div className="flex justify-center gap-3">
-            <Button type="primary" icon={<CheckCircle2 size={14} />} loading={submitting} onClick={submitAllocation}>同意</Button>
-            <Button danger icon={<XCircle size={14} />} onClick={rejectAllocation}>驳回</Button>
+            <Button type="primary" loading={submitting} onClick={submitAllocation}>同意</Button>
+            <Button danger onClick={rejectAllocation}>驳回</Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
-            <Button icon={<UserPlus size={14} />} onClick={() => setCountersignOpen(true)}>加签</Button>
+            <Button onClick={() => setCountersignOpen(true)}>加签</Button>
           </div>
         </Card>
       </Space>
@@ -323,12 +323,14 @@ export default function EmployeeAssetAllocationPage() {
           <QueryItem label="资产用途"><Select allowClear value={applicantQuery.assetPurpose || undefined} options={[{ label: '员工用机', value: '员工用机' }, { label: '日常办公', value: '日常办公' }]} onChange={(value) => setApplicantQuery({ ...applicantQuery, assetPurpose: value || '' })} /></QueryItem>
           <QueryItem label="是否锁定"><Select allowClear value={applicantQuery.locked || undefined} options={[{ label: '是', value: '是' }, { label: '否', value: '否' }]} onChange={(value) => setApplicantQuery({ ...applicantQuery, locked: value || '' })} /></QueryItem>
         </QueryBar>
-        <Table rowKey="id" columns={applicantAssetColumns} dataSource={filteredApplicantAssets} scroll={{ x: 1400, y: 400 }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
+        <Table rowKey="id" size="small" bordered columns={applicantAssetColumns} dataSource={filteredApplicantAssets} scroll={{ x: 1400, y: 400 }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
       </Modal>
 
       <Modal title="库存领用匹配资产" open={matchModalOpen} width={860} footer={null} onCancel={() => setMatchModalOpen(false)}>
         <Table
           rowKey="id"
+          size="small"
+          bordered
           pagination={false}
           dataSource={applicationMaterials}
           columns={[
@@ -339,11 +341,11 @@ export default function EmployeeAssetAllocationPage() {
         />
         <div className="mt-4 flex justify-center gap-3">
           <Button type="primary" disabled={!matchedAsset} onClick={() => setMatchModalOpen(false)}>确定</Button>
-          <Button onClick={() => setMatchModalOpen(false)}>返回</Button>
+          <Button onClick={() => setMatchModalOpen(false)}>取消</Button>
         </div>
       </Modal>
 
-      <Modal title="物资列表" open={assetListOpen} width={1280} footer={null} onCancel={() => setAssetListOpen(false)}>
+      <Modal title="选择资产" open={assetListOpen} width={1280} footer={null} onCancel={() => setAssetListOpen(false)}>
         <QueryBar
           onQuery={() => setAppliedMatchQuery(matchQuery)}
           onReset={() => {
@@ -358,6 +360,8 @@ export default function EmployeeAssetAllocationPage() {
         </QueryBar>
         <Table
           rowKey="id"
+          size="small"
+          bordered
           columns={assetColumns}
           dataSource={filteredAssets}
           scroll={{ x: 1850, y: 380 }}
@@ -366,7 +370,7 @@ export default function EmployeeAssetAllocationPage() {
         />
         <div className="mt-4 flex justify-center gap-3">
           <Button type="primary" disabled={!matchedAsset} onClick={() => setAssetListOpen(false)}>确定</Button>
-          <Button onClick={() => setAssetListOpen(false)}>返回</Button>
+          <Button onClick={() => setAssetListOpen(false)}>取消</Button>
         </div>
       </Modal>
 
