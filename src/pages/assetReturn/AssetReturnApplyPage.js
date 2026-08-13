@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button, Card, Descriptions, Empty, Input, Modal, Select, Space, Table, Tag, Typography, message as antdMessage } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
@@ -14,10 +15,20 @@ const { TextArea } = Input;
 const EMPTY_QUERY = { assetTag: '', assetDesc: '', status: '', purpose: '', locked: '否' };
 
 export default function AssetReturnApplyPage() {
+  const location = useLocation();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [version, setVersion] = useState(0);
   const assets = useMemo(() => getAssetReturnAssets(), [version]);
-  const [selectedIds, setSelectedIds] = useState(() => getAssetReturnDraftIds());
+  const [selectedIds, setSelectedIds] = useState(() => {
+    const prefillAssetTags = location.state?.prefillAssetTags || [];
+    if (prefillAssetTags.length) {
+      const currentAssets = getAssetReturnAssets();
+      return prefillAssetTags
+        .map((assetTag) => currentAssets.find((asset) => asset.assetTag === assetTag)?.id)
+        .filter(Boolean);
+    }
+    return getAssetReturnDraftIds();
+  });
   const [returnType, setReturnType] = useState('资产退库');
   const [reason, setReason] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
