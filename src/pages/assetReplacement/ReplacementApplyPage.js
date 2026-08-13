@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button, Card, Checkbox, Empty, Input, Space, Table, Typography, message as antdMessage } from 'antd';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
@@ -34,6 +34,7 @@ function RequiredLabel({ children }) {
 
 export default function ReplacementApplyPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [reason, setReason] = useState('');
   const [accepted, setAccepted] = useState(false);
@@ -41,12 +42,18 @@ export default function ReplacementApplyPage() {
 
   const assets = useMemo(() => getEmployeeReplacementAssets(), []);
   const selectedAssets = useMemo(() => {
+    const prefillAssetTags = location.state?.prefillAssetTags || [];
+    if (prefillAssetTags.length) {
+      return prefillAssetTags
+        .map((assetTag) => assets.find((asset) => asset.assetTag === assetTag))
+        .filter(Boolean);
+    }
     const draftIds = getReplacementDraftAssetIds();
     const availableDraftAssets = draftIds.map((assetId) => assets.find((asset) => asset.id === assetId)).filter(Boolean);
     if (availableDraftAssets.length > 0) return availableDraftAssets;
     const fallback = assets.find((asset) => getReplacementEligibility(asset).allowed);
     return fallback ? [fallback] : [];
-  }, [assets]);
+  }, [assets, location.state]);
   const totalQuantity = selectedAssets.reduce((sum, asset) => sum + (asset.quantity || 0), 0);
 
   const submit = () => {
