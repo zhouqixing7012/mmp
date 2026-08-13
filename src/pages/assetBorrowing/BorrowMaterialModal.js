@@ -3,57 +3,51 @@ import { Check, ChevronRight, LayoutGrid, Trash2 } from 'lucide-react';
 import { Button, Checkbox, Empty, Input, Modal, Space, Tag, Typography } from 'antd';
 import { BORROWABLE_MATERIALS } from '../../mock/assetBorrowingMock';
 
-const LEVEL_NAMES = ['大类', '小类', '品牌', '型号', '配置'];
-
-function getCatalogRecords(keyword) {
-  return BORROWABLE_MATERIALS
+function getBorrowTypes(keyword) {
+  const grouped = new Map();
+  BORROWABLE_MATERIALS
     .filter((material) => material.enabled && material.borrowable)
-    .map((material) => ({
-      material,
-      path: [material.category, material.subCategory, material.brand, material.model, material.config],
-    }))
-    .filter((item) => {
-      const text = `${item.material.assetDesc} ${item.path.join(' ')}`.toLowerCase();
-      return !keyword || text.includes(keyword);
+    .forEach((material) => {
+      const key = `${material.category}::${material.subCategory}`;
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          id: key,
+          category: material.category,
+          subCategory: material.subCategory,
+          assetDesc: material.subCategory,
+          config: '',
+          enabled: true,
+          borrowable: true,
+        });
+      }
     });
-}
 
-function uniqueValues(records, level, selectedPath) {
-  return [...new Set(records
-    .filter((item) => selectedPath.every((value, index) => item.path[index] === value))
-    .map((item) => item.path[level]))];
+  const normalizedKeyword = keyword.trim().toLowerCase();
+  return [...grouped.values()].filter((item) => (
+    !normalizedKeyword || `${item.category} ${item.subCategory}`.toLowerCase().includes(normalizedKeyword)
+  ));
 }
 
 export default function BorrowMaterialModal({ open, onCancel, onConfirm }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPath, setSelectedPath] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedMaterials, setSelectedMaterials] = useState([]);
-  const keyword = searchQuery.trim().toLowerCase();
-  const records = useMemo(() => getCatalogRecords(keyword), [keyword]);
+  const borrowTypes = useMemo(() => getBorrowTypes(searchQuery), [searchQuery]);
+  const categories = useMemo(() => [...new Set(borrowTypes.map((item) => item.category))], [borrowTypes]);
+  const subCategories = useMemo(
+    () => borrowTypes.filter((item) => item.category === selectedCategory),
+    [borrowTypes, selectedCategory]
+  );
 
-  const levelOptions = useMemo(() => LEVEL_NAMES.map((_, level) => (
-    level === 0 || selectedPath.length >= level
-      ? uniqueValues(records, level, selectedPath.slice(0, level))
-      : []
-  )), [records, selectedPath]);
-
-  const selectLevel = (level, value) => {
-    setSelectedPath((current) => [...current.slice(0, level), value]);
-  };
-
-  const toggleConfiguration = (config) => {
-    const path = [...selectedPath.slice(0, 4), config];
-    const matched = records.find((item) => item.path.every((value, index) => value === path[index]));
-    if (!matched) return;
-
-    setSelectedMaterials((current) => current.some((item) => item.id === matched.material.id)
-      ? current.filter((item) => item.id !== matched.material.id)
-      : [...current, matched.material]);
+  const toggleSubCategory = (material) => {
+    setSelectedMaterials((current) => current.some((item) => item.id === material.id)
+      ? current.filter((item) => item.id !== material.id)
+      : [...current, material]);
   };
 
   const resetModal = () => {
     setSearchQuery('');
-    setSelectedPath([]);
+    setSelectedCategory('');
     setSelectedMaterials([]);
   };
 
@@ -77,13 +71,11 @@ export default function BorrowMaterialModal({ open, onCancel, onConfirm }) {
         </Space>
       )}
       open={open}
-      width={1180}
+      width={920}
       onCancel={closeModal}
       footer={(
         <div className="flex w-full items-center justify-between px-2">
-          <div className="min-w-[140px] text-left">
-            <Typography.Text>已选择 <b className="text-blue-600">{selectedMaterials.length}</b> 项</Typography.Text>
-          </div>
+          <Typography.Text>已选择 <b className="text-blue-600">{selectedMaterials.length}</b> 项</Typography.Text>
           <Space size={12}>
             <Button type="primary" disabled={selectedMaterials.length === 0} onClick={confirmSelection}>确定添加</Button>
             <Button onClick={closeModal}>返回</Button>
@@ -95,71 +87,69 @@ export default function BorrowMaterialModal({ open, onCancel, onConfirm }) {
       <Input.Search
         allowClear
         className="mb-4"
-        placeholder="搜索大类、小类、品牌、型号或配置"
+        placeholder="搜索大类或小类"
         value={searchQuery}
         onChange={(event) => {
           setSearchQuery(event.target.value);
-          setSelectedPath([]);
+          setSelectedCategory('');
         }}
       />
 
-      <div className="grid grid-cols-[minmax(0,1fr)_300px] gap-4">
+      <div className="grid grid-cols-[minmax(0,1fr)_280px] gap-4">
         <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <div className="grid grid-cols-5 border-b border-slate-200 bg-slate-50">
-            {LEVEL_NAMES.map((name) => (
-              <div key={name} className="border-r border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 last:border-r-0">{name}</div>
-            ))}
+          <div className="grid grid-cols-2 border-b border-slate-200 bg-slate-50">
+            <div className="border-r border-slate-200 px-3 py-2 text-sm font-medium text-slate-700">大类</div>
+            <div className="px-3 py-2 text-sm font-medium text-slate-700">小类</div>
           </div>
 
-          <div className="grid min-h-[430px] max-h-[500px] grid-cols-5">
-            {LEVEL_NAMES.map((_, level) => (
-              <div key={LEVEL_NAMES[level]} className="overflow-auto border-r border-slate-200 p-2 last:border-r-0">
-                {levelOptions[level].length === 0 ? (
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={level === 0 ? '暂无可借用资产' : '请选择上一级'}
-                  />
-                ) : levelOptions[level].map((option) => {
-                  const selected = selectedPath[level] === option;
-                  const isConfig = level === 4;
-                  const matched = isConfig
-                    ? records.find((item) => item.path.every((value, index) => value === [...selectedPath.slice(0, 4), option][index]))
-                    : null;
-                  const checked = matched && selectedMaterials.some((item) => item.id === matched.material.id);
+          <div className="grid min-h-[360px] max-h-[460px] grid-cols-2">
+            <div className="overflow-auto border-r border-slate-200 p-2">
+              {categories.length === 0 ? (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无可借用资产" />
+              ) : categories.map((category) => {
+                const selected = selectedCategory === category;
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    className={`mb-1 flex w-full items-center justify-between rounded px-3 py-2 text-left text-sm transition ${selected ? 'bg-blue-50 text-blue-600' : 'text-slate-700 hover:bg-slate-50'}`}
+                    onClick={() => setSelectedCategory(category)}
+                  >
+                    <span>{category}</span>
+                    {selected ? <Check size={14} /> : <ChevronRight size={14} className="text-slate-400" />}
+                  </button>
+                );
+              })}
+            </div>
 
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      className={`mb-1 flex w-full items-center justify-between rounded px-3 py-2 text-left text-sm transition ${selected || checked ? 'bg-blue-50 text-blue-600' : 'text-slate-700 hover:bg-slate-50'}`}
-                      onMouseEnter={() => {
-                        if (!isConfig) selectLevel(level, option);
-                      }}
-                      onFocus={() => {
-                        if (!isConfig) selectLevel(level, option);
-                      }}
-                      onClick={() => {
-                        if (isConfig) toggleConfiguration(option);
-                        else selectLevel(level, option);
-                      }}
-                    >
-                      <span className="min-w-0 flex-1 truncate">{option}</span>
-                      {isConfig ? (
-                        <Checkbox
-                          checked={Boolean(checked)}
-                          onChange={() => toggleConfiguration(option)}
-                          onClick={(event) => event.stopPropagation()}
-                        />
-                      ) : selected ? <Check size={14} /> : <ChevronRight size={14} className="text-slate-400" />}
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
+            <div className="overflow-auto p-2">
+              {!selectedCategory ? (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="请选择大类" />
+              ) : subCategories.length === 0 ? (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无可借用小类" />
+              ) : subCategories.map((material) => {
+                const checked = selectedMaterials.some((item) => item.id === material.id);
+                return (
+                  <button
+                    key={material.id}
+                    type="button"
+                    className={`mb-1 flex w-full items-center justify-between rounded px-3 py-2 text-left text-sm transition ${checked ? 'bg-blue-50 text-blue-600' : 'text-slate-700 hover:bg-slate-50'}`}
+                    onClick={() => toggleSubCategory(material)}
+                  >
+                    <span>{material.subCategory}</span>
+                    <Checkbox
+                      checked={checked}
+                      onChange={() => toggleSubCategory(material)}
+                      onClick={(event) => event.stopPropagation()}
+                    />
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        <div className="flex min-h-[430px] max-h-[500px] flex-col rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div className="flex min-h-[360px] max-h-[460px] flex-col rounded-lg border border-slate-200 bg-slate-50 p-4">
           <div className="mb-3 flex items-center justify-between">
             <Typography.Title level={5} className="mb-0">已选资产</Typography.Title>
             <Button type="link" disabled={selectedMaterials.length === 0} onClick={() => setSelectedMaterials([])}>清空</Button>
@@ -180,8 +170,8 @@ export default function BorrowMaterialModal({ open, onCancel, onConfirm }) {
                     onClick={() => setSelectedMaterials((current) => current.filter((record) => record.id !== item.id))}
                   />
                 </div>
-                <Typography.Text strong>{item.assetDesc}</Typography.Text>
-                <div className="mt-1 text-xs text-slate-500">{item.config}</div>
+                <Typography.Text strong>{item.subCategory}</Typography.Text>
+                <div className="mt-1 text-xs text-slate-500">{item.category}</div>
               </div>
             ))}
           </div>
