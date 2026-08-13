@@ -97,7 +97,6 @@ export default function ContractNumberReceiptConfirmPage() {
   }
 
   const applicant = current.applicant;
-  const number = current.assignedNumber;
   const confirmed = Boolean(confirmedResult);
 
   const columns = [
