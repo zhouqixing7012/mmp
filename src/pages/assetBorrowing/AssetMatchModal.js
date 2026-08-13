@@ -25,7 +25,16 @@ function enrichAsset(asset) {
   };
 }
 
-export default function AssetMatchModal({ open, materialId, warehouse, currentAsset, onCancel, onConfirm }) {
+export default function AssetMatchModal({
+  open,
+  materialId,
+  category,
+  subCategory,
+  warehouse,
+  currentAsset,
+  onCancel,
+  onConfirm,
+}) {
   const [query, setQuery] = useState(EMPTY_QUERY);
   const [appliedQuery, setAppliedQuery] = useState(EMPTY_QUERY);
   const [selectedKey, setSelectedKey] = useState(currentAsset?.id || null);
@@ -39,12 +48,14 @@ export default function AssetMatchModal({ open, materialId, warehouse, currentAs
 
   const baseAssets = useMemo(() => BORROW_ALLOCATABLE_ASSETS
     .filter((asset) => (
-      asset.materialId === materialId
+      (category && subCategory
+        ? asset.category === category && asset.subCategory === subCategory
+        : asset.materialId === materialId)
       && asset.warehouse === warehouse
       && ['在库-新增', '在库-待处理', '在库-再利用'].includes(asset.status)
       && !asset.locked
     ))
-    .map(enrichAsset), [materialId, warehouse]);
+    .map(enrichAsset), [materialId, category, subCategory, warehouse]);
 
   const filteredAssets = useMemo(() => baseAssets.filter((asset) => (
     (!appliedQuery.assetTag || asset.assetTag.toLowerCase().includes(appliedQuery.assetTag.toLowerCase()))
