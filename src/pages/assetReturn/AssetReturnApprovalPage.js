@@ -5,7 +5,6 @@ import {
   Card,
   Empty,
   Input,
-  Modal,
   Space,
   Table,
   Typography,
@@ -14,17 +13,13 @@ import {
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import {
-  addAssetReturnAttachment,
   getAssetReturnApplications,
-  removeAssetReturnAttachment,
   submitAssetReturnMisDecision,
 } from '../../services/assetReturnService';
 import { formatDateText, formatDepartment } from '../../utils/displayFormat';
-import ReturnAttachmentCard from './ReturnAttachmentCard';
 
 const { TextArea } = Input;
 const MIS_NODE = 'MIS鉴定';
-const MIS_UPLOADER = { id: 'CW003379', name: 'CW003379-李木勇' };
 
 function SectionTitle({ children }) {
   return (
@@ -40,38 +35,11 @@ export default function AssetReturnApprovalPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [version, setVersion] = useState(0);
   const [comment, setComment] = useState('');
-  const [repairOpen, setRepairOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const applications = useMemo(() => getAssetReturnApplications(), [version]);
   const selected = applications.find((item) => item.status === '处理中' && item.currentNode === MIS_NODE) || null;
 
   const refresh = () => setVersion((value) => value + 1);
-
-  const uploadAttachment = (file) => {
-    if (!selected) return;
-    addAssetReturnAttachment(selected.id, {
-      ...file,
-      node: MIS_NODE,
-      uploaderId: MIS_UPLOADER.id,
-      uploaderName: MIS_UPLOADER.name,
-    });
-    messageApi.success(`附件“${file.name}”上传成功`);
-    refresh();
-  };
-
-  const deleteAttachment = (attachmentId) => {
-    if (!selected) return;
-    try {
-      removeAssetReturnAttachment(selected.id, attachmentId, {
-        node: MIS_NODE,
-        uploaderId: MIS_UPLOADER.id,
-      });
-      messageApi.success('附件已删除');
-      refresh();
-    } catch (error) {
-      messageApi.error(error.message);
-    }
-  };
 
   const submit = (decision) => {
     if (!selected) return;
@@ -130,33 +98,6 @@ export default function AssetReturnApprovalPage() {
     { title: '审批意见', dataIndex: 'comment', render: (value) => value || '-' },
   ];
 
-  const repairColumns = [
-    { title: '维修单号', dataIndex: 'orderNo', width: 170 },
-    { title: '维修时间', dataIndex: 'repairTime', width: 170 },
-    { title: '故障描述', dataIndex: 'faultDescription', width: 240 },
-    { title: '维修结果', dataIndex: 'repairResult', width: 240 },
-    { title: '维修状态', dataIndex: 'status', width: 100, render: (value) => <StatusTag value={value} type="business" /> },
-  ];
-
-  const repairRecords = [
-    {
-      id: 'repair-1',
-      orderNo: 'WX-202607180021',
-      repairTime: '2026-07-18 10:30:00',
-      faultDescription: '设备间歇性蓝屏、无法稳定启动。',
-      repairResult: '更换硬盘并完成系统检测。',
-      status: '已完成',
-    },
-    {
-      id: 'repair-2',
-      orderNo: 'WX-202601120008',
-      repairTime: '2026-01-12 15:20:00',
-      faultDescription: '设备运行卡顿，启动时间较长。',
-      repairResult: '完成系统清理及硬件检测。',
-      status: '已完成',
-    },
-  ];
-
   return (
     <>
       {contextHolder}
@@ -185,28 +126,17 @@ export default function AssetReturnApprovalPage() {
             <DetailItem label="数量">{asset.quantity || 1}</DetailItem>
             <DetailItem label="资产大类">{asset.category || '-'}</DetailItem>
             <DetailItem label="资产小类">{asset.subCategory || '-'}</DetailItem>
+            <DetailItem label="资产说明">{asset.assetDesc || '-'}</DetailItem>
             <DetailItem label="资产状态"><StatusTag value={asset.status} type="business" /></DetailItem>
             <DetailItem label="部件数量">{componentCount}</DetailItem>
             <DetailItem label="启用日期">{formatDateText(asset.enabledDate)}</DetailItem>
             <DetailItem label="城市">{asset.city || '-'}</DetailItem>
             <DetailItem label="建筑">{asset.building || '-'}</DetailItem>
             <DetailItem label="楼层">{asset.floor || '-'}</DetailItem>
-            <DetailItem label="维修记录">
-              <Button type="link" size="small" className="px-0" onClick={() => setRepairOpen(true)}>维修记录</Button>
-            </DetailItem>
-            <DetailItem label="资产说明" span={3}>{asset.assetDesc || '-'}</DetailItem>
             <DetailItem label="配置" span={3}>{asset.config || '-'}</DetailItem>
             <DetailItem label="备注" span={3}>{asset.note || '-'}</DetailItem>
           </DetailGrid>
         </Card>
-
-        <ReturnAttachmentCard
-          attachments={selected.attachments || []}
-          currentNode={MIS_NODE}
-          currentUploader={MIS_UPLOADER}
-          onUpload={uploadAttachment}
-          onDelete={deleteAttachment}
-        />
 
         <Card size="small" title={<SectionTitle>审批信息</SectionTitle>}>
           <Table
@@ -239,24 +169,6 @@ export default function AssetReturnApprovalPage() {
           </div>
         </Card>
       </Space>
-
-      <Modal
-        title={`维修记录（资产标签号：${asset.assetTag}）`}
-        open={repairOpen}
-        width={980}
-        footer={<div className="flex justify-center"><Button onClick={() => setRepairOpen(false)}>关闭</Button></div>}
-        onCancel={() => setRepairOpen(false)}
-      >
-        <Table
-          rowKey="id"
-          columns={repairColumns}
-          dataSource={repairRecords}
-          pagination={false}
-          bordered
-          size="small"
-          scroll={{ x: 920 }}
-        />
-      </Modal>
     </>
   );
 }
