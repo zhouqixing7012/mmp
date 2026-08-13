@@ -1,13 +1,6 @@
 import React from 'react';
-import { Card, Table, Tag } from 'antd';
-
-const STATUS_COLOR = {
-  已提交: 'processing',
-  已同意: 'success',
-  待审批: 'warning',
-  已驳回: 'error',
-  已跳过: 'default',
-};
+import { Card, Table } from 'antd';
+import StatusTag from '../../components/StatusTag';
 
 export default function ApprovalHistoryCard({ records }) {
   const columns = [
@@ -18,10 +11,10 @@ export default function ApprovalHistoryCard({ records }) {
       dataIndex: 'status',
       width: 110,
       align: 'center',
-      render: (value) => <Tag color={STATUS_COLOR[value] || 'default'}>{value}</Tag>,
+      render: (value) => <StatusTag value={value} type="business" />,
     },
-    { title: '审批时间', dataIndex: 'time', width: 170 },
-    { title: '审批意见', dataIndex: 'comment' },
+    { title: '审批时间', dataIndex: 'time', width: 170, render: (value) => value || '-' },
+    { title: '审批意见', dataIndex: 'comment', render: (value) => value || '-' },
   ];
 
   return (
@@ -32,6 +25,7 @@ export default function ApprovalHistoryCard({ records }) {
         dataSource={records}
         pagination={false}
         size="small"
+        bordered
       />
     </Card>
   );
