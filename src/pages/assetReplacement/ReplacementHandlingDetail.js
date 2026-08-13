@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Trash2 } from 'lucide-react';
+import { Search } from 'lucide-react';
 import {
   Button,
   Card,
@@ -230,6 +230,10 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
   };
 
   const handleIssueConfirm = () => {
+    if (!oldInboundDone) {
+      messageApi.warning('请先完成旧资产退库确认');
+      return;
+    }
     if (newWaitingConfirmation) {
       openEmployeeConfirmation();
       return;
@@ -293,12 +297,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
           title={<SectionTitle>更换物资信息</SectionTitle>}
           size="small"
           extra={(
-            <Button
-              type="primary"
-              loading={submitting}
-              disabled={oldInboundDone}
-              onClick={handleReturnConfirm}
-            >
+            <Button type="primary" loading={submitting} onClick={handleReturnConfirm}>
               退库确认
             </Button>
           )}
@@ -358,19 +357,9 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
           title={<SectionTitle>待发放资产信息</SectionTitle>}
           size="small"
           extra={(
-            <Space size={8}>
-              {newAsset && (
-                <Button danger type="text" icon={<Trash2 size={14} />} onClick={() => setNewAsset(null)}>删除</Button>
-              )}
-              <Button
-                type="primary"
-                loading={submitting}
-                disabled={!oldInboundDone}
-                onClick={handleIssueConfirm}
-              >
-                领用确认
-              </Button>
-            </Space>
+            <Button type="primary" loading={submitting} onClick={handleIssueConfirm}>
+              领用确认
+            </Button>
           )}
         >
           <DetailGrid>
