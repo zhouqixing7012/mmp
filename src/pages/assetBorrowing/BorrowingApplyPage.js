@@ -306,49 +306,53 @@ export default function BorrowingApplyPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4">
+    <>
       {contextHolder}
-      {!canApply && <Alert className="mb-4" type="error" showIcon message="当前员工类型暂不支持资产借用。" />}
+      <Space direction="vertical" size={16} className="w-full">
+        <Typography.Title level={4} className="mb-0">资产借用</Typography.Title>
 
-      <Card
-        title={(
-          <Space>
-            <span>借用资产明细</span>
-            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">{totalQuantity} 件</span>
-          </Space>
-        )}
-        size="small"
-        extra={(
-          <Button type="primary" icon={<Plus size={14} />} disabled={!canApply} onClick={() => setMaterialModalOpen(true)}>
-            添加资产
-          </Button>
-        )}
-      >
-        <Table
-          rowKey="rowKey"
-          columns={columns}
-          dataSource={details}
-          pagination={false}
+        {!canApply && <Alert type="error" showIcon message="当前员工类型暂不支持资产借用。" />}
+
+        <Card
+          title={(
+            <Space>
+              <span>借用资产明细</span>
+              <Typography.Text type="secondary">共 {totalQuantity} 件</Typography.Text>
+            </Space>
+          )}
           size="small"
-          bordered
-          scroll={{ x: 1200 }}
-          locale={{ emptyText: <Empty description="请点击右上角“添加资产”选择借用资产" /> }}
-        />
-      </Card>
+          extra={(
+            <Button type="primary" icon={<Plus size={14} />} disabled={!canApply} onClick={() => setMaterialModalOpen(true)}>
+              添加资产
+            </Button>
+          )}
+        >
+          <Table
+            rowKey="rowKey"
+            columns={columns}
+            dataSource={details}
+            pagination={false}
+            size="small"
+            bordered
+            scroll={{ x: 1200 }}
+            locale={{ emptyText: <Empty description="请点击右上角“添加资产”选择借用资产" /> }}
+          />
+        </Card>
 
-      <Card title="资产保管职责" size="small" className="mt-4">
-        <Typography.Paragraph type="danger" className="mb-3">{BORROW_CUSTODY_TEXT}</Typography.Paragraph>
-        <div className="flex justify-center">
-          <Checkbox checked={custodyAccepted} onChange={(event) => setCustodyAccepted(event.target.checked)}>
-            我已阅读并确认资产保管职责
-          </Checkbox>
+        <Card title="资产保管职责" size="small">
+          <Typography.Paragraph type="danger" className="mb-3">{BORROW_CUSTODY_TEXT}</Typography.Paragraph>
+          <div className="flex justify-center">
+            <Checkbox checked={custodyAccepted} onChange={(event) => setCustodyAccepted(event.target.checked)}>
+              我已阅读并确认资产保管职责
+            </Checkbox>
+          </div>
+        </Card>
+
+        <div className="flex justify-center gap-3 py-2">
+          <Button type="primary" loading={submitting} onClick={submit}>提交</Button>
+          <Button onClick={cancel}>取消</Button>
         </div>
-      </Card>
-
-      <div className="mt-4 flex justify-center gap-3 rounded-lg bg-white px-5 py-4 shadow-sm">
-        <Button type="primary" loading={submitting} onClick={submit}>提交</Button>
-        <Button onClick={cancel}>取消</Button>
-      </div>
+      </Space>
 
       <Modal title="申请须知" open={noticeOpen} closable={false} maskClosable={false} keyboard={false} footer={null}>
         {BORROW_NOTICE.map((item, index) => <Typography.Paragraph key={item}>{index + 1}、{item}</Typography.Paragraph>)}
@@ -356,6 +360,6 @@ export default function BorrowingApplyPage() {
       </Modal>
 
       <BorrowMaterialModal open={materialModalOpen} onCancel={() => setMaterialModalOpen(false)} onConfirm={addMaterials} />
-    </div>
+    </>
   );
 }
