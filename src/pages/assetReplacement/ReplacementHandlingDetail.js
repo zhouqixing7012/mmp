@@ -330,6 +330,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
               />
             </DetailItem>
             <DetailItem label="责任人">{returnManager}</DetailItem>
+            <DetailItem label="鉴定说明">{application.mis?.description || '-'}</DetailItem>
             <DetailItem label="资产标记">
               <Select
                 className="w-full"
@@ -341,7 +342,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
               />
             </DetailItem>
             <DetailItem label="退库日期">{confirmedReturnDate}</DetailItem>
-            <DetailItem label="使用说明" span={2}>
+            <DetailItem label="使用说明">
               <Input
                 maxLength={200}
                 value={returnUsageNote}
