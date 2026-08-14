@@ -160,7 +160,11 @@ export default function EmployeeAssetApprovalPage() {
           <Typography.Text type="secondary">申请单号：{selectedApplication.id}</Typography.Text>
         </div>
 
-        <ApplicantInfoCard applicant={selectedApplication.applicant} applyDate={selectedApplication.applyDate} />
+        <ApplicantInfoCard
+          applicant={selectedApplication.applicant}
+          applyDate={selectedApplication.applyDate}
+          showEmployeeStatus={false}
+        />
 
         <Card title="申请资产信息" size="small">
           <Table
@@ -177,7 +181,7 @@ export default function EmployeeAssetApprovalPage() {
         <ApprovalHistoryCard records={selectedApplication.approvalHistory} />
 
         {canApprove && (
-          <Card title="当前审批操作" size="small">
+          <Card title="审批操作" size="small">
             <TextArea rows={3} value={comment} placeholder="驳回时必填" onChange={(event) => setComment(event.target.value)} />
             <div className="mt-4 flex justify-center gap-3">
               <Button type="primary" loading={loading} onClick={() => handleDecision('同意')}>同意</Button>
