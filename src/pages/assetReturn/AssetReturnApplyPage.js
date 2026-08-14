@@ -39,8 +39,6 @@ export default function AssetReturnApplyPage() {
 
   const selectedAssets = selectedIds.map((id) => assets.find((asset) => asset.id === id)).filter(Boolean);
   const selectedAssetTotal = selectedAssets.reduce((sum, item) => sum + item.quantity, 0);
-  const selectedPurposes = [...new Set(selectedAssets.map((item) => item.purpose).filter(Boolean))];
-  const purposeSummary = selectedPurposes.length ? selectedPurposes.join('、') : '-';
 
   const selectableAssets = useMemo(() => assets.filter((asset) => (
     !selectedIds.includes(asset.id)
@@ -108,10 +106,9 @@ export default function AssetReturnApplyPage() {
         <Card size="small" title="申请信息">
           <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="申请人">213852-孙志强</Descriptions.Item>
-            <Descriptions.Item label="退库类型">
+            <Descriptions.Item label="退库类型" span={2}>
               <Select className="w-full" value={returnType} options={['资产退库', '离职退还'].map((value) => ({ label: value, value }))} onChange={setReturnType} />
             </Descriptions.Item>
-            <Descriptions.Item label="资产用途">{purposeSummary}</Descriptions.Item>
             <Descriptions.Item label={<><span className="text-red-500">*</span> 退库原因</>} span={3}>
               <TextArea rows={3} maxLength={400} showCount value={reason} placeholder="请填写退库原因，最多400字" onChange={(event) => setReason(event.target.value)} />
             </Descriptions.Item>
