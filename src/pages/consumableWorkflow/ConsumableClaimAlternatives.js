@@ -90,6 +90,7 @@ function ConsumableClaimAlternativePage({ variant }) {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const data = VARIANTS[variant];
+  const isMaterialCode = variant === 'materialCode';
   const [warehouse, setWarehouse] = useState('I1001-耗材集团总库（新媒体）');
   const [documentRemark, setDocumentRemark] = useState('');
   const [identifier, setIdentifier] = useState(data.identifier);
@@ -101,7 +102,7 @@ function ConsumableClaimAlternativePage({ variant }) {
   const [usageNote, setUsageNote] = useState('');
 
   const submit = () => {
-    if (!warehouse || !identifier.trim() || !city || !building || !floor || !purpose) {
+    if (!warehouse || !identifier.trim() || !city || !building || !floor || (!isMaterialCode && !purpose)) {
       messageApi.warning('请完整填写必填字段');
       return;
     }
@@ -129,9 +130,11 @@ function ConsumableClaimAlternativePage({ variant }) {
           <Descriptions.Item label="申请日期">{data.applicant.applyDate}</Descriptions.Item>
           <Descriptions.Item label="成本中心">{data.applicant.costCenter}</Descriptions.Item>
           <Descriptions.Item label="部门" span={2}>{formatDepartment(data.applicant.department)}</Descriptions.Item>
-          <Descriptions.Item label="单据备注" span={3}>
-            <TextArea rows={2} maxLength={400} showCount value={documentRemark} placeholder="请输入单据备注" onChange={(event) => setDocumentRemark(event.target.value)} />
-          </Descriptions.Item>
+          {!isMaterialCode && (
+            <Descriptions.Item label="单据备注" span={3}>
+              <TextArea rows={2} maxLength={400} showCount value={documentRemark} placeholder="请输入单据备注" onChange={(event) => setDocumentRemark(event.target.value)} />
+            </Descriptions.Item>
+          )}
         </Descriptions>
       </Card>
 
@@ -140,7 +143,7 @@ function ConsumableClaimAlternativePage({ variant }) {
           <Descriptions.Item label={<span><span className="text-red-500">*</span> {data.identifierLabel}</span>}>
             <Input value={identifier} onChange={(event) => setIdentifier(event.target.value)} />
           </Descriptions.Item>
-          <Descriptions.Item label="序列号">{data.serialNo}</Descriptions.Item>
+          {!isMaterialCode && <Descriptions.Item label="序列号">{data.serialNo}</Descriptions.Item>}
           <Descriptions.Item label={data.quantityLabel}>{data.quantity}</Descriptions.Item>
           <Descriptions.Item label="公司">{data.company}</Descriptions.Item>
           <Descriptions.Item label="板块">{data.block}</Descriptions.Item>
@@ -148,7 +151,11 @@ function ConsumableClaimAlternativePage({ variant }) {
           <Descriptions.Item label="实际耗材说明">{data.actualDescription}</Descriptions.Item>
           <Descriptions.Item label="配置" span={2}>{data.configuration}</Descriptions.Item>
           <Descriptions.Item label="备注" span={3}>
-            <TextArea rows={2} maxLength={400} showCount value={remark} placeholder="请输入备注" onChange={(event) => setRemark(event.target.value)} />
+            {isMaterialCode ? (
+              <Input maxLength={400} value={remark} placeholder="请输入备注" onChange={(event) => setRemark(event.target.value)} />
+            ) : (
+              <TextArea rows={2} maxLength={400} showCount value={remark} placeholder="请输入备注" onChange={(event) => setRemark(event.target.value)} />
+            )}
           </Descriptions.Item>
           <Descriptions.Item label={<span><span className="text-red-500">*</span> 城市</span>}>
             <Select className="w-full" value={city} options={CITY_OPTIONS} onChange={setCity} />
@@ -159,11 +166,17 @@ function ConsumableClaimAlternativePage({ variant }) {
           <Descriptions.Item label={<span><span className="text-red-500">*</span> 楼层</span>}>
             <Select className="w-full" value={floor} options={FLOOR_OPTIONS} onChange={setFloor} />
           </Descriptions.Item>
-          <Descriptions.Item label={<span><span className="text-red-500">*</span> 使用用途</span>}>
-            <Select className="w-full" value={purpose} options={PURPOSE_OPTIONS} onChange={setPurpose} />
-          </Descriptions.Item>
-          <Descriptions.Item label="使用说明" span={2}>
-            <TextArea rows={2} maxLength={400} showCount value={usageNote} placeholder="请输入使用说明" onChange={(event) => setUsageNote(event.target.value)} />
+          {!isMaterialCode && (
+            <Descriptions.Item label={<span><span className="text-red-500">*</span> 使用用途</span>}>
+              <Select className="w-full" value={purpose} options={PURPOSE_OPTIONS} onChange={setPurpose} />
+            </Descriptions.Item>
+          )}
+          <Descriptions.Item label="使用说明" span={isMaterialCode ? 3 : 2}>
+            {isMaterialCode ? (
+              <Input maxLength={400} value={usageNote} placeholder="请输入使用说明" onChange={(event) => setUsageNote(event.target.value)} />
+            ) : (
+              <TextArea rows={2} maxLength={400} showCount value={usageNote} placeholder="请输入使用说明" onChange={(event) => setUsageNote(event.target.value)} />
+            )}
           </Descriptions.Item>
         </Descriptions>
       </Card>
@@ -171,8 +184,8 @@ function ConsumableClaimAlternativePage({ variant }) {
       <Card size="small" title="申请参考信息">
         <Descriptions bordered size="small" column={3}>
           <Descriptions.Item label="申请耗材说明" span={3}>{data.requestedDescription}</Descriptions.Item>
-          <Descriptions.Item label="申请原因" span={3}>{data.reason}</Descriptions.Item>
-          <Descriptions.Item label="详细说明" span={3}>{data.detail}</Descriptions.Item>
+          <Descriptions.Item label={isMaterialCode ? '申请用途' : '申请原因'} span={3}>{data.reason}</Descriptions.Item>
+          <Descriptions.Item label={isMaterialCode ? '申请原因' : '详细说明'} span={3}>{data.detail}</Descriptions.Item>
         </Descriptions>
       </Card>
 
