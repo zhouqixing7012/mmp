@@ -3,7 +3,7 @@ export const UNIFIED_SUMMARY_LIST = [
     id: 'UA-202601-001',
     department: '集团总部.员工服务中心',
     quantity: 4,
-    summaryTime: '2026-02-05 18:30',
+    summaryTime: '2026-08-03至2026-08-09',
     status: '待汇总',
   },
 ];
