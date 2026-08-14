@@ -32,9 +32,10 @@ export function DetailGrid({
     { length: normalizedColumns },
     () => `${normalizedLabelWidth} minmax(0, 1fr)`
   ).join(' ');
+  const scrollClassName = minWidth ? 'overflow-x-auto' : '';
 
   return (
-    <div className={`w-full overflow-x-auto ${className}`.trim()}>
+    <div className={`w-full ${scrollClassName} ${className}`.trim()}>
       <DetailGridContext.Provider value={{ columns: normalizedColumns }}>
         <dl
           style={{
