@@ -18,7 +18,7 @@ import {
   getBorrowingApplicationByNode,
   updateAssetBorrowingApplication,
 } from '../../services/assetBorrowingService';
-import { formatDepartment } from '../../utils/displayFormat';
+import { formatDateText, formatDepartment } from '../../utils/displayFormat';
 import { nowText } from './utils';
 
 export default function BorrowingConfirmPage() {
@@ -81,8 +81,16 @@ export default function BorrowingConfirmPage() {
     },
     { title: '资产说明', dataIndex: 'assetDesc', width: 240 },
     { title: '配置', dataIndex: 'config', width: 250, render: (value) => value || '-' },
-    { title: '申请数量', dataIndex: 'quantity', width: 100, align: 'center' },
-    { title: '借用数量', dataIndex: 'quantity', width: 100, align: 'center' },
+    {
+      title: '借用开始时间',
+      width: 150,
+      render: (_, record) => formatDateText(record.startDate),
+    },
+    {
+      title: '借用结束时间',
+      width: 150,
+      render: (_, record) => formatDateText(record.endDate),
+    },
     {
       title: '资产用途',
       width: 130,
@@ -137,7 +145,7 @@ export default function BorrowingConfirmPage() {
             columns={columns}
             dataSource={application.details}
             pagination={false}
-            scroll={{ x: 1320 }}
+            scroll={{ x: 1420 }}
           />
         </Card>
 
