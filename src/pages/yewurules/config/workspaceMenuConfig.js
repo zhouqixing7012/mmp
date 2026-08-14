@@ -35,6 +35,11 @@ import {
   BorrowingConfirmPage,
 } from '../../assetBorrowing';
 import {
+  AssetTransferDetailPage,
+  TransferOutManagerApprovalPage,
+  ReceiverManagerApprovalPage,
+} from '../../assetTransfer/TransferApprovalPages';
+import {
   ReplacementApplyPage,
   ReplacementMisPage,
   ReplacementHandlingPage,
@@ -82,6 +87,9 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: '借用审批', label: '借用审批', Page: BorrowingApprovalPage },
   { key: '借用发放', label: '借用发放', Page: BorrowingIssuePage },
   { key: '员工借用确认', label: '员工借用确认', Page: BorrowingConfirmPage },
+  { key: '资产转移详情', label: '资产转移详情', Page: AssetTransferDetailPage },
+  { key: '转出部门经理审批', label: '转出部门经理审批', Page: TransferOutManagerApprovalPage },
+  { key: '接收部门经理审批', label: '接收部门经理审批', Page: ReceiverManagerApprovalPage },
   { key: '资产更换申请', label: '资产更换申请', Page: ReplacementApplyPage },
   { key: 'MIS鉴定', label: 'MIS鉴定', Page: ReplacementMisPage },
   { key: '资产更换办理', label: '资产更换办理', Page: ReplacementHandlingPage },
