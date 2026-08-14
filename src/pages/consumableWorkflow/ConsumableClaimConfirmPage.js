@@ -4,11 +4,11 @@ import {
   Alert,
   Button,
   Card,
-  Checkbox,
   Empty,
   Input,
   QRCode,
   Space,
+  Table,
   Typography,
   message as antdMessage,
 } from 'antd';
@@ -22,7 +22,6 @@ export default function ConsumableClaimConfirmPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [version, setVersion] = useState(0);
   const [employeeId, setEmployeeId] = useState('');
-  const [read, setRead] = useState(false);
   const [confirmedResult, setConfirmedResult] = useState(null);
   const claim = useMemo(
     () => getConsumableWorkflowState().claims.find((item) => (
@@ -36,10 +35,6 @@ export default function ConsumableClaimConfirmPage() {
 
   const confirm = (method, targetEmployeeId) => {
     if (!claim) return;
-    if (!read) {
-      messageApi.warning('请先阅读并确认耗材保管职责');
-      return;
-    }
     if (!targetEmployeeId) {
       messageApi.warning('请输入员工工号');
       return;
@@ -71,6 +66,40 @@ export default function ConsumableClaimConfirmPage() {
 
   const confirmed = Boolean(confirmedResult) || current.confirmationStatus === '已确认';
   const responsibility = '领用人确认已收到上述耗材，认同公司耗材仅作为工作用途使用。如无使用需要，应置于公司办公场所保存。领用人应承担妥善保管耗材的责任，除自然损耗外，不得人为损坏或者疏于维护。';
+  const detailColumns = [
+    {
+      title: '行号',
+      width: 70,
+      align: 'center',
+      render: (_, __, index) => index + 1,
+    },
+    {
+      title: '耗材说明',
+      width: 260,
+      render: (_, record) => record.item.materialDesc || '-',
+    },
+    {
+      title: '数量',
+      width: 90,
+      align: 'center',
+      render: (_, record) => record.item.quantity || 1,
+    },
+    {
+      title: '耗材标签号',
+      width: 160,
+      render: (_, record) => record.stock?.assetTag || '-',
+    },
+    {
+      title: '主资产标签号',
+      width: 170,
+      render: (_, record) => record.item.mainAssetTag || '-',
+    },
+    {
+      title: '主资产说明',
+      width: 260,
+      render: (_, record) => record.item.mainAssetDesc || '-',
+    },
+  ];
 
   return (
     <>
@@ -89,24 +118,21 @@ export default function ConsumableClaimConfirmPage() {
         </Card>
 
         <Card size="small" title="领用耗材明细">
-          <DetailGrid>
-            <DetailItem label="耗材说明">{current.item.materialDesc || '-'}</DetailItem>
-            <DetailItem label="数量">{current.item.quantity || 1}</DetailItem>
-            <DetailItem label="耗材标签号">{current.stock?.assetTag || '-'}</DetailItem>
-            <DetailItem label="主资产标签号">{current.item.mainAssetTag || '-'}</DetailItem>
-            <DetailItem label="主资产说明" span={2}>{current.item.mainAssetDesc || '-'}</DetailItem>
-          </DetailGrid>
+          <Table
+            rowKey="id"
+            size="small"
+            bordered
+            columns={detailColumns}
+            dataSource={[current]}
+            pagination={false}
+            scroll={{ x: 1010 }}
+          />
         </Card>
 
         <Card size="small" title="确认提示及保管职责">
-          <Typography.Paragraph type="danger" className="mb-3">
+          <Typography.Paragraph type="danger" className="mb-0">
             <strong>保管职责：</strong>{responsibility}
           </Typography.Paragraph>
-          <div className="flex justify-center">
-            <Checkbox checked={read} disabled={confirmed} onChange={(event) => setRead(event.target.checked)}>
-              我已阅读并确认耗材保管职责
-            </Checkbox>
-          </div>
         </Card>
 
         <Card size="small" title="刷卡/扫码确认">
