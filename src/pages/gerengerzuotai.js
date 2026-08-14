@@ -8,6 +8,7 @@ import { EMPLOYEE_CONTRACT_NUMBERS } from '../mock/assetReturnMock';
 
 const MOCK_DATA = {
   user: { name: '周琦星', id: '220784', department: '集团总部' },
+  pendingTodoCount: 3,
   assets: [
     {
       id: 'A2024001234',
@@ -84,6 +85,9 @@ export default function PersonalWorkspace() {
   const [keyword, setKeyword] = useState('');
   const [selectedAssetIds, setSelectedAssetIds] = useState([]);
   const [selectedContractIds, setSelectedContractIds] = useState([]);
+  const today = new Date();
+  const dateText = today.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+  const weekdayText = `星期${'日一二三四五六'[today.getDay()]}`;
 
   const selectedAssets = useMemo(
     () => MOCK_DATA.assets.filter((item) => selectedAssetIds.includes(item.id)),
@@ -208,7 +212,10 @@ export default function PersonalWorkspace() {
         <div className="flex items-center justify-between gap-6">
           <div>
             <Typography.Title level={4} style={{ color: '#fff', margin: 0 }}>上午好，{MOCK_DATA.user.name}</Typography.Title>
-            <div className="mt-2 text-sm text-blue-100">您名下共有 {MOCK_DATA.assets.length + MOCK_DATA.consumables.length} 项资产与耗材。</div>
+            <div className="mt-1 text-sm text-blue-100">{dateText} · {weekdayText}</div>
+            <div className="mt-2 text-sm text-blue-100">
+              您名下共有 {MOCK_DATA.assets.length + MOCK_DATA.consumables.length} 项资产与耗材，另有 {MOCK_DATA.pendingTodoCount} 条待办等待处理。
+            </div>
           </div>
           <Space>
             <Button icon={<Plus size={14} />} onClick={() => navigate('/employee-self-service/asset-apply')}>物资申请</Button>
