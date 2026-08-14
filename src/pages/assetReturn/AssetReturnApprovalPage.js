@@ -44,7 +44,7 @@ export default function AssetReturnApprovalPage() {
   const submit = (decision) => {
     if (!selected) return;
     if (decision === '驳回' && !comment.trim()) {
-      messageApi.warning('鉴定不通过时审批意见必填');
+      messageApi.warning('驳回时审批意见必填');
       return;
     }
 
@@ -57,7 +57,7 @@ export default function AssetReturnApprovalPage() {
         decision,
         comment: comment.trim(),
       });
-      messageApi.success(approved ? '鉴定已通过' : '退库申请已驳回');
+      messageApi.success(approved ? '已同意退库申请' : '退库申请已驳回');
       setComment('');
       refresh();
     } catch (error) {
@@ -157,14 +157,14 @@ export default function AssetReturnApprovalPage() {
               maxLength={400}
               showCount
               value={comment}
-              placeholder="鉴定不通过时必填"
+              placeholder="驳回时必填"
               onChange={(event) => setComment(event.target.value)}
             />
           </div>
 
           <div className="mt-4 flex justify-center gap-3">
-            <Button type="primary" loading={loading} onClick={() => submit('同意')}>鉴定通过</Button>
-            <Button danger loading={loading} onClick={() => submit('驳回')}>鉴定不通过</Button>
+            <Button type="primary" loading={loading} onClick={() => submit('同意')}>同意</Button>
+            <Button danger loading={loading} onClick={() => submit('驳回')}>驳回</Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
           </div>
         </Card>
