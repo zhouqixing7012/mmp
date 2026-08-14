@@ -43,15 +43,13 @@ export default function ContractNumberReceiptConfirmPage() {
     if (!current) return [];
     const number = current.assignedNumber || {};
     const handling = current.warehouseHandling || {};
-    const quantity = handling.quantity || 1;
     return [{
       id: current.id,
       assetTag: number.assetTag || '-',
-      phoneNumber: number.phoneNumber || '-',
+      contractNumber: number.phoneNumber || number.imei || '-',
       description: number.packageName || '-',
-      applyQuantity: quantity,
-      claimQuantity: quantity,
-      applyReason: handling.usageReason || current.applyReason || '-',
+      packageContent: number.packageContent || handling.packageContent || '-',
+      applyReason: current.applyReason || '-',
     }];
   }, [current]);
 
@@ -63,17 +61,16 @@ export default function ContractNumberReceiptConfirmPage() {
   const confirmed = Boolean(confirmedResult);
   const columns = [
     { title: '标签号', dataIndex: 'assetTag', width: 150 },
-    { title: '电话号码', dataIndex: 'phoneNumber', width: 160 },
-    { title: '说明', dataIndex: 'description', width: 220 },
-    { title: '申请数量', dataIndex: 'applyQuantity', width: 100, align: 'center' },
-    { title: '领用数量', dataIndex: 'claimQuantity', width: 100, align: 'center' },
-    { title: '申请原因', dataIndex: 'applyReason', width: 260 },
+    { title: '合约号码', dataIndex: 'contractNumber', width: 170 },
+    { title: '合约号码说明', dataIndex: 'description', width: 220 },
+    { title: '套餐内容', dataIndex: 'packageContent', width: 260 },
+    { title: '申请原因', dataIndex: 'applyReason', width: 280 },
   ];
 
   return <>{contextHolder}<Space direction="vertical" size={16} className="w-full">
     <div className="flex items-center justify-between"><Typography.Title level={4} className="mb-0">员工合约号码领取确认</Typography.Title><Typography.Text type="secondary">申请单号：{current.id}</Typography.Text></div>
     <Card title={<SectionTitle>领用人信息</SectionTitle>} size="small"><DetailGrid><DetailItem label="使用人">{applicant.id}-{applicant.name}</DetailItem><DetailItem label="联系电话">{applicant.phone || '-'}</DetailItem><DetailItem label="部门">{formatDepartment(applicant.department)}</DetailItem></DetailGrid></Card>
-    <Card title={<SectionTitle>领用物资明细</SectionTitle>} size="small"><Table rowKey="id" columns={columns} dataSource={rows} pagination={false} size="small" bordered scroll={{ x: 990 }} /></Card>
+    <Card title={<SectionTitle>领用物资明细</SectionTitle>} size="small"><Table rowKey="id" columns={columns} dataSource={rows} pagination={false} size="small" bordered scroll={{ x: 1080 }} /></Card>
     <Card title={<SectionTitle>保管职责</SectionTitle>} size="small"><Typography.Paragraph type="danger" strong className="mb-3">提示：我已核对并确认领取上述合约号码及电话卡，已阅读并确认保管职责，特此刷卡或扫码确认！</Typography.Paragraph><Typography.Paragraph type="danger" className="mb-0 leading-7"><strong>保管职责：</strong>{RESPONSIBILITY_TEXT}</Typography.Paragraph></Card>
     <Card title={<SectionTitle>刷卡/扫码确认</SectionTitle>} size="small">
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center"><div><Typography.Text strong>刷卡领用确认</Typography.Text><Typography.Paragraph type="secondary" className="mt-1 mb-3">请刷员工卡，或由管理员录入领用人员工工号后确认。</Typography.Paragraph><Space.Compact className="w-full max-w-xl"><Input value={employeeId} disabled={confirmed} placeholder="请输入员工工号" onPressEnter={confirmByEmployeeId} onChange={(event) => setEmployeeId(event.target.value)} /><Button type="primary" disabled={confirmed} onClick={confirmByEmployeeId}>确认领用</Button></Space.Compact></div><div className="flex flex-col items-center justify-center"><QRCode value={`contract-number-confirm:${current.id}:${applicant.id}`} size={156} /><Typography.Text strong className="mt-3">狐小 e 扫码确认</Typography.Text><Button className="mt-3" disabled={confirmed} onClick={() => confirm('狐小 e 扫码确认', applicant.id)}>模拟扫码确认</Button></div></div>
