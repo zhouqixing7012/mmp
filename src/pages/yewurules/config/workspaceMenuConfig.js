@@ -43,6 +43,7 @@ import {
 import {
   AssetReturnApplyPage,
   AssetReturnApprovalPage,
+  LeaderAssetReturnApprovalPage,
   AssetReturnHandlingPage,
   AssetReturnConfirmPage,
   ContractReturnApplyPage,
@@ -87,6 +88,7 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: '员工资产确认', label: '员工资产确认', Page: ReplacementConfirmPage },
   { key: '资产退库', label: '资产退库', Page: AssetReturnApplyPage },
   { key: '退库审批', label: '退库审批', Page: AssetReturnApprovalPage },
+  { key: '领导退库审批', label: '领导退库审批', Page: LeaderAssetReturnApprovalPage },
   { key: '资产退库办理', label: '资产退库办理', Page: AssetReturnHandlingPage },
   { key: '员工退库确认', label: '员工退库确认', Page: AssetReturnConfirmPage },
   { key: '合约号码退库', label: '合约号码退库', Page: ContractReturnApplyPage },
