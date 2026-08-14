@@ -106,6 +106,10 @@ function ConsumableClaimAlternativePage({ variant }) {
     messageApi.success('领用信息已保存，并已发起员工刷卡/扫码确认');
   };
 
+  const handleAction = (action) => {
+    messageApi.success(`${action}操作成功`);
+  };
+
   return (
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
@@ -176,7 +180,10 @@ function ConsumableClaimAlternativePage({ variant }) {
       <Card size="small" title="审批操作">
         <div className="flex justify-center gap-3">
           <Button type="primary" onClick={submit}>领用确认</Button>
+          <Button onClick={() => handleAction('弃领')}>弃领</Button>
+          <Button onClick={() => handleAction('加签')}>加签</Button>
           <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
+          <Button onClick={() => handleAction('发送领用通知')}>发送领用通知</Button>
         </div>
       </Card>
     </Space>
