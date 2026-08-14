@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, Card, Space } from 'antd';
+import { Eye } from 'lucide-react';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { formatDateText, formatDepartment } from '../../utils/displayFormat';
@@ -9,7 +10,13 @@ function ApplicantValue({ applicant, onViewAssets }) {
     <Space size={8}>
       <span>{applicant.id}-{applicant.name}</span>
       {onViewAssets && (
-        <Button size="small" onClick={onViewAssets}>
+        <Button
+          type="link"
+          size="small"
+          className="px-0"
+          icon={<Eye size={14} />}
+          onClick={onViewAssets}
+        >
           查看名下资产
         </Button>
       )}
