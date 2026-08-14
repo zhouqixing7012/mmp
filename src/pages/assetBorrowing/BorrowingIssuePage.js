@@ -22,7 +22,6 @@ import { formatDateText, formatDepartment } from '../../utils/displayFormat';
 import AssetMatchModal from './AssetMatchModal';
 import { nowText } from './utils';
 
-const { TextArea } = Input;
 const WAREHOUSE_OPTIONS = ['北京总部仓', '北京影像器材仓'];
 const PURPOSE_OPTIONS = ['员工用机', '部门公用', '其他用途', '专业用途'];
 const LOCATION_OPTIONS = {
@@ -60,7 +59,6 @@ export default function BorrowingIssuePage() {
   const [application, setApplication] = useState(() => getBorrowingIssueApplication());
   const [details, setDetails] = useState(() => hydrateDetails(application));
   const [warehouse, setWarehouse] = useState(() => application?.warehouse || '北京总部仓');
-  const [documentNote, setDocumentNote] = useState(() => application?.issueNote || '');
   const [confirmMethod] = useState(() => application?.confirmMethod || '狐小e扫码确认');
   const [matchDetailId, setMatchDetailId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -82,7 +80,6 @@ export default function BorrowingIssuePage() {
     setApplication(next);
     setDetails(hydrateDetails(next));
     setWarehouse(next?.warehouse || '北京总部仓');
-    setDocumentNote(next?.issueNote || '');
   };
 
   const validateIssueData = () => {
@@ -128,7 +125,6 @@ export default function BorrowingIssuePage() {
         floor: firstDetail?.issueFloor || record.floor,
         purpose: firstDetail?.issuePurpose || '',
         usageNote: firstDetail?.issueUsageNote || '',
-        issueNote: documentNote,
         confirmMethod,
         details,
         currentNode: '员工确认',
@@ -167,7 +163,6 @@ export default function BorrowingIssuePage() {
           outOrderNo,
           completedAt: nowText(),
           details,
-          issueNote: documentNote,
           approvalHistory: [
             ...record.approvalHistory,
             { node: '执行出库', person: 'SOHU01-库房管理员', status: '已出库', time: nowText(), comment: `出库单号：${outOrderNo}` },
@@ -252,9 +247,6 @@ export default function BorrowingIssuePage() {
             <Descriptions.Item label="联系电话">{application.applicant.phone || '-'}</Descriptions.Item>
             <Descriptions.Item label="邮箱">{application.applicant.email || '-'}</Descriptions.Item>
             <Descriptions.Item label="部门" span={3}>{formatDepartment(application.applicant.department)}</Descriptions.Item>
-            <Descriptions.Item label="单据备注" span={3}>
-              <TextArea rows={2} maxLength={400} showCount value={documentNote} onChange={(event) => setDocumentNote(event.target.value)} />
-            </Descriptions.Item>
           </Descriptions>
         </Card>
 
@@ -319,10 +311,8 @@ export default function BorrowingIssuePage() {
                       />
                     </Descriptions.Item>
                     <Descriptions.Item label="使用说明" span={2}>
-                      <TextArea
-                        rows={2}
+                      <Input
                         maxLength={400}
-                        showCount
                         value={detail.issueUsageNote}
                         onChange={(event) => updateDetail(detail.id, { issueUsageNote: event.target.value })}
                       />
