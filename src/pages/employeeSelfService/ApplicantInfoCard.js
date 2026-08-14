@@ -5,7 +5,7 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { formatDepartment } from '../../utils/displayFormat';
 
-export default function ApplicantInfoCard({ applicant, applyDate, onViewAssets }) {
+export default function ApplicantInfoCard({ applicant, applyDate, onViewAssets, showEmployeeStatus = true }) {
   return (
     <Card title="申请人信息" size="small">
       <DetailGrid>
@@ -31,7 +31,9 @@ export default function ApplicantInfoCard({ applicant, applyDate, onViewAssets }
         <DetailItem label="联系电话">{applicant.phone || '-'}</DetailItem>
         <DetailItem label="邮箱">{applicant.email || '-'}</DetailItem>
         <DetailItem label="部门" span={3}>{formatDepartment(applicant.department)}</DetailItem>
-        <DetailItem label="员工状态"><StatusTag value={applicant.employeeStatus || '-'} type="business" /></DetailItem>
+        {showEmployeeStatus && (
+          <DetailItem label="员工状态"><StatusTag value={applicant.employeeStatus || '-'} type="business" /></DetailItem>
+        )}
       </DetailGrid>
     </Card>
   );
