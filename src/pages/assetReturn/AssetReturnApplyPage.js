@@ -106,7 +106,7 @@ export default function AssetReturnApplyPage() {
         <Card size="small" title="申请信息">
           <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="申请人">213852-孙志强</Descriptions.Item>
-            <Descriptions.Item label="退库类型" span={2}>
+            <Descriptions.Item label="退库类型">
               <Select className="w-full" value={returnType} options={['资产退库', '离职退还'].map((value) => ({ label: value, value }))} onChange={setReturnType} />
             </Descriptions.Item>
             <Descriptions.Item label={<><span className="text-red-500">*</span> 退库原因</>} span={3}>
