@@ -86,8 +86,11 @@ export default function PersonalWorkspace() {
   const [selectedAssetIds, setSelectedAssetIds] = useState([]);
   const [selectedContractIds, setSelectedContractIds] = useState([]);
   const today = new Date();
-  const dateText = today.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+  const dateText = `${today.getMonth() + 1}月${today.getDate()}日`;
   const weekdayText = `星期${'日一二三四五六'[today.getDay()]}`;
+  const hour = today.getHours();
+  const greeting = hour < 12 ? '上午好' : hour < 18 ? '下午好' : '晚上好';
+  const assetConsumableCount = MOCK_DATA.assets.length + MOCK_DATA.consumables.length;
 
   const selectedAssets = useMemo(
     () => MOCK_DATA.assets.filter((item) => selectedAssetIds.includes(item.id)),
@@ -208,18 +211,36 @@ export default function PersonalWorkspace() {
 
   return (
     <Space direction="vertical" size={16} className="w-full">
-      <div className="rounded-xl bg-gradient-to-r from-blue-700 to-indigo-600 px-6 py-5 text-white">
-        <div className="flex items-center justify-between gap-6">
+      <div
+        className="rounded-lg px-7 py-5 text-white"
+        style={{ background: 'linear-gradient(110deg, #2864E8 0%, #3561EA 56%, #5A4FE9 100%)' }}
+      >
+        <div className="flex min-h-[124px] items-center justify-between gap-8">
           <div>
-            <Typography.Title level={4} style={{ color: '#fff', margin: 0 }}>上午好，{MOCK_DATA.user.name}</Typography.Title>
-            <div className="mt-1 text-sm text-blue-100">{dateText} · {weekdayText}</div>
-            <div className="mt-2 text-sm text-blue-100">
-              您名下共有 {MOCK_DATA.assets.length + MOCK_DATA.consumables.length} 项资产与耗材，另有 {MOCK_DATA.pendingTodoCount} 条待办等待处理。
+            <div className="mb-2 text-base font-semibold text-blue-100">{dateText} {weekdayText}</div>
+            <div className="text-[28px] font-bold leading-9 text-white">{greeting}，{MOCK_DATA.user.name}</div>
+            <div className="mt-3 text-base text-blue-100">
+              您名下共有 <span className="font-semibold text-amber-300">{assetConsumableCount}</span> 项资产与耗材运行正常，另有 <span className="font-semibold text-amber-300">{MOCK_DATA.pendingTodoCount}</span> 条待办等待处理。
             </div>
           </div>
-          <Space>
-            <Button icon={<Plus size={14} />} onClick={() => navigate('/employee-self-service/asset-apply')}>物资申请</Button>
-            <Button ghost icon={<Handshake size={14} />} onClick={() => navigate('/yewurules', { state: { workspace: '资产借用' } })}>资产借用</Button>
+          <Space size={12}>
+            <Button
+              size="large"
+              icon={<Plus size={16} />}
+              style={{ color: '#2563EB', borderColor: '#fff', fontWeight: 600 }}
+              onClick={() => navigate('/employee-self-service/asset-apply')}
+            >
+              物资申请
+            </Button>
+            <Button
+              ghost
+              size="large"
+              icon={<Handshake size={16} />}
+              style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.36)', fontWeight: 600, background: 'rgba(255,255,255,0.06)' }}
+              onClick={() => navigate('/yewurules', { state: { workspace: '资产借用' } })}
+            >
+              资产借用
+            </Button>
           </Space>
         </div>
       </div>
