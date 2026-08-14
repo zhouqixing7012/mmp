@@ -5,7 +5,7 @@ import {
   Card,
   Empty,
   Input,
-  Radio,
+  Select,
   Space,
   Typography,
   message as antdMessage,
@@ -16,6 +16,7 @@ import { formatDateText, formatDepartment } from '../../utils/displayFormat';
 import ReplacementHistoryCard from './ReplacementHistoryCard';
 
 const { TextArea } = Input;
+const MIS_DESCRIPTION_OPTIONS = ['无', '主板故障', '键盘故障', '屏幕故障', '硬盘故障'];
 
 function SectionTitle({ children }) {
   return (
@@ -26,20 +27,10 @@ function SectionTitle({ children }) {
   );
 }
 
-function RequiredLabel({ children }) {
-  return (
-    <span>
-      <span className="mr-1 text-red-500">*</span>
-      {children}
-    </span>
-  );
-}
-
 export default function ReplacementMisPage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [version, setVersion] = useState(0);
-  const [result, setResult] = useState('资产更换');
   const [description, setDescription] = useState('');
   const [comment, setComment] = useState('同意');
   const [submitting, setSubmitting] = useState(false);
@@ -47,16 +38,8 @@ export default function ReplacementMisPage() {
 
   const submitDecision = (decision) => {
     if (!selectedApplication) return;
-    if (!description.trim()) {
-      messageApi.warning('请填写鉴定说明');
-      return;
-    }
-    if (decision === '同意' && result !== '资产更换') {
-      messageApi.warning('鉴定结果为资产更换时方可同意');
-      return;
-    }
-    if (decision === '驳回' && result === '资产更换') {
-      messageApi.warning('资产更换需选择同意');
+    if (decision === '同意' && !description) {
+      messageApi.warning('请选择鉴定说明');
       return;
     }
     if (decision === '驳回' && !comment.trim()) {
@@ -67,13 +50,12 @@ export default function ReplacementMisPage() {
     setSubmitting(true);
     try {
       submitMisDecision(selectedApplication.id, {
-        result,
-        description: description.trim(),
+        result: '',
+        description,
         decision,
         comment: comment.trim(),
       });
       messageApi.success(decision === '同意' ? 'MIS鉴定已通过，单据进入资产更换办理' : '申请已驳回并结束流程');
-      setResult('资产更换');
       setDescription('');
       setComment('同意');
       setVersion((value) => value + 1);
@@ -131,24 +113,14 @@ export default function ReplacementMisPage() {
 
         <Card title={<SectionTitle>MIS鉴定处理</SectionTitle>} size="small">
           <DetailGrid>
-            <DetailItem label={<RequiredLabel>鉴定结果</RequiredLabel>} span={3}>
-              <Radio.Group
-                value={result}
-                options={['资产维修', '资产更换'].map((value) => ({ label: value, value }))}
-                onChange={(event) => {
-                  setResult(event.target.value);
-                  setComment(event.target.value === '资产更换' ? '同意' : '');
-                }}
-              />
-            </DetailItem>
-            <DetailItem label={<RequiredLabel>鉴定说明</RequiredLabel>} span={3}>
-              <TextArea
-                rows={3}
-                maxLength={60}
-                showCount
-                value={description}
-                placeholder="请填写鉴定说明（60字以内）"
-                onChange={(event) => setDescription(event.target.value)}
+            <DetailItem label="鉴定说明" span={3}>
+              <Select
+                className="w-full"
+                allowClear
+                value={description || undefined}
+                placeholder="请选择鉴定说明（同意时必填）"
+                options={MIS_DESCRIPTION_OPTIONS.map((value) => ({ label: value, value }))}
+                onChange={(value) => setDescription(value || '')}
               />
             </DetailItem>
           </DetailGrid>
