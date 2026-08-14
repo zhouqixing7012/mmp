@@ -1,10 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  DatePicker,
   Empty,
   Input,
   Select,
@@ -45,7 +43,6 @@ export default function AssetReturnHandlingPage() {
   )) || null;
   const [warehouse, setWarehouse] = useState('北京总部资产仓');
   const [assetMark, setAssetMark] = useState('');
-  const [returnDate, setReturnDate] = useState(dayjs());
   const [usageNote, setUsageNote] = useState('');
   const [opinion, setOpinion] = useState('');
   const [loading, setLoading] = useState(false);
@@ -54,18 +51,20 @@ export default function AssetReturnHandlingPage() {
     if (!selected) return;
     setWarehouse(selected.handling.warehouse || '北京总部资产仓');
     setAssetMark(selected.handling.assetMark || '');
-    setReturnDate(selected.handling.returnDate ? dayjs(selected.handling.returnDate) : dayjs());
     setUsageNote(selected.handling.usageNote || '');
     setOpinion(selected.handling.opinion || '');
   }, [selected?.id]);
 
   const refresh = () => setVersion((value) => value + 1);
+  const confirmedReturnDate = selected?.handling?.confirmationTime
+    ? formatDateText(selected.handling.confirmationTime)
+    : '-';
 
   const handlingValues = () => ({
     warehouse,
     responsiblePerson: selected.handling.responsiblePerson || 'SOHU01-库房管理员-SOHU',
     assetMark,
-    returnDate: returnDate.format('YYYY-MM-DD'),
+    returnDate: selected.handling.confirmationTime ? formatDateText(selected.handling.confirmationTime) : '',
     usageNote,
     opinion: opinion.trim(),
   });
@@ -193,20 +192,12 @@ export default function AssetReturnHandlingPage() {
                 onChange={(value) => setAssetMark(value || '')}
               />
             </DetailItem>
-            <DetailItem label={<><span className="text-red-500">*</span> 退库日期</>}>
-              <DatePicker
-                className="w-full"
-                value={returnDate}
-                format="YYYY-MM-DD"
-                onChange={(value) => setReturnDate(value || dayjs())}
-              />
-            </DetailItem>
+            <DetailItem label="退库日期">{confirmedReturnDate}</DetailItem>
             <DetailItem label="使用说明" span={2}>
-              <TextArea
-                rows={3}
+              <Input
                 maxLength={400}
-                showCount
                 value={usageNote}
+                placeholder="请输入使用说明"
                 onChange={(event) => setUsageNote(event.target.value)}
               />
             </DetailItem>
