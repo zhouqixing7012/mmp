@@ -93,7 +93,6 @@ export default function ContractNumberWarehousePage() {
   const [warehouse, setWarehouse] = useState('');
   const [city, setCity] = useState('');
   const [cityModalOpen, setCityModalOpen] = useState(false);
-  const [subsidiary, setSubsidiary] = useState('');
   const [note, setNote] = useState('');
   const [opinion, setOpinion] = useState('');
   const [loadingAction, setLoadingAction] = useState('');
@@ -102,7 +101,6 @@ export default function ContractNumberWarehousePage() {
     if (!application) return;
     setWarehouse(application.warehouseHandling?.warehouse || '');
     setCity(application.warehouseHandling?.city || '');
-    setSubsidiary(application.warehouseHandling?.subsidiary || '');
     setNote(application.warehouseHandling?.note || '');
   }, [application?.id]);
 
@@ -114,7 +112,6 @@ export default function ContractNumberWarehousePage() {
       ...record.warehouseHandling,
       warehouse,
       city,
-      subsidiary,
       note,
     },
   });
@@ -122,11 +119,7 @@ export default function ContractNumberWarehousePage() {
   const submit = (action) => {
     if (!application) return;
     if (!warehouse) {
-      messageApi.warning('当前仓库为空，请检查单据数据');
-      return;
-    }
-    if (action === '驳回' && !opinion.trim()) {
-      messageApi.warning('驳回时审批意见必填');
+      messageApi.warning('仓库为空，请检查单据数据');
       return;
     }
 
@@ -136,31 +129,32 @@ export default function ContractNumberWarehousePage() {
         const savedRecord = saveHandlingFields(record);
         const startConfirmation = action === '领用确认';
         const handledAt = nowText();
+        const actionComment = opinion.trim() || (startConfirmation ? '已发起员工领取确认' : '员工弃领');
 
         return {
           ...savedRecord,
-          status: startConfirmation ? '处理中' : '已驳回',
+          status: startConfirmation ? '处理中' : '已弃领',
           currentNode: startConfirmation ? '员工领取确认' : '结束',
           assignedNumber: savedRecord.assignedNumber
             ? {
               ...savedRecord.assignedNumber,
-              status: startConfirmation ? '待员工确认' : savedRecord.assignedNumber.status,
+              status: startConfirmation ? '待员工确认' : '在库',
             }
             : null,
           warehouseHandling: {
             ...savedRecord.warehouseHandling,
-            status: startConfirmation ? '待员工确认' : '已驳回',
+            status: startConfirmation ? '待员工确认' : '已弃领',
             confirmationStatus: startConfirmation ? '待确认' : savedRecord.warehouseHandling?.confirmationStatus,
-            opinion: opinion.trim() || '已核对号码及领用信息',
+            opinion: actionComment,
             handledAt,
           },
           history: (savedRecord.history || []).map((item) => (
             item.node === '库管员领用' && item.status === '待处理'
               ? {
                 ...item,
-                status: startConfirmation ? '已处理' : '已驳回',
+                status: startConfirmation ? '已处理' : '已弃领',
                 time: handledAt,
-                comment: opinion.trim() || (startConfirmation ? '已发起员工领取确认' : '驳回'),
+                comment: actionComment,
               }
               : item
           )).concat(startConfirmation ? [{
@@ -173,7 +167,7 @@ export default function ContractNumberWarehousePage() {
           }] : []),
         };
       });
-      messageApi.success(action === '领用确认' ? '已发起员工合约号码领取确认' : '合约号码领用申请已驳回');
+      messageApi.success(action === '领用确认' ? '已发起员工合约号码领取确认' : '已完成弃领处理');
       setOpinion('');
       refresh();
     } finally {
@@ -210,7 +204,7 @@ export default function ContractNumberWarehousePage() {
 
         <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>
           <DetailGrid>
-            <DetailItem label="当前仓库" span={3}>{warehouse || '-'}</DetailItem>
+            <DetailItem label="仓库" span={3}>{warehouse || '-'}</DetailItem>
             <DetailItem label="使用人">{applicant.id}-{applicant.name}</DetailItem>
             <DetailItem label="联系电话">{applicant.phone || '-'}</DetailItem>
             <DetailItem label="申请日期">{application.applyDate || '-'}</DetailItem>
@@ -225,10 +219,9 @@ export default function ContractNumberWarehousePage() {
         <Card size="small" title={<SectionTitle>申请合约号码信息</SectionTitle>}>
           <DetailGrid>
             <DetailItem label="标签号">{number?.assetTag || '-'}</DetailItem>
-            <DetailItem label="序列号">{number?.imei || '-'}</DetailItem>
-            <DetailItem label="说明">{number?.packageName || '-'}</DetailItem>
-            <DetailItem label="数量">{handling.quantity || 1}</DetailItem>
-            <DetailItem label="金额" span={2}>{handling.tariffStandard ?? '-'}</DetailItem>
+            <DetailItem label="合约号码">{number?.phoneNumber || number?.imei || '-'}</DetailItem>
+            <DetailItem label="合约号码说明">{number?.packageName || '-'}</DetailItem>
+            <DetailItem label="金额">{handling.tariffStandard ?? '-'}</DetailItem>
             <DetailItem label="城市">
               <Input
                 readOnly
@@ -238,15 +231,7 @@ export default function ContractNumberWarehousePage() {
                 onClick={() => setCityModalOpen(true)}
               />
             </DetailItem>
-            <DetailItem label="子公司" span={2}>
-              <Input
-                value={subsidiary}
-                maxLength={50}
-                placeholder="请输入子公司"
-                onChange={(event) => setSubsidiary(event.target.value)}
-              />
-            </DetailItem>
-            <DetailItem label="申请原因" span={3}>{handling.usageReason || application.applyReason || '-'}</DetailItem>
+            <DetailItem label="申请原因">{application.applyReason || '-'}</DetailItem>
             <DetailItem label="备注" span={3}>
               <TextArea
                 rows={2}
@@ -259,18 +244,20 @@ export default function ContractNumberWarehousePage() {
           </DetailGrid>
         </Card>
 
-        <Card size="small" title={<SectionTitle>审批意见</SectionTitle>}>
+        <Card size="small" title={<SectionTitle>审批操作</SectionTitle>}>
+          <Typography.Text strong>审批意见</Typography.Text>
           <TextArea
+            className="mt-2"
             rows={3}
             maxLength={400}
             showCount
             value={opinion}
-            placeholder="领用确认时可不填写，驳回时必填"
+            placeholder="可填写处理意见"
             onChange={(event) => setOpinion(event.target.value)}
           />
           <div className="mt-4 flex justify-center gap-3">
             <Button type="primary" loading={loadingAction === '领用确认'} onClick={() => submit('领用确认')}>领用确认</Button>
-            <Button danger loading={loadingAction === '驳回'} onClick={() => submit('驳回')}>驳回</Button>
+            <Button danger loading={loadingAction === '弃领'} onClick={() => submit('弃领')}>弃领</Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
           </div>
         </Card>
