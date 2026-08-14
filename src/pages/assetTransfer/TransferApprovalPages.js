@@ -49,7 +49,6 @@ const ASSET_ROWS = [
     building: '搜狐媒体大厦',
     floor: '17层',
     componentCount: 0,
-    transferRemark: '-',
     status: '在用-使用中',
   },
 ];
@@ -97,7 +96,6 @@ const ASSET_COLUMNS = [
   { title: '建筑', dataIndex: 'building', width: 140 },
   { title: '楼层', dataIndex: 'floor', width: 80 },
   { title: '部件数量', dataIndex: 'componentCount', width: 100, align: 'center' },
-  { title: '转移备注说明', dataIndex: 'transferRemark', width: 150 },
   {
     title: '资产状态',
     dataIndex: 'status',
@@ -154,7 +152,7 @@ function TransferBaseInfo() {
           pagination={false}
           size="small"
           bordered
-          scroll={{ x: 1370 }}
+          scroll={{ x: 1220 }}
         />
       </Card>
     </>
@@ -214,8 +212,6 @@ function ApprovalActions({ stageName }) {
 }
 
 function TransferPage({ title, approvalRows, approvalStage }) {
-  const navigate = useNavigate();
-
   return (
     <Space direction="vertical" size={16} className="w-full">
       <div className="flex items-center justify-between gap-4">
@@ -225,23 +221,17 @@ function TransferPage({ title, approvalRows, approvalStage }) {
 
       <TransferBaseInfo />
       <ApprovalHistory rows={approvalRows} />
-
-      {approvalStage ? (
-        <ApprovalActions stageName={approvalStage} />
-      ) : (
-        <div className="flex justify-center">
-          <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
-        </div>
-      )}
+      <ApprovalActions stageName={approvalStage} />
     </Space>
   );
 }
 
-export function AssetTransferDetailPage() {
+export function AssetTransferApprovalPage() {
   return (
     <TransferPage
-      title="资产转移详情"
+      title="资产转移审批"
       approvalRows={APPROVAL_ROWS}
+      approvalStage="资产转移审批"
     />
   );
 }
