@@ -42,7 +42,7 @@ export default function ReplacementMisPage() {
       messageApi.warning('请选择鉴定说明');
       return;
     }
-    if (decision === '驳回' && !comment.trim()) {
+    if (decision === '驳回' && (!comment.trim() || comment.trim() === '同意')) {
       messageApi.warning('驳回时审批意见必填');
       return;
     }
