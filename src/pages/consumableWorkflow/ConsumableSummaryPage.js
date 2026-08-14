@@ -247,7 +247,7 @@ export default function ConsumableSummaryPage() {
             columns={[
               { title: '汇总公司', dataIndex: 'company', render: (value) => <Button type="link" size="small" className="px-0" onClick={() => setView('detail')}>{value}</Button> },
               { title: '申请数量', width: 120, align: 'center', render: () => totalQuantity },
-              { title: '汇总周期', dataIndex: 'period', width: 220 },
+              { title: '汇总时间', dataIndex: 'period', width: 220, render: (value) => value || '2026-08-03至2026-08-09' },
               { title: '操作', width: 100, render: () => <Button type="link" size="small" onClick={() => setView('detail')}>查看</Button> },
             ]}
           />
