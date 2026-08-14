@@ -220,7 +220,7 @@ export default function PersonalWorkspace() {
             <div className="mb-2 text-base font-semibold text-blue-100">{dateText} {weekdayText}</div>
             <div className="text-[28px] font-bold leading-9 text-white">{greeting}，{MOCK_DATA.user.name}</div>
             <div className="mt-3 text-base text-blue-100">
-              您名下共有 <span className="font-semibold text-amber-300">{assetConsumableCount}</span> 项资产与耗材运行正常，另有 <span className="font-semibold text-amber-300">{MOCK_DATA.pendingTodoCount}</span> 条待办等待处理。
+              您名下共有 <span className="font-semibold text-amber-300">{assetConsumableCount}</span> 项资产与耗材，另有 <span className="font-semibold text-amber-300">{MOCK_DATA.pendingTodoCount}</span> 条待办等待处理。
             </div>
           </div>
           <Space size={12}>
