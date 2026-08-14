@@ -79,6 +79,7 @@ export default function EmployeeAssetAllocationPage() {
   const [matchingStatus, setMatchingStatus] = useState('');
   const [matchedAsset, setMatchedAsset] = useState(null);
   const [esComment, setEsComment] = useState('');
+  const [approvalOpinion, setApprovalOpinion] = useState('');
   const [matchModalOpen, setMatchModalOpen] = useState(false);
   const [assetListOpen, setAssetListOpen] = useState(false);
   const [applicantAssetsOpen, setApplicantAssetsOpen] = useState(false);
@@ -155,11 +156,13 @@ export default function EmployeeAssetAllocationPage() {
         matchingStatus,
         matchedAsset: matchingStatus === '库存领用' ? matchedAsset : null,
         esComment,
+        approvalOpinion: approvalOpinion.trim(),
         status: '已配给',
       });
       refreshApplicationProgress(selectedOrder.sourceApplicationId);
       syncPurchaseSummaries();
       refresh();
+      setApprovalOpinion('');
       messageApi.success(matchingStatus === '库存领用' ? '配给审批已同意' : '已转入统一采购');
     } finally {
       setSubmitting(false);
@@ -182,10 +185,12 @@ export default function EmployeeAssetAllocationPage() {
           matchingStatus: '',
           matchedAsset: null,
           esComment,
+          approvalOpinion: approvalOpinion.trim(),
           status: '已取消',
         });
         refreshApplicationProgress(selectedOrder.sourceApplicationId);
         refresh();
+        setApprovalOpinion('');
         messageApi.success('申请已驳回');
       },
     });
@@ -255,7 +260,12 @@ export default function EmployeeAssetAllocationPage() {
           <Typography.Text type="secondary">申请单号：{selectedOrder.sourceApplicationId}</Typography.Text>
         </div>
 
-        <ApplicantInfoCard applicant={selectedOrder.applicant} applyDate={selectedOrder.applyDate} onViewAssets={() => setApplicantAssetsOpen(true)} />
+        <ApplicantInfoCard
+          applicant={selectedOrder.applicant}
+          applyDate={selectedOrder.applyDate}
+          onViewAssets={() => setApplicantAssetsOpen(true)}
+          showEmployeeStatus={false}
+        />
 
         <Card title="申请物资明细" size="small">
           <Table rowKey="id" size="small" bordered columns={materialColumns} dataSource={applicationMaterials} pagination={false} scroll={{ x: 1300 }} />
@@ -296,7 +306,17 @@ export default function EmployeeAssetAllocationPage() {
         <ApprovalHistoryCard records={sourceApplication?.approvalHistory || []} />
 
         <Card title="审批操作" size="small">
-          <div className="flex justify-center gap-3">
+          <Typography.Text strong>审批意见</Typography.Text>
+          <TextArea
+            className="mt-2"
+            rows={3}
+            maxLength={400}
+            showCount
+            value={approvalOpinion}
+            placeholder="请输入审批意见"
+            onChange={(event) => setApprovalOpinion(event.target.value)}
+          />
+          <div className="mt-4 flex justify-center gap-3">
             <Button type="primary" loading={submitting} onClick={submitAllocation}>同意</Button>
             <Button danger onClick={rejectAllocation}>驳回</Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
