@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
-import { Button, Card, Descriptions, Empty, Input, Modal, Select, Space, Table, Tag, Typography, message as antdMessage } from 'antd';
+import { Button, Card, Empty, Input, Modal, Select, Space, Table, Tag, Typography, message as antdMessage } from 'antd';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
 import {
@@ -104,16 +105,16 @@ export default function AssetReturnApplyPage() {
         </div>
 
         <Card size="small" title="申请信息">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="申请人">213852-孙志强</Descriptions.Item>
-            <Descriptions.Item label="退库类型">
+          <DetailGrid>
+            <DetailItem label="申请人">213852-孙志强</DetailItem>
+            <DetailItem label="退库类型">
               <Select className="w-full" value={returnType} options={['资产退库', '离职退还'].map((value) => ({ label: value, value }))} onChange={setReturnType} />
-            </Descriptions.Item>
-            <Descriptions.Item label=" "> </Descriptions.Item>
-            <Descriptions.Item label={<><span className="text-red-500">*</span> 退库原因</>} span={3}>
+            </DetailItem>
+            <DetailItem label="\u00a0">\u00a0</DetailItem>
+            <DetailItem label={<><span className="text-red-500">*</span> 退库原因</>} span={3}>
               <TextArea rows={3} maxLength={400} showCount value={reason} placeholder="请填写退库原因，最多400字" onChange={(event) => setReason(event.target.value)} />
-            </Descriptions.Item>
-          </Descriptions>
+            </DetailItem>
+          </DetailGrid>
           <div className="mt-3 rounded border border-orange-100 bg-orange-50 px-3 py-2 text-sm text-orange-700">资产用途为部门公用时，需直属5级及以上领导审批；主资产存在升级耗材时将随主资产一并退库。</div>
         </Card>
 
