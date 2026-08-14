@@ -10,7 +10,6 @@ import {
   assetClaimSelectableAssets,
 } from '../mock/assetClaimMock';
 
-const { TextArea } = Input;
 const EMPTY_QUERY = { assetTag: '', serialNumber: '', block: '', description: '' };
 
 export default function FrontDeskAssetClaim() {
@@ -102,7 +101,6 @@ export default function FrontDeskAssetClaim() {
         initialValues={{
           warehouse: application.warehouse,
           assetTag: application.asset.tag,
-          remark: application.remark,
           city: application.asset.city,
           building: application.asset.building,
           floor: application.asset.floor,
@@ -134,11 +132,6 @@ export default function FrontDeskAssetClaim() {
               <Descriptions.Item label="申请日期">{application.applyDate}</Descriptions.Item>
               <Descriptions.Item label="成本中心">{application.costCenter}</Descriptions.Item>
               <Descriptions.Item label="部门" span={2}>{application.department}</Descriptions.Item>
-              <Descriptions.Item label="单据备注" span={3}>
-                <Form.Item name="remark" noStyle>
-                  <TextArea rows={2} placeholder="请输入单据备注" />
-                </Form.Item>
-              </Descriptions.Item>
             </Descriptions>
           </Card>
 
@@ -187,9 +180,9 @@ export default function FrontDeskAssetClaim() {
               </Descriptions.Item>
               <Descriptions.Item label="实际盘点人">{selectedAsset.inventoryOwner}</Descriptions.Item>
               <Descriptions.Item label="盘点状态"><StatusTag value={selectedAsset.inventoryStatus} type="business" /></Descriptions.Item>
-              <Descriptions.Item label="申请配置">{selectedAsset.applyConfiguration}</Descriptions.Item>
               <Descriptions.Item label="申请物资说明" span={2}>{selectedAsset.applyMaterialDescription}</Descriptions.Item>
-              <Descriptions.Item label="详细说明">{selectedAsset.detailDescription || '-'}</Descriptions.Item>
+              <Descriptions.Item label="申请配置">{selectedAsset.applyConfiguration}</Descriptions.Item>
+              <Descriptions.Item label="申请原因" span={3}>{selectedAsset.detailDescription || '-'}</Descriptions.Item>
             </Descriptions>
           </Card>
 
