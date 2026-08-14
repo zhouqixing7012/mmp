@@ -109,6 +109,7 @@ export default function AssetReturnApplyPage() {
             <Descriptions.Item label="退库类型">
               <Select className="w-full" value={returnType} options={['资产退库', '离职退还'].map((value) => ({ label: value, value }))} onChange={setReturnType} />
             </Descriptions.Item>
+            <Descriptions.Item label=" "> </Descriptions.Item>
             <Descriptions.Item label={<><span className="text-red-500">*</span> 退库原因</>} span={3}>
               <TextArea rows={3} maxLength={400} showCount value={reason} placeholder="请填写退库原因，最多400字" onChange={(event) => setReason(event.target.value)} />
             </Descriptions.Item>
