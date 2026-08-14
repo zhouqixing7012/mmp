@@ -142,9 +142,7 @@ function TransferBaseInfo() {
           <DetailItem label="接收部门">{TRANSFER_ORDER.receiverDepartment}</DetailItem>
           <DetailItem label="电话">{TRANSFER_ORDER.receiverPhone}</DetailItem>
           <DetailItem label="邮箱">{TRANSFER_ORDER.receiverEmail}</DetailItem>
-          <DetailItem label={null}>{null}</DetailItem>
-          <DetailItem label={null}>{null}</DetailItem>
-          <DetailItem label="使用用途" span={3}>{TRANSFER_ORDER.purpose}</DetailItem>
+          <DetailItem label="使用用途" span={2}>{TRANSFER_ORDER.purpose}</DetailItem>
         </DetailGrid>
       </Card>
 
