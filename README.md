@@ -35,7 +35,7 @@ src/
 ├── components/                     # 通用查询、状态、选择弹窗等组件
 ├── mock/                           # 演示数据
 ├── services/                       # 演示数据与流程读写
-├── prototype-annotations/          # 原型标注数据、定位、编辑和本地覆盖层
+├── prototype-annotations/          # 原型标注数据、目标解析、定位、编辑和本地覆盖层
 ├── pages/
 │   ├── assetManagement/            # 后台资产管理
 │   ├── inventoryManagement/        # 库存管理菜单与页面入口
@@ -50,13 +50,22 @@ src/
 
 ## 原型标注
 
-业务页面只负责声明稳定锚点，例如：
+业务页面可以声明模块级稳定锚点，例如：
 
 ```jsx
 <div data-prototype-anchor="material-query-bar">...</div>
 ```
 
 Agent 直接读取仓库中的 PRD 与 React 页面代码，在需要的位置补充语义化锚点，并把初始标注写入 `src/prototype-annotations/annotation-data.js`。页面端不做 PRD 上传和 AI 解析。
+
+除模块锚点外，标注编辑器还支持细粒度目标：
+
+- `QueryItem` 查询条件：公共组件通过 `data-prototype-bindable="query-condition"` 暴露稳定语义。
+- Button：按所在模块、按钮文字/语义和出现顺序生成稳定运行时 target。
+- Ant Design Table 表头：可直接标注某一列字段。
+- FormItem：可标注单个表单字段。
+
+细粒度目标由 `src/prototype-annotations/annotation-targeting.js` 统一生成和解析，不保存 `nth-child`、绝对 CSS 路径或屏幕坐标。
 
 每条标注可通过 `position` 指定位置：
 
@@ -77,9 +86,11 @@ position: {
 
 - 拖动标注点调整位置。
 - 修改标题、摘要、来源、类型和详细说明。
-- 重新选择 DOM 锚点。
+- 重新选择模块、具体按钮、单个查询条件、表格字段或 FormItem。
 - 新增、删除标注。
-- 保存到当前浏览器、导入/导出标注 JSON、导出当前页面锚点。
+- 保存到当前浏览器、导入/导出标注 JSON、导出当前页面模块与细粒度目标。
+
+标注面板通过 React Portal 直接渲染到 `document.body`，内部使用独立滚动区；Tooltip、Popconfirm、Select dropdown 也显式渲染到 body 并使用更高层级，避免业务页面 stacking context 或面板 overflow 造成遮挡。
 
 保存采用“代码初稿 + 用户覆盖层”模型：仓库中的标注始终是 PRD 基线，浏览器只保存用户改过的同 id 标注、用户新增标注和删除记录。因此 Agent 后续根据 PRD 新增标注时，新标注会自动出现；已经人工调整过的标注仍保留用户版本。
 
@@ -180,7 +191,7 @@ npm test
 - 资产申请、审批、配给、领用、借用、更换、退库和合约号码退库演示流程。
 - 后台基础配置主要页面。
 - 报废和机房资产演示页面。
-- 原型标注支持 DOM 锚点、可配置位置、滚动跟随、可视化编辑、本地覆盖保存和 JSON 导入导出。
+- 原型标注支持模块/细粒度 DOM 目标、可配置位置、滚动跟随、可视化编辑、本地覆盖保存和 JSON 导入导出。
 
 ## 待办事项
 
@@ -203,3 +214,4 @@ npm test
 - 库存管理直接复用现有后台菜单渲染结构，没有引入外部方案或新增依赖。
 - 资产借用、更换、退库等流程继续复用项目现有 service + `demoStorage` 结构。
 - 2026-08-17 原型标注升级参考 GitHub 的 Floating UI、Driver.js、React Joyride，以及 skills.sh 的 Agentation。保留现有产品标注数据模型，只吸收 DOM 锚定、可配置 placement、边缘避让和低频 DOM 监听思路；当前 22px 标注点定位需求较轻，不引入新的第三方运行时依赖。
+- 2026-08-17 标注面板遮挡问题按 Ant Design 官方 popup container / zIndexPopup 机制重构：面板 Portal 到 body，Tooltip / Popconfirm / Select popup 也统一挂载 body，并增加细粒度 DOM target scanner，不新增第三方依赖。
