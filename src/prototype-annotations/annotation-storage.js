@@ -1,8 +1,10 @@
 import { readDemoData, resetDemoData, writeDemoData } from '../services/demoStorage';
 import { normalizeAnnotationPosition } from './annotation-positioning';
 
-export const PROTOTYPE_ANNOTATION_STORAGE_KEY = 'prototype_annotation_drafts_v1';
+export const PROTOTYPE_ANNOTATION_STORAGE_KEY = 'prototype_annotation_overrides_v2';
+const LEGACY_STORAGE_KEY = 'prototype_annotation_drafts_v1';
 
+const baseAnnotationRegistry = new Map();
 const cloneValue = (value) => JSON.parse(JSON.stringify(value));
 
 function normalizeSections(sections) {
@@ -66,55 +68,121 @@ export function normalizeAnnotationCollection(payload, pageKey) {
   });
 }
 
-export function readAnnotationDraft(pageKey, defaultAnnotations = []) {
-  const store = readDemoData(PROTOTYPE_ANNOTATION_STORAGE_KEY, { version: 1, pages: {} });
-  const saved = store?.pages?.[pageKey]?.annotations;
-  if (!Array.isArray(saved)) {
-    return cloneValue(defaultAnnotations);
-  }
-
-  try {
-    return normalizeAnnotationCollection(saved, pageKey);
-  } catch (error) {
-    console.error(`读取标注草稿失败：${pageKey}`, error);
-    return cloneValue(defaultAnnotations);
-  }
+function readOverrideStore() {
+  return readDemoData(PROTOTYPE_ANNOTATION_STORAGE_KEY, { version: 2, pages: {} });
 }
 
-export function writeAnnotationDraft(pageKey, annotations) {
-  const normalized = normalizeAnnotationCollection(annotations, pageKey);
-  const store = readDemoData(PROTOTYPE_ANNOTATION_STORAGE_KEY, { version: 1, pages: {} });
-  const nextStore = {
-    ...store,
-    version: 1,
-    pages: {
-      ...(store.pages || {}),
-      [pageKey]: {
-        annotations: normalized,
-        updatedAt: new Date().toISOString(),
-      },
-    },
+function annotationEquals(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function buildOverrideRecord(pageKey, baseAnnotations, currentAnnotations) {
+  const base = normalizeAnnotationCollection(baseAnnotations, pageKey);
+  const current = normalizeAnnotationCollection(currentAnnotations, pageKey);
+  const baseById = new Map(base.map((note) => [note.id, note]));
+  const currentIds = new Set(current.map((note) => note.id));
+  const overrides = {};
+
+  current.forEach((note) => {
+    const baseNote = baseById.get(note.id);
+    if (!baseNote || !annotationEquals(baseNote, note)) {
+      overrides[note.id] = note;
+    }
+  });
+
+  const deletedIds = base
+    .filter((note) => !currentIds.has(note.id))
+    .map((note) => note.id);
+
+  return {
+    overrides,
+    deletedIds,
+    updatedAt: new Date().toISOString(),
   };
-  writeDemoData(PROTOTYPE_ANNOTATION_STORAGE_KEY, nextStore);
-  return normalized;
 }
 
-export function resetAnnotationDraft(pageKey, defaultAnnotations = []) {
-  const store = readDemoData(PROTOTYPE_ANNOTATION_STORAGE_KEY, { version: 1, pages: {} });
-  if (!store?.pages?.[pageKey]) {
-    return cloneValue(defaultAnnotations);
-  }
+function mergeOverrideRecord(pageKey, baseAnnotations, record) {
+  const base = normalizeAnnotationCollection(baseAnnotations, pageKey);
+  if (!record) return cloneValue(base);
+
+  const deletedIds = new Set(Array.isArray(record.deletedIds) ? record.deletedIds : []);
+  const overrides = record.overrides && typeof record.overrides === 'object'
+    ? record.overrides
+    : {};
+  const baseIds = new Set(base.map((note) => note.id));
+
+  const merged = base
+    .filter((note) => !deletedIds.has(note.id))
+    .map((note) => (
+      overrides[note.id]
+        ? normalizeAnnotation(overrides[note.id], pageKey)
+        : note
+    ));
+
+  Object.values(overrides).forEach((note) => {
+    const normalized = normalizeAnnotation(note, pageKey);
+    if (!baseIds.has(normalized.id) && !deletedIds.has(normalized.id)) {
+      merged.push(normalized);
+    }
+  });
+
+  return merged;
+}
+
+function removePageFromStore(storageKey, pageKey) {
+  const store = readDemoData(storageKey, { version: 2, pages: {} });
+  if (!store?.pages?.[pageKey]) return;
 
   const pages = { ...(store.pages || {}) };
   delete pages[pageKey];
 
   if (Object.keys(pages).length === 0) {
-    resetDemoData(PROTOTYPE_ANNOTATION_STORAGE_KEY);
+    resetDemoData(storageKey);
   } else {
-    writeDemoData(PROTOTYPE_ANNOTATION_STORAGE_KEY, { ...store, pages });
+    writeDemoData(storageKey, { ...store, pages });
+  }
+}
+
+export function readAnnotationDraft(pageKey, defaultAnnotations = []) {
+  const base = normalizeAnnotationCollection(defaultAnnotations, pageKey);
+  baseAnnotationRegistry.set(pageKey, cloneValue(base));
+
+  const store = readOverrideStore();
+  const record = store?.pages?.[pageKey];
+  return mergeOverrideRecord(pageKey, base, record);
+}
+
+export function writeAnnotationDraft(pageKey, annotations) {
+  const current = normalizeAnnotationCollection(annotations, pageKey);
+  const base = baseAnnotationRegistry.get(pageKey) || [];
+  const record = buildOverrideRecord(pageKey, base, current);
+  const hasOverrides = Object.keys(record.overrides).length > 0;
+  const hasDeleted = record.deletedIds.length > 0;
+
+  if (!hasOverrides && !hasDeleted) {
+    removePageFromStore(PROTOTYPE_ANNOTATION_STORAGE_KEY, pageKey);
+    return cloneValue(base);
   }
 
-  return cloneValue(defaultAnnotations);
+  const store = readOverrideStore();
+  const nextStore = {
+    ...store,
+    version: 2,
+    pages: {
+      ...(store.pages || {}),
+      [pageKey]: record,
+    },
+  };
+  writeDemoData(PROTOTYPE_ANNOTATION_STORAGE_KEY, nextStore);
+  return mergeOverrideRecord(pageKey, base, record);
+}
+
+export function resetAnnotationDraft(pageKey, defaultAnnotations = []) {
+  const base = normalizeAnnotationCollection(defaultAnnotations, pageKey);
+  baseAnnotationRegistry.set(pageKey, cloneValue(base));
+  removePageFromStore(PROTOTYPE_ANNOTATION_STORAGE_KEY, pageKey);
+  removePageFromStore(LEGACY_STORAGE_KEY, pageKey);
+  return cloneValue(base);
 }
 
 export function serializeAnnotationExport(pageKey, annotations) {
