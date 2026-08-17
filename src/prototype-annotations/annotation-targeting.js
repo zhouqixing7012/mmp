@@ -3,6 +3,7 @@ export const GENERATED_SCOPE_ATTRIBUTE = 'data-prototype-generated-scope';
 export const TARGET_KIND_ATTRIBUTE = 'data-prototype-target-kind';
 export const TARGET_LABEL_ATTRIBUTE = 'data-prototype-target-label';
 export const PROTOTYPE_OVERLAY_ATTRIBUTE = 'data-prototype-overlay';
+export const PROTOTYPE_DISPLAY_ANCHOR_ATTRIBUTE = 'data-prototype-display-anchor';
 
 const PRECISE_CONTROL_SELECTOR = [
   'button',
@@ -56,6 +57,15 @@ const GENERIC_MODULE_SELECTOR = [
   '[role="region"]',
   'div.bg-white',
 ].join(',');
+
+const MODULE_BINDABLE_TYPES = new Set([
+  'selection-modal',
+  'selection-table',
+  'module',
+  'card',
+  'table',
+  'form',
+]);
 
 const ANNOTATION_UI_SELECTOR = [
   '.paf-annotation-panel',
@@ -378,6 +388,56 @@ export function findPrototypeBindingElement(eventTarget) {
     || closestOutsideUi(eventTarget, '.ant-form-item')
     || closestOutsideUi(eventTarget, '[data-prototype-anchor]')
     || closestOutsideUi(eventTarget, GENERIC_MODULE_SELECTOR);
+}
+
+function isModuleDisplayTarget(element) {
+  if (!(element instanceof Element)) return false;
+  const bindableType = element.getAttribute('data-prototype-bindable');
+  return element.matches(GENERIC_MODULE_SELECTOR)
+    || element.hasAttribute('data-prototype-anchor')
+    || MODULE_BINDABLE_TYPES.has(bindableType);
+}
+
+function findModuleTitleAnchor(element) {
+  const explicit = element.matches(`[${PROTOTYPE_DISPLAY_ANCHOR_ATTRIBUTE}]`)
+    ? element
+    : element.querySelector?.(`[${PROTOTYPE_DISPLAY_ANCHOR_ATTRIBUTE}]`);
+  if (explicit) return explicit;
+
+  if (element.matches('.ant-card')) {
+    const cardTitle = element.querySelector('.ant-card-head-title');
+    if (cardTitle) return cardTitle;
+  }
+
+  if (element.matches('.ant-modal-wrap, [role="dialog"][aria-modal="true"]')) {
+    const modalTitle = element.querySelector('.ant-modal-title, [data-prototype-title], h1, h2, h3, h4');
+    if (modalTitle) return modalTitle;
+  }
+
+  if (element.matches('.ant-drawer')) {
+    const drawerTitle = element.querySelector('.ant-drawer-title, [data-prototype-title], h1, h2, h3, h4');
+    if (drawerTitle) return drawerTitle;
+  }
+
+  const ownHeading = Array.from(element.children || []).find((child) => (
+    child.matches?.('h1, h2, h3, h4, h5, h6, [data-prototype-title]')
+  ));
+  if (ownHeading) return ownHeading;
+
+  const nestedHeading = element.querySelector?.('h1, h2, h3, h4, h5, h6, [data-prototype-title]');
+  if (nestedHeading) return nestedHeading;
+
+  const card = element.closest('.ant-card');
+  const contextualCardTitle = card?.querySelector('.ant-card-head-title');
+  return contextualCardTitle || null;
+}
+
+// 标注 target 决定“这条规则属于谁”，display anchor 决定“序号画在哪里”。
+// 字段/控件继续贴自身；模块级 target 则优先把序号贴到模块标题旁边，避免全部堆到页面最右侧。
+export function getPrototypeDisplayAnchor(element) {
+  if (!(element instanceof Element)) return null;
+  if (!isModuleDisplayTarget(element)) return element;
+  return findModuleTitleAnchor(element) || element;
 }
 
 function isOverlayVisible(element) {
