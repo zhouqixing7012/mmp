@@ -36,6 +36,8 @@
 | `src/prototype-annotations/annotation-positioning.js` | 根据 display anchor 的实时矩形进行标注点定位、自动翻转和视口约束。 |
 | `src/prototype-annotations/annotation-storage.js` | 按页面作用域保存浏览器标注覆盖层、删除记录和自定义标注。 |
 | `src/prototype-annotations/annotation-anchor-scanner.js` | 扫描模块锚点和细粒度可标注目标并导出上下文。 |
+| `src/prototype-annotations/annotation-quality.js` | 原型标注质量门；校验 action/field/tab/table-column 等规则的 target 粒度，以及 PRD Requirement Coverage Ledger 是否完整。 |
+| `src/prototype-annotations/contract-number-annotation-coverage.js` | 合约号码模块的 PRD 重点覆盖账本示例；每条重点明确为 bound / review / skip。 |
 | `src/services/demoStorage.js` | localStorage 统一读写。 |
 | `src/pages/yewurules/` | 后台框架、侧边栏和菜单。 |
 | `src/pages/assetManagement/` | 后台资产管理页面。 |
@@ -51,10 +53,19 @@
 
 ```text
 仓库 PRD + React 页面代码
-  ↓ Agent 识别页面结构、规则归属和业务语义
+  ↓ Agent 先拆 Requirement Atom（来源 / 页面 / objectType / 对象 / 规则）
+  ├─ action → Button
+  ├─ field → DetailItem / FormItem / 控件
+  ├─ tab → Tab
+  ├─ table-column → 表头
+  └─ 真正跨对象规则 → Card / module
+  ↓
 annotation-data.js 代码基线
-  ├─ 字段规则 → 字段/控件 target
-  └─ 统一规则 → Card/模块 target
+  + Requirement Coverage Ledger（bound / review / skip）
+  ↓
+annotation-quality.js
+  ├─ Granularity Check：具体对象规则不得回退模块
+  └─ Coverage Check：PRD 重点必须有明确去向
   ↓
 annotation-page-scope.js
   ├─ 独立路由：route:<pathname>
@@ -85,7 +96,11 @@ PrototypeAnnotationLayer
 ```
 
 - PRD 不在页面端上传，也不在前端调用 AI；Agent 直接读取仓库中的 PRD 文件和页面代码生成初始标注。
-- Agent 生成基线时先判断规则归属：单字段必填、只读、脱敏、枚举、输入限制、附件格式/大小等要求绑定字段/控件；Card/模块标注只放跨字段统一规则、准入/统一校验、状态流转、公共交互和系统副作用，避免把字段规则堆进一个大模块标注。
+- Agent 生成标注前必须先将 PRD 拆为最小 Requirement Atom；同一段同时描述多个字段、按钮或不同结果时继续拆分，不能按 PRD 段落或 Card 直接生成一个大标注。
+- Agent 生成基线时按规则真实归属选择 target：字段必填/只读/脱敏/枚举/默认值/附件规则等绑定字段/控件；按钮动作及其副作用绑定 Button；Card/模块只放跨字段统一规则、准入/公共流程和真正跨对象的系统副作用。
+- `annotation-quality.js` 对具体规则执行 Granularity Check：`action-rule` 必须绑定 Button，`field-rule` 必须绑定字段/控件，`tab-rule` 必须绑定 Tab，`table-column-rule` 必须绑定表头。找不到可靠 target 时不得自动回退 Card，而是进入 coverage ledger 的 `review`。
+- Requirement Coverage Ledger 负责完整性：`bound` 必须存在对应 annotation；`review` 表示 PRD 与页面/最新口径冲突或暂无可靠 target；`skip` 表示明确无需单独标注。review/skip 必须写原因，避免研发重点静默遗漏。
+- `docs/原型标注生成规范.md` 是后续 Agent 生成标注的统一流程规范，资产申请、借用、退库、耗材等模块也应按相同方式生成 coverage ledger 和质量检查。
 - `PrototypeAnnotationLayer` 在 `App.js` 全局挂载，不再限制 `/yewurules`。普通独立页面按 pathname 隔离标注数据。
 - `/yewurules` 的 URL 在内部菜单切换时不变，因此 `AdminContent` 通过 `data-prototype-page-scope` 暴露 `activeMenu / activeSubMenu / activeTab`，标注层监听该 scope 变化并重新加载当前页面标注。
 - 新增/重绑采用鼠标实时目标识别，不要求元素先完成 generated-target 预扫描。精确交互控件优先于外层业务字段：点击 Select/Radio/Tab 等命中控件本身；点击字段标签或普通只读值时才回退到 QueryItem/DetailItem/FormItem 等字段语义。
