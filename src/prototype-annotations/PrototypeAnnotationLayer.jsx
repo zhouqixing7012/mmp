@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import PrototypeAnnotationPanel from './PrototypeAnnotationPanel';
 import usePrototypeAnnotations from './usePrototypeAnnotations';
 import { computeHotspotPosition, normalizeAnnotationPosition } from './annotation-positioning';
+import { buildAnnotationNumberMap } from './annotation-numbering';
 import {
   normalizeAnnotationCollection,
   readAnnotationDraft,
@@ -55,11 +56,9 @@ function PrototypeAnnotationHotspot({
   layoutVersion,
   onSelect,
   onMove,
-  onVisibilityChange,
 }) {
   const hotspotRef = useRef(null);
   const frameRef = useRef(null);
-  const visibleRef = useRef(false);
   const dragRef = useRef(null);
   const suppressClickRef = useRef(false);
   const [coordinates, setCoordinates] = useState(null);
@@ -67,15 +66,13 @@ function PrototypeAnnotationHotspot({
 
   const updatePosition = useCallback(() => {
     const hotspot = hotspotRef.current;
-    if (!element || !hotspot || !element.isConnected) return;
+    if (!element || !hotspot || !element.isConnected) {
+      setCoordinates(null);
+      return;
+    }
 
     const rect = element.getBoundingClientRect();
     const isVisible = rect.width > 0 && rect.height > 0 && element.getClientRects().length > 0;
-
-    if (visibleRef.current !== isVisible) {
-      visibleRef.current = isVisible;
-      onVisibilityChange(note.id, isVisible);
-    }
 
     if (!isVisible) {
       setCoordinates(null);
@@ -101,7 +98,7 @@ function PrototypeAnnotationHotspot({
       }
       return next;
     });
-  }, [element, note.id, note.position, onVisibilityChange]);
+  }, [element, note.position]);
 
   const scheduleUpdate = useCallback(() => {
     if (frameRef.current !== null) return;
@@ -130,9 +127,8 @@ function PrototypeAnnotationHotspot({
       window.removeEventListener('resize', scheduleUpdate);
       resizeObserver?.disconnect();
       if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
-      if (visibleRef.current) onVisibilityChange(note.id, false);
     };
-  }, [element, note.id, onVisibilityChange, scheduleUpdate]);
+  }, [element, scheduleUpdate]);
 
   useEffect(() => {
     scheduleUpdate();
@@ -187,7 +183,7 @@ function PrototypeAnnotationHotspot({
     onSelect(note.id, note.target);
   };
 
-  const showHotspot = coordinates && Number.isInteger(number);
+  const showHotspot = Boolean(coordinates) && Number.isInteger(number);
   const scale = selected ? 1.25 : 1;
 
   return (
@@ -240,7 +236,6 @@ export default function PrototypeAnnotationLayer() {
   const baseAnnotations = useMemo(() => (pageKey ? ALL_ANNOTATIONS[pageKey] || [] : []), [pageKey]);
   const [pageAnnotations, setPageAnnotations] = useState([]);
   const [anchoredNotes, setAnchoredNotes] = useState([]);
-  const [visibleNoteIds, setVisibleNoteIds] = useState(() => new Set());
   const [layoutVersion, setLayoutVersion] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -343,7 +338,6 @@ export default function PrototypeAnnotationLayer() {
   useEffect(() => {
     if (!ann.enabled) {
       setAnchoredNotes([]);
-      setVisibleNoteIds(new Set());
       return undefined;
     }
 
@@ -367,37 +361,13 @@ export default function PrototypeAnnotationLayer() {
     };
   }, [ann.enabled, pageAnnotations, scanAnchors]);
 
-  useEffect(() => {
-    const activeIds = new Set(anchoredNotes.map((item) => item.note.id));
-    setVisibleNoteIds((previous) => {
-      const next = new Set([...previous].filter((id) => activeIds.has(id)));
-      if (next.size === previous.size && [...next].every((id) => previous.has(id))) return previous;
-      return next;
-    });
-  }, [anchoredNotes]);
-
-  const handleVisibilityChange = useCallback((noteId, visible) => {
-    setVisibleNoteIds((previous) => {
-      const alreadyVisible = previous.has(noteId);
-      if (alreadyVisible === visible) return previous;
-      const next = new Set(previous);
-      if (visible) next.add(noteId);
-      else next.delete(noteId);
-      return next;
-    });
-  }, []);
-
   const matchedIds = useMemo(() => (
     new Set(anchoredNotes.map((item) => item.note.id))
   ), [anchoredNotes]);
 
-  const visibleAnnotations = useMemo(() => (
-    pageAnnotations.filter((note) => visibleNoteIds.has(note.id))
-  ), [pageAnnotations, visibleNoteIds]);
-
-  const visibleNoteNumbers = useMemo(() => (
-    new Map(visibleAnnotations.map((note, index) => [note.id, index + 1]))
-  ), [visibleAnnotations]);
+  const noteNumbers = useMemo(() => (
+    buildAnnotationNumberMap(pageAnnotations)
+  ), [pageAnnotations]);
 
   useEffect(() => {
     document.querySelectorAll('.paf-target-highlight').forEach((element) => {
@@ -532,20 +502,19 @@ export default function PrototypeAnnotationLayer() {
           key={note.id}
           note={note}
           element={element}
-          number={visibleNoteNumbers.get(note.id)}
+          number={noteNumbers.get(note.id)}
           selected={ann.expandedNoteId === note.id}
           editMode={editMode}
           layoutVersion={layoutVersion}
           onSelect={ann.selectNote}
           onMove={handleMoveNote}
-          onVisibilityChange={handleVisibilityChange}
         />
       ))}
 
       {ann.enabled && (
         <PrototypeAnnotationPanel
           notes={pageAnnotations}
-          noteNumbers={visibleNoteNumbers}
+          noteNumbers={noteNumbers}
           matchedIds={matchedIds}
           expandedNoteId={ann.expandedNoteId}
           onToggleExpand={ann.toggleExpand}
