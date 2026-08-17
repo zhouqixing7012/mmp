@@ -4,27 +4,28 @@
 - 当前阶段：个人工作台、资产管理、库存管理主要原型已建立，后续继续按截图和 PRD 逐页校准。
 - 2026-08-17 已将附件 `员工自助功能PRD.pdf` 按业务模块转换为 Markdown，新增 `docs/员工自助功能PRD/`；资产申请因内容较长再按流程拆为 3 个子文件。
 - 2026-08-17 原型标注已升级为可编辑模式：支持拖动位置、修改标题/摘要/详细说明、重新绑定锚点、新增/删除、保存、导入导出。
-- 2026-08-17 原型标注交互二次重构：面板改为 Portal 到 `document.body`，内部使用独立固定高度滚动区；Ant Design Tooltip/Popconfirm/Select 浮层统一渲染到 body 且层级高于面板；新增/重绑支持按钮、QueryItem 查询条件、Table 表头字段、FormItem 和模块锚点的细粒度选择。
+- 2026-08-17 原型标注交互已完成全局化和精准化重构：所有 React 路由均可使用标注；`/yewurules` 按实际 `activeMenu / activeSubMenu / activeTab` 拆分页面作用域；新增/重绑改为鼠标实时识别目标，不再依赖进入页面时预扫描成功。
 
 # 上次停留位置
 
 - PRD 不在页面端上传或调用 AI 接口。后续由 Agent 直接读取仓库中的 PRD Markdown/PDF 和 React 页面代码，补充语义化 `data-prototype-anchor` 并生成初始标注。
 - 页面端只负责人工校准：打开“标注 → 编辑”，修改内容、拖动位置或重新绑定后点击保存。
-- 新增/重绑时可直接把鼠标移动到具体按钮、单个查询条件或表格表头字段，橙色描边显示当前精确目标，点击后完成绑定。
-- 用户保存结果写入浏览器本地覆盖层；刷新页面可恢复。最终需要固化进仓库时可导出标注 JSON，再由 Agent 合并回项目标注数据。
+- 新增/重绑时直接把鼠标移动到具体按钮、查询条件、表格表头、详情字段、表单字段或业务模块；橙色描边显示当前实时命中的精确目标，点击后完成绑定。
+- 用户保存结果按“当前页面作用域”写入浏览器本地覆盖层；不同路由、不同后台菜单/页签互不串数据。最终需要固化进仓库时可导出标注 JSON，再由 Agent 合并回项目标注数据。
 
 # 近期关键决定
 
 - 标注数据采用“代码初稿 + 用户覆盖层”模型：仓库中的 `annotation-data.js` 是 PRD 生成的基线，浏览器保存的修改只覆盖同 id 标注。
 - Agent 后续根据 PRD 新增标注时，新 id 会自动出现；用户已经修改过的同 id 标注仍保留用户版本，避免重新生成时覆盖人工校准。
+- 页面作用域不再只看 pathname：普通独立路由使用 `route:<pathname>`；`/yewurules` 由 `AdminContent` 暴露 `activeMenu / activeSubMenu / activeTab`，形成独立 scope。
+- 原型标注入口不再限制于 `/yewurules`，所有 React 路由都可新建和保存标注。
+- 新增/重绑不再要求目标预先存在 generated-target；鼠标经过时实时按语义优先级识别：Button → 表头 → DetailItem/FormField/QueryItem/FormItem → 输入控件 → 显式模块锚点 → Card/Table/Form/普通白色业务块。
+- QueryItem、DetailItem、FormField 通过公共组件统一补充语义标记，避免各页面重复埋点；旧页面没有 Ant Design Card 时，`bg-white` 等业务块仍可作为模块级目标。
+- 细粒度 target 基于页面 scope + 业务语义重建，不保存 nth-child、绝对 CSS path 或绝对 x/y。
 - 标注序号只由 `pageAnnotations` 稳定顺序决定，不依赖 DOM 可见状态。
-- 标注面板直接通过 React Portal 渲染到 `document.body`，避免业务页面 stacking context 影响滚动和浮层展示；面板内部只保留一个真实滚动容器。
-- Tooltip / Popconfirm / Select dropdown 显式使用 `document.body` 作为 popup container，并配置高于标注面板的 popup z-index。
-- 细粒度目标使用 `annotation-targeting.js` 统一扫描和解析：显式 `data-prototype-anchor` 仍是模块级稳定锚点；按钮、QueryItem、表头、FormItem 等生成稳定运行时 target，不保存 nth-child 或绝对 CSS 路径。
-- QueryItem 通过公共 `QueryBar` 增加 `data-prototype-bindable="query-condition"` 和语义 label，确保查询条件可精准定位且刷新后可重建。
+- 标注面板直接通过 React Portal 渲染到 `document.body`，面板内部只保留一个真实滚动容器；Tooltip / Popconfirm / Select dropdown 同样显式挂载 body 且 popup z-index 高于面板。
 - 业务页面不保存 x/y 坐标；位置保存为 `side / align / gap / offsetX / offsetY / viewportPadding`。
 - 定位层统一处理滚动跟随、元素尺寸变化、边缘翻转和视口约束，不在业务页面写定位补丁。
-- `MutationObserver` 只监听 DOM 增删；滚动、窗口变化和元素尺寸变化由独立监听处理。
 - 本轮不新增第三方运行时依赖，保持现有安装、构建和部署链不变。
 
 # 当前全局设计规范
@@ -43,4 +44,4 @@
 - 个人工作台：资产申请、审批、配给、领用、借用、更换、退库、合约号码相关主链路已建立。
 - 资产管理：资产维护、耗材维护、合约号码维护、标签打印、跨公司转移、资产报废、账面报废、资产处置、员工资产信息查询已建立。
 - 库存管理：资产接收、入库、出库、移库、转移、库管员工作台已有主要原型；耗材接收及部分新建/详情页继续按后续字段补充。
-- 原型标注：当前先覆盖 `/yewurules`；编辑器、本地覆盖层和细粒度目标选择已建立，后续由 Agent 按仓库 PRD 逐页生成初始 annotation data 与锚点。
+- 原型标注：已全局挂载到所有 React 路由；编辑器、本地覆盖层、页面作用域和实时细粒度目标选择均已建立，后续由 Agent 按仓库 PRD 逐页生成初始 annotation data 与稳定业务锚点。
