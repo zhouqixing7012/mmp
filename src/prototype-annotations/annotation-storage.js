@@ -1,4 +1,5 @@
 import { readDemoData, resetDemoData, writeDemoData } from '../services/demoStorage';
+import { getBuiltInPrototypeAnnotations } from './annotation-base-registry';
 import { normalizeAnnotationPosition } from './annotation-positioning';
 
 export const PROTOTYPE_ANNOTATION_STORAGE_KEY = 'prototype_annotation_overrides_v2';
@@ -150,8 +151,19 @@ function findFallbackRecord(store, fallbackPageKeys = []) {
   return null;
 }
 
+function resolveBaseAnnotations(pageKey, defaultAnnotations = []) {
+  if (Array.isArray(defaultAnnotations) && defaultAnnotations.length > 0) {
+    return defaultAnnotations;
+  }
+
+  const builtInAnnotations = getBuiltInPrototypeAnnotations(pageKey);
+  if (builtInAnnotations.length > 0) return builtInAnnotations;
+
+  return defaultAnnotations;
+}
+
 export function readAnnotationDraft(pageKey, defaultAnnotations = [], fallbackPageKeys = []) {
-  const base = normalizeAnnotationCollection(defaultAnnotations, pageKey);
+  const base = normalizeAnnotationCollection(resolveBaseAnnotations(pageKey, defaultAnnotations), pageKey);
   baseAnnotationRegistry.set(pageKey, cloneValue(base));
 
   const store = readOverrideStore();
@@ -185,7 +197,7 @@ export function writeAnnotationDraft(pageKey, annotations) {
 }
 
 export function resetAnnotationDraft(pageKey, defaultAnnotations = [], fallbackPageKeys = []) {
-  const base = normalizeAnnotationCollection(defaultAnnotations, pageKey);
+  const base = normalizeAnnotationCollection(resolveBaseAnnotations(pageKey, defaultAnnotations), pageKey);
   baseAnnotationRegistry.set(pageKey, cloneValue(base));
   removePageFromStore(PROTOTYPE_ANNOTATION_STORAGE_KEY, pageKey);
   removePageFromStore(LEGACY_STORAGE_KEY, pageKey);
