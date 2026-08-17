@@ -116,3 +116,5 @@
 - 标注面板出现“内部无法滚动 / Ant Design Tooltip 被面板遮挡”时，不要继续只堆 `overflow` 或全局 CSS z-index。面板应直接 Portal 到 `document.body`，内部使用明确高度的单一滚动容器；Tooltip / Popconfirm / Select popup 也显式挂载 body 并设置独立 popup z-index。
 - 新增/重绑标注不能只允许命中模块级 `data-prototype-anchor`。产品标注需要覆盖单个按钮、QueryItem 查询条件、Table 表头字段、FormItem 等细粒度元素；细粒度 target 必须由稳定业务语义重建，禁止 `nth-child`、绝对 CSS path 或绝对 x/y。
 - 中文字段生成稳定 target 时，编码后必须统一大小写再过滤字符，避免 URL 编码中的 A-F 被误删导致不同中文字段 key 退化或冲突。
+- 对于同一路由内部通过菜单/页签切换的后台，不可只用 pathname 作为标注 pageKey；必须显式暴露当前业务页面 scope，否则不同页面会共享或丢失标注。普通路由按 pathname 隔离，`/yewurules` 按 `activeMenu / activeSubMenu / activeTab` 隔离。
+- 精准标注选择不能依赖“进入页面时预扫描已经成功”。鼠标经过时应实时从当前 DOM 判断 Button、表头、QueryItem、DetailItem、FormField、FormItem、Input 等目标，再回退到 Card/Table/Form/业务块；预扫描只负责持久化 target 重建，不负责决定当前能不能选。
