@@ -13,6 +13,15 @@ import {
 } from './annotation-storage';
 import { serializePrototypeAnchorContext } from './annotation-anchor-scanner';
 import {
+  PAGE_LABEL_ATTRIBUTE,
+  PAGE_SCOPE_ATTRIBUTE,
+  YEWURULES_MATERIAL_COMPREHENSIVE_SCOPE,
+  annotationScopeFilename,
+  buildRoutePageScope,
+  readPrototypePageLabel,
+  readPrototypePageScope,
+} from './annotation-page-scope';
+import {
   findPrototypeBindingElement,
   getPrototypeTargetMetadata,
   preparePrototypeTargets,
@@ -21,14 +30,9 @@ import {
 
 import yewurulesAnnotations from './annotation-data';
 
-const ALL_ANNOTATIONS = {
-  yewurules: yewurulesAnnotations,
+const BASE_ANNOTATIONS_BY_SCOPE = {
+  [YEWURULES_MATERIAL_COMPREHENSIVE_SCOPE]: yewurulesAnnotations,
 };
-
-function detectPageKey(pathname) {
-  if (pathname === '/yewurules' || pathname.startsWith('/yewurules')) return 'yewurules';
-  return null;
-}
 
 function sameAnchors(previous, next) {
   if (previous.length !== next.length) return false;
@@ -235,8 +239,8 @@ function PrototypeAnnotationHotspot({
 export default function PrototypeAnnotationLayer() {
   const location = useLocation();
   const ann = usePrototypeAnnotations();
-  const pageKey = useMemo(() => detectPageKey(location.pathname), [location.pathname]);
-  const baseAnnotations = useMemo(() => (pageKey ? ALL_ANNOTATIONS[pageKey] || [] : []), [pageKey]);
+  const [pageScope, setPageScope] = useState(() => buildRoutePageScope(location.pathname));
+  const [pageLabel, setPageLabel] = useState(() => location.pathname || '/');
   const [pageAnnotations, setPageAnnotations] = useState([]);
   const [anchoredNotes, setAnchoredNotes] = useState([]);
   const [layoutVersion, setLayoutVersion] = useState(0);
@@ -244,17 +248,49 @@ export default function PrototypeAnnotationLayer() {
   const [dirty, setDirty] = useState(false);
   const [bindingMode, setBindingMode] = useState(null);
 
+  const baseAnnotations = useMemo(() => BASE_ANNOTATIONS_BY_SCOPE[pageScope] || [], [pageScope]);
+  const legacyPageKeys = useMemo(() => (
+    pageScope === YEWURULES_MATERIAL_COMPREHENSIVE_SCOPE ? ['yewurules'] : []
+  ), [pageScope]);
+
   useEffect(() => {
-    if (!pageKey) {
-      setPageAnnotations([]);
-      setDirty(false);
-      setBindingMode(null);
-      return;
-    }
-    setPageAnnotations(readAnnotationDraft(pageKey, baseAnnotations));
+    let frame = null;
+
+    const updateScope = () => {
+      setPageScope(readPrototypePageScope(location.pathname, document));
+      setPageLabel(readPrototypePageLabel(location.pathname, document));
+    };
+
+    const scheduleUpdate = () => {
+      if (frame !== null) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        updateScope();
+      });
+    };
+
+    updateScope();
+
+    const observer = new MutationObserver(scheduleUpdate);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: [PAGE_SCOPE_ATTRIBUTE, PAGE_LABEL_ATTRIBUTE],
+    });
+
+    return () => {
+      observer.disconnect();
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  }, [location.key, location.pathname]);
+
+  useEffect(() => {
+    setPageAnnotations(readAnnotationDraft(pageScope, baseAnnotations, legacyPageKeys));
     setDirty(false);
     setBindingMode(null);
-  }, [baseAnnotations, pageKey]);
+    ann.clearSelection();
+  }, [ann.clearSelection, baseAnnotations, legacyPageKeys, pageScope]);
 
   const updateAnnotations = useCallback((updater) => {
     setPageAnnotations((previous) => (
@@ -262,6 +298,16 @@ export default function PrototypeAnnotationLayer() {
     ));
     setDirty(true);
   }, []);
+
+  const handleSelectNote = useCallback((noteId, target) => {
+    ann.selectNote(noteId, target);
+    if (!target) return;
+
+    const element = resolvePrototypeTarget(target, pageScope, document);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    }
+  }, [ann.selectNote, pageScope]);
 
   const handleUpdateNote = useCallback((noteId, patch) => {
     updateAnnotations((previous) => previous.map((note) => (
@@ -284,62 +330,60 @@ export default function PrototypeAnnotationLayer() {
 
   const handleDeleteNote = useCallback((noteId) => {
     updateAnnotations((previous) => previous.filter((note) => note.id !== noteId));
-    if (ann.expandedNoteId === noteId) ann.selectNote(null, null);
-  }, [ann, updateAnnotations]);
+    if (ann.expandedNoteId === noteId) ann.clearSelection();
+  }, [ann.clearSelection, ann.expandedNoteId, updateAnnotations]);
 
   const handleSave = useCallback(() => {
-    if (!pageKey) return;
-    const saved = writeAnnotationDraft(pageKey, pageAnnotations);
+    const saved = writeAnnotationDraft(pageScope, pageAnnotations);
     setPageAnnotations(saved);
     setDirty(false);
-  }, [pageAnnotations, pageKey]);
+  }, [pageAnnotations, pageScope]);
 
   const handleReset = useCallback(() => {
-    if (!pageKey) return;
-    setPageAnnotations(resetAnnotationDraft(pageKey, baseAnnotations));
+    setPageAnnotations(resetAnnotationDraft(pageScope, baseAnnotations, legacyPageKeys));
     setDirty(false);
     setBindingMode(null);
-    ann.selectNote(null, null);
-  }, [ann, baseAnnotations, pageKey]);
+    ann.clearSelection();
+  }, [ann.clearSelection, baseAnnotations, legacyPageKeys, pageScope]);
 
   const handleImport = useCallback((text) => {
     const payload = JSON.parse(text);
-    const imported = normalizeAnnotationCollection(payload, pageKey);
+    const imported = normalizeAnnotationCollection(payload, pageScope);
     setPageAnnotations(imported);
     setDirty(true);
     setBindingMode(null);
-  }, [pageKey]);
+  }, [pageScope]);
 
   const handleExport = useCallback(() => {
-    if (!pageKey) return;
-    downloadTextFile(`${pageKey}-annotations.json`, serializeAnnotationExport(pageKey, pageAnnotations));
-  }, [pageAnnotations, pageKey]);
+    const fileBase = annotationScopeFilename(pageScope);
+    downloadTextFile(`${fileBase}-annotations.json`, serializeAnnotationExport(pageScope, pageAnnotations));
+  }, [pageAnnotations, pageScope]);
 
   const handleExportAnchors = useCallback(() => {
-    if (!pageKey) return;
-    preparePrototypeTargets(pageKey, document);
-    downloadTextFile(`${pageKey}-anchors.json`, serializePrototypeAnchorContext(pageKey, location.pathname));
-  }, [location.pathname, pageKey]);
+    preparePrototypeTargets(pageScope, document);
+    const fileBase = annotationScopeFilename(pageScope);
+    downloadTextFile(`${fileBase}-anchors.json`, serializePrototypeAnchorContext(pageScope, location.pathname));
+  }, [location.pathname, pageScope]);
 
   const scanAnchors = useCallback(() => {
-    if (!ann.enabled || !pageKey) {
+    if (!ann.enabled) {
       setAnchoredNotes([]);
       return;
     }
 
-    preparePrototypeTargets(pageKey, document);
+    preparePrototypeTargets(pageScope, document);
 
     const next = pageAnnotations
-      .map((note) => ({ note, element: resolvePrototypeTarget(note.target) }))
+      .map((note) => ({ note, element: resolvePrototypeTarget(note.target, pageScope, document) }))
       .filter((item) => item.element);
 
     setAnchoredNotes((previous) => sameAnchors(previous, next) ? previous : next);
     setLayoutVersion((version) => version + 1);
-  }, [ann.enabled, pageAnnotations, pageKey]);
+  }, [ann.enabled, pageAnnotations, pageScope]);
 
   useEffect(() => {
     ann.updateActiveNotes(pageAnnotations);
-  }, [pageAnnotations]);
+  }, [ann.updateActiveNotes, pageAnnotations]);
 
   useEffect(() => {
     if (!ann.enabled) {
@@ -365,7 +409,7 @@ export default function PrototypeAnnotationLayer() {
       observer.disconnect();
       if (frame !== null) window.cancelAnimationFrame(frame);
     };
-  }, [ann.enabled, pageAnnotations, scanAnchors]);
+  }, [ann.enabled, pageAnnotations, pageScope, scanAnchors]);
 
   const matchedIds = useMemo(() => (
     new Set(anchoredNotes.map((item) => item.note.id))
@@ -379,15 +423,13 @@ export default function PrototypeAnnotationLayer() {
     });
 
     if (!ann.enabled || !ann.highlightedTarget) return;
-    preparePrototypeTargets(pageKey, document);
-    const target = resolvePrototypeTarget(ann.highlightedTarget);
+    const target = resolvePrototypeTarget(ann.highlightedTarget, pageScope, document);
     if (target) target.classList.add('paf-target-highlight');
-  }, [ann.highlightedTarget, ann.enabled, layoutVersion, pageKey]);
+  }, [ann.enabled, ann.highlightedTarget, layoutVersion, pageScope]);
 
   useEffect(() => {
-    if (!bindingMode || !editMode || !pageKey) return undefined;
+    if (!bindingMode || !editMode) return undefined;
 
-    preparePrototypeTargets(pageKey, document);
     let candidate = null;
 
     const clearCandidate = () => {
@@ -406,7 +448,8 @@ export default function PrototypeAnnotationLayer() {
     const onClick = (event) => {
       const targetElement = findPrototypeBindingElement(event.target);
       if (!targetElement) return;
-      const metadata = getPrototypeTargetMetadata(targetElement);
+
+      const metadata = getPrototypeTargetMetadata(targetElement, pageScope, document);
       if (!metadata?.target) return;
 
       event.preventDefault();
@@ -416,9 +459,13 @@ export default function PrototypeAnnotationLayer() {
         const noteId = `annotation-${Date.now().toString(36)}`;
         const newNote = {
           id: noteId,
-          pageKey,
+          pageKey: pageScope,
           target: metadata.target,
-          context: { generatedTarget: metadata.generated },
+          context: {
+            pageScope,
+            pageLabel,
+            generatedTarget: metadata.generated,
+          },
           kind: metadata.kind || 'module',
           position: normalizeAnnotationPosition({ side: 'right', align: 'center', gap: 8 }),
           title: metadata.label ? `${metadata.label}标注` : '新标注',
@@ -427,14 +474,24 @@ export default function PrototypeAnnotationLayer() {
           sections: [],
         };
         updateAnnotations((previous) => [...previous, newNote]);
-        ann.selectNote(noteId, metadata.target);
+        handleSelectNote(noteId, metadata.target);
       } else if (bindingMode.type === 'rebind' && bindingMode.noteId) {
-        handleUpdateNote(bindingMode.noteId, {
-          target: metadata.target,
-          kind: metadata.kind || 'module',
-          context: { generatedTarget: metadata.generated },
-        });
-        ann.selectNote(bindingMode.noteId, metadata.target);
+        updateAnnotations((previous) => previous.map((note) => (
+          note.id === bindingMode.noteId
+            ? {
+              ...note,
+              target: metadata.target,
+              kind: metadata.kind || note.kind || 'module',
+              context: {
+                ...(note.context || {}),
+                pageScope,
+                pageLabel,
+                generatedTarget: metadata.generated,
+              },
+            }
+            : note
+        )));
+        handleSelectNote(bindingMode.noteId, metadata.target);
       }
 
       clearCandidate();
@@ -458,18 +515,17 @@ export default function PrototypeAnnotationLayer() {
       document.removeEventListener('click', onClick, true);
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [ann, bindingMode, editMode, handleUpdateNote, pageKey, updateAnnotations]);
+  }, [bindingMode, editMode, handleSelectNote, pageLabel, pageScope, updateAnnotations]);
 
   useEffect(() => {
     if (!editMode) setBindingMode(null);
   }, [editMode]);
 
-  if (!pageKey) return null;
-
   return (
     <>
       <div
         data-prototype-annotation-ui="true"
+        title={`当前标注页面：${pageLabel}`}
         style={{
           position: 'fixed',
           bottom: 20,
@@ -497,14 +553,14 @@ export default function PrototypeAnnotationLayer() {
 
       {ann.enabled && anchoredNotes.map(({ note, element }) => (
         <PrototypeAnnotationHotspot
-          key={note.id}
+          key={`${pageScope}-${note.id}`}
           note={note}
           element={element}
           number={noteNumbers.get(note.id)}
           selected={ann.expandedNoteId === note.id}
           editMode={editMode}
           layoutVersion={layoutVersion}
-          onSelect={ann.selectNote}
+          onSelect={handleSelectNote}
           onMove={handleMoveNote}
         />
       ))}
@@ -516,7 +572,7 @@ export default function PrototypeAnnotationLayer() {
           matchedIds={matchedIds}
           expandedNoteId={ann.expandedNoteId}
           onToggleExpand={ann.toggleExpand}
-          onSelectNote={ann.selectNote}
+          onSelectNote={handleSelectNote}
           onClose={ann.toggle}
           panelRef={ann.panelRef}
           editMode={editMode}
@@ -546,8 +602,9 @@ export default function PrototypeAnnotationLayer() {
         .paf-bind-target-candidate {
           outline: 3px solid #faad14 !important;
           outline-offset: 3px;
+          border-radius: 4px;
           cursor: crosshair !important;
-          background-color: rgba(250, 173, 20, 0.08) !important;
+          box-shadow: 0 0 0 2px rgba(250, 173, 20, 0.16) !important;
         }
         @keyframes paf-pulse {
           0%, 100% { outline-color: #1677ff; }
