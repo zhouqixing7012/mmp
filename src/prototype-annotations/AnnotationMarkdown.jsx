@@ -1,5 +1,14 @@
 import React from 'react';
 
+function unescapeMarkdown(text) {
+  return String(text || '')
+    .replaceAll('\\*', '*')
+    .replaceAll('\\_', '_')
+    .replaceAll('\\`', '`')
+    .replaceAll('\\|', '|')
+    .replaceAll('\\\\', '\\');
+}
+
 function renderInlineMarkdown(text) {
   const parts = String(text || '').split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g).filter(Boolean);
 
@@ -7,17 +16,17 @@ function renderInlineMarkdown(text) {
     if (part.startsWith('`') && part.endsWith('`')) {
       return (
         <code key={`${part}-${index}`} style={{ background: '#f5f5f5', padding: '0 4px', borderRadius: 3, fontSize: '0.95em' }}>
-          {part.slice(1, -1)}
+          {unescapeMarkdown(part.slice(1, -1))}
         </code>
       );
     }
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
+      return <strong key={`${part}-${index}`}>{unescapeMarkdown(part.slice(2, -2))}</strong>;
     }
     if (part.startsWith('*') && part.endsWith('*')) {
-      return <em key={`${part}-${index}`}>{part.slice(1, -1)}</em>;
+      return <em key={`${part}-${index}`}>{unescapeMarkdown(part.slice(1, -1))}</em>;
     }
-    return <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>;
+    return <React.Fragment key={`${part}-${index}`}>{unescapeMarkdown(part)}</React.Fragment>;
   });
 }
 
