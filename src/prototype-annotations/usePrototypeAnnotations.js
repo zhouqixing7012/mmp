@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
+import { resolvePrototypeTarget } from './annotation-targeting';
 
 export default function usePrototypeAnnotations() {
   const [enabled, setEnabled] = useState(false);
@@ -7,15 +8,13 @@ export default function usePrototypeAnnotations() {
   const [highlightedTarget, setHighlightedTarget] = useState(null);
   const panelRef = useRef(null);
 
-  const toggle = () => setEnabled(prev => {
-    if (prev) {
-      // 关闭时清理所有状态
+  const toggle = () => setEnabled((previous) => {
+    if (previous) {
       setExpandedNoteId(null);
       setHighlightedTarget(null);
-      // 移除所有残留高亮
-      document.querySelectorAll('.paf-target-highlight').forEach(el =>
-        el.classList.remove('paf-target-highlight')
-      );
+      document.querySelectorAll('.paf-target-highlight').forEach((element) => {
+        element.classList.remove('paf-target-highlight');
+      });
       return false;
     }
     return true;
@@ -27,14 +26,28 @@ export default function usePrototypeAnnotations() {
     setExpandedNoteId(noteId);
     setHighlightedTarget(target);
     if (target) {
-      const el = document.querySelector(`[data-prototype-anchor="${target}"]`);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const element = resolvePrototypeTarget(target);
+      if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
     }
   };
 
-  const toggleExpand = (noteId) =>
-    setExpandedNoteId(prev => prev === noteId ? null : noteId);
+  const toggleExpand = (noteId) => {
+    setExpandedNoteId((previous) => {
+      const closing = previous === noteId;
+      if (closing) setHighlightedTarget(null);
+      return closing ? null : noteId;
+    });
+  };
 
-  return { enabled, toggle, activeNotes, updateActiveNotes, expandedNoteId,
-    selectNote, toggleExpand, highlightedTarget, panelRef };
+  return {
+    enabled,
+    toggle,
+    activeNotes,
+    updateActiveNotes,
+    expandedNoteId,
+    selectNote,
+    toggleExpand,
+    highlightedTarget,
+    panelRef,
+  };
 }
