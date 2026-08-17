@@ -21,6 +21,11 @@ const PREPARE_SELECTOR = [
   '.ant-table-wrapper',
   '.ant-card',
   'form',
+  'main',
+  'section',
+  'article',
+  '[role="region"]',
+  'div.bg-white',
 ].join(',');
 
 const CONTROL_SELECTOR = [
@@ -31,6 +36,17 @@ const CONTROL_SELECTOR = [
   'input',
   'textarea',
   'select',
+].join(',');
+
+const GENERIC_MODULE_SELECTOR = [
+  '.ant-table-wrapper',
+  '.ant-card',
+  'form',
+  'main',
+  'section',
+  'article',
+  '[role="region"]',
+  'div.bg-white',
 ].join(',');
 
 const ANNOTATION_UI_SELECTOR = [
@@ -68,7 +84,10 @@ function isRedundantContainer(element) {
   if (element.matches('.qw') && element.querySelector('[data-prototype-bindable="query-condition"]')) {
     return true;
   }
-  if (isControl(element) && element.closest('[data-prototype-bindable="query-condition"], .ant-form-item')) {
+  if (isControl(element) && element.closest('[data-prototype-bindable], .ant-form-item')) {
+    return true;
+  }
+  if (element.matches('div.bg-white') && element.closest('.ant-card, .ant-table-wrapper')) {
     return true;
   }
   return false;
@@ -84,7 +103,17 @@ function getTargetKind(element) {
   if (element.matches('.ant-table-wrapper')) return 'table';
   if (element.matches('.ant-card')) return 'card';
   if (element.matches('form')) return 'form';
-  return element.tagName.toLowerCase();
+  return 'module';
+}
+
+function getDirectHeading(element) {
+  const directHeading = Array.from(element.children || []).find((child) => (
+    child.matches?.('h1, h2, h3, h4, h5, h6, [data-prototype-title]')
+  ));
+  if (directHeading) return compactText(directHeading.textContent);
+
+  const nestedHeading = element.querySelector?.('h1, h2, h3, h4, h5, h6, [data-prototype-title]');
+  return compactText(nestedHeading?.textContent);
 }
 
 function getCardTitle(element) {
@@ -141,7 +170,7 @@ function getTargetLabel(element) {
   if (formLabel) return formLabel;
 
   if (element.matches('.ant-card')) {
-    return getCardTitle(element) || '卡片区域';
+    return getCardTitle(element) || getDirectHeading(element) || '卡片区域';
   }
 
   if (element.matches('.ant-table-wrapper')) {
@@ -149,7 +178,11 @@ function getTargetLabel(element) {
   }
 
   if (element.matches('form')) {
-    return getCardTitle(element) || '表单';
+    return getCardTitle(element) || getDirectHeading(element) || '表单';
+  }
+
+  if (element.matches('main, section, article, [role="region"], div.bg-white')) {
+    return getDirectHeading(element) || getCardTitle(element) || '内容区域';
   }
 
   const placeholder = getControlPlaceholder(element);
@@ -222,8 +255,18 @@ function closestOutsideUi(eventTarget, selector) {
   return candidate && !isAnnotationUi(candidate) ? candidate : null;
 }
 
+function findDetailFieldFromValue(eventTarget) {
+  const valueCell = closestOutsideUi(eventTarget, '[data-prototype-detail-value]');
+  if (!valueCell) return null;
+  const labelCell = valueCell.previousElementSibling;
+  return labelCell?.matches?.('[data-prototype-bindable="detail-field"]') ? labelCell : null;
+}
+
 export function findPrototypeBindingElement(eventTarget) {
   if (!(eventTarget instanceof Element) || isAnnotationUi(eventTarget)) return null;
+
+  const detailField = findDetailFieldFromValue(eventTarget);
+  if (detailField) return detailField;
 
   // 优先命中真正的操作对象，再逐级回退到字段和模块。
   return closestOutsideUi(eventTarget, '[data-prototype-bindable]:not([data-prototype-bindable="query-condition"])')
@@ -233,9 +276,7 @@ export function findPrototypeBindingElement(eventTarget) {
     || closestOutsideUi(eventTarget, '.ant-form-item')
     || closestOutsideUi(eventTarget, CONTROL_SELECTOR)
     || closestOutsideUi(eventTarget, '[data-prototype-anchor]')
-    || closestOutsideUi(eventTarget, '.ant-table-wrapper')
-    || closestOutsideUi(eventTarget, '.ant-card')
-    || closestOutsideUi(eventTarget, 'form');
+    || closestOutsideUi(eventTarget, GENERIC_MODULE_SELECTOR);
 }
 
 export function getPrototypeTargetMetadata(element, pageScope, root = document) {
