@@ -9,8 +9,14 @@ import { Search, RefreshCcw } from 'lucide-react';
  */
 
 export function QueryItem({ label, children, labelWidth = 96 }) {
+  const prototypeLabel = typeof label === 'string' ? label.replace(/[:：]\s*$/, '') : undefined;
+
   return (
-    <div className="flex items-center gap-2 min-w-0">
+    <div
+      className="flex items-center gap-2 min-w-0"
+      data-prototype-bindable="query-condition"
+      data-prototype-label={prototypeLabel}
+    >
       <span
         className="shrink-0 text-right text-sm text-gray-600"
         style={{ width: labelWidth }}
