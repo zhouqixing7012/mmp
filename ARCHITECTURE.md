@@ -21,15 +21,16 @@
 |---|---|
 | `src/App.js` | 应用路由入口。 |
 | `src/config/routes.js` | 独立页面路由配置。 |
-| `src/components/QueryBar.jsx` | 统一查询区域。 |
+| `src/components/QueryBar.jsx` | 统一查询区域；QueryItem 同时暴露细粒度原型标注语义。 |
 | `src/components/StatusTag.jsx` | 统一状态展示。 |
 | `src/components/SelectModal.jsx` | 通用选择弹窗。 |
-| `src/prototype-annotations/PrototypeAnnotationLayer.jsx` | 全局原型标注层，解析锚点、定位热点、处理拖动/重绑和保存。 |
-| `src/prototype-annotations/PrototypeAnnotationPanel.jsx` | 标注查看与可视化编辑面板。 |
+| `src/prototype-annotations/PrototypeAnnotationLayer.jsx` | 全局原型标注层，解析目标、定位热点、处理拖动/重绑和保存。 |
+| `src/prototype-annotations/PrototypeAnnotationPanel.jsx` | 标注查看与可视化编辑面板；通过 Portal 独立渲染到 body。 |
 | `src/prototype-annotations/annotation-data.js` | Agent 根据仓库 PRD 生成的标注基线。 |
+| `src/prototype-annotations/annotation-targeting.js` | 模块锚点与按钮/查询条件/表头/FormItem 等细粒度目标的生成、解析和绑定。 |
 | `src/prototype-annotations/annotation-positioning.js` | 标注点定位、自动翻转和视口约束。 |
 | `src/prototype-annotations/annotation-storage.js` | 浏览器标注覆盖层、删除记录和自定义标注持久化。 |
-| `src/prototype-annotations/annotation-anchor-scanner.js` | 扫描页面语义锚点并导出上下文。 |
+| `src/prototype-annotations/annotation-anchor-scanner.js` | 扫描模块锚点和细粒度可标注目标并导出上下文。 |
 | `src/services/demoStorage.js` | localStorage 统一读写。 |
 | `src/pages/yewurules/` | 后台框架、侧边栏和菜单。 |
 | `src/pages/assetManagement/` | 后台资产管理页面。 |
@@ -48,22 +49,28 @@
   ↓ Agent 识别页面结构和业务规则
 业务页面 data-prototype-anchor + annotation-data.js 基线
   ↓
+annotation-targeting.js
+  ├─ 模块级 data-prototype-anchor
+  └─ 细粒度运行时 target：Button / QueryItem / Table Header / FormItem
+  ↓
 PrototypeAnnotationLayer
   ├─ annotation-positioning.js      side / align / gap / offset + 边缘翻转
   ├─ annotation-storage.js          用户覆盖层 / 新增 / 删除
-  ├─ annotation-anchor-scanner.js   当前 DOM 锚点上下文
-  └─ PrototypeAnnotationPanel       查看、编辑、重绑、保存、导入导出
+  ├─ annotation-anchor-scanner.js   模块 + 细粒度目标上下文
+  └─ PrototypeAnnotationPanel       body Portal；查看、编辑、重绑、保存、导入导出
 ```
 
 - PRD 不在页面端上传，也不在前端调用 AI；Agent 直接读取仓库中的 PRD 文件和页面代码生成初始标注。
-- 业务页面只声明语义化锚点，不保存标注坐标。
+- `data-prototype-anchor` 继续承担模块级稳定锚点；细粒度交互由 `annotation-targeting.js` 根据语义生成稳定运行时 target，不使用 `nth-child`、绝对 CSS 路径或屏幕坐标。
+- 公共 `QueryItem` 显式声明 `data-prototype-bindable="query-condition"` 和 label；Button、Table 表头和 FormItem 由目标扫描层统一识别。
 - `annotation-data.js` 是代码基线；用户在页面上的修改只作为浏览器覆盖层保存。
 - 保存时只记录与基线不同的同 id 标注、用户新增标注和删除 id。Agent 后续新增新的基线标注时会自动出现，不会被旧本地快照挡住。
-- 标注点使用 `getBoundingClientRect` 获取锚点实时位置，滚动和窗口变化通过 `requestAnimationFrame` 合并刷新。
-- `ResizeObserver` 负责锚点尺寸变化；`MutationObserver` 只监听 DOM 增删，用于发现动态挂载/卸载的锚点，不监听所有属性。
+- 标注点使用 `getBoundingClientRect` 获取目标实时位置，滚动和窗口变化通过 `requestAnimationFrame` 合并刷新。
+- `ResizeObserver` 负责目标尺寸变化；`MutationObserver` 只监听 DOM 增删，用于发现动态挂载/卸载的目标，不监听所有属性。
 - 标注位置支持 `top / right / bottom / left`、`start / center / end`、间距和像素偏移。
 - 标注靠近视口边缘时优先翻转到对侧，最终再约束在可视区域内。
-- 编辑模式下可直接拖动标注点修改偏移，也可在面板内修改内容、重新绑定锚点、新增或删除标注。
+- 编辑模式下可直接拖动标注点修改偏移，也可选择具体按钮、查询条件、表格字段或模块重新绑定。
+- `PrototypeAnnotationPanel` 通过 React Portal 直接挂载 `document.body`；面板内部只有一个独立滚动区。Tooltip / Popconfirm / Select dropdown 同样显式挂载到 body，并使用高于面板的 popup z-index，避免业务页面 stacking context 和 panel overflow 造成遮挡。
 
 ## 后台主导航
 
