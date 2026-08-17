@@ -7,7 +7,10 @@
 - 2026-08-17 原型标注交互已完成全局化和精准化重构：所有 React 路由均可使用标注；`/yewurules` 按实际 `activeMenu / activeSubMenu / activeTab` 拆分页面作用域；新增/重绑改为鼠标实时识别目标，不再依赖进入页面时预扫描成功。
 - 2026-08-17 产品标注面板支持最小化：标题栏使用明确的“— 收起”文字按钮，仅收起面板、不退出标注模式；“×”仍用于退出。最小化后以小条展示查看/编辑和未保存状态，并提供明确“展开”按钮恢复完整面板。
 - 2026-08-17 原型标注目标扩展到 Select、DatePicker、Radio、Checkbox、Tabs、Segmented、Switch、Slider、Rate、Upload 和普通输入控件；具体交互控件优先于 QueryItem、DetailItem、FormItem 等外层字段容器。
-- 2026-08-17 标注层新增业务浮层感知：Ant Design Modal/Drawer/Image Preview 及公共 `Modal` 打开时，底层页面标注点和高亮不再穿透显示在弹窗上方；仅当前顶层业务浮层内部的标注目标继续展示。
+- 2026-08-17 标注层新增业务浮层感知：Ant Design Modal/Drawer/Image Preview、公共 `Modal` 以及公共 `SelectModal` 打开时，底层页面标注点和高亮不再穿透显示在弹窗上方；仅当前顶层业务浮层内部的标注目标继续展示。
+- 2026-08-17 公共 `SelectModal` 已补稳定标注语义：选择弹窗整体、搜索条件、结果列表均可作为稳定目标；标注选择状态下可按住 Alt/Option 点击先执行原业务交互以打开弹窗/下拉，bindingMode 保持不退出。
+- 2026-08-17 查看态标注详情改为“点击同一条展开 / 再点同一条收起”，移除详情区单独“收起”按钮；编辑态仍保留“收起编辑”。
+- 2026-08-17 标注内容支持受控 Markdown 子集：普通条目默认以项目符号展示，支持加粗、斜体、行内代码、标题、列表、Markdown 表格和常用转义，不解析原始 HTML，也不改变 annotation JSON / localStorage 数据结构。
 - 2026-08-17 已完成合约号码申请模块第一批 PRD 研发评审标注：覆盖号码控制、合约号码申请、ES 配给、配给主管审批、库管员待办、员工领取确认 6 个页面，共 11 条基线标注。
 
 # 上次停留位置
@@ -15,9 +18,13 @@
 - 合约号码申请模块已可直接在对应原型页面打开“标注”查看 PRD 重点；标注只保留准入、校验、状态流转、异常分支和跨节点系统动作，不搬运整份 PRD。
 - PRD 不在页面端上传或调用 AI 接口。后续由 Agent 直接读取仓库中的 PRD Markdown/PDF 和 React 页面代码，生成当前页面作用域的基线标注。
 - 页面端只负责人工校准：打开“标注 → 编辑”，修改内容、拖动位置或重新绑定后点击保存。
-- 新增/重绑时直接把鼠标移动到具体按钮、下拉框、单选/复选、标签页、查询条件、表格表头、详情字段、表单字段或业务模块；橙色描边显示当前实时命中的精确目标，点击后完成绑定。
+- 新增/重绑时直接把鼠标移动到具体按钮、下拉框、单选/复选、标签页、查询条件、表格表头、详情字段、表单字段、选择弹窗或业务模块；橙色描边显示当前实时命中的精确目标，点击后完成绑定。
+- 如果需要在新增/重绑状态下先打开选择弹窗或下拉框，按住 Alt/Option 点击对应业务控件，只执行原页面交互、不完成绑定，打开浮层后再直接点击浮层内部目标完成标注。
+- 公共 `SelectModal` 打开后可直接标注：点击弹窗标题/空白业务区命中“选择弹窗整体”，点击搜索条件标签命中该搜索条件，点击结果表格内容命中“结果列表”，按钮/输入框/表头仍按更细粒度优先命中。
+- 查看态标注详情不再提供单独“收起”按钮；点击一条标注展开，再点同一条或右侧箭头即可收起。
+- 普通 `section.items[]` 在查看态自动显示为 `•` 项目符号，来源如 `PRD` 跟在条目末尾；需要表格时可在单条说明中直接输入 Markdown 表格语法。
 - 标注面板可随时点击右上角“— 收起”腾出页面空间；最小化不会关闭标注模式、不会清除当前查看/编辑状态，也不会影响页面标注点继续展示；小条右侧“展开”恢复完整面板。
-- 打开业务 Modal/Drawer 后，底层页面标注点自动隐藏，不再覆盖弹窗；如果给弹窗内部字段本身添加标注，弹窗内部目标仍可正常显示和编辑。
+- 打开业务 Modal/Drawer/SelectModal 后，底层页面标注点自动隐藏，不再覆盖弹窗；如果给弹窗内部字段本身添加标注，弹窗内部目标仍可正常显示和编辑。
 - 用户保存结果按“当前页面作用域”写入浏览器本地覆盖层；不同路由、不同后台菜单/页签互不串数据。最终需要固化进仓库时可导出标注 JSON，再由 Agent 合并回项目标注数据。
 
 # 近期关键决定
@@ -29,13 +36,16 @@
 - Agent 后续根据 PRD 新增标注时，新 id 会自动出现；用户已经修改过的同 id 标注仍保留用户版本，避免重新生成时覆盖人工校准。
 - 页面作用域不再只看 pathname：普通独立路由使用 `route:<pathname>`；`/yewurules` 由 `AdminContent` 暴露 `activeMenu / activeSubMenu / activeTab`，形成独立 scope。
 - 原型标注入口不再限制于 `/yewurules`，所有 React 路由都可新建和保存标注。
-- 新增/重绑不再要求目标预先存在 generated-target；鼠标经过时实时识别。精度优先级为：Button / 表头 / Tabs / Radio / Checkbox / Segmented / Switch / Select / DatePicker / Slider / Rate / Upload / 输入控件 → DetailItem/FormField/QueryItem/FormItem → 显式模块锚点 → Card/Table/Form/普通白色业务块。点击具体控件命中控件本身；点击字段标签或普通只读值再回退到字段级语义。
+- 新增/重绑不再要求目标预先存在 generated-target；鼠标经过时实时识别。精度优先级为：Button / 表头 / Tabs / Radio / Checkbox / Segmented / Switch / Select / DatePicker / Slider / Rate / Upload / 输入控件 → DetailItem/FormField/QueryItem/FormItem/SelectModal 语义块 → 显式模块锚点 → Card/Table/Form/普通白色业务块。点击具体控件命中控件本身；点击字段标签或普通只读值再回退到字段级语义。
+- `SelectModal` 通过 `data-prototype-overlay="select-modal"` 声明当前业务浮层，并为弹窗整体、搜索条件和结果列表提供 `data-prototype-bindable` 语义；关闭后对应目标自然变为未匹配，再次打开由 MutationObserver 重新扫描并恢复匹配。
 - QueryItem、DetailItem、FormField 通过公共组件统一补充语义标记，避免各页面重复埋点；旧页面没有 Ant Design Card 时，`bg-white` 等业务块仍可作为模块级目标。
 - 细粒度 target 基于页面 scope + 业务语义重建，不保存 nth-child、绝对 CSS path 或绝对 x/y。
 - 标注序号只由 `pageAnnotations` 稳定顺序决定，不依赖 DOM 可见状态。
 - 标注面板直接通过 React Portal 渲染到 `document.body`，面板内部只保留一个真实滚动容器；Tooltip / Popconfirm / Select dropdown 同样显式挂载 body 且 popup z-index 高于面板。
 - 面板可视状态与标注启用状态分离：最小化只改变面板尺寸和展示，不调用 `onClose`；退出标注模式只由关闭按钮或全局标注开关触发。收起/展开使用带文字的显式按钮，避免纯图标操作不可发现。
-- 标注圆点仍可高于普通页面，但显示前必须经过“当前业务浮层”判断：存在 Modal/Drawer 时，弹窗外目标隐藏、弹窗内目标保留。公共 `Modal` 通过 `data-prototype-overlay="modal"` 显式声明，Ant Design Modal/Drawer 由标注层自动识别。
+- 查看态展开状态只由标注条目本身和箭头切换，不再在详情区重复增加第二套收起入口。
+- 标注详细内容继续使用 `section.title + items[]` 作为持久化模型；展示层对普通 item 自动加项目符号，对带 Markdown 块语法的 item 使用 `AnnotationMarkdown` 渲染。支持受控 Markdown，但禁止原始 HTML，避免把富文本展示需求扩散成不受控 HTML 注入。
+- 标注圆点仍可高于普通页面，但显示前必须经过“当前业务浮层”判断：存在 Modal/Drawer/SelectModal 时，弹窗外目标隐藏、弹窗内目标保留。公共 `Modal` 与 `SelectModal` 显式声明 overlay，Ant Design Modal/Drawer 由标注层自动识别。
 - 业务页面不保存 x/y 坐标；位置保存为 `side / align / gap / offsetX / offsetY / viewportPadding`。
 - 定位层统一处理滚动跟随、元素尺寸变化、边缘翻转、业务浮层遮挡和视口约束，不在业务页面写定位补丁。
 - 本轮不新增第三方运行时依赖，保持现有安装、构建和部署链不变。
@@ -56,4 +66,4 @@
 - 个人工作台：资产申请、审批、配给、领用、借用、更换、退库、合约号码相关主链路已建立；合约号码申请链路已补首批 PRD 研发评审基线标注。
 - 资产管理：资产维护、耗材维护、合约号码维护、标签打印、跨公司转移、资产报废、账面报废、资产处置、员工资产信息查询已建立。
 - 库存管理：资产接收、入库、出库、移库、转移、库管员工作台已有主要原型；耗材接收及部分新建/详情页继续按后续字段补充。
-- 原型标注：已全局挂载到所有 React 路由；编辑器、本地覆盖层、页面作用域、扩展细粒度目标选择、业务浮层遮挡、面板最小化和业务模块基线注册均已建立，后续可继续按仓库 PRD 分模块生成初始 annotation data。
+- 原型标注：已全局挂载到所有 React 路由；编辑器、本地覆盖层、页面作用域、扩展细粒度目标选择、业务浮层遮挡、SelectModal 语义、查看态点击折叠、Markdown 展示、面板最小化和业务模块基线注册均已建立，后续可继续按仓库 PRD 分模块生成初始 annotation data。
