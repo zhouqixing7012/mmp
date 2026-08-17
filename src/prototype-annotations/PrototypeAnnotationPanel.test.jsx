@@ -6,14 +6,17 @@ const NOTE = {
   id: 'note-1',
   target: 'material-query-bar',
   title: '测试标注',
-  summary: '用于测试面板交互',
+  summary: '用于测试**面板交互**',
   summarySource: 'prd',
   kind: 'module',
   position: { side: 'right', align: 'center', gap: 8, offsetX: 0, offsetY: 0 },
   sections: [
     {
       title: '字段说明',
-      items: [{ text: '详细字段内容', source: 'confirmed' }],
+      items: [
+        { text: '第一条详细字段内容', source: 'confirmed' },
+        { text: '第二条详细字段内容', source: 'prd' },
+      ],
     },
   ],
 };
@@ -68,14 +71,24 @@ describe('PrototypeAnnotationPanel', () => {
     expect(scrollArea).toHaveStyle('min-height: 0');
   });
 
-  test('查看态展开后可以通过显式收起按钮关闭', () => {
+  test('查看态点击同一条标注即可展开并再次点击收起，不显示额外收起按钮', () => {
     render(<PanelHarness />);
 
-    fireEvent.click(screen.getByText('测试标注'));
-    expect(screen.getByText('详细字段内容')).toBeInTheDocument();
+    const title = screen.getByText('测试标注');
+    fireEvent.click(title);
+    expect(screen.getByText('第一条详细字段内容')).toBeInTheDocument();
+    expect(screen.getByText('第二条详细字段内容')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '收起' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '收起' }));
-    expect(screen.queryByText('详细字段内容')).not.toBeInTheDocument();
+    fireEvent.click(title);
+    expect(screen.queryByText('第一条详细字段内容')).not.toBeInTheDocument();
+  });
+
+  test('查看态普通条目默认按项目符号展示且保留来源', () => {
+    render(<PanelHarness initiallyExpanded />);
+
+    expect(screen.getAllByText('•')).toHaveLength(2);
+    expect(screen.getAllByText('PRD').length).toBeGreaterThan(0);
   });
 
   test('编辑态可以显式收起编辑区', () => {
