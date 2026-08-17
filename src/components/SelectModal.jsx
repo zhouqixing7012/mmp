@@ -104,8 +104,16 @@ const resetState = () => {
    }
  
    return (
-     <div className="fixed inset-0 bg-black/40 z-[1050] flex items-center justify-center p-4">
-       <div className="bg-white rounded-md shadow-xl flex flex-col overflow-hidden" style={{ width: '700px', maxWidth: '100%' }}>
+     <div
+       className="fixed inset-0 bg-black/40 z-[1050] flex items-center justify-center p-4"
+       data-prototype-overlay="select-modal"
+     >
+       <div
+         className="bg-white rounded-md shadow-xl flex flex-col overflow-hidden"
+         style={{ width: '700px', maxWidth: '100%' }}
+         data-prototype-bindable="selection-modal"
+         data-prototype-label={title}
+       >
          {/* 标题栏 */}
          <div className="flex items-center justify-between px-4 py-3 border-b border-[#f0f0f0] bg-[#fafafa]">
            <span className="font-medium text-gray-800">{title}</span>
@@ -119,7 +127,12 @@ const resetState = () => {
            {rows.map((row, ri) => (
              <div key={ri} className="flex gap-4 mb-4">
                {row.map((field) => (
-                 <div key={field.name} className="flex items-center gap-2 flex-1">
+                 <div
+                   key={field.name}
+                   className="flex items-center gap-2 flex-1"
+                   data-prototype-bindable="selection-search-field"
+                   data-prototype-label={field.label}
+                 >
                    <span className="text-sm text-gray-600 whitespace-nowrap">{field.label}:</span>
                    <input
                      type="text"
@@ -136,7 +149,11 @@ const resetState = () => {
            ))}
  
            {/* 表格 */}
-           <div className="border border-[#f0f0f0] rounded overflow-hidden">
+           <div
+             className="border border-[#f0f0f0] rounded overflow-hidden"
+             data-prototype-bindable="selection-table"
+             data-prototype-label={`${title}列表`}
+           >
              <table className="w-full text-left border-collapse">
                <thead>
                  <tr className="bg-[#fafafa] border-b border-[#f0f0f0]">
