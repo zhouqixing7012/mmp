@@ -4,22 +4,25 @@
 - 当前阶段：个人工作台、资产管理、库存管理主要原型已建立，后续继续按截图和 PRD 逐页校准。
 - 2026-08-17 已将附件 `员工自助功能PRD.pdf` 按业务模块转换为 Markdown，新增 `docs/员工自助功能PRD/`；资产申请因内容较长再按流程拆为 3 个子文件。
 - 2026-08-17 原型标注已升级为可编辑模式：支持拖动位置、修改标题/摘要/详细说明、重新绑定锚点、新增/删除、保存、导入导出。
-- 2026-08-17 已修复标注编辑交互：页面序号改为按标注数据稳定编号；面板头部/工具栏固定，编辑区与标注列表统一在面板内部滚动；选中项支持再次点击或“收起编辑”关闭；Tooltip、Select、Popconfirm 等浮层统一高于标注面板。
+- 2026-08-17 原型标注交互二次重构：面板改为 Portal 到 `document.body`，内部使用独立固定高度滚动区；Ant Design Tooltip/Popconfirm/Select 浮层统一渲染到 body 且层级高于面板；新增/重绑支持按钮、QueryItem 查询条件、Table 表头字段、FormItem 和模块锚点的细粒度选择。
 
 # 上次停留位置
 
 - PRD 不在页面端上传或调用 AI 接口。后续由 Agent 直接读取仓库中的 PRD Markdown/PDF 和 React 页面代码，补充语义化 `data-prototype-anchor` 并生成初始标注。
 - 页面端只负责人工校准：打开“标注 → 编辑”，修改内容、拖动位置或重新绑定后点击保存。
+- 新增/重绑时可直接把鼠标移动到具体按钮、单个查询条件或表格表头字段，橙色描边显示当前精确目标，点击后完成绑定。
 - 用户保存结果写入浏览器本地覆盖层；刷新页面可恢复。最终需要固化进仓库时可导出标注 JSON，再由 Agent 合并回项目标注数据。
 
 # 近期关键决定
 
 - 标注数据采用“代码初稿 + 用户覆盖层”模型：仓库中的 `annotation-data.js` 是 PRD 生成的基线，浏览器保存的修改只覆盖同 id 标注。
 - Agent 后续根据 PRD 新增标注时，新 id 会自动出现；用户已经修改过的同 id 标注仍保留用户版本，避免重新生成时覆盖人工校准。
-- 页面标注序号只由 `pageAnnotations` 的稳定顺序决定，不再依赖锚点可见状态，避免序号消失或随滚动变化。
-- 标注面板采用固定头部/工具栏 + 单一内部滚动区；编辑表单和标注列表都必须处于可滚动区域，不能由展开内容撑破面板。
-- 标注面板 z-index 为高层 UI，所有 Ant Design Tooltip / Popconfirm / Select dropdown 等浮层必须显式高于标注面板。
-- 业务页面不保存 x/y 坐标，只声明语义化 DOM 锚点；位置保存为 `side / align / gap / offsetX / offsetY / viewportPadding`。
+- 标注序号只由 `pageAnnotations` 稳定顺序决定，不依赖 DOM 可见状态。
+- 标注面板直接通过 React Portal 渲染到 `document.body`，避免业务页面 stacking context 影响滚动和浮层展示；面板内部只保留一个真实滚动容器。
+- Tooltip / Popconfirm / Select dropdown 显式使用 `document.body` 作为 popup container，并配置高于标注面板的 popup z-index。
+- 细粒度目标使用 `annotation-targeting.js` 统一扫描和解析：显式 `data-prototype-anchor` 仍是模块级稳定锚点；按钮、QueryItem、表头、FormItem 等生成稳定运行时 target，不保存 nth-child 或绝对 CSS 路径。
+- QueryItem 通过公共 `QueryBar` 增加 `data-prototype-bindable="query-condition"` 和语义 label，确保查询条件可精准定位且刷新后可重建。
+- 业务页面不保存 x/y 坐标；位置保存为 `side / align / gap / offsetX / offsetY / viewportPadding`。
 - 定位层统一处理滚动跟随、元素尺寸变化、边缘翻转和视口约束，不在业务页面写定位补丁。
 - `MutationObserver` 只监听 DOM 增删；滚动、窗口变化和元素尺寸变化由独立监听处理。
 - 本轮不新增第三方运行时依赖，保持现有安装、构建和部署链不变。
@@ -40,4 +43,4 @@
 - 个人工作台：资产申请、审批、配给、领用、借用、更换、退库、合约号码相关主链路已建立。
 - 资产管理：资产维护、耗材维护、合约号码维护、标签打印、跨公司转移、资产报废、账面报废、资产处置、员工资产信息查询已建立。
 - 库存管理：资产接收、入库、出库、移库、转移、库管员工作台已有主要原型；耗材接收及部分新建/详情页继续按后续字段补充。
-- 原型标注：当前先覆盖 `/yewurules`；编辑器和本地覆盖层已建立，后续由 Agent 按仓库 PRD 逐页生成初始 annotation data 与锚点。
+- 原型标注：当前先覆盖 `/yewurules`；编辑器、本地覆盖层和细粒度目标选择已建立，后续由 Agent 按仓库 PRD 逐页生成初始 annotation data 与锚点。
