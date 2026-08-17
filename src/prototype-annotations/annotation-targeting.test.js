@@ -141,9 +141,9 @@ describe('annotation-targeting', () => {
     expect(getPrototypeDisplayAnchor(field)).toBe(field);
   });
 
-  test('Card 模块标注的序号优先贴在模块标题旁边', () => {
+  test('Card 模块标注的序号优先贴在实际标题文字旁边', () => {
     const card = document.querySelector('#application-card');
-    expect(getPrototypeDisplayAnchor(card)).toBe(card.querySelector('.ant-card-head-title'));
+    expect(getPrototypeDisplayAnchor(card)).toBe(card.querySelector('.ant-card-head-title > span'));
   });
 
   test('自定义模块可显式声明序号展示锚点', () => {
