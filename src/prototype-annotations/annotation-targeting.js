@@ -71,14 +71,30 @@ function isAnnotationUi(element) {
   return Boolean(element.closest('.paf-annotation-panel, .paf-hotspot, [data-prototype-annotation-ui="true"]'));
 }
 
+function isRedundantContainer(element) {
+  if (!element.matches('.qw, .ant-form-item')) return false;
+  return Boolean(element.querySelector('[data-prototype-bindable]'));
+}
+
+function clearGeneratedTargets(root) {
+  root.querySelectorAll(`[${GENERATED_TARGET_ATTRIBUTE}]`).forEach((element) => {
+    if (isAnnotationUi(element)) return;
+    element.removeAttribute(GENERATED_TARGET_ATTRIBUTE);
+    element.removeAttribute(TARGET_KIND_ATTRIBUTE);
+    element.removeAttribute(TARGET_LABEL_ATTRIBUTE);
+  });
+}
+
 export function preparePrototypeTargets(pageKey, root = document) {
+  clearGeneratedTargets(root);
+
   const counters = new Map();
   const candidates = Array.from(root.querySelectorAll(BINDABLE_SELECTOR));
   const prepared = [];
 
   candidates.forEach((element) => {
     if (!(element instanceof Element) || isAnnotationUi(element)) return;
-    if (element.hasAttribute('data-prototype-anchor')) return;
+    if (element.hasAttribute('data-prototype-anchor') || isRedundantContainer(element)) return;
 
     const kind = getTargetKind(element);
     const label = getTargetLabel(element);
