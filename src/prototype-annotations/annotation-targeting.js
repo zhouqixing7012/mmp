@@ -376,7 +376,6 @@ function findPreciseControl(eventTarget) {
 export function findPrototypeBindingElement(eventTarget) {
   if (!(eventTarget instanceof Element) || isAnnotationUi(eventTarget)) return null;
 
-  // 具体交互控件优先，点击字段标签或普通值区域时再回退到字段级语义。
   const preciseControl = findPreciseControl(eventTarget);
   if (preciseControl) return preciseControl;
 
@@ -398,6 +397,11 @@ function isModuleDisplayTarget(element) {
     || MODULE_BINDABLE_TYPES.has(bindableType);
 }
 
+function compactTitleAnchor(titleContainer) {
+  if (!(titleContainer instanceof Element)) return null;
+  return titleContainer.firstElementChild || titleContainer;
+}
+
 function findModuleTitleAnchor(element) {
   const explicit = element.matches(`[${PROTOTYPE_DISPLAY_ANCHOR_ATTRIBUTE}]`)
     ? element
@@ -405,35 +409,35 @@ function findModuleTitleAnchor(element) {
   if (explicit) return explicit;
 
   if (element.matches('.ant-card')) {
-    const cardTitle = element.querySelector('.ant-card-head-title');
+    const cardTitle = compactTitleAnchor(element.querySelector('.ant-card-head-title'));
     if (cardTitle) return cardTitle;
   }
 
   if (element.matches('.ant-modal-wrap, [role="dialog"][aria-modal="true"]')) {
     const modalTitle = element.querySelector('.ant-modal-title, [data-prototype-title], h1, h2, h3, h4');
-    if (modalTitle) return modalTitle;
+    if (modalTitle) return compactTitleAnchor(modalTitle);
   }
 
   if (element.matches('.ant-drawer')) {
     const drawerTitle = element.querySelector('.ant-drawer-title, [data-prototype-title], h1, h2, h3, h4');
-    if (drawerTitle) return drawerTitle;
+    if (drawerTitle) return compactTitleAnchor(drawerTitle);
   }
 
   const ownHeading = Array.from(element.children || []).find((child) => (
     child.matches?.('h1, h2, h3, h4, h5, h6, [data-prototype-title]')
   ));
-  if (ownHeading) return ownHeading;
+  if (ownHeading) return compactTitleAnchor(ownHeading);
 
   const nestedHeading = element.querySelector?.('h1, h2, h3, h4, h5, h6, [data-prototype-title]');
-  if (nestedHeading) return nestedHeading;
+  if (nestedHeading) return compactTitleAnchor(nestedHeading);
 
   const card = element.closest('.ant-card');
-  const contextualCardTitle = card?.querySelector('.ant-card-head-title');
+  const contextualCardTitle = compactTitleAnchor(card?.querySelector('.ant-card-head-title'));
   return contextualCardTitle || null;
 }
 
-// 标注 target 决定“这条规则属于谁”，display anchor 决定“序号画在哪里”。
-// 字段/控件继续贴自身；模块级 target 则优先把序号贴到模块标题旁边，避免全部堆到页面最右侧。
+// target 决定规则属于谁；display anchor 只决定序号画在哪里。
+// 字段和具体控件贴自身，模块/分组优先贴实际标题文字，不再默认贴整个模块最右侧。
 export function getPrototypeDisplayAnchor(element) {
   if (!(element instanceof Element)) return null;
   if (!isModuleDisplayTarget(element)) return element;
