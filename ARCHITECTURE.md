@@ -24,13 +24,14 @@
 | `src/components/QueryBar.jsx` | 统一查询区域；QueryItem 同时暴露细粒度原型标注语义。 |
 | `src/components/DetailGrid.jsx` | 统一只读详情网格；DetailItem 暴露详情字段标注语义。 |
 | `src/components/FormField.js` | 旧页面表单字段组件；暴露表单字段标注语义。 |
+| `src/components/Modal.js` | 项目公共弹窗；通过 `data-prototype-overlay` 显式声明业务浮层，供标注层处理遮挡关系。 |
 | `src/components/StatusTag.jsx` | 统一状态展示。 |
 | `src/components/SelectModal.jsx` | 通用选择弹窗。 |
-| `src/prototype-annotations/PrototypeAnnotationLayer.jsx` | 全局原型标注层；所有 React 路由均挂载，负责页面作用域、目标解析、热点、拖动/重绑和保存。 |
+| `src/prototype-annotations/PrototypeAnnotationLayer.jsx` | 全局原型标注层；所有 React 路由均挂载，负责页面作用域、目标解析、业务浮层遮挡、热点、拖动/重绑和保存。 |
 | `src/prototype-annotations/PrototypeAnnotationPanel.jsx` | 标注查看与可视化编辑面板；通过 Portal 独立渲染到 body。 |
 | `src/prototype-annotations/annotation-data.js` | Agent 根据仓库 PRD 生成的标注基线。 |
 | `src/prototype-annotations/annotation-page-scope.js` | 普通路由与 `/yewurules` 内部页面的标注作用域解析。 |
-| `src/prototype-annotations/annotation-targeting.js` | 模块锚点与 Button / QueryItem / 表头 / DetailItem / FormField / FormItem 等细粒度目标的实时识别、生成和解析。 |
+| `src/prototype-annotations/annotation-targeting.js` | 模块锚点与 Button / Select / Radio / Checkbox / Tabs / DatePicker / QueryItem / 表头 / DetailItem / FormField / FormItem 等目标的实时识别、生成、解析和业务浮层判断。 |
 | `src/prototype-annotations/annotation-positioning.js` | 标注点定位、自动翻转和视口约束。 |
 | `src/prototype-annotations/annotation-storage.js` | 按页面作用域保存浏览器标注覆盖层、删除记录和自定义标注。 |
 | `src/prototype-annotations/annotation-anchor-scanner.js` | 扫描模块锚点和细粒度可标注目标并导出上下文。 |
@@ -58,27 +59,32 @@ annotation-page-scope.js
   ↓
 annotation-targeting.js
   ├─ 模块级 data-prototype-anchor
-  ├─ 实时精确目标：Button / Table Header
-  ├─ 业务字段：QueryItem / DetailItem / FormField / FormItem / Input
+  ├─ 实时精确目标：Button / Table Header / Tabs
+  ├─ 交互控件：Select / DatePicker / Radio / Checkbox / Segmented / Switch / Slider / Rate / Upload / Input
+  ├─ 业务字段：QueryItem / DetailItem / FormField / FormItem
+  ├─ 业务浮层：Modal / Drawer / Image Preview / data-prototype-overlay
   └─ 无显式锚点时回退：Ant Card / Table / Form / section / bg-white 业务块
   ↓
 PrototypeAnnotationLayer
   ├─ annotation-positioning.js      side / align / gap / offset + 边缘翻转
   ├─ annotation-storage.js          按 page scope 保存用户覆盖层 / 新增 / 删除
   ├─ annotation-anchor-scanner.js   模块 + 细粒度目标上下文
+  ├─ 业务浮层可见性               弹窗外标注隐藏 / 弹窗内标注保留
   └─ PrototypeAnnotationPanel       body Portal；查看、编辑、重绑、保存、导入导出
 ```
 
 - PRD 不在页面端上传，也不在前端调用 AI；Agent 直接读取仓库中的 PRD 文件和页面代码生成初始标注。
 - `PrototypeAnnotationLayer` 在 `App.js` 全局挂载，不再限制 `/yewurules`。普通独立页面按 pathname 隔离标注数据。
 - `/yewurules` 的 URL 在内部菜单切换时不变，因此 `AdminContent` 通过 `data-prototype-page-scope` 暴露 `activeMenu / activeSubMenu / activeTab`，标注层监听该 scope 变化并重新加载当前页面标注。
-- 新增/重绑采用鼠标实时目标识别，不要求元素先完成 generated-target 预扫描。命中优先级为操作控件 → 表头 → 业务字段 → 输入控件 → 显式模块锚点 → 通用业务模块。
+- 新增/重绑采用鼠标实时目标识别，不要求元素先完成 generated-target 预扫描。精确交互控件优先于外层业务字段：点击 Select/Radio/Tab 等命中控件本身；点击字段标签或普通只读值时才回退到 QueryItem/DetailItem/FormItem 等字段语义。
 - `data-prototype-anchor` 继续承担模块级稳定锚点；细粒度 target 根据 page scope + 业务语义生成，不使用 `nth-child`、绝对 CSS 路径或屏幕坐标。
-- 公共 `QueryItem`、`DetailItem`、`FormField` 显式声明可标注语义；Button、Table 表头、Ant FormItem 和常见输入控件由目标层自动识别。
+- 公共 `QueryItem`、`DetailItem`、`FormField` 显式声明可标注语义；Button、Table 表头、Tabs、Select、DatePicker、Radio、Checkbox、Segmented、Switch 等常见 Ant Design 控件由目标层自动识别。
+- 复合控件内部用于实现组件行为的隐藏 input 不作为独立目标，避免出现一个 Select 同时被识别成 Select 和内部 input 的伪重复目标。
 - `annotation-data.js` 是代码基线；用户在页面上的修改只作为浏览器覆盖层保存。旧 `yewurules` 本地覆盖在物料维度组合 scope 中提供兼容读取，保存后进入新 scope。
 - 保存时只记录与基线不同的同 id 标注、用户新增标注和删除 id。Agent 后续新增新的基线标注时会自动出现，不会被旧本地快照挡住。
 - 标注点使用 `getBoundingClientRect` 获取目标实时位置，滚动和窗口变化通过 `requestAnimationFrame` 合并刷新。
 - `ResizeObserver` 负责目标尺寸变化；内容 DOM 增删触发重新扫描；页面 scope 属性单独监听，避免把所有 DOM 属性变化纳入观察。
+- 标注点的视觉 z-index 可以高于普通业务页面，但显示前必须判断当前顶层业务浮层。Ant Design Modal/Drawer/Image Preview 自动识别，项目公共 `Modal` 通过 `data-prototype-overlay="modal"` 显式声明；弹窗外目标隐藏，弹窗内目标仍可显示和绑定，避免底层标注穿透遮罩层。
 - 标注位置支持 `top / right / bottom / left`、`start / center / end`、间距和像素偏移。
 - 标注靠近视口边缘时优先翻转到对侧，最终再约束在可视区域内。
 - `PrototypeAnnotationPanel` 通过 React Portal 直接挂载 `document.body`；面板内部只有一个独立滚动区。Tooltip / Popconfirm / Select dropdown 同样显式挂载到 body，并使用高于面板的 popup z-index。
