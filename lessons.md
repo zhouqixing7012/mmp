@@ -113,3 +113,6 @@
 - PRD 已经在项目仓库里时，不要再设计“前端上传 PRD / 前端调用 AI 自动匹配”的链路。正确流程是 Agent 直接读取仓库 PRD 和 React 页面代码，生成语义锚点与初始标注；页面端只负责人工校准。
 - 原型标注保存不能把整页 annotation 快照覆盖代码基线，否则 Agent 后续根据 PRD 新增/更新标注会被旧 localStorage 挡住。必须采用“代码基线 + 用户覆盖层”：同 id 用户修改优先，新 id 基线自动出现，用户新增和删除单独持久化。
 - 页面内移动标注时继续保存相对锚点的 `side / align / offset`，不要退化成绝对 x/y 坐标。
+- 标注面板出现“内部无法滚动 / Ant Design Tooltip 被面板遮挡”时，不要继续只堆 `overflow` 或全局 CSS z-index。面板应直接 Portal 到 `document.body`，内部使用明确高度的单一滚动容器；Tooltip / Popconfirm / Select popup 也显式挂载 body 并设置独立 popup z-index。
+- 新增/重绑标注不能只允许命中模块级 `data-prototype-anchor`。产品标注需要覆盖单个按钮、QueryItem 查询条件、Table 表头字段、FormItem 等细粒度元素；细粒度 target 必须由稳定业务语义重建，禁止 `nth-child`、绝对 CSS path 或绝对 x/y。
+- 中文字段生成稳定 target 时，编码后必须统一大小写再过滤字符，避免 URL 编码中的 A-F 被误删导致不同中文字段 key 退化或冲突。
