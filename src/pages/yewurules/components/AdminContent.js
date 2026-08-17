@@ -3,9 +3,15 @@ import { ChevronRight } from 'lucide-react';
 
 export default function AdminContent({ activeMenu, activeSubMenu, activeTab, tabs, onTabChange, children }) {
   const isWorkspace = activeMenu === '个人工作台';
+  const prototypePageScope = [activeMenu, activeSubMenu, activeTab].filter(Boolean).join('::');
+  const prototypePageLabel = activeTab || activeSubMenu || activeMenu;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#f0f2f5] p-4 md:p-6">
+    <div
+      className="flex-1 overflow-y-auto bg-[#f0f2f5] p-4 md:p-6"
+      data-prototype-page-scope={prototypePageScope}
+      data-prototype-page-label={prototypePageLabel}
+    >
       <div className="mb-4 flex items-center gap-2 text-sm text-gray-500">
         <span>首页</span>
         <ChevronRight size={14} />
