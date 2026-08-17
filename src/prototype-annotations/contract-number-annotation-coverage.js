@@ -26,8 +26,9 @@ export const contractWarehouseRequirementCoverage = [
     source: '04-合约号码申请.md#12.2-备注',
     object: '备注字段',
     rule: '备注可编辑，员工确认后带入合约号码台账。',
-    status: 'review',
-    reason: '当前基线内容已覆盖该规则，但仍在模块级标注中；按最新粒度规范应继续拆为备注字段级标注。',
+    status: 'bound',
+    annotationId: 'contract-warehouse-note-rule',
+    expectedTargetFragment: '::detail-field::e5a487e6b3a8',
   },
   {
     id: 'CN-WH-004',
