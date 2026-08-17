@@ -37,6 +37,7 @@ const PREPARE_SELECTOR = [
   '.qw',
   PRECISE_CONTROL_SELECTOR,
   '.ant-form-item',
+  '.ant-descriptions-item-label',
   '.ant-table-wrapper',
   '.ant-card',
   'form',
@@ -91,6 +92,12 @@ function compactText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
+function compactFieldLabel(value) {
+  return compactText(value)
+    .replace(/^[*＊]\s*/, '')
+    .replace(/[:：]\s*$/, '');
+}
+
 function stableKey(value) {
   const text = compactText(value).toLowerCase() || 'item';
   return encodeURIComponent(text)
@@ -130,6 +137,7 @@ function isRedundantContainer(element) {
 function getTargetKind(element) {
   const explicitKind = element.getAttribute('data-prototype-bindable');
   if (explicitKind) return explicitKind;
+  if (element.matches('.ant-descriptions-item-label')) return 'detail-field';
   if (element.matches('button, [role="button"]')) return 'button';
   if (element.matches('th, [role="columnheader"]')) return 'table-column';
   if (element.matches('.ant-tabs-tab, [role="tab"]')) return 'tab';
@@ -169,7 +177,7 @@ function getCardTitle(element) {
 function getFormLabel(element) {
   const formItem = element.matches('.ant-form-item') ? element : element.closest('.ant-form-item');
   if (!formItem) return '';
-  return compactText(formItem.querySelector('.ant-form-item-label label')?.textContent).replace(/[:：]\s*$/, '');
+  return compactFieldLabel(formItem.querySelector('.ant-form-item-label label')?.textContent);
 }
 
 function getQueryLabel(element) {
@@ -177,8 +185,25 @@ function getQueryLabel(element) {
     ? element
     : element.closest('[data-prototype-bindable="query-condition"]');
   if (!queryItem) return '';
-  return compactText(queryItem.getAttribute('data-prototype-label') || queryItem.querySelector('span')?.textContent)
-    .replace(/[:：]\s*$/, '');
+  return compactFieldLabel(queryItem.getAttribute('data-prototype-label') || queryItem.querySelector('span')?.textContent);
+}
+
+function findDescriptionsLabelElement(element) {
+  if (!(element instanceof Element)) return null;
+  if (element.matches('.ant-descriptions-item-label')) return element;
+
+  const item = element.closest('.ant-descriptions-item');
+  const itemLabel = item?.querySelector?.('.ant-descriptions-item-label');
+  if (itemLabel) return itemLabel;
+
+  const content = element.closest('.ant-descriptions-item-content');
+  if (!content) return null;
+  const previous = content.previousElementSibling;
+  return previous?.matches?.('.ant-descriptions-item-label') ? previous : null;
+}
+
+function getDescriptionsLabel(element) {
+  return compactFieldLabel(findDescriptionsLabelElement(element)?.textContent);
 }
 
 function getPreciseControlLabel(element) {
@@ -238,6 +263,7 @@ function getTargetLabel(element) {
 
   const queryLabel = getQueryLabel(element);
   const formLabel = getFormLabel(element);
+  const descriptionsLabel = getDescriptionsLabel(element);
   const preciseLabel = getPreciseControlLabel(element);
 
   if (element.matches([
@@ -250,12 +276,13 @@ function getTargetLabel(element) {
     '[role="checkbox"]',
     '.ant-segmented-item',
   ].join(', ')) && preciseLabel) {
-    const fieldLabel = queryLabel || formLabel;
+    const fieldLabel = queryLabel || formLabel || descriptionsLabel;
     return fieldLabel ? `${fieldLabel}-${preciseLabel}` : preciseLabel;
   }
 
   if (queryLabel) return queryLabel;
   if (formLabel) return formLabel;
+  if (descriptionsLabel) return descriptionsLabel;
   if (preciseLabel) return preciseLabel;
 
   if (element.matches('.ant-card')) {
@@ -356,8 +383,14 @@ function findDetailFieldFromValue(eventTarget) {
   return labelCell?.matches?.('[data-prototype-bindable="detail-field"]') ? labelCell : null;
 }
 
+function findDescriptionsFieldFromValue(eventTarget) {
+  const label = findDescriptionsLabelElement(eventTarget);
+  return label && !isAnnotationUi(label) ? label : null;
+}
+
 function findPreciseControl(eventTarget) {
   return closestOutsideUi(eventTarget, 'button, [role="button"]')
+    || closestOutsideUi(eventTarget, '.ant-descriptions-item-label')
     || closestOutsideUi(eventTarget, 'th, [role="columnheader"]')
     || closestOutsideUi(eventTarget, '.ant-tabs-tab, [role="tab"]')
     || closestOutsideUi(eventTarget, '.ant-radio-button-wrapper, .ant-radio-wrapper, [role="radio"]')
@@ -381,6 +414,9 @@ export function findPrototypeBindingElement(eventTarget) {
 
   const detailField = findDetailFieldFromValue(eventTarget);
   if (detailField) return detailField;
+
+  const descriptionsField = findDescriptionsFieldFromValue(eventTarget);
+  if (descriptionsField) return descriptionsField;
 
   return closestOutsideUi(eventTarget, '[data-prototype-bindable]:not([data-prototype-bindable="query-condition"])')
     || closestOutsideUi(eventTarget, '[data-prototype-bindable="query-condition"], .qw')
@@ -498,8 +534,8 @@ export function getPrototypeTargetMetadata(element, pageScope, root = document) 
   if (anchorTarget) {
     return {
       target: anchorTarget,
-      kind: 'module',
-      label: compactText(element.getAttribute('data-prototype-label') || anchorTarget),
+      kind: getTargetKind(element),
+      label: getTargetLabel(element) || anchorTarget,
       generated: false,
     };
   }
