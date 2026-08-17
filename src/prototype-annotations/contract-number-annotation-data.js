@@ -20,6 +20,7 @@ const TARGETS = {
   allocationNumber: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e4bd9ce58fb03a3ae59088e7baa6e58f::card::e58fb7e7a081e9858de7bb99',
   approvalInfo: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e4bd9ce58fb03a3ae59088e7baa6e58f::card::e5aea1e689b9e4bfa1e681af',
   warehouseInfo: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e4bd9ce58fb03a3ae59088e7baa6e58fb7e7a081e4bfa1e681af',
+  warehouseNoteField: 'card-e794b3e8afb7e59088e7baa6e58fb7e7a081e4bfa1e681af::detail-field::e5a487e6b3a8',
   warehouseClaimButton: 'card-e5aea1e689b9e6938de4bd9c::button::e9a286e794a8e7a1aee8aea4',
   warehouseAbandonButton: 'card-e5aea1e689b9e6938de4bd9c::button::e5bc83e9a286',
   responsibility: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e4bd9ce58fb03a3ae59198e5b7a5e590::card::e4bf9de7aea1e8818ce8b4a3',
@@ -265,16 +266,34 @@ const contractNumberAnnotationsByScope = {
       target: TARGETS.warehouseInfo,
       kind: 'business-rule',
       position: { side: 'right', align: 'center', gap: 6 },
-      title: '库管员现场核验与领用信息维护',
-      summary: '员工本人线下到场领取，库管员核验申请人与配给号码；本节点维护的备注在员工确认后带入合约号码台账。',
+      title: '库管员现场核验',
+      summary: '员工本人线下到场领取，库管员/合约号码发放管理员核验申请人与已配给号码后再进入后续办理。',
       summarySource: 'prd',
       sections: [
         {
           title: '办理规则',
           items: [
             prdItem('办理对象为对应合约号码仓库的库管员/发放管理员，员工本人需线下到场领取电话卡。'),
-            prdItem('库管员核验员工身份和已配给号码后，再发起员工领用确认。'),
-            prdItem('备注可编辑，员工确认完成后应带入合约号码台账。'),
+            prdItem('库管员核验员工身份和已配给号码后，再进入正常领用或弃领处理。'),
+          ],
+        },
+      ],
+    },
+    {
+      id: 'contract-warehouse-note-rule',
+      pageKey: SCOPES.warehouse,
+      target: TARGETS.warehouseNoteField,
+      kind: 'field-rule',
+      position: { side: 'right', align: 'center', gap: 6 },
+      title: '备注带入号码台账',
+      summary: '备注可编辑，员工确认完成后应带入合约号码台账。',
+      summarySource: 'prd',
+      sections: [
+        {
+          title: '字段规则',
+          items: [
+            prdItem('备注允许库管员编辑。'),
+            prdItem('员工确认完成后，备注按本页面填写内容更新到合约号码台账。'),
           ],
         },
       ],
