@@ -143,12 +143,19 @@ function removePageFromStore(storageKey, pageKey) {
   }
 }
 
-export function readAnnotationDraft(pageKey, defaultAnnotations = []) {
+function findFallbackRecord(store, fallbackPageKeys = []) {
+  for (const key of fallbackPageKeys) {
+    if (store?.pages?.[key]) return store.pages[key];
+  }
+  return null;
+}
+
+export function readAnnotationDraft(pageKey, defaultAnnotations = [], fallbackPageKeys = []) {
   const base = normalizeAnnotationCollection(defaultAnnotations, pageKey);
   baseAnnotationRegistry.set(pageKey, cloneValue(base));
 
   const store = readOverrideStore();
-  const record = store?.pages?.[pageKey];
+  const record = store?.pages?.[pageKey] || findFallbackRecord(store, fallbackPageKeys);
   return mergeOverrideRecord(pageKey, base, record);
 }
 
@@ -177,11 +184,15 @@ export function writeAnnotationDraft(pageKey, annotations) {
   return mergeOverrideRecord(pageKey, base, record);
 }
 
-export function resetAnnotationDraft(pageKey, defaultAnnotations = []) {
+export function resetAnnotationDraft(pageKey, defaultAnnotations = [], fallbackPageKeys = []) {
   const base = normalizeAnnotationCollection(defaultAnnotations, pageKey);
   baseAnnotationRegistry.set(pageKey, cloneValue(base));
   removePageFromStore(PROTOTYPE_ANNOTATION_STORAGE_KEY, pageKey);
   removePageFromStore(LEGACY_STORAGE_KEY, pageKey);
+  fallbackPageKeys.forEach((fallbackKey) => {
+    removePageFromStore(PROTOTYPE_ANNOTATION_STORAGE_KEY, fallbackKey);
+    removePageFromStore(LEGACY_STORAGE_KEY, fallbackKey);
+  });
   return cloneValue(base);
 }
 
