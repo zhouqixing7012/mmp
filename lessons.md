@@ -120,3 +120,6 @@
 - 精准标注选择不能依赖“进入页面时预扫描已经成功”。鼠标经过时应实时从当前 DOM 判断 Button、表头、QueryItem、DetailItem、FormField、FormItem、Input 等目标，再回退到 Card/Table/Form/业务块；预扫描只负责持久化 target 重建，不负责决定当前能不能选。
 - Select、DatePicker、Radio、Checkbox、Tabs、Segmented、Switch 等交互控件不能被外层 QueryItem/DetailItem/FormItem 抢走命中。选择目标时应先判断具体交互控件，只有点击字段标签或普通只读值区域时才回退到字段级标注；复合控件内部隐藏 input 不能单独成为伪目标。
 - 标注点层级不能只靠一个超高 z-index 解决，否则底层页面标注会穿透到 Modal/Drawer 上方。应感知当前顶层业务浮层：弹窗外目标隐藏，弹窗内目标可继续展示；公共自定义 Modal 显式声明 overlay，Ant Design Modal/Drawer 自动识别。
+- `SelectModal` 这类项目自定义选择弹窗必须显式声明业务 overlay，并给弹窗整体、搜索条件、结果列表稳定语义；否则只能偶然命中里面的 input/button，无法把“选择弹窗”作为稳定业务对象标注。标注选择状态下如果需要先打开弹窗或下拉，允许按住 Alt/Option 点击执行原业务交互且保持 bindingMode，再在浮层内部完成绑定。
+- 查看态的标注详情本身已经支持“点击条目展开 / 再点同一条收起”，不要再在详情区重复放一个独立“收起”按钮占据内容高度；编辑态的“收起编辑”仍保留，因为它控制的是编辑器区域。
+- 标注内容优先复用现有 `section.title + items[]` 结构：查看态将普通 item 自动渲染为项目符号，并在末尾保留来源标识。需要富文本时使用受控 Markdown 子集（加粗、斜体、行内代码、标题、列表、表格、常用转义），不解析原始 HTML、不改变 annotation JSON / localStorage 数据结构。
