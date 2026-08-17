@@ -12,6 +12,12 @@ import {
   writeAnnotationDraft,
 } from './annotation-storage';
 import { serializePrototypeAnchorContext } from './annotation-anchor-scanner';
+import {
+  findPrototypeBindingElement,
+  getPrototypeTargetMetadata,
+  preparePrototypeTargets,
+  resolvePrototypeTarget,
+} from './annotation-targeting';
 
 import yewurulesAnnotations from './annotation-data';
 
@@ -22,10 +28,6 @@ const ALL_ANNOTATIONS = {
 function detectPageKey(pathname) {
   if (pathname === '/yewurules' || pathname.startsWith('/yewurules')) return 'yewurules';
   return null;
-}
-
-function findAnchor(target) {
-  return document.querySelector(`[data-prototype-anchor="${target}"]`);
 }
 
 function sameAnchors(previous, next) {
@@ -89,10 +91,10 @@ function PrototypeAnnotationHotspot({
 
     setCoordinates((previous) => {
       if (
-        previous &&
-        Math.abs(previous.left - next.left) < 0.5 &&
-        Math.abs(previous.top - next.top) < 0.5 &&
-        previous.side === next.side
+        previous
+        && Math.abs(previous.left - next.left) < 0.5
+        && Math.abs(previous.top - next.top) < 0.5
+        && previous.side === next.side
       ) {
         return previous;
       }
@@ -190,6 +192,7 @@ function PrototypeAnnotationHotspot({
     <div
       ref={hotspotRef}
       className="paf-hotspot"
+      data-prototype-annotation-ui="true"
       onClick={handleClick}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -207,7 +210,7 @@ function PrototypeAnnotationHotspot({
         background: selected ? '#1677ff' : '#ff7a00',
         border: '2px solid #fff',
         boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-        zIndex: 9998,
+        zIndex: 19990,
         cursor: editMode ? 'grab' : 'pointer',
         display: 'flex',
         alignItems: 'center',
@@ -314,22 +317,25 @@ export default function PrototypeAnnotationLayer() {
 
   const handleExportAnchors = useCallback(() => {
     if (!pageKey) return;
+    preparePrototypeTargets(pageKey, document);
     downloadTextFile(`${pageKey}-anchors.json`, serializePrototypeAnchorContext(pageKey, location.pathname));
   }, [location.pathname, pageKey]);
 
   const scanAnchors = useCallback(() => {
-    if (!ann.enabled) {
+    if (!ann.enabled || !pageKey) {
       setAnchoredNotes([]);
       return;
     }
 
+    preparePrototypeTargets(pageKey, document);
+
     const next = pageAnnotations
-      .map((note) => ({ note, element: findAnchor(note.target) }))
+      .map((note) => ({ note, element: resolvePrototypeTarget(note.target) }))
       .filter((item) => item.element);
 
     setAnchoredNotes((previous) => sameAnchors(previous, next) ? previous : next);
     setLayoutVersion((version) => version + 1);
-  }, [ann.enabled, pageAnnotations]);
+  }, [ann.enabled, pageAnnotations, pageKey]);
 
   useEffect(() => {
     ann.updateActiveNotes(pageAnnotations);
@@ -365,9 +371,7 @@ export default function PrototypeAnnotationLayer() {
     new Set(anchoredNotes.map((item) => item.note.id))
   ), [anchoredNotes]);
 
-  const noteNumbers = useMemo(() => (
-    buildAnnotationNumberMap(pageAnnotations)
-  ), [pageAnnotations]);
+  const noteNumbers = useMemo(() => buildAnnotationNumberMap(pageAnnotations), [pageAnnotations]);
 
   useEffect(() => {
     document.querySelectorAll('.paf-target-highlight').forEach((element) => {
@@ -375,27 +379,24 @@ export default function PrototypeAnnotationLayer() {
     });
 
     if (!ann.enabled || !ann.highlightedTarget) return;
-    const target = findAnchor(ann.highlightedTarget);
+    preparePrototypeTargets(pageKey, document);
+    const target = resolvePrototypeTarget(ann.highlightedTarget);
     if (target) target.classList.add('paf-target-highlight');
-  }, [ann.highlightedTarget, ann.enabled, layoutVersion]);
+  }, [ann.highlightedTarget, ann.enabled, layoutVersion, pageKey]);
 
   useEffect(() => {
-    if (!bindingMode || !editMode) return undefined;
+    if (!bindingMode || !editMode || !pageKey) return undefined;
 
+    preparePrototypeTargets(pageKey, document);
     let candidate = null;
+
     const clearCandidate = () => {
       candidate?.classList.remove('paf-bind-target-candidate');
       candidate = null;
     };
 
-    const findCandidate = (eventTarget) => {
-      if (!(eventTarget instanceof Element)) return null;
-      if (eventTarget.closest('.paf-annotation-panel') || eventTarget.closest('.paf-hotspot')) return null;
-      return eventTarget.closest('[data-prototype-anchor]');
-    };
-
     const onPointerMove = (event) => {
-      const nextCandidate = findCandidate(event.target);
+      const nextCandidate = findPrototypeBindingElement(event.target);
       if (nextCandidate === candidate) return;
       clearCandidate();
       candidate = nextCandidate;
@@ -403,10 +404,10 @@ export default function PrototypeAnnotationLayer() {
     };
 
     const onClick = (event) => {
-      const targetElement = findCandidate(event.target);
+      const targetElement = findPrototypeBindingElement(event.target);
       if (!targetElement) return;
-      const target = targetElement.getAttribute('data-prototype-anchor');
-      if (!target) return;
+      const metadata = getPrototypeTargetMetadata(targetElement);
+      if (!metadata?.target) return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -416,20 +417,24 @@ export default function PrototypeAnnotationLayer() {
         const newNote = {
           id: noteId,
           pageKey,
-          target,
-          context: {},
-          kind: 'module',
+          target: metadata.target,
+          context: { generatedTarget: metadata.generated },
+          kind: metadata.kind || 'module',
           position: normalizeAnnotationPosition({ side: 'right', align: 'center', gap: 8 }),
-          title: '新标注',
+          title: metadata.label ? `${metadata.label}标注` : '新标注',
           summary: '',
           summarySource: 'confirmed',
           sections: [],
         };
         updateAnnotations((previous) => [...previous, newNote]);
-        ann.selectNote(noteId, target);
+        ann.selectNote(noteId, metadata.target);
       } else if (bindingMode.type === 'rebind' && bindingMode.noteId) {
-        handleUpdateNote(bindingMode.noteId, { target });
-        ann.selectNote(bindingMode.noteId, target);
+        handleUpdateNote(bindingMode.noteId, {
+          target: metadata.target,
+          kind: metadata.kind || 'module',
+          context: { generatedTarget: metadata.generated },
+        });
+        ann.selectNote(bindingMode.noteId, metadata.target);
       }
 
       clearCandidate();
@@ -464,11 +469,12 @@ export default function PrototypeAnnotationLayer() {
   return (
     <>
       <div
+        data-prototype-annotation-ui="true"
         style={{
           position: 'fixed',
           bottom: 20,
           right: 20,
-          zIndex: 9999,
+          zIndex: 19995,
           display: 'flex',
           alignItems: 'center',
           gap: 8,
@@ -485,15 +491,7 @@ export default function PrototypeAnnotationLayer() {
         }}
         onClick={ann.toggle}
       >
-        <span
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: ann.enabled ? '#52c41a' : '#d9d9d9',
-            transition: 'background 0.2s',
-          }}
-        />
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: ann.enabled ? '#52c41a' : '#d9d9d9', transition: 'background 0.2s' }} />
         标注
       </div>
 
@@ -549,6 +547,7 @@ export default function PrototypeAnnotationLayer() {
           outline: 3px solid #faad14 !important;
           outline-offset: 3px;
           cursor: crosshair !important;
+          background-color: rgba(250, 173, 20, 0.08) !important;
         }
         @keyframes paf-pulse {
           0%, 100% { outline-color: #1677ff; }
