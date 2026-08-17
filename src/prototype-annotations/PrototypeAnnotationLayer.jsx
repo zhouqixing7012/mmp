@@ -456,6 +456,13 @@ export default function PrototypeAnnotationLayer() {
     };
 
     const onClick = (event) => {
+      // 标注选择过程中允许先操作真实页面：按住 Alt/Option 点击只触发原业务交互，
+      // 不完成绑定且保持当前 bindingMode，便于先打开选择弹窗/下拉再标注内部内容。
+      if (event.altKey) {
+        clearCandidate();
+        return;
+      }
+
       const targetElement = findPrototypeBindingElement(event.target);
       if (!targetElement) return;
 
