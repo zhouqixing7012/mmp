@@ -18,7 +18,7 @@ const NOTE = {
   ],
 };
 
-function PanelHarness({ editMode = false, initiallyExpanded = false }) {
+function PanelHarness({ editMode = false, initiallyExpanded = false, onClose = () => {} }) {
   const [expandedNoteId, setExpandedNoteId] = useState(initiallyExpanded ? NOTE.id : null);
   const panelRef = createRef();
 
@@ -34,7 +34,7 @@ function PanelHarness({ editMode = false, initiallyExpanded = false }) {
       expandedNoteId={expandedNoteId}
       onToggleExpand={toggleExpand}
       onSelectNote={(noteId) => setExpandedNoteId(noteId)}
-      onClose={() => {}}
+      onClose={onClose}
       panelRef={panelRef}
       editMode={editMode}
       onToggleEditMode={() => {}}
@@ -84,5 +84,22 @@ describe('PrototypeAnnotationPanel', () => {
     expect(screen.getByText('编辑当前标注')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '收起编辑' }));
     expect(screen.queryByText('编辑当前标注')).not.toBeInTheDocument();
+  });
+
+  test('最小化只收起面板，不退出标注模式，并可恢复', () => {
+    const onClose = jest.fn();
+    render(<PanelHarness onClose={onClose} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '最小化产品标注面板' }));
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(document.body.querySelector('.paf-annotation-panel-minimized')).toBeInTheDocument();
+    expect(screen.queryByText('测试标注')).not.toBeInTheDocument();
+    expect(screen.getByText('产品标注')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '展开产品标注面板' }));
+
+    expect(document.body.querySelector('.paf-annotation-panel-minimized')).not.toBeInTheDocument();
+    expect(screen.getByText('测试标注')).toBeInTheDocument();
   });
 });
