@@ -20,6 +20,14 @@ describe('contract number annotation quality gate', () => {
     expect(abandon.target).toContain('::button::e5bc83e9a286');
   });
 
+  test('备注规则绑定到备注字段而不是模块', () => {
+    const annotations = contractNumberAnnotationsByScope[CONTRACT_WAREHOUSE_SCOPE];
+    const noteRule = annotations.find((note) => note.id === 'contract-warehouse-note-rule');
+
+    expect(noteRule.kind).toBe('field-rule');
+    expect(noteRule.target).toContain('::detail-field::e5a487e6b3a8');
+  });
+
   test('具体规则不存在模块级误绑定', () => {
     const annotations = contractNumberAnnotationsByScope[CONTRACT_WAREHOUSE_SCOPE];
     expect(validateAnnotationGranularity(annotations)).toEqual([]);
@@ -32,7 +40,7 @@ describe('contract number annotation quality gate', () => {
 
   test('当前待确认项不会被静默当成已完成', () => {
     const reviewItems = contractWarehouseRequirementCoverage.filter((item) => item.status === 'review');
-    expect(reviewItems.map((item) => item.id)).toEqual(expect.arrayContaining(['CN-WH-002', 'CN-WH-003']));
+    expect(reviewItems.map((item) => item.id)).toEqual(['CN-WH-002']);
     reviewItems.forEach((item) => expect(item.reason).toBeTruthy());
   });
 });
