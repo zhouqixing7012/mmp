@@ -1,3 +1,5 @@
+import { listPrototypeTargets } from './annotation-targeting';
+
 function compactText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
@@ -7,25 +9,28 @@ function isElementVisible(element) {
   return rect.width > 0 && rect.height > 0 && element.getClientRects().length > 0;
 }
 
-export function scanPrototypeAnchors(root = document) {
-  return Array.from(root.querySelectorAll('[data-prototype-anchor]')).map((element, index) => ({
+export function scanPrototypeAnchors(root = document, pageKey = 'page') {
+  return listPrototypeTargets(pageKey, root).map((item, index) => ({
     index,
-    target: element.getAttribute('data-prototype-anchor'),
-    tagName: element.tagName.toLowerCase(),
-    role: element.getAttribute('role') || '',
-    ariaLabel: element.getAttribute('aria-label') || '',
-    text: compactText(element.innerText || element.textContent).slice(0, 1600),
-    visible: isElementVisible(element),
+    target: item.target,
+    generated: item.generated,
+    kind: item.kind,
+    label: item.label,
+    tagName: item.element.tagName.toLowerCase(),
+    role: item.element.getAttribute('role') || '',
+    ariaLabel: item.element.getAttribute('aria-label') || '',
+    text: compactText(item.element.innerText || item.element.textContent).slice(0, 1600),
+    visible: isElementVisible(item.element),
   }));
 }
 
 export function buildPrototypeAnchorContext(pageKey, pathname = window.location.pathname) {
   return {
-    version: 1,
+    version: 2,
     pageKey,
     pathname,
     capturedAt: new Date().toISOString(),
-    anchors: scanPrototypeAnchors(document),
+    anchors: scanPrototypeAnchors(document, pageKey),
   };
 }
 
