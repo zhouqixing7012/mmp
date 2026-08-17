@@ -54,6 +54,27 @@ describe('annotation-targeting', () => {
         <div class="ant-card-head"><div class="ant-card-head-title"><span>申请信息</span></div></div>
         <div class="ant-card-body"><div>申请内容</div></div>
       </div>
+      <div class="ant-card" id="issue-card">
+        <div class="ant-card-head"><div class="ant-card-head-title"><span>借用资产明细</span></div></div>
+        <div class="ant-card-body">
+          <table class="ant-descriptions-view">
+            <tbody>
+              <tr class="ant-descriptions-row">
+                <th class="ant-descriptions-item-label"><span class="required-star">*</span> 当前仓库</th>
+                <td class="ant-descriptions-item-content">
+                  <div class="ant-select" id="warehouse-select">
+                    <div class="ant-select-selector"><span class="ant-select-selection-item">北京总部仓</span></div>
+                  </div>
+                </td>
+              </tr>
+              <tr class="ant-descriptions-row">
+                <th class="ant-descriptions-item-label">使用说明</th>
+                <td class="ant-descriptions-item-content"><span id="usage-value">临时办公</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
       <div data-prototype-bindable="selection-modal" data-prototype-label="选择资产" id="selection-modal">
         <span data-prototype-display-anchor="title">选择资产</span>
         <div>弹窗内容</div>
@@ -90,6 +111,37 @@ describe('annotation-targeting', () => {
     expect(resolvePrototypeTarget(metadata.target, PAGE_SCOPE)).toBe(element);
   });
 
+  test('Descriptions 内的 Select 使用字段标签而不是当前值生成 target', () => {
+    const selectedValue = document.querySelector('#warehouse-select .ant-select-selection-item');
+    const element = findPrototypeBindingElement(selectedValue);
+    const metadata = getPrototypeTargetMetadata(element, PAGE_SCOPE);
+
+    expect(element.id).toBe('warehouse-select');
+    expect(metadata.kind).toBe('select');
+    expect(metadata.label).toBe('当前仓库');
+    expect(metadata.target).toContain('::select::');
+    expect(metadata.target).not.toContain('北京总部仓');
+  });
+
+  test('Descriptions 普通值区域回退到对应字段标签', () => {
+    const value = document.querySelector('#usage-value');
+    const element = findPrototypeBindingElement(value);
+    const metadata = getPrototypeTargetMetadata(element, PAGE_SCOPE);
+
+    expect(element.classList.contains('ant-descriptions-item-label')).toBe(true);
+    expect(metadata.kind).toBe('detail-field');
+    expect(metadata.label).toBe('使用说明');
+  });
+
+  test('Descriptions 必填星号不会进入字段语义', () => {
+    const star = document.querySelector('.required-star');
+    const element = findPrototypeBindingElement(star);
+    const metadata = getPrototypeTargetMetadata(element, PAGE_SCOPE);
+
+    expect(metadata.kind).toBe('detail-field');
+    expect(metadata.label).toBe('当前仓库');
+  });
+
   test('单选按钮可以按具体选项精准命中', () => {
     const optionText = Array.from(document.querySelectorAll('.ant-radio-wrapper span'))
       .find((element) => element.textContent === '是');
@@ -121,7 +173,7 @@ describe('annotation-targeting', () => {
   });
 
   test('无需预扫描也能从表头内部精准命中单个 th', () => {
-    const span = document.querySelector('th span');
+    const span = document.querySelector('section th span');
     const element = findPrototypeBindingElement(span);
 
     expect(element.tagName).toBe('TH');
@@ -158,12 +210,13 @@ describe('annotation-targeting', () => {
     expect(element.classList.contains('bg-white')).toBe(true);
   });
 
-  test('为字段、控件、按钮、表头、单选和标签页生成稳定细粒度目标', () => {
+  test('为字段、Descriptions、控件、按钮、表头、单选和标签页生成稳定细粒度目标', () => {
     const firstTargets = preparePrototypeTargets(PAGE_SCOPE).map((item) => item.target);
     const secondTargets = preparePrototypeTargets(PAGE_SCOPE).map((item) => item.target);
 
     expect(firstTargets).toEqual(secondTargets);
     expect(firstTargets.some((target) => target.includes('query-condition'))).toBe(true);
+    expect(firstTargets.some((target) => target.includes('detail-field'))).toBe(true);
     expect(firstTargets.some((target) => target.includes('select'))).toBe(true);
     expect(firstTargets.some((target) => target.includes('radio'))).toBe(true);
     expect(firstTargets.some((target) => target.includes('tab'))).toBe(true);
