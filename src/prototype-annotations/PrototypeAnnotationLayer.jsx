@@ -115,6 +115,8 @@ function PrototypeAnnotationHotspot({
     scheduleUpdate();
   }, [layoutVersion, scheduleUpdate]);
 
+  const showHotspot = coordinates && Number.isInteger(number);
+
   return (
     <div
       ref={hotspotRef}
@@ -141,8 +143,8 @@ function PrototypeAnnotationHotspot({
         color: '#fff',
         fontWeight: 700,
         lineHeight: 1,
-        opacity: coordinates ? 1 : 0,
-        pointerEvents: coordinates ? 'auto' : 'none',
+        opacity: showHotspot ? 1 : 0,
+        pointerEvents: showHotspot ? 'auto' : 'none',
         transition: 'transform 0.15s, background 0.15s, opacity 0.12s',
         transform: selected ? 'scale(1.25)' : 'scale(1)',
       }}
@@ -172,7 +174,7 @@ export default function PrototypeAnnotationLayer() {
     }
 
     const next = pageAnnotations
-      .map((note, index) => ({ note, index, element: findAnchor(note.target) }))
+      .map((note) => ({ note, element: findAnchor(note.target) }))
       .filter((item) => item.element);
 
     setAnchoredNotes((previous) => sameAnchors(previous, next) ? previous : next);
@@ -237,6 +239,10 @@ export default function PrototypeAnnotationLayer() {
     pageAnnotations.filter((note) => visibleNoteIds.has(note.id))
   ), [pageAnnotations, visibleNoteIds]);
 
+  const visibleNoteNumbers = useMemo(() => (
+    new Map(visibleAnnotations.map((note, index) => [note.id, index + 1]))
+  ), [visibleAnnotations]);
+
   useEffect(() => {
     document.querySelectorAll('.paf-target-highlight').forEach((element) => {
       element.classList.remove('paf-target-highlight');
@@ -285,12 +291,12 @@ export default function PrototypeAnnotationLayer() {
         标注
       </div>
 
-      {ann.enabled && anchoredNotes.map(({ note, index, element }) => (
+      {ann.enabled && anchoredNotes.map(({ note, element }) => (
         <PrototypeAnnotationHotspot
           key={note.id}
           note={note}
           element={element}
-          number={index + 1}
+          number={visibleNoteNumbers.get(note.id)}
           selected={ann.expandedNoteId === note.id}
           layoutVersion={layoutVersion}
           onSelect={ann.selectNote}
