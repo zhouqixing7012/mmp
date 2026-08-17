@@ -27,7 +27,10 @@ const Modal = ({ isOpen, onClose, title, children, footer, width = 'max-w-[520px
   );
 
   return (
-    <div className="fixed inset-0 bg-[rgba(0,0,0,0.45)] z-[1000] flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 bg-[rgba(0,0,0,0.45)] z-[1000] flex items-center justify-center p-4"
+      data-prototype-overlay="modal"
+    >
       <div className={`bg-white rounded-lg shadow-[0_6px_16px_0_rgba(0,0,0,0.08)] w-full ${width} overflow-hidden`}>
         <div className="px-6 py-4 border-b border-border flex justify-between items-center">
           <h3 className="text-[16px] font-semibold text-text-primary">{title}</h3>
