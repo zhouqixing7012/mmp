@@ -68,7 +68,15 @@ function getBaseTarget(element, pageKey) {
 }
 
 function isAnnotationUi(element) {
-  return Boolean(element.closest('.paf-annotation-panel, .paf-hotspot, [data-prototype-annotation-ui="true"]'));
+  return Boolean(element.closest([
+    '.paf-annotation-panel',
+    '.paf-hotspot',
+    '[data-prototype-annotation-ui="true"]',
+    '.ant-tooltip',
+    '.ant-popover',
+    '.ant-select-dropdown',
+    '.ant-message',
+  ].join(', ')));
 }
 
 function isRedundantContainer(element) {
