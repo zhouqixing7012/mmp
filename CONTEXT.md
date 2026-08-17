@@ -2,15 +2,18 @@
 
 - 项目为企业资产管理产品演示前端，继续直接在 `main` 迭代；不新建分支或 worktree，除非用户明确要求。
 - 当前阶段：个人工作台、资产管理、库存管理主要原型已建立，后续继续按截图和 PRD 逐页校准。
+- 2026-08-17 已将附件 `员工自助功能PRD.pdf` 按业务模块转换为 Markdown，新增 `docs/员工自助功能PRD/`；资产申请因内容较长再按流程拆为 3 个子文件。
 - 2026-08-17 已完成原型标注层升级：保留 `data-prototype-anchor`，新增可配置位置、滚动跟随、尺寸跟随、边缘自动翻转和视口约束。
 
 # 上次停留位置
 
-- 原型标注能力已升级并写入 `main`。
-- 下一次涉及页面标注时，直接在业务页面增加语义化 `data-prototype-anchor`，在 `src/prototype-annotations/annotation-data.js` 配置标注内容和 `position`。
+- `员工自助功能PRD.pdf` 已完成模块化 Markdown 拆分；后续需要查原始需求时优先从 `docs/员工自助功能PRD/README.md` 进入对应模块。
+- 原型标注能力已升级并写入 `main`；下一次涉及页面标注时，直接在业务页面增加语义化 `data-prototype-anchor`，在 `src/prototype-annotations/annotation-data.js` 配置标注内容和 `position`。
 
 # 近期关键决定
 
+- 本次 PRD 转换保留原 PDF 页码标记、文字、字段表和业务规则；原 PDF 页面截图/流程图不单独导出为图片。
+- 现有 `docs/PRD-EMPLOYEE-ASSET-SELF-SERVICE*.md` 属于项目迭代实现口径，本次不覆盖，原始附件拆分版独立放入 `docs/员工自助功能PRD/`。
 - 标注数据与业务页面解耦：业务页面不保存 x/y 坐标，只声明 DOM 锚点。
 - 标注位置统一支持 `side / align / gap / offsetX / offsetY / viewportPadding`。
 - 定位层统一处理屏幕边缘翻转和可视区域约束，不在业务页面写定位补丁。
