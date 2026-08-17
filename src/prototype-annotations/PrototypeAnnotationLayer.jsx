@@ -2,9 +2,16 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom';
 import PrototypeAnnotationPanel from './PrototypeAnnotationPanel';
 import usePrototypeAnnotations from './usePrototypeAnnotations';
-import { computeHotspotPosition } from './annotation-positioning';
+import { computeHotspotPosition, normalizeAnnotationPosition } from './annotation-positioning';
+import {
+  normalizeAnnotationCollection,
+  readAnnotationDraft,
+  resetAnnotationDraft,
+  serializeAnnotationExport,
+  writeAnnotationDraft,
+} from './annotation-storage';
+import { serializePrototypeAnchorContext } from './annotation-anchor-scanner';
 
-// 所有标注数据
 import yewurulesAnnotations from './annotation-data';
 
 const ALL_ANNOTATIONS = {
@@ -23,8 +30,20 @@ function findAnchor(target) {
 function sameAnchors(previous, next) {
   if (previous.length !== next.length) return false;
   return previous.every((item, index) => (
-    item.note.id === next[index].note.id && item.element === next[index].element
+    item.note === next[index].note && item.element === next[index].element
   ));
+}
+
+function downloadTextFile(filename, content) {
+  const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function PrototypeAnnotationHotspot({
@@ -32,14 +51,19 @@ function PrototypeAnnotationHotspot({
   element,
   number,
   selected,
+  editMode,
   layoutVersion,
   onSelect,
+  onMove,
   onVisibilityChange,
 }) {
   const hotspotRef = useRef(null);
   const frameRef = useRef(null);
   const visibleRef = useRef(false);
+  const dragRef = useRef(null);
+  const suppressClickRef = useRef(false);
   const [coordinates, setCoordinates] = useState(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   const updatePosition = useCallback(() => {
     const hotspot = hotspotRef.current;
@@ -89,7 +113,6 @@ function PrototypeAnnotationHotspot({
 
   useEffect(() => {
     scheduleUpdate();
-
     window.addEventListener('scroll', scheduleUpdate, true);
     window.addEventListener('resize', scheduleUpdate);
 
@@ -115,15 +138,69 @@ function PrototypeAnnotationHotspot({
     scheduleUpdate();
   }, [layoutVersion, scheduleUpdate]);
 
+  const handlePointerDown = (event) => {
+    if (!editMode || event.button !== 0) return;
+    const position = normalizeAnnotationPosition(note.position);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      offsetX: position.offsetX,
+      offsetY: position.offsetY,
+    };
+    suppressClickRef.current = false;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  };
+
+  const handlePointerMove = (event) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const x = event.clientX - drag.startX;
+    const y = event.clientY - drag.startY;
+    if (Math.abs(x) > 2 || Math.abs(y) > 2) suppressClickRef.current = true;
+    setDragOffset({ x, y });
+  };
+
+  const finishDrag = (event) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const x = event.clientX - drag.startX;
+    const y = event.clientY - drag.startY;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    dragRef.current = null;
+    setDragOffset({ x: 0, y: 0 });
+
+    if (suppressClickRef.current) {
+      onMove(note.id, {
+        offsetX: drag.offsetX + x,
+        offsetY: drag.offsetY + y,
+      });
+    }
+  };
+
+  const handleClick = () => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
+    onSelect(note.id, note.target);
+  };
+
   const showHotspot = coordinates && Number.isInteger(number);
+  const scale = selected ? 1.25 : 1;
 
   return (
     <div
       ref={hotspotRef}
       className="paf-hotspot"
-      onClick={() => onSelect(note.id, note.target)}
+      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={finishDrag}
+      onPointerCancel={finishDrag}
       data-placement-side={coordinates?.side || note.position?.side || 'right'}
-      title={note.title}
+      title={editMode ? `${note.title}（拖动可调整位置）` : note.title}
       style={{
         position: 'fixed',
         left: coordinates?.left ?? -9999,
@@ -135,7 +212,7 @@ function PrototypeAnnotationHotspot({
         border: '2px solid #fff',
         boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
         zIndex: 9998,
-        cursor: 'pointer',
+        cursor: editMode ? 'grab' : 'pointer',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -145,8 +222,10 @@ function PrototypeAnnotationHotspot({
         lineHeight: 1,
         opacity: showHotspot ? 1 : 0,
         pointerEvents: showHotspot ? 'auto' : 'none',
-        transition: 'transform 0.15s, background 0.15s, opacity 0.12s',
-        transform: selected ? 'scale(1.25)' : 'scale(1)',
+        transition: dragRef.current ? 'none' : 'transform 0.15s, background 0.15s, opacity 0.12s',
+        transform: `translate(${dragOffset.x}px, ${dragOffset.y}px) scale(${scale})`,
+        touchAction: 'none',
+        userSelect: 'none',
       }}
     >
       {number}
@@ -158,14 +237,90 @@ export default function PrototypeAnnotationLayer() {
   const location = useLocation();
   const ann = usePrototypeAnnotations();
   const pageKey = useMemo(() => detectPageKey(location.pathname), [location.pathname]);
+  const baseAnnotations = useMemo(() => (pageKey ? ALL_ANNOTATIONS[pageKey] || [] : []), [pageKey]);
+  const [pageAnnotations, setPageAnnotations] = useState([]);
   const [anchoredNotes, setAnchoredNotes] = useState([]);
   const [visibleNoteIds, setVisibleNoteIds] = useState(() => new Set());
   const [layoutVersion, setLayoutVersion] = useState(0);
+  const [editMode, setEditMode] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [bindingMode, setBindingMode] = useState(null);
 
-  const pageAnnotations = useMemo(() => {
-    if (!pageKey) return [];
-    return ALL_ANNOTATIONS[pageKey] || [];
+  useEffect(() => {
+    if (!pageKey) {
+      setPageAnnotations([]);
+      setDirty(false);
+      setBindingMode(null);
+      return;
+    }
+    setPageAnnotations(readAnnotationDraft(pageKey, baseAnnotations));
+    setDirty(false);
+    setBindingMode(null);
+  }, [baseAnnotations, pageKey]);
+
+  const updateAnnotations = useCallback((updater) => {
+    setPageAnnotations((previous) => (
+      typeof updater === 'function' ? updater(previous) : updater
+    ));
+    setDirty(true);
+  }, []);
+
+  const handleUpdateNote = useCallback((noteId, patch) => {
+    updateAnnotations((previous) => previous.map((note) => (
+      note.id === noteId ? { ...note, ...patch } : note
+    )));
+  }, [updateAnnotations]);
+
+  const handleMoveNote = useCallback((noteId, offsetPatch) => {
+    updateAnnotations((previous) => previous.map((note) => {
+      if (note.id !== noteId) return note;
+      return {
+        ...note,
+        position: {
+          ...normalizeAnnotationPosition(note.position),
+          ...offsetPatch,
+        },
+      };
+    }));
+  }, [updateAnnotations]);
+
+  const handleDeleteNote = useCallback((noteId) => {
+    updateAnnotations((previous) => previous.filter((note) => note.id !== noteId));
+    if (ann.expandedNoteId === noteId) ann.selectNote(null, null);
+  }, [ann, updateAnnotations]);
+
+  const handleSave = useCallback(() => {
+    if (!pageKey) return;
+    const saved = writeAnnotationDraft(pageKey, pageAnnotations);
+    setPageAnnotations(saved);
+    setDirty(false);
+  }, [pageAnnotations, pageKey]);
+
+  const handleReset = useCallback(() => {
+    if (!pageKey) return;
+    setPageAnnotations(resetAnnotationDraft(pageKey, baseAnnotations));
+    setDirty(false);
+    setBindingMode(null);
+    ann.selectNote(null, null);
+  }, [ann, baseAnnotations, pageKey]);
+
+  const handleImport = useCallback((text) => {
+    const payload = JSON.parse(text);
+    const imported = normalizeAnnotationCollection(payload, pageKey);
+    setPageAnnotations(imported);
+    setDirty(true);
+    setBindingMode(null);
   }, [pageKey]);
+
+  const handleExport = useCallback(() => {
+    if (!pageKey) return;
+    downloadTextFile(`${pageKey}-annotations.json`, serializeAnnotationExport(pageKey, pageAnnotations));
+  }, [pageAnnotations, pageKey]);
+
+  const handleExportAnchors = useCallback(() => {
+    if (!pageKey) return;
+    downloadTextFile(`${pageKey}-anchors.json`, serializePrototypeAnchorContext(pageKey, location.pathname));
+  }, [location.pathname, pageKey]);
 
   const scanAnchors = useCallback(() => {
     if (!ann.enabled) {
@@ -204,10 +359,7 @@ export default function PrototypeAnnotationLayer() {
     scheduleScan();
 
     const observer = new MutationObserver(scheduleScan);
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
+    observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
       observer.disconnect();
@@ -235,6 +387,10 @@ export default function PrototypeAnnotationLayer() {
     });
   }, []);
 
+  const matchedIds = useMemo(() => (
+    new Set(anchoredNotes.map((item) => item.note.id))
+  ), [anchoredNotes]);
+
   const visibleAnnotations = useMemo(() => (
     pageAnnotations.filter((note) => visibleNoteIds.has(note.id))
   ), [pageAnnotations, visibleNoteIds]);
@@ -252,6 +408,86 @@ export default function PrototypeAnnotationLayer() {
     const target = findAnchor(ann.highlightedTarget);
     if (target) target.classList.add('paf-target-highlight');
   }, [ann.highlightedTarget, ann.enabled, layoutVersion]);
+
+  useEffect(() => {
+    if (!bindingMode || !editMode) return undefined;
+
+    let candidate = null;
+    const clearCandidate = () => {
+      candidate?.classList.remove('paf-bind-target-candidate');
+      candidate = null;
+    };
+
+    const findCandidate = (eventTarget) => {
+      if (!(eventTarget instanceof Element)) return null;
+      if (eventTarget.closest('.paf-annotation-panel') || eventTarget.closest('.paf-hotspot')) return null;
+      return eventTarget.closest('[data-prototype-anchor]');
+    };
+
+    const onPointerMove = (event) => {
+      const nextCandidate = findCandidate(event.target);
+      if (nextCandidate === candidate) return;
+      clearCandidate();
+      candidate = nextCandidate;
+      candidate?.classList.add('paf-bind-target-candidate');
+    };
+
+    const onClick = (event) => {
+      const targetElement = findCandidate(event.target);
+      if (!targetElement) return;
+      const target = targetElement.getAttribute('data-prototype-anchor');
+      if (!target) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (bindingMode.type === 'create') {
+        const noteId = `annotation-${Date.now().toString(36)}`;
+        const newNote = {
+          id: noteId,
+          pageKey,
+          target,
+          context: {},
+          kind: 'module',
+          position: normalizeAnnotationPosition({ side: 'right', align: 'center', gap: 8 }),
+          title: '新标注',
+          summary: '',
+          summarySource: 'confirmed',
+          sections: [],
+        };
+        updateAnnotations((previous) => [...previous, newNote]);
+        ann.selectNote(noteId, target);
+      } else if (bindingMode.type === 'rebind' && bindingMode.noteId) {
+        handleUpdateNote(bindingMode.noteId, { target });
+        ann.selectNote(bindingMode.noteId, target);
+      }
+
+      clearCandidate();
+      setBindingMode(null);
+    };
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        clearCandidate();
+        setBindingMode(null);
+      }
+    };
+
+    document.addEventListener('pointermove', onPointerMove, true);
+    document.addEventListener('click', onClick, true);
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      clearCandidate();
+      document.removeEventListener('pointermove', onPointerMove, true);
+      document.removeEventListener('click', onClick, true);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [ann, bindingMode, editMode, handleUpdateNote, pageKey, updateAnnotations]);
+
+  useEffect(() => {
+    if (!editMode) setBindingMode(null);
+  }, [editMode]);
 
   if (!pageKey) return null;
 
@@ -298,20 +534,38 @@ export default function PrototypeAnnotationLayer() {
           element={element}
           number={visibleNoteNumbers.get(note.id)}
           selected={ann.expandedNoteId === note.id}
+          editMode={editMode}
           layoutVersion={layoutVersion}
           onSelect={ann.selectNote}
+          onMove={handleMoveNote}
           onVisibilityChange={handleVisibilityChange}
         />
       ))}
 
       {ann.enabled && (
         <PrototypeAnnotationPanel
-          notes={visibleAnnotations}
+          notes={pageAnnotations}
+          noteNumbers={visibleNoteNumbers}
+          matchedIds={matchedIds}
           expandedNoteId={ann.expandedNoteId}
           onToggleExpand={ann.toggleExpand}
           onSelectNote={ann.selectNote}
           onClose={ann.toggle}
           panelRef={ann.panelRef}
+          editMode={editMode}
+          onToggleEditMode={setEditMode}
+          onUpdateNote={handleUpdateNote}
+          onDeleteNote={handleDeleteNote}
+          onCreateNote={() => { setEditMode(true); setBindingMode({ type: 'create' }); }}
+          onStartRebind={(noteId) => setBindingMode({ type: 'rebind', noteId })}
+          bindingMode={bindingMode}
+          onCancelBinding={() => setBindingMode(null)}
+          onSave={handleSave}
+          onReset={handleReset}
+          onImport={handleImport}
+          onExport={handleExport}
+          onExportAnchors={handleExportAnchors}
+          dirty={dirty}
         />
       )}
 
@@ -321,6 +575,11 @@ export default function PrototypeAnnotationLayer() {
           outline-offset: 2px;
           border-radius: 4px;
           animation: paf-pulse 1.5s ease-in-out infinite;
+        }
+        .paf-bind-target-candidate {
+          outline: 3px solid #faad14 !important;
+          outline-offset: 3px;
+          cursor: crosshair !important;
         }
         @keyframes paf-pulse {
           0%, 100% { outline-color: #1677ff; }
