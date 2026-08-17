@@ -254,9 +254,9 @@ export default function PrototypeAnnotationPanel({
 
   const selectedNote = notes.find((note) => note.id === expandedNoteId) || null;
   const matchedCount = notes.filter((note) => matchedIds.has(note.id)).length;
-  const expandedPanelWidth = editMode ? 440 : 380;
+  const expandedPanelWidth = editMode ? 480 : 430;
   const expandedPanelHeight = Math.max(240, viewport.height - 32);
-  const panelWidth = minimized ? 280 : expandedPanelWidth;
+  const panelWidth = minimized ? 300 : expandedPanelWidth;
   const panelHeight = minimized ? 44 : expandedPanelHeight;
 
   const clampPanelPosition = useCallback((nextPosition) => ({
@@ -402,16 +402,17 @@ export default function PrototypeAnnotationPanel({
               <Tag style={{ marginInlineEnd: 0 }}>{editMode ? '编辑' : '查看'}</Tag>
               {dirty && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未保存</Tag>}
             </div>
-            <div onMouseDown={(event) => event.stopPropagation()}>
-              <Tooltip title="展开产品标注面板" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
-                <Button
-                  aria-label="展开产品标注面板"
-                  type="text"
-                  size="small"
-                  icon={<Maximize2 size={15} />}
-                  onClick={() => setMinimized(false)}
-                />
-              </Tooltip>
+            <div onMouseDown={(event) => event.stopPropagation()} style={{ flexShrink: 0 }}>
+              <Button
+                aria-label="展开产品标注面板"
+                type="primary"
+                ghost
+                size="small"
+                icon={<Maximize2 size={14} />}
+                onClick={() => setMinimized(false)}
+              >
+                展开
+              </Button>
             </div>
           </div>
         </div>
@@ -438,28 +439,30 @@ export default function PrototypeAnnotationPanel({
               cursor: 'grab',
               userSelect: 'none',
               background: '#fafafa',
+              gap: 8,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
               <GripHorizontal size={16} color="#999" />
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>产品标注</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#333', whiteSpace: 'nowrap' }}>产品标注</span>
               {dirty && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未保存</Tag>}
             </div>
-            <div onMouseDown={(event) => event.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div onMouseDown={(event) => event.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
               <Segmented
                 size="small"
                 value={editMode ? 'edit' : 'view'}
                 options={[{ label: '查看', value: 'view' }, { label: '编辑', value: 'edit' }]}
                 onChange={(value) => onToggleEditMode(value === 'edit')}
               />
-              <Tooltip title="最小化面板，保持标注模式" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
+              <Tooltip title="仅收起面板，标注模式继续保持" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
                 <Button
-                  aria-label="最小化产品标注面板"
-                  type="text"
+                  aria-label="收起产品标注面板"
                   size="small"
-                  icon={<Minus size={16} />}
+                  icon={<Minus size={14} />}
                   onClick={() => setMinimized(true)}
-                />
+                >
+                  收起
+                </Button>
               </Tooltip>
               <Tooltip title="退出标注模式" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
                 <Button aria-label="退出标注模式" type="text" size="small" icon={<X size={16} />} onClick={onClose} />
