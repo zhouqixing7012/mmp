@@ -23,7 +23,7 @@ const TARGETS = {
   warehouseClaimButton: 'card-e5aea1e689b9e6938de4bd9c::button::e9a286e794a8e7a1aee8aea4',
   warehouseAbandonButton: 'card-e5aea1e689b9e6938de4bd9c::button::e5bc83e9a286',
   responsibility: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e4bd9ce58fb03a3ae59198e5b7a5e590::card::e4bf9de7aea1e8818ce8b4a3',
-  receiptConfirm: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e590::card::e588b7e58da12fe689abe7a081e7a1aee8aea4',
+  receiptConfirm: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e4bd9ce58fb03a3ae59198e5b7a5e590::card::e588b7e58da12fe689abe7a081e7a1aee8aea4',
 };
 
 const prdItem = (text) => ({ text, source: 'prd' });
