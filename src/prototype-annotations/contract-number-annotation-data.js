@@ -1,6 +1,6 @@
 // 合约号码申请模块的研发评审基线标注。
 // 内容仅摘取 PRD 中会影响实现/验收的准入、校验、状态流转和跨节点副作用；
-// 模块级标注只保留跨字段/统一流程规则，单字段要求尽量绑定到具体字段。
+// 模块级标注只保留跨字段/统一流程规则，字段/按钮等具体对象的规则必须优先绑定到具体对象。
 
 const SCOPES = {
   authorization: 'route:/yewurules::个人工作台::号码控制',
@@ -20,9 +20,10 @@ const TARGETS = {
   allocationNumber: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e4bd9ce58fb03a3ae59088e7baa6e58f::card::e58fb7e7a081e9858de7bb99',
   approvalInfo: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e4bd9ce58fb03a3ae59088e7baa6e58f::card::e5aea1e689b9e4bfa1e681af',
   warehouseInfo: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e4bd9ce58fb03a3ae59088e7baa6e58fb7e7a081e4bfa1e681af',
-  warehouseActions: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e4bd9ce58fb03a3ae59088e7baa6e58f::card::e5aea1e689b9e6938de4bd9c',
+  warehouseClaimButton: 'card-e5aea1e689b9e6938de4bd9c::button::e9a286e794a8e7a1aee8aea4',
+  warehouseAbandonButton: 'card-e5aea1e689b9e6938de4bd9c::button::e5bc83e9a286',
   responsibility: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e4bd9ce58fb03a3ae59198e5b7a5e590::card::e4bf9de7aea1e8818ce8b4a3',
-  receiptConfirm: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e4bd9ce58fb03a3ae59198e5b7a5e590::card::e588b7e58da12fe689abe7a081e7a1aee8aea4',
+  receiptConfirm: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e590::card::e588b7e58da12fe689abe7a081e7a1aee8aea4',
 };
 
 const prdItem = (text) => ({ text, source: 'prd' });
@@ -279,27 +280,40 @@ const contractNumberAnnotationsByScope = {
       ],
     },
     {
-      id: 'contract-warehouse-claim-or-abandon',
+      id: 'contract-warehouse-claim-action',
       pageKey: SCOPES.warehouse,
-      target: TARGETS.warehouseActions,
-      kind: 'business-rule',
+      target: TARGETS.warehouseClaimButton,
+      kind: 'action-rule',
       position: { side: 'right', align: 'center', gap: 6 },
-      title: '领用确认与弃领是两个终态分支',
-      summary: '领用确认进入员工扫码确认；弃领不生成出库单并释放号码锁定，之后不能恢复正常领用，如仍需号码必须重新申请。',
+      title: '领用确认进入员工确认',
+      summary: '点击“领用确认”后进入员工领用确认页，继续由申请人本人完成身份校验和扫码确认。',
       summarySource: 'prd',
       sections: [
         {
-          title: '领用确认',
+          title: '按钮规则',
           items: [
-            prdItem('点击“领用确认”后进入员工领用确认页，待员工完成身份校验和扫码确认。'),
+            prdItem('点击“领用确认”后打开员工领用确认页。'),
+            prdItem('员工确认页由申请人本人继续完成身份核验和扫码确认。'),
           ],
         },
+      ],
+    },
+    {
+      id: 'contract-warehouse-abandon-action',
+      pageKey: SCOPES.warehouse,
+      target: TARGETS.warehouseAbandonButton,
+      kind: 'action-rule',
+      position: { side: 'right', align: 'center', gap: 6 },
+      title: '弃领直接结束领用流程',
+      summary: '弃领后结束领用流程，不生成出库单并释放号码锁定；之后不能恢复正常领用，如仍有需求需重新申请。',
+      summarySource: 'prd',
+      sections: [
         {
-          title: '弃领',
+          title: '按钮规则',
           items: [
-            prdItem('弃领后流程结束，不执行员工扫码确认、不生成出库单，并释放号码锁定。'),
+            prdItem('弃领后结束领用流程，不执行员工领用确认，也不生成出库单。'),
+            prdItem('弃领后释放已配给号码的锁定。'),
             prdItem('放弃领用后禁止再次执行正常领用；如仍有需求，由申请人重新发起新单。'),
-            prdItem('PRD 状态口径：放弃领用也视为单据“已完成”。'),
           ],
         },
       ],
