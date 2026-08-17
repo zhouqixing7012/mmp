@@ -1,9 +1,12 @@
 import {
   findPrototypeBindingElement,
+  getPrototypeTargetMetadata,
   listPrototypeTargets,
   preparePrototypeTargets,
   resolvePrototypeTarget,
 } from './annotation-targeting';
+
+const PAGE_SCOPE = 'route:/yewurules::后台基础配置::物料数据维护::物料维度组合';
 
 describe('annotation-targeting', () => {
   beforeEach(() => {
@@ -23,14 +26,58 @@ describe('annotation-targeting', () => {
         <button><span>重置</span></button>
       </section>
       <section data-prototype-anchor="material-table">
-        <table><thead><tr><th>资产标签号</th><th>资产状态</th></tr></thead></table>
+        <table><thead><tr><th><span>资产标签号</span></th><th>资产状态</th></tr></thead></table>
       </section>
+      <div class="bg-white"><h3>审批信息</h3><div>普通内容</div></div>
+      <dl>
+        <dt data-prototype-bindable="detail-field" data-prototype-label="公司">公司</dt>
+        <dd data-prototype-detail-value="公司"><span>搜狐公司</span></dd>
+      </dl>
     `;
   });
 
+  test('无需预扫描也能从查询条件内部精准命中 QueryItem', () => {
+    const input = document.querySelector('input[placeholder="请输入资产标签号"]');
+    const element = findPrototypeBindingElement(input);
+
+    expect(element.getAttribute('data-prototype-bindable')).toBe('query-condition');
+    expect(element.getAttribute('data-prototype-label')).toBe('资产标签号');
+  });
+
+  test('无需预扫描也能从按钮内部精准命中 Button', () => {
+    const span = document.querySelector('button span');
+    const element = findPrototypeBindingElement(span);
+
+    expect(element.tagName).toBe('BUTTON');
+    expect(element.textContent).toBe('查询');
+  });
+
+  test('无需预扫描也能从表头内部精准命中单个 th', () => {
+    const span = document.querySelector('th span');
+    const element = findPrototypeBindingElement(span);
+
+    expect(element.tagName).toBe('TH');
+    expect(element.textContent).toBe('资产标签号');
+  });
+
+  test('点击 DetailItem 的值也会命中对应详情字段', () => {
+    const value = document.querySelector('[data-prototype-detail-value] span');
+    const element = findPrototypeBindingElement(value);
+
+    expect(element.tagName).toBe('DT');
+    expect(element.getAttribute('data-prototype-label')).toBe('公司');
+  });
+
+  test('没有预埋 anchor 的普通白色业务块仍可作为模块命中', () => {
+    const content = document.querySelector('.bg-white div');
+    const element = findPrototypeBindingElement(content);
+
+    expect(element.classList.contains('bg-white')).toBe(true);
+  });
+
   test('为查询条件、按钮和表头生成稳定细粒度目标', () => {
-    const firstTargets = preparePrototypeTargets('yewurules').map((item) => item.target);
-    const secondTargets = preparePrototypeTargets('yewurules').map((item) => item.target);
+    const firstTargets = preparePrototypeTargets(PAGE_SCOPE).map((item) => item.target);
+    const secondTargets = preparePrototypeTargets(PAGE_SCOPE).map((item) => item.target);
 
     expect(firstTargets).toEqual(secondTargets);
     expect(firstTargets.filter((target) => target.includes('query-condition'))).toHaveLength(2);
@@ -39,27 +86,28 @@ describe('annotation-targeting', () => {
   });
 
   test('不同中文字段生成不同且可重建的 target', () => {
-    const targets = preparePrototypeTargets('yewurules')
+    const targets = preparePrototypeTargets(PAGE_SCOPE)
       .filter((item) => item.kind === 'query-condition')
       .map((item) => item.target);
 
     expect(new Set(targets).size).toBe(2);
     expect(targets[0]).not.toBe(targets[1]);
-    expect(targets.every((target) => /[a-f]/.test(target))).toBe(true);
   });
 
-  test('可以从按钮内部节点精准命中按钮目标', () => {
-    preparePrototypeTargets('yewurules');
-    const span = document.querySelector('button span');
-    const element = findPrototypeBindingElement(span);
-    expect(element.tagName).toBe('BUTTON');
-    expect(element.getAttribute('data-prototype-generated-target')).toContain('button');
+  test('实时命中的元素可生成 metadata 并在同一 page scope 中重新解析', () => {
+    const input = document.querySelector('input[placeholder="请输入资产标签号"]');
+    const element = findPrototypeBindingElement(input);
+    const metadata = getPrototypeTargetMetadata(element, PAGE_SCOPE);
+
+    expect(metadata.kind).toBe('query-condition');
+    expect(metadata.label).toBe('资产标签号');
+    expect(resolvePrototypeTarget(metadata.target, PAGE_SCOPE)).toBe(element);
   });
 
-  test('生成目标可以在刷新扫描后重新解析', () => {
-    const targets = listPrototypeTargets('yewurules');
-    const generated = targets.find((item) => item.generated && item.kind === 'query-condition');
-    expect(generated).toBeTruthy();
-    expect(resolvePrototypeTarget(generated.target)).toBe(generated.element);
+  test('导出目标包含模块级和细粒度目标', () => {
+    const targets = listPrototypeTargets(PAGE_SCOPE);
+    expect(targets.some((item) => item.kind === 'query-condition')).toBe(true);
+    expect(targets.some((item) => item.kind === 'detail-field')).toBe(true);
+    expect(targets.some((item) => item.kind === 'module')).toBe(true);
   });
 });
