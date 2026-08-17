@@ -268,10 +268,10 @@ export function findPrototypeBindingElement(eventTarget) {
   const detailField = findDetailFieldFromValue(eventTarget);
   if (detailField) return detailField;
 
-  // 优先命中真正的操作对象，再逐级回退到字段和模块。
-  return closestOutsideUi(eventTarget, '[data-prototype-bindable]:not([data-prototype-bindable="query-condition"])')
-    || closestOutsideUi(eventTarget, 'button, [role="button"]')
+  // 精度优先级：操作控件 > 表头 > 业务字段 > 输入控件 > 模块。
+  return closestOutsideUi(eventTarget, 'button, [role="button"]')
     || closestOutsideUi(eventTarget, 'th, [role="columnheader"]')
+    || closestOutsideUi(eventTarget, '[data-prototype-bindable]:not([data-prototype-bindable="query-condition"])')
     || closestOutsideUi(eventTarget, '[data-prototype-bindable="query-condition"], .qw')
     || closestOutsideUi(eventTarget, '.ant-form-item')
     || closestOutsideUi(eventTarget, CONTROL_SELECTOR)
@@ -316,6 +316,13 @@ export function resolvePrototypeTarget(target, pageScope, root = document) {
   const anchors = Array.from(root.querySelectorAll?.('[data-prototype-anchor]') || []);
   const anchor = anchors.find((element) => element.getAttribute('data-prototype-anchor') === target);
   if (anchor) return anchor;
+
+  const existingGenerated = Array.from(root.querySelectorAll?.(`[${GENERATED_TARGET_ATTRIBUTE}]`) || [])
+    .find((element) => (
+      element.getAttribute(GENERATED_TARGET_ATTRIBUTE) === target
+      && element.getAttribute(GENERATED_SCOPE_ATTRIBUTE) === (pageScope || 'page')
+    ));
+  if (existingGenerated) return existingGenerated;
 
   preparePrototypeTargets(pageScope, root);
   const generated = Array.from(root.querySelectorAll?.(`[${GENERATED_TARGET_ATTRIBUTE}]`) || []);
