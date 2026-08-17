@@ -24,6 +24,7 @@ import {
 import {
   findPrototypeBindingElement,
   getPrototypeTargetMetadata,
+  isPrototypeElementInActiveLayer,
   preparePrototypeTargets,
   resolvePrototypeTarget,
 } from './annotation-targeting';
@@ -73,6 +74,13 @@ function PrototypeAnnotationHotspot({
   const updatePosition = useCallback(() => {
     const hotspot = hotspotRef.current;
     if (!element || !hotspot || !element.isConnected) {
+      setCoordinates(null);
+      return;
+    }
+
+    // Modal / Drawer 打开时，底层页面目标不再把标注点穿透到业务浮层之上。
+    // 只有属于当前顶层业务浮层内部的目标仍继续展示标注。
+    if (!isPrototypeElementInActiveLayer(element, document)) {
       setCoordinates(null);
       return;
     }
@@ -424,7 +432,9 @@ export default function PrototypeAnnotationLayer() {
 
     if (!ann.enabled || !ann.highlightedTarget) return;
     const target = resolvePrototypeTarget(ann.highlightedTarget, pageScope, document);
-    if (target) target.classList.add('paf-target-highlight');
+    if (target && isPrototypeElementInActiveLayer(target, document)) {
+      target.classList.add('paf-target-highlight');
+    }
   }, [ann.enabled, ann.highlightedTarget, layoutVersion, pageScope]);
 
   useEffect(() => {
