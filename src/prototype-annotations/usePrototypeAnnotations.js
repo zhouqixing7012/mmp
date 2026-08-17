@@ -1,5 +1,4 @@
-import { useState, useRef } from 'react';
-import { resolvePrototypeTarget } from './annotation-targeting';
+import { useCallback, useRef, useState } from 'react';
 
 export default function usePrototypeAnnotations() {
   const [enabled, setEnabled] = useState(false);
@@ -8,7 +7,15 @@ export default function usePrototypeAnnotations() {
   const [highlightedTarget, setHighlightedTarget] = useState(null);
   const panelRef = useRef(null);
 
-  const toggle = () => setEnabled((previous) => {
+  const clearSelection = useCallback(() => {
+    setExpandedNoteId(null);
+    setHighlightedTarget(null);
+    document.querySelectorAll('.paf-target-highlight').forEach((element) => {
+      element.classList.remove('paf-target-highlight');
+    });
+  }, []);
+
+  const toggle = useCallback(() => setEnabled((previous) => {
     if (previous) {
       setExpandedNoteId(null);
       setHighlightedTarget(null);
@@ -18,26 +25,22 @@ export default function usePrototypeAnnotations() {
       return false;
     }
     return true;
-  });
+  }), []);
 
-  const updateActiveNotes = (notes) => setActiveNotes(notes);
+  const updateActiveNotes = useCallback((notes) => setActiveNotes(notes), []);
 
-  const selectNote = (noteId, target) => {
+  const selectNote = useCallback((noteId, target) => {
     setExpandedNoteId(noteId);
     setHighlightedTarget(target);
-    if (target) {
-      const element = resolvePrototypeTarget(target);
-      if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-    }
-  };
+  }, []);
 
-  const toggleExpand = (noteId) => {
+  const toggleExpand = useCallback((noteId) => {
     setExpandedNoteId((previous) => {
       const closing = previous === noteId;
       if (closing) setHighlightedTarget(null);
       return closing ? null : noteId;
     });
-  };
+  }, []);
 
   return {
     enabled,
@@ -46,6 +49,7 @@ export default function usePrototypeAnnotations() {
     updateActiveNotes,
     expandedNoteId,
     selectNote,
+    clearSelection,
     toggleExpand,
     highlightedTarget,
     panelRef,
