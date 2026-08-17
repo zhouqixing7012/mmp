@@ -2,22 +2,40 @@ export const GENERATED_TARGET_ATTRIBUTE = 'data-prototype-generated-target';
 export const GENERATED_SCOPE_ATTRIBUTE = 'data-prototype-generated-scope';
 export const TARGET_KIND_ATTRIBUTE = 'data-prototype-target-kind';
 export const TARGET_LABEL_ATTRIBUTE = 'data-prototype-target-label';
+export const PROTOTYPE_OVERLAY_ATTRIBUTE = 'data-prototype-overlay';
 
-const PREPARE_SELECTOR = [
-  '[data-prototype-bindable]',
-  '.qw',
+const PRECISE_CONTROL_SELECTOR = [
   'button',
   '[role="button"]',
   'th',
   '[role="columnheader"]',
-  '.ant-form-item',
+  '.ant-tabs-tab',
+  '[role="tab"]',
+  '.ant-radio-button-wrapper',
+  '.ant-radio-wrapper',
+  '[role="radio"]',
+  '.ant-checkbox-wrapper',
+  '[role="checkbox"]',
+  '.ant-segmented-item',
+  '.ant-switch',
+  '[role="switch"]',
   '.ant-select',
   '.ant-picker',
   '.ant-input-affix-wrapper',
   '.ant-input-number',
+  '.ant-slider',
+  '.ant-rate',
+  '.ant-upload',
   'input',
   'textarea',
   'select',
+].join(',');
+
+const PREPARE_SELECTOR = [
+  '[data-prototype-bindable]',
+  '.qw',
+  PRECISE_CONTROL_SELECTOR,
+  '.ant-form-item',
   '.ant-table-wrapper',
   '.ant-card',
   'form',
@@ -26,16 +44,6 @@ const PREPARE_SELECTOR = [
   'article',
   '[role="region"]',
   'div.bg-white',
-].join(',');
-
-const CONTROL_SELECTOR = [
-  '.ant-select',
-  '.ant-picker',
-  '.ant-input-affix-wrapper',
-  '.ant-input-number',
-  'input',
-  'textarea',
-  'select',
 ].join(',');
 
 const GENERIC_MODULE_SELECTOR = [
@@ -56,8 +64,18 @@ const ANNOTATION_UI_SELECTOR = [
   '.ant-tooltip',
   '.ant-popover',
   '.ant-select-dropdown',
+  '.ant-dropdown',
   '.ant-message',
+  '.ant-notification',
 ].join(', ');
+
+const BUSINESS_OVERLAY_SELECTOR = [
+  `[${PROTOTYPE_OVERLAY_ATTRIBUTE}]`,
+  '.ant-modal-wrap',
+  '.ant-drawer',
+  '.ant-image-preview-wrap',
+  '[role="dialog"][aria-modal="true"]',
+].join(',');
 
 function compactText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
@@ -76,17 +94,27 @@ function isAnnotationUi(element) {
   return Boolean(element?.closest?.(ANNOTATION_UI_SELECTOR));
 }
 
-function isControl(element) {
-  return element.matches(CONTROL_SELECTOR);
+function isPreciseControl(element) {
+  return element.matches(PRECISE_CONTROL_SELECTOR);
+}
+
+function isNativeControlInsideComposite(element) {
+  if (!element.matches('input, textarea, select')) return false;
+  return Boolean(element.closest([
+    '.ant-select',
+    '.ant-picker',
+    '.ant-input-affix-wrapper',
+    '.ant-input-number',
+    '.ant-radio-wrapper',
+    '.ant-checkbox-wrapper',
+  ].join(', ')));
 }
 
 function isRedundantContainer(element) {
   if (element.matches('.qw') && element.querySelector('[data-prototype-bindable="query-condition"]')) {
     return true;
   }
-  if (isControl(element) && element.closest('[data-prototype-bindable], .ant-form-item')) {
-    return true;
-  }
+  if (isNativeControlInsideComposite(element)) return true;
   if (element.matches('div.bg-white') && element.closest('.ant-card, .ant-table-wrapper')) {
     return true;
   }
@@ -98,8 +126,18 @@ function getTargetKind(element) {
   if (explicitKind) return explicitKind;
   if (element.matches('button, [role="button"]')) return 'button';
   if (element.matches('th, [role="columnheader"]')) return 'table-column';
+  if (element.matches('.ant-tabs-tab, [role="tab"]')) return 'tab';
+  if (element.matches('.ant-radio-button-wrapper, .ant-radio-wrapper, [role="radio"]')) return 'radio';
+  if (element.matches('.ant-checkbox-wrapper, [role="checkbox"]')) return 'checkbox';
+  if (element.matches('.ant-segmented-item')) return 'segment';
+  if (element.matches('.ant-switch, [role="switch"]')) return 'switch';
+  if (element.matches('.ant-select')) return 'select';
+  if (element.matches('.ant-picker')) return 'date-picker';
+  if (element.matches('.ant-slider')) return 'slider';
+  if (element.matches('.ant-rate')) return 'rate';
+  if (element.matches('.ant-upload')) return 'upload';
+  if (element.matches('.ant-input-affix-wrapper, .ant-input-number, input, textarea, select')) return 'control';
   if (element.matches('.qw, .ant-form-item')) return 'field';
-  if (isControl(element)) return 'control';
   if (element.matches('.ant-table-wrapper')) return 'table';
   if (element.matches('.ant-card')) return 'card';
   if (element.matches('form')) return 'form';
@@ -137,6 +175,35 @@ function getQueryLabel(element) {
     .replace(/[:：]\s*$/, '');
 }
 
+function getPreciseControlLabel(element) {
+  if (element.matches('.ant-tabs-tab, [role="tab"]')) {
+    return compactText(element.querySelector('.ant-tabs-tab-btn')?.textContent || element.textContent);
+  }
+
+  if (element.matches('.ant-radio-button-wrapper, .ant-radio-wrapper, [role="radio"]')) {
+    return compactText(element.textContent) || compactText(element.getAttribute('aria-label'));
+  }
+
+  if (element.matches('.ant-checkbox-wrapper, [role="checkbox"]')) {
+    return compactText(element.textContent) || compactText(element.getAttribute('aria-label'));
+  }
+
+  if (element.matches('.ant-segmented-item')) {
+    return compactText(element.querySelector('.ant-segmented-item-label')?.textContent || element.textContent);
+  }
+
+  if (element.matches('.ant-select')) {
+    return compactText(
+      element.querySelector('.ant-select-selection-item')?.getAttribute('title')
+      || element.querySelector('.ant-select-selection-item')?.textContent
+      || element.querySelector('.ant-select-selection-placeholder')?.textContent
+      || element.querySelector('input')?.getAttribute('placeholder')
+    );
+  }
+
+  return '';
+}
+
 function getControlPlaceholder(element) {
   if (element.matches('input, textarea, select')) {
     return compactText(
@@ -169,6 +236,9 @@ function getTargetLabel(element) {
   const formLabel = getFormLabel(element);
   if (formLabel) return formLabel;
 
+  const preciseLabel = getPreciseControlLabel(element);
+  if (preciseLabel) return preciseLabel;
+
   if (element.matches('.ant-card')) {
     return getCardTitle(element) || getDirectHeading(element) || '卡片区域';
   }
@@ -187,6 +257,11 @@ function getTargetLabel(element) {
 
   const placeholder = getControlPlaceholder(element);
   if (placeholder) return placeholder;
+
+  if (element.matches('.ant-switch, [role="switch"]')) return '开关';
+  if (element.matches('.ant-slider')) return '滑块';
+  if (element.matches('.ant-rate')) return '评分';
+  if (element.matches('.ant-upload')) return compactText(element.textContent) || '上传';
 
   return compactText(element.innerText || element.textContent).slice(0, 120);
 }
@@ -262,21 +337,85 @@ function findDetailFieldFromValue(eventTarget) {
   return labelCell?.matches?.('[data-prototype-bindable="detail-field"]') ? labelCell : null;
 }
 
+function findPreciseControl(eventTarget) {
+  return closestOutsideUi(eventTarget, 'button, [role="button"]')
+    || closestOutsideUi(eventTarget, 'th, [role="columnheader"]')
+    || closestOutsideUi(eventTarget, '.ant-tabs-tab, [role="tab"]')
+    || closestOutsideUi(eventTarget, '.ant-radio-button-wrapper, .ant-radio-wrapper, [role="radio"]')
+    || closestOutsideUi(eventTarget, '.ant-checkbox-wrapper, [role="checkbox"]')
+    || closestOutsideUi(eventTarget, '.ant-segmented-item')
+    || closestOutsideUi(eventTarget, '.ant-switch, [role="switch"]')
+    || closestOutsideUi(eventTarget, '.ant-select')
+    || closestOutsideUi(eventTarget, '.ant-picker')
+    || closestOutsideUi(eventTarget, '.ant-slider')
+    || closestOutsideUi(eventTarget, '.ant-rate')
+    || closestOutsideUi(eventTarget, '.ant-upload')
+    || closestOutsideUi(eventTarget, '.ant-input-affix-wrapper, .ant-input-number')
+    || closestOutsideUi(eventTarget, 'input, textarea, select');
+}
+
 export function findPrototypeBindingElement(eventTarget) {
   if (!(eventTarget instanceof Element) || isAnnotationUi(eventTarget)) return null;
+
+  // 具体交互控件优先，点击字段标签或普通值区域时再回退到字段级语义。
+  const preciseControl = findPreciseControl(eventTarget);
+  if (preciseControl) return preciseControl;
 
   const detailField = findDetailFieldFromValue(eventTarget);
   if (detailField) return detailField;
 
-  // 精度优先级：操作控件 > 表头 > 业务字段 > 输入控件 > 模块。
-  return closestOutsideUi(eventTarget, 'button, [role="button"]')
-    || closestOutsideUi(eventTarget, 'th, [role="columnheader"]')
-    || closestOutsideUi(eventTarget, '[data-prototype-bindable]:not([data-prototype-bindable="query-condition"])')
+  return closestOutsideUi(eventTarget, '[data-prototype-bindable]:not([data-prototype-bindable="query-condition"])')
     || closestOutsideUi(eventTarget, '[data-prototype-bindable="query-condition"], .qw')
     || closestOutsideUi(eventTarget, '.ant-form-item')
-    || closestOutsideUi(eventTarget, CONTROL_SELECTOR)
     || closestOutsideUi(eventTarget, '[data-prototype-anchor]')
     || closestOutsideUi(eventTarget, GENERIC_MODULE_SELECTOR);
+}
+
+function isOverlayVisible(element) {
+  if (!element?.isConnected) return false;
+  if (element.getAttribute('aria-hidden') === 'true') return false;
+
+  const style = typeof window !== 'undefined' && window.getComputedStyle
+    ? window.getComputedStyle(element)
+    : null;
+  if (style?.display === 'none' || style?.visibility === 'hidden') return false;
+
+  return true;
+}
+
+function readOverlayZIndex(element) {
+  const style = typeof window !== 'undefined' && window.getComputedStyle
+    ? window.getComputedStyle(element)
+    : null;
+  const parsed = Number.parseInt(style?.zIndex || '', 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export function getActivePrototypeOverlay(root = document) {
+  const overlays = Array.from(root.querySelectorAll?.(BUSINESS_OVERLAY_SELECTOR) || [])
+    .filter((element) => element instanceof Element)
+    .filter((element) => !isAnnotationUi(element))
+    .filter(isOverlayVisible);
+
+  if (!overlays.length) return null;
+
+  return overlays.reduce((active, current) => {
+    if (!active) return current;
+    const activeZIndex = readOverlayZIndex(active);
+    const currentZIndex = readOverlayZIndex(current);
+    if (currentZIndex > activeZIndex) return current;
+    if (currentZIndex < activeZIndex) return active;
+
+    const relation = active.compareDocumentPosition(current);
+    return relation & Node.DOCUMENT_POSITION_FOLLOWING ? current : active;
+  }, null);
+}
+
+export function isPrototypeElementInActiveLayer(element, root = document) {
+  if (!(element instanceof Element)) return false;
+  const overlay = getActivePrototypeOverlay(root);
+  if (!overlay) return true;
+  return overlay === element || overlay.contains(element);
 }
 
 export function getPrototypeTargetMetadata(element, pageScope, root = document) {
