@@ -1,5 +1,6 @@
 // 业务规则编辑页 (yewurules) 的标注数据
 // 每个标注对应页面上一个 data-prototype-anchor 元素
+// position 可配置标注点方向、对齐、间距和像素级微调；不配置时默认右侧居中
 
 const yewurulesAnnotations = [
   // ---- 物料综合集合 ----
@@ -9,6 +10,7 @@ const yewurulesAnnotations = [
     target: "material-query-bar",
     context: { state: "物料维度组合" },
     kind: "module",
+    position: { side: "right", align: "start", gap: 8, offsetY: 8 },
     title: "查询筛选区",
     summary: "用于按条件过滤物料维度组合列表。支持编码、描述、物资总类、大类、小类、单位、启用状态、参考价格等维度查询。",
     summarySource: "observed",
@@ -37,6 +39,7 @@ const yewurulesAnnotations = [
     target: "material-table-toolbar",
     context: { state: "物料维度组合" },
     kind: "module",
+    position: { side: "right", align: "center", gap: 8 },
     title: "表格操作栏",
     summary: "提供对物料维度组合数据的批量操作和新增功能。",
     summarySource: "observed",
@@ -65,6 +68,7 @@ const yewurulesAnnotations = [
     target: "material-table",
     context: { state: "物料维度组合" },
     kind: "module",
+    position: { side: "right", align: "start", gap: 8, offsetY: 24 },
     title: "物料维度组合列表",
     summary: "展示所有物料维度组合记录，含编码、描述、分类、品牌、型号、配置、单位、状态标记、价格、操作等信息。",
     summarySource: "observed",
