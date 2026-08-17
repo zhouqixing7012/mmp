@@ -23,6 +23,7 @@ import {
 } from './annotation-page-scope';
 import {
   findPrototypeBindingElement,
+  getPrototypeDisplayAnchor,
   getPrototypeTargetMetadata,
   isPrototypeElementInActiveLayer,
   preparePrototypeTargets,
@@ -57,6 +58,7 @@ function downloadTextFile(filename, content) {
 function PrototypeAnnotationHotspot({
   note,
   element,
+  displayElement,
   number,
   selected,
   editMode,
@@ -73,7 +75,8 @@ function PrototypeAnnotationHotspot({
 
   const updatePosition = useCallback(() => {
     const hotspot = hotspotRef.current;
-    if (!element || !hotspot || !element.isConnected) {
+    const positionElement = displayElement?.isConnected ? displayElement : element;
+    if (!element || !positionElement || !hotspot || !element.isConnected) {
       setCoordinates(null);
       return;
     }
@@ -85,8 +88,8 @@ function PrototypeAnnotationHotspot({
       return;
     }
 
-    const rect = element.getBoundingClientRect();
-    const isVisible = rect.width > 0 && rect.height > 0 && element.getClientRects().length > 0;
+    const rect = positionElement.getBoundingClientRect();
+    const isVisible = rect.width > 0 && rect.height > 0 && positionElement.getClientRects().length > 0;
 
     if (!isVisible) {
       setCoordinates(null);
@@ -112,7 +115,7 @@ function PrototypeAnnotationHotspot({
       }
       return next;
     });
-  }, [element, note.position]);
+  }, [displayElement, element, note.position]);
 
   const scheduleUpdate = useCallback(() => {
     if (frameRef.current !== null) return;
@@ -133,6 +136,7 @@ function PrototypeAnnotationHotspot({
 
     if (resizeObserver) {
       resizeObserver.observe(element);
+      if (displayElement && displayElement !== element) resizeObserver.observe(displayElement);
       if (hotspotRef.current) resizeObserver.observe(hotspotRef.current);
     }
 
@@ -142,7 +146,7 @@ function PrototypeAnnotationHotspot({
       resizeObserver?.disconnect();
       if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
     };
-  }, [element, scheduleUpdate]);
+  }, [displayElement, element, scheduleUpdate]);
 
   useEffect(() => {
     scheduleUpdate();
@@ -573,6 +577,7 @@ export default function PrototypeAnnotationLayer() {
           key={`${pageScope}-${note.id}`}
           note={note}
           element={element}
+          displayElement={getPrototypeDisplayAnchor(element)}
           number={noteNumbers.get(note.id)}
           selected={ann.expandedNoteId === note.id}
           editMode={editMode}
