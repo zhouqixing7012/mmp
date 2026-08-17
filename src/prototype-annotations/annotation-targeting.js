@@ -94,10 +94,6 @@ function isAnnotationUi(element) {
   return Boolean(element?.closest?.(ANNOTATION_UI_SELECTOR));
 }
 
-function isPreciseControl(element) {
-  return element.matches(PRECISE_CONTROL_SELECTOR);
-}
-
 function isNativeControlInsideComposite(element) {
   if (!element.matches('input, textarea, select')) return false;
   return Boolean(element.closest([
@@ -231,12 +227,25 @@ function getTargetLabel(element) {
   if (title) return title;
 
   const queryLabel = getQueryLabel(element);
-  if (queryLabel) return queryLabel;
-
   const formLabel = getFormLabel(element);
-  if (formLabel) return formLabel;
-
   const preciseLabel = getPreciseControlLabel(element);
+
+  if (element.matches([
+    '.ant-tabs-tab',
+    '[role="tab"]',
+    '.ant-radio-button-wrapper',
+    '.ant-radio-wrapper',
+    '[role="radio"]',
+    '.ant-checkbox-wrapper',
+    '[role="checkbox"]',
+    '.ant-segmented-item',
+  ].join(', ')) && preciseLabel) {
+    const fieldLabel = queryLabel || formLabel;
+    return fieldLabel ? `${fieldLabel}-${preciseLabel}` : preciseLabel;
+  }
+
+  if (queryLabel) return queryLabel;
+  if (formLabel) return formLabel;
   if (preciseLabel) return preciseLabel;
 
   if (element.matches('.ant-card')) {
