@@ -28,6 +28,7 @@ import {
   Tooltip,
   message,
 } from 'antd';
+import AnnotationMarkdown, { AnnotationInlineMarkdown, hasBlockMarkdown } from './AnnotationMarkdown';
 
 const { TextArea } = Input;
 const PANEL_Z_INDEX = 20000;
@@ -57,6 +58,35 @@ const BODY_POPUP = () => document.body;
 
 function FieldLabel({ children }) {
   return <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>{children}</div>;
+}
+
+function SourceBadge({ source }) {
+  return (
+    <span style={{ fontSize: 10, color: '#ad6800', marginLeft: 6, whiteSpace: 'nowrap' }}>
+      {SOURCE_LABELS[source] || source}
+    </span>
+  );
+}
+
+function AnnotationItemView({ item }) {
+  if (hasBlockMarkdown(item.text)) {
+    return (
+      <div style={{ fontSize: 12, color: '#666', lineHeight: 1.7, marginBottom: 6 }}>
+        <AnnotationMarkdown text={item.text} />
+        <SourceBadge source={item.source} />
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, color: '#666', lineHeight: 1.7, marginBottom: 4 }}>
+      <span aria-hidden="true" style={{ flexShrink: 0, color: '#8c8c8c' }}>•</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <AnnotationInlineMarkdown text={item.text} />
+        <SourceBadge source={item.source} />
+      </div>
+    </div>
+  );
 }
 
 function AnnotationEditor({ note, onUpdateNote, onDeleteNote, onStartRebind, onCollapse }) {
@@ -113,8 +143,8 @@ function AnnotationEditor({ note, onUpdateNote, onDeleteNote, onStartRebind, onC
       <Input size="small" value={note.title} onChange={(event) => onUpdateNote(note.id, { title: event.target.value })} />
 
       <div style={{ marginTop: 10 }}>
-        <FieldLabel>简要说明</FieldLabel>
-        <TextArea value={note.summary} autoSize={{ minRows: 2, maxRows: 5 }} onChange={(event) => onUpdateNote(note.id, { summary: event.target.value })} />
+        <FieldLabel>简要说明（支持 Markdown）</FieldLabel>
+        <TextArea value={note.summary} autoSize={{ minRows: 2, maxRows: 6 }} onChange={(event) => onUpdateNote(note.id, { summary: event.target.value })} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
@@ -185,7 +215,12 @@ function AnnotationEditor({ note, onUpdateNote, onDeleteNote, onStartRebind, onC
 
           {(section.items || []).map((item, itemIndex) => (
             <div key={`${note.id}-item-${sectionIndex}-${itemIndex}`} style={{ marginTop: 8 }}>
-              <TextArea value={item.text} autoSize={{ minRows: 1, maxRows: 4 }} placeholder="说明内容" onChange={(event) => updateItem(sectionIndex, itemIndex, { text: event.target.value })} />
+              <TextArea
+                value={item.text}
+                autoSize={{ minRows: 1, maxRows: 8 }}
+                placeholder="说明内容，支持 Markdown；表格可使用 | 列1 | 列2 | 语法"
+                onChange={(event) => updateItem(sectionIndex, itemIndex, { text: event.target.value })}
+              />
               <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                 <Select
                   size="small"
@@ -504,7 +539,7 @@ export default function PrototypeAnnotationPanel({
 
           {bindingMode ? (
             <div style={{ padding: '8px 12px', background: '#fffbe6', borderBottom: '1px solid #ffe58f', fontSize: 12, color: '#8c6d1f', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>{bindingMode.type === 'create' ? '移动鼠标选择按钮、查询条件、表格字段或模块，点击完成标注' : '移动鼠标选择新的精确绑定位置，点击完成重绑'}</span>
+              <span>{bindingMode.type === 'create' ? '移动鼠标选择按钮、查询条件、表格字段、选择弹窗或模块，点击完成标注' : '移动鼠标选择新的精确绑定位置，点击完成重绑'}</span>
               <Button type="link" size="small" onClick={onCancelBinding}>取消</Button>
             </div>
           ) : <div />}
@@ -568,7 +603,9 @@ export default function PrototypeAnnotationPanel({
                           <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{note.title}</span>
                           {!matched && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未匹配</Tag>}
                         </div>
-                        <div style={{ fontSize: 12, color: '#999', lineHeight: 1.5, marginBottom: 4 }}>{note.summary || '-'}</div>
+                        <div style={{ fontSize: 12, color: '#999', lineHeight: 1.5, marginBottom: 4 }}>
+                          <AnnotationInlineMarkdown text={note.summary || '-'} />
+                        </div>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <span style={{ fontSize: 11, background: '#fff7e6', color: '#d46b08', padding: '1px 6px', borderRadius: 3 }}>{SOURCE_LABELS[note.summarySource] || note.summarySource}</span>
                           <span style={{ fontSize: 11, color: '#bbb' }}>{note.kind}</span>
@@ -588,17 +625,11 @@ export default function PrototypeAnnotationPanel({
 
                     {!editMode && expanded && (
                       <div style={{ marginLeft: 50, marginRight: 16, marginBottom: 8, padding: '10px 14px', background: '#fafafa', borderRadius: 6, border: '1px solid #f0f0f0' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: note.sections?.length ? 6 : 0 }}>
-                          <Button type="link" size="small" onClick={() => onToggleExpand(note.id)}>收起</Button>
-                        </div>
                         {(note.sections || []).map((section, sectionIndex) => (
-                          <div key={`${note.id}-detail-${sectionIndex}`} style={{ marginBottom: sectionIndex < note.sections.length - 1 ? 10 : 0 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: '#555', marginBottom: 4 }}>{section.title}</div>
+                          <div key={`${note.id}-detail-${sectionIndex}`} style={{ marginBottom: sectionIndex < note.sections.length - 1 ? 12 : 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 5 }}>{section.title}</div>
                             {(section.items || []).map((item, itemIndex) => (
-                              <div key={`${note.id}-detail-item-${sectionIndex}-${itemIndex}`} style={{ fontSize: 12, color: '#666', lineHeight: 1.7, paddingLeft: 8, borderLeft: '2px solid #e8e8e8', marginBottom: 3 }}>
-                                {item.text}
-                                <span style={{ fontSize: 10, color: '#aaa', marginLeft: 6, background: '#f5f5f5', padding: '0 4px', borderRadius: 2 }}>{SOURCE_LABELS[item.source] || item.source}</span>
-                              </div>
+                              <AnnotationItemView key={`${note.id}-detail-item-${sectionIndex}-${itemIndex}`} item={item} />
                             ))}
                           </div>
                         ))}
