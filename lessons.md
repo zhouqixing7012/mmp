@@ -118,3 +118,5 @@
 - 中文字段生成稳定 target 时，编码后必须统一大小写再过滤字符，避免 URL 编码中的 A-F 被误删导致不同中文字段 key 退化或冲突。
 - 对于同一路由内部通过菜单/页签切换的后台，不可只用 pathname 作为标注 pageKey；必须显式暴露当前业务页面 scope，否则不同页面会共享或丢失标注。普通路由按 pathname 隔离，`/yewurules` 按 `activeMenu / activeSubMenu / activeTab` 隔离。
 - 精准标注选择不能依赖“进入页面时预扫描已经成功”。鼠标经过时应实时从当前 DOM 判断 Button、表头、QueryItem、DetailItem、FormField、FormItem、Input 等目标，再回退到 Card/Table/Form/业务块；预扫描只负责持久化 target 重建，不负责决定当前能不能选。
+- Select、DatePicker、Radio、Checkbox、Tabs、Segmented、Switch 等交互控件不能被外层 QueryItem/DetailItem/FormItem 抢走命中。选择目标时应先判断具体交互控件，只有点击字段标签或普通只读值区域时才回退到字段级标注；复合控件内部隐藏 input 不能单独成为伪目标。
+- 标注点层级不能只靠一个超高 z-index 解决，否则底层页面标注会穿透到 Modal/Drawer 上方。应感知当前顶层业务浮层：弹窗外目标隐藏，弹窗内目标可继续展示；公共自定义 Modal 显式声明 overlay，Ant Design Modal/Drawer 自动识别。
