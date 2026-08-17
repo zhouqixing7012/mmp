@@ -1,5 +1,6 @@
 import {
   findPrototypeBindingElement,
+  getPrototypeDisplayAnchor,
   getPrototypeTargetMetadata,
   isPrototypeElementInActiveLayer,
   listPrototypeTargets,
@@ -49,6 +50,14 @@ describe('annotation-targeting', () => {
         <dt data-prototype-bindable="detail-field" data-prototype-label="公司">公司</dt>
         <dd data-prototype-detail-value="公司"><span>搜狐公司</span></dd>
       </dl>
+      <div class="ant-card" id="application-card">
+        <div class="ant-card-head"><div class="ant-card-head-title"><span>申请信息</span></div></div>
+        <div class="ant-card-body"><div>申请内容</div></div>
+      </div>
+      <div data-prototype-bindable="selection-modal" data-prototype-label="选择资产" id="selection-modal">
+        <span data-prototype-display-anchor="title">选择资产</span>
+        <div>弹窗内容</div>
+      </div>
     `;
   });
 
@@ -125,6 +134,21 @@ describe('annotation-targeting', () => {
 
     expect(element.tagName).toBe('DT');
     expect(element.getAttribute('data-prototype-label')).toBe('公司');
+  });
+
+  test('字段标注的展示锚点保持在字段本身', () => {
+    const field = document.querySelector('[data-prototype-bindable="detail-field"]');
+    expect(getPrototypeDisplayAnchor(field)).toBe(field);
+  });
+
+  test('Card 模块标注的序号优先贴在模块标题旁边', () => {
+    const card = document.querySelector('#application-card');
+    expect(getPrototypeDisplayAnchor(card)).toBe(card.querySelector('.ant-card-head-title'));
+  });
+
+  test('自定义模块可显式声明序号展示锚点', () => {
+    const modal = document.querySelector('#selection-modal');
+    expect(getPrototypeDisplayAnchor(modal)).toBe(modal.querySelector('[data-prototype-display-anchor]'));
   });
 
   test('没有预埋 anchor 的普通白色业务块仍可作为模块命中', () => {
