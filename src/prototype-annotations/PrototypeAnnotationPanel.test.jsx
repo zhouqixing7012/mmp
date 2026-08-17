@@ -90,14 +90,18 @@ describe('PrototypeAnnotationPanel', () => {
     const onClose = jest.fn();
     render(<PanelHarness onClose={onClose} />);
 
-    fireEvent.click(screen.getByRole('button', { name: '最小化产品标注面板' }));
+    const collapseButton = screen.getByRole('button', { name: '收起产品标注面板' });
+    expect(collapseButton).toHaveTextContent('收起');
+    fireEvent.click(collapseButton);
 
     expect(onClose).not.toHaveBeenCalled();
     expect(document.body.querySelector('.paf-annotation-panel-minimized')).toBeInTheDocument();
     expect(screen.queryByText('测试标注')).not.toBeInTheDocument();
     expect(screen.getByText('产品标注')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '展开产品标注面板' }));
+    const expandButton = screen.getByRole('button', { name: '展开产品标注面板' });
+    expect(expandButton).toHaveTextContent('展开');
+    fireEvent.click(expandButton);
 
     expect(document.body.querySelector('.paf-annotation-panel-minimized')).not.toBeInTheDocument();
     expect(screen.getByText('测试标注')).toBeInTheDocument();
