@@ -20,6 +20,7 @@ function stableKey(value) {
   const text = compactText(value).toLowerCase() || 'item';
   return encodeURIComponent(text)
     .replace(/%/g, '')
+    .toLowerCase()
     .replace(/[^a-z0-9_-]/g, '')
     .slice(0, 56) || 'item';
 }
@@ -44,7 +45,7 @@ function getTargetLabel(element) {
   if (title) return compactText(title);
 
   if (element.matches('.qw')) {
-    const label = element.querySelector(':scope > div > span:first-child, :scope span:first-child');
+    const label = element.querySelector('span');
     const text = compactText(label?.textContent).replace(/[:：]\s*$/, '');
     if (text) return text;
   }
