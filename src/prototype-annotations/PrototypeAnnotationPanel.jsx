@@ -5,6 +5,8 @@ import {
   Download,
   GripHorizontal,
   Link2,
+  Maximize2,
+  Minus,
   Plus,
   Save,
   ScanLine,
@@ -244,6 +246,7 @@ export default function PrototypeAnnotationPanel({
 }) {
   const [position, setPosition] = useState({ x: null, y: null });
   const [dragging, setDragging] = useState(false);
+  const [minimized, setMinimized] = useState(false);
   const [viewport, setViewport] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
   const dragRef = useRef({ startX: 0, startY: 0, posX: 0, posY: 0 });
   const scrollRef = useRef(null);
@@ -251,8 +254,10 @@ export default function PrototypeAnnotationPanel({
 
   const selectedNote = notes.find((note) => note.id === expandedNoteId) || null;
   const matchedCount = notes.filter((note) => matchedIds.has(note.id)).length;
-  const panelWidth = editMode ? 440 : 380;
-  const panelHeight = Math.max(240, viewport.height - 32);
+  const expandedPanelWidth = editMode ? 440 : 380;
+  const expandedPanelHeight = Math.max(240, viewport.height - 32);
+  const panelWidth = minimized ? 280 : expandedPanelWidth;
+  const panelHeight = minimized ? 44 : expandedPanelHeight;
 
   const clampPanelPosition = useCallback((nextPosition) => ({
     x: Math.max(8, Math.min(nextPosition.x, viewport.width - panelWidth - 8)),
@@ -275,7 +280,7 @@ export default function PrototypeAnnotationPanel({
   }, [clampPanelPosition, panelWidth, viewport.width]);
 
   useEffect(() => {
-    if (!expandedNoteId || !scrollRef.current) return;
+    if (minimized || !expandedNoteId || !scrollRef.current) return;
     if (editMode) {
       scrollRef.current.scrollTop = 0;
       return;
@@ -290,7 +295,7 @@ export default function PrototypeAnnotationPanel({
     } else if (rowRect.bottom > containerRect.bottom) {
       scrollRef.current.scrollTop += rowRect.bottom - containerRect.bottom + 8;
     }
-  }, [editMode, expandedNoteId]);
+  }, [editMode, expandedNoteId, minimized]);
 
   const onMouseDown = useCallback((event) => {
     setDragging(true);
@@ -343,6 +348,20 @@ export default function PrototypeAnnotationPanel({
 
   if (typeof document === 'undefined') return null;
 
+  const panelStyle = {
+    position: 'fixed',
+    left: position.x ?? Math.max(8, viewport.width - panelWidth - 24),
+    top: position.y ?? 16,
+    width: panelWidth,
+    height: panelHeight,
+    zIndex: PANEL_Z_INDEX,
+    background: '#fff',
+    borderRadius: 8,
+    boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
+    cursor: dragging ? 'grabbing' : 'default',
+    overflow: 'hidden',
+  };
+
   return createPortal(
     <ConfigProvider
       getPopupContainer={BODY_POPUP}
@@ -355,196 +374,240 @@ export default function PrototypeAnnotationPanel({
         },
       }}
     >
-      <div
-        ref={panelRef}
-        className="paf-annotation-panel"
-        data-prototype-annotation-ui="true"
-        style={{
-          position: 'fixed',
-          left: position.x ?? Math.max(8, viewport.width - panelWidth - 24),
-          top: position.y ?? 16,
-          width: panelWidth,
-          height: panelHeight,
-          zIndex: PANEL_Z_INDEX,
-          background: '#fff',
-          borderRadius: 8,
-          boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
-          display: 'grid',
-          gridTemplateRows: 'auto auto auto auto minmax(0, 1fr)',
-          cursor: dragging ? 'grabbing' : 'default',
-          overflow: 'hidden',
-        }}
-      >
+      {minimized ? (
         <div
-          className="paf-panel-header"
-          onMouseDown={onMouseDown}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 12px',
-            borderBottom: '1px solid #f0f0f0',
-            cursor: 'grab',
-            userSelect: 'none',
-            background: '#fafafa',
-          }}
+          ref={panelRef}
+          className="paf-annotation-panel paf-annotation-panel-minimized"
+          data-prototype-annotation-ui="true"
+          style={{ ...panelStyle, display: 'flex', alignItems: 'center' }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <GripHorizontal size={16} color="#999" />
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>产品标注</span>
-            {dirty && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未保存</Tag>}
-          </div>
-          <div onMouseDown={(event) => event.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Segmented
-              size="small"
-              value={editMode ? 'edit' : 'view'}
-              options={[{ label: '查看', value: 'view' }, { label: '编辑', value: 'edit' }]}
-              onChange={(value) => onToggleEditMode(value === 'edit')}
-            />
-            <Button type="text" size="small" icon={<X size={16} />} onClick={onClose} />
+          <div
+            className="paf-panel-header"
+            onMouseDown={onMouseDown}
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0 8px 0 12px',
+              cursor: 'grab',
+              userSelect: 'none',
+              background: '#fafafa',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              <GripHorizontal size={16} color="#999" />
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#333', whiteSpace: 'nowrap' }}>产品标注</span>
+              <Tag style={{ marginInlineEnd: 0 }}>{editMode ? '编辑' : '查看'}</Tag>
+              {dirty && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未保存</Tag>}
+            </div>
+            <div onMouseDown={(event) => event.stopPropagation()}>
+              <Tooltip title="展开产品标注面板" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
+                <Button
+                  aria-label="展开产品标注面板"
+                  type="text"
+                  size="small"
+                  icon={<Maximize2 size={15} />}
+                  onClick={() => setMinimized(false)}
+                />
+              </Tooltip>
+            </div>
           </div>
         </div>
-
-        {editMode ? (
-          <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0', background: '#fff' }}>
-            <Space size={4} wrap>
-              <Tooltip title="新增标注后，可直接选择按钮、查询条件、表格字段或模块区域" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
-                <Button size="small" icon={<Plus size={14} />} onClick={onCreateNote}>新增</Button>
-              </Tooltip>
-              <Tooltip title="保存当前页面的标注修改" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
-                <Button size="small" type="primary" icon={<Save size={14} />} onClick={onSave}>保存</Button>
-              </Tooltip>
-              <Tooltip title="导入标注 JSON" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
-                <Button size="small" icon={<Upload size={14} />} onClick={() => fileInputRef.current?.click()}>导入</Button>
-              </Tooltip>
-              <Tooltip title="导出当前标注配置" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
-                <Button size="small" icon={<Download size={14} />} onClick={onExport}>导出标注</Button>
-              </Tooltip>
-              <Tooltip title="导出当前页面模块与细粒度可标注目标" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
-                <Button size="small" icon={<ScanLine size={14} />} onClick={onExportAnchors}>导出锚点</Button>
-              </Tooltip>
-              <Popconfirm
-                zIndex={POPUP_Z_INDEX}
-                getPopupContainer={BODY_POPUP}
-                title="恢复代码中的默认标注？"
-                description="当前页面未导出的本地修改会被清除。"
-                onConfirm={onReset}
-              >
-                <Button size="small">重置</Button>
-              </Popconfirm>
-            </Space>
-            <input ref={fileInputRef} type="file" accept="application/json,.json" hidden onChange={handleImportFile} />
-          </div>
-        ) : <div />}
-
-        {bindingMode ? (
-          <div style={{ padding: '8px 12px', background: '#fffbe6', borderBottom: '1px solid #ffe58f', fontSize: 12, color: '#8c6d1f', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>{bindingMode.type === 'create' ? '移动鼠标选择按钮、查询条件、表格字段或模块，点击完成标注' : '移动鼠标选择新的精确绑定位置，点击完成重绑'}</span>
-            <Button type="link" size="small" onClick={onCancelBinding}>取消</Button>
-          </div>
-        ) : <div />}
-
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#888', display: 'flex', gap: 12 }}>
-          <span>共 {notes.length} 项</span>
-          <span style={{ color: '#389e0d' }}>已匹配 {matchedCount}</span>
-          <span style={{ color: notes.length - matchedCount > 0 ? '#d46b08' : '#999' }}>未匹配 {notes.length - matchedCount}</span>
-        </div>
-
+      ) : (
         <div
-          ref={scrollRef}
-          className="paf-annotation-scroll"
-          onWheelCapture={(event) => event.stopPropagation()}
+          ref={panelRef}
+          className="paf-annotation-panel"
+          data-prototype-annotation-ui="true"
           style={{
-            minHeight: 0,
-            overflowY: 'scroll',
-            overflowX: 'hidden',
-            overscrollBehavior: 'contain',
-            WebkitOverflowScrolling: 'touch',
-            touchAction: 'pan-y',
-            scrollbarGutter: 'stable',
+            ...panelStyle,
+            display: 'grid',
+            gridTemplateRows: 'auto auto auto auto minmax(0, 1fr)',
           }}
         >
-          {editMode && selectedNote && (
-            <AnnotationEditor
-              note={selectedNote}
-              onUpdateNote={onUpdateNote}
-              onDeleteNote={onDeleteNote}
-              onStartRebind={onStartRebind}
-              onCollapse={() => onToggleExpand(selectedNote.id)}
-            />
-          )}
+          <div
+            className="paf-panel-header"
+            onMouseDown={onMouseDown}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 12px',
+              borderBottom: '1px solid #f0f0f0',
+              cursor: 'grab',
+              userSelect: 'none',
+              background: '#fafafa',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <GripHorizontal size={16} color="#999" />
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>产品标注</span>
+              {dirty && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未保存</Tag>}
+            </div>
+            <div onMouseDown={(event) => event.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Segmented
+                size="small"
+                value={editMode ? 'edit' : 'view'}
+                options={[{ label: '查看', value: 'view' }, { label: '编辑', value: 'edit' }]}
+                onChange={(value) => onToggleEditMode(value === 'edit')}
+              />
+              <Tooltip title="最小化面板，保持标注模式" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
+                <Button
+                  aria-label="最小化产品标注面板"
+                  type="text"
+                  size="small"
+                  icon={<Minus size={16} />}
+                  onClick={() => setMinimized(true)}
+                />
+              </Tooltip>
+              <Tooltip title="退出标注模式" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
+                <Button aria-label="退出标注模式" type="text" size="small" icon={<X size={16} />} onClick={onClose} />
+              </Tooltip>
+            </div>
+          </div>
 
-          <div style={{ padding: '8px 0' }}>
-            {notes.map((note) => {
-              const number = noteNumbers.get(note.id);
-              const matched = matchedIds.has(note.id);
-              const expanded = expandedNoteId === note.id;
+          {editMode ? (
+            <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0', background: '#fff' }}>
+              <Space size={4} wrap>
+                <Tooltip title="新增标注后，可直接选择按钮、查询条件、表格字段或模块区域" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
+                  <Button size="small" icon={<Plus size={14} />} onClick={onCreateNote}>新增</Button>
+                </Tooltip>
+                <Tooltip title="保存当前页面的标注修改" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
+                  <Button size="small" type="primary" icon={<Save size={14} />} onClick={onSave}>保存</Button>
+                </Tooltip>
+                <Tooltip title="导入标注 JSON" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
+                  <Button size="small" icon={<Upload size={14} />} onClick={() => fileInputRef.current?.click()}>导入</Button>
+                </Tooltip>
+                <Tooltip title="导出当前标注配置" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
+                  <Button size="small" icon={<Download size={14} />} onClick={onExport}>导出标注</Button>
+                </Tooltip>
+                <Tooltip title="导出当前页面模块与细粒度可标注目标" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
+                  <Button size="small" icon={<ScanLine size={14} />} onClick={onExportAnchors}>导出锚点</Button>
+                </Tooltip>
+                <Popconfirm
+                  zIndex={POPUP_Z_INDEX}
+                  getPopupContainer={BODY_POPUP}
+                  title="恢复代码中的默认标注？"
+                  description="当前页面未导出的本地修改会被清除。"
+                  onConfirm={onReset}
+                >
+                  <Button size="small">重置</Button>
+                </Popconfirm>
+              </Space>
+              <input ref={fileInputRef} type="file" accept="application/json,.json" hidden onChange={handleImportFile} />
+            </div>
+          ) : <div />}
 
-              return (
-                <div key={note.id} data-annotation-note-id={note.id}>
-                  <div
-                    className="paf-note-item"
-                    onClick={() => handleNoteClick(note)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 10,
-                      padding: '10px 16px',
-                      cursor: 'pointer',
-                      borderLeft: expanded ? '3px solid #1677ff' : '3px solid transparent',
-                      background: expanded ? '#f0f5ff' : 'transparent',
-                    }}
-                  >
-                    <span style={{ width: 24, height: 24, borderRadius: '50%', background: matched ? '#1677ff' : '#f5f5f5', color: matched ? '#fff' : '#999', border: matched ? 'none' : '1px solid #d9d9d9', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
-                      {number || '-'}
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 2 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{note.title}</span>
-                        {!matched && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未匹配</Tag>}
-                      </div>
-                      <div style={{ fontSize: 12, color: '#999', lineHeight: 1.5, marginBottom: 4 }}>{note.summary || '-'}</div>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <span style={{ fontSize: 11, background: '#fff7e6', color: '#d46b08', padding: '1px 6px', borderRadius: 3 }}>{SOURCE_LABELS[note.summarySource] || note.summarySource}</span>
-                        <span style={{ fontSize: 11, color: '#bbb' }}>{note.kind}</span>
-                        <ChevronDown
-                          size={14}
-                          color="#bbb"
-                          style={{ marginLeft: 'auto', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            if (expanded) onToggleExpand(note.id);
-                            else onSelectNote(note.id, note.target);
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
+          {bindingMode ? (
+            <div style={{ padding: '8px 12px', background: '#fffbe6', borderBottom: '1px solid #ffe58f', fontSize: 12, color: '#8c6d1f', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>{bindingMode.type === 'create' ? '移动鼠标选择按钮、查询条件、表格字段或模块，点击完成标注' : '移动鼠标选择新的精确绑定位置，点击完成重绑'}</span>
+              <Button type="link" size="small" onClick={onCancelBinding}>取消</Button>
+            </div>
+          ) : <div />}
 
-                  {!editMode && expanded && (
-                    <div style={{ marginLeft: 50, marginRight: 16, marginBottom: 8, padding: '10px 14px', background: '#fafafa', borderRadius: 6, border: '1px solid #f0f0f0' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: note.sections?.length ? 6 : 0 }}>
-                        <Button type="link" size="small" onClick={() => onToggleExpand(note.id)}>收起</Button>
-                      </div>
-                      {(note.sections || []).map((section, sectionIndex) => (
-                        <div key={`${note.id}-detail-${sectionIndex}`} style={{ marginBottom: sectionIndex < note.sections.length - 1 ? 10 : 0 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: '#555', marginBottom: 4 }}>{section.title}</div>
-                          {(section.items || []).map((item, itemIndex) => (
-                            <div key={`${note.id}-detail-item-${sectionIndex}-${itemIndex}`} style={{ fontSize: 12, color: '#666', lineHeight: 1.7, paddingLeft: 8, borderLeft: '2px solid #e8e8e8', marginBottom: 3 }}>
-                              {item.text}
-                              <span style={{ fontSize: 10, color: '#aaa', marginLeft: 6, background: '#f5f5f5', padding: '0 4px', borderRadius: 2 }}>{SOURCE_LABELS[item.source] || item.source}</span>
-                            </div>
-                          ))}
+          <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#888', display: 'flex', gap: 12 }}>
+            <span>共 {notes.length} 项</span>
+            <span style={{ color: '#389e0d' }}>已匹配 {matchedCount}</span>
+            <span style={{ color: notes.length - matchedCount > 0 ? '#d46b08' : '#999' }}>未匹配 {notes.length - matchedCount}</span>
+          </div>
+
+          <div
+            ref={scrollRef}
+            className="paf-annotation-scroll"
+            onWheelCapture={(event) => event.stopPropagation()}
+            style={{
+              minHeight: 0,
+              overflowY: 'scroll',
+              overflowX: 'hidden',
+              overscrollBehavior: 'contain',
+              WebkitOverflowScrolling: 'touch',
+              touchAction: 'pan-y',
+              scrollbarGutter: 'stable',
+            }}
+          >
+            {editMode && selectedNote && (
+              <AnnotationEditor
+                note={selectedNote}
+                onUpdateNote={onUpdateNote}
+                onDeleteNote={onDeleteNote}
+                onStartRebind={onStartRebind}
+                onCollapse={() => onToggleExpand(selectedNote.id)}
+              />
+            )}
+
+            <div style={{ padding: '8px 0' }}>
+              {notes.map((note) => {
+                const number = noteNumbers.get(note.id);
+                const matched = matchedIds.has(note.id);
+                const expanded = expandedNoteId === note.id;
+
+                return (
+                  <div key={note.id} data-annotation-note-id={note.id}>
+                    <div
+                      className="paf-note-item"
+                      onClick={() => handleNoteClick(note)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 10,
+                        padding: '10px 16px',
+                        cursor: 'pointer',
+                        borderLeft: expanded ? '3px solid #1677ff' : '3px solid transparent',
+                        background: expanded ? '#f0f5ff' : 'transparent',
+                      }}
+                    >
+                      <span style={{ width: 24, height: 24, borderRadius: '50%', background: matched ? '#1677ff' : '#f5f5f5', color: matched ? '#fff' : '#999', border: matched ? 'none' : '1px solid #d9d9d9', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                        {number || '-'}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 2 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{note.title}</span>
+                          {!matched && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未匹配</Tag>}
                         </div>
-                      ))}
+                        <div style={{ fontSize: 12, color: '#999', lineHeight: 1.5, marginBottom: 4 }}>{note.summary || '-'}</div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, background: '#fff7e6', color: '#d46b08', padding: '1px 6px', borderRadius: 3 }}>{SOURCE_LABELS[note.summarySource] || note.summarySource}</span>
+                          <span style={{ fontSize: 11, color: '#bbb' }}>{note.kind}</span>
+                          <ChevronDown
+                            size={14}
+                            color="#bbb"
+                            style={{ marginLeft: 'auto', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (expanded) onToggleExpand(note.id);
+                              else onSelectNote(note.id, note.target);
+                            }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-              );
-            })}
+
+                    {!editMode && expanded && (
+                      <div style={{ marginLeft: 50, marginRight: 16, marginBottom: 8, padding: '10px 14px', background: '#fafafa', borderRadius: 6, border: '1px solid #f0f0f0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: note.sections?.length ? 6 : 0 }}>
+                          <Button type="link" size="small" onClick={() => onToggleExpand(note.id)}>收起</Button>
+                        </div>
+                        {(note.sections || []).map((section, sectionIndex) => (
+                          <div key={`${note.id}-detail-${sectionIndex}`} style={{ marginBottom: sectionIndex < note.sections.length - 1 ? 10 : 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: '#555', marginBottom: 4 }}>{section.title}</div>
+                            {(section.items || []).map((item, itemIndex) => (
+                              <div key={`${note.id}-detail-item-${sectionIndex}-${itemIndex}`} style={{ fontSize: 12, color: '#666', lineHeight: 1.7, paddingLeft: 8, borderLeft: '2px solid #e8e8e8', marginBottom: 3 }}>
+                                {item.text}
+                                <span style={{ fontSize: 10, color: '#aaa', marginLeft: 6, background: '#f5f5f5', padding: '0 4px', borderRadius: 2 }}>{SOURCE_LABELS[item.source] || item.source}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </ConfigProvider>,
     document.body
   );
