@@ -18,6 +18,10 @@ function toCssWidth(width) {
   return typeof width === 'number' ? `${width}px` : width;
 }
 
+function toPrototypeLabel(label) {
+  return typeof label === 'string' ? label.replace(/[:：]\s*$/, '') : undefined;
+}
+
 export function DetailGrid({
   children,
   columns = DEFAULT_COLUMNS,
@@ -61,6 +65,7 @@ export function DetailItem({ label, children, span = 1 }) {
   const { columns } = useContext(DetailGridContext);
   const normalizedSpan = normalizeSpan(span, columns);
   const valueColumnSpan = normalizedSpan * 2 - 1;
+  const prototypeLabel = toPrototypeLabel(label);
   const cellBaseStyle = {
     padding: `${token.paddingXS}px ${token.paddingSM}px`,
     margin: 0,
@@ -74,6 +79,8 @@ export function DetailItem({ label, children, span = 1 }) {
   return (
     <>
       <dt
+        data-prototype-bindable="detail-field"
+        data-prototype-label={prototypeLabel}
         style={{
           ...cellBaseStyle,
           background: token.colorFillAlter,
@@ -85,6 +92,7 @@ export function DetailItem({ label, children, span = 1 }) {
         {label}
       </dt>
       <dd
+        data-prototype-detail-value={prototypeLabel}
         style={{
           ...cellBaseStyle,
           gridColumn: `span ${valueColumnSpan}`,
