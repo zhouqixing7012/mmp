@@ -24,6 +24,10 @@
 | `src/components/QueryBar.jsx` | 统一查询区域。 |
 | `src/components/StatusTag.jsx` | 统一状态展示。 |
 | `src/components/SelectModal.jsx` | 通用选择弹窗。 |
+| `src/prototype-annotations/PrototypeAnnotationLayer.jsx` | 全局原型标注层，解析锚点并渲染热点。 |
+| `src/prototype-annotations/PrototypeAnnotationPanel.jsx` | 原型标注说明面板。 |
+| `src/prototype-annotations/annotation-data.js` | 原型标注内容和位置配置。 |
+| `src/prototype-annotations/annotation-positioning.js` | 标注点定位、自动翻转和视口约束。 |
 | `src/services/demoStorage.js` | localStorage 统一读写。 |
 | `src/pages/yewurules/` | 后台框架、侧边栏和菜单。 |
 | `src/pages/assetManagement/` | 后台资产管理页面。 |
@@ -34,6 +38,23 @@
 | `src/pages/assetReturn/` | 资产退库与合约号码退库流程。 |
 | `src/mock/` | 各业务模块演示数据。 |
 | `src/services/` | 各业务模块状态读写和流程操作。 |
+
+## 原型标注调用关系
+
+```text
+业务页面 data-prototype-anchor
+  ↓
+PrototypeAnnotationLayer
+  ├─ annotation-data.js             标注内容 + position
+  ├─ annotation-positioning.js      side / align / gap / offset + 边缘翻转
+  └─ PrototypeAnnotationPanel       说明列表与详情
+```
+
+- 业务页面只声明语义化锚点，不保存标注坐标。
+- 标注点使用 `getBoundingClientRect` 获取锚点实时位置，滚动和窗口变化通过 `requestAnimationFrame` 合并刷新。
+- `ResizeObserver` 负责锚点尺寸变化；`MutationObserver` 只监听 DOM 增删，用于发现动态挂载/卸载的锚点，不监听所有属性。
+- 标注位置支持 `top / right / bottom / left`、`start / center / end`、间距和像素偏移。
+- 标注靠近视口边缘时优先翻转到对侧，最终再约束在可视区域内。
 
 ## 后台主导航
 
