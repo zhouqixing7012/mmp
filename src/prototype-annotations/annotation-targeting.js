@@ -697,6 +697,8 @@ export function resolvePrototypeTarget(target, pageScope, root = document) {
   const anchor = anchors.find((element) => element.getAttribute('data-prototype-anchor') === target);
   if (anchor) return anchor;
 
+  const wanted = splitGeneratedTarget(target);
+
   // Button targets are resolved directly from the current page's live DOM semantics.
   // Parent Card/module context remains useful when generating a target, but is no longer
   // a runtime prerequisite. This avoids coupling approval actions to registry/bridge state,
@@ -704,20 +706,27 @@ export function resolvePrototypeTarget(target, pageScope, root = document) {
   const directButton = findDirectSemanticButtonTarget(target, pageScope, root);
   if (directButton) return directButton;
 
-  const existingGenerated = Array.from(root.querySelectorAll?.(`[${GENERATED_TARGET_ATTRIBUTE}]`) || [])
+  // Once a target is known to be a button, every fallback is also constrained to the
+  // current page-scope container. This prevents prepare/compatibility fallback from
+  // accidentally picking a same-label button that belongs to another workbench page.
+  const resolutionRoot = wanted?.kind === 'button'
+    ? findCurrentPageScopeRoot(pageScope, root)
+    : root;
+
+  const existingGenerated = Array.from(resolutionRoot.querySelectorAll?.(`[${GENERATED_TARGET_ATTRIBUTE}]`) || [])
     .find((element) => (
       element.getAttribute(GENERATED_TARGET_ATTRIBUTE) === target
       && element.getAttribute(GENERATED_SCOPE_ATTRIBUTE) === (pageScope || 'page')
     ));
   if (existingGenerated) return existingGenerated;
 
-  const existingCompatible = findCompatibleGeneratedTarget(target, pageScope, root);
+  const existingCompatible = findCompatibleGeneratedTarget(target, pageScope, resolutionRoot);
   if (existingCompatible) return existingCompatible;
 
-  preparePrototypeTargets(pageScope, root);
-  const generated = Array.from(root.querySelectorAll?.(`[${GENERATED_TARGET_ATTRIBUTE}]`) || []);
+  preparePrototypeTargets(pageScope, resolutionRoot);
+  const generated = Array.from(resolutionRoot.querySelectorAll?.(`[${GENERATED_TARGET_ATTRIBUTE}]`) || []);
   const exact = generated.find((element) => element.getAttribute(GENERATED_TARGET_ATTRIBUTE) === target);
-  return exact || findCompatibleGeneratedTarget(target, pageScope, root);
+  return exact || findCompatibleGeneratedTarget(target, pageScope, resolutionRoot);
 }
 
 export function listPrototypeTargets(pageScope, root = document) {
