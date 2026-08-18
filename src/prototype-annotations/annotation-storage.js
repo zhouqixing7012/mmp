@@ -136,16 +136,17 @@ function removeLegacyBindingContext(note, storeVersion) {
 
 function mergeBaseNoteWithOverride(baseNote, overrideNote, pageKey, storeVersion) {
   const normalizedOverride = normalizeAnnotation(overrideNote, pageKey);
-  if (normalizedOverride.target === baseNote.target || hasExplicitTargetBinding(normalizedOverride, storeVersion)) {
-    return normalizedOverride;
+  const migratedOverride = removeLegacyBindingContext(normalizedOverride, storeVersion);
+
+  if (migratedOverride.target === baseNote.target || hasExplicitTargetBinding(migratedOverride, storeVersion)) {
+    return migratedOverride;
   }
 
   // v2 及更早的覆盖层保存的是整条 note 快照：普通文字编辑/拖动也可能夹带当时的旧 target，
   // 并且旧 context 无法可靠证明用户真的执行过“重选”。因此历史数据统一跟随当前代码基线 target，
   // 同时继续保留用户修改过的标题、内容和位置；从 v3 起的新重绑仍会被明确保留。
-  const migrated = removeLegacyBindingContext(normalizedOverride, storeVersion);
   return {
-    ...migrated,
+    ...migratedOverride,
     target: baseNote.target,
   };
 }
