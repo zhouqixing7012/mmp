@@ -42,6 +42,7 @@
 | `src/pages/yewurules/` | 后台框架、侧边栏和菜单。 |
 | `src/pages/assetManagement/` | 后台资产管理页面。 |
 | `src/pages/inventoryManagement/` | 库存管理菜单与子页面入口。 |
+| `src/pages/assetInventory/` | 资产盘点菜单内容；盘点项目、快照、盘点计划及轨迹样例数据。 |
 | `src/pages/employeeSelfService/` | 资产申请、审批、配给等。 |
 | `src/pages/assetBorrowing/` | 资产借用流程。 |
 | `src/pages/assetReplacement/` | 资产更换流程。 |
@@ -152,6 +153,10 @@ PrototypeAnnotationLayer
 └─ 库管员工作台
 
 资产盘点
+├─ 公司-账套对应关系
+├─ 盘点规则
+├─ 盘点项目
+└─ 盘点差异报表
 ```
 
 `AdminSidebar` 负责一级菜单展开、子菜单选中；`yewurules.js` 根据 `activeMenu / activeSubMenu` 分发到对应模块。
@@ -212,6 +217,28 @@ InventoryManagementContent
 ```
 
 库存管理按用户已确认截图逐页补充；未确认的新建/详情字段不补造。
+
+## 资产盘点调用关系
+
+```text
+AdminSidebar
+  ↓ 资产盘点
+AssetInventoryContent
+  ├─ 公司-账套对应关系 → PendingAssetInventoryPage
+  ├─ 盘点规则 → PendingAssetInventoryPage
+  ├─ 盘点项目 → AssetInventoryProjectPage
+  │   ├─ ProjectListView
+  │   ├─ CreateSnapshotView
+  │   ├─ SnapshotView
+  │   └─ PlansView
+  │       └─ SelectModal（计划负责人 / 盘点监督人 / 盘点执行人）
+  └─ 盘点差异报表 → PendingAssetInventoryPage
+```
+
+- `AssetInventoryProjectPage` 用页面内 view 状态承载旧系统同一菜单中的多步流程，不增加额外独立路由。
+- `mockData.js` 只保存用户操作轨迹截图中可确认的项目、资产、人员和盘点计划样例。
+- 盘点项目页统一复用 `QueryBar / QueryItem`、`DetailGrid / DetailItem`、`StatusTag`、`SelectModal` 和 Ant Design Table。
+- 未采集“公司-账套对应关系”“盘点规则”“盘点差异报表”的字段，因此这 3 个子菜单只建立入口；后续收到轨迹后再替换占位页。
 
 ## 个人工作台导航
 
@@ -275,7 +302,7 @@ ContractReturnApplyPage → ContractReturnHandlingPage ↔ ContractReturnConfirm
 
 以下能力仍为前端模拟：
 
-- 后台资产管理和库存管理真实接口。
+- 后台资产管理、库存管理和资产盘点真实接口。
 - 服务号通知。
 - 狐小 e 扫码和刷卡硬件。
 - 并发资产/号码锁定。
