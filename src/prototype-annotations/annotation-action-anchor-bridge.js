@@ -46,7 +46,7 @@ function decodeHexSemanticKey(target) {
   try {
     const encoded = key.match(/.{2}/g).map((pair) => `%${pair}`).join('');
     return decodeURIComponent(encoded);
-  } catch (error) {
+  } catch {
     return '';
   }
 }
