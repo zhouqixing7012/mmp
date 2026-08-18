@@ -8,6 +8,10 @@ import {
   expandedEmployeeSelfServiceCoverageByScope,
 } from './employee-self-service-expanded-annotations';
 import {
+  applyAssetApplicationAnnotationAudit,
+  applyAssetApplicationCoverageAudit,
+} from './asset-application-prd-audit';
+import {
   FOUNDATION_PRD_MODULES,
   foundationAnnotationsByScope,
   foundationCoverageByScope,
@@ -37,17 +41,24 @@ function mergeScopeMaps(...maps) {
   }, {});
 }
 
+const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyAssetApplicationAnnotationAudit(
+  expandedEmployeeSelfServiceAnnotationsByScope
+);
+const auditedExpandedEmployeeSelfServiceCoverageByScope = applyAssetApplicationCoverageAudit(
+  expandedEmployeeSelfServiceCoverageByScope
+);
+
 const ALL_ANNOTATIONS_BY_SCOPE = mergeScopeMaps(
   contractNumberAnnotationsByScope,
   assetBorrowingAnnotationsByScope,
-  expandedEmployeeSelfServiceAnnotationsByScope,
+  auditedExpandedEmployeeSelfServiceAnnotationsByScope,
   foundationAnnotationsByScope
 );
 
 const ALL_COVERAGE_BY_SCOPE = mergeScopeMaps(
   contractNumberRequirementCoverageByScope,
   assetBorrowingRequirementCoverageByScope,
-  expandedEmployeeSelfServiceCoverageByScope,
+  auditedExpandedEmployeeSelfServiceCoverageByScope,
   foundationCoverageByScope
 );
 
@@ -136,13 +147,19 @@ export function getEmployeeSelfServiceCoverageModules() {
 
     const expanded = expandedById.get(module.id);
     if (expanded) {
-      const requirements = flattenCoverage(expanded.coverageByScope);
+      const annotationsByScope = module.id === 'asset-application'
+        ? applyAssetApplicationAnnotationAudit(expanded.annotationsByScope)
+        : expanded.annotationsByScope;
+      const coverageByScope = module.id === 'asset-application'
+        ? applyAssetApplicationCoverageAudit(expanded.coverageByScope)
+        : expanded.coverageByScope;
+      const requirements = flattenCoverage(coverageByScope);
       return {
         ...module,
         state: 'audited',
         label: requirements.some((item) => item.status === 'review') ? '已审计，存在PRD差异' : '已建立完整覆盖账本',
-        registeredScopes: Object.keys(expanded.annotationsByScope).length,
-        auditedScopes: Object.keys(expanded.coverageByScope).length,
+        registeredScopes: Object.keys(annotationsByScope).length,
+        auditedScopes: Object.keys(coverageByScope).length,
         ...countStatuses(requirements),
       };
     }
