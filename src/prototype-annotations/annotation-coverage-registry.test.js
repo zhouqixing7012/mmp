@@ -4,7 +4,7 @@ import {
   getRequirementCoverageForScope,
 } from './annotation-coverage-registry';
 import { ASSET_BORROWING_SCOPES } from './asset-borrowing-annotation-data';
-import { CONTRACT_NUMBER_SCOPES } from './contract-number-annotation-data';
+import { CONTRACT_NUMBER_SCOPES } from './contract-number-annotation-coverage';
 import { ASSET_APPLICATION_AUDIT_SCOPES } from './asset-application-prd-audit';
 import { NEW_EMPLOYEE_CLAIM_AUDIT_SCOPES } from './new-employee-claim-prd-audit';
 
