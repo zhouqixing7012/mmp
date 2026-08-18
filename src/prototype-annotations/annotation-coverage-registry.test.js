@@ -17,7 +17,7 @@ test('资产借用五个页面都能读取 PRD 覆盖账本', () => {
   });
 });
 
-test('合约号码已覆盖的页面都进入正式审计账本', () => {
+test('合约号码六个页面均使用第二轮深审覆盖结果', () => {
   Object.values(CONTRACT_NUMBER_SCOPES).forEach((scope) => {
     expect(getPageCoverageState(scope).state).toBe('audited');
     expect(getRequirementCoverageForScope(scope).length).toBeGreaterThan(0);
@@ -27,6 +27,9 @@ test('合约号码已覆盖的页面都进入正式审计账本', () => {
   const contract = modules.find((item) => item.id === 'contract-number');
   expect(contract.state).toBe('audited');
   expect(contract.auditedScopes).toBe(contract.registeredScopes);
+  expect(contract.auditedScopes).toBe(6);
+  expect(contract.total).toBe(78);
+  expect(contract.review).toBeGreaterThan(0);
 });
 
 test('资产申请六个页面均使用第二轮深审覆盖结果', () => {
