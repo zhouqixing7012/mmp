@@ -3,6 +3,7 @@ import contractNumberAnnotationsByScope from './contract-number-annotation-data'
 import expandedEmployeeSelfServiceAnnotationsByScope from './employee-self-service-expanded-annotations';
 import foundationAnnotationsByScope from './employee-self-service-foundation-annotations';
 import { applyAssetApplicationAnnotationAudit } from './asset-application-prd-audit';
+import { applyNewEmployeeClaimAnnotationAudit } from './new-employee-claim-prd-audit';
 import {
   applySemanticActionAnchors,
   installSemanticActionAnchorBridge,
@@ -31,8 +32,8 @@ function mergeScopeMaps(...maps) {
   }, {});
 }
 
-const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyAssetApplicationAnnotationAudit(
-  expandedEmployeeSelfServiceAnnotationsByScope
+const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyNewEmployeeClaimAnnotationAudit(
+  applyAssetApplicationAnnotationAudit(expandedEmployeeSelfServiceAnnotationsByScope)
 );
 
 // 同一个工作台页面可能同时承载多个 PRD 模块（例如“物资申请”同时承载资产、耗材和附录规则）。
