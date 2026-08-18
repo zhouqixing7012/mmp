@@ -156,7 +156,7 @@ function AnnotationEditor({ note, onUpdateNote, onDeleteNote, onStartRebind, onC
       <Input size="small" value={note.title} onChange={(event) => onUpdateNote(note.id, { title: event.target.value })} />
 
       <div style={{ marginTop: 10 }}>
-        <FieldLabel>简要说明（支持 Markdown）</FieldLabel>
+        <FieldLabel>简要说明（兼容字段，不在查看态展示）</FieldLabel>
         <TextArea value={note.summary} autoSize={{ minRows: 2, maxRows: 6 }} onChange={(event) => onUpdateNote(note.id, { summary: event.target.value })} />
       </div>
 
@@ -616,13 +616,10 @@ export default function PrototypeAnnotationPanel({
                         {number || '-'}
                       </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 2 }}>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4 }}>
                           <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{note.title}</span>
                           {dynamicTarget && <Tag color="blue" style={{ marginInlineEnd: 0 }}>需打开弹窗</Tag>}
                           {!matched && !dynamicTarget && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未匹配</Tag>}
-                        </div>
-                        <div style={{ fontSize: 12, color: '#999', lineHeight: 1.5, marginBottom: 4 }}>
-                          <AnnotationInlineMarkdown text={note.summary || '-'} />
                         </div>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <span style={{ fontSize: 11, background: '#fff7e6', color: '#d46b08', padding: '1px 6px', borderRadius: 3 }}>{SOURCE_LABELS[note.summarySource] || note.summarySource}</span>
