@@ -100,6 +100,37 @@ test('v2 历史 context 不能再把旧 target 锁死', () => {
   expect(migrated.context).toBeUndefined();
 });
 
+test('v3 旧 context 即使版本号较新也不能冒充人工重绑', () => {
+  window.localStorage.setItem(PROTOTYPE_ANNOTATION_STORAGE_KEY, JSON.stringify({
+    version: 3,
+    pages: {
+      yewurules: {
+        overrides: {
+          a: {
+            ...base[0],
+            target: 'anchor-a-stale-v3',
+            context: {
+              pageScope: 'yewurules',
+              pageLabel: '测试页',
+              generatedTarget: true,
+            },
+          },
+        },
+        deletedIds: [],
+      },
+    },
+  }));
+
+  const nextBase = base.map((note) => (
+    note.id === 'a' ? { ...note, target: 'anchor-a-v4' } : note
+  ));
+  const result = readAnnotationDraft('yewurules', nextBase);
+  const migrated = result.find((note) => note.id === 'a');
+
+  expect(migrated.target).toBe('anchor-a-v4');
+  expect(migrated.context).toBeUndefined();
+});
+
 test('当前版本明确执行过重选的 target 继续优先于新版代码基线', () => {
   const current = readAnnotationDraft('yewurules', base).map((note) => (
     note.id === 'a'
@@ -120,8 +151,10 @@ test('当前版本明确执行过重选的 target 继续优先于新版代码基
     note.id === 'a' ? { ...note, target: 'anchor-a-v2' } : note
   ));
   const result = readAnnotationDraft('yewurules', nextBase);
+  const rebound = result.find((note) => note.id === 'a');
 
-  expect(result.find((note) => note.id === 'a').target).toBe('anchor-a-user-rebound');
+  expect(rebound.target).toBe('anchor-a-user-rebound');
+  expect(rebound.context.userReboundTarget).toBe(true);
 });
 
 test('用户删除与新增标注都可以持久化', () => {
