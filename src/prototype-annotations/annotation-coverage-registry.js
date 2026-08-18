@@ -20,6 +20,10 @@ import {
   applyContractNumberCoverageAudit,
 } from './contract-number-prd-audit';
 import {
+  applyConsumableAnnotationAudit,
+  applyConsumableCoverageAudit,
+} from './consumable-prd-audit';
+import {
   FOUNDATION_PRD_MODULES,
   foundationAnnotationsByScope,
   foundationCoverageByScope,
@@ -52,12 +56,14 @@ function mergeScopeMaps(...maps) {
 function applyExpandedAnnotationAudits(moduleId, annotationsByScope) {
   if (moduleId === 'asset-application') return applyAssetApplicationAnnotationAudit(annotationsByScope);
   if (moduleId === 'new-employee-claim') return applyNewEmployeeClaimAnnotationAudit(annotationsByScope);
+  if (moduleId === 'consumables') return applyConsumableAnnotationAudit(annotationsByScope);
   return annotationsByScope;
 }
 
 function applyExpandedCoverageAudits(moduleId, coverageByScope) {
   if (moduleId === 'asset-application') return applyAssetApplicationCoverageAudit(coverageByScope);
   if (moduleId === 'new-employee-claim') return applyNewEmployeeClaimCoverageAudit(coverageByScope);
+  if (moduleId === 'consumables') return applyConsumableCoverageAudit(coverageByScope);
   return coverageByScope;
 }
 
@@ -68,11 +74,15 @@ const auditedContractNumberCoverageByScope = applyContractNumberCoverageAudit(
   contractNumberRequirementCoverageByScope
 );
 
-const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyNewEmployeeClaimAnnotationAudit(
-  applyAssetApplicationAnnotationAudit(expandedEmployeeSelfServiceAnnotationsByScope)
+const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyConsumableAnnotationAudit(
+  applyNewEmployeeClaimAnnotationAudit(
+    applyAssetApplicationAnnotationAudit(expandedEmployeeSelfServiceAnnotationsByScope)
+  )
 );
-const auditedExpandedEmployeeSelfServiceCoverageByScope = applyNewEmployeeClaimCoverageAudit(
-  applyAssetApplicationCoverageAudit(expandedEmployeeSelfServiceCoverageByScope)
+const auditedExpandedEmployeeSelfServiceCoverageByScope = applyConsumableCoverageAudit(
+  applyNewEmployeeClaimCoverageAudit(
+    applyAssetApplicationCoverageAudit(expandedEmployeeSelfServiceCoverageByScope)
+  )
 );
 
 const ALL_ANNOTATIONS_BY_SCOPE = mergeScopeMaps(
