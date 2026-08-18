@@ -12,6 +12,10 @@ import {
   applyAssetApplicationCoverageAudit,
 } from './asset-application-prd-audit';
 import {
+  applyNewEmployeeClaimAnnotationAudit,
+  applyNewEmployeeClaimCoverageAudit,
+} from './new-employee-claim-prd-audit';
+import {
   FOUNDATION_PRD_MODULES,
   foundationAnnotationsByScope,
   foundationCoverageByScope,
@@ -41,11 +45,23 @@ function mergeScopeMaps(...maps) {
   }, {});
 }
 
-const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyAssetApplicationAnnotationAudit(
-  expandedEmployeeSelfServiceAnnotationsByScope
+function applyExpandedAnnotationAudits(moduleId, annotationsByScope) {
+  if (moduleId === 'asset-application') return applyAssetApplicationAnnotationAudit(annotationsByScope);
+  if (moduleId === 'new-employee-claim') return applyNewEmployeeClaimAnnotationAudit(annotationsByScope);
+  return annotationsByScope;
+}
+
+function applyExpandedCoverageAudits(moduleId, coverageByScope) {
+  if (moduleId === 'asset-application') return applyAssetApplicationCoverageAudit(coverageByScope);
+  if (moduleId === 'new-employee-claim') return applyNewEmployeeClaimCoverageAudit(coverageByScope);
+  return coverageByScope;
+}
+
+const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyNewEmployeeClaimAnnotationAudit(
+  applyAssetApplicationAnnotationAudit(expandedEmployeeSelfServiceAnnotationsByScope)
 );
-const auditedExpandedEmployeeSelfServiceCoverageByScope = applyAssetApplicationCoverageAudit(
-  expandedEmployeeSelfServiceCoverageByScope
+const auditedExpandedEmployeeSelfServiceCoverageByScope = applyNewEmployeeClaimCoverageAudit(
+  applyAssetApplicationCoverageAudit(expandedEmployeeSelfServiceCoverageByScope)
 );
 
 const ALL_ANNOTATIONS_BY_SCOPE = mergeScopeMaps(
@@ -147,12 +163,8 @@ export function getEmployeeSelfServiceCoverageModules() {
 
     const expanded = expandedById.get(module.id);
     if (expanded) {
-      const annotationsByScope = module.id === 'asset-application'
-        ? applyAssetApplicationAnnotationAudit(expanded.annotationsByScope)
-        : expanded.annotationsByScope;
-      const coverageByScope = module.id === 'asset-application'
-        ? applyAssetApplicationCoverageAudit(expanded.coverageByScope)
-        : expanded.coverageByScope;
+      const annotationsByScope = applyExpandedAnnotationAudits(module.id, expanded.annotationsByScope);
+      const coverageByScope = applyExpandedCoverageAudits(module.id, expanded.coverageByScope);
       const requirements = flattenCoverage(coverageByScope);
       return {
         ...module,
