@@ -176,12 +176,9 @@ function getPrimaryTitleAnchor(titleContainer) {
   );
   if (explicit) return explicit;
 
-  // Ant Design Space 会把标题主文本和“共 X 件/条”等动态附加信息拆成多个 item。
-  // target 只能取第一个稳定标题 item，不能把会变化的计数拼进语义 key。
   const firstSpaceItem = titleContainer.querySelector?.('.ant-space-item');
   if (firstSpaceItem) return firstSpaceItem.firstElementChild || firstSpaceItem;
 
-  // 兼容未使用 Space、但通过 secondary Typography 展示动态统计的标题。
   const secondary = titleContainer.querySelector?.('.ant-typography-secondary');
   if (secondary) {
     const firstStableChild = Array.from(titleContainer.children || []).find((child) => (
@@ -511,8 +508,6 @@ function findModuleTitleAnchor(element) {
   return contextualCardTitle || null;
 }
 
-// target 决定规则属于谁；display anchor 只决定序号画在哪里。
-// 字段和具体控件贴自身，模块/分组优先贴实际标题文字，不再默认贴整个模块最右侧。
 export function getPrototypeDisplayAnchor(element) {
   if (!(element instanceof Element)) return null;
   if (!isModuleDisplayTarget(element)) return element;
@@ -603,6 +598,72 @@ function splitGeneratedTarget(target) {
   return { context: parts[0], kind: parts[1], key: parts[2] };
 }
 
+function internalScopeFromPageScope(pageScope) {
+  const parts = String(pageScope || '').split('::');
+  return parts.length > 1 ? parts.slice(1).join('::') : '';
+}
+
+function findCurrentPageScopeRoot(pageScope, root) {
+  if (!root?.querySelectorAll) return root;
+  const internalScope = internalScopeFromPageScope(pageScope);
+  if (!internalScope) return root;
+
+  if (
+    typeof Element !== 'undefined'
+    && root instanceof Element
+    && root.getAttribute('data-prototype-page-scope') === internalScope
+  ) {
+    return root;
+  }
+
+  return Array.from(root.querySelectorAll('[data-prototype-page-scope]'))
+    .find((element) => element.getAttribute('data-prototype-page-scope') === internalScope)
+    || root;
+}
+
+function directButtonLabel(element) {
+  return compactText(
+    element?.getAttribute?.('aria-label')
+    || element?.innerText
+    || element?.textContent
+  );
+}
+
+function findUniqueButtonBySemanticKey(searchRoot, wantedKey) {
+  if (!searchRoot?.querySelectorAll || !wantedKey) return null;
+
+  const buttons = Array.from(searchRoot.querySelectorAll('button, [role="button"]'))
+    .filter((element) => element instanceof Element)
+    .filter((element) => !isAnnotationUi(element))
+    .filter(isOverlayVisible);
+
+  const keyCandidates = [wantedKey];
+  const withoutOccurrence = wantedKey.replace(/-\d+$/, '');
+  if (withoutOccurrence !== wantedKey) keyCandidates.push(withoutOccurrence);
+
+  for (const key of keyCandidates) {
+    const matches = buttons.filter((element) => stableKey(directButtonLabel(element)) === key);
+    if (matches.length === 1) return matches[0];
+    if (matches.length > 1) return null;
+  }
+
+  return null;
+}
+
+function findDirectSemanticButtonTarget(target, pageScope, root) {
+  const wanted = splitGeneratedTarget(target);
+  if (!wanted || wanted.kind !== 'button') return null;
+
+  const overlay = getActivePrototypeOverlay(root);
+  if (overlay) {
+    const overlayMatch = findUniqueButtonBySemanticKey(overlay, wanted.key);
+    if (overlayMatch) return overlayMatch;
+  }
+
+  const pageRoot = findCurrentPageScopeRoot(pageScope, root);
+  return findUniqueButtonBySemanticKey(pageRoot, wanted.key);
+}
+
 function findCompatibleGeneratedTarget(target, pageScope, root) {
   const wanted = splitGeneratedTarget(target);
   if (!wanted) return null;
@@ -614,10 +675,6 @@ function findCompatibleGeneratedTarget(target, pageScope, root) {
       return Boolean(current && current.kind === wanted.kind && current.key === wanted.key);
     });
 
-  // 审批/办理动作的按钮文案本身通常就是最稳定的业务语义。
-  // 历史基线可能记录在“审批操作”，当前页面却把同一个“同意/驳回”按钮放进“审批信息”；
-  // 只要当前页面该按钮文案唯一，就忽略父 Card 上下文差异直接恢复匹配。
-  // 同名按钮超过一个时绝不猜测，继续保持未匹配，等待更精确的上下文或人工重绑。
   if (wanted.kind === 'button' && semanticMatches.length === 1) {
     return semanticMatches[0];
   }
@@ -627,8 +684,6 @@ function findCompatibleGeneratedTarget(target, pageScope, root) {
     if (!current) return false;
     if (current.context === wanted.context) return true;
 
-    // 兼容旧基线：历史 target 可能只保存 Card 主标题，而运行时上下文曾把“共 X 件/条”
-    // 等动态副标题拼进去。仅允许上下文前缀一致且候选唯一时回退，避免跨模块误绑。
     return current.context.startsWith(wanted.context) || wanted.context.startsWith(current.context);
   });
 
@@ -641,6 +696,13 @@ export function resolvePrototypeTarget(target, pageScope, root = document) {
   const anchors = Array.from(root.querySelectorAll?.('[data-prototype-anchor]') || []);
   const anchor = anchors.find((element) => element.getAttribute('data-prototype-anchor') === target);
   if (anchor) return anchor;
+
+  // Button targets are resolved directly from the current page's live DOM semantics.
+  // Parent Card/module context remains useful when generating a target, but is no longer
+  // a runtime prerequisite. This avoids coupling approval actions to registry/bridge state,
+  // stale anchors, React effect order or Card title changes.
+  const directButton = findDirectSemanticButtonTarget(target, pageScope, root);
+  if (directButton) return directButton;
 
   const existingGenerated = Array.from(root.querySelectorAll?.(`[${GENERATED_TARGET_ATTRIBUTE}]`) || [])
     .find((element) => (
