@@ -7,6 +7,7 @@ import DictManagementView from './dictmanagement';
 import RoleManagementView from './rolemgt';
 import { AssetManagementContent } from './assetManagement';
 import { InventoryManagementContent } from './inventoryManagement';
+import { AssetInventoryContent } from './assetInventory';
 import AdminSidebar from './yewurules/components/AdminSidebar';
 import AdminHeader from './yewurules/components/AdminHeader';
 import AdminContent from './yewurules/components/AdminContent';
@@ -70,6 +71,10 @@ export default function App() {
       setActiveSubMenu('资产接收');
       setActiveTab('');
     }
+    if (menuKey === '资产盘点' && !isClosing) {
+      setActiveSubMenu('盘点项目');
+      setActiveTab('');
+    }
     setActiveMenu(isClosing ? '' : menuKey);
   };
 
@@ -91,6 +96,7 @@ export default function App() {
           {activeMenu === '个人工作台' && <WorkspaceContent activeSubMenu={activeSubMenu} />}
           {activeMenu === '资产管理' && <AssetManagementContent activeSubMenu={activeSubMenu} />}
           {activeMenu === '库存管理' && <InventoryManagementContent activeSubMenu={activeSubMenu} />}
+          {activeMenu === '资产盘点' && <AssetInventoryContent activeSubMenu={activeSubMenu} />}
           {activeMenu === '后台基础配置' && activeTab === '物料维度组合' && <MaterialComprehensiveView />}
           {activeMenu === '后台基础配置' && activeTab === '物料大类' && <MaterialCategoryView />}
           {activeMenu === '后台基础配置' && activeTab === '物料小类' && <MaterialSubCategoryView />}
