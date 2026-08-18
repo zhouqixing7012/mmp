@@ -22,11 +22,18 @@ export const INVENTORY_MANAGEMENT_MENU_ITEMS = [
   '库管员工作台',
 ];
 
+export const ASSET_INVENTORY_MENU_ITEMS = [
+  '公司-账套对应关系',
+  '盘点规则',
+  '盘点项目',
+  '盘点差异报表',
+];
+
 export const MAIN_MENU_ITEMS = [
   { key: '资产管理', label: '资产管理', icon: Monitor, children: ASSET_MANAGEMENT_MENU_ITEMS },
   { key: '无形资产', label: '无形资产', icon: Layers },
   { key: '库存管理', label: '库存管理', icon: Layers, children: INVENTORY_MANAGEMENT_MENU_ITEMS },
-  { key: '资产盘点', label: '资产盘点', icon: ClipboardList },
+  { key: '资产盘点', label: '资产盘点', icon: ClipboardList, children: ASSET_INVENTORY_MENU_ITEMS },
 ];
 
 export const BACKEND_CONFIG_MENU_ITEMS = [
