@@ -49,3 +49,16 @@ test('当前业务页没有目标按钮时，不会误匹配其他 page scope �
 
   expect(resolvePrototypeTarget(AGREE_TARGET, PAGE_SCOPE, document)).toBeNull();
 });
+
+test('其他 page scope 即使存在完全相同的 exact anchor，也不能抢占当前页面按钮', () => {
+  document.body.innerHTML = `
+    <div data-prototype-page-scope="个人工作台::任意审批页">
+      <button id="current-agree">同意</button>
+    </div>
+    <div data-prototype-page-scope="个人工作台::另一个审批页">
+      <button id="other-exact" data-prototype-anchor="${AGREE_TARGET}">同意</button>
+    </div>
+  `;
+
+  expect(resolvePrototypeTarget(AGREE_TARGET, PAGE_SCOPE, document)?.id).toBe('current-agree');
+});
