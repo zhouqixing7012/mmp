@@ -5,6 +5,15 @@ import {
   applySemanticActionAnchors,
   installSemanticActionAnchorBridge,
 } from './annotation-action-anchor-bridge';
+import {
+  applySharedActionTargetAnchors,
+  buildCanonicalActionBridgeRegistry,
+  installSharedActionTargetBridge,
+} from './annotation-action-target-bridge';
+import {
+  applyFieldLabelAnchors,
+  installFieldLabelAnchorBridge,
+} from './annotation-field-label-bridge';
 import { installAnnotationCoverageUi } from './annotation-coverage-ui';
 import { installAnnotationMatchQualityUi } from './annotation-match-quality-ui';
 import { installAnnotationReviewModeUi } from './annotation-review-mode-ui';
@@ -28,7 +37,13 @@ const BUILT_IN_ANNOTATIONS_BY_SCOPE = mergeScopeMaps(
   expandedEmployeeSelfServiceAnnotationsByScope
 );
 
-installSemanticActionAnchorBridge(BUILT_IN_ANNOTATIONS_BY_SCOPE);
+// Semantic bridge 使用 target 动作生成的“桥接副本”，不修改用户在标注面板看到的标题。
+// 这样可避免标注标题中出现“提交”等业务描述时误覆盖真正的“同意”按钮语义。
+const ACTION_BRIDGE_REGISTRY = buildCanonicalActionBridgeRegistry(BUILT_IN_ANNOTATIONS_BY_SCOPE);
+
+installSemanticActionAnchorBridge(ACTION_BRIDGE_REGISTRY);
+installSharedActionTargetBridge(BUILT_IN_ANNOTATIONS_BY_SCOPE);
+installFieldLabelAnchorBridge(BUILT_IN_ANNOTATIONS_BY_SCOPE);
 installAnnotationCoverageUi();
 installAnnotationMatchQualityUi();
 installAnnotationReviewModeUi();
@@ -38,7 +53,10 @@ installAnnotationToolHubUi();
 export function getBuiltInPrototypeAnnotations(pageScope) {
   const annotations = BUILT_IN_ANNOTATIONS_BY_SCOPE[pageScope] || [];
   if (typeof document !== 'undefined') {
-    applySemanticActionAnchors(pageScope, annotations, document);
+    const bridgeAnnotations = ACTION_BRIDGE_REGISTRY[pageScope] || annotations;
+    applySemanticActionAnchors(pageScope, bridgeAnnotations, document);
+    applySharedActionTargetAnchors(pageScope, annotations, document);
+    applyFieldLabelAnchors(pageScope, annotations, document);
   }
   return annotations;
 }
