@@ -18,8 +18,21 @@ function toCssWidth(width) {
   return typeof width === 'number' ? `${width}px` : width;
 }
 
+function collectPrototypeLabelText(node) {
+  if (node === null || node === undefined || typeof node === 'boolean') return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(collectPrototypeLabelText).join('');
+  if (React.isValidElement(node)) return collectPrototypeLabelText(node.props?.children);
+  return '';
+}
+
 function toPrototypeLabel(label) {
-  return typeof label === 'string' ? label.replace(/[:：]\s*$/, '') : undefined;
+  const text = collectPrototypeLabelText(label).replace(/\s+/g, ' ').trim();
+  if (!text) return undefined;
+  return text
+    .replace(/^[*＊]\s*/, '')
+    .replace(/[:：]\s*$/, '')
+    .trim() || undefined;
 }
 
 export function DetailGrid({
