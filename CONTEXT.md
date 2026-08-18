@@ -16,6 +16,7 @@
 - 2026-08-17 新增原型标注质量门：`annotation-quality.js` 校验 action/field/tab/table-column 等规则是否绑定到正确细粒度 target；新增 Requirement Coverage Ledger，以 `bound / review / skip` 显式记录每条 PRD 重点去向，避免找不到目标时静默遗漏或粗暴回退模块。
 - 2026-08-18 资产借用模块完成复杂压力测试：5 个页面已生成 35 条 PRD 基线标注，coverage ledger 拆出 59 个研发重点，其中 20 项因页面缺失、实现差异或 PRD 自身冲突显式进入 `review`，4 项通用/已被最新规范替代内容明确 `skip`。
 - 2026-08-18 标注目标层新增 Ant Design `Descriptions` 字段语义：普通值可回退到对应字段标签，Descriptions 内 Select/Input 使用“当前仓库 / 城市 / 使用说明”等稳定字段名生成 target，不再使用当前业务值，必填星号不进入 target key。
+- 2026-08-18 为重新触发 GitHub → Vercel 自动构建执行一次仅文档状态更新的提交，不包含业务代码变更。
 
 # 上次停留位置
 
@@ -47,7 +48,7 @@
 - Agent 生成标注前必须先把 PRD 拆为最小研发规则单元 Requirement Atom，至少记录来源、页面、objectType、具体对象和规则；同一段同时描述多个字段/按钮/不同结果时必须继续拆分，不能按 PRD 段落直接生成一个大标注。
 - 标注粒度按规则实际归属决定：字段的必填/只读/脱敏/枚举/默认值/附件规则等优先生成字段或控件级标注；按钮动作及其副作用生成 action-rule；模块级标注只承载跨字段统一规则、准入、公共流程和真正跨对象的系统副作用。
 - 具体对象规则禁止自动回退模块：`action-rule` 必须绑定 Button，`field-rule` 必须绑定字段/控件，`tab-rule` 必须绑定 Tab，`table-column-rule` 必须绑定表头；找不到可靠目标时进入 coverage ledger 的 `review`，而不是“为了匹配”挂 Card。
-- 每个 PRD 模块同步维护 Requirement Coverage Ledger：`bound` 表示已精确绑定；`review` 表示 PRD 与页面/最新口径冲突或暂无可靠 target；`skip` 表示明确无需单独标注且必须说明原因。没有进入 coverage ledger 的研发重点视为遗漏。
+- 每个 PRD 模块同步维护 Requirement Coverage Ledger：`bound` 表示已精确绑定；`review` 表示 PRD 与当前页面/最新口径冲突或暂无可靠 target；`skip` 表示明确无需单独标注且必须说明原因。没有进入 coverage ledger 的研发重点视为遗漏。
 - `annotation-quality.js` 提供 Granularity Check 与 Coverage Check：检查规则种类和 target 粒度、bound annotation 是否存在、review/skip 是否说明原因以及 requirementId 是否重复。
 - 复杂模块不能只比对 UI：coverage 生成时还要检查页面代码中的权限过滤、锁定、状态机、审批路由、条件展示和系统副作用；页面控件存在不等于实现与 PRD 一致。
 - Ant Design `Descriptions` 作为正式字段容器进入目标模型：Descriptions label 生成 `detail-field`，内部具体控件仍优先，但 target label 必须取字段名；这样借用发放等旧页面无需逐字段手工加 data 属性。
