@@ -54,6 +54,19 @@ describe('annotation-targeting', () => {
         <div class="ant-card-head"><div class="ant-card-head-title"><span>申请信息</span></div></div>
         <div class="ant-card-body"><div>申请内容</div></div>
       </div>
+      <div class="ant-card" id="dynamic-card">
+        <div class="ant-card-head">
+          <div class="ant-card-head-title">
+            <div class="ant-space">
+              <div class="ant-space-item"><span id="dynamic-card-title">借用资产明细</span></div>
+              <div class="ant-space-item"><span class="ant-typography ant-typography-secondary" id="dynamic-card-count">共 0 件</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="ant-card-body">
+          <table><thead><tr><th id="borrow-quantity-header">借用数量</th></tr></thead></table>
+        </div>
+      </div>
       <div class="ant-card" id="issue-card">
         <div class="ant-card-head"><div class="ant-card-head-title"><span>借用资产明细</span></div></div>
         <div class="ant-card-body">
@@ -198,6 +211,41 @@ describe('annotation-targeting', () => {
     expect(getPrototypeDisplayAnchor(card)).toBe(card.querySelector('.ant-card-head-title > span'));
   });
 
+  test('动态 Card 标题只使用主标题生成稳定 target 和展示锚点', () => {
+    const card = document.querySelector('#dynamic-card');
+    const firstMetadata = getPrototypeTargetMetadata(card, PAGE_SCOPE);
+    const header = document.querySelector('#borrow-quantity-header');
+    const firstHeaderMetadata = getPrototypeTargetMetadata(header, PAGE_SCOPE);
+
+    expect(firstMetadata.label).toBe('借用资产明细');
+    expect(getPrototypeDisplayAnchor(card)).toBe(document.querySelector('#dynamic-card-title'));
+
+    document.querySelector('#dynamic-card-count').textContent = '共 9 件';
+    preparePrototypeTargets(PAGE_SCOPE);
+
+    const secondMetadata = getPrototypeTargetMetadata(card, PAGE_SCOPE);
+    const secondHeaderMetadata = getPrototypeTargetMetadata(header, PAGE_SCOPE);
+    expect(secondMetadata.target).toBe(firstMetadata.target);
+    expect(secondHeaderMetadata.target).toBe(firstHeaderMetadata.target);
+  });
+
+  test('兼容旧基线时仅按唯一的语义前缀回退，不因动态计数失配', () => {
+    const card = document.querySelector('#dynamic-card');
+    const header = document.querySelector('#borrow-quantity-header');
+    preparePrototypeTargets(PAGE_SCOPE);
+    const runtimeTarget = getPrototypeTargetMetadata(header, PAGE_SCOPE).target;
+    const [context, kind, key] = runtimeTarget.split('::');
+    const shorterContext = context.replace(/e585b10e4bbb6$/, '');
+    const legacyTarget = `${shorterContext}::${kind}::${key}`;
+
+    expect(resolvePrototypeTarget(runtimeTarget, PAGE_SCOPE)).toBe(header);
+    // 如果历史上下文确实只是当前上下文前缀，兼容 resolver 仍能找到唯一目标。
+    if (shorterContext !== context) {
+      expect(resolvePrototypeTarget(legacyTarget, PAGE_SCOPE)).toBe(header);
+    }
+    expect(getPrototypeTargetMetadata(card, PAGE_SCOPE).label).toBe('借用资产明细');
+  });
+
   test('自定义模块可显式声明序号展示锚点', () => {
     const modal = document.querySelector('#selection-modal');
     expect(getPrototypeDisplayAnchor(modal)).toBe(modal.querySelector('[data-prototype-display-anchor]'));
@@ -221,7 +269,7 @@ describe('annotation-targeting', () => {
     expect(firstTargets.some((target) => target.includes('radio'))).toBe(true);
     expect(firstTargets.some((target) => target.includes('tab'))).toBe(true);
     expect(firstTargets.filter((target) => target.includes('button'))).toHaveLength(2);
-    expect(firstTargets.filter((target) => target.includes('table-column'))).toHaveLength(2);
+    expect(firstTargets.filter((target) => target.includes('table-column'))).toHaveLength(3);
   });
 
   test('不同中文字段生成不同且可重建的 target', () => {
