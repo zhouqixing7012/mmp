@@ -7,6 +7,7 @@ const ANNOTATION_UI_SELECTOR = [
 ].join(', ');
 
 export const SEMANTIC_ACTION_ANCHOR_ATTRIBUTE = 'data-prototype-semantic-action-anchor';
+const SEMANTIC_ACTION_REFRESH_ATTRIBUTE = 'data-prototype-semantic-action-refresh';
 
 const COMMON_ACTION_LABELS = [
   '领用确认',
@@ -89,10 +90,19 @@ function getButtonText(element) {
   return compactText(element?.innerText || element?.textContent);
 }
 
-function findUniqueActionButton(label, root) {
+function findCurrentPageRoot(pageScope, root) {
+  if (!root?.querySelectorAll || !pageScope) return root;
+
+  const scopeValue = String(pageScope).replace(/^route:\/yewurules::/, '');
+  const candidates = Array.from(root.querySelectorAll('[data-prototype-page-scope]'));
+  return candidates.find((element) => element.getAttribute('data-prototype-page-scope') === scopeValue) || root;
+}
+
+function findUniqueActionButton(label, pageScope, root) {
   if (!label) return null;
 
-  const matches = Array.from(root.querySelectorAll?.('button, [role="button"]') || [])
+  const searchRoot = findCurrentPageRoot(pageScope, root);
+  const matches = Array.from(searchRoot.querySelectorAll?.('button, [role="button"]') || [])
     .filter((element) => element instanceof Element)
     .filter((element) => !isAnnotationUi(element))
     .filter((element) => !isHiddenActionButton(element))
@@ -108,10 +118,25 @@ function actionNotesWithLabels(annotations) {
     .filter((item) => item.label);
 }
 
+function notifyAnnotationLayerRescan(root) {
+  const host = root?.body || root?.documentElement;
+  if (!host || typeof document === 'undefined') return;
+
+  // PrototypeAnnotationLayer 当前只监听 childList。semantic bridge 改的是属性，
+  // 因此必须制造一次无视觉副作用的 childList 变化，确保 Layer 在 anchor 写入后重新 scan。
+  const marker = document.createElement('span');
+  marker.setAttribute('data-prototype-annotation-ui', 'true');
+  marker.setAttribute(SEMANTIC_ACTION_REFRESH_ATTRIBUTE, 'true');
+  marker.hidden = true;
+  host.appendChild(marker);
+  marker.remove();
+}
+
 function clearStaleSemanticActionAnchors(pageScope, annotations, root) {
   const activeOwners = new Set(
     actionNotesWithLabels(annotations).map(({ note }) => `${pageScope}::${note.id}`)
   );
+  let changed = false;
 
   Array.from(root.querySelectorAll?.(`[${SEMANTIC_ACTION_ANCHOR_ATTRIBUTE}]`) || [])
     .forEach((element) => {
@@ -122,13 +147,16 @@ function clearStaleSemanticActionAnchors(pageScope, annotations, root) {
       element.removeAttribute('data-prototype-anchor');
       element.removeAttribute('data-prototype-label');
       element.removeAttribute(SEMANTIC_ACTION_ANCHOR_ATTRIBUTE);
+      changed = true;
     });
+
+  return changed;
 }
 
 export function applySemanticActionAnchors(pageScope, annotations, root = document) {
   if (!pageScope || !Array.isArray(annotations) || !root?.querySelectorAll) return [];
 
-  clearStaleSemanticActionAnchors(pageScope, annotations, root);
+  let changed = clearStaleSemanticActionAnchors(pageScope, annotations, root);
 
   const actionItems = actionNotesWithLabels(annotations);
   const labelCounts = actionItems.reduce((counts, { label }) => {
@@ -141,7 +169,7 @@ export function applySemanticActionAnchors(pageScope, annotations, root = docume
     // 同一页若两条 action-rule 都声称属于同一个按钮文案，不自动猜测归属。
     if (labelCounts.get(label) !== 1) return;
 
-    const button = findUniqueActionButton(label, root);
+    const button = findUniqueActionButton(label, pageScope, root);
     if (!button) return;
 
     const owner = `${pageScope}::${note.id}`;
@@ -157,12 +185,23 @@ export function applySemanticActionAnchors(pageScope, annotations, root = docume
       return;
     }
 
-    button.setAttribute('data-prototype-anchor', note.target);
-    button.setAttribute('data-prototype-label', label);
-    button.setAttribute(SEMANTIC_ACTION_ANCHOR_ATTRIBUTE, owner);
+    const needsWrite = (
+      existingAnchor !== note.target
+      || existingSemanticOwner !== owner
+      || button.getAttribute('data-prototype-label') !== label
+    );
+
+    if (needsWrite) {
+      button.setAttribute('data-prototype-anchor', note.target);
+      button.setAttribute('data-prototype-label', label);
+      button.setAttribute(SEMANTIC_ACTION_ANCHOR_ATTRIBUTE, owner);
+      changed = true;
+    }
+
     applied.push({ noteId: note.id, target: note.target, label, element: button });
   });
 
+  if (changed) notifyAnnotationLayerRescan(root);
   return applied;
 }
 
@@ -187,7 +226,8 @@ function applyCurrentScope(root = document) {
   // 页面切换时 activeNotes 的 React effect 可能晚于 DOM 更新一拍。
   // 先清掉旧页运行时 semantic anchor，再用当前 scope 的代码基线兜底；
   // 等 activeNotes 更新后会自动切换到最终有效标注集合。
-  clearStaleSemanticActionAnchors(currentScope, [], root);
+  const cleared = clearStaleSemanticActionAnchors(currentScope, [], root);
+  if (cleared) notifyAnnotationLayerRescan(root);
   const annotations = bridgeRegistry?.[currentScope] || [];
   applySemanticActionAnchors(currentScope, annotations, root);
 }
