@@ -10,17 +10,19 @@ export const SEMANTIC_ACTION_ANCHOR_ATTRIBUTE = 'data-prototype-semantic-action-
 const SEMANTIC_ACTION_REFRESH_ATTRIBUTE = 'data-prototype-semantic-action-refresh';
 
 const COMMON_ACTION_LABELS = [
+  '发送领用通知',
   '领用确认',
   '确认加签',
   '执行出库',
-  '已阅读',
-  '不同意',
   '鉴定不通过',
   '鉴定通过',
+  '已阅读',
+  '不同意',
   '同意',
   '驳回',
   '返回',
   '加签',
+  '转签',
   '弃领',
   '退回',
   '通过',
@@ -56,20 +58,30 @@ function decodeHexSemanticKey(target) {
   }
 }
 
+function findKnownActionLabel(value) {
+  const text = compactText(value);
+  return COMMON_ACTION_LABELS.find((label) => text.includes(label)) || '';
+}
+
 function inferActionLabel(note) {
-  const decoded = decodeHexSemanticKey(note?.target);
-  if (decoded) return compactText(decoded);
+  // action-rule 的业务语义必须以标注内容为准，而不是以历史 target 为准。
+  // target 可能来自旧页面结构、旧 Card 上下文或用户历史覆盖；只要它还能被解码，
+  // 旧逻辑就会错误地短路到旧按钮，导致“标注明明写同意，但始终匹配不上同意按钮”。
+  // 因此优先级固定为：标题 > 说明/规则正文 > target 最后兜底。
+  const titleLabel = findKnownActionLabel(note?.title);
+  if (titleLabel) return titleLabel;
 
   const semanticText = [
-    note?.title,
     note?.summary,
     ...(note?.sections || []).flatMap((section) => [
       section?.title,
       ...(section?.items || []).map((item) => item?.text),
     ]),
   ].filter(Boolean).join(' ');
+  const semanticLabel = findKnownActionLabel(semanticText);
+  if (semanticLabel) return semanticLabel;
 
-  return COMMON_ACTION_LABELS.find((label) => semanticText.includes(label)) || '';
+  return compactText(decodeHexSemanticKey(note?.target));
 }
 
 function isAnnotationUi(element) {
@@ -122,8 +134,6 @@ function notifyAnnotationLayerRescan(root) {
   const host = root?.body || root?.documentElement;
   if (!host || typeof document === 'undefined') return;
 
-  // PrototypeAnnotationLayer 当前只监听 childList。semantic bridge 改的是属性，
-  // 因此必须制造一次无视觉副作用的 childList 变化，确保 Layer 在 anchor 写入后重新 scan。
   const marker = document.createElement('span');
   marker.setAttribute('data-prototype-annotation-ui', 'true');
   marker.setAttribute(SEMANTIC_ACTION_REFRESH_ATTRIBUTE, 'true');
@@ -143,7 +153,6 @@ function clearStaleSemanticActionAnchors(pageScope, annotations, root) {
       const owner = element.getAttribute(SEMANTIC_ACTION_ANCHOR_ATTRIBUTE);
       if (activeOwners.has(owner)) return;
 
-      // 只清理桥接器自己写入的运行时 anchor；JSX 中显式 data-prototype-anchor 没有该标记，绝不动。
       element.removeAttribute('data-prototype-anchor');
       element.removeAttribute('data-prototype-label');
       element.removeAttribute(SEMANTIC_ACTION_ANCHOR_ATTRIBUTE);
@@ -166,7 +175,6 @@ export function applySemanticActionAnchors(pageScope, annotations, root = docume
   const applied = [];
 
   actionItems.forEach(({ note, label }) => {
-    // 同一页若两条 action-rule 都声称属于同一个按钮文案，不自动猜测归属。
     if (labelCounts.get(label) !== 1) return;
 
     const button = findUniqueActionButton(label, pageScope, root);
@@ -176,8 +184,6 @@ export function applySemanticActionAnchors(pageScope, annotations, root = docume
     const existingAnchor = button.getAttribute('data-prototype-anchor');
     const existingSemanticOwner = button.getAttribute(SEMANTIC_ACTION_ANCHOR_ATTRIBUTE);
 
-    // JSX 显式 anchor 由 React 管理：如果已经正确命中，只记录匹配结果但不接管 ownership；
-    // 如果显式 anchor 指向别处，也绝不覆盖。只有 bridge 自己留下的 stale anchor 才允许换页后重写。
     if (existingAnchor && !existingSemanticOwner) {
       if (existingAnchor === note.target) {
         applied.push({ noteId: note.id, target: note.target, label, element: button });
@@ -223,9 +229,6 @@ function applyCurrentScope(root = document) {
     return;
   }
 
-  // 页面切换时 activeNotes 的 React effect 可能晚于 DOM 更新一拍。
-  // 先清掉旧页运行时 semantic anchor，再用当前 scope 的代码基线兜底；
-  // 等 activeNotes 更新后会自动切换到最终有效标注集合。
   const cleared = clearStaleSemanticActionAnchors(currentScope, [], root);
   if (cleared) notifyAnnotationLayerRescan(root);
   const annotations = bridgeRegistry?.[currentScope] || [];
@@ -249,8 +252,6 @@ export function installSemanticActionAnchorBridge(registry, root = document) {
 
   if (bridgeObserver) return;
 
-  // 业务页在同一路由内切换、异步渲染按钮、弹窗出现时都可能晚于第一次标注扫描。
-  // Observer 始终基于“当前 active annotations”重放 semantic anchor，避免时序依赖。
   bridgeObserver = new MutationObserver(() => scheduleApply(root));
   bridgeObserver.observe(root.body, {
     childList: true,
