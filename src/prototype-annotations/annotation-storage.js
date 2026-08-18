@@ -102,6 +102,33 @@ function buildOverrideRecord(pageKey, baseAnnotations, currentAnnotations) {
   };
 }
 
+function hasExplicitTargetBinding(note) {
+  const context = note?.context;
+  if (!context || typeof context !== 'object') return false;
+
+  // 旧版“重选”流程已经会写入 pageScope / pageLabel / generatedTarget；
+  // 普通文字编辑或拖动位置不会补这些字段。因此可以用它兼容识别历史人工重绑，
+  // 避免基线 target 更新时把用户真正选择过的目标覆盖掉。
+  return typeof context.pageScope === 'string'
+    && typeof context.pageLabel === 'string'
+    && Object.prototype.hasOwnProperty.call(context, 'generatedTarget');
+}
+
+function mergeBaseNoteWithOverride(baseNote, overrideNote, pageKey) {
+  const normalizedOverride = normalizeAnnotation(overrideNote, pageKey);
+  if (normalizedOverride.target === baseNote.target || hasExplicitTargetBinding(normalizedOverride)) {
+    return normalizedOverride;
+  }
+
+  // 历史覆盖层保存的是整条 note 快照：用户即使只改文字或位置，也会把当时的 target 一并锁住。
+  // 当 Agent 后续修正代码基线 target 时，这类非人工重绑的旧 target 应自动跟随当前基线，
+  // 同时继续保留用户已经修改过的标题、内容、位置等字段。
+  return {
+    ...normalizedOverride,
+    target: baseNote.target,
+  };
+}
+
 function mergeOverrideRecord(pageKey, baseAnnotations, record) {
   const base = normalizeAnnotationCollection(baseAnnotations, pageKey);
   if (!record) return cloneValue(base);
@@ -110,13 +137,13 @@ function mergeOverrideRecord(pageKey, baseAnnotations, record) {
   const overrides = record.overrides && typeof record.overrides === 'object'
     ? record.overrides
     : {};
-  const baseIds = new Set(base.map((note) => note.id));
+  const baseIds = new Set(base.map((note) => [note.id, note]));
 
   const merged = base
     .filter((note) => !deletedIds.has(note.id))
     .map((note) => (
       overrides[note.id]
-        ? normalizeAnnotation(overrides[note.id], pageKey)
+        ? mergeBaseNoteWithOverride(note, overrides[note.id], pageKey)
         : note
     ));
 
