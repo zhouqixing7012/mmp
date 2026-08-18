@@ -1,7 +1,8 @@
 import contractNumberAnnotationsByScope from './contract-number-annotation-data';
 import {
+  CONTRACT_NUMBER_SCOPES,
   CONTRACT_WAREHOUSE_SCOPE,
-  contractWarehouseRequirementCoverage,
+  contractNumberRequirementCoverageByScope,
 } from './contract-number-annotation-coverage';
 import {
   validateAnnotationGranularity,
@@ -9,6 +10,12 @@ import {
 } from './annotation-quality';
 
 describe('contract number annotation quality gate', () => {
+  test('合约号码申请六个页面均已注册基线标注', () => {
+    Object.values(CONTRACT_NUMBER_SCOPES).forEach((pageScope) => {
+      expect(contractNumberAnnotationsByScope[pageScope]?.length).toBeGreaterThan(0);
+    });
+  });
+
   test('库管员领用确认和弃领分别绑定到对应按钮', () => {
     const annotations = contractNumberAnnotationsByScope[CONTRACT_WAREHOUSE_SCOPE];
     const claim = annotations.find((note) => note.id === 'contract-warehouse-claim-action');
@@ -28,19 +35,30 @@ describe('contract number annotation quality gate', () => {
     expect(noteRule.target).toContain('::detail-field::e5a487e6b3a8');
   });
 
-  test('具体规则不存在模块级误绑定', () => {
-    const annotations = contractNumberAnnotationsByScope[CONTRACT_WAREHOUSE_SCOPE];
-    expect(validateAnnotationGranularity(annotations)).toEqual([]);
+  test('所有页面具体规则不存在模块级误绑定', () => {
+    Object.values(CONTRACT_NUMBER_SCOPES).forEach((pageScope) => {
+      expect(validateAnnotationGranularity(contractNumberAnnotationsByScope[pageScope] || [])).toEqual([]);
+    });
   });
 
-  test('库管员 PRD 重点全部有明确覆盖状态', () => {
-    const annotations = contractNumberAnnotationsByScope[CONTRACT_WAREHOUSE_SCOPE];
-    expect(validateRequirementCoverage(contractWarehouseRequirementCoverage, annotations)).toEqual([]);
+  test('六个页面的 PRD 重点全部有 bound/review/skip 明确去向', () => {
+    Object.values(CONTRACT_NUMBER_SCOPES).forEach((pageScope) => {
+      const annotations = contractNumberAnnotationsByScope[pageScope] || [];
+      const coverage = contractNumberRequirementCoverageByScope[pageScope] || [];
+      expect(coverage.length).toBeGreaterThan(0);
+      expect(validateRequirementCoverage(coverage, annotations)).toEqual([]);
+    });
   });
 
-  test('当前待确认项不会被静默当成已完成', () => {
-    const reviewItems = contractWarehouseRequirementCoverage.filter((item) => item.status === 'review');
-    expect(reviewItems.map((item) => item.id)).toEqual(['CN-WH-002']);
-    reviewItems.forEach((item) => expect(item.reason).toBeTruthy());
+  test('当前实现差异不会被静默当成已完成', () => {
+    const reviewItems = Object.values(contractNumberRequirementCoverageByScope)
+      .flat()
+      .filter((item) => item.status === 'review');
+
+    expect(reviewItems.length).toBeGreaterThan(0);
+    reviewItems.forEach((item) => {
+      expect(item.reason).toBeTruthy();
+      expect(item.rule).toBeTruthy();
+    });
   });
 });
