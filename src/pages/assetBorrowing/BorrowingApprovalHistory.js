@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, Table } from 'antd';
 import StatusTag from '../../components/StatusTag';
 
-export default function BorrowingApprovalHistory({ records = [], children }) {
+export default function BorrowingApprovalHistory({ records = [], children, prototypeAnchor }) {
   const columns = [
     { title: '审批环节', dataIndex: 'node', width: 160 },
     { title: '申请人/审批人', dataIndex: 'person', width: 190 },
@@ -17,7 +17,7 @@ export default function BorrowingApprovalHistory({ records = [], children }) {
   ];
 
   return (
-    <Card title="审批信息" size="small">
+    <Card title="审批信息" size="small" data-prototype-anchor={prototypeAnchor}>
       <Table
         rowKey={(record, index) => `${record.node}-${index}`}
         columns={columns}
