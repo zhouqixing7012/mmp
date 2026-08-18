@@ -155,7 +155,7 @@ export function getEmployeeSelfServiceCoverageModules() {
       ];
       return {
         ...module,
-        state: foundation.state || 'audited',
+        state: foundation.state === 'reference' ? 'audited' : (foundation.state || 'audited'),
         label: foundation.label || (requirements.some((item) => item.status === 'review') ? '已审计，存在PRD差异' : '已建立完整覆盖账本'),
         registeredScopes: Object.keys(foundation.annotationsByScope || {}).length,
         auditedScopes: Object.keys(foundation.coverageByScope || {}).length,
