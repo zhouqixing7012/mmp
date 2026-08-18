@@ -67,7 +67,40 @@ test('仅编辑内容或位置留下的旧快照会跟随新版基线 target', (
   expect(migrated.position.offsetX).toBe(24);
 });
 
-test('历史上明确执行过重选的 target 继续优先于新版代码基线', () => {
+test('v2 历史 context 不能再把旧 target 锁死', () => {
+  window.localStorage.setItem(PROTOTYPE_ANNOTATION_STORAGE_KEY, JSON.stringify({
+    version: 2,
+    pages: {
+      yewurules: {
+        overrides: {
+          a: {
+            ...base[0],
+            target: 'anchor-a-old-generated',
+            title: 'A-历史修改',
+            context: {
+              pageScope: 'yewurules',
+              pageLabel: '测试页',
+              generatedTarget: true,
+            },
+          },
+        },
+        deletedIds: [],
+      },
+    },
+  }));
+
+  const nextBase = base.map((note) => (
+    note.id === 'a' ? { ...note, target: 'anchor-a-v2' } : note
+  ));
+  const result = readAnnotationDraft('yewurules', nextBase);
+  const migrated = result.find((note) => note.id === 'a');
+
+  expect(migrated.target).toBe('anchor-a-v2');
+  expect(migrated.title).toBe('A-历史修改');
+  expect(migrated.context).toBeUndefined();
+});
+
+test('当前版本明确执行过重选的 target 继续优先于新版代码基线', () => {
   const current = readAnnotationDraft('yewurules', base).map((note) => (
     note.id === 'a'
       ? {
