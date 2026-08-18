@@ -54,6 +54,19 @@ const ALIGN_OPTIONS = [
   { value: 'end', label: '末端' },
 ];
 
+// 兼容已经写入代码基线、但尚未补 targetLifecycle 元数据的弹窗内标注。
+// 后续新生成的动态目标优先写 context.targetLifecycle = 'overlay'。
+const LEGACY_DYNAMIC_TARGET_NOTE_IDS = new Set([
+  'borrowing-apply-notice-read',
+  'borrowing-apply-material-search',
+]);
+
+function isDynamicTargetNote(note) {
+  return note?.availability === 'dynamic'
+    || note?.context?.targetLifecycle === 'overlay'
+    || LEGACY_DYNAMIC_TARGET_NOTE_IDS.has(note?.id);
+}
+
 const BODY_POPUP = () => document.body;
 
 function FieldLabel({ children }) {
@@ -289,6 +302,8 @@ export default function PrototypeAnnotationPanel({
 
   const selectedNote = notes.find((note) => note.id === expandedNoteId) || null;
   const matchedCount = notes.filter((note) => matchedIds.has(note.id)).length;
+  const dynamicCount = notes.filter((note) => !matchedIds.has(note.id) && isDynamicTargetNote(note)).length;
+  const unmatchedCount = Math.max(0, notes.length - matchedCount - dynamicCount);
   const expandedPanelWidth = editMode ? 480 : 430;
   const expandedPanelHeight = Math.max(240, viewport.height - 32);
   const panelWidth = minimized ? 300 : expandedPanelWidth;
@@ -544,10 +559,11 @@ export default function PrototypeAnnotationPanel({
             </div>
           ) : <div />}
 
-          <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#888', display: 'flex', gap: 12 }}>
+          <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#888', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <span>共 {notes.length} 项</span>
             <span style={{ color: '#389e0d' }}>已匹配 {matchedCount}</span>
-            <span style={{ color: notes.length - matchedCount > 0 ? '#d46b08' : '#999' }}>未匹配 {notes.length - matchedCount}</span>
+            {dynamicCount > 0 && <span style={{ color: '#1677ff' }}>动态目标 {dynamicCount}</span>}
+            <span style={{ color: unmatchedCount > 0 ? '#d46b08' : '#999' }}>真未匹配 {unmatchedCount}</span>
           </div>
 
           <div
@@ -578,6 +594,7 @@ export default function PrototypeAnnotationPanel({
               {notes.map((note) => {
                 const number = noteNumbers.get(note.id);
                 const matched = matchedIds.has(note.id);
+                const dynamicTarget = !matched && isDynamicTargetNote(note);
                 const expanded = expandedNoteId === note.id;
 
                 return (
@@ -595,13 +612,14 @@ export default function PrototypeAnnotationPanel({
                         background: expanded ? '#f0f5ff' : 'transparent',
                       }}
                     >
-                      <span style={{ width: 24, height: 24, borderRadius: '50%', background: matched ? '#1677ff' : '#f5f5f5', color: matched ? '#fff' : '#999', border: matched ? 'none' : '1px solid #d9d9d9', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                      <span style={{ width: 24, height: 24, borderRadius: '50%', background: matched ? '#1677ff' : '#f5f5f5', color: matched ? '#fff' : dynamicTarget ? '#1677ff' : '#999', border: matched ? 'none' : dynamicTarget ? '1px solid #91caff' : '1px solid #d9d9d9', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
                         {number || '-'}
                       </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 2 }}>
                           <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{note.title}</span>
-                          {!matched && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未匹配</Tag>}
+                          {dynamicTarget && <Tag color="blue" style={{ marginInlineEnd: 0 }}>需打开弹窗</Tag>}
+                          {!matched && !dynamicTarget && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未匹配</Tag>}
                         </div>
                         <div style={{ fontSize: 12, color: '#999', lineHeight: 1.5, marginBottom: 4 }}>
                           <AnnotationInlineMarkdown text={note.summary || '-'} />
