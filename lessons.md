@@ -127,3 +127,4 @@
 - 标注的业务 `target` 与序号 `display anchor` 必须分离：`target` 继续负责规则归属、高亮和稳定重建；字段/控件的序号贴自身，Card/分组/模块的序号优先贴实际标题文字或标题组件。自定义模块必要时用 `data-prototype-display-anchor` 显式指定标题，避免模块宽度导致序号被推到页面最右侧。
 - PRD 中如果同一段同时描述多个按钮、字段或不同业务分支，必须先拆成最小 Requirement Atom，再逐条绑定；不能按“它们都在同一个 Card”就合成模块标注。比如库管员“领用确认”和“弃领”属于两个按钮、两条业务分支，必须分别绑定对应 Button。
 - 精确性和完整性必须分开校验：具体对象规则使用 Granularity Check 阻止 action/field/tab/table-column 规则回退到模块；同时维护 Requirement Coverage Ledger，所有研发重点必须明确为 `bound / review / skip`。找不到稳定目标或 PRD 与页面口径冲突时进入 `review`，不能静默遗漏，也不能为了有地方放而挂到错误模块。
+- 标注 target 的稳定性不能依赖动态展示文案：Card 标题里的“共 X 件/条”、状态数字、统计副标题等不能进入 target 语义；优先取稳定主标题，并在 exact target 失配时只允许“同 kind + 同语义 key + 唯一上下文前缀”兼容回退。弹窗关闭造成的 DOM 暂不存在也不应统计为真正失配，应与“真未匹配”分开显示。
