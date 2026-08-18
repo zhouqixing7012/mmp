@@ -39,12 +39,27 @@ test('React 复用同一个按钮 DOM 时，旧页 semantic anchor 会被新页�
   expect(button.getAttribute(SEMANTIC_ACTION_ANCHOR_ATTRIBUTE)).toBe(`${PAGE_B}::agree-b`);
 });
 
-test('显式 JSX anchor 不属于 bridge，不能被语义桥接覆盖', () => {
+test('显式 JSX anchor 指向其他 target 时不能被语义桥接覆盖', () => {
   const button = document.getElementById('agree');
   button.setAttribute('data-prototype-anchor', 'explicit-jsx-anchor');
 
   applySemanticActionAnchors(PAGE_B, [actionNote('agree-b', PAGE_B, TARGET_B)], document);
 
   expect(button.getAttribute('data-prototype-anchor')).toBe('explicit-jsx-anchor');
+  expect(button.hasAttribute(SEMANTIC_ACTION_ANCHOR_ATTRIBUTE)).toBe(false);
+});
+
+test('显式 JSX anchor 已正确命中时只复用结果，不接管 bridge ownership', () => {
+  const button = document.getElementById('agree');
+  button.setAttribute('data-prototype-anchor', TARGET_B);
+
+  const applied = applySemanticActionAnchors(
+    PAGE_B,
+    [actionNote('agree-b', PAGE_B, TARGET_B)],
+    document
+  );
+
+  expect(applied).toHaveLength(1);
+  expect(button.getAttribute('data-prototype-anchor')).toBe(TARGET_B);
   expect(button.hasAttribute(SEMANTIC_ACTION_ANCHOR_ATTRIBUTE)).toBe(false);
 });
