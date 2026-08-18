@@ -34,6 +34,12 @@ function flattenCoverage(coverageByScope = {}) {
   return Object.values(coverageByScope).flat();
 }
 
+export function getBaselineAnnotationsForScope(pageScope) {
+  if (BORROWING_SCOPES.has(pageScope)) return assetBorrowingAnnotationsByScope[pageScope] || [];
+  if (CONTRACT_SCOPES.has(pageScope)) return contractNumberAnnotationsByScope[pageScope] || [];
+  return [];
+}
+
 export function getRequirementCoverageForScope(pageScope) {
   if (assetBorrowingRequirementCoverageByScope[pageScope]) {
     return assetBorrowingRequirementCoverageByScope[pageScope];
@@ -46,9 +52,7 @@ export function getRequirementCoverageForScope(pageScope) {
 
 export function getPageCoverageState(pageScope) {
   const requirements = getRequirementCoverageForScope(pageScope);
-  const annotations = BORROWING_SCOPES.has(pageScope)
-    ? (assetBorrowingAnnotationsByScope[pageScope] || [])
-    : (contractNumberAnnotationsByScope[pageScope] || []);
+  const annotations = getBaselineAnnotationsForScope(pageScope);
 
   if (requirements.length) {
     return {
