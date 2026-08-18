@@ -5,6 +5,11 @@ import {
   CONTRACT_WAREHOUSE_SCOPE,
   contractWarehouseRequirementCoverage,
 } from './contract-number-annotation-coverage';
+import {
+  EXPANDED_EMPLOYEE_SELF_SERVICE_MODULES,
+  expandedEmployeeSelfServiceAnnotationsByScope,
+  expandedEmployeeSelfServiceCoverageByScope,
+} from './employee-self-service-expanded-annotations';
 
 const MODULE_CATALOG = [
   { id: 'asset-application', name: '资产申请', prd: '02-资产申请.md' },
@@ -18,8 +23,26 @@ const MODULE_CATALOG = [
   { id: 'contract-number-return', name: '合约号码退库', prd: '10-合约号码退库.md' },
 ];
 
-const BORROWING_SCOPES = new Set(Object.values(ASSET_BORROWING_SCOPES));
-const CONTRACT_SCOPES = new Set(Object.keys(contractNumberAnnotationsByScope));
+function mergeScopeMaps(...maps) {
+  return maps.reduce((result, map) => {
+    Object.entries(map || {}).forEach(([pageScope, values]) => {
+      result[pageScope] = [...(result[pageScope] || []), ...(values || [])];
+    });
+    return result;
+  }, {});
+}
+
+const ALL_ANNOTATIONS_BY_SCOPE = mergeScopeMaps(
+  contractNumberAnnotationsByScope,
+  assetBorrowingAnnotationsByScope,
+  expandedEmployeeSelfServiceAnnotationsByScope
+);
+
+const ALL_COVERAGE_BY_SCOPE = mergeScopeMaps(
+  assetBorrowingRequirementCoverageByScope,
+  { [CONTRACT_WAREHOUSE_SCOPE]: contractWarehouseRequirementCoverage },
+  expandedEmployeeSelfServiceCoverageByScope
+);
 
 function countStatuses(requirements = []) {
   return requirements.reduce((counts, item) => {
@@ -35,19 +58,11 @@ function flattenCoverage(coverageByScope = {}) {
 }
 
 export function getBaselineAnnotationsForScope(pageScope) {
-  if (BORROWING_SCOPES.has(pageScope)) return assetBorrowingAnnotationsByScope[pageScope] || [];
-  if (CONTRACT_SCOPES.has(pageScope)) return contractNumberAnnotationsByScope[pageScope] || [];
-  return [];
+  return ALL_ANNOTATIONS_BY_SCOPE[pageScope] || [];
 }
 
 export function getRequirementCoverageForScope(pageScope) {
-  if (assetBorrowingRequirementCoverageByScope[pageScope]) {
-    return assetBorrowingRequirementCoverageByScope[pageScope];
-  }
-  if (pageScope === CONTRACT_WAREHOUSE_SCOPE) {
-    return contractWarehouseRequirementCoverage;
-  }
-  return [];
+  return ALL_COVERAGE_BY_SCOPE[pageScope] || [];
 }
 
 export function getPageCoverageState(pageScope) {
@@ -87,6 +102,7 @@ export function getEmployeeSelfServiceCoverageModules() {
   const borrowingRequirements = flattenCoverage(assetBorrowingRequirementCoverageByScope);
   const borrowingCounts = countStatuses(borrowingRequirements);
   const contractCounts = countStatuses(contractWarehouseRequirementCoverage);
+  const expandedById = new Map(EXPANDED_EMPLOYEE_SELF_SERVICE_MODULES.map((module) => [module.id, module]));
 
   return MODULE_CATALOG.map((module) => {
     if (module.id === 'asset-borrowing') {
@@ -108,6 +124,19 @@ export function getEmployeeSelfServiceCoverageModules() {
         registeredScopes: Object.keys(contractNumberAnnotationsByScope).length,
         auditedScopes: 1,
         ...contractCounts,
+      };
+    }
+
+    const expanded = expandedById.get(module.id);
+    if (expanded) {
+      const requirements = flattenCoverage(expanded.coverageByScope);
+      return {
+        ...module,
+        state: 'audited',
+        label: requirements.some((item) => item.status === 'review') ? '已审计，存在PRD差异' : '已建立完整覆盖账本',
+        registeredScopes: Object.keys(expanded.annotationsByScope).length,
+        auditedScopes: Object.keys(expanded.coverageByScope).length,
+        ...countStatuses(requirements),
       };
     }
 
