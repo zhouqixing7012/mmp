@@ -7,8 +7,15 @@ import {
   expandedEmployeeSelfServiceAnnotationsByScope,
   expandedEmployeeSelfServiceCoverageByScope,
 } from './employee-self-service-expanded-annotations';
+import {
+  FOUNDATION_PRD_MODULES,
+  foundationAnnotationsByScope,
+  foundationCoverageByScope,
+} from './employee-self-service-foundation-annotations';
 
 const MODULE_CATALOG = [
+  { id: 'module-overview', name: '员工自助模块总览', prd: '00-员工自助模块总览.md' },
+  { id: 'personal-workbench', name: '个人工作台', prd: '01-个人工作台.md' },
   { id: 'asset-application', name: '资产申请', prd: '02-资产申请.md' },
   { id: 'new-employee-claim', name: '新员工与实习生资产领用', prd: '03-新员工与实习生资产领用.md' },
   { id: 'contract-number', name: '合约号码申请', prd: '04-合约号码申请.md' },
@@ -18,6 +25,7 @@ const MODULE_CATALOG = [
   { id: 'asset-transfer', name: '资产转移', prd: '08-资产转移.md' },
   { id: 'asset-return', name: '资产退库', prd: '09-资产退库.md' },
   { id: 'contract-number-return', name: '合约号码退库', prd: '10-合约号码退库.md' },
+  { id: 'appendix', name: '附录', prd: '11-附录.md' },
 ];
 
 function mergeScopeMaps(...maps) {
@@ -32,13 +40,15 @@ function mergeScopeMaps(...maps) {
 const ALL_ANNOTATIONS_BY_SCOPE = mergeScopeMaps(
   contractNumberAnnotationsByScope,
   assetBorrowingAnnotationsByScope,
-  expandedEmployeeSelfServiceAnnotationsByScope
+  expandedEmployeeSelfServiceAnnotationsByScope,
+  foundationAnnotationsByScope
 );
 
 const ALL_COVERAGE_BY_SCOPE = mergeScopeMaps(
   contractNumberRequirementCoverageByScope,
   assetBorrowingRequirementCoverageByScope,
-  expandedEmployeeSelfServiceCoverageByScope
+  expandedEmployeeSelfServiceCoverageByScope,
+  foundationCoverageByScope
 );
 
 function countStatuses(requirements = []) {
@@ -99,6 +109,7 @@ export function getEmployeeSelfServiceCoverageModules() {
   const borrowingRequirements = flattenCoverage(assetBorrowingRequirementCoverageByScope);
   const contractRequirements = flattenCoverage(contractNumberRequirementCoverageByScope);
   const expandedById = new Map(EXPANDED_EMPLOYEE_SELF_SERVICE_MODULES.map((module) => [module.id, module]));
+  const foundationById = new Map(FOUNDATION_PRD_MODULES.map((module) => [module.id, module]));
 
   return MODULE_CATALOG.map((module) => {
     if (module.id === 'asset-borrowing') {
@@ -132,6 +143,22 @@ export function getEmployeeSelfServiceCoverageModules() {
         label: requirements.some((item) => item.status === 'review') ? '已审计，存在PRD差异' : '已建立完整覆盖账本',
         registeredScopes: Object.keys(expanded.annotationsByScope).length,
         auditedScopes: Object.keys(expanded.coverageByScope).length,
+        ...countStatuses(requirements),
+      };
+    }
+
+    const foundation = foundationById.get(module.id);
+    if (foundation) {
+      const requirements = [
+        ...flattenCoverage(foundation.coverageByScope),
+        ...(foundation.referenceCoverage || []),
+      ];
+      return {
+        ...module,
+        state: foundation.state || 'audited',
+        label: foundation.label || (requirements.some((item) => item.status === 'review') ? '已审计，存在PRD差异' : '已建立完整覆盖账本'),
+        registeredScopes: Object.keys(foundation.annotationsByScope || {}).length,
+        auditedScopes: Object.keys(foundation.coverageByScope || {}).length,
         ...countStatuses(requirements),
       };
     }
