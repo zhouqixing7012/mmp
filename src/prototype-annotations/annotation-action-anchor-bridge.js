@@ -148,8 +148,14 @@ export function applySemanticActionAnchors(pageScope, annotations, root = docume
     const existingAnchor = button.getAttribute('data-prototype-anchor');
     const existingSemanticOwner = button.getAttribute(SEMANTIC_ACTION_ANCHOR_ATTRIBUTE);
 
-    // 显式 JSX anchor 始终优先；但桥接器自己在上一个页面留下的 stale anchor 必须允许覆盖。
-    if (existingAnchor && existingAnchor !== note.target && !existingSemanticOwner) return;
+    // JSX 显式 anchor 由 React 管理：如果已经正确命中，只记录匹配结果但不接管 ownership；
+    // 如果显式 anchor 指向别处，也绝不覆盖。只有 bridge 自己留下的 stale anchor 才允许换页后重写。
+    if (existingAnchor && !existingSemanticOwner) {
+      if (existingAnchor === note.target) {
+        applied.push({ noteId: note.id, target: note.target, label, element: button });
+      }
+      return;
+    }
 
     button.setAttribute('data-prototype-anchor', note.target);
     button.setAttribute('data-prototype-label', label);
