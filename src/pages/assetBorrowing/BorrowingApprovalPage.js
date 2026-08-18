@@ -22,6 +22,15 @@ import { nowText } from './utils';
 
 const { TextArea } = Input;
 
+// 借用审批的 4 个研发评审关键点使用显式锚点，不再依赖运行时 DOM 文案重建。
+// 锚点值保持与现有标注基线 target 一致，可直接兼容浏览器中已经保存的旧标注。
+const APPROVAL_ANNOTATION_ANCHORS = {
+  module: 'scope-route3a2fyewurules3a3ae4b8aae4babae5b7a5e4bd9ce58fb03a3ae5809fe794a8e5ae::card::e5aea1e689b9e4bfa1e681af',
+  opinion: 'card-e5aea1e689b9e4bfa1e681af::control::e5908ce6848fe697b6e99d9ee5bf85e5a1abefbc8ce9a9b3e59b9ee697b6e5bf85e5a1ab',
+  agree: 'card-e5aea1e689b9e4bfa1e681af::button::e5908ce6848f',
+  reject: 'card-e5aea1e689b9e4bfa1e681af::button::e9a9b3e59b9e',
+};
+
 export default function BorrowingApprovalPage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
@@ -135,9 +144,13 @@ export default function BorrowingApprovalPage() {
           />
         </Card>
 
-        <BorrowingApprovalHistory records={application.approvalHistory}>
+        <BorrowingApprovalHistory
+          records={application.approvalHistory}
+          prototypeAnchor={APPROVAL_ANNOTATION_ANCHORS.module}
+        >
           <Typography.Text strong>审批意见</Typography.Text>
           <TextArea
+            data-prototype-anchor={APPROVAL_ANNOTATION_ANCHORS.opinion}
             className="mt-2"
             rows={3}
             maxLength={400}
@@ -147,8 +160,22 @@ export default function BorrowingApprovalPage() {
             onChange={(event) => setComment(event.target.value)}
           />
           <div className="mt-3 flex justify-center gap-3">
-            <Button type="primary" loading={loading} onClick={() => decide('同意')}>同意</Button>
-            <Button danger loading={loading} onClick={() => decide('驳回')}>驳回</Button>
+            <Button
+              data-prototype-anchor={APPROVAL_ANNOTATION_ANCHORS.agree}
+              type="primary"
+              loading={loading}
+              onClick={() => decide('同意')}
+            >
+              同意
+            </Button>
+            <Button
+              data-prototype-anchor={APPROVAL_ANNOTATION_ANCHORS.reject}
+              danger
+              loading={loading}
+              onClick={() => decide('驳回')}
+            >
+              驳回
+            </Button>
             <Button onClick={() => navigate('/yewurules', { state: { workspace: '工作台首页' } })}>返回</Button>
             <Button onClick={() => setCountersignOpen(true)}>加签</Button>
           </div>
