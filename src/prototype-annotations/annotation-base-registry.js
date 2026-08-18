@@ -1,6 +1,7 @@
 import assetBorrowingAnnotationsByScope from './asset-borrowing-annotation-data';
 import contractNumberAnnotationsByScope from './contract-number-annotation-data';
 import expandedEmployeeSelfServiceAnnotationsByScope from './employee-self-service-expanded-annotations';
+import foundationAnnotationsByScope from './employee-self-service-foundation-annotations';
 import {
   applySemanticActionAnchors,
   installSemanticActionAnchorBridge,
@@ -29,12 +30,13 @@ function mergeScopeMaps(...maps) {
   }, {});
 }
 
-// 同一个工作台页面可能同时承载多个 PRD 模块（例如“物资申请”同时承载资产和耗材）。
+// 同一个工作台页面可能同时承载多个 PRD 模块（例如“物资申请”同时承载资产、耗材和附录规则）。
 // 这里必须按 scope 合并数组，不能再用对象 spread 覆盖后注册模块。
 const BUILT_IN_ANNOTATIONS_BY_SCOPE = mergeScopeMaps(
   contractNumberAnnotationsByScope,
   assetBorrowingAnnotationsByScope,
-  expandedEmployeeSelfServiceAnnotationsByScope
+  expandedEmployeeSelfServiceAnnotationsByScope,
+  foundationAnnotationsByScope
 );
 
 // Semantic bridge 使用 target 动作生成的“桥接副本”，不修改用户在标注面板看到的标题。
