@@ -1,6 +1,9 @@
 import assetBorrowingAnnotationsByScope from './asset-borrowing-annotation-data';
 import contractNumberAnnotationsByScope from './contract-number-annotation-data';
-import { installSemanticActionAnchorBridge } from './annotation-action-anchor-bridge';
+import {
+  applySemanticActionAnchors,
+  installSemanticActionAnchorBridge,
+} from './annotation-action-anchor-bridge';
 
 const BUILT_IN_ANNOTATIONS_BY_SCOPE = {
   ...contractNumberAnnotationsByScope,
@@ -10,5 +13,9 @@ const BUILT_IN_ANNOTATIONS_BY_SCOPE = {
 installSemanticActionAnchorBridge(BUILT_IN_ANNOTATIONS_BY_SCOPE);
 
 export function getBuiltInPrototypeAnnotations(pageScope) {
-  return BUILT_IN_ANNOTATIONS_BY_SCOPE[pageScope] || [];
+  const annotations = BUILT_IN_ANNOTATIONS_BY_SCOPE[pageScope] || [];
+  if (typeof document !== 'undefined') {
+    applySemanticActionAnchors(pageScope, annotations, document);
+  }
+  return annotations;
 }
