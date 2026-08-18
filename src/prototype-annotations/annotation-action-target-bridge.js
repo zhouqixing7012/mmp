@@ -5,6 +5,7 @@ const ANNOTATION_UI_SELECTOR = [
 ].join(', ');
 
 const SHARED_ACTION_ATTRIBUTE = 'data-prototype-shared-action-anchor';
+const ACTION_REFRESH_ATTRIBUTE = 'data-prototype-action-target-refresh';
 let registry = null;
 let observer = null;
 let scheduled = false;
@@ -59,6 +60,17 @@ function findUniqueButton(label, pageScope, root) {
   return matches.length === 1 ? matches[0] : null;
 }
 
+function notifyAnnotationLayerRescan(root) {
+  const host = root?.body || root?.documentElement;
+  if (!host || typeof document === 'undefined') return;
+  const marker = document.createElement('span');
+  marker.setAttribute('data-prototype-annotation-ui', 'true');
+  marker.setAttribute(ACTION_REFRESH_ATTRIBUTE, 'true');
+  marker.hidden = true;
+  host.appendChild(marker);
+  marker.remove();
+}
+
 // Bridge 专用 registry：不改用户看到的标注标题，只让旧 semantic bridge 优先识别
 // 当前有效 target 自己代表的动作。历史非人工 target 已由 storage v4 跟随代码基线，
 // 人工重绑则 target 本身就是用户明确选择的新动作，因此这里以 target 作为桥接语义是安全的。
@@ -89,18 +101,30 @@ export function applySharedActionTargetAnchors(pageScope, annotations, root = do
     });
 
   const applied = [];
+  let changed = false;
   groups.forEach((group) => {
-    // 单条 action-rule 仍由原 semantic bridge 负责；这里只解决“多个PRD规则共享同一按钮”。
-    if (group.notes.length < 2) return;
+    // target 自己就是 action-rule 的稳定业务语义来源。
+    // 不再只处理“多个PRD规则共享同一按钮”：单条 action-rule 也直接按 target 解码动作绑定，
+    // 避免标题/规则正文里出现“提交、确认”等词时污染按钮动作识别。
     const button = findUniqueButton(group.label, pageScope, root);
     if (!button) return;
 
     const existing = button.getAttribute('data-prototype-anchor');
     if (existing && existing !== group.target) return;
 
-    button.setAttribute('data-prototype-anchor', group.target);
-    button.setAttribute('data-prototype-label', group.label);
-    button.setAttribute(SHARED_ACTION_ATTRIBUTE, group.target);
+    const needsWrite = (
+      existing !== group.target
+      || button.getAttribute('data-prototype-label') !== group.label
+      || button.getAttribute(SHARED_ACTION_ATTRIBUTE) !== group.target
+    );
+
+    if (needsWrite) {
+      button.setAttribute('data-prototype-anchor', group.target);
+      button.setAttribute('data-prototype-label', group.label);
+      button.setAttribute(SHARED_ACTION_ATTRIBUTE, group.target);
+      changed = true;
+    }
+
     group.notes.forEach((note) => applied.push({
       noteId: note.id,
       target: group.target,
@@ -108,6 +132,8 @@ export function applySharedActionTargetAnchors(pageScope, annotations, root = do
       element: button,
     }));
   });
+
+  if (changed) notifyAnnotationLayerRescan(root);
   return applied;
 }
 
