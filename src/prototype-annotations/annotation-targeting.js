@@ -168,10 +168,49 @@ function getDirectHeading(element) {
   return compactText(nestedHeading?.textContent);
 }
 
+function getPrimaryTitleAnchor(titleContainer) {
+  if (!(titleContainer instanceof Element)) return null;
+
+  const explicit = titleContainer.querySelector?.(
+    `[${PROTOTYPE_DISPLAY_ANCHOR_ATTRIBUTE}], [data-prototype-title]`
+  );
+  if (explicit) return explicit;
+
+  // Ant Design Space 会把标题主文本和“共 X 件/条”等动态附加信息拆成多个 item。
+  // target 只能取第一个稳定标题 item，不能把会变化的计数拼进语义 key。
+  const firstSpaceItem = titleContainer.querySelector?.('.ant-space-item');
+  if (firstSpaceItem) return firstSpaceItem.firstElementChild || firstSpaceItem;
+
+  // 兼容未使用 Space、但通过 secondary Typography 展示动态统计的标题。
+  const secondary = titleContainer.querySelector?.('.ant-typography-secondary');
+  if (secondary) {
+    const firstStableChild = Array.from(titleContainer.children || []).find((child) => (
+      !child.matches?.('.ant-typography-secondary')
+    ));
+    if (firstStableChild) return firstStableChild;
+  }
+
+  return titleContainer.firstElementChild || titleContainer;
+}
+
+function getPrimaryTitleText(titleContainer) {
+  if (!(titleContainer instanceof Element)) return '';
+
+  const primaryAnchor = getPrimaryTitleAnchor(titleContainer);
+  if (primaryAnchor && primaryAnchor !== titleContainer) {
+    const primaryText = compactText(primaryAnchor.textContent);
+    if (primaryText) return primaryText;
+  }
+
+  const clone = titleContainer.cloneNode(true);
+  clone.querySelectorAll?.('.ant-typography-secondary').forEach((node) => node.remove());
+  return compactText(clone.textContent || titleContainer.textContent);
+}
+
 function getCardTitle(element) {
   const card = element.matches('.ant-card') ? element : element.closest('.ant-card');
   if (!card) return '';
-  return compactText(card.querySelector('.ant-card-head-title')?.textContent);
+  return getPrimaryTitleText(card.querySelector('.ant-card-head-title'));
 }
 
 function getFormLabel(element) {
@@ -435,7 +474,7 @@ function isModuleDisplayTarget(element) {
 
 function compactTitleAnchor(titleContainer) {
   if (!(titleContainer instanceof Element)) return null;
-  return titleContainer.firstElementChild || titleContainer;
+  return getPrimaryTitleAnchor(titleContainer) || titleContainer;
 }
 
 function findModuleTitleAnchor(element) {
@@ -558,6 +597,31 @@ export function getPrototypeTargetMetadata(element, pageScope, root = document) 
   };
 }
 
+function splitGeneratedTarget(target) {
+  const parts = String(target || '').split('::');
+  if (parts.length !== 3) return null;
+  return { context: parts[0], kind: parts[1], key: parts[2] };
+}
+
+function findCompatibleGeneratedTarget(target, pageScope, root) {
+  const wanted = splitGeneratedTarget(target);
+  if (!wanted) return null;
+
+  const compatible = Array.from(root.querySelectorAll?.(`[${GENERATED_TARGET_ATTRIBUTE}]`) || [])
+    .filter((element) => element.getAttribute(GENERATED_SCOPE_ATTRIBUTE) === (pageScope || 'page'))
+    .filter((element) => {
+      const current = splitGeneratedTarget(element.getAttribute(GENERATED_TARGET_ATTRIBUTE));
+      if (!current || current.kind !== wanted.kind || current.key !== wanted.key) return false;
+      if (current.context === wanted.context) return true;
+
+      // 兼容旧基线：历史 target 可能只保存 Card 主标题，而运行时上下文曾把“共 X 件/条”
+      // 等动态副标题拼进去。仅允许上下文前缀一致且候选唯一时回退，避免跨模块误绑。
+      return current.context.startsWith(wanted.context) || wanted.context.startsWith(current.context);
+    });
+
+  return compatible.length === 1 ? compatible[0] : null;
+}
+
 export function resolvePrototypeTarget(target, pageScope, root = document) {
   if (!target) return null;
 
@@ -572,9 +636,13 @@ export function resolvePrototypeTarget(target, pageScope, root = document) {
     ));
   if (existingGenerated) return existingGenerated;
 
+  const existingCompatible = findCompatibleGeneratedTarget(target, pageScope, root);
+  if (existingCompatible) return existingCompatible;
+
   preparePrototypeTargets(pageScope, root);
   const generated = Array.from(root.querySelectorAll?.(`[${GENERATED_TARGET_ATTRIBUTE}]`) || []);
-  return generated.find((element) => element.getAttribute(GENERATED_TARGET_ATTRIBUTE) === target) || null;
+  const exact = generated.find((element) => element.getAttribute(GENERATED_TARGET_ATTRIBUTE) === target);
+  return exact || findCompatibleGeneratedTarget(target, pageScope, root);
 }
 
 export function listPrototypeTargets(pageScope, root = document) {
