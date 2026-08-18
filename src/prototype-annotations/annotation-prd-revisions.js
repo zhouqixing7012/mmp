@@ -3,6 +3,18 @@
 // annotation-prd-revisions.test.js 就会失败，提醒重新审计标注与 coverage ledger。
 // 资产申请在仓库中拆成 3 个实际规则文件，因此使用 sources 数组逐文件锁定。
 export const ANNOTATION_PRD_REVISIONS = {
+  'module-overview': {
+    moduleName: '员工自助模块总览',
+    path: 'docs/员工自助功能PRD/00-员工自助模块总览.md',
+    reviewedBlobSha: '7aac6706b19eb24af5311f83da07d176872441d2',
+    coverageState: 'reference',
+  },
+  'personal-workbench': {
+    moduleName: '个人工作台',
+    path: 'docs/员工自助功能PRD/01-个人工作台.md',
+    reviewedBlobSha: '9c44d029ff5087a9597629e2e522f882de283b7a',
+    coverageState: 'audited',
+  },
   'asset-application': {
     moduleName: '资产申请',
     coverageState: 'audited',
@@ -67,6 +79,12 @@ export const ANNOTATION_PRD_REVISIONS = {
     moduleName: '合约号码退库',
     path: 'docs/员工自助功能PRD/10-合约号码退库.md',
     reviewedBlobSha: '42746acca08e6863715a5332235a7f70b719a044',
+    coverageState: 'audited',
+  },
+  appendix: {
+    moduleName: '附录',
+    path: 'docs/员工自助功能PRD/11-附录.md',
+    reviewedBlobSha: 'e7f941444db9aa655a1d264da8d621f4a81fceac',
     coverageState: 'audited',
   },
 };
