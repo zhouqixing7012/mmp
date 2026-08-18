@@ -2,92 +2,70 @@
 
 - 项目为企业资产管理产品演示前端，继续直接在 `main` 迭代；不新建分支或 worktree，除非用户明确要求。
 - 当前阶段：个人工作台、资产管理、库存管理主要原型已建立，后续继续按截图和 PRD 逐页校准。
-- 2026-08-17 已将附件 `员工自助功能PRD.pdf` 按业务模块转换为 Markdown，新增 `docs/员工自助功能PRD/`；资产申请因内容较长再按流程拆为 3 个子文件。
-- 2026-08-17 原型标注已升级为可编辑模式：支持拖动位置、修改标题/摘要/详细说明、重新绑定锚点、新增/删除、保存、导入导出。
-- 2026-08-17 原型标注交互已完成全局化和精准化重构：所有 React 路由均可使用标注；`/yewurules` 按实际 `activeMenu / activeSubMenu / activeTab` 拆分页面作用域；新增/重绑改为鼠标实时识别目标，不再依赖进入页面时预扫描成功。
-- 2026-08-17 产品标注面板支持最小化：标题栏使用明确的“— 收起”文字按钮，仅收起面板、不退出标注模式；“×”仍用于退出。最小化后以小条展示查看/编辑和未保存状态，并提供明确“展开”按钮恢复完整面板。
-- 2026-08-17 原型标注目标扩展到 Select、DatePicker、Radio、Checkbox、Tabs、Segmented、Switch、Slider、Rate、Upload 和普通输入控件；具体交互控件优先于 QueryItem、DetailItem、FormItem 等外层字段容器。
-- 2026-08-17 标注层新增业务浮层感知：Ant Design Modal/Drawer/Image Preview、公共 `Modal` 以及公共 `SelectModal` 打开时，底层页面标注点和高亮不再穿透显示在弹窗上方；仅当前顶层业务浮层内部的标注目标继续展示。
-- 2026-08-17 公共 `SelectModal` 已补稳定标注语义：选择弹窗整体、搜索条件、结果列表均可作为稳定目标；标注选择状态下可按住 Alt/Option 点击先执行原业务交互以打开弹窗/下拉，bindingMode 保持不退出。
-- 2026-08-17 查看态标注详情改为“点击同一条展开 / 再点同一条收起”，移除详情区单独“收起”按钮；编辑态仍保留“收起编辑”。
-- 2026-08-17 标注内容支持受控 Markdown 子集：普通条目默认以项目符号展示，支持加粗、斜体、行内代码、标题、列表、Markdown 表格和常用转义，不解析原始 HTML，也不改变 annotation JSON / localStorage 数据结构。
-- 2026-08-17 标注序号展示与业务 target 已解耦：字段/控件标注序号贴具体元素，Card/分组/模块标注序号优先贴实际标题文字；自定义模块可用 `data-prototype-display-anchor` 指定展示锚点。
-- 2026-08-17 合约号码申请基线已按规则归属拆分：申请信息模块只保留统一规则，身份证号码、申请原因、上传附件分别使用字段级标注；库管员备注使用字段级标注，“领用确认 / 弃领”拆为两个按钮级 action-rule；合约号码申请模块 6 个页面当前共 16 条基线标注。
-- 2026-08-17 新增原型标注质量门：`annotation-quality.js` 校验 action/field/tab/table-column 等规则是否绑定到正确细粒度 target；新增 Requirement Coverage Ledger，以 `bound / review / skip` 显式记录每条 PRD 重点去向，避免找不到目标时静默遗漏或粗暴回退模块。
-- 2026-08-18 资产借用模块完成复杂压力测试：5 个页面已生成 35 条 PRD 基线标注，coverage ledger 拆出 59 个研发重点，其中 20 项因页面缺失、实现差异或 PRD 自身冲突显式进入 `review`，4 项通用/已被最新规范替代内容明确 `skip`。
-- 2026-08-18 标注目标层新增 Ant Design `Descriptions` 字段语义：普通值可回退到对应字段标签，Descriptions 内 Select/Input 使用“当前仓库 / 城市 / 使用说明”等稳定字段名生成 target，不再使用当前业务值，必填星号不进入 target key。
-- 2026-08-18 为重新触发 GitHub → Vercel 自动构建执行一次仅文档状态更新的提交，不包含业务代码变更。
+- PRD 已存放在仓库 `docs/`，原型标注由 Agent 直接读取 PRD + React 页面代码后生成；浏览器端不上传 PRD、不调用 AI，只负责查看和人工校准。
+- 原型标注已支持：全局页面作用域、细粒度 target、拖动位置、内容编辑、重新绑定、新增/删除、保存、导入导出、面板最小化、业务浮层感知、Markdown/表格展示、target/display-anchor 分离。
+- 标注保存采用“代码基线 + 用户覆盖层”：新基线 id 自动出现，同 id 的用户人工修改继续保留，避免整页 localStorage 快照挡住 Agent 后续更新。
+- 合约号码申请模块 6 个页面已有 16 条 PRD 基线标注；字段规则和按钮规则已按具体对象拆分。
+- 资产借用模块已完成复杂压力测试：5 个页面生成 35 条 PRD 基线标注，coverage ledger 拆出 59 个研发重点，其中 20 项因页面缺失、实现差异或 PRD 冲突进入 `review`，4 项明确 `skip`。
+- 2026-08-18 修复资产借用“标注拆得细但大量未匹配”的根因：Card target 现在只取稳定主标题，不再把“共 X 件/条”、状态数字、统计副标题等动态展示文案拼入 target；resolver 对历史 target 增加“同 kind + 同语义 key + 唯一上下文前缀”兼容回退。
+- 2026-08-18 标注面板将弹窗关闭造成的暂时不可见目标从真正失配中分离：统计改为“已匹配 / 动态目标 / 真未匹配”，动态目标显示“需打开弹窗”。资产借用申请的“已阅读”和“添加资产搜索框”先作为兼容动态目标。
+- 2026-08-18 Ant Design `Descriptions` 已进入正式目标模型：普通值可回退到对应字段标签，内部 Select/Input 使用“当前仓库 / 城市 / 使用说明”等稳定字段名生成 target，必填星号不进入语义 key。
 
 # 上次停留位置
 
-- 资产借用已按“PRD 原子化 → 逐页对照 React 实现 → 精确 target → coverage ledger → quality check”完成第一轮标注，可直接在资产借用、借用配给、借用审批、借用发放、员工借用确认 5 个页面查看。
-- 本轮复杂压力测试没有为了“全部显示”而强塞模块标注：申请页缺“配置”列、发放页缺员工名下资产查询和升级耗材子表、核心借用出库单/套打模板当前无对应借用页面 target，均保留为 `review`。
-- 借用模块还显式暴露实现/PRD差异：物资关键字搜索范围偏窄；配给/发放仓库权限过滤不完整；配给资产缺公司板块权限/资产标记/真实并发锁；审批没有动态 5级+ 与 VP/CEO-1 路由；盘点字段未按活动盘点计划条件展示；发放“取消”与 PRD“弃领”命名不一致；员工确认的输入工号与刷卡未拆为独立方式，模拟扫码未校验账号。
-- PRD 对正常出库和放弃领用后的单据状态存在“已处理 / 已完成”前后冲突；当前代码使用“已处理”，coverage 中保持 `review`，未擅自替产品定口径。
-- 合约号码申请模块已可直接在对应原型页面打开“标注”查看 PRD 重点；标注只保留准入、校验、状态流转、异常分支和跨节点系统动作，不搬运整份 PRD。
-- 合约号码申请页当前拆为 1 条“申请级统一规则”模块标注 + 3 条字段标注（身份证号码 / 申请原因 / 上传附件）；字段自身的必填、只读、脱敏、附件格式/大小等规则不再混入模块标注。
-- 合约号码库管员待办中，“备注带入台账”已绑定到备注字段；“领用确认”与“弃领”分别绑定到各自 Button，不再共用“审批操作”模块标注。同一按钮的多个后果可以合并为一条按钮标注，但不同按钮/业务分支必须拆开。
-- 库管员 PRD 已建立覆盖账本示例：现场核验、备注、领用确认、弃领均为 `bound`；“城市默认北京市”因 PRD 与当前页面默认逻辑不一致进入 `review`；简单“返回上一页”明确 `skip`。当前没有其他静默遗漏项。
-- PRD 不在页面端上传或调用 AI 接口。后续由 Agent 直接读取仓库中的 PRD Markdown/PDF 和 React 页面代码，先拆 Requirement Atom，再生成当前页面作用域的基线标注与 coverage ledger。
-- 页面端只负责人工校准：打开“标注 → 编辑”，修改内容、拖动位置或重新绑定后点击保存。
-- 新增/重绑时直接把鼠标移动到具体按钮、下拉框、单选/复选、标签页、查询条件、表格表头、详情字段、Descriptions 字段、表单字段、选择弹窗或业务模块；橙色描边显示当前实时命中的精确目标，点击后完成绑定。
-- 如果需要在新增/重绑状态下先打开选择弹窗或下拉框，按住 Alt/Option 点击对应业务控件，只执行原页面交互、不完成绑定，打开浮层后再直接点击浮层内部目标完成标注。
-- 公共 `SelectModal` 打开后可直接标注：点击弹窗标题/空白业务区命中“选择弹窗整体”，点击搜索条件标签命中该搜索条件，点击结果表格内容命中“结果列表”，按钮/输入框/表头仍按更细粒度优先命中。
-- 查看态标注详情不再提供单独“收起”按钮；点击一条标注展开，再点同一条或右侧箭头即可收起。
-- 普通 `section.items[]` 在查看态自动显示为 `•` 项目符号，来源如 `PRD` 跟在条目末尾；需要表格时可在单条说明中直接输入 Markdown 表格语法。
-- 标注序号不再默认跟随目标整体边缘：字段级 target 直接贴字段，模块级 target 仍绑定整个模块用于高亮/重建，但序号单独取模块标题作为 display anchor；编辑模式拖动仍可继续微调偏移。
-- 标注面板可随时点击右上角“— 收起”腾出页面空间；最小化不会关闭标注模式、不会清除当前查看/编辑状态，也不会影响页面标注点继续展示；小条右侧“展开”恢复完整面板。
-- 打开业务 Modal/Drawer/SelectModal 后，底层页面标注点自动隐藏，不再覆盖弹窗；如果给弹窗内部字段本身添加标注，弹窗内部目标仍可正常显示和编辑。
-- 用户保存结果按“当前页面作用域”写入浏览器本地覆盖层；不同路由、不同后台菜单/页签互不串数据。最终需要固化进仓库时可导出标注 JSON，再由 Agent 合并回项目标注数据。
+- 用户反馈资产借用标注匹配率较低。排查确认不是“拆得细”本身导致，而是 target 稳定性和动态 DOM 统计口径问题。
+- 资产借用申请页的“借用资产明细”Card 标题实际由“借用资产明细 + 共 X 件”组成；旧逻辑把整个标题文本作为 Card 语义上下文，导致数量变化时 Card 及其内部“借用数量 / 借用日期 / 借用原因 / 需求说明 / 添加资产”等 target 一起变化，形成成片未匹配。现已改为只取稳定主标题。
+- `resolvePrototypeTarget` 在 exact target 找不到时允许非常保守的兼容匹配：kind 和语义 key 必须一致，只允许上下文前缀兼容，并且候选必须唯一；避免为了提高匹配率发生跨模块误绑。
+- 面板原本只有“已匹配 / 未匹配”两种状态，弹窗关闭后 DOM 自然不存在也被算成错误。现在弹窗生命周期目标单列为“动态目标 / 需打开弹窗”，不再污染“真未匹配”。
+- 已补回归测试场景：动态 Card 从“共 0 件”变为“共 9 件”后，Card target 与内部表头 target 都应保持不变；动态弹窗目标不计入真未匹配。
+- 最新相关代码已提交到 `main`；Vercel 对包含上述代码的提交已成功构建。
+- 资产借用第一轮 coverage 暴露的业务/实现差异仍保持 `review`，没有因为提高匹配率而强行绑定：申请页缺配置列、物资搜索范围偏窄、仓库/公司板块权限过滤不足、资产标记/真实锁定缺失、审批链缺动态 5级+ 与 VP/CEO-1、发放页缺员工名下资产查询和升级耗材子表、盘点条件展示不一致、确认方式实现差异、出库状态口径冲突、核心出库套打页暂无对应 target。
 
-# 近期关键决定
+# 原型标注生成与质量规则
 
-- 标注数据采用“代码初稿 + 用户覆盖层”模型：仓库基线标注由代码提供，浏览器保存的修改只覆盖同 id 标注。
-- 基线标注新增 `annotation-base-registry.js` 作为页面作用域注册入口；当页面组件层没有显式基线时，由存储层按当前 page scope 取得内置 PRD 标注，避免以后每增加一个业务模块都修改全局标注 Layer。
-- PRD 自动初稿只摘取会改变研发实现或测试验收的内容：人员准入、必填/阻断校验、可选数据范围、审批前置条件、状态变化、释放锁定、通知/待办/出库等副作用和异常终态。
-- Agent 生成标注前必须先把 PRD 拆为最小研发规则单元 Requirement Atom，至少记录来源、页面、objectType、具体对象和规则；同一段同时描述多个字段/按钮/不同结果时必须继续拆分，不能按 PRD 段落直接生成一个大标注。
-- 标注粒度按规则实际归属决定：字段的必填/只读/脱敏/枚举/默认值/附件规则等优先生成字段或控件级标注；按钮动作及其副作用生成 action-rule；模块级标注只承载跨字段统一规则、准入、公共流程和真正跨对象的系统副作用。
-- 具体对象规则禁止自动回退模块：`action-rule` 必须绑定 Button，`field-rule` 必须绑定字段/控件，`tab-rule` 必须绑定 Tab，`table-column-rule` 必须绑定表头；找不到可靠目标时进入 coverage ledger 的 `review`，而不是“为了匹配”挂 Card。
-- 每个 PRD 模块同步维护 Requirement Coverage Ledger：`bound` 表示已精确绑定；`review` 表示 PRD 与当前页面/最新口径冲突或暂无可靠 target；`skip` 表示明确无需单独标注且必须说明原因。没有进入 coverage ledger 的研发重点视为遗漏。
-- `annotation-quality.js` 提供 Granularity Check 与 Coverage Check：检查规则种类和 target 粒度、bound annotation 是否存在、review/skip 是否说明原因以及 requirementId 是否重复。
-- 复杂模块不能只比对 UI：coverage 生成时还要检查页面代码中的权限过滤、锁定、状态机、审批路由、条件展示和系统副作用；页面控件存在不等于实现与 PRD 一致。
-- Ant Design `Descriptions` 作为正式字段容器进入目标模型：Descriptions label 生成 `detail-field`，内部具体控件仍优先，但 target label 必须取字段名；这样借用发放等旧页面无需逐字段手工加 data 属性。
-- 不属于当前页面的研发规则不能为了“有标注”而错绑：核心出库、套打模板、定时提醒等规则应放到真实承载页面/系统规则标注；当前没有可靠目标时必须留在 coverage `review`。
-- 详细生成规范记录在 `docs/原型标注生成规范.md`，后续资产申请、借用、退库、耗材等模块统一使用相同流程。
-- 标注 `target` 与序号 `display anchor` 分离：`target` 负责规则归属、高亮、重绑和稳定重建；字段/控件 display anchor 为元素自身，Card/分组/模块优先取标题文字/标题组件，自定义模块可显式声明 `data-prototype-display-anchor`。
-- 合约号码申请页作为字段粒度示例：`contract-apply-core-rules` 只保留申请级统一流程规则；身份证号码、申请原因、上传附件分别使用独立 field-rule id 和 DetailItem target。
-- 合约号码库管员页作为字段/动作粒度示例：`contract-warehouse-note-rule` 绑定备注 DetailItem；`contract-warehouse-claim-action` 与 `contract-warehouse-abandon-action` 分别绑定“领用确认”“弃领”按钮，不再使用统一审批操作 Card target。
-- Agent 后续根据 PRD 新增标注时，新 id 会自动出现；用户已经修改过的同 id 标注仍保留用户版本，避免重新生成时覆盖人工校准。
-- 页面作用域不再只看 pathname：普通独立路由使用 `route:<pathname>`；`/yewurules` 由 `AdminContent` 暴露 `activeMenu / activeSubMenu / activeTab`，形成独立 scope。
-- 原型标注入口不再限制于 `/yewurules`，所有 React 路由都可新建和保存标注。
-- 新增/重绑不再要求目标预先存在 generated-target；鼠标经过时实时识别。精度优先级为：Button / Descriptions字段 / 表头 / Tabs / Radio / Checkbox / Segmented / Switch / Select / DatePicker / Slider / Rate / Upload / 输入控件 → DetailItem/FormField/QueryItem/FormItem/SelectModal 语义块 → 显式模块锚点 → Card/Table/Form/普通白色业务块。点击具体控件命中控件本身；点击字段标签或普通只读值再回退到字段级语义。
-- `SelectModal` 通过 `data-prototype-overlay="select-modal"` 声明当前业务浮层，并为弹窗整体、搜索条件和结果列表提供 `data-prototype-bindable` 语义；标题通过 `data-prototype-display-anchor` 作为模块序号展示锚点。关闭后对应目标自然变为未匹配，再次打开由 MutationObserver 重新扫描并恢复匹配。
-- QueryItem、DetailItem、FormField 通过公共组件统一补充语义标记，避免各页面重复埋点；旧页面没有 Ant Design Card 时，`bg-white` 等业务块仍可作为模块级目标。
-- 细粒度 target 基于页面 scope + 业务语义重建，不保存 nth-child、绝对 CSS path 或绝对 x/y。
-- 标注序号只由 `pageAnnotations` 稳定顺序决定，不依赖 DOM 可见状态；序号坐标由 display anchor 决定，不要求统一放在页面或模块最右侧。
-- 标注面板直接通过 React Portal 渲染到 `document.body`，面板内部只保留一个真实滚动容器；Tooltip / Popconfirm / Select dropdown 同样显式挂载 body 且 popup z-index 高于面板。
-- 面板可视状态与标注启用状态分离：最小化只改变面板尺寸和展示，不调用 `onClose`；退出标注模式只由关闭按钮或全局标注开关触发。收起/展开使用带文字的显式按钮，避免纯图标操作不可发现。
-- 查看态展开状态只由标注条目本身和箭头切换，不再在详情区重复增加第二套收起入口。
-- 标注详细内容继续使用 `section.title + items[]` 作为持久化模型；展示层对普通 item 自动加项目符号，对带 Markdown 块语法的 item 使用 `AnnotationMarkdown` 渲染。支持受控 Markdown，但禁止原始 HTML，避免把富文本展示需求扩散成不受控 HTML 注入。
-- 标注圆点仍可高于普通页面，但显示前必须经过“当前业务浮层”判断：存在 Modal/Drawer/SelectModal 时，弹窗外目标隐藏、弹窗内目标保留。公共 `Modal` 与 `SelectModal` 显式声明 overlay，Ant Design Modal/Drawer 由标注层自动识别。
-- 业务页面不保存 x/y 坐标；位置保存为 `side / align / gap / offsetX / offsetY / viewportPadding`。
-- 定位层统一处理滚动跟随、元素尺寸变化、边缘翻转、业务浮层遮挡、display anchor 和视口约束，不在业务页面写定位补丁。
-- 本轮不新增第三方运行时依赖，保持现有安装、构建和部署链不变。
+- Agent 生成标注前先把 PRD 拆成最小 Requirement Atom，至少明确来源、页面、objectType、具体对象和规则；一个段落涉及多个按钮/字段/业务分支时必须继续拆分。
+- 标注粒度按规则真实归属决定：
+  - 字段必填/只读/默认值/枚举/长度/附件格式等 → field/control/table-column；
+  - 按钮动作及副作用 → action-rule；
+  - Tab 规则 → tab-rule；
+  - 跨字段、统一准入、流程状态、公共系统动作 → module/page rule。
+- 页面存在更细目标时禁止为了省事回退模块：`action-rule` 必须 Button，`field-rule` 必须字段/控件，`tab-rule` 必须 Tab，`table-column-rule` 必须表头。
+- 每个 PRD 模块同步维护 Requirement Coverage Ledger：
+  - `bound`：已精确绑定；
+  - `review`：PRD 与页面/最新口径冲突，或当前没有可靠 target；
+  - `skip`：明确无需单独标注，必须写原因。
+- `annotation-quality.js` 同时做 Granularity Check 与 Coverage Check；“位置准确”和“内容不遗漏”分别校验。
+- 复杂模块不能只看 UI 是否存在：还要对照代码检查权限过滤、锁定、状态机、审批路由、条件展示、通知/待办/出库等系统副作用。
+- 不属于当前页面的研发规则不能错绑：核心出库、套打模板、定时提醒等应在真实承载页面/系统规则位置标注；当前无可靠目标时留 `review`。
+- target 稳定性禁止依赖动态文案：`共 X 件/条`、统计数字、状态计数、运行时业务值不得成为 target 的稳定语义来源。
+- 弹窗/抽屉/条件渲染目标应声明动态生命周期，例如 `context.targetLifecycle = 'overlay'`；关闭时归类为动态目标，而不是“真未匹配”。
+
+# 当前标注交互约定
+
+- 页面作用域：普通路由使用 `route:<pathname>`；`/yewurules` 由 `activeMenu / activeSubMenu / activeTab` 形成独立 scope。
+- target 与 display anchor 分离：target 决定规则归属、高亮、重绑和稳定重建；字段/控件序号贴自身，Card/模块序号优先贴实际标题文字。
+- 新增/重绑时实时从 DOM 判断最细目标，不依赖页面首次预扫描是否成功。
+- 目标优先级：Button / Descriptions 字段 / 表头 / Tabs / Radio / Checkbox / Segmented / Switch / Select / DatePicker / Slider / Rate / Upload / 输入控件 → DetailItem/FormField/QueryItem/FormItem/SelectModal 语义块 → 显式模块锚点 → Card/Table/Form/普通业务块。
+- 业务 Modal/Drawer/SelectModal 打开后，底层页面标注点隐藏，仅当前顶层业务浮层内部目标展示。
+- 需要在绑定状态先打开弹窗/下拉时，按住 Alt/Option 点击业务控件，只执行原业务交互且保持 bindingMode，再选择浮层内部目标。
+- 查看态点击标注展开，再点同一条或箭头收起；详情区不重复放第二个“收起”按钮。
+- 标注内容继续使用 `section.title + items[]` 持久化；普通条目自动项目符号，支持受控 Markdown 子集和表格，不解析原始 HTML。
+- 用户拖动只保存相对锚点的 `side / align / gap / offsetX / offsetY / viewportPadding`，不保存绝对 x/y。
 
 # 当前全局设计规范
 
 - PC 业务页使用单层画布；页面标题用 `Typography.Title level={4}`；蓝色竖块只用于业务 Card 标题。
 - 业务分区使用 `Card size="small"`；详情优先 `DetailGrid + DetailItem`；列表使用 small bordered Table。
-- 只读字段展示文本或 `StatusTag`；只有真实可编辑字段使用 Input / Select / DatePicker / TextArea。
+- 只读字段展示文本或 `StatusTag`；真实可编辑字段才使用 Input / Select / DatePicker / TextArea。
 - 查询区域优先复用 `QueryBar / QueryItem`；选择类字段优先复用 `SelectModal`。
 - 空值显示 `-`；公司/板块分开；部门用 `.` 连接。
-- 员工确认全面取消电子签，统一刷卡/员工工号 + 狐小 e 扫码。
+- 员工确认全面取消电子签，统一刷卡/员工工号 + 狐小 e 扫码，并校验到真实申请人。
 - “查看名下资产”统一使用眼睛图标 + 蓝色 link Button。
 - 未确认字段不补造；截图只用于确认业务内容，视觉按当前项目规范重构。
 
 # 当前模块状态
 
-- 个人工作台：资产申请、审批、配给、领用、借用、更换、退库、合约号码相关主链路已建立；合约号码申请链路当前 6 个页面共 16 条 PRD 研发评审基线标注；资产借用 5 个页面已新增 35 条基线标注和 59 条 requirement coverage 重点。
+- 个人工作台：资产申请、审批、配给、领用、借用、更换、退库、耗材、合约号码等主链路已建立；合约号码和资产借用已开始使用 PRD 基线标注 + coverage ledger。
 - 资产管理：资产维护、耗材维护、合约号码维护、标签打印、跨公司转移、资产报废、账面报废、资产处置、员工资产信息查询已建立。
-- 库存管理：资产接收、入库、出库、移库、转移、库管员工作台已有主要原型；耗材接收及部分新建/详情页继续按后续字段补充。
-- 原型标注：已全局挂载到所有 React 路由；编辑器、本地覆盖层、页面作用域、扩展细粒度目标选择、Descriptions 字段语义、业务浮层遮挡、SelectModal 语义、查看态点击折叠、Markdown 展示、target/display-anchor 分离、Granularity/Coverage 质量门、面板最小化和业务模块基线注册均已建立；后续按“PRD 原子化 → 精确 target → 实现对照 → coverage ledger → quality check”流程继续生成初始 annotation data。
+- 库存管理：资产接收、耗材接收、入库、出库、移库、转移、库管员工作台已有主要原型，继续按后续字段和流程校准。
+- 原型标注：已全局挂载；编辑器、覆盖层、页面作用域、细粒度目标、Descriptions、业务浮层、SelectModal、Markdown、target/display-anchor、Granularity/Coverage 质量门、动态 target 分类和稳定 target 重建均已建立；后续统一按“PRD 原子化 → 精确 target → 实现对照 → coverage ledger → quality check”生成。
