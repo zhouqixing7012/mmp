@@ -31,7 +31,7 @@ export const ANNOTATION_PRD_REVISIONS = {
     moduleName: '合约号码申请',
     path: 'docs/员工自助功能PRD/04-合约号码申请.md',
     reviewedBlobSha: '4971139118bafb0a66f7d36762e5e6fc2041902b',
-    coverageState: 'partial',
+    coverageState: 'audited',
   },
   'consumables': {
     moduleName: '耗材申请',
