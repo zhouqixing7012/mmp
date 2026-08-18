@@ -45,6 +45,17 @@ function compactText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
+// Ant Design 会为部分中文按钮（典型是两个汉字）在真实 DOM 文本中插入展示空格，
+// 例如 JSX 写的是“同意”，运行时 innerText/textContent 可能变成“同 意”。
+// 这个空格只属于视觉排版，不应参与业务语义比较。
+// 仅删除“中文字符之间”的空白；英文词间空格等真实语义保持不变。
+export function normalizeActionButtonText(value) {
+  return compactText(value).replace(
+    /([\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF])\s+(?=[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF])/g,
+    '$1'
+  );
+}
+
 function decodeHexSemanticKey(target) {
   const parts = String(target || '').split('::');
   if (parts.length !== 3 || parts[1] !== 'button') return '';
@@ -61,7 +72,7 @@ function decodeHexSemanticKey(target) {
 }
 
 function findKnownActionLabel(value) {
-  const text = compactText(value);
+  const text = normalizeActionButtonText(value);
   return COMMON_ACTION_LABELS.find((label) => text.includes(label)) || '';
 }
 
@@ -83,7 +94,7 @@ function inferActionLabel(note) {
   const semanticLabel = findKnownActionLabel(semanticText);
   if (semanticLabel) return semanticLabel;
 
-  return compactText(decodeHexSemanticKey(note?.target));
+  return normalizeActionButtonText(decodeHexSemanticKey(note?.target));
 }
 
 function isAnnotationUi(element) {
@@ -101,7 +112,7 @@ function isHiddenActionButton(element) {
 }
 
 function getButtonText(element) {
-  return compactText(element?.innerText || element?.textContent);
+  return normalizeActionButtonText(element?.innerText || element?.textContent);
 }
 
 function findCurrentPageRoot(pageScope, root) {
@@ -120,7 +131,7 @@ function findUniqueActionButton(label, pageScope, root) {
     .filter((element) => element instanceof Element)
     .filter((element) => !isAnnotationUi(element))
     .filter((element) => !isHiddenActionButton(element))
-    .filter((element) => getButtonText(element) === label);
+    .filter((element) => getButtonText(element) === normalizeActionButtonText(label));
 
   return matches.length === 1 ? matches[0] : null;
 }
@@ -228,6 +239,7 @@ function describeElement(element) {
   return {
     tag: element.tagName.toLowerCase(),
     text: getButtonText(element) || compactText(element.textContent),
+    rawText: compactText(element?.innerText || element?.textContent),
     anchor: element.getAttribute('data-prototype-anchor') || '',
     semanticOwner: element.getAttribute(SEMANTIC_ACTION_ANCHOR_ATTRIBUTE) || '',
     generatedTarget: element.getAttribute('data-prototype-generated-target') || '',
@@ -274,7 +286,7 @@ async function buildDiagnosticSnapshot(root = document) {
   }
 
   const rows = actionItems.map(({ note, label }) => {
-    const candidates = visibleButtons.filter((button) => button.text === label);
+    const candidates = visibleButtons.filter((button) => button.text === normalizeActionButtonText(label));
     const resolved = resolver ? resolver(note.target, pageScope, root) : null;
     return {
       id: note.id,
