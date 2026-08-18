@@ -21,8 +21,22 @@ const NOTE = {
   ],
 };
 
-function PanelHarness({ editMode = false, initiallyExpanded = false, onClose = () => {} }) {
-  const [expandedNoteId, setExpandedNoteId] = useState(initiallyExpanded ? NOTE.id : null);
+const DYNAMIC_NOTE = {
+  ...NOTE,
+  id: 'borrowing-apply-notice-read',
+  target: 'modal-button',
+  title: '弹窗标注',
+  context: { targetLifecycle: 'overlay' },
+};
+
+function PanelHarness({
+  editMode = false,
+  initiallyExpanded = false,
+  onClose = () => {},
+  notes = [NOTE],
+  matchedIds = new Set([NOTE.id]),
+}) {
+  const [expandedNoteId, setExpandedNoteId] = useState(initiallyExpanded ? notes[0]?.id : null);
   const panelRef = createRef();
 
   const toggleExpand = (noteId) => {
@@ -31,9 +45,9 @@ function PanelHarness({ editMode = false, initiallyExpanded = false, onClose = (
 
   return (
     <PrototypeAnnotationPanel
-      notes={[NOTE]}
-      noteNumbers={new Map([[NOTE.id, 1]])}
-      matchedIds={new Set([NOTE.id])}
+      notes={notes}
+      noteNumbers={new Map(notes.map((note, index) => [note.id, index + 1]))}
+      matchedIds={matchedIds}
       expandedNoteId={expandedNoteId}
       onToggleExpand={toggleExpand}
       onSelectNote={(noteId) => setExpandedNoteId(noteId)}
@@ -89,6 +103,16 @@ describe('PrototypeAnnotationPanel', () => {
 
     expect(screen.getAllByText('•')).toHaveLength(2);
     expect(screen.getAllByText('PRD').length).toBeGreaterThan(0);
+  });
+
+  test('弹窗关闭造成的动态目标不计入真未匹配', () => {
+    render(<PanelHarness notes={[NOTE, DYNAMIC_NOTE]} matchedIds={new Set([NOTE.id])} />);
+
+    expect(screen.getByText('已匹配 1')).toBeInTheDocument();
+    expect(screen.getByText('动态目标 1')).toBeInTheDocument();
+    expect(screen.getByText('真未匹配 0')).toBeInTheDocument();
+    expect(screen.getByText('需打开弹窗')).toBeInTheDocument();
+    expect(screen.queryByText(/^未匹配$/)).not.toBeInTheDocument();
   });
 
   test('编辑态可以显式收起编辑区', () => {
