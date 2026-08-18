@@ -5,6 +5,7 @@ import foundationAnnotationsByScope from './employee-self-service-foundation-ann
 import { applyAssetApplicationAnnotationAudit } from './asset-application-prd-audit';
 import { applyNewEmployeeClaimAnnotationAudit } from './new-employee-claim-prd-audit';
 import { applyContractNumberAnnotationAudit } from './contract-number-prd-audit';
+import { applyConsumableAnnotationAudit } from './consumable-prd-audit';
 import {
   applySemanticActionAnchors,
   installSemanticActionAnchorBridge,
@@ -37,8 +38,10 @@ const auditedContractNumberAnnotationsByScope = applyContractNumberAnnotationAud
   contractNumberAnnotationsByScope
 );
 
-const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyNewEmployeeClaimAnnotationAudit(
-  applyAssetApplicationAnnotationAudit(expandedEmployeeSelfServiceAnnotationsByScope)
+const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyConsumableAnnotationAudit(
+  applyNewEmployeeClaimAnnotationAudit(
+    applyAssetApplicationAnnotationAudit(expandedEmployeeSelfServiceAnnotationsByScope)
+  )
 );
 
 // 同一个工作台页面可能同时承载多个 PRD 模块（例如“物资申请”同时承载资产、耗材和附录规则）。
