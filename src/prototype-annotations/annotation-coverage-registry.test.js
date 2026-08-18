@@ -4,7 +4,9 @@ import {
   getRequirementCoverageForScope,
 } from './annotation-coverage-registry';
 import { ASSET_BORROWING_SCOPES } from './asset-borrowing-annotation-data';
-import { CONTRACT_WAREHOUSE_SCOPE } from './contract-number-annotation-coverage';
+import { CONTRACT_NUMBER_SCOPES } from './contract-number-annotation-data';
+import { ASSET_APPLICATION_AUDIT_SCOPES } from './asset-application-prd-audit';
+import { NEW_EMPLOYEE_CLAIM_AUDIT_SCOPES } from './new-employee-claim-prd-audit';
 
 test('资产借用五个页面都能读取 PRD 覆盖账本', () => {
   Object.values(ASSET_BORROWING_SCOPES).forEach((scope) => {
@@ -15,22 +17,49 @@ test('资产借用五个页面都能读取 PRD 覆盖账本', () => {
   });
 });
 
-test('合约号码库管员页已审计，其他合约号码页面不会被误报为完整覆盖', () => {
-  expect(getPageCoverageState(CONTRACT_WAREHOUSE_SCOPE).state).toBe('audited');
-  expect(getRequirementCoverageForScope(CONTRACT_WAREHOUSE_SCOPE).length).toBeGreaterThan(0);
+test('合约号码已覆盖的页面都进入正式审计账本', () => {
+  Object.values(CONTRACT_NUMBER_SCOPES).forEach((scope) => {
+    expect(getPageCoverageState(scope).state).toBe('audited');
+    expect(getRequirementCoverageForScope(scope).length).toBeGreaterThan(0);
+  });
 
   const modules = getEmployeeSelfServiceCoverageModules();
   const contract = modules.find((item) => item.id === 'contract-number');
-  expect(contract.state).toBe('partial');
-  expect(contract.registeredScopes).toBeGreaterThan(contract.auditedScopes);
+  expect(contract.state).toBe('audited');
+  expect(contract.auditedScopes).toBe(contract.registeredScopes);
 });
 
-test('员工自助未建立基线标注的模块必须在覆盖中心明确显示为未接入', () => {
+test('资产申请六个页面均使用第二轮深审覆盖结果', () => {
+  Object.values(ASSET_APPLICATION_AUDIT_SCOPES).forEach((scope) => {
+    expect(getPageCoverageState(scope).state).toBe('audited');
+    expect(getRequirementCoverageForScope(scope).length).toBeGreaterThan(0);
+  });
+
+  const module = getEmployeeSelfServiceCoverageModules().find((item) => item.id === 'asset-application');
+  expect(module.state).toBe('audited');
+  expect(module.total).toBe(102);
+});
+
+test('新员工与实习生资产领用两个页面均使用第二轮深审覆盖结果', () => {
+  Object.values(NEW_EMPLOYEE_CLAIM_AUDIT_SCOPES).forEach((scope) => {
+    expect(getPageCoverageState(scope).state).toBe('audited');
+    expect(getRequirementCoverageForScope(scope).length).toBeGreaterThan(0);
+  });
+
+  const module = getEmployeeSelfServiceCoverageModules().find((item) => item.id === 'new-employee-claim');
+  expect(module.state).toBe('audited');
+  expect(module.total).toBe(55);
+  expect(module.review).toBeGreaterThan(0);
+});
+
+test('员工自助业务模块均已进入基线标注与覆盖账本', () => {
   const modules = getEmployeeSelfServiceCoverageModules();
   const expected = [
     'asset-application',
     'new-employee-claim',
+    'contract-number',
     'consumables',
+    'asset-borrowing',
     'asset-replacement',
     'asset-transfer',
     'asset-return',
@@ -38,6 +67,8 @@ test('员工自助未建立基线标注的模块必须在覆盖中心明确显�
   ];
 
   expected.forEach((id) => {
-    expect(modules.find((item) => item.id === id)?.state).toBe('unregistered');
+    const module = modules.find((item) => item.id === id);
+    expect(module?.state).toBe('audited');
+    expect(module?.total).toBeGreaterThan(0);
   });
 });
