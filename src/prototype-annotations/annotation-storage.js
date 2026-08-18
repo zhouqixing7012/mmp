@@ -78,6 +78,29 @@ function annotationEquals(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
+function hasFreshBindingContext(note) {
+  const context = note?.context;
+  return Boolean(
+    context
+    && typeof context === 'object'
+    && typeof context.pageScope === 'string'
+    && typeof context.pageLabel === 'string'
+    && Object.prototype.hasOwnProperty.call(context, 'generatedTarget')
+  );
+}
+
+function markFreshManualRebind(note, baseNote) {
+  if (!baseNote || note.target === baseNote.target || !hasFreshBindingContext(note)) return note;
+
+  return {
+    ...note,
+    context: {
+      ...(note.context || {}),
+      userReboundTarget: true,
+    },
+  };
+}
+
 function buildOverrideRecord(pageKey, baseAnnotations, currentAnnotations) {
   const base = normalizeAnnotationCollection(baseAnnotations, pageKey);
   const current = normalizeAnnotationCollection(currentAnnotations, pageKey);
@@ -87,8 +110,9 @@ function buildOverrideRecord(pageKey, baseAnnotations, currentAnnotations) {
 
   current.forEach((note) => {
     const baseNote = baseById.get(note.id);
-    if (!baseNote || !annotationEquals(baseNote, note)) {
-      overrides[note.id] = note;
+    const persistedNote = markFreshManualRebind(note, baseNote);
+    if (!baseNote || !annotationEquals(baseNote, persistedNote)) {
+      overrides[note.id] = persistedNote;
     }
   });
 
@@ -115,6 +139,7 @@ function removeLegacyBindingContext(note) {
   delete context.pageScope;
   delete context.pageLabel;
   delete context.generatedTarget;
+  delete context.userReboundTarget;
 
   if (Object.keys(context).length === 0) {
     const next = { ...note };
@@ -133,9 +158,8 @@ function mergeBaseNoteWithOverride(baseNote, overrideNote, pageKey) {
     return migratedOverride;
   }
 
-  // 只有新版“重选”明确写入 userReboundTarget=true 时，用户 target 才能覆盖代码基线。
-  // 历史版本中的 pageScope/pageLabel/generatedTarget 不能证明用户真的重绑过；
-  // 对内置标注统一采用当前代码基线 target，同时继续保留用户修改过的标题、内容和位置。
+  // 内置标注默认始终跟随当前代码基线 target；只有本版以后真实执行“重选”并保存的标注
+  // 会带 userReboundTarget=true，从而继续保留人工 target。历史 context 不再有资格锁死 target。
   return {
     ...migratedOverride,
     target: baseNote.target,
@@ -150,7 +174,7 @@ function mergeOverrideRecord(pageKey, baseAnnotations, record) {
   const overrides = record.overrides && typeof record.overrides === 'object'
     ? record.overrides
     : {};
-  const baseIds = new Set(base.map((note) => [note.id, note]).map(([id]) => id));
+  const baseIds = new Set(base.map((note) => note.id));
 
   const merged = base
     .filter((note) => !deletedIds.has(note.id))
