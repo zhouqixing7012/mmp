@@ -7,6 +7,7 @@ import {
 import { installAnnotationCoverageUi } from './annotation-coverage-ui';
 import { installAnnotationMatchQualityUi } from './annotation-match-quality-ui';
 import { installAnnotationReviewModeUi } from './annotation-review-mode-ui';
+import { installAnnotationHotspotCollisionAvoidance } from './annotation-hotspot-collision';
 
 const BUILT_IN_ANNOTATIONS_BY_SCOPE = {
   ...contractNumberAnnotationsByScope,
@@ -17,6 +18,7 @@ installSemanticActionAnchorBridge(BUILT_IN_ANNOTATIONS_BY_SCOPE);
 installAnnotationCoverageUi();
 installAnnotationMatchQualityUi();
 installAnnotationReviewModeUi();
+installAnnotationHotspotCollisionAvoidance();
 
 export function getBuiltInPrototypeAnnotations(pageScope) {
   const annotations = BUILT_IN_ANNOTATIONS_BY_SCOPE[pageScope] || [];
