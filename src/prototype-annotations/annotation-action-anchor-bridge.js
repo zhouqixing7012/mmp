@@ -8,6 +8,8 @@ const ANNOTATION_UI_SELECTOR = [
 
 export const SEMANTIC_ACTION_ANCHOR_ATTRIBUTE = 'data-prototype-semantic-action-anchor';
 const SEMANTIC_ACTION_REFRESH_ATTRIBUTE = 'data-prototype-semantic-action-refresh';
+const DIAGNOSTIC_LAUNCHER_ID = 'paf-runtime-diagnostic-launcher';
+const DIAGNOSTIC_PANEL_ID = 'paf-runtime-diagnostic-panel';
 
 const COMMON_ACTION_LABELS = [
   '发送领用通知',
@@ -211,6 +213,240 @@ export function applySemanticActionAnchors(pageScope, annotations, root = docume
   return applied;
 }
 
+function readPanelStatus(noteId, root) {
+  const row = Array.from(root.querySelectorAll?.('[data-annotation-note-id]') || [])
+    .find((element) => element.getAttribute('data-annotation-note-id') === noteId);
+  if (!row) return '面板中未找到该 note';
+  const text = compactText(row.textContent);
+  if (text.includes('需打开弹窗')) return '动态目标';
+  if (text.includes('未匹配')) return '未匹配';
+  return '面板显示已匹配';
+}
+
+function describeElement(element) {
+  if (!(element instanceof Element)) return null;
+  return {
+    tag: element.tagName.toLowerCase(),
+    text: getButtonText(element) || compactText(element.textContent),
+    anchor: element.getAttribute('data-prototype-anchor') || '',
+    semanticOwner: element.getAttribute(SEMANTIC_ACTION_ANCHOR_ATTRIBUTE) || '',
+    generatedTarget: element.getAttribute('data-prototype-generated-target') || '',
+    generatedScope: element.getAttribute('data-prototype-generated-scope') || '',
+  };
+}
+
+function listVisibleButtons(searchRoot) {
+  return Array.from(searchRoot?.querySelectorAll?.('button, [role="button"]') || [])
+    .filter((element) => element instanceof Element)
+    .filter((element) => !isAnnotationUi(element))
+    .filter((element) => !isHiddenActionButton(element))
+    .map((element) => describeElement(element));
+}
+
+function countExactAttribute(root, attribute, value) {
+  if (!root?.querySelectorAll || !value) return 0;
+  return Array.from(root.querySelectorAll(`[${attribute}]`))
+    .filter((element) => element.getAttribute(attribute) === value)
+    .length;
+}
+
+async function buildDiagnosticSnapshot(root = document) {
+  const pageScope = activePageScope || (
+    typeof window !== 'undefined'
+      ? readPrototypePageScope(window.location.pathname, root)
+      : ''
+  );
+  const pageRoot = findCurrentPageRoot(pageScope, root);
+  const pageRootScope = pageRoot instanceof Element
+    ? pageRoot.getAttribute('data-prototype-page-scope') || ''
+    : '(document fallback)';
+  const scopeNodes = Array.from(root.querySelectorAll?.('[data-prototype-page-scope]') || [])
+    .map((element) => element.getAttribute('data-prototype-page-scope'));
+  const visibleButtons = listVisibleButtons(pageRoot);
+  const actionItems = actionNotesWithLabels(activeAnnotations);
+
+  let resolver = null;
+  try {
+    const module = await import('./annotation-targeting');
+    resolver = module.resolvePrototypeTarget;
+  } catch {
+    resolver = null;
+  }
+
+  const rows = actionItems.map(({ note, label }) => {
+    const candidates = visibleButtons.filter((button) => button.text === label);
+    const resolved = resolver ? resolver(note.target, pageScope, root) : null;
+    return {
+      id: note.id,
+      title: note.title,
+      panelStatus: readPanelStatus(note.id, root),
+      kind: note.kind,
+      target: note.target,
+      targetDecodedAction: decodeHexSemanticKey(note.target),
+      inferredAction: label,
+      candidateCount: candidates.length,
+      candidates,
+      exactAnchorCountInPage: countExactAttribute(pageRoot, 'data-prototype-anchor', note.target),
+      exactAnchorCountInDocument: countExactAttribute(root, 'data-prototype-anchor', note.target),
+      exactGeneratedCountInPage: countExactAttribute(pageRoot, 'data-prototype-generated-target', note.target),
+      resolverResult: describeElement(resolved),
+      resolverReturnedElement: Boolean(resolved),
+    };
+  });
+
+  return {
+    capturedAt: new Date().toISOString(),
+    location: typeof window !== 'undefined' ? window.location.href : '',
+    activePageScope: pageScope,
+    currentPageRootScope: pageRootScope,
+    pageScopeNodesInDocument: scopeNodes,
+    activeAnnotationCount: activeAnnotations.length,
+    visibleButtonsInCurrentPage: visibleButtons,
+    actionRules: rows,
+  };
+}
+
+function renderDiagnosticPanel(snapshot, root = document) {
+  root.getElementById?.(DIAGNOSTIC_PANEL_ID)?.remove();
+
+  const panel = document.createElement('div');
+  panel.id = DIAGNOSTIC_PANEL_ID;
+  panel.setAttribute('data-prototype-annotation-ui', 'true');
+  Object.assign(panel.style, {
+    position: 'fixed',
+    left: '16px',
+    bottom: '58px',
+    width: 'min(720px, calc(100vw - 32px))',
+    maxHeight: '72vh',
+    zIndex: '22050',
+    background: '#111827',
+    color: '#e5e7eb',
+    border: '1px solid #374151',
+    borderRadius: '8px',
+    boxShadow: '0 12px 36px rgba(0,0,0,.35)',
+    overflow: 'hidden',
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+  });
+
+  const header = document.createElement('div');
+  Object.assign(header.style, {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '8px',
+    padding: '8px 10px',
+    borderBottom: '1px solid #374151',
+    background: '#1f2937',
+  });
+
+  const title = document.createElement('strong');
+  title.textContent = '标注运行诊断（只读）';
+  title.style.fontSize = '12px';
+
+  const actions = document.createElement('div');
+  Object.assign(actions.style, { display: 'flex', gap: '6px' });
+
+  const copy = document.createElement('button');
+  copy.textContent = '复制诊断';
+  Object.assign(copy.style, {
+    border: '1px solid #4b5563',
+    borderRadius: '4px',
+    background: '#374151',
+    color: '#fff',
+    padding: '3px 8px',
+    cursor: 'pointer',
+    fontSize: '11px',
+  });
+
+  const close = document.createElement('button');
+  close.textContent = '关闭';
+  Object.assign(close.style, {
+    border: '1px solid #4b5563',
+    borderRadius: '4px',
+    background: '#374151',
+    color: '#fff',
+    padding: '3px 8px',
+    cursor: 'pointer',
+    fontSize: '11px',
+  });
+  close.onclick = () => panel.remove();
+
+  const pre = document.createElement('pre');
+  const text = JSON.stringify(snapshot, null, 2);
+  pre.textContent = text;
+  Object.assign(pre.style, {
+    margin: '0',
+    padding: '10px 12px',
+    overflow: 'auto',
+    maxHeight: 'calc(72vh - 40px)',
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word',
+    fontSize: '11px',
+    lineHeight: '1.5',
+  });
+
+  copy.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      copy.textContent = '已复制';
+    } catch {
+      copy.textContent = '复制失败';
+    }
+  };
+
+  actions.append(copy, close);
+  header.append(title, actions);
+  panel.append(header, pre);
+  document.body.appendChild(panel);
+}
+
+function ensureDiagnosticLauncher(root = document) {
+  const annotationPanelVisible = Boolean(root.querySelector?.('.paf-annotation-panel'));
+  const existing = root.getElementById?.(DIAGNOSTIC_LAUNCHER_ID);
+
+  if (!annotationPanelVisible) {
+    existing?.remove();
+    root.getElementById?.(DIAGNOSTIC_PANEL_ID)?.remove();
+    return;
+  }
+  if (existing) return;
+
+  const button = document.createElement('button');
+  button.id = DIAGNOSTIC_LAUNCHER_ID;
+  button.type = 'button';
+  button.textContent = '运行标注诊断';
+  button.setAttribute('data-prototype-annotation-ui', 'true');
+  Object.assign(button.style, {
+    position: 'fixed',
+    left: '16px',
+    bottom: '16px',
+    zIndex: '22040',
+    border: '1px solid #d46b08',
+    borderRadius: '16px',
+    background: '#fff7e6',
+    color: '#ad4e00',
+    padding: '5px 12px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '600',
+    boxShadow: '0 2px 8px rgba(0,0,0,.12)',
+  });
+  button.onclick = async () => {
+    button.disabled = true;
+    const originalText = button.textContent;
+    button.textContent = '诊断中…';
+    try {
+      const snapshot = await buildDiagnosticSnapshot(root);
+      renderDiagnosticPanel(snapshot, root);
+    } finally {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  };
+
+  document.body.appendChild(button);
+}
+
 export function setActiveSemanticActionAnnotations(pageScope, annotations, root = document) {
   activePageScope = typeof pageScope === 'string' ? pageScope : '';
   activeAnnotations = Array.isArray(annotations) ? annotations : [];
@@ -218,6 +454,7 @@ export function setActiveSemanticActionAnnotations(pageScope, annotations, root 
   if (activePageScope && root?.querySelectorAll) {
     applySemanticActionAnchors(activePageScope, activeAnnotations, root);
   }
+  ensureDiagnosticLauncher(root);
 }
 
 function applyCurrentScope(root = document) {
@@ -226,6 +463,7 @@ function applyCurrentScope(root = document) {
   const currentScope = readPrototypePageScope(window.location.pathname, root);
   if (activePageScope === currentScope) {
     applySemanticActionAnchors(currentScope, activeAnnotations, root);
+    ensureDiagnosticLauncher(root);
     return;
   }
 
@@ -233,6 +471,7 @@ function applyCurrentScope(root = document) {
   if (cleared) notifyAnnotationLayerRescan(root);
   const annotations = bridgeRegistry?.[currentScope] || [];
   applySemanticActionAnchors(currentScope, annotations, root);
+  ensureDiagnosticLauncher(root);
 }
 
 function scheduleApply(root = document) {
