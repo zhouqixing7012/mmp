@@ -63,3 +63,38 @@ test('显式 JSX anchor 已正确命中时只复用结果，不接管 bridge own
   expect(button.getAttribute('data-prototype-anchor')).toBe(TARGET_B);
   expect(button.hasAttribute(SEMANTIC_ACTION_ANCHOR_ATTRIBUTE)).toBe(false);
 });
+
+test('只在当前 page scope 内判断同名审批按钮唯一性', () => {
+  document.body.innerHTML = `
+    <div data-prototype-page-scope="个人工作台::审批页A">
+      <button id="agree-a">同意</button>
+    </div>
+    <div data-prototype-page-scope="个人工作台::审批页B">
+      <button id="agree-b">同意</button>
+    </div>
+  `;
+
+  applySemanticActionAnchors(PAGE_B, [actionNote('agree-b-note', PAGE_B, TARGET_B)], document);
+
+  expect(document.getElementById('agree-a').hasAttribute('data-prototype-anchor')).toBe(false);
+  expect(document.getElementById('agree-b').getAttribute('data-prototype-anchor')).toBe(TARGET_B);
+});
+
+test('运行时写入 semantic anchor 后会制造 childList 变化供标注层重新扫描', async () => {
+  document.body.innerHTML = `
+    <div data-prototype-page-scope="个人工作台::审批页B">
+      <button id="agree-b">同意</button>
+    </div>
+  `;
+
+  const mutations = [];
+  const observer = new MutationObserver((records) => mutations.push(...records));
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  applySemanticActionAnchors(PAGE_B, [actionNote('agree-b-note', PAGE_B, TARGET_B)], document);
+  await Promise.resolve();
+  observer.disconnect();
+
+  expect(document.getElementById('agree-b').getAttribute('data-prototype-anchor')).toBe(TARGET_B);
+  expect(mutations.some((record) => record.type === 'childList')).toBe(true);
+});
