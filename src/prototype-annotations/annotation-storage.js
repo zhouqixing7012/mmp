@@ -4,7 +4,7 @@ import { normalizeAnnotationPosition } from './annotation-positioning';
 
 export const PROTOTYPE_ANNOTATION_STORAGE_KEY = 'prototype_annotation_overrides_v2';
 const LEGACY_STORAGE_KEY = 'prototype_annotation_drafts_v1';
-const OVERRIDE_STORE_VERSION = 3;
+const OVERRIDE_STORE_VERSION = 4;
 
 const baseAnnotationRegistry = new Map();
 const cloneValue = (value) => JSON.parse(JSON.stringify(value));
@@ -103,22 +103,13 @@ function buildOverrideRecord(pageKey, baseAnnotations, currentAnnotations) {
   };
 }
 
-function hasExplicitTargetBinding(note, storeVersion) {
-  if (Number(storeVersion || 0) < OVERRIDE_STORE_VERSION) return false;
-
-  const context = note?.context;
-  if (!context || typeof context !== 'object') return false;
-
-  // 从 v3 开始，pageScope / pageLabel / generatedTarget 只用于当前版本明确执行的新增/重绑。
-  // v2 历史数据中的同名字段来源不可靠，不能继续把旧 target 锁死。
-  return typeof context.pageScope === 'string'
-    && typeof context.pageLabel === 'string'
-    && Object.prototype.hasOwnProperty.call(context, 'generatedTarget');
+function hasExplicitTargetBinding(note) {
+  return note?.context?.userReboundTarget === true;
 }
 
-function removeLegacyBindingContext(note, storeVersion) {
-  if (Number(storeVersion || 0) >= OVERRIDE_STORE_VERSION) return note;
+function removeLegacyBindingContext(note) {
   if (!note?.context || typeof note.context !== 'object') return note;
+  if (hasExplicitTargetBinding(note)) return note;
 
   const context = { ...note.context };
   delete context.pageScope;
@@ -134,24 +125,24 @@ function removeLegacyBindingContext(note, storeVersion) {
   return { ...note, context };
 }
 
-function mergeBaseNoteWithOverride(baseNote, overrideNote, pageKey, storeVersion) {
+function mergeBaseNoteWithOverride(baseNote, overrideNote, pageKey) {
   const normalizedOverride = normalizeAnnotation(overrideNote, pageKey);
-  const migratedOverride = removeLegacyBindingContext(normalizedOverride, storeVersion);
+  const migratedOverride = removeLegacyBindingContext(normalizedOverride);
 
-  if (migratedOverride.target === baseNote.target || hasExplicitTargetBinding(migratedOverride, storeVersion)) {
+  if (hasExplicitTargetBinding(migratedOverride)) {
     return migratedOverride;
   }
 
-  // v2 及更早的覆盖层保存的是整条 note 快照：普通文字编辑/拖动也可能夹带当时的旧 target，
-  // 并且旧 context 无法可靠证明用户真的执行过“重选”。因此历史数据统一跟随当前代码基线 target，
-  // 同时继续保留用户修改过的标题、内容和位置；从 v3 起的新重绑仍会被明确保留。
+  // 只有新版“重选”明确写入 userReboundTarget=true 时，用户 target 才能覆盖代码基线。
+  // 历史版本中的 pageScope/pageLabel/generatedTarget 不能证明用户真的重绑过；
+  // 对内置标注统一采用当前代码基线 target，同时继续保留用户修改过的标题、内容和位置。
   return {
     ...migratedOverride,
     target: baseNote.target,
   };
 }
 
-function mergeOverrideRecord(pageKey, baseAnnotations, record, storeVersion = OVERRIDE_STORE_VERSION) {
+function mergeOverrideRecord(pageKey, baseAnnotations, record) {
   const base = normalizeAnnotationCollection(baseAnnotations, pageKey);
   if (!record) return cloneValue(base);
 
@@ -159,13 +150,13 @@ function mergeOverrideRecord(pageKey, baseAnnotations, record, storeVersion = OV
   const overrides = record.overrides && typeof record.overrides === 'object'
     ? record.overrides
     : {};
-  const baseIds = new Set(base.map((note) => note.id));
+  const baseIds = new Set(base.map((note) => [note.id, note]).map(([id]) => id));
 
   const merged = base
     .filter((note) => !deletedIds.has(note.id))
     .map((note) => (
       overrides[note.id]
-        ? mergeBaseNoteWithOverride(note, overrides[note.id], pageKey, storeVersion)
+        ? mergeBaseNoteWithOverride(note, overrides[note.id], pageKey)
         : note
     ));
 
@@ -217,7 +208,7 @@ export function readAnnotationDraft(pageKey, defaultAnnotations = [], fallbackPa
 
   const store = readOverrideStore();
   const record = store?.pages?.[pageKey] || findFallbackRecord(store, fallbackPageKeys);
-  return mergeOverrideRecord(pageKey, base, record, store?.version);
+  return mergeOverrideRecord(pageKey, base, record);
 }
 
 export function writeAnnotationDraft(pageKey, annotations) {
@@ -242,7 +233,7 @@ export function writeAnnotationDraft(pageKey, annotations) {
     },
   };
   writeDemoData(PROTOTYPE_ANNOTATION_STORAGE_KEY, nextStore);
-  return mergeOverrideRecord(pageKey, base, record, OVERRIDE_STORE_VERSION);
+  return mergeOverrideRecord(pageKey, base, record);
 }
 
 export function resetAnnotationDraft(pageKey, defaultAnnotations = [], fallbackPageKeys = []) {
