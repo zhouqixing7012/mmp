@@ -24,6 +24,10 @@ import {
   applyConsumableCoverageAudit,
 } from './consumable-prd-audit';
 import {
+  applyAssetBorrowingAnnotationAudit,
+  applyAssetBorrowingCoverageAudit,
+} from './asset-borrowing-prd-audit';
+import {
   FOUNDATION_PRD_MODULES,
   foundationAnnotationsByScope,
   foundationCoverageByScope,
@@ -74,6 +78,13 @@ const auditedContractNumberCoverageByScope = applyContractNumberCoverageAudit(
   contractNumberRequirementCoverageByScope
 );
 
+const auditedAssetBorrowingAnnotationsByScope = applyAssetBorrowingAnnotationAudit(
+  assetBorrowingAnnotationsByScope
+);
+const auditedAssetBorrowingCoverageByScope = applyAssetBorrowingCoverageAudit(
+  assetBorrowingRequirementCoverageByScope
+);
+
 const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyConsumableAnnotationAudit(
   applyNewEmployeeClaimAnnotationAudit(
     applyAssetApplicationAnnotationAudit(expandedEmployeeSelfServiceAnnotationsByScope)
@@ -87,14 +98,14 @@ const auditedExpandedEmployeeSelfServiceCoverageByScope = applyConsumableCoverag
 
 const ALL_ANNOTATIONS_BY_SCOPE = mergeScopeMaps(
   auditedContractNumberAnnotationsByScope,
-  assetBorrowingAnnotationsByScope,
+  auditedAssetBorrowingAnnotationsByScope,
   auditedExpandedEmployeeSelfServiceAnnotationsByScope,
   foundationAnnotationsByScope
 );
 
 const ALL_COVERAGE_BY_SCOPE = mergeScopeMaps(
   auditedContractNumberCoverageByScope,
-  assetBorrowingRequirementCoverageByScope,
+  auditedAssetBorrowingCoverageByScope,
   auditedExpandedEmployeeSelfServiceCoverageByScope,
   foundationCoverageByScope
 );
@@ -154,7 +165,7 @@ export function getPageCoverageState(pageScope) {
 }
 
 export function getEmployeeSelfServiceCoverageModules() {
-  const borrowingRequirements = flattenCoverage(assetBorrowingRequirementCoverageByScope);
+  const borrowingRequirements = flattenCoverage(auditedAssetBorrowingCoverageByScope);
   const contractRequirements = flattenCoverage(auditedContractNumberCoverageByScope);
   const expandedById = new Map(EXPANDED_EMPLOYEE_SELF_SERVICE_MODULES.map((module) => [module.id, module]));
   const foundationById = new Map(FOUNDATION_PRD_MODULES.map((module) => [module.id, module]));
@@ -165,8 +176,8 @@ export function getEmployeeSelfServiceCoverageModules() {
         ...module,
         state: 'audited',
         label: borrowingRequirements.some((item) => item.status === 'review') ? '已审计，存在PRD差异' : '已建立完整覆盖账本',
-        registeredScopes: Object.keys(assetBorrowingAnnotationsByScope).length,
-        auditedScopes: Object.keys(assetBorrowingRequirementCoverageByScope).length,
+        registeredScopes: Object.keys(auditedAssetBorrowingAnnotationsByScope).length,
+        auditedScopes: Object.keys(auditedAssetBorrowingCoverageByScope).length,
         ...countStatuses(borrowingRequirements),
       };
     }
