@@ -664,6 +664,13 @@ function findDirectSemanticButtonTarget(target, pageScope, root) {
   return findUniqueButtonBySemanticKey(pageRoot, wanted.key);
 }
 
+function findExactAnchorInRoot(target, searchRoot) {
+  if (!searchRoot?.querySelectorAll) return null;
+  return Array.from(searchRoot.querySelectorAll('[data-prototype-anchor]'))
+    .find((element) => element.getAttribute('data-prototype-anchor') === target)
+    || null;
+}
+
 function findCompatibleGeneratedTarget(target, pageScope, root) {
   const wanted = splitGeneratedTarget(target);
   if (!wanted) return null;
@@ -693,11 +700,19 @@ function findCompatibleGeneratedTarget(target, pageScope, root) {
 export function resolvePrototypeTarget(target, pageScope, root = document) {
   if (!target) return null;
 
-  const anchors = Array.from(root.querySelectorAll?.('[data-prototype-anchor]') || []);
-  const anchor = anchors.find((element) => element.getAttribute('data-prototype-anchor') === target);
-  if (anchor) return anchor;
-
   const wanted = splitGeneratedTarget(target);
+  const pageRoot = wanted?.kind === 'button'
+    ? findCurrentPageScopeRoot(pageScope, root)
+    : root;
+  const overlay = wanted?.kind === 'button' ? getActivePrototypeOverlay(root) : null;
+
+  // Button anchors are page scoped from the very first lookup. Different workbench pages
+  // are allowed to have identical semantic targets (for example "同意" under "审批信息"),
+  // so a document-wide exact-anchor lookup is unsafe for button targets.
+  const anchor = wanted?.kind === 'button'
+    ? (findExactAnchorInRoot(target, overlay) || findExactAnchorInRoot(target, pageRoot))
+    : findExactAnchorInRoot(target, root);
+  if (anchor) return anchor;
 
   // Button targets are resolved directly from the current page's live DOM semantics.
   // Parent Card/module context remains useful when generating a target, but is no longer
@@ -709,9 +724,7 @@ export function resolvePrototypeTarget(target, pageScope, root = document) {
   // Once a target is known to be a button, every fallback is also constrained to the
   // current page-scope container. This prevents prepare/compatibility fallback from
   // accidentally picking a same-label button that belongs to another workbench page.
-  const resolutionRoot = wanted?.kind === 'button'
-    ? findCurrentPageScopeRoot(pageScope, root)
-    : root;
+  const resolutionRoot = wanted?.kind === 'button' ? pageRoot : root;
 
   const existingGenerated = Array.from(resolutionRoot.querySelectorAll?.(`[${GENERATED_TARGET_ATTRIBUTE}]`) || [])
     .find((element) => (
