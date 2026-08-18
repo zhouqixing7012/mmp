@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { applySemanticActionAnchors } from './annotation-action-anchor-bridge';
+import { setActiveSemanticActionAnnotations } from './annotation-action-anchor-bridge';
 
 export default function usePrototypeAnnotations() {
   const [enabled, setEnabled] = useState(false);
@@ -30,13 +30,13 @@ export default function usePrototypeAnnotations() {
 
   const updateActiveNotes = useCallback((notes) => {
     const nextNotes = Array.isArray(notes) ? notes : [];
-    const pageScope = nextNotes.find((note) => typeof note?.pageKey === 'string')?.pageKey;
+    const pageScope = nextNotes.find((note) => typeof note?.pageKey === 'string')?.pageKey || '';
 
-    // 以“当前真正活动的标注集合”为审批动作语义绑定的数据源。
-    // 这样无论标注来自代码基线、本地覆盖、导入还是刚创建的内存态，
-    // 都会在 PrototypeAnnotationLayer 的 scanAnchors 运行前先把唯一同名动作按钮挂成稳定 anchor。
-    if (pageScope && typeof document !== 'undefined') {
-      applySemanticActionAnchors(pageScope, nextNotes, document);
+    // active annotations 是运行时唯一可信的数据源：同步保存给 semantic bridge，
+    // 后续即使业务页按钮晚一拍挂载、同一路由切换页面或 React 复用 DOM，
+    // MutationObserver 也会基于当前页标注重新挂 anchor，并清掉旧页 stale anchor。
+    if (typeof document !== 'undefined') {
+      setActiveSemanticActionAnnotations(pageScope, nextNotes, document);
     }
 
     setActiveNotes(nextNotes);
