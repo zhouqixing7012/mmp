@@ -33,6 +33,11 @@ import AnnotationMarkdown, { AnnotationInlineMarkdown, hasBlockMarkdown } from '
 const { TextArea } = Input;
 const PANEL_Z_INDEX = 20000;
 const POPUP_Z_INDEX = 21000;
+const PANEL_SIZE_STORAGE_KEY = 'prototype_annotation_panel_size_v1';
+const PANEL_MIN_WIDTH = 380;
+const PANEL_MAX_WIDTH = 760;
+const PANEL_MIN_HEIGHT = 280;
+const PANEL_VIEWPORT_MAX_RATIO = 0.76;
 
 const SOURCE_LABELS = {
   prd: 'PRD',
@@ -67,10 +72,42 @@ function isDynamicTargetNote(note) {
     || LEGACY_DYNAMIC_TARGET_NOTE_IDS.has(note?.id);
 }
 
+function readStoredPanelSize() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(PANEL_SIZE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!Number.isFinite(parsed?.width) || !Number.isFinite(parsed?.height)) return null;
+    return { width: parsed.width, height: parsed.height };
+  } catch {
+    return null;
+  }
+}
+
+function storePanelSize(size) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (size) window.sessionStorage.setItem(PANEL_SIZE_STORAGE_KEY, JSON.stringify(size));
+    else window.sessionStorage.removeItem(PANEL_SIZE_STORAGE_KEY);
+  } catch {
+    // sessionStorage 不可用时仍保持当前页面可用，不阻断标注面板。
+  }
+}
+
+function clampPanelSize(size, viewport) {
+  const maxWidth = Math.max(PANEL_MIN_WIDTH, Math.min(PANEL_MAX_WIDTH, viewport.width - 32));
+  const maxHeight = Math.max(PANEL_MIN_HEIGHT, viewport.height - 32);
+  return {
+    width: Math.max(PANEL_MIN_WIDTH, Math.min(size.width, maxWidth)),
+    height: Math.max(PANEL_MIN_HEIGHT, Math.min(size.height, maxHeight)),
+  };
+}
+
 const BODY_POPUP = () => document.body;
 
 function FieldLabel({ children }) {
-  return <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>{children}</div>;
+  return <div style={{ fontSize: 12, color: '#667085', marginBottom: 4, fontWeight: 500 }}>{children}</div>;
 }
 
 function SourceBadge({ source }) {
@@ -84,7 +121,7 @@ function SourceBadge({ source }) {
 function AnnotationItemView({ item }) {
   if (hasBlockMarkdown(item.text)) {
     return (
-      <div style={{ fontSize: 12, color: '#666', lineHeight: 1.7, marginBottom: 6 }}>
+      <div style={{ fontSize: 12, color: '#475467', lineHeight: 1.75, marginBottom: 6 }}>
         <AnnotationMarkdown text={item.text} />
         <SourceBadge source={item.source} />
       </div>
@@ -92,8 +129,8 @@ function AnnotationItemView({ item }) {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, color: '#666', lineHeight: 1.7, marginBottom: 4 }}>
-      <span aria-hidden="true" style={{ flexShrink: 0, color: '#8c8c8c' }}>•</span>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 12, color: '#475467', lineHeight: 1.75, marginBottom: 5 }}>
+      <span aria-hidden="true" style={{ flexShrink: 0, color: '#98a2b3' }}>•</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <AnnotationInlineMarkdown text={item.text} />
         <SourceBadge source={item.source} />
@@ -146,9 +183,9 @@ function AnnotationEditor({ note, onUpdateNote, onDeleteNote, onStartRebind, onC
   )));
 
   return (
-    <div style={{ padding: '12px 16px', background: '#fafcff', borderBottom: '1px solid #f0f0f0' }}>
+    <div style={{ padding: '14px 16px', background: '#f8faff', borderBottom: '1px solid #eaecf0' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>编辑当前标注</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#344054' }}>编辑当前标注</span>
         <Button type="link" size="small" onClick={onCollapse}>收起编辑</Button>
       </div>
 
@@ -213,12 +250,12 @@ function AnnotationEditor({ note, onUpdateNote, onDeleteNote, onStartRebind, onC
 
       <Divider style={{ margin: '12px 0' }} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#555' }}>详细说明</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: '#475467' }}>详细说明</span>
         <Button type="link" size="small" icon={<Plus size={13} />} onClick={addSection}>增加分组</Button>
       </div>
 
       {(note.sections || []).map((section, sectionIndex) => (
-        <div key={`${note.id}-section-${sectionIndex}`} style={{ border: '1px solid #f0f0f0', borderRadius: 6, padding: 8, marginBottom: 8, background: '#fff' }}>
+        <div key={`${note.id}-section-${sectionIndex}`} style={{ border: '1px solid #eaecf0', borderRadius: 8, padding: 9, marginBottom: 8, background: '#fff' }}>
           <Space.Compact block>
             <Input size="small" value={section.title} placeholder="分组标题" onChange={(event) => updateSectionTitle(sectionIndex, event.target.value)} />
             <Popconfirm zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP} title="删除这个分组？" onConfirm={() => removeSection(sectionIndex)}>
@@ -294,9 +331,12 @@ export default function PrototypeAnnotationPanel({
 }) {
   const [position, setPosition] = useState({ x: null, y: null });
   const [dragging, setDragging] = useState(false);
+  const [resizing, setResizing] = useState(false);
   const [minimized, setMinimized] = useState(false);
+  const [manualSize, setManualSize] = useState(() => readStoredPanelSize());
   const [viewport, setViewport] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
   const dragRef = useRef({ startX: 0, startY: 0, posX: 0, posY: 0 });
+  const resizeRef = useRef({ startX: 0, startY: 0, width: 0, height: 0 });
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -304,21 +344,33 @@ export default function PrototypeAnnotationPanel({
   const matchedCount = notes.filter((note) => matchedIds.has(note.id)).length;
   const dynamicCount = notes.filter((note) => !matchedIds.has(note.id) && isDynamicTargetNote(note)).length;
   const unmatchedCount = Math.max(0, notes.length - matchedCount - dynamicCount);
-  const expandedPanelWidth = editMode ? 480 : 430;
-  const expandedPanelHeight = Math.max(240, viewport.height - 32);
-  const panelWidth = minimized ? 300 : expandedPanelWidth;
-  const panelHeight = minimized ? 44 : expandedPanelHeight;
+  const defaultPanelWidth = editMode ? 500 : 460;
+  const autoMaxHeight = Math.max(PANEL_MIN_HEIGHT, Math.floor(viewport.height * PANEL_VIEWPORT_MAX_RATIO));
+  const panelWidth = minimized ? 300 : (manualSize?.width || defaultPanelWidth);
+  const estimatedPanelHeight = minimized
+    ? 44
+    : (manualSize?.height || Math.min(panelRef?.current?.getBoundingClientRect?.().height || autoMaxHeight, autoMaxHeight));
 
   const clampPanelPosition = useCallback((nextPosition) => ({
     x: Math.max(8, Math.min(nextPosition.x, viewport.width - panelWidth - 8)),
-    y: Math.max(8, Math.min(nextPosition.y, viewport.height - panelHeight - 8)),
-  }), [panelHeight, panelWidth, viewport.height, viewport.width]);
+    y: Math.max(8, Math.min(nextPosition.y, viewport.height - estimatedPanelHeight - 8)),
+  }), [estimatedPanelHeight, panelWidth, viewport.height, viewport.width]);
 
   useEffect(() => {
     const onResize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
+
+  useEffect(() => {
+    if (!manualSize) return;
+    setManualSize((previous) => {
+      if (!previous) return previous;
+      const next = clampPanelSize(previous, viewport);
+      storePanelSize(next);
+      return next;
+    });
+  }, [viewport]);
 
   useEffect(() => {
     setPosition((previous) => {
@@ -348,6 +400,7 @@ export default function PrototypeAnnotationPanel({
   }, [editMode, expandedNoteId, minimized]);
 
   const onMouseDown = useCallback((event) => {
+    if (resizing) return;
     setDragging(true);
     dragRef.current = {
       startX: event.clientX,
@@ -356,7 +409,7 @@ export default function PrototypeAnnotationPanel({
       posY: position.y,
     };
     event.preventDefault();
-  }, [position]);
+  }, [position, resizing]);
 
   useEffect(() => {
     if (!dragging) return undefined;
@@ -374,6 +427,49 @@ export default function PrototypeAnnotationPanel({
       window.removeEventListener('mouseup', onUp);
     };
   }, [clampPanelPosition, dragging]);
+
+  const startResize = useCallback((event) => {
+    const rect = panelRef?.current?.getBoundingClientRect?.();
+    if (!rect) return;
+    setResizing(true);
+    resizeRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      width: rect.width,
+      height: rect.height,
+    };
+    event.preventDefault();
+    event.stopPropagation();
+  }, [panelRef]);
+
+  useEffect(() => {
+    if (!resizing) return undefined;
+    const onMove = (event) => {
+      const next = clampPanelSize({
+        width: resizeRef.current.width + event.clientX - resizeRef.current.startX,
+        height: resizeRef.current.height + event.clientY - resizeRef.current.startY,
+      }, viewport);
+      setManualSize(next);
+    };
+    const onUp = () => {
+      setResizing(false);
+      setManualSize((current) => {
+        if (current) storePanelSize(current);
+        return current;
+      });
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [resizing, viewport]);
+
+  const resetPanelSize = useCallback(() => {
+    setManualSize(null);
+    storePanelSize(null);
+  }, []);
 
   const handleImportFile = async (event) => {
     const file = event.target.files?.[0];
@@ -403,13 +499,30 @@ export default function PrototypeAnnotationPanel({
     left: position.x ?? Math.max(8, viewport.width - panelWidth - 24),
     top: position.y ?? 16,
     width: panelWidth,
-    height: panelHeight,
+    height: minimized ? 44 : (manualSize?.height || 'auto'),
+    maxHeight: minimized ? 44 : autoMaxHeight,
     zIndex: PANEL_Z_INDEX,
     background: '#fff',
-    borderRadius: 8,
-    boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
+    border: '1px solid rgba(16, 24, 40, 0.08)',
+    borderRadius: 12,
+    boxShadow: '0 18px 50px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(15, 23, 42, 0.08)',
     cursor: dragging ? 'grabbing' : 'default',
     overflow: 'hidden',
+  };
+
+  const statusPill = (label, value, tone) => {
+    const tones = {
+      neutral: { background: '#f2f4f7', color: '#475467' },
+      success: { background: '#ecfdf3', color: '#027a48' },
+      info: { background: '#eff8ff', color: '#175cd3' },
+      warning: { background: '#fffaeb', color: '#b54708' },
+    };
+    const style = tones[tone] || tones.neutral;
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 999, background: style.background, color: style.color, fontSize: 11, fontWeight: 500 }}>
+        {label}<strong style={{ fontWeight: 700 }}>{value}</strong>
+      </span>
+    );
   };
 
   return createPortal(
@@ -443,20 +556,19 @@ export default function PrototypeAnnotationPanel({
               padding: '0 8px 0 12px',
               cursor: 'grab',
               userSelect: 'none',
-              background: '#fafafa',
+              background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-              <GripHorizontal size={16} color="#999" />
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#333', whiteSpace: 'nowrap' }}>产品标注</span>
+              <span style={{ width: 8, height: 8, borderRadius: 3, background: '#1677ff', flexShrink: 0 }} />
+              <span style={{ fontSize: 14, fontWeight: 650, color: '#1d2939', whiteSpace: 'nowrap' }}>产品标注</span>
               <Tag style={{ marginInlineEnd: 0 }}>{editMode ? '编辑' : '查看'}</Tag>
               {dirty && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未保存</Tag>}
             </div>
             <div onMouseDown={(event) => event.stopPropagation()} style={{ flexShrink: 0 }}>
               <Button
                 aria-label="展开产品标注面板"
-                type="primary"
-                ghost
+                type="text"
                 size="small"
                 icon={<Maximize2 size={14} />}
                 onClick={() => setMinimized(false)}
@@ -473,8 +585,8 @@ export default function PrototypeAnnotationPanel({
           data-prototype-annotation-ui="true"
           style={{
             ...panelStyle,
-            display: 'grid',
-            gridTemplateRows: 'auto auto auto auto minmax(0, 1fr)',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           <div
@@ -484,35 +596,46 @@ export default function PrototypeAnnotationPanel({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '10px 12px',
-              borderBottom: '1px solid #f0f0f0',
+              padding: '11px 12px',
+              borderBottom: '1px solid #eaecf0',
               cursor: 'grab',
               userSelect: 'none',
-              background: '#fafafa',
+              background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
               gap: 8,
+              flexShrink: 0,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-              <GripHorizontal size={16} color="#999" />
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#333', whiteSpace: 'nowrap' }}>产品标注</span>
-              {dirty && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未保存</Tag>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+              <GripHorizontal size={15} color="#98a2b3" />
+              <span style={{ width: 8, height: 8, borderRadius: 3, background: '#1677ff', flexShrink: 0 }} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 14, fontWeight: 650, color: '#1d2939', whiteSpace: 'nowrap' }}>产品标注</span>
+                  {dirty && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未保存</Tag>}
+                </div>
+                <div style={{ marginTop: 1, fontSize: 10, color: '#98a2b3' }}>PRD 规则与原型评审</div>
+              </div>
             </div>
-            <div onMouseDown={(event) => event.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <div onMouseDown={(event) => event.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
               <Segmented
                 size="small"
                 value={editMode ? 'edit' : 'view'}
                 options={[{ label: '查看', value: 'view' }, { label: '编辑', value: 'edit' }]}
                 onChange={(value) => onToggleEditMode(value === 'edit')}
               />
+              {manualSize && (
+                <Tooltip title="恢复内容自适应尺寸" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
+                  <Button aria-label="恢复自适应尺寸" type="text" size="small" icon={<Maximize2 size={14} />} onClick={resetPanelSize} />
+                </Tooltip>
+              )}
               <Tooltip title="仅收起面板，标注模式继续保持" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
                 <Button
                   aria-label="收起产品标注面板"
+                  type="text"
                   size="small"
                   icon={<Minus size={14} />}
                   onClick={() => setMinimized(true)}
-                >
-                  收起
-                </Button>
+                />
               </Tooltip>
               <Tooltip title="退出标注模式" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
                 <Button aria-label="退出标注模式" type="text" size="small" icon={<X size={16} />} onClick={onClose} />
@@ -521,7 +644,7 @@ export default function PrototypeAnnotationPanel({
           </div>
 
           {editMode ? (
-            <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0', background: '#fff' }}>
+            <div style={{ padding: '8px 12px', borderBottom: '1px solid #eaecf0', background: '#fff', flexShrink: 0 }}>
               <Space size={4} wrap>
                 <Tooltip title="新增标注后，可直接选择按钮、查询条件、表格字段或模块区域" zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
                   <Button size="small" icon={<Plus size={14} />} onClick={onCreateNote}>新增</Button>
@@ -550,20 +673,20 @@ export default function PrototypeAnnotationPanel({
               </Space>
               <input ref={fileInputRef} type="file" accept="application/json,.json" hidden onChange={handleImportFile} />
             </div>
-          ) : <div />}
+          ) : null}
 
           {bindingMode ? (
-            <div style={{ padding: '8px 12px', background: '#fffbe6', borderBottom: '1px solid #ffe58f', fontSize: 12, color: '#8c6d1f', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '8px 12px', background: '#fffaeb', borderBottom: '1px solid #fedf89', fontSize: 12, color: '#93370d', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
               <span>{bindingMode.type === 'create' ? '移动鼠标选择按钮、查询条件、表格字段、选择弹窗或模块，点击完成标注' : '移动鼠标选择新的精确绑定位置，点击完成重绑'}</span>
               <Button type="link" size="small" onClick={onCancelBinding}>取消</Button>
             </div>
-          ) : <div />}
+          ) : null}
 
-          <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#888', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <span>共 {notes.length} 项</span>
-            <span style={{ color: '#389e0d' }}>已匹配 {matchedCount}</span>
-            {dynamicCount > 0 && <span style={{ color: '#1677ff' }}>动态目标 {dynamicCount}</span>}
-            <span style={{ color: unmatchedCount > 0 ? '#d46b08' : '#999' }}>真未匹配 {unmatchedCount}</span>
+          <div style={{ padding: '8px 12px', borderBottom: '1px solid #eaecf0', display: 'flex', gap: 6, flexWrap: 'wrap', background: '#fff', flexShrink: 0 }}>
+            {statusPill('标注', notes.length, 'neutral')}
+            {statusPill('已匹配', matchedCount, 'success')}
+            {dynamicCount > 0 && statusPill('动态', dynamicCount, 'info')}
+            {statusPill('未匹配', unmatchedCount, unmatchedCount > 0 ? 'warning' : 'neutral')}
           </div>
 
           <div
@@ -572,12 +695,14 @@ export default function PrototypeAnnotationPanel({
             onWheelCapture={(event) => event.stopPropagation()}
             style={{
               minHeight: 0,
-              overflowY: 'scroll',
+              flex: '1 1 auto',
+              overflowY: 'auto',
               overflowX: 'hidden',
               overscrollBehavior: 'contain',
               WebkitOverflowScrolling: 'touch',
               touchAction: 'pan-y',
               scrollbarGutter: 'stable',
+              background: '#f8fafc',
             }}
           >
             {editMode && selectedNote && (
@@ -590,7 +715,7 @@ export default function PrototypeAnnotationPanel({
               />
             )}
 
-            <div style={{ padding: '8px 0' }}>
+            <div style={{ padding: '8px 8px 10px' }}>
               {notes.map((note) => {
                 const number = noteNumbers.get(note.id);
                 const matched = matchedIds.has(note.id);
@@ -598,7 +723,7 @@ export default function PrototypeAnnotationPanel({
                 const expanded = expandedNoteId === note.id;
 
                 return (
-                  <div key={note.id} data-annotation-note-id={note.id}>
+                  <div key={note.id} data-annotation-note-id={note.id} style={{ marginBottom: 6 }}>
                     <div
                       className="paf-note-item"
                       onClick={() => handleNoteClick(note)}
@@ -606,28 +731,31 @@ export default function PrototypeAnnotationPanel({
                         display: 'flex',
                         alignItems: 'flex-start',
                         gap: 10,
-                        padding: '10px 16px',
+                        padding: '10px 11px',
                         cursor: 'pointer',
-                        borderLeft: expanded ? '3px solid #1677ff' : '3px solid transparent',
-                        background: expanded ? '#f0f5ff' : 'transparent',
+                        border: expanded ? '1px solid #84adff' : '1px solid #eaecf0',
+                        borderRadius: expanded ? '9px 9px 0 0' : 9,
+                        background: expanded ? '#eff4ff' : '#fff',
+                        boxShadow: expanded ? '0 1px 2px rgba(16, 24, 40, 0.05)' : 'none',
+                        transition: 'border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease',
                       }}
                     >
-                      <span style={{ width: 24, height: 24, borderRadius: '50%', background: matched ? '#1677ff' : '#f5f5f5', color: matched ? '#fff' : dynamicTarget ? '#1677ff' : '#999', border: matched ? 'none' : dynamicTarget ? '1px solid #91caff' : '1px solid #d9d9d9', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                      <span style={{ width: 24, height: 24, borderRadius: 7, background: matched ? '#1677ff' : dynamicTarget ? '#eff8ff' : '#f2f4f7', color: matched ? '#fff' : dynamicTarget ? '#175cd3' : '#667085', border: matched ? 'none' : dynamicTarget ? '1px solid #b2ddff' : '1px solid #eaecf0', fontSize: 12, fontWeight: 650, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
                         {number || '-'}
                       </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4 }}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{note.title}</span>
-                          {dynamicTarget && <Tag color="blue" style={{ marginInlineEnd: 0 }}>需打开弹窗</Tag>}
-                          {!matched && !dynamicTarget && <Tag color="orange" style={{ marginInlineEnd: 0 }}>未匹配</Tag>}
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 5 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#1d2939', lineHeight: 1.45 }}>{note.title}</span>
+                          {dynamicTarget && <Tag color="blue" style={{ marginInlineEnd: 0, flexShrink: 0 }}>需打开弹窗</Tag>}
+                          {!matched && !dynamicTarget && <Tag color="orange" style={{ marginInlineEnd: 0, flexShrink: 0 }}>未匹配</Tag>}
                         </div>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <span style={{ fontSize: 11, background: '#fff7e6', color: '#d46b08', padding: '1px 6px', borderRadius: 3 }}>{SOURCE_LABELS[note.summarySource] || note.summarySource}</span>
-                          <span style={{ fontSize: 11, color: '#bbb' }}>{note.kind}</span>
+                        <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
+                          <span style={{ fontSize: 10, background: '#fff7e6', color: '#b54708', padding: '2px 6px', borderRadius: 999 }}>{SOURCE_LABELS[note.summarySource] || note.summarySource}</span>
+                          <span style={{ fontSize: 10, color: '#98a2b3' }}>{note.kind}</span>
                           <ChevronDown
                             size={14}
-                            color="#bbb"
-                            style={{ marginLeft: 'auto', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+                            color="#98a2b3"
+                            style={{ marginLeft: 'auto', flexShrink: 0, transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
                             onClick={(event) => {
                               event.stopPropagation();
                               if (expanded) onToggleExpand(note.id);
@@ -639,10 +767,10 @@ export default function PrototypeAnnotationPanel({
                     </div>
 
                     {!editMode && expanded && (
-                      <div style={{ marginLeft: 50, marginRight: 16, marginBottom: 8, padding: '10px 14px', background: '#fafafa', borderRadius: 6, border: '1px solid #f0f0f0' }}>
+                      <div style={{ padding: '11px 13px 10px 45px', background: '#fff', border: '1px solid #84adff', borderTop: 'none', borderRadius: '0 0 9px 9px' }}>
                         {(note.sections || []).map((section, sectionIndex) => (
                           <div key={`${note.id}-detail-${sectionIndex}`} style={{ marginBottom: sectionIndex < note.sections.length - 1 ? 12 : 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 5 }}>{section.title}</div>
+                            <div style={{ fontSize: 12, fontWeight: 650, color: '#344054', marginBottom: 6 }}>{section.title}</div>
                             {(section.items || []).map((item, itemIndex) => (
                               <AnnotationItemView key={`${note.id}-detail-item-${sectionIndex}-${itemIndex}`} item={item} />
                             ))}
@@ -655,6 +783,26 @@ export default function PrototypeAnnotationPanel({
               })}
             </div>
           </div>
+
+          <Tooltip title={manualSize ? '拖动调整面板大小；双击恢复内容自适应' : '拖动调整面板大小'} zIndex={POPUP_Z_INDEX} getPopupContainer={BODY_POPUP}>
+            <div
+              role="separator"
+              aria-label="调整产品标注面板大小"
+              onMouseDown={startResize}
+              onDoubleClick={resetPanelSize}
+              style={{
+                position: 'absolute',
+                right: 3,
+                bottom: 3,
+                width: 18,
+                height: 18,
+                cursor: 'nwse-resize',
+                zIndex: 2,
+                opacity: resizing ? 1 : 0.62,
+                background: 'linear-gradient(135deg, transparent 0 48%, #98a2b3 49% 55%, transparent 56% 66%, #98a2b3 67% 73%, transparent 74%)',
+              }}
+            />
+          </Tooltip>
         </div>
       )}
     </ConfigProvider>,
