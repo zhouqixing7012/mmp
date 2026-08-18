@@ -6,6 +6,7 @@ import { applyAssetApplicationAnnotationAudit } from './asset-application-prd-au
 import { applyNewEmployeeClaimAnnotationAudit } from './new-employee-claim-prd-audit';
 import { applyContractNumberAnnotationAudit } from './contract-number-prd-audit';
 import { applyConsumableAnnotationAudit } from './consumable-prd-audit';
+import { applyAssetBorrowingAnnotationAudit } from './asset-borrowing-prd-audit';
 import {
   applySemanticActionAnchors,
   installSemanticActionAnchorBridge,
@@ -38,6 +39,10 @@ const auditedContractNumberAnnotationsByScope = applyContractNumberAnnotationAud
   contractNumberAnnotationsByScope
 );
 
+const auditedAssetBorrowingAnnotationsByScope = applyAssetBorrowingAnnotationAudit(
+  assetBorrowingAnnotationsByScope
+);
+
 const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyConsumableAnnotationAudit(
   applyNewEmployeeClaimAnnotationAudit(
     applyAssetApplicationAnnotationAudit(expandedEmployeeSelfServiceAnnotationsByScope)
@@ -48,7 +53,7 @@ const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyConsumableAnno
 // 这里必须按 scope 合并数组，不能再用对象 spread 覆盖后注册模块。
 const BUILT_IN_ANNOTATIONS_BY_SCOPE = mergeScopeMaps(
   auditedContractNumberAnnotationsByScope,
-  assetBorrowingAnnotationsByScope,
+  auditedAssetBorrowingAnnotationsByScope,
   auditedExpandedEmployeeSelfServiceAnnotationsByScope,
   foundationAnnotationsByScope
 );
