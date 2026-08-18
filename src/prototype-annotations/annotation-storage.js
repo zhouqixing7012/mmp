@@ -1,5 +1,6 @@
 import { readDemoData, resetDemoData, writeDemoData } from '../services/demoStorage';
 import { getBuiltInPrototypeAnnotations } from './annotation-base-registry';
+import { applySemanticActionAnchors } from './annotation-action-anchor-bridge';
 import { normalizeAnnotationPosition } from './annotation-positioning';
 
 export const PROTOTYPE_ANNOTATION_STORAGE_KEY = 'prototype_annotation_overrides_v2';
@@ -68,6 +69,13 @@ export function normalizeAnnotationCollection(payload, pageKey) {
     ids.add(normalized.id);
     return normalized;
   });
+}
+
+function applyEffectiveActionAnchors(pageKey, annotations) {
+  if (typeof document !== 'undefined') {
+    applySemanticActionAnchors(pageKey, annotations, document);
+  }
+  return annotations;
 }
 
 function readOverrideStore() {
@@ -232,7 +240,8 @@ export function readAnnotationDraft(pageKey, defaultAnnotations = [], fallbackPa
 
   const store = readOverrideStore();
   const record = store?.pages?.[pageKey] || findFallbackRecord(store, fallbackPageKeys);
-  return mergeOverrideRecord(pageKey, base, record);
+  const merged = mergeOverrideRecord(pageKey, base, record);
+  return applyEffectiveActionAnchors(pageKey, merged);
 }
 
 export function writeAnnotationDraft(pageKey, annotations) {
@@ -244,7 +253,7 @@ export function writeAnnotationDraft(pageKey, annotations) {
 
   if (!hasOverrides && !hasDeleted) {
     removePageFromStore(PROTOTYPE_ANNOTATION_STORAGE_KEY, pageKey);
-    return cloneValue(base);
+    return applyEffectiveActionAnchors(pageKey, cloneValue(base));
   }
 
   const store = readOverrideStore();
@@ -257,7 +266,8 @@ export function writeAnnotationDraft(pageKey, annotations) {
     },
   };
   writeDemoData(PROTOTYPE_ANNOTATION_STORAGE_KEY, nextStore);
-  return mergeOverrideRecord(pageKey, base, record);
+  const merged = mergeOverrideRecord(pageKey, base, record);
+  return applyEffectiveActionAnchors(pageKey, merged);
 }
 
 export function resetAnnotationDraft(pageKey, defaultAnnotations = [], fallbackPageKeys = []) {
@@ -269,7 +279,7 @@ export function resetAnnotationDraft(pageKey, defaultAnnotations = [], fallbackP
     removePageFromStore(PROTOTYPE_ANNOTATION_STORAGE_KEY, fallbackKey);
     removePageFromStore(LEGACY_STORAGE_KEY, fallbackKey);
   });
-  return cloneValue(base);
+  return applyEffectiveActionAnchors(pageKey, cloneValue(base));
 }
 
 export function serializeAnnotationExport(pageKey, annotations) {
