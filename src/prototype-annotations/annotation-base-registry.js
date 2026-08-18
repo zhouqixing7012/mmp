@@ -8,6 +8,7 @@ import { installAnnotationCoverageUi } from './annotation-coverage-ui';
 import { installAnnotationMatchQualityUi } from './annotation-match-quality-ui';
 import { installAnnotationReviewModeUi } from './annotation-review-mode-ui';
 import { installAnnotationHotspotCollisionAvoidance } from './annotation-hotspot-collision';
+import { installAnnotationToolHubUi } from './annotation-tool-hub-ui';
 
 const BUILT_IN_ANNOTATIONS_BY_SCOPE = {
   ...contractNumberAnnotationsByScope,
@@ -19,6 +20,7 @@ installAnnotationCoverageUi();
 installAnnotationMatchQualityUi();
 installAnnotationReviewModeUi();
 installAnnotationHotspotCollisionAvoidance();
+installAnnotationToolHubUi();
 
 export function getBuiltInPrototypeAnnotations(pageScope) {
   const annotations = BUILT_IN_ANNOTATIONS_BY_SCOPE[pageScope] || [];
