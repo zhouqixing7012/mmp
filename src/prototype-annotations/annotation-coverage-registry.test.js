@@ -7,6 +7,7 @@ import { ASSET_BORROWING_SCOPES } from './asset-borrowing-annotation-data';
 import { CONTRACT_NUMBER_SCOPES } from './contract-number-annotation-coverage';
 import { ASSET_APPLICATION_AUDIT_SCOPES } from './asset-application-prd-audit';
 import { NEW_EMPLOYEE_CLAIM_AUDIT_SCOPES } from './new-employee-claim-prd-audit';
+import { CONSUMABLE_AUDIT_SCOPES } from './consumable-prd-audit';
 
 test('资产借用五个页面都能读取 PRD 覆盖账本', () => {
   Object.values(ASSET_BORROWING_SCOPES).forEach((scope) => {
@@ -53,6 +54,23 @@ test('新员工与实习生资产领用两个页面均使用第二轮深审覆�
   expect(module.state).toBe('audited');
   expect(module.total).toBe(55);
   expect(module.review).toBeGreaterThan(0);
+});
+
+test('耗材九个正式页面使用第二轮深审，领用方案一/二分别审计', () => {
+  Object.values(CONSUMABLE_AUDIT_SCOPES).forEach((scope) => {
+    expect(getPageCoverageState(scope).state).toBe('audited');
+    expect(getRequirementCoverageForScope(scope).length).toBeGreaterThan(0);
+  });
+
+  expect(getPageCoverageState('route:/yewurules::个人工作台::耗材领用').state).toBe('unregistered');
+
+  const module = getEmployeeSelfServiceCoverageModules().find((item) => item.id === 'consumables');
+  expect(module.state).toBe('audited');
+  expect(module.registeredScopes).toBe(9);
+  expect(module.auditedScopes).toBe(9);
+  expect(module.total).toBe(104);
+  expect(module.review).toBeGreaterThan(0);
+  expect(module.skip).toBeGreaterThan(0);
 });
 
 test('员工自助业务模块均已进入基线标注与覆盖账本', () => {
