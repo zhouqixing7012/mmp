@@ -1,10 +1,7 @@
-import assetBorrowingAnnotationsByScope, { ASSET_BORROWING_SCOPES } from './asset-borrowing-annotation-data';
+import assetBorrowingAnnotationsByScope from './asset-borrowing-annotation-data';
 import { assetBorrowingRequirementCoverageByScope } from './asset-borrowing-annotation-coverage';
 import contractNumberAnnotationsByScope from './contract-number-annotation-data';
-import {
-  CONTRACT_WAREHOUSE_SCOPE,
-  contractWarehouseRequirementCoverage,
-} from './contract-number-annotation-coverage';
+import { contractNumberRequirementCoverageByScope } from './contract-number-annotation-coverage';
 import {
   EXPANDED_EMPLOYEE_SELF_SERVICE_MODULES,
   expandedEmployeeSelfServiceAnnotationsByScope,
@@ -39,8 +36,8 @@ const ALL_ANNOTATIONS_BY_SCOPE = mergeScopeMaps(
 );
 
 const ALL_COVERAGE_BY_SCOPE = mergeScopeMaps(
+  contractNumberRequirementCoverageByScope,
   assetBorrowingRequirementCoverageByScope,
-  { [CONTRACT_WAREHOUSE_SCOPE]: contractWarehouseRequirementCoverage },
   expandedEmployeeSelfServiceCoverageByScope
 );
 
@@ -100,8 +97,7 @@ export function getPageCoverageState(pageScope) {
 
 export function getEmployeeSelfServiceCoverageModules() {
   const borrowingRequirements = flattenCoverage(assetBorrowingRequirementCoverageByScope);
-  const borrowingCounts = countStatuses(borrowingRequirements);
-  const contractCounts = countStatuses(contractWarehouseRequirementCoverage);
+  const contractRequirements = flattenCoverage(contractNumberRequirementCoverageByScope);
   const expandedById = new Map(EXPANDED_EMPLOYEE_SELF_SERVICE_MODULES.map((module) => [module.id, module]));
 
   return MODULE_CATALOG.map((module) => {
@@ -109,21 +105,21 @@ export function getEmployeeSelfServiceCoverageModules() {
       return {
         ...module,
         state: 'audited',
-        label: '已建立完整覆盖账本',
+        label: borrowingRequirements.some((item) => item.status === 'review') ? '已审计，存在PRD差异' : '已建立完整覆盖账本',
         registeredScopes: Object.keys(assetBorrowingAnnotationsByScope).length,
         auditedScopes: Object.keys(assetBorrowingRequirementCoverageByScope).length,
-        ...borrowingCounts,
+        ...countStatuses(borrowingRequirements),
       };
     }
 
     if (module.id === 'contract-number') {
       return {
         ...module,
-        state: 'partial',
-        label: '部分页面已审计',
+        state: 'audited',
+        label: contractRequirements.some((item) => item.status === 'review') ? '已审计，存在PRD差异' : '已建立完整覆盖账本',
         registeredScopes: Object.keys(contractNumberAnnotationsByScope).length,
-        auditedScopes: 1,
-        ...contractCounts,
+        auditedScopes: Object.keys(contractNumberRequirementCoverageByScope).length,
+        ...countStatuses(contractRequirements),
       };
     }
 
