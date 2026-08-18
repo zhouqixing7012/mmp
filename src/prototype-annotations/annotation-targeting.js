@@ -607,17 +607,30 @@ function findCompatibleGeneratedTarget(target, pageScope, root) {
   const wanted = splitGeneratedTarget(target);
   if (!wanted) return null;
 
-  const compatible = Array.from(root.querySelectorAll?.(`[${GENERATED_TARGET_ATTRIBUTE}]`) || [])
+  const semanticMatches = Array.from(root.querySelectorAll?.(`[${GENERATED_TARGET_ATTRIBUTE}]`) || [])
     .filter((element) => element.getAttribute(GENERATED_SCOPE_ATTRIBUTE) === (pageScope || 'page'))
     .filter((element) => {
       const current = splitGeneratedTarget(element.getAttribute(GENERATED_TARGET_ATTRIBUTE));
-      if (!current || current.kind !== wanted.kind || current.key !== wanted.key) return false;
-      if (current.context === wanted.context) return true;
-
-      // 兼容旧基线：历史 target 可能只保存 Card 主标题，而运行时上下文曾把“共 X 件/条”
-      // 等动态副标题拼进去。仅允许上下文前缀一致且候选唯一时回退，避免跨模块误绑。
-      return current.context.startsWith(wanted.context) || wanted.context.startsWith(current.context);
+      return Boolean(current && current.kind === wanted.kind && current.key === wanted.key);
     });
+
+  // 审批/办理动作的按钮文案本身通常就是最稳定的业务语义。
+  // 历史基线可能记录在“审批操作”，当前页面却把同一个“同意/驳回”按钮放进“审批信息”；
+  // 只要当前页面该按钮文案唯一，就忽略父 Card 上下文差异直接恢复匹配。
+  // 同名按钮超过一个时绝不猜测，继续保持未匹配，等待更精确的上下文或人工重绑。
+  if (wanted.kind === 'button' && semanticMatches.length === 1) {
+    return semanticMatches[0];
+  }
+
+  const compatible = semanticMatches.filter((element) => {
+    const current = splitGeneratedTarget(element.getAttribute(GENERATED_TARGET_ATTRIBUTE));
+    if (!current) return false;
+    if (current.context === wanted.context) return true;
+
+    // 兼容旧基线：历史 target 可能只保存 Card 主标题，而运行时上下文曾把“共 X 件/条”
+    // 等动态副标题拼进去。仅允许上下文前缀一致且候选唯一时回退，避免跨模块误绑。
+    return current.context.startsWith(wanted.context) || wanted.context.startsWith(current.context);
+  });
 
   return compatible.length === 1 ? compatible[0] : null;
 }
