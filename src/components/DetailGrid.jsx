@@ -26,7 +26,7 @@ function collectPrototypeLabelText(node) {
   return '';
 }
 
-function toPrototypeLabel(label) {
+export function toPrototypeLabel(label) {
   const text = collectPrototypeLabelText(label).replace(/\s+/g, ' ').trim();
   if (!text) return undefined;
   return text
