@@ -137,7 +137,7 @@ function mergeOverrideRecord(pageKey, baseAnnotations, record) {
   const overrides = record.overrides && typeof record.overrides === 'object'
     ? record.overrides
     : {};
-  const baseIds = new Set(base.map((note) => [note.id, note]));
+  const baseIds = new Set(base.map((note) => note.id));
 
   const merged = base
     .filter((note) => !deletedIds.has(note.id))
