@@ -463,10 +463,10 @@ export function findPrototypeBindingElement(eventTarget) {
 
 function isModuleDisplayTarget(element) {
   if (!(element instanceof Element)) return false;
-  const bindableType = element.getAttribute('data-prototype-bindable');
-  return element.matches(GENERIC_MODULE_SELECTOR)
-    || element.hasAttribute('data-prototype-anchor')
-    || MODULE_BINDABLE_TYPES.has(bindableType);
+  // Display placement follows the semantic target kind, not the mere existence of an anchor.
+  // Buttons/fields/controls can carry stable anchors too, but their annotation hotspot must
+  // stay attached to the precise control. Only true module-level targets use a module title.
+  return MODULE_BINDABLE_TYPES.has(getTargetKind(element));
 }
 
 function compactTitleAnchor(titleContainer) {
