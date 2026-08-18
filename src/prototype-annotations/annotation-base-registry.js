@@ -4,6 +4,7 @@ import {
   applySemanticActionAnchors,
   installSemanticActionAnchorBridge,
 } from './annotation-action-anchor-bridge';
+import { installAnnotationCoverageUi } from './annotation-coverage-ui';
 
 const BUILT_IN_ANNOTATIONS_BY_SCOPE = {
   ...contractNumberAnnotationsByScope,
@@ -11,6 +12,7 @@ const BUILT_IN_ANNOTATIONS_BY_SCOPE = {
 };
 
 installSemanticActionAnchorBridge(BUILT_IN_ANNOTATIONS_BY_SCOPE);
+installAnnotationCoverageUi();
 
 export function getBuiltInPrototypeAnnotations(pageScope) {
   const annotations = BUILT_IN_ANNOTATIONS_BY_SCOPE[pageScope] || [];
