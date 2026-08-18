@@ -44,6 +44,53 @@ test('用户修改会覆盖同 id 标注，但代码新增标注仍会出现', (
   expect(result.find((note) => note.id === 'c').title).toBe('C');
 });
 
+test('仅编辑内容或位置留下的旧快照会跟随新版基线 target', () => {
+  const current = readAnnotationDraft('yewurules', base).map((note) => (
+    note.id === 'a'
+      ? {
+        ...note,
+        title: 'A-用户修改',
+        position: { ...note.position, offsetX: 24 },
+      }
+      : note
+  ));
+  writeAnnotationDraft('yewurules', current);
+
+  const nextBase = base.map((note) => (
+    note.id === 'a' ? { ...note, target: 'anchor-a-v2' } : note
+  ));
+  const result = readAnnotationDraft('yewurules', nextBase);
+  const migrated = result.find((note) => note.id === 'a');
+
+  expect(migrated.target).toBe('anchor-a-v2');
+  expect(migrated.title).toBe('A-用户修改');
+  expect(migrated.position.offsetX).toBe(24);
+});
+
+test('历史上明确执行过重选的 target 继续优先于新版代码基线', () => {
+  const current = readAnnotationDraft('yewurules', base).map((note) => (
+    note.id === 'a'
+      ? {
+        ...note,
+        target: 'anchor-a-user-rebound',
+        context: {
+          pageScope: 'yewurules',
+          pageLabel: '测试页',
+          generatedTarget: true,
+        },
+      }
+      : note
+  ));
+  writeAnnotationDraft('yewurules', current);
+
+  const nextBase = base.map((note) => (
+    note.id === 'a' ? { ...note, target: 'anchor-a-v2' } : note
+  ));
+  const result = readAnnotationDraft('yewurules', nextBase);
+
+  expect(result.find((note) => note.id === 'a').target).toBe('anchor-a-user-rebound');
+});
+
 test('用户删除与新增标注都可以持久化', () => {
   const current = readAnnotationDraft('yewurules', base)
     .filter((note) => note.id !== 'b')
