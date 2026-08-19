@@ -23,6 +23,7 @@ import {
   applyContractNumberAnnotationAudit,
   applyContractNumberCoverageAudit,
 } from './contract-number-prd-audit';
+import { applyContractNumberAnnotationTargetFixes } from './contract-number-annotation-target-fixes';
 import {
   applyConsumableAnnotationAudit,
   applyConsumableCoverageAudit,
@@ -99,8 +100,8 @@ function applyExpandedCoverageAudits(moduleId, coverageByScope) {
   return coverageByScope;
 }
 
-const auditedContractNumberAnnotationsByScope = applyContractNumberAnnotationAudit(
-  contractNumberAnnotationsByScope
+const auditedContractNumberAnnotationsByScope = applyContractNumberAnnotationTargetFixes(
+  applyContractNumberAnnotationAudit(contractNumberAnnotationsByScope)
 );
 const auditedContractNumberCoverageByScope = applyContractNumberCoverageAudit(
   contractNumberRequirementCoverageByScope
