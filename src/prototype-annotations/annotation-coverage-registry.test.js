@@ -3,6 +3,7 @@ import {
   getPageCoverageState,
   getRequirementCoverageForScope,
 } from './annotation-coverage-registry';
+import { PERSONAL_WORKBENCH_AUDIT_SCOPES } from './personal-workbench-prd-audit';
 import { CONTRACT_NUMBER_SCOPES } from './contract-number-annotation-coverage';
 import { ASSET_APPLICATION_AUDIT_SCOPES } from './asset-application-prd-audit';
 import { NEW_EMPLOYEE_CLAIM_AUDIT_SCOPES } from './new-employee-claim-prd-audit';
@@ -12,6 +13,23 @@ import { ASSET_REPLACEMENT_AUDIT_SCOPES } from './asset-replacement-prd-audit';
 import { ASSET_TRANSFER_AUDIT_SCOPES } from './asset-transfer-prd-audit';
 import { ASSET_RETURN_AUDIT_SCOPES } from './asset-return-prd-audit';
 import { CONTRACT_RETURN_AUDIT_SCOPES } from './contract-return-prd-audit';
+
+test('个人工作台首页使用第二轮深审覆盖结果', () => {
+  Object.values(PERSONAL_WORKBENCH_AUDIT_SCOPES).forEach((scope) => {
+    const state = getPageCoverageState(scope);
+    expect(state.state).toBe('audited');
+    expect(state.counts.total).toBeGreaterThan(0);
+    expect(state.counts.total).toBe(state.counts.bound + state.counts.review + state.counts.skip);
+  });
+
+  const module = getEmployeeSelfServiceCoverageModules().find((item) => item.id === 'personal-workbench');
+  expect(module.state).toBe('audited');
+  expect(module.registeredScopes).toBe(1);
+  expect(module.auditedScopes).toBe(1);
+  expect(module.total).toBe(36);
+  expect(module.review).toBeGreaterThan(0);
+  expect(module.skip).toBeGreaterThan(0);
+});
 
 test('资产借用五个页面均使用第二轮深审覆盖结果', () => {
   Object.values(ASSET_BORROWING_AUDIT_SCOPES).forEach((scope) => {
@@ -154,6 +172,7 @@ test('合约号码退库三张员工自助页面与核心入库页共同组成�
 test('员工自助业务模块均已进入基线标注与覆盖账本', () => {
   const modules = getEmployeeSelfServiceCoverageModules();
   const expected = [
+    'personal-workbench',
     'asset-application',
     'new-employee-claim',
     'contract-number',
