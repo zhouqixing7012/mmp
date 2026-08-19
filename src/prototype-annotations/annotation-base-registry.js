@@ -6,6 +6,7 @@ import { applyPersonalWorkbenchAnnotationAudit } from './personal-workbench-prd-
 import { applyAssetApplicationAnnotationAudit } from './asset-application-prd-audit';
 import { applyNewEmployeeClaimAnnotationAudit } from './new-employee-claim-prd-audit';
 import { applyContractNumberAnnotationAudit } from './contract-number-prd-audit';
+import { applyContractNumberAnnotationTargetFixes } from './contract-number-annotation-target-fixes';
 import { applyConsumableAnnotationAudit } from './consumable-prd-audit';
 import { applyAssetBorrowingAnnotationAudit } from './asset-borrowing-prd-audit';
 import { applyAssetReplacementAnnotationAudit } from './asset-replacement-prd-audit';
@@ -40,8 +41,8 @@ function mergeScopeMaps(...maps) {
   }, {});
 }
 
-const auditedContractNumberAnnotationsByScope = applyContractNumberAnnotationAudit(
-  contractNumberAnnotationsByScope
+const auditedContractNumberAnnotationsByScope = applyContractNumberAnnotationTargetFixes(
+  applyContractNumberAnnotationAudit(contractNumberAnnotationsByScope)
 );
 
 const auditedAssetBorrowingAnnotationsByScope = applyAssetBorrowingAnnotationAudit(
