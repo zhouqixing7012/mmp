@@ -28,6 +28,10 @@ import {
   applyAssetBorrowingCoverageAudit,
 } from './asset-borrowing-prd-audit';
 import {
+  applyAssetReplacementAnnotationAudit,
+  applyAssetReplacementCoverageAudit,
+} from './asset-replacement-prd-audit';
+import {
   FOUNDATION_PRD_MODULES,
   foundationAnnotationsByScope,
   foundationCoverageByScope,
@@ -61,6 +65,7 @@ function applyExpandedAnnotationAudits(moduleId, annotationsByScope) {
   if (moduleId === 'asset-application') return applyAssetApplicationAnnotationAudit(annotationsByScope);
   if (moduleId === 'new-employee-claim') return applyNewEmployeeClaimAnnotationAudit(annotationsByScope);
   if (moduleId === 'consumables') return applyConsumableAnnotationAudit(annotationsByScope);
+  if (moduleId === 'asset-replacement') return applyAssetReplacementAnnotationAudit(annotationsByScope);
   return annotationsByScope;
 }
 
@@ -68,6 +73,7 @@ function applyExpandedCoverageAudits(moduleId, coverageByScope) {
   if (moduleId === 'asset-application') return applyAssetApplicationCoverageAudit(coverageByScope);
   if (moduleId === 'new-employee-claim') return applyNewEmployeeClaimCoverageAudit(coverageByScope);
   if (moduleId === 'consumables') return applyConsumableCoverageAudit(coverageByScope);
+  if (moduleId === 'asset-replacement') return applyAssetReplacementCoverageAudit(coverageByScope);
   return coverageByScope;
 }
 
@@ -85,14 +91,18 @@ const auditedAssetBorrowingCoverageByScope = applyAssetBorrowingCoverageAudit(
   assetBorrowingRequirementCoverageByScope
 );
 
-const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyConsumableAnnotationAudit(
-  applyNewEmployeeClaimAnnotationAudit(
-    applyAssetApplicationAnnotationAudit(expandedEmployeeSelfServiceAnnotationsByScope)
+const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyAssetReplacementAnnotationAudit(
+  applyConsumableAnnotationAudit(
+    applyNewEmployeeClaimAnnotationAudit(
+      applyAssetApplicationAnnotationAudit(expandedEmployeeSelfServiceAnnotationsByScope)
+    )
   )
 );
-const auditedExpandedEmployeeSelfServiceCoverageByScope = applyConsumableCoverageAudit(
-  applyNewEmployeeClaimCoverageAudit(
-    applyAssetApplicationCoverageAudit(expandedEmployeeSelfServiceCoverageByScope)
+const auditedExpandedEmployeeSelfServiceCoverageByScope = applyAssetReplacementCoverageAudit(
+  applyConsumableCoverageAudit(
+    applyNewEmployeeClaimCoverageAudit(
+      applyAssetApplicationCoverageAudit(expandedEmployeeSelfServiceCoverageByScope)
+    )
   )
 );
 
