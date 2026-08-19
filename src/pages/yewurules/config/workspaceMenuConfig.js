@@ -10,6 +10,11 @@ import EmployeeAssetApprovalPage from '../../employeeSelfService/AssetApprovalPa
 import EmployeeAssetAllocationPage from '../../employeeSelfService/AssetAllocationPage';
 import NewEmployeeAssetClaimPage from '../../employeeSelfService/NewEmployeeAssetClaimPage';
 import NewEmployeeAssetClaimConfirmPage from '../../employeeSelfService/NewEmployeeAssetClaimConfirmPage';
+import {
+  PendingApprovalPage,
+  ApprovedTasksPage,
+  AppliedApplicationsPage,
+} from '../../employeeSelfService/PersonalWorkbenchTaskPages';
 import ContractNumberAllocationPage from '../../contractNumber/ContractNumberAllocationPage';
 import ContractNumberSupervisorApprovalPage from '../../contractNumber/ContractNumberSupervisorApprovalPage';
 import ContractNumberWarehousePage from '../../contractNumber/ContractNumberWarehousePage';
@@ -58,6 +63,9 @@ import {
 
 export const WORKSPACE_MENU_ITEMS = [
   { key: '工作台首页', label: '工作台首页', Page: PersonalWorkspace },
+  { key: '待审批', label: '待审批', Page: PendingApprovalPage },
+  { key: '已审批', label: '已审批', Page: ApprovedTasksPage },
+  { key: '已申请', label: '已申请', Page: AppliedApplicationsPage },
   { key: '移动端工作台', label: '移动端工作台', Page: MobileWorkspacePage },
   { key: '合约号码申请', label: '合约号码申请', Page: Haoma },
   { key: '号码控制', label: '号码控制', Page: Haomakongzhi },
