@@ -1,31 +1,159 @@
-import React, { useState } from 'react';
-import { PROJECT_INFO } from './mockData';
-import ProjectListView from './AssetInventoryProjectV2List';
-import CreateProjectView from './AssetInventoryProjectV2Create';
-import SnapshotView from './AssetInventoryProjectV2Snapshot';
-import { ImageReviewView, PlansView, ProgressView } from './AssetInventoryProjectV2Views';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, Card, Checkbox, Input, Table } from 'antd';
+import { createPortal } from 'react-dom';
+import AssetInventoryProjectPage from './AssetInventoryProjectPage';
+import { INVENTORY_RANGE_METHOD_ROWS } from './mockData';
 
-export default function AssetInventoryProjectPageV2() {
-  const [view, setView] = useState('list');
-  const [activeProject, setActiveProject] = useState({ ...PROJECT_INFO, status: '快照生成' });
+const SCAN_METHOD_OPTIONS = ['狐小e扫码', '狐小e快速扫描资产', '扫码枪', '人工上传盘点结果'];
 
-  if (view === 'create') {
-    return <CreateProjectView initialProject={activeProject?.status === '暂存' ? activeProject : null} onBack={() => setView('list')} onGenerated={(project) => { setActiveProject(project); setView('snapshot'); }} />;
-  }
-  if (view === 'snapshot') {
-    return <SnapshotView project={activeProject} onBack={() => setView('list')} onDeleteSnapshot={() => { setActiveProject((current) => ({ ...current, status: '暂存', snapshotTime: '-' })); setView('create'); }} onGeneratePlans={() => { setActiveProject((current) => ({ ...current, status: '生成盘点计划' })); setView('plans'); }} />;
-  }
-  if (view === 'plans') return <PlansView project={activeProject} onBack={() => setView('list')} />;
-  if (view === 'progress') return <ProgressView project={activeProject} onBack={() => setView('list')} />;
-  if (view === 'image-review') return <ImageReviewView project={activeProject} onBack={() => setView('list')} />;
+function CardTitle({ children }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="h-4 w-1 rounded bg-[#1677ff]" />
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function InventoryMethodSettingsCard() {
+  const [methodRows, setMethodRows] = useState(INVENTORY_RANGE_METHOD_ROWS);
+
+  const methodColumns = [
+    { title: '盘点范围', dataIndex: 'range', width: 100 },
+    {
+      title: '盘点方式',
+      dataIndex: 'methods',
+      width: 520,
+      render: (value, row) => (
+        <Checkbox.Group
+          options={SCAN_METHOD_OPTIONS}
+          value={value}
+          onChange={(methods) => setMethodRows((current) => current.map((item) => item.key === row.key ? { ...item, methods } : item))}
+        />
+      ),
+    },
+    {
+      title: '备注',
+      dataIndex: 'remark',
+      width: 260,
+      render: (value, row) => (
+        <Input
+          value={value}
+          placeholder="选填"
+          onChange={(event) => setMethodRows((current) => current.map((item) => item.key === row.key ? { ...item, remark: event.target.value } : item))}
+        />
+      ),
+    },
+  ];
 
   return (
-    <ProjectListView
-      onCreate={() => { setActiveProject({ ...PROJECT_INFO, status: '暂存', snapshotTime: '-' }); setView('create'); }}
-      onOpenProject={(project) => { setActiveProject({ ...PROJECT_INFO, ...project }); setView(project.status === '暂存' ? 'create' : 'snapshot'); }}
-      onOpenPlans={(project) => { setActiveProject({ ...PROJECT_INFO, ...project }); setView('plans'); }}
-      onOpenProgress={(project) => { setActiveProject({ ...PROJECT_INFO, ...project }); setView('progress'); }}
-      onOpenImageReview={(project) => { setActiveProject({ ...PROJECT_INFO, ...project }); setView('image-review'); }}
-    />
+    <Card size="small" title={<CardTitle>盘点方式设置</CardTitle>}>
+      <Table rowKey="key" size="small" bordered columns={methodColumns} dataSource={methodRows} pagination={false} />
+      <div className="mt-3">
+        <Alert
+          type="info"
+          showIcon
+          message="盘点范围与盘点方式可自由组合。保存或生成快照时，如某行未选择任何盘点方式，系统会阻止操作并提示对应盘点范围。"
+        />
+      </div>
+    </Card>
+  );
+}
+
+function getCardTitle(card) {
+  return card.querySelector('.ant-card-head-title')?.textContent?.trim() || '';
+}
+
+export default function AssetInventoryProjectPageV2() {
+  const rootRef = useRef(null);
+  const [methodSlot, setMethodSlot] = useState(null);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+
+    let frameId = 0;
+
+    const restoreHiddenBlocks = () => {
+      root.querySelectorAll('[data-asset-inventory-v2-hidden="true"]').forEach((element) => {
+        element.style.display = '';
+        delete element.dataset.assetInventoryV2Hidden;
+      });
+    };
+
+    const removeMethodSlot = () => {
+      const existing = root.querySelector('[data-asset-inventory-v2-method-slot="true"]');
+      if (existing) existing.remove();
+      setMethodSlot(null);
+    };
+
+    const applyVariant = () => {
+      restoreHiddenBlocks();
+
+      const pageTitle = root.querySelector('h4.ant-typography')?.textContent?.trim() || '';
+      const cards = Array.from(root.querySelectorAll('.ant-card'));
+      const isCreateView = pageTitle === '创建盘点项目' || pageTitle === '编辑盘点项目';
+      const isSnapshotView = pageTitle === '盘点项目详情';
+
+      if (isCreateView) {
+        removeMethodSlot();
+        cards.forEach((card) => {
+          const title = getCardTitle(card);
+          if (title !== '盘点规则' && title !== '图片上传规则配置') return;
+          const spaceItem = card.closest('.ant-space-item') || card;
+          spaceItem.dataset.assetInventoryV2Hidden = 'true';
+          spaceItem.style.display = 'none';
+        });
+        return;
+      }
+
+      if (isSnapshotView) {
+        const imageRuleCard = cards.find((card) => getCardTitle(card) === '图片上传规则配置');
+        if (!imageRuleCard) {
+          removeMethodSlot();
+          return;
+        }
+
+        const imageRuleItem = imageRuleCard.closest('.ant-space-item') || imageRuleCard;
+        let slot = root.querySelector('[data-asset-inventory-v2-method-slot="true"]');
+        if (!slot) {
+          slot = document.createElement('div');
+          slot.className = imageRuleItem.className || 'ant-space-item';
+          slot.dataset.assetInventoryV2MethodSlot = 'true';
+          imageRuleItem.parentNode?.insertBefore(slot, imageRuleItem);
+        }
+        setMethodSlot((current) => current === slot ? current : slot);
+        return;
+      }
+
+      removeMethodSlot();
+    };
+
+    const scheduleApply = () => {
+      if (frameId) cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        frameId = 0;
+        applyVariant();
+      });
+    };
+
+    applyVariant();
+    const observer = new MutationObserver(scheduleApply);
+    observer.observe(root, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      if (frameId) cancelAnimationFrame(frameId);
+      restoreHiddenBlocks();
+      const existing = root.querySelector('[data-asset-inventory-v2-method-slot="true"]');
+      if (existing) existing.remove();
+    };
+  }, []);
+
+  return (
+    <div ref={rootRef} className="w-full">
+      <AssetInventoryProjectPage />
+      {methodSlot ? createPortal(<InventoryMethodSettingsCard />, methodSlot) : null}
+    </div>
   );
 }
