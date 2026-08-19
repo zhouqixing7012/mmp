@@ -12,6 +12,10 @@ import {
   applyPersonalWorkbenchCoverageAudit,
 } from './personal-workbench-prd-audit';
 import {
+  applyPersonalWorkbenchReviewAnnotations,
+  applyPersonalWorkbenchReviewCoverage,
+} from './personal-workbench-review-resolutions';
+import {
   applyAssetApplicationAnnotationAudit,
   applyAssetApplicationCoverageAudit,
 } from './asset-application-prd-audit';
@@ -141,11 +145,11 @@ const auditedExpandedEmployeeSelfServiceCoverageByScope = applyContractReturnCov
   )
 );
 
-const auditedFoundationAnnotationsByScope = applyPersonalWorkbenchAnnotationAudit(
-  foundationAnnotationsByScope
+const auditedFoundationAnnotationsByScope = applyPersonalWorkbenchReviewAnnotations(
+  applyPersonalWorkbenchAnnotationAudit(foundationAnnotationsByScope)
 );
-const auditedFoundationCoverageByScope = applyPersonalWorkbenchCoverageAudit(
-  foundationCoverageByScope
+const auditedFoundationCoverageByScope = applyPersonalWorkbenchReviewCoverage(
+  applyPersonalWorkbenchCoverageAudit(foundationCoverageByScope)
 );
 
 const ALL_ANNOTATIONS_BY_SCOPE = mergeScopeMaps(
@@ -263,10 +267,14 @@ export function getEmployeeSelfServiceCoverageModules() {
     const foundation = foundationById.get(module.id);
     if (foundation) {
       const annotationsByScope = module.id === 'personal-workbench'
-        ? applyPersonalWorkbenchAnnotationAudit(foundation.annotationsByScope)
+        ? applyPersonalWorkbenchReviewAnnotations(
+          applyPersonalWorkbenchAnnotationAudit(foundation.annotationsByScope)
+        )
         : foundation.annotationsByScope;
       const coverageByScope = module.id === 'personal-workbench'
-        ? applyPersonalWorkbenchCoverageAudit(foundation.coverageByScope)
+        ? applyPersonalWorkbenchReviewCoverage(
+          applyPersonalWorkbenchCoverageAudit(foundation.coverageByScope)
+        )
         : foundation.coverageByScope;
       const requirements = [
         ...flattenCoverage(coverageByScope),
