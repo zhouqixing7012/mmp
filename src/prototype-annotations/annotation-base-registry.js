@@ -10,6 +10,7 @@ import { applyAssetBorrowingAnnotationAudit } from './asset-borrowing-prd-audit'
 import { applyAssetReplacementAnnotationAudit } from './asset-replacement-prd-audit';
 import { applyAssetTransferAnnotationAudit } from './asset-transfer-prd-audit';
 import { applyAssetReturnAnnotationAudit } from './asset-return-prd-audit';
+import { applyContractReturnAnnotationAudit } from './contract-return-prd-audit';
 import {
   applySemanticActionAnchors,
   installSemanticActionAnchorBridge,
@@ -46,12 +47,14 @@ const auditedAssetBorrowingAnnotationsByScope = applyAssetBorrowingAnnotationAud
   assetBorrowingAnnotationsByScope
 );
 
-const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyAssetReturnAnnotationAudit(
-  applyAssetTransferAnnotationAudit(
-    applyAssetReplacementAnnotationAudit(
-      applyConsumableAnnotationAudit(
-        applyNewEmployeeClaimAnnotationAudit(
-          applyAssetApplicationAnnotationAudit(expandedEmployeeSelfServiceAnnotationsByScope)
+const auditedExpandedEmployeeSelfServiceAnnotationsByScope = applyContractReturnAnnotationAudit(
+  applyAssetReturnAnnotationAudit(
+    applyAssetTransferAnnotationAudit(
+      applyAssetReplacementAnnotationAudit(
+        applyConsumableAnnotationAudit(
+          applyNewEmployeeClaimAnnotationAudit(
+            applyAssetApplicationAnnotationAudit(expandedEmployeeSelfServiceAnnotationsByScope)
+          )
         )
       )
     )
