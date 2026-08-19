@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import routes from './config/routes';
 import PrototypeAnnotationLayer from './prototype-annotations/PrototypeAnnotationLayer';
+import ReviewUpdateNotice from './review/ReviewUpdateNotice';
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         })}
       </Routes>
       <PrototypeAnnotationLayer />
+      <ReviewUpdateNotice />
     </BrowserRouter>
   );
 }
