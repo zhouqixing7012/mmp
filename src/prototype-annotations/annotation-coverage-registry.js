@@ -8,6 +8,10 @@ import {
   expandedEmployeeSelfServiceCoverageByScope,
 } from './employee-self-service-expanded-annotations';
 import {
+  applyPersonalWorkbenchAnnotationAudit,
+  applyPersonalWorkbenchCoverageAudit,
+} from './personal-workbench-prd-audit';
+import {
   applyAssetApplicationAnnotationAudit,
   applyAssetApplicationCoverageAudit,
 } from './asset-application-prd-audit';
@@ -136,18 +140,25 @@ const auditedExpandedEmployeeSelfServiceCoverageByScope = applyContractReturnCov
   )
 );
 
+const auditedFoundationAnnotationsByScope = applyPersonalWorkbenchAnnotationAudit(
+  foundationAnnotationsByScope
+);
+const auditedFoundationCoverageByScope = applyPersonalWorkbenchCoverageAudit(
+  foundationCoverageByScope
+);
+
 const ALL_ANNOTATIONS_BY_SCOPE = mergeScopeMaps(
   auditedContractNumberAnnotationsByScope,
   auditedAssetBorrowingAnnotationsByScope,
   auditedExpandedEmployeeSelfServiceAnnotationsByScope,
-  foundationAnnotationsByScope
+  auditedFoundationAnnotationsByScope
 );
 
 const ALL_COVERAGE_BY_SCOPE = mergeScopeMaps(
   auditedContractNumberCoverageByScope,
   auditedAssetBorrowingCoverageByScope,
   auditedExpandedEmployeeSelfServiceCoverageByScope,
-  foundationCoverageByScope
+  auditedFoundationCoverageByScope
 );
 
 function countStatuses(requirements = []) {
@@ -250,16 +261,24 @@ export function getEmployeeSelfServiceCoverageModules() {
 
     const foundation = foundationById.get(module.id);
     if (foundation) {
+      const annotationsByScope = module.id === 'personal-workbench'
+        ? applyPersonalWorkbenchAnnotationAudit(foundation.annotationsByScope)
+        : foundation.annotationsByScope;
+      const coverageByScope = module.id === 'personal-workbench'
+        ? applyPersonalWorkbenchCoverageAudit(foundation.coverageByScope)
+        : foundation.coverageByScope;
       const requirements = [
-        ...flattenCoverage(foundation.coverageByScope),
+        ...flattenCoverage(coverageByScope),
         ...(foundation.referenceCoverage || []),
       ];
       return {
         ...module,
         state: foundation.state === 'reference' ? 'audited' : (foundation.state || 'audited'),
-        label: foundation.label || (requirements.some((item) => item.status === 'review') ? '已审计，存在PRD差异' : '已建立完整覆盖账本'),
-        registeredScopes: Object.keys(foundation.annotationsByScope || {}).length,
-        auditedScopes: Object.keys(foundation.coverageByScope || {}).length,
+        label: requirements.some((item) => item.status === 'review')
+          ? '已审计，存在PRD差异'
+          : (foundation.label || '已建立完整覆盖账本'),
+        registeredScopes: Object.keys(annotationsByScope || {}).length,
+        auditedScopes: Object.keys(coverageByScope || {}).length,
         ...countStatuses(requirements),
       };
     }
