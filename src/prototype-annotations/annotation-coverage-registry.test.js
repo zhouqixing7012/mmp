@@ -9,6 +9,7 @@ import { NEW_EMPLOYEE_CLAIM_AUDIT_SCOPES } from './new-employee-claim-prd-audit'
 import { CONSUMABLE_AUDIT_SCOPES } from './consumable-prd-audit';
 import { ASSET_BORROWING_AUDIT_SCOPES } from './asset-borrowing-prd-audit';
 import { ASSET_REPLACEMENT_AUDIT_SCOPES } from './asset-replacement-prd-audit';
+import { ASSET_TRANSFER_AUDIT_SCOPES } from './asset-transfer-prd-audit';
 
 test('资产借用五个页面均使用第二轮深审覆盖结果', () => {
   Object.values(ASSET_BORROWING_AUDIT_SCOPES).forEach((scope) => {
@@ -96,6 +97,22 @@ test('资产更换四个正式页面均使用第二轮深审覆盖结果', () =>
   expect(module.total).toBe(106);
   expect(module.review).toBeGreaterThan(0);
   expect(module.skip).toBeGreaterThan(0);
+});
+
+test('资产转移责任人变更三页与工作台审批页共同组成六个正式scope', () => {
+  Object.values(ASSET_TRANSFER_AUDIT_SCOPES).forEach((scope) => {
+    const state = getPageCoverageState(scope);
+    expect(state.state).toBe('audited');
+    expect(state.counts.total).toBeGreaterThan(0);
+    expect(state.counts.total).toBe(state.counts.bound + state.counts.review + state.counts.skip);
+  });
+
+  const module = getEmployeeSelfServiceCoverageModules().find((item) => item.id === 'asset-transfer');
+  expect(module.state).toBe('audited');
+  expect(module.registeredScopes).toBe(6);
+  expect(module.auditedScopes).toBe(6);
+  expect(module.total).toBe(82);
+  expect(module.review).toBeGreaterThan(0);
 });
 
 test('员工自助业务模块均已进入基线标注与覆盖账本', () => {
