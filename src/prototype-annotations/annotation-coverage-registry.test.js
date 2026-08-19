@@ -3,7 +3,7 @@ import {
   getPageCoverageState,
   getRequirementCoverageForScope,
 } from './annotation-coverage-registry';
-import { PERSONAL_WORKBENCH_AUDIT_SCOPES } from './personal-workbench-prd-audit';
+import { PERSONAL_WORKBENCH_REVIEW_SCOPES } from './personal-workbench-review-resolutions';
 import { CONTRACT_NUMBER_SCOPES } from './contract-number-annotation-coverage';
 import { ASSET_APPLICATION_AUDIT_SCOPES } from './asset-application-prd-audit';
 import { NEW_EMPLOYEE_CLAIM_AUDIT_SCOPES } from './new-employee-claim-prd-audit';
@@ -14,8 +14,8 @@ import { ASSET_TRANSFER_AUDIT_SCOPES } from './asset-transfer-prd-audit';
 import { ASSET_RETURN_AUDIT_SCOPES } from './asset-return-prd-audit';
 import { CONTRACT_RETURN_AUDIT_SCOPES } from './contract-return-prd-audit';
 
-test('个人工作台首页使用第二轮深审覆盖结果', () => {
-  Object.values(PERSONAL_WORKBENCH_AUDIT_SCOPES).forEach((scope) => {
+test('个人工作台四个正式页面使用已确认的评审覆盖结果', () => {
+  Object.values(PERSONAL_WORKBENCH_REVIEW_SCOPES).forEach((scope) => {
     const state = getPageCoverageState(scope);
     expect(state.state).toBe('audited');
     expect(state.counts.total).toBeGreaterThan(0);
@@ -24,10 +24,10 @@ test('个人工作台首页使用第二轮深审覆盖结果', () => {
 
   const module = getEmployeeSelfServiceCoverageModules().find((item) => item.id === 'personal-workbench');
   expect(module.state).toBe('audited');
-  expect(module.registeredScopes).toBe(1);
-  expect(module.auditedScopes).toBe(1);
+  expect(module.registeredScopes).toBe(4);
+  expect(module.auditedScopes).toBe(4);
   expect(module.total).toBe(36);
-  expect(module.review).toBeGreaterThan(0);
+  expect(module.review).toBe(0);
   expect(module.skip).toBeGreaterThan(0);
 });
 
