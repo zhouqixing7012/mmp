@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Card, Checkbox, Input, Table } from 'antd';
+import { Alert, Card, Checkbox, Input, Modal, Table } from 'antd';
 import { createPortal } from 'react-dom';
 import AssetInventoryProjectPage from './AssetInventoryProjectPage';
+import AssetInventoryCustomPlanBuilder from './AssetInventoryCustomPlanBuilder';
 import { INVENTORY_RANGE_METHOD_ROWS } from './mockData';
 
 const SCAN_METHOD_OPTIONS = ['狐小e扫码', '狐小e快速扫描资产', '扫码枪', '人工上传盘点结果'];
@@ -66,7 +67,53 @@ function getCardTitle(card) {
 
 export default function AssetInventoryProjectPageV2() {
   const rootRef = useRef(null);
+  const allowOriginalGenerateRef = useRef(false);
   const [methodSlot, setMethodSlot] = useState(null);
+  const [customBuilderOpen, setCustomBuilderOpen] = useState(false);
+
+  const triggerOriginalDefaultPlan = () => {
+    setCustomBuilderOpen(false);
+
+    window.setTimeout(() => {
+      const root = rootRef.current;
+      if (!root) return;
+      const generateButton = Array.from(root.querySelectorAll('button')).find((button) => button.textContent?.trim() === '生成盘点计划');
+      if (!generateButton) return;
+
+      allowOriginalGenerateRef.current = true;
+      generateButton.click();
+      allowOriginalGenerateRef.current = false;
+
+      window.setTimeout(() => {
+        const confirms = Array.from(document.querySelectorAll('.ant-modal-confirm'));
+        const originalConfirm = confirms.reverse().find((modal) => modal.textContent?.includes('是否按照默认方式生成盘点计划？'));
+        if (!originalConfirm) return;
+        const yesButton = Array.from(originalConfirm.querySelectorAll('button')).find((button) => button.textContent?.trim() === '是');
+        yesButton?.click();
+      }, 100);
+    }, 0);
+  };
+
+  const interceptGeneratePlan = (event) => {
+    if (allowOriginalGenerateRef.current || customBuilderOpen) return;
+    const button = event.target.closest?.('button');
+    if (!button || button.textContent?.trim() !== '生成盘点计划') return;
+
+    const pageTitle = rootRef.current?.querySelector('h4.ant-typography')?.textContent?.trim() || '';
+    if (pageTitle !== '盘点项目详情') return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    Modal.confirm({
+      title: '提示',
+      content: '是否按照默认方式生成盘点计划？',
+      okText: '是',
+      cancelText: '否',
+      onOk: triggerOriginalDefaultPlan,
+      onCancel: () => setCustomBuilderOpen(true),
+    });
+  };
 
   useEffect(() => {
     const root = rootRef.current;
@@ -151,8 +198,18 @@ export default function AssetInventoryProjectPageV2() {
   }, []);
 
   return (
-    <div ref={rootRef} className="w-full">
-      <AssetInventoryProjectPage />
+    <div ref={rootRef} className="w-full" onClickCapture={interceptGeneratePlan}>
+      {customBuilderOpen && (
+        <AssetInventoryCustomPlanBuilder
+          onBack={() => setCustomBuilderOpen(false)}
+          onConfirmPlan={() => triggerOriginalDefaultPlan()}
+        />
+      )}
+
+      <div style={{ display: customBuilderOpen ? 'none' : 'block' }}>
+        <AssetInventoryProjectPage />
+      </div>
+
       {methodSlot ? createPortal(<InventoryMethodSettingsCard />, methodSlot) : null}
     </div>
   );
