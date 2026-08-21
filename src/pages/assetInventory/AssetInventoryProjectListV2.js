@@ -9,7 +9,7 @@ import { PROJECT_ROWS } from './mockData';
 const EMPTY_FILTERS = {
   projectNo: '', projectName: '', status: '', owner: '', startFrom: '', startTo: '', type: '', createdFrom: '', createdTo: '',
 };
-const PROJECT_STATUS_OPTIONS = ['暂存', '快照生成', '生成盘点计划', '盘点中', '盘点关闭'];
+const PROJECT_STATUS_OPTIONS = ['草稿', '快照生成', '生成盘点计划', '盘点中', '盘点关闭'];
 const PROJECT_TYPE_OPTIONS = ['初盘', '抽盘', '复盘'];
 
 function includesText(value, query) {
@@ -28,10 +28,16 @@ function CardTitle({ children }) {
 function DateFilter({ value, onChange, placeholder }) {
   return <DatePicker value={value ? dayjs(value) : null} format="YYYY-MM-DD" placeholder={placeholder} style={{ width: '100%' }} onChange={(date) => onChange(date ? date.format('YYYY-MM-DD') : '')} />;
 }
+function normalizeStatus(status) {
+  return status === '暂存' ? '草稿' : status;
+}
+function displayGroupName(name) {
+  return String(name || '').split('链路').join('');
+}
 
 export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [rows, setRows] = useState(PROJECT_ROWS);
+  const [rows, setRows] = useState(() => PROJECT_ROWS.map((row) => ({ ...row, status: normalizeStatus(row.status) })));
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [selectedKeys, setSelectedKeys] = useState([]);
@@ -57,7 +63,12 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
     return Array.from(groups.entries()).map(([relationGroup, groupRows]) => {
       const initial = groupRows.find((row) => row.projectType === '初盘') || groupRows[0];
       const children = groupRows.filter((row) => row.key !== initial.key).map((row) => ({ ...row, relationGroupLabel: '', relationCount: 0 }));
-      return { ...initial, relationGroupLabel: relationGroup, relationCount: groupRows.length, children: children.length ? children : undefined };
+      return {
+        ...initial,
+        relationGroupLabel: displayGroupName(relationGroup),
+        relationCount: groupRows.length,
+        children: children.length ? children : undefined,
+      };
     });
   }, [filteredRows]);
 
@@ -65,24 +76,32 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
   const handleDelete = () => {
     if (!selectedKeys.length) { messageApi.warning('请先选择需要删除的盘点项目'); return; }
     const selected = rows.filter((row) => selectedKeys.includes(row.key));
-    if (selected.some((row) => row.status !== '暂存')) { messageApi.warning('仅暂存状态的盘点项目可删除'); return; }
+    if (selected.some((row) => row.status !== '草稿')) { messageApi.warning('仅草稿状态的盘点项目可删除'); return; }
     Modal.confirm({
       title: '确认删除所选盘点项目？', content: `共选择 ${selectedKeys.length} 个盘点项目。`, okText: '删除', cancelText: '取消', okButtonProps: { danger: true },
-      onOk: () => { const selectedSet = new Set(selectedKeys); setRows((current) => current.filter((row) => !selectedSet.has(row.key))); setSelectedKeys([]); messageApi.success('已删除所选盘点项目'); },
+      onOk: () => {
+        const selectedSet = new Set(selectedKeys);
+        setRows((current) => current.filter((row) => !selectedSet.has(row.key)));
+        setSelectedKeys([]);
+        messageApi.success('已删除所选盘点项目');
+      },
     });
   };
   const handleClose = () => {
     if (selectedKeys.length !== 1) { messageApi.warning('请选择一个需要关闭的盘点项目'); return; }
     const row = rows.find((item) => item.key === selectedKeys[0]);
     if (!row) return;
-    if (row.status === '暂存' || row.status === '快照生成') { messageApi.warning('当前项目尚未完成盘点计划启动，无法关闭'); return; }
+    if (row.status === '草稿' || row.status === '快照生成') { messageApi.warning('当前项目尚未完成盘点计划启动，无法关闭'); return; }
     setRows((current) => current.map((item) => item.key === row.key ? { ...item, status: '盘点关闭' } : item));
     setSelectedKeys([]);
     messageApi.success('盘点项目已关闭');
   };
 
   const columns = [
-    { title: '关联项目', dataIndex: 'relationGroupLabel', width: 260, fixed: 'left', render: (value, row) => value ? <Space size={6}><Typography.Text strong>{value}</Typography.Text><Tag>{row.relationCount} 个关联项目</Tag></Space> : '-' },
+    {
+      title: '关联项目', dataIndex: 'relationGroupLabel', width: 250, fixed: 'left',
+      render: (value, row) => value ? <Space size={6}><Typography.Text strong>{value}</Typography.Text><Tag>{row.relationCount} 个关联项目</Tag></Space> : '-',
+    },
     { title: '项目编号', dataIndex: 'projectNo', width: 170, fixed: 'left' },
     { title: '项目名称', dataIndex: 'projectName', width: 180, render: (value, row) => <Button type="link" className="px-0" onClick={() => onOpenProject(row)}>{value}</Button> },
     { title: '项目类型', dataIndex: 'projectType', width: 90 },
@@ -93,8 +112,8 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
     { title: '资产总量', dataIndex: 'assetCount', width: 100, align: 'right' },
     { title: '项目责任人', dataIndex: 'owner', width: 130 },
     { title: '项目创建时间', dataIndex: 'createdAt', width: 130 },
-    { title: '进入计划', width: 100, render: (_, row) => row.planStatus ? <Button type="link" className="px-0" onClick={() => onOpenPlans(row)}>进入计划</Button> : null },
-    { title: '项目进度', width: 100, render: (_, row) => <Button type="link" className="px-0" onClick={() => onOpenProgress(row)}>查看进度</Button> },
+    { title: '进入计划', width: 100, fixed: 'right', render: (_, row) => row.planStatus ? <Button type="link" className="px-0" onClick={() => onOpenPlans(row)}>进入计划</Button> : null },
+    { title: '项目进度', width: 100, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => onOpenProgress(row)}>查看进度</Button> },
     { title: '图片审核', width: 100, fixed: 'right', render: (_, row) => row.imageApproval ? <Button type="link" className="px-0" onClick={() => onOpenImageReview(row)}>图片审核</Button> : null },
   ];
 
@@ -114,7 +133,17 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
     </QueryBar>
     <Card size="small" title={<CardTitle>盘点项目列表</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
       <div className="mb-3 flex justify-end"><Space wrap><Button type="primary" icon={<Plus size={14} />} onClick={onCreate}>创建项目</Button><Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除</Button><Button icon={<XCircle size={14} />} onClick={handleClose}>关闭项目</Button></Space></div>
-      <Table rowKey="key" size="small" bordered columns={columns} dataSource={treeRows} expandable={{ defaultExpandAllRows: false, rowExpandable: (record) => Boolean(record.children?.length), indentSize: 18 }} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true }} scroll={{ x: 1800 }} pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
+      <Table
+        rowKey="key"
+        size="small"
+        bordered
+        columns={columns}
+        dataSource={treeRows}
+        expandable={{ defaultExpandAllRows: true, rowExpandable: (record) => Boolean(record.children?.length), indentSize: 18 }}
+        rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true }}
+        scroll={{ x: 1900 }}
+        pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
+      />
     </Card>
   </Space>;
 }

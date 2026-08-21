@@ -1,17 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, Card, InputNumber, Modal, Select, Space, Switch, Table, Typography } from 'antd';
 import { createPortal } from 'react-dom';
-import { Plus } from 'lucide-react';
+import { Download, Plus } from 'lucide-react';
 import AssetInventoryProjectPage from './AssetInventoryProjectPage';
 import AssetInventoryCustomPlanBuilder from './AssetInventoryCustomPlanBuilder';
 import AssetInventoryProjectListV2 from './AssetInventoryProjectListV2';
 import AssetInventoryPlansV2Refined from './AssetInventoryPlansV2Refined';
 import AssetInventoryImageReviewV2 from './AssetInventoryImageReviewV2';
+import AssetInventoryProgressV2 from './AssetInventoryProgressV2';
 import { AssetInventoryPlanAssetListV2 } from './AssetInventoryPlanViewsV2';
 import { IMAGE_RULE_ROWS, PROJECT_INFO, PROJECT_ROWS } from './mockData';
 
 const RANGE_OPTIONS = ['库房', '公共', '机房', '员工'];
-function CardTitle({ children }) { return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>; }
+function CardTitle({ children }) {
+  return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>;
+}
 function ImageUploadRuleEditorV2() {
   const [enabled, setEnabled] = useState(true);
   const [rows, setRows] = useState(IMAGE_RULE_ROWS);
@@ -30,12 +33,22 @@ function ImageUploadRuleEditorV2() {
     { title: '上传百分比（%）', dataIndex: 'percent', width: 140, render: (value, row) => <InputNumber min={0} max={100} value={value} className="w-full" onChange={(next) => changeRow(row.key, 'percent', next ?? 100)} /> },
     { title: '操作', width: 80, fixed: 'right', render: (_, row) => <Button type="link" danger onClick={() => setRows((current) => current.filter((item) => item.key !== row.key))}>删除</Button> },
   ];
-  return <Card size="small" title={<CardTitle>图片上传规则配置</CardTitle>} extra={<Space><Typography.Text>是否上传图片</Typography.Text><Switch checked={enabled} onChange={setEnabled} /></Space>}>
-    {enabled && <><div className="mb-3 flex justify-end"><Button icon={<Plus size={14} />} onClick={() => setRows((current) => [...current, { key: `image-${Date.now()}`, range: '员工', ownerLevel: ['全部'], department: ['全部'], category: ['全部'], assetStatus: ['全部'], organization: ['集团'], city: ['北京市'], building: ['全部'], floor: ['全部'], percent: 100 }])}>增行</Button></div><Table rowKey="key" size="small" bordered columns={columns} dataSource={rows} scroll={{ x: 1800 }} pagination={false} /></>}
-  </Card>;
+  return (
+    <Card size="small" title={<CardTitle>图片上传规则配置</CardTitle>} extra={<Space><Typography.Text>是否上传图片</Typography.Text><Switch checked={enabled} onChange={setEnabled} /></Space>}>
+      {enabled && <>
+        <div className="mb-3 flex justify-end"><Button icon={<Plus size={14} />} onClick={() => setRows((current) => [...current, { key: `image-${Date.now()}`, range: '员工', ownerLevel: ['全部'], department: ['全部'], category: ['全部'], assetStatus: ['全部'], organization: ['集团'], city: ['北京市'], building: ['全部'], floor: ['全部'], percent: 100 }])}>增行</Button></div>
+        <Table rowKey="key" size="small" bordered columns={columns} dataSource={rows} scroll={{ x: 1800 }} pagination={false} />
+      </>}
+    </Card>
+  );
 }
-function getCardTitle(card) { return card.querySelector('.ant-card-head-title')?.textContent?.trim() || ''; }
-function resolveProjectFromRow(row) { return row ? { ...PROJECT_INFO, ...row } : PROJECT_INFO; }
+function getCardTitle(card) {
+  return card.querySelector('.ant-card-head-title')?.textContent?.trim() || '';
+}
+function resolveProjectFromRow(row) {
+  if (!row) return PROJECT_INFO;
+  return { ...PROJECT_INFO, ...row, status: row.status === '暂存' ? '草稿' : row.status };
+}
 function resolveProject(root, sourceElement) {
   const sourceText = sourceElement?.closest?.('tr')?.textContent || '';
   const sourceProject = PROJECT_ROWS.find((row) => sourceText.includes(row.projectNo));
@@ -46,52 +59,206 @@ function resolveProject(root, sourceElement) {
 }
 
 export default function AssetInventoryProjectPageV2() {
-  const rootRef = useRef(null); const baseContainerRef = useRef(null);
-  const [basePageTitle, setBasePageTitle] = useState('盘点项目'); const [imageRuleSlot, setImageRuleSlot] = useState(null); const [customBuilderOpen, setCustomBuilderOpen] = useState(false); const [planViewOpen, setPlanViewOpen] = useState(false); const [activePlan, setActivePlan] = useState(null); const [imageReviewOpen, setImageReviewOpen] = useState(false); const [planProject, setPlanProject] = useState(PROJECT_INFO);
-  const openPlanViewByProject = (project, forceGeneratedStatus = false) => { const nextProject = resolveProjectFromRow(project); setPlanProject(forceGeneratedStatus ? { ...nextProject, status: '生成盘点计划' } : nextProject); setCustomBuilderOpen(false); setImageReviewOpen(false); setActivePlan(null); setPlanViewOpen(true); };
-  const openPlanView = (sourceElement, forceGeneratedStatus = false) => { const nextProject = resolveProject(baseContainerRef.current, sourceElement); openPlanViewByProject(nextProject, forceGeneratedStatus); };
+  const rootRef = useRef(null);
+  const baseContainerRef = useRef(null);
+  const [basePageTitle, setBasePageTitle] = useState('盘点项目');
+  const [imageRuleSlot, setImageRuleSlot] = useState(null);
+  const [reportSlot, setReportSlot] = useState(null);
+  const [customBuilderOpen, setCustomBuilderOpen] = useState(false);
+  const [planViewOpen, setPlanViewOpen] = useState(false);
+  const [activePlan, setActivePlan] = useState(null);
+  const [imageReviewOpen, setImageReviewOpen] = useState(false);
+  const [progressOpen, setProgressOpen] = useState(false);
+  const [planProject, setPlanProject] = useState(PROJECT_INFO);
+
+  const resetOverlays = () => {
+    setCustomBuilderOpen(false);
+    setPlanViewOpen(false);
+    setActivePlan(null);
+    setImageReviewOpen(false);
+    setProgressOpen(false);
+  };
+  const openPlanViewByProject = (project, forceGeneratedStatus = false) => {
+    const nextProject = resolveProjectFromRow(project);
+    resetOverlays();
+    setPlanProject(forceGeneratedStatus ? { ...nextProject, status: '生成盘点计划' } : nextProject);
+    setPlanViewOpen(true);
+  };
+  const openPlanView = (sourceElement, forceGeneratedStatus = false) => {
+    openPlanViewByProject(resolveProject(baseContainerRef.current, sourceElement), forceGeneratedStatus);
+  };
+  const openProgressByProject = (project) => {
+    resetOverlays();
+    setPlanProject(resolveProjectFromRow(project));
+    setProgressOpen(true);
+  };
   const triggerBaseAction = (row, action) => {
-    const base = baseContainerRef.current; if (!base) return;
-    if (action === 'create') { Array.from(base.querySelectorAll('button')).find((button) => button.textContent?.trim() === '创建项目')?.click(); return; }
-    const targetRow = Array.from(base.querySelectorAll('tr')).find((item) => item.textContent?.includes(row.projectNo)); if (!targetRow) return;
-    if (action === 'project') { Array.from(targetRow.querySelectorAll('button')).find((button) => button.textContent?.trim() === row.projectName)?.click(); return; }
-    if (action === 'progress') Array.from(targetRow.querySelectorAll('button')).find((button) => button.textContent?.trim() === '查看进度')?.click();
+    const base = baseContainerRef.current;
+    if (!base) return;
+    if (action === 'create') {
+      Array.from(base.querySelectorAll('button')).find((button) => button.textContent?.trim() === '创建项目')?.click();
+      return;
+    }
+    const targetRow = Array.from(base.querySelectorAll('tr')).find((item) => item.textContent?.includes(row.projectNo));
+    if (!targetRow) return;
+    if (action === 'project') Array.from(targetRow.querySelectorAll('button')).find((button) => button.textContent?.trim() === row.projectName)?.click();
   };
+
   const interceptNavigation = (event) => {
-    if (customBuilderOpen || planViewOpen || activePlan || imageReviewOpen) return;
-    const button = event.target.closest?.('button'); if (!button) return;
-    const text = button.textContent?.trim() || ''; const pageTitle = baseContainerRef.current?.querySelector('h4.ant-typography')?.textContent?.trim() || '';
-    if (text === '生成盘点计划' && pageTitle === '盘点项目详情') { event.preventDefault(); event.stopPropagation(); setPlanProject({ ...resolveProject(baseContainerRef.current, button), status: '生成盘点计划' }); Modal.confirm({ title: '提示', content: '是否按照默认方式生成盘点计划？', okText: '是', cancelText: '否', onOk: () => openPlanView(button, true), onCancel: () => setCustomBuilderOpen(true) }); return; }
-    if (text === '进入计划' || text === '查看计划清单') { event.preventDefault(); event.stopPropagation(); openPlanView(button); return; }
-    if (text === '图片审核') { event.preventDefault(); event.stopPropagation(); setPlanProject(resolveProject(baseContainerRef.current, button)); setImageReviewOpen(true); }
+    if (customBuilderOpen || planViewOpen || activePlan || imageReviewOpen || progressOpen) return;
+    const button = event.target.closest?.('button');
+    if (!button) return;
+    const text = button.textContent?.trim() || '';
+    const pageTitle = baseContainerRef.current?.querySelector('h4.ant-typography')?.textContent?.trim() || '';
+    if (text === '生成盘点计划' && pageTitle === '盘点项目详情') {
+      event.preventDefault();
+      event.stopPropagation();
+      setPlanProject({ ...resolveProject(baseContainerRef.current, button), status: '生成盘点计划' });
+      Modal.confirm({
+        title: '提示', content: '是否按照默认方式生成盘点计划？', okText: '是', cancelText: '否',
+        onOk: () => openPlanView(button, true),
+        onCancel: () => { resetOverlays(); setCustomBuilderOpen(true); },
+      });
+      return;
+    }
+    if (text === '进入计划' || text === '查看计划清单') {
+      event.preventDefault(); event.stopPropagation(); openPlanView(button); return;
+    }
+    if (text === '查看进度') {
+      event.preventDefault(); event.stopPropagation(); openProgressByProject(resolveProject(baseContainerRef.current, button)); return;
+    }
+    if (text === '图片审核') {
+      event.preventDefault(); event.stopPropagation(); resetOverlays(); setPlanProject(resolveProject(baseContainerRef.current, button)); setImageReviewOpen(true);
+    }
   };
+
   useEffect(() => {
-    const base = baseContainerRef.current; if (!base) return undefined; let frameId = 0;
-    const restoreVariantChanges = () => { base.querySelectorAll('[data-asset-inventory-v2-hidden="true"]').forEach((element) => { element.style.display = ''; delete element.dataset.assetInventoryV2Hidden; }); };
-    const removeImageRuleSlot = () => { const existing = base.querySelector('[data-asset-inventory-v2-image-slot="true"]'); if (existing) existing.remove(); setImageRuleSlot(null); };
+    const base = baseContainerRef.current;
+    if (!base) return undefined;
+    let frameId = 0;
+    const restoreVariantChanges = () => {
+      base.querySelectorAll('[data-asset-inventory-v2-hidden="true"]').forEach((element) => {
+        element.style.display = '';
+        delete element.dataset.assetInventoryV2Hidden;
+      });
+    };
+    const removeImageRuleSlot = () => {
+      const existing = base.querySelector('[data-asset-inventory-v2-image-slot="true"]');
+      if (existing) existing.remove();
+      setImageRuleSlot(null);
+    };
+    const removeReportSlot = () => {
+      const existing = base.querySelector('[data-asset-inventory-v2-report-slot="true"]');
+      if (existing) existing.remove();
+      setReportSlot(null);
+    };
+    const normalizeDraftLabels = () => {
+      base.querySelectorAll('.ant-tag, .ant-select-selection-item').forEach((element) => {
+        if (element.textContent?.trim() === '暂存') element.textContent = '草稿';
+      });
+    };
     const applyVariant = () => {
-      restoreVariantChanges(); const pageTitle = base.querySelector('h4.ant-typography')?.textContent?.trim() || '盘点项目'; setBasePageTitle((current) => current === pageTitle ? current : pageTitle);
-      const cards = Array.from(base.querySelectorAll('.ant-card')); const baseCards = cards.filter((card) => !card.closest('[data-asset-inventory-v2-image-slot="true"]')); const isCreateView = pageTitle === '创建盘点项目' || pageTitle === '编辑盘点项目'; const isSnapshotView = pageTitle === '盘点项目详情';
+      restoreVariantChanges();
+      normalizeDraftLabels();
+      const pageTitle = base.querySelector('h4.ant-typography')?.textContent?.trim() || '盘点项目';
+      setBasePageTitle((current) => current === pageTitle ? current : pageTitle);
+      const cards = Array.from(base.querySelectorAll('.ant-card'));
+      const baseCards = cards.filter((card) => !card.closest('[data-asset-inventory-v2-image-slot="true"]'));
+      const isCreateView = pageTitle === '创建盘点项目' || pageTitle === '编辑盘点项目';
+      const isProjectDetail = pageTitle === '盘点项目详情';
+
       if (isCreateView) {
-        baseCards.forEach((card) => { const title = getCardTitle(card); if (title !== '盘点规则' && title !== '图片上传规则配置') return; const item = card.closest('.ant-space-item') || card; item.dataset.assetInventoryV2Hidden = 'true'; item.style.display = 'none'; });
-        const rangeCard = baseCards.find((card) => getCardTitle(card) === '盘点范围筛选'); if (rangeCard) { const rangeItem = rangeCard.closest('.ant-space-item') || rangeCard; let slot = base.querySelector('[data-asset-inventory-v2-image-slot="true"]'); if (!slot) { slot = document.createElement('div'); slot.className = rangeItem.className || 'ant-space-item'; slot.dataset.assetInventoryV2ImageSlot = 'true'; rangeItem.parentNode?.insertBefore(slot, rangeItem.nextSibling); } setImageRuleSlot((current) => current === slot ? current : slot); }
-        const assetRangeCard = baseCards.find((card) => getCardTitle(card) === '盘点资产范围明细'); if (assetRangeCard) { const configButton = Array.from(assetRangeCard.querySelectorAll('button')).find((button) => button.textContent?.trim() === '配置'); if (configButton) { configButton.dataset.assetInventoryV2Hidden = 'true'; configButton.style.display = 'none'; } }
+        removeReportSlot();
+        baseCards.forEach((card) => {
+          const title = getCardTitle(card);
+          if (title !== '盘点规则' && title !== '图片上传规则配置') return;
+          const item = card.closest('.ant-space-item') || card;
+          item.dataset.assetInventoryV2Hidden = 'true';
+          item.style.display = 'none';
+        });
+        const assetRangeCard = baseCards.find((card) => getCardTitle(card) === '盘点资产范围明细');
+        if (assetRangeCard) {
+          const configButton = Array.from(assetRangeCard.querySelectorAll('button')).find((button) => button.textContent?.trim() === '配置');
+          if (configButton) {
+            configButton.dataset.assetInventoryV2Hidden = 'true';
+            configButton.style.display = 'none';
+          }
+          const rangeItem = assetRangeCard.closest('.ant-space-item') || assetRangeCard;
+          let slot = base.querySelector('[data-asset-inventory-v2-image-slot="true"]');
+          if (!slot) {
+            slot = document.createElement('div');
+            slot.className = rangeItem.className || 'ant-space-item';
+            slot.dataset.assetInventoryV2ImageSlot = 'true';
+            rangeItem.parentNode?.insertBefore(slot, rangeItem.nextSibling);
+          }
+          setImageRuleSlot((current) => current === slot ? current : slot);
+        }
         return;
       }
-      removeImageRuleSlot(); if (isSnapshotView) baseCards.forEach((card) => { if (getCardTitle(card) !== '图片上传规则配置') return; const item = card.closest('.ant-space-item') || card; item.dataset.assetInventoryV2Hidden = 'true'; item.style.display = 'none'; });
+
+      removeImageRuleSlot();
+      if (isProjectDetail) {
+        baseCards.forEach((card) => {
+          if (getCardTitle(card) !== '图片上传规则配置') return;
+          const item = card.closest('.ant-space-item') || card;
+          item.dataset.assetInventoryV2Hidden = 'true';
+          item.style.display = 'none';
+        });
+        const currentProject = resolveProject(base, null);
+        if (currentProject.status === '盘点中') {
+          let slot = base.querySelector('[data-asset-inventory-v2-report-slot="true"]');
+          if (!slot) {
+            slot = document.createElement('div');
+            slot.dataset.assetInventoryV2ReportSlot = 'true';
+            base.appendChild(slot);
+          }
+          setReportSlot((current) => current === slot ? current : slot);
+        } else removeReportSlot();
+        return;
+      }
+      removeReportSlot();
     };
-    const scheduleApply = () => { if (frameId) cancelAnimationFrame(frameId); frameId = requestAnimationFrame(() => { frameId = 0; applyVariant(); }); };
-    applyVariant(); const observer = new MutationObserver(scheduleApply); observer.observe(base, { childList: true, subtree: true });
-    return () => { observer.disconnect(); if (frameId) cancelAnimationFrame(frameId); restoreVariantChanges(); const existing = base.querySelector('[data-asset-inventory-v2-image-slot="true"]'); if (existing) existing.remove(); };
+    const scheduleApply = () => {
+      if (frameId) cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => { frameId = 0; applyVariant(); });
+    };
+    applyVariant();
+    const observer = new MutationObserver(scheduleApply);
+    observer.observe(base, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      if (frameId) cancelAnimationFrame(frameId);
+      restoreVariantChanges();
+      const imageSlot = base.querySelector('[data-asset-inventory-v2-image-slot="true"]');
+      if (imageSlot) imageSlot.remove();
+      const report = base.querySelector('[data-asset-inventory-v2-report-slot="true"]');
+      if (report) report.remove();
+    };
   }, []);
-  const overlayOpen = customBuilderOpen || planViewOpen || Boolean(activePlan) || imageReviewOpen; const showProjectListV2 = !overlayOpen && basePageTitle === '盘点项目';
+
+  const overlayOpen = customBuilderOpen || planViewOpen || Boolean(activePlan) || imageReviewOpen || progressOpen;
+  const showProjectListV2 = !overlayOpen && basePageTitle === '盘点项目';
+
   return <div ref={rootRef} className="w-full" onClickCapture={interceptNavigation}>
-    {showProjectListV2 && <AssetInventoryProjectListV2 onCreate={() => triggerBaseAction(null, 'create')} onOpenProject={(row) => triggerBaseAction(row, 'project')} onOpenPlans={(row) => openPlanViewByProject(row)} onOpenProgress={(row) => triggerBaseAction(row, 'progress')} onOpenImageReview={(row) => { setPlanProject(resolveProjectFromRow(row)); setImageReviewOpen(true); }} />}
+    {showProjectListV2 && <AssetInventoryProjectListV2
+      onCreate={() => triggerBaseAction(null, 'create')}
+      onOpenProject={(row) => triggerBaseAction(row, 'project')}
+      onOpenPlans={(row) => openPlanViewByProject(row)}
+      onOpenProgress={(row) => openProgressByProject(row)}
+      onOpenImageReview={(row) => { resetOverlays(); setPlanProject(resolveProjectFromRow(row)); setImageReviewOpen(true); }}
+    />}
     {customBuilderOpen && <AssetInventoryCustomPlanBuilder onBack={() => setCustomBuilderOpen(false)} onConfirmPlan={() => openPlanView(null, true)} />}
     {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} onBack={() => setPlanViewOpen(false)} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}
     {activePlan && <AssetInventoryPlanAssetListV2 plan={activePlan} onBack={() => setActivePlan(null)} />}
     {imageReviewOpen && <AssetInventoryImageReviewV2 project={planProject} onBack={() => setImageReviewOpen(false)} />}
+    {progressOpen && <AssetInventoryProgressV2 project={planProject} onBack={() => setProgressOpen(false)} />}
     <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage /></div>
     {!overlayOpen && imageRuleSlot ? createPortal(<ImageUploadRuleEditorV2 />, imageRuleSlot) : null}
+    {!overlayOpen && reportSlot ? createPortal(
+      <div className="flex justify-center pb-2 mt-4">
+        <Button icon={<Download size={14} />} onClick={() => Modal.info({ title: '导出盘点报告', content: '盘点报告导出任务已创建。' })}>导出盘点报告</Button>
+      </div>,
+      reportSlot,
+    ) : null}
   </div>;
 }
