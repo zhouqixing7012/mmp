@@ -7,7 +7,6 @@ import {
   Input,
   InputNumber,
   Modal,
-  Select,
   Space,
   Table,
   Typography,
@@ -15,11 +14,14 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { Download, Eye, Search, Trash2 } from 'lucide-react';
+import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import { ASSET_ROWS, EMPLOYEE_ROWS } from './mockData';
 
 const RANGE_OPTIONS = ['机房', '公共', '员工', '库房'];
+const PLAN_RANGE_OPTIONS = ['员工', '库房', '公共', '机房'];
+const EMPTY_ASSET_FILTERS = { assetTag: '', owner: '', ownerLevel: '' };
 
 function CardTitle({ children }) {
   return (
@@ -84,67 +86,109 @@ const INITIAL_SCOPE_ROWS = [
 ];
 
 function PlanInfoModal({ open, onCancel, onConfirm }) {
-  const [draft, setDraft] = useState({
-    planName: '自定义盘点计划',
+  const [planName, setPlanName] = useState('自定义盘点计划');
+  const [rows, setRows] = useState(() => PLAN_RANGE_OPTIONS.map((range) => ({
+    key: range,
+    range,
     manager: '',
     supervisor: '',
     executor: '',
-  });
-  const [personField, setPersonField] = useState(null);
+  })));
+  const [personTarget, setPersonTarget] = useState(null);
   const [messageApi, contextHolder] = antdMessage.useMessage();
 
-  const setField = (field, value) => setDraft((current) => ({ ...current, [field]: value }));
+  const updatePerson = (record) => {
+    if (!personTarget) return;
+    setRows((current) => current.map((row) => (
+      row.key === personTarget.rowKey
+        ? { ...row, [personTarget.field]: record.employeeName }
+        : row
+    )));
+    setPersonTarget(null);
+  };
 
   const confirm = () => {
-    if (!draft.planName.trim()) {
+    if (!planName.trim()) {
       messageApi.warning('请填写计划名称');
       return;
     }
-    if (!draft.manager || !draft.supervisor || !draft.executor) {
-      messageApi.warning('请完整确定计划负责人、盘点监督人和盘点执行人');
+    const incomplete = rows.find((row) => !row.manager || !row.supervisor || !row.executor);
+    if (incomplete) {
+      messageApi.warning(`请完整配置${incomplete.range}范围的计划责任人、盘点监督人和盘点执行人`);
       return;
     }
-    onConfirm(draft);
+    onConfirm({ planName, rows });
   };
 
-  const personInput = (label, field) => (
-    <div>
-      <Typography.Text type="secondary">{label}</Typography.Text>
-      <Input
-        readOnly
-        value={draft[field]}
-        placeholder={`请选择${label}`}
-        suffix={<Search size={14} className="text-[#1677ff]" />}
-        onClick={() => setPersonField(field)}
-      />
-    </div>
-  );
+  const columns = [
+    { title: '盘点范围', dataIndex: 'range', width: 110, fixed: 'left' },
+    {
+      title: '计划责任人',
+      dataIndex: 'manager',
+      width: 210,
+      render: (value, row) => (
+        <Input
+          readOnly
+          value={value}
+          placeholder="请选择计划责任人"
+          suffix={<Search size={14} className="text-[#1677ff]" />}
+          onClick={() => setPersonTarget({ rowKey: row.key, field: 'manager' })}
+        />
+      ),
+    },
+    {
+      title: '盘点监督人',
+      dataIndex: 'supervisor',
+      width: 210,
+      render: (value, row) => (
+        <Input
+          readOnly
+          value={value}
+          placeholder="请选择盘点监督人"
+          suffix={<Search size={14} className="text-[#1677ff]" />}
+          onClick={() => setPersonTarget({ rowKey: row.key, field: 'supervisor' })}
+        />
+      ),
+    },
+    {
+      title: '盘点执行人',
+      dataIndex: 'executor',
+      width: 210,
+      render: (value, row) => (
+        <Input
+          readOnly
+          value={value}
+          placeholder="请选择盘点执行人"
+          suffix={<Search size={14} className="text-[#1677ff]" />}
+          onClick={() => setPersonTarget({ rowKey: row.key, field: 'executor' })}
+        />
+      ),
+    },
+  ];
 
   return (
     <>
       {contextHolder}
       <Modal
         open={open}
-        title="生成盘点计划"
-        width={720}
+        title="设置计划信息"
+        width={900}
         okText="确定"
         cancelText="取消"
         onCancel={onCancel}
         onOk={confirm}
       >
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4 py-2">
-          <div className="col-span-2">
+        <Space direction="vertical" size={16} className="w-full">
+          <div>
             <Typography.Text type="secondary">计划名称</Typography.Text>
-            <Input value={draft.planName} maxLength={100} onChange={(event) => setField('planName', event.target.value)} />
+            <Input value={planName} maxLength={100} onChange={(event) => setPlanName(event.target.value)} />
           </div>
-          {personInput('计划负责人', 'manager')}
-          {personInput('盘点监督人', 'supervisor')}
-          {personInput('盘点执行人', 'executor')}
-        </div>
+          <Table rowKey="key" size="small" bordered columns={columns} dataSource={rows} pagination={false} scroll={{ x: 740 }} />
+        </Space>
       </Modal>
 
       <SelectModal
-        open={Boolean(personField)}
+        open={Boolean(personTarget)}
         title="用户列表"
         rowKey="id"
         dataSource={EMPLOYEE_ROWS}
@@ -158,11 +202,8 @@ function PlanInfoModal({ open, onCancel, onConfirm }) {
           { title: '员工姓名', dataIndex: 'employeeName' },
           { title: '部门名称', dataIndex: 'department' },
         ]}
-        onCancel={() => setPersonField(null)}
-        onConfirm={(record) => {
-          if (personField) setField(personField, record.employeeName);
-          setPersonField(null);
-        }}
+        onCancel={() => setPersonTarget(null)}
+        onConfirm={updatePerson}
       />
     </>
   );
@@ -178,7 +219,8 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan 
   const [scopeRows, setScopeRows] = useState(INITIAL_SCOPE_ROWS);
   const [assetRows, setAssetRows] = useState(ASSET_ROWS);
   const [selectedAssetKeys, setSelectedAssetKeys] = useState([]);
-  const [assetFilters, setAssetFilters] = useState({ assetTag: '', owner: '', ownerLevel: '' });
+  const [assetDraftFilters, setAssetDraftFilters] = useState(EMPTY_ASSET_FILTERS);
+  const [assetFilters, setAssetFilters] = useState(EMPTY_ASSET_FILTERS);
   const [planModalOpen, setPlanModalOpen] = useState(false);
 
   const setFilter = (field, value) => setFilters((current) => ({ ...current, [field]: value }));
@@ -273,6 +315,16 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan 
     ['仓库', 'warehouse'], ['City', 'city'], ['Building', 'building'], ['Floor', 'floor'],
   ];
 
+  const handleDeleteAssets = () => {
+    if (!selectedAssetKeys.length) {
+      messageApi.warning('请先选择需要删除的资产');
+      return;
+    }
+    const selected = new Set(selectedAssetKeys);
+    setAssetRows((current) => current.filter((row) => !selected.has(row.key)));
+    setSelectedAssetKeys([]);
+  };
+
   return (
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
@@ -319,45 +371,29 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan 
         <Table rowKey="key" size="small" bordered columns={scopeColumns} dataSource={scopeRows} scroll={{ x: 2700 }} pagination={false} />
       </Card>
 
+      <QueryBar
+        onQuery={() => setAssetFilters({ ...assetDraftFilters })}
+        onReset={() => {
+          setAssetDraftFilters(EMPTY_ASSET_FILTERS);
+          setAssetFilters(EMPTY_ASSET_FILTERS);
+        }}
+      >
+        <QueryItem label="资产标签号">
+          <Input value={assetDraftFilters.assetTag} allowClear placeholder="请输入资产标签号" onChange={(event) => setAssetDraftFilters((current) => ({ ...current, assetTag: event.target.value }))} />
+        </QueryItem>
+        <QueryItem label="资产责任人">
+          <Input value={assetDraftFilters.owner} allowClear placeholder="请输入资产责任人" onChange={(event) => setAssetDraftFilters((current) => ({ ...current, owner: event.target.value }))} />
+        </QueryItem>
+        <QueryItem label="责任人职级">
+          <Input value={assetDraftFilters.ownerLevel} allowClear placeholder="请输入责任人职级" onChange={(event) => setAssetDraftFilters((current) => ({ ...current, ownerLevel: event.target.value }))} />
+        </QueryItem>
+      </QueryBar>
+
       <Card size="small" title={<CardTitle>资产明细</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredAssets.length} 条</Typography.Text>}>
         <div className="mb-3 flex justify-end">
-          <Button
-            danger
-            icon={<Trash2 size={14} />}
-            onClick={() => {
-              if (!selectedAssetKeys.length) {
-                messageApi.warning('请先选择需要删除的资产');
-                return;
-              }
-              const selected = new Set(selectedAssetKeys);
-              setAssetRows((current) => current.filter((row) => !selected.has(row.key)));
-              setSelectedAssetKeys([]);
-            }}
-          >
-            删除
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3 items-end mb-3">
-          <div>
-            <Typography.Text type="secondary">资产标签号</Typography.Text>
-            <Input value={assetFilters.assetTag} onChange={(event) => setAssetFilters((current) => ({ ...current, assetTag: event.target.value }))} />
-          </div>
-          <div>
-            <Typography.Text type="secondary">资产责任人</Typography.Text>
-            <Input value={assetFilters.owner} onChange={(event) => setAssetFilters((current) => ({ ...current, owner: event.target.value }))} />
-          </div>
-          <div>
-            <Typography.Text type="secondary">责任人职级</Typography.Text>
-            <Input value={assetFilters.ownerLevel} onChange={(event) => setAssetFilters((current) => ({ ...current, ownerLevel: event.target.value }))} />
-          </div>
-        </div>
-
-        <div className="mb-3 flex justify-center">
           <Space>
-            <Button type="primary">查询</Button>
-            <Button onClick={() => setAssetFilters({ assetTag: '', owner: '', ownerLevel: '' })}>重置</Button>
             <Button icon={<Download size={14} />} onClick={() => messageApi.success('已导出当前资产清册')}>导出清册</Button>
+            <Button danger icon={<Trash2 size={14} />} onClick={handleDeleteAssets}>删除</Button>
           </Space>
         </div>
 
