@@ -171,7 +171,7 @@ function PlanInfoModal({ open, onCancel, onConfirm }) {
 export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [filters, setFilters] = useState({
-    company: '', department: '', plate: '', assetTag: '', category: '', serialNo: '', printNo: '', description: '',
+    company: '', department: '', plate: '', assetTag: '', category: '', serialNo: '', description: '',
     status: '', owner: '', ownerLevel: '', costCenter: '', enableFrom: '', enableTo: '', warehouse: '', city: '', building: '', floor: '', ratio: 100,
     methods: [],
   });
@@ -192,7 +192,7 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan 
       assetTag: filters.assetTag || '-',
       category: filters.category || '全部',
       serialNo: filters.serialNo || '-',
-      printNo: filters.printNo || '-',
+      printNo: '-',
       description: filters.description || '-',
       status: filters.status || '全部',
       owner: filters.owner || '-',
@@ -244,7 +244,6 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan 
 
   const assetColumns = [
     { title: '资产标签号', dataIndex: 'assetTag', width: 140, fixed: 'left' },
-    { title: '印刷号', width: 110, render: () => '-' },
     { title: '序列号', dataIndex: 'serialNo', width: 130 },
     { title: '资产大类', dataIndex: 'category', width: 110 },
     { title: '资产小类', dataIndex: 'subCategory', width: 170 },
@@ -261,12 +260,15 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan 
     { title: 'City', dataIndex: 'city', width: 110 },
     { title: 'Building', dataIndex: 'building', width: 160 },
     { title: 'Floor', dataIndex: 'floor', width: 90 },
+    { title: '账套', dataIndex: 'organization', width: 120 },
+    { title: '成本中心', dataIndex: 'costCenter', width: 160 },
+    { title: '启用日期', dataIndex: 'enableDate', width: 120 },
   ];
 
   const queryFields = [
     ['公司', 'company'], ['部门', 'department'], ['板块', 'plate'],
     ['标签号', 'assetTag'], ['资产类别', 'category'], ['资产序列号', 'serialNo'],
-    ['印刷号', 'printNo'], ['资产说明', 'description'], ['资产状态', 'status'],
+    ['资产说明', 'description'], ['资产状态', 'status'],
     ['资产责任人', 'owner'], ['资产责任人职级', 'ownerLevel'], ['成本中心', 'costCenter'],
     ['仓库', 'warehouse'], ['City', 'city'], ['Building', 'building'], ['Floor', 'floor'],
   ];
@@ -303,11 +305,7 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan 
         </div>
 
         <div className="mt-4 flex justify-center">
-          <Space>
-            <Button type="primary" onClick={generateScope}>生成查询</Button>
-            <Button type="primary" onClick={() => setPlanModalOpen(true)}>生成计划</Button>
-            <Button onClick={onBack}>返回</Button>
-          </Space>
+          <Button type="primary" onClick={generateScope}>生成查询</Button>
         </div>
       </Card>
 
@@ -323,27 +321,24 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan 
 
       <Card size="small" title={<CardTitle>资产明细</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredAssets.length} 条</Typography.Text>}>
         <div className="mb-3 flex justify-end">
-          <Space>
-            <Button icon={<Download size={14} />} onClick={() => messageApi.success('已导出当前资产清册')}>导出清册</Button>
-            <Button
-              danger
-              icon={<Trash2 size={14} />}
-              onClick={() => {
-                if (!selectedAssetKeys.length) {
-                  messageApi.warning('请先选择需要删除的资产');
-                  return;
-                }
-                const selected = new Set(selectedAssetKeys);
-                setAssetRows((current) => current.filter((row) => !selected.has(row.key)));
-                setSelectedAssetKeys([]);
-              }}
-            >
-              删除
-            </Button>
-          </Space>
+          <Button
+            danger
+            icon={<Trash2 size={14} />}
+            onClick={() => {
+              if (!selectedAssetKeys.length) {
+                messageApi.warning('请先选择需要删除的资产');
+                return;
+              }
+              const selected = new Set(selectedAssetKeys);
+              setAssetRows((current) => current.filter((row) => !selected.has(row.key)));
+              setSelectedAssetKeys([]);
+            }}
+          >
+            删除
+          </Button>
         </div>
 
-        <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end mb-3">
+        <div className="grid grid-cols-3 gap-3 items-end mb-3">
           <div>
             <Typography.Text type="secondary">资产标签号</Typography.Text>
             <Input value={assetFilters.assetTag} onChange={(event) => setAssetFilters((current) => ({ ...current, assetTag: event.target.value }))} />
@@ -356,7 +351,14 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan 
             <Typography.Text type="secondary">责任人职级</Typography.Text>
             <Input value={assetFilters.ownerLevel} onChange={(event) => setAssetFilters((current) => ({ ...current, ownerLevel: event.target.value }))} />
           </div>
-          <Button type="primary">查询</Button>
+        </div>
+
+        <div className="mb-3 flex justify-center">
+          <Space>
+            <Button type="primary">查询</Button>
+            <Button onClick={() => setAssetFilters({ assetTag: '', owner: '', ownerLevel: '' })}>重置</Button>
+            <Button icon={<Download size={14} />} onClick={() => messageApi.success('已导出当前资产清册')}>导出清册</Button>
+          </Space>
         </div>
 
         <Table
@@ -366,10 +368,17 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan 
           columns={assetColumns}
           dataSource={filteredAssets}
           rowSelection={{ selectedRowKeys: selectedAssetKeys, onChange: setSelectedAssetKeys }}
-          scroll={{ x: 2200 }}
+          scroll={{ x: 2450 }}
           pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
         />
       </Card>
+
+      <div className="flex justify-center pb-2">
+        <Space>
+          <Button type="primary" onClick={() => setPlanModalOpen(true)}>生成计划</Button>
+          <Button onClick={onBack}>返回</Button>
+        </Space>
+      </div>
 
       <PlanInfoModal
         open={planModalOpen}
