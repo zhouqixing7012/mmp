@@ -90,7 +90,6 @@ function PlanInfoModal({ open, onCancel, onConfirm }) {
   const [rows, setRows] = useState(() => PLAN_RANGE_OPTIONS.map((range) => ({
     key: range,
     range,
-    manager: '',
     supervisor: '',
     executor: '',
   })));
@@ -112,39 +111,20 @@ function PlanInfoModal({ open, onCancel, onConfirm }) {
       messageApi.warning('请填写计划名称');
       return;
     }
-    const incomplete = rows.find((row) => !row.manager || !row.supervisor || !row.executor);
-    if (incomplete) {
-      messageApi.warning(`请完整配置${incomplete.range}范围的计划责任人、盘点监督人和盘点执行人`);
-      return;
-    }
     onConfirm({ planName, rows });
   };
 
   const columns = [
     { title: '盘点范围', dataIndex: 'range', width: 110, fixed: 'left' },
     {
-      title: '计划责任人',
-      dataIndex: 'manager',
-      width: 210,
-      render: (value, row) => (
-        <Input
-          readOnly
-          value={value}
-          placeholder="请选择计划责任人"
-          suffix={<Search size={14} className="text-[#1677ff]" />}
-          onClick={() => setPersonTarget({ rowKey: row.key, field: 'manager' })}
-        />
-      ),
-    },
-    {
       title: '盘点监督人',
       dataIndex: 'supervisor',
-      width: 210,
+      width: 240,
       render: (value, row) => (
         <Input
           readOnly
           value={value}
-          placeholder="请选择盘点监督人"
+          placeholder="选填"
           suffix={<Search size={14} className="text-[#1677ff]" />}
           onClick={() => setPersonTarget({ rowKey: row.key, field: 'supervisor' })}
         />
@@ -153,12 +133,12 @@ function PlanInfoModal({ open, onCancel, onConfirm }) {
     {
       title: '盘点执行人',
       dataIndex: 'executor',
-      width: 210,
+      width: 240,
       render: (value, row) => (
         <Input
           readOnly
           value={value}
-          placeholder="请选择盘点执行人"
+          placeholder="选填"
           suffix={<Search size={14} className="text-[#1677ff]" />}
           onClick={() => setPersonTarget({ rowKey: row.key, field: 'executor' })}
         />
@@ -172,7 +152,7 @@ function PlanInfoModal({ open, onCancel, onConfirm }) {
       <Modal
         open={open}
         title="设置计划信息"
-        width={900}
+        width={720}
         okText="确定"
         cancelText="取消"
         onCancel={onCancel}
@@ -180,10 +160,10 @@ function PlanInfoModal({ open, onCancel, onConfirm }) {
       >
         <Space direction="vertical" size={16} className="w-full">
           <div>
-            <Typography.Text type="secondary">计划名称</Typography.Text>
+            <Typography.Text type="secondary"><span className="text-red-500 mr-1">*</span>计划名称</Typography.Text>
             <Input value={planName} maxLength={100} onChange={(event) => setPlanName(event.target.value)} />
           </div>
-          <Table rowKey="key" size="small" bordered columns={columns} dataSource={rows} pagination={false} scroll={{ x: 740 }} />
+          <Table rowKey="key" size="small" bordered columns={columns} dataSource={rows} pagination={false} scroll={{ x: 590 }} />
         </Space>
       </Modal>
 
@@ -371,25 +351,25 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan 
         <Table rowKey="key" size="small" bordered columns={scopeColumns} dataSource={scopeRows} scroll={{ x: 2700 }} pagination={false} />
       </Card>
 
-      <QueryBar
-        onQuery={() => setAssetFilters({ ...assetDraftFilters })}
-        onReset={() => {
-          setAssetDraftFilters(EMPTY_ASSET_FILTERS);
-          setAssetFilters(EMPTY_ASSET_FILTERS);
-        }}
-      >
-        <QueryItem label="资产标签号">
-          <Input value={assetDraftFilters.assetTag} allowClear placeholder="请输入资产标签号" onChange={(event) => setAssetDraftFilters((current) => ({ ...current, assetTag: event.target.value }))} />
-        </QueryItem>
-        <QueryItem label="资产责任人">
-          <Input value={assetDraftFilters.owner} allowClear placeholder="请输入资产责任人" onChange={(event) => setAssetDraftFilters((current) => ({ ...current, owner: event.target.value }))} />
-        </QueryItem>
-        <QueryItem label="责任人职级">
-          <Input value={assetDraftFilters.ownerLevel} allowClear placeholder="请输入责任人职级" onChange={(event) => setAssetDraftFilters((current) => ({ ...current, ownerLevel: event.target.value }))} />
-        </QueryItem>
-      </QueryBar>
-
       <Card size="small" title={<CardTitle>资产明细</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredAssets.length} 条</Typography.Text>}>
+        <QueryBar
+          onQuery={() => setAssetFilters({ ...assetDraftFilters })}
+          onReset={() => {
+            setAssetDraftFilters(EMPTY_ASSET_FILTERS);
+            setAssetFilters(EMPTY_ASSET_FILTERS);
+          }}
+        >
+          <QueryItem label="资产标签号">
+            <Input value={assetDraftFilters.assetTag} allowClear placeholder="请输入资产标签号" onChange={(event) => setAssetDraftFilters((current) => ({ ...current, assetTag: event.target.value }))} />
+          </QueryItem>
+          <QueryItem label="资产责任人">
+            <Input value={assetDraftFilters.owner} allowClear placeholder="请输入资产责任人" onChange={(event) => setAssetDraftFilters((current) => ({ ...current, owner: event.target.value }))} />
+          </QueryItem>
+          <QueryItem label="责任人职级">
+            <Input value={assetDraftFilters.ownerLevel} allowClear placeholder="请输入责任人职级" onChange={(event) => setAssetDraftFilters((current) => ({ ...current, ownerLevel: event.target.value }))} />
+          </QueryItem>
+        </QueryBar>
+
         <div className="mb-3 flex justify-end">
           <Space>
             <Button icon={<Download size={14} />} onClick={() => messageApi.success('已导出当前资产清册')}>导出清册</Button>
