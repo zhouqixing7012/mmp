@@ -2,13 +2,12 @@ import React from 'react';
 import { Alert, Card, Empty, Space, Typography } from 'antd';
 import AssetInventoryProjectPage from './AssetInventoryProjectPage';
 import AssetInventoryProjectPageV2 from './AssetInventoryProjectPageV2';
+import './assetInventoryV2.css';
 
 export const ASSET_INVENTORY_SUB_MENUS = [
   '公司-账套对应关系',
-  '盘点规则',
   '盘点项目',
   '盘点项目（方案二）',
-  '盘点差异报表',
 ];
 
 function PendingAssetInventoryPage({ title }) {
