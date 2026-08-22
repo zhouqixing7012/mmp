@@ -41,6 +41,9 @@ function normalizeQuarterText(value) {
 function displayGroupName(name) {
   return normalizeQuarterText(String(name || '').split('链路').join(''));
 }
+function DisabledAction({ children }) {
+  return <Typography.Text type="secondary">{children}</Typography.Text>;
+}
 
 export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
@@ -105,7 +108,7 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
 
   const columns = [
     {
-      title: '关联项目', dataIndex: 'relationGroupLabel', width: 220, fixed: 'left',
+      title: '关联项目', dataIndex: 'relationGroupLabel', width: 180, fixed: 'left',
       render: (value) => value ? <Typography.Text strong>{value}</Typography.Text> : '-',
     },
     { title: '项目编号', dataIndex: 'projectNo', width: 170, fixed: 'left' },
@@ -118,9 +121,24 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
     { title: '资产总量', dataIndex: 'assetCount', width: 100, align: 'right' },
     { title: '项目责任人', dataIndex: 'owner', width: 130 },
     { title: '项目创建时间', dataIndex: 'createdAt', width: 130 },
-    { title: '进入计划', width: 100, fixed: 'right', render: (_, row) => row.planStatus ? <Button type="link" className="px-0" onClick={() => onOpenPlans(row)}>进入计划</Button> : null },
-    { title: '项目进度', width: 100, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => onOpenProgress(row)}>查看进度</Button> },
-    { title: '图片审核', width: 100, fixed: 'right', render: (_, row) => row.imageApproval ? <Button type="link" className="px-0" onClick={() => onOpenImageReview(row)}>图片审核</Button> : null },
+    {
+      title: '进入计划', width: 100, fixed: 'right',
+      render: (_, row) => row.planStatus
+        ? <Button type="link" className="px-0" onClick={() => onOpenPlans(row)}>进入计划</Button>
+        : <DisabledAction>进入计划</DisabledAction>,
+    },
+    {
+      title: '项目进度', width: 100, fixed: 'right',
+      render: (_, row) => Number(row.executionCount || 0) > 0
+        ? <Button type="link" className="px-0" onClick={() => onOpenProgress(row)}>查看进度</Button>
+        : <DisabledAction>查看进度</DisabledAction>,
+    },
+    {
+      title: '图片审核', width: 100, fixed: 'right',
+      render: (_, row) => row.imageApproval
+        ? <Button type="link" className="px-0" onClick={() => onOpenImageReview(row)}>图片审核</Button>
+        : <DisabledAction>图片审核</DisabledAction>,
+    },
   ];
 
   return <Space direction="vertical" size={16} className="w-full">
@@ -147,7 +165,7 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
         dataSource={treeRows}
         expandable={{ defaultExpandAllRows: true, rowExpandable: (record) => Boolean(record.children?.length), indentSize: 18 }}
         rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true }}
-        scroll={{ x: 1850 }}
+        scroll={{ x: 1810 }}
         pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
       />
     </Card>
