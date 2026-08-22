@@ -2,6 +2,7 @@ import React from 'react';
 import { Alert, Card, Empty, Space, Typography } from 'antd';
 import AssetInventoryProjectPage from './AssetInventoryProjectPage';
 import AssetInventoryProjectPageV2 from './AssetInventoryProjectPageV2';
+import AssetInventoryFieldPolicy from './AssetInventoryFieldPolicy';
 import './assetInventoryV2.css';
 
 export const ASSET_INVENTORY_SUB_MENUS = [
@@ -26,11 +27,15 @@ function PendingAssetInventoryPage({ title }) {
   );
 }
 
+function withFieldPolicy(content) {
+  return <AssetInventoryFieldPolicy>{content}</AssetInventoryFieldPolicy>;
+}
+
 export function AssetInventoryContent({ activeSubMenu }) {
-  if (activeSubMenu === '盘点项目') return <AssetInventoryProjectPage />;
-  if (activeSubMenu === '盘点项目（方案二）') return <AssetInventoryProjectPageV2 />;
-  if (ASSET_INVENTORY_SUB_MENUS.includes(activeSubMenu)) return <PendingAssetInventoryPage title={activeSubMenu} />;
-  return <AssetInventoryProjectPage />;
+  if (activeSubMenu === '盘点项目') return withFieldPolicy(<AssetInventoryProjectPage />);
+  if (activeSubMenu === '盘点项目（方案二）') return withFieldPolicy(<AssetInventoryProjectPageV2 />);
+  if (ASSET_INVENTORY_SUB_MENUS.includes(activeSubMenu)) return withFieldPolicy(<PendingAssetInventoryPage title={activeSubMenu} />);
+  return withFieldPolicy(<AssetInventoryProjectPage />);
 }
 
 export { default as AssetInventoryProjectPage } from './AssetInventoryProjectPage';
