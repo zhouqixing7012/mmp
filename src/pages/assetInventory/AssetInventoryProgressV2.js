@@ -49,7 +49,6 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
     { title: '剩余天数', dataIndex: 'remainingDays', width: 100 },
     { title: '计划监督人', dataIndex: 'supervisor', width: 130 },
     { title: '财务监督人', dataIndex: 'financialSupervisor', width: 130 },
-    { title: '内审监督人', dataIndex: 'auditSupervisor', width: 130 },
   ];
 
   return (
@@ -67,7 +66,7 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
             {
               key: 'detail',
               label: '进度详情',
-              children: <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={PROGRESS_DETAIL_ROWS} pagination={false} scroll={{ x: 1650 }} />,
+              children: <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={PROGRESS_DETAIL_ROWS} pagination={false} scroll={{ x: 1500 }} />,
             },
           ]}
         />
