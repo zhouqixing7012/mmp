@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Tag, Typography, message as antdMessage } from 'antd';
+import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import { Plus, Trash2, XCircle } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
@@ -31,8 +31,15 @@ function DateFilter({ value, onChange, placeholder }) {
 function normalizeStatus(status) {
   return status === '暂存' ? '草稿' : status;
 }
+function normalizeQuarterText(value) {
+  return String(value || '')
+    .split('第一季度').join('Q1')
+    .split('第二季度').join('Q2')
+    .split('第三季度').join('Q3')
+    .split('第四季度').join('Q4');
+}
 function displayGroupName(name) {
-  return String(name || '').split('链路').join('');
+  return normalizeQuarterText(String(name || '').split('链路').join(''));
 }
 
 export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview }) {
@@ -44,7 +51,7 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
 
   const filteredRows = useMemo(() => rows.filter((row) => (
     includesText(row.projectNo, appliedFilters.projectNo)
-    && includesText(row.projectName, appliedFilters.projectName)
+    && includesText(normalizeQuarterText(row.projectName), appliedFilters.projectName)
     && includesText(row.status, appliedFilters.status)
     && includesText(row.owner, appliedFilters.owner)
     && includesText(row.projectType, appliedFilters.type)
@@ -62,11 +69,10 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
     });
     return Array.from(groups.entries()).map(([relationGroup, groupRows]) => {
       const initial = groupRows.find((row) => row.projectType === '初盘') || groupRows[0];
-      const children = groupRows.filter((row) => row.key !== initial.key).map((row) => ({ ...row, relationGroupLabel: '', relationCount: 0 }));
+      const children = groupRows.filter((row) => row.key !== initial.key).map((row) => ({ ...row, relationGroupLabel: '' }));
       return {
         ...initial,
         relationGroupLabel: displayGroupName(relationGroup),
-        relationCount: groupRows.length,
         children: children.length ? children : undefined,
       };
     });
@@ -99,11 +105,11 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
 
   const columns = [
     {
-      title: '关联项目', dataIndex: 'relationGroupLabel', width: 250, fixed: 'left',
-      render: (value, row) => value ? <Space size={6}><Typography.Text strong>{value}</Typography.Text><Tag>{row.relationCount} 个关联项目</Tag></Space> : '-',
+      title: '关联项目', dataIndex: 'relationGroupLabel', width: 220, fixed: 'left',
+      render: (value) => value ? <Typography.Text strong>{value}</Typography.Text> : '-',
     },
     { title: '项目编号', dataIndex: 'projectNo', width: 170, fixed: 'left' },
-    { title: '项目名称', dataIndex: 'projectName', width: 180, render: (value, row) => <Button type="link" className="px-0" onClick={() => onOpenProject(row)}>{value}</Button> },
+    { title: '项目名称', dataIndex: 'projectName', width: 180, render: (value, row) => <Button type="link" className="px-0" onClick={() => onOpenProject(row)}>{normalizeQuarterText(value)}</Button> },
     { title: '项目类型', dataIndex: 'projectType', width: 90 },
     { title: '项目状态', dataIndex: 'status', width: 120, render: (value) => <StatusTag value={value} /> },
     { title: '盘点开始时间', dataIndex: 'startDate', width: 130 },
@@ -141,7 +147,7 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
         dataSource={treeRows}
         expandable={{ defaultExpandAllRows: true, rowExpandable: (record) => Boolean(record.children?.length), indentSize: 18 }}
         rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true }}
-        scroll={{ x: 1900 }}
+        scroll={{ x: 1850 }}
         pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
       />
     </Card>
