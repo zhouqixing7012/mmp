@@ -2,6 +2,7 @@ import React from 'react';
 import { Alert, Card, Empty, Space, Typography } from 'antd';
 import AssetInventoryProjectPage from './AssetInventoryProjectPage';
 import AssetInventoryProjectPageV2 from './AssetInventoryProjectPageV2';
+import AssetInventoryProjectPageV3 from './AssetInventoryProjectPageV3';
 import AssetInventoryFieldPolicy from './AssetInventoryFieldPolicy';
 import './assetInventoryV2.css';
 
@@ -9,6 +10,7 @@ export const ASSET_INVENTORY_SUB_MENUS = [
   '公司-账套对应关系',
   '盘点项目',
   '盘点项目（方案二）',
+  '盘点项目（方案三）',
 ];
 
 function PendingAssetInventoryPage({ title }) {
@@ -34,9 +36,11 @@ function withFieldPolicy(content) {
 export function AssetInventoryContent({ activeSubMenu }) {
   if (activeSubMenu === '盘点项目') return withFieldPolicy(<AssetInventoryProjectPage />);
   if (activeSubMenu === '盘点项目（方案二）') return withFieldPolicy(<AssetInventoryProjectPageV2 />);
+  if (activeSubMenu === '盘点项目（方案三）') return withFieldPolicy(<AssetInventoryProjectPageV3 />);
   if (ASSET_INVENTORY_SUB_MENUS.includes(activeSubMenu)) return withFieldPolicy(<PendingAssetInventoryPage title={activeSubMenu} />);
   return withFieldPolicy(<AssetInventoryProjectPage />);
 }
 
 export { default as AssetInventoryProjectPage } from './AssetInventoryProjectPage';
 export { default as AssetInventoryProjectPageV2 } from './AssetInventoryProjectPageV2';
+export { default as AssetInventoryProjectPageV3 } from './AssetInventoryProjectPageV3';

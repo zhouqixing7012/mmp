@@ -5,6 +5,7 @@ import { Download, Image as ImageIcon } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
 import { IMAGE_REVIEW_ROWS } from './mockData';
+import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 
 const EMPTY_FILTERS = {
   assetTag: '', description: '', reviewStatus: '', owner: '', company: '', department: '', category: '',
@@ -34,8 +35,9 @@ function PhotoPlaceholder({ label }) {
 }
 
 export default function AssetInventoryImageReviewV2({ onBack }) {
+  const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [rows, setRows] = useState(IMAGE_REVIEW_ROWS);
+  const [rows, setRows] = useState(() => IMAGE_REVIEW_ROWS.filter((row) => isInventoryRangeAllowed(row.asset, allowedRanges)));
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
   const [filters, setFilters] = useState(EMPTY_FILTERS);

@@ -10,13 +10,15 @@ import AssetInventoryProgressV2 from './AssetInventoryProgressV2';
 import AssetInventorySnapshotDetailV2 from './AssetInventorySnapshotDetailV2';
 import { AssetInventoryPlanAssetListV2 } from './AssetInventoryPlanViewsV2';
 import { ASSET_ROWS, IMAGE_RULE_ROWS, INITIAL_PLAN_ROWS, PROJECT_INFO, PROJECT_ROWS } from './mockData';
+import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 
 function CardTitle({ children }) {
   return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>;
 }
 
 function ImageUploadRuleEditorV2() {
-  const [rows, setRows] = useState(() => IMAGE_RULE_ROWS.map((row) => ({ ...row, uploadEnabled: false })));
+  const { allowedRanges } = useAssetInventoryVariant();
+  const [rows, setRows] = useState(() => IMAGE_RULE_ROWS.filter((row) => allowedRanges.includes(row.range)).map((row) => ({ ...row, uploadEnabled: false })));
   const multiOptions = (values) => values.map((value) => ({ label: value, value }));
   const changeRow = (key, field, value) => setRows((current) => current.map((row) => row.key === key ? { ...row, [field]: value } : row));
   const columns = [
@@ -78,7 +80,12 @@ function resolveProject(root, sourceElement) {
   return current ? resolveProjectFromRow(current) : resolveProjectFromDetail(root);
 }
 
-export default function AssetInventoryProjectPageV2() {
+export default function AssetInventoryProjectPageV2({ variantLabel = '方案二' } = {}) {
+  const { allowedRanges } = useAssetInventoryVariant();
+  const allowedRangeKey = allowedRanges.join('|');
+  const availableAssets = ASSET_ROWS.filter((asset) => isInventoryRangeAllowed(asset, allowedRanges));
+  const initialPlanRows = INITIAL_PLAN_ROWS.filter((row) => allowedRanges.includes(row.range));
+  const variantMenuLabel = `盘点项目（${variantLabel}）`;
   const rootRef = useRef(null);
   const baseContainerRef = useRef(null);
   const [basePageTitle, setBasePageTitle] = useState('盘点项目');
@@ -91,11 +98,11 @@ export default function AssetInventoryProjectPageV2() {
   const [imageReviewOpen, setImageReviewOpen] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
   const [planProject, setPlanProject] = useState(PROJECT_INFO);
-  const [planRows, setPlanRows] = useState(() => INITIAL_PLAN_ROWS.map((row) => ({ ...row, status: row.status === '暂存' ? '草稿' : row.status })));
-  const [assetPlanMap, setAssetPlanMap] = useState(() => Object.fromEntries(ASSET_ROWS.map((asset) => [asset.key, INITIAL_PLAN_ROWS.some((plan) => plan.planNo === asset.planNo) ? asset.planNo : ''])));
+  const [planRows, setPlanRows] = useState(() => initialPlanRows.map((row) => ({ ...row, status: row.status === '暂存' ? '草稿' : row.status })));
+  const [assetPlanMap, setAssetPlanMap] = useState(() => Object.fromEntries(availableAssets.map((asset) => [asset.key, initialPlanRows.some((plan) => plan.planNo === asset.planNo) ? asset.planNo : ''])));
 
-  const activePlanNos = new Set(planRows.map((row) => row.planNo));
-  const unplannedSnapshotAssets = ASSET_ROWS.filter((asset) => !assetPlanMap[asset.key] || !activePlanNos.has(assetPlanMap[asset.key]));
+  const activePlanNos = new Set(planRows.filter((row) => allowedRanges.includes(row.range)).map((row) => row.planNo));
+  const unplannedSnapshotAssets = availableAssets.filter((asset) => !assetPlanMap[asset.key] || !activePlanNos.has(assetPlanMap[asset.key]));
   const canManualCreate = unplannedSnapshotAssets.length > 0;
 
   const resetOverlays = () => {
@@ -191,7 +198,7 @@ export default function AssetInventoryProjectPageV2() {
   };
 
   const createManualPlans = (draft) => {
-    const assets = draft.assets || [];
+    const assets = (draft.assets || []).filter((asset) => isInventoryRangeAllowed(asset, allowedRanges));
     const groups = new Map();
     assets.forEach((asset) => {
       const range = asset.inventoryRange || '员工';
@@ -240,7 +247,7 @@ export default function AssetInventoryProjectPageV2() {
     }
     setAssetPlanMap((current) => {
       const next = { ...current };
-      (draft.assets || []).forEach((asset) => {
+      (draft.assets || []).filter((asset) => isInventoryRangeAllowed(asset, allowedRanges)).forEach((asset) => {
         const targetPlan = planRows.find((plan) => plan.range === asset.inventoryRange);
         if (targetPlan) next[asset.key] = targetPlan.planNo;
       });
@@ -333,6 +340,10 @@ export default function AssetInventoryProjectPageV2() {
         if (assetRangeCard) {
           const configButton = Array.from(assetRangeCard.querySelectorAll('button')).find((button) => button.textContent?.trim() === '配置');
           hideVariantElement(configButton);
+          const disallowedAssetTags = ASSET_ROWS.filter((asset) => !isInventoryRangeAllowed(asset, allowedRanges)).map((asset) => asset.assetTag).filter(Boolean);
+          assetRangeCard.querySelectorAll('tbody tr').forEach((row) => {
+            if (disallowedAssetTags.some((tag) => row.textContent?.includes(tag))) hideVariantElement(row);
+          });
           const rangeItem = assetRangeCard.closest('.ant-space-item') || assetRangeCard;
           let slot = base.querySelector('[data-asset-inventory-v2-image-slot="true"]');
           if (!slot) {
@@ -368,13 +379,13 @@ export default function AssetInventoryProjectPageV2() {
       const imageSlot = base.querySelector('[data-asset-inventory-v2-image-slot="true"]');
       if (imageSlot) imageSlot.remove();
     };
-  }, []);
+  }, [allowedRangeKey]);
 
   useEffect(() => {
     const baseItems = [
       { label: '首页' },
       { label: '资产盘点' },
-      { label: '盘点项目（方案二）', onClick: returnToProjectList },
+      { label: variantMenuLabel, onClick: returnToProjectList },
     ];
     let tail = [];
     if (customBuilderOpen) {
@@ -394,9 +405,9 @@ export default function AssetInventoryProjectPageV2() {
     } else if (basePageTitle && basePageTitle !== '盘点项目') {
       tail = [{ label: basePageTitle }];
     }
-    const items = tail.length ? [...baseItems, ...tail] : [{ label: '首页' }, { label: '资产盘点' }, { label: '盘点项目（方案二）' }];
+    const items = tail.length ? [...baseItems, ...tail] : [{ label: '首页' }, { label: '资产盘点' }, { label: variantMenuLabel }];
     window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', { detail: { items } }));
-  }, [activePlan, basePageTitle, customBuilderOpen, customBuilderSource, imageReviewOpen, planViewOpen, progressOpen, snapshotOpen]);
+  }, [activePlan, basePageTitle, customBuilderOpen, customBuilderSource, imageReviewOpen, planViewOpen, progressOpen, snapshotOpen, variantMenuLabel]);
 
   useEffect(() => () => {
     window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', { detail: { items: null } }));
@@ -425,7 +436,7 @@ export default function AssetInventoryProjectPageV2() {
       onGenerateCustom={() => openSnapshotPlanBuilder(snapshotProject)}
     />}
 
-    {customBuilderOpen && <AssetInventoryCustomPlanBuilder initialAssets={customBuilderSource === 'plans' ? unplannedSnapshotAssets : ASSET_ROWS} onBack={closeCustomBuilder} onConfirmPlan={handleCustomPlanConfirm} />}
+    {customBuilderOpen && <AssetInventoryCustomPlanBuilder initialAssets={customBuilderSource === 'plans' ? unplannedSnapshotAssets : availableAssets} onBack={closeCustomBuilder} onConfirmPlan={handleCustomPlanConfirm} />}
     {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} rows={planRows} setRows={setPlanRows} canManualCreate={canManualCreate} onManualCreate={openManualPlanBuilder} onBack={() => setPlanViewOpen(false)} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}
     {activePlan && <AssetInventoryPlanAssetListV2 plan={activePlan} onBack={() => setActivePlan(null)} />}
     {imageReviewOpen && <AssetInventoryImageReviewV2 project={planProject} onBack={() => setImageReviewOpen(false)} />}

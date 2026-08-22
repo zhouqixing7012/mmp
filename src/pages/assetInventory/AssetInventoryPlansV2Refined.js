@@ -6,6 +6,7 @@ import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import { EMPLOYEE_ROWS } from './mockData';
+import { useAssetInventoryVariant } from './AssetInventoryVariantContext';
 
 const EMPTY_PLAN_FILTERS = { planNo: '', planName: '', planStatus: '', city: '', organization: '', range: '' };
 const RANGE_OPTIONS = ['员工', '库房', '公共', '机房'];
@@ -24,6 +25,8 @@ function ProjectInfoCard({ project }) {
 }
 
 export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPlanAssets, rows, setRows, canManualCreate, onManualCreate }) {
+  const { allowedRanges } = useAssetInventoryVariant();
+  const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [draftFilters, setDraftFilters] = useState(EMPTY_PLAN_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_PLAN_FILTERS);
@@ -31,39 +34,49 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
   const [personTarget, setPersonTarget] = useState(null);
   const [batchDateOpen, setBatchDateOpen] = useState(false);
   const [batchDates, setBatchDates] = useState({ startDate: '', endDate: '' });
+  const visibleRows = useMemo(() => rows.filter((row) => allowedRanges.includes(row.range)), [rows, allowedRanges]);
   const updateFilter = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
-  const filteredRows = useMemo(() => rows.filter((row) => includesText(row.planNo, appliedFilters.planNo) && includesText(row.planName, appliedFilters.planName) && includesText(row.status, appliedFilters.planStatus) && includesText(row.city, appliedFilters.city) && includesText(row.organization, appliedFilters.organization) && includesText(row.range, appliedFilters.range)), [rows, appliedFilters]);
+  const filteredRows = useMemo(() => visibleRows.filter((row) => includesText(row.planNo, appliedFilters.planNo) && includesText(row.planName, appliedFilters.planName) && includesText(row.status, appliedFilters.planStatus) && includesText(row.city, appliedFilters.city) && includesText(row.organization, appliedFilters.organization) && includesText(row.range, appliedFilters.range)), [visibleRows, appliedFilters]);
   const editable = (row) => row.status === '草稿';
-  const selectedRows = rows.filter((row) => selectedKeys.includes(row.key));
+  const selectedRows = visibleRows.filter((row) => selectedKeys.includes(row.key));
   const allSelectedDraft = selectedRows.length > 0 && selectedRows.every((row) => row.status === '草稿');
-  const anyStarted = rows.some((row) => row.status === '启动');
+  const anyStarted = visibleRows.some((row) => row.status === '启动');
   const openPersonnel = (rowKey, field) => setPersonTarget({ rowKey, field });
   const applyPersonnel = (record) => { if (!personTarget) return; setRows((current) => current.map((row) => row.key === personTarget.rowKey ? { ...row, [personTarget.field]: record.employeeName } : row)); setPersonTarget(null); };
+
   const handleStart = () => {
     if (!selectedKeys.length) { messageApi.warning('请先选择需要启动的盘点计划'); return; }
     const selected = new Set(selectedKeys);
-    const missing = rows.find((row) => selected.has(row.key) && (!row.manager || row.manager === '-' || !row.executor || row.executor === '-'));
+    const missing = visibleRows.find((row) => selected.has(row.key) && (!row.manager || row.manager === '-' || !row.executor || row.executor === '-'));
     if (missing) { Modal.warning({ title: '人员配置不完整', content: `盘点计划 ${missing.planNo} 未完整配置计划负责人/盘点执行人，请先完成配置。` }); return; }
     setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '启动' } : row));
     setSelectedKeys([]);
     messageApi.success('盘点计划已启动，盘点执行人狐小e盘点入口已开放，并发送待办及通知');
   };
+
   const handleDelete = () => {
     if (!selectedKeys.length) { messageApi.warning('请先选择需要删除的盘点计划'); return; }
     const selected = new Set(selectedKeys);
-    if (rows.some((row) => selected.has(row.key) && row.status !== '草稿')) { messageApi.warning('仅草稿状态的盘点计划可删除'); return; }
+    if (visibleRows.some((row) => selected.has(row.key) && row.status !== '草稿')) { messageApi.warning('仅草稿状态的盘点计划可删除'); return; }
     setRows((current) => current.filter((row) => !selected.has(row.key)));
     setSelectedKeys([]);
     messageApi.success('已删除所选盘点计划');
   };
-  const openBatchDate = () => { const first = rows[0]; setBatchDates({ startDate: first?.startDate || '', endDate: first?.endDate || '' }); setBatchDateOpen(true); };
+
+  const openBatchDate = () => {
+    const first = visibleRows[0];
+    setBatchDates({ startDate: first?.startDate || '', endDate: first?.endDate || '' });
+    setBatchDateOpen(true);
+  };
+
   const saveBatchDates = () => {
     if (!batchDates.startDate || !batchDates.endDate) { messageApi.warning('请完整填写盘点开始日期和盘点结束日期'); return; }
     if (batchDates.endDate < batchDates.startDate) { messageApi.warning('盘点结束日期不能早于盘点开始日期'); return; }
-    setRows((current) => current.map((row) => ({ ...row, startDate: batchDates.startDate, endDate: batchDates.endDate })));
+    setRows((current) => current.map((row) => allowedRanges.includes(row.range) ? { ...row, startDate: batchDates.startDate, endDate: batchDates.endDate } : row));
     setBatchDateOpen(false);
-    messageApi.success(`已统一更新全部 ${rows.length} 个盘点计划的盘点日期`);
+    messageApi.success(`已统一更新全部 ${visibleRows.length} 个盘点计划的盘点日期`);
   };
+
   const columns = [
     { title: '计划编号', dataIndex: 'planNo', width: 170, fixed: 'left' }, { title: '计划名称', dataIndex: 'planName', width: 190 }, { title: '计划状态', dataIndex: 'status', width: 100, render: (value) => <StatusTag value={value} /> }, { title: '盘点组织', dataIndex: 'organization', width: 120 }, { title: 'City', dataIndex: 'city', width: 120 },
     ...(project?.projectType === '复盘' ? [{ title: '财务监督人', dataIndex: 'financialSupervisor', width: 130, render: (value, row) => <PersonnelInput disabled={!editable(row)} value={value} onClick={() => openPersonnel(row.key, 'financialSupervisor')} /> }] : []),
@@ -75,6 +88,7 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
     { title: '盘点执行人', dataIndex: 'executor', width: 160, render: (value, row) => <PersonnelInput disabled={!editable(row)} value={value} onClick={() => openPersonnel(row.key, 'executor')} /> },
     { title: '资产清单', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => onOpenPlanAssets(row)}>查看</Button> },
   ];
+
   return <Space direction="vertical" size={16} className="w-full">
     {contextHolder}<PageTitle>盘点计划</PageTitle><ProjectInfoCard project={project} />
     <Card size="small" title={<CardTitle>盘点计划明细</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
@@ -84,7 +98,7 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
         <QueryItem label="计划状态"><Select value={draftFilters.planStatus || undefined} allowClear placeholder="请选择" options={['草稿', '启动', '关闭'].map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('planStatus', value)} /></QueryItem>
         <QueryItem label="City"><Input value={draftFilters.city} allowClear placeholder="请输入City" onChange={(event) => updateFilter('city', event.target.value)} /></QueryItem>
         <QueryItem label="盘点组织"><Input value={draftFilters.organization} allowClear placeholder="请输入盘点组织" onChange={(event) => updateFilter('organization', event.target.value)} /></QueryItem>
-        <QueryItem label="盘点范围"><Select value={draftFilters.range || undefined} allowClear placeholder="请选择" options={RANGE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('range', value)} /></QueryItem>
+        <QueryItem label="盘点范围"><Select value={draftFilters.range || undefined} allowClear placeholder="请选择" options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('range', value)} /></QueryItem>
       </QueryBar>
       <div className="mb-3 flex justify-end"><Space wrap>{canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}<Button onClick={openBatchDate}>批量编辑盘点日期</Button>{allSelectedDraft && <Button type="primary" icon={<PlayCircle size={14} />} onClick={handleStart}>启动盘点计划</Button>}{allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}<Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button><Button icon={<Download size={14} />}>导出</Button>{project?.projectType === '复盘' && anyStarted && <Button type="primary">提交审核</Button>}{anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已向盘点监督人、盘点执行人发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
       <Table rowKey="key" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />

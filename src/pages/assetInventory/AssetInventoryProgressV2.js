@@ -3,6 +3,7 @@ import { Button, Card, Progress, Space, Table, Tabs, Typography } from 'antd';
 import StatusTag from '../../components/StatusTag';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import { PROGRESS_DETAIL_ROWS, PROGRESS_ROWS } from './mockData';
+import { useAssetInventoryVariant } from './AssetInventoryVariantContext';
 
 function CardTitle({ children }) {
   return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>;
@@ -23,6 +24,10 @@ function ProjectInfoCard({ project }) {
 }
 
 export default function AssetInventoryProgressV2({ project, onBack }) {
+  const { allowedRanges } = useAssetInventoryVariant();
+  const progressRows = PROGRESS_ROWS.filter((row) => allowedRanges.includes(row.range));
+  const detailRows = PROGRESS_DETAIL_ROWS.filter((row) => allowedRanges.includes(row.range));
+
   const progressColumns = [
     { title: '盘点范围', dataIndex: 'range', width: 100 },
     { title: '盘点方式', dataIndex: 'method', width: 180 },
@@ -61,12 +66,12 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
             {
               key: 'summary',
               label: '项目进度',
-              children: <Table rowKey="key" size="small" bordered columns={progressColumns} dataSource={PROGRESS_ROWS} pagination={false} scroll={{ x: 1250 }} />,
+              children: <Table rowKey="key" size="small" bordered columns={progressColumns} dataSource={progressRows} pagination={false} scroll={{ x: 1250 }} />,
             },
             {
               key: 'detail',
               label: '进度详情',
-              children: <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={PROGRESS_DETAIL_ROWS} pagination={false} scroll={{ x: 1500 }} />,
+              children: <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={detailRows} pagination={false} scroll={{ x: 1500 }} />,
             },
           ]}
         />

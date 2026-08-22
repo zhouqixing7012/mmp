@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import {
   Button,
   Card,
-  Collapse,
   Input,
   Modal,
   Select,
@@ -19,6 +18,7 @@ import QueryBar, { QueryItem } from '../../components/QueryBar';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { ASSET_ROWS, UNINCLUDED_ASSET_ROWS } from './mockData';
+import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 
 const RANGE_OPTIONS = ['库房', '公共', '机房', '员工'];
 const EMPTY_FILTERS = { assetTag: '', category: '', status: '', owner: '', city: '', range: '' };
@@ -64,8 +64,8 @@ function ProjectInfoCard({ project }) {
   );
 }
 
-function makeAssetColumns() {
-  return [
+function makeAssetColumns({ includeNo = true } = {}) {
+  const columns = [
     { title: '盘点范围', dataIndex: 'inventoryRange', width: 100, fixed: 'left' },
     { title: '盘点状态', dataIndex: 'inventoryStatus', width: 100, render: (value) => <StatusTag value={value} /> },
     { title: '资产盘点人', dataIndex: 'counter', width: 130 },
@@ -94,16 +94,23 @@ function makeAssetColumns() {
     { title: '成本中心', dataIndex: 'costCenter', width: 180 },
     { title: '启用日期', dataIndex: 'enableDate', width: 120 },
     { title: '主资产标签号', dataIndex: 'mainAssetTag', width: 140 },
-    { title: 'NO扫描资产标签号', dataIndex: 'noScanAssetTag', width: 160 },
-    { title: 'NO扫描序列号', dataIndex: 'noScanSerialNo', width: 150 },
-    { title: 'NO扫描品牌', dataIndex: 'noScanBrand', width: 120 },
-    { title: 'NO扫描型号', dataIndex: 'noScanModel', width: 140 },
-    { title: 'NO扫描位置', dataIndex: 'noScanLocation', width: 190 },
-    { title: 'NO扫描数据差异', dataIndex: 'noScanDiff', width: 240 },
   ];
+
+  if (includeNo) {
+    columns.push(
+      { title: 'NO扫描资产标签号', dataIndex: 'noScanAssetTag', width: 160 },
+      { title: 'NO扫描序列号', dataIndex: 'noScanSerialNo', width: 150 },
+      { title: 'NO扫描品牌', dataIndex: 'noScanBrand', width: 120 },
+      { title: 'NO扫描型号', dataIndex: 'noScanModel', width: 140 },
+      { title: 'NO扫描位置', dataIndex: 'noScanLocation', width: 190 },
+      { title: 'NO扫描数据差异', dataIndex: 'noScanDiff', width: 240 },
+    );
+  }
+
+  return columns;
 }
 
-function SnapshotQuery({ filters, setFilters, onQuery }) {
+function SnapshotQuery({ filters, setFilters, onQuery, rangeOptions }) {
   const update = (field, value) => setFilters((current) => ({ ...current, [field]: value || '' }));
   return (
     <QueryBar onQuery={onQuery} onReset={() => { setFilters(EMPTY_FILTERS); onQuery(); }}>
@@ -112,12 +119,15 @@ function SnapshotQuery({ filters, setFilters, onQuery }) {
       <QueryItem label="盘点状态"><Select value={filters.status || undefined} allowClear placeholder="请选择" options={['未盘', '已盘', '代盘', '报失', '盘亏'].map((value) => ({ label: value, value }))} onChange={(value) => update('status', value)} /></QueryItem>
       <QueryItem label="资产责任人"><Input value={filters.owner} allowClear placeholder="请输入资产责任人" onChange={(event) => update('owner', event.target.value)} /></QueryItem>
       <QueryItem label="City"><Input value={filters.city} allowClear placeholder="请输入City" onChange={(event) => update('city', event.target.value)} /></QueryItem>
-      <QueryItem label="盘点范围"><Select value={filters.range || undefined} allowClear placeholder="请选择" options={RANGE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => update('range', value)} /></QueryItem>
+      <QueryItem label="盘点范围"><Select value={filters.range || undefined} allowClear placeholder="请选择" options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => update('range', value)} /></QueryItem>
     </QueryBar>
   );
 }
 
 function SnapshotAssetTab({ type, projectStatus, rows, setRows, setOtherRows, messageApi }) {
+  const { allowedRanges } = useAssetInventoryVariant();
+  const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
+  const showMachineRoomFeatures = allowedRanges.includes('机房');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -170,8 +180,10 @@ function SnapshotAssetTab({ type, projectStatus, rows, setRows, setOtherRows, me
     operations.push(
       <Button key="move" onClick={() => moveSelected(false)}>转移至未执行盘点</Button>,
       <Button key="importMove" icon={<Upload size={14} />}>模板转移至未执行盘点</Button>,
-      <Button key="no" icon={<ScanLine size={14} />} onClick={() => messageApi.info('NO扫描数据同步逻辑待机房蓝图确认')}>同步NO扫描数据</Button>,
     );
+    if (showMachineRoomFeatures) {
+      operations.push(<Button key="no" icon={<ScanLine size={14} />} onClick={() => messageApi.info('NO扫描数据同步逻辑待机房蓝图确认')}>同步NO扫描数据</Button>);
+    }
   }
   if (type === 'execution' && during) {
     operations.push(
@@ -214,20 +226,15 @@ function SnapshotAssetTab({ type, projectStatus, rows, setRows, setOtherRows, me
     },
   ];
 
-  const query = <SnapshotQuery filters={filters} setFilters={setFilters} onQuery={() => setCurrentPage(1)} />;
-  const queryArea = ['execution', 'notExecution'].includes(type)
-    ? query
-    : <Collapse ghost items={[{ key: 'query', label: '设置查询条件', children: query }]} />;
-
   return (
     <Card size="small">
-      {queryArea}
+      <SnapshotQuery filters={filters} setFilters={setFilters} onQuery={() => setCurrentPage(1)} rangeOptions={rangeOptions} />
       <div className="mb-3 flex justify-end"><Space wrap>{operations}</Space></div>
       <Table
         rowKey="key"
         size="small"
         bordered
-        columns={makeAssetColumns()}
+        columns={makeAssetColumns({ includeNo: showMachineRoomFeatures })}
         dataSource={filteredRows}
         rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, selections: selectionMenu }}
         scroll={{ x: 'max-content' }}
@@ -247,12 +254,14 @@ function SnapshotAssetTab({ type, projectStatus, rows, setRows, setOtherRows, me
 }
 
 function SnapshotStats({ projectStatus, onOpenPlans }) {
-  const total = ASSET_ROWS.reduce((sum, row) => sum + row.quantity, 0);
-  const execution = ASSET_ROWS.filter((row) => row.executeInventory).reduce((sum, row) => sum + row.quantity, 0);
+  const { allowedRanges } = useAssetInventoryVariant();
+  const assets = ASSET_ROWS.filter((row) => isInventoryRangeAllowed(row, allowedRanges));
+  const total = assets.reduce((sum, row) => sum + row.quantity, 0);
+  const execution = assets.filter((row) => row.executeInventory).reduce((sum, row) => sum + row.quantity, 0);
   const notExecution = total - execution;
-  const counted = ASSET_ROWS.filter((row) => ['已盘', '代盘'].includes(row.inventoryStatus)).reduce((sum, row) => sum + row.quantity, 0);
-  const uncounted = ASSET_ROWS.filter((row) => row.executeInventory && ['未盘', '报失', '盘亏'].includes(row.inventoryStatus)).reduce((sum, row) => sum + row.quantity, 0);
-  const lost = ASSET_ROWS.filter((row) => row.inventoryStatus === '盘亏').reduce((sum, row) => sum + row.quantity, 0);
+  const counted = assets.filter((row) => ['已盘', '代盘'].includes(row.inventoryStatus)).reduce((sum, row) => sum + row.quantity, 0);
+  const uncounted = assets.filter((row) => row.executeInventory && ['未盘', '报失', '盘亏'].includes(row.inventoryStatus)).reduce((sum, row) => sum + row.quantity, 0);
+  const lost = assets.filter((row) => row.inventoryStatus === '盘亏').reduce((sum, row) => sum + row.quantity, 0);
   const rate = execution ? Number(((counted / execution) * 100).toFixed(1)) : 0;
   const generatedPlan = ['生成盘点计划', '盘点中', '盘点关闭'].includes(projectStatus);
 
@@ -279,11 +288,12 @@ export default function AssetInventorySnapshotDetailV2({
   onGenerateDefault,
   onGenerateCustom,
 }) {
+  const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [projectStatus, setProjectStatus] = useState(project?.status === '草稿' ? '快照生成' : (project?.status || '快照生成'));
-  const [executionRows, setExecutionRows] = useState(() => ASSET_ROWS.filter((row) => row.executeInventory));
-  const [notExecutionRows, setNotExecutionRows] = useState(() => ASSET_ROWS.filter((row) => !row.executeInventory));
-  const [excludedRows, setExcludedRows] = useState(UNINCLUDED_ASSET_ROWS);
+  const [executionRows, setExecutionRows] = useState(() => ASSET_ROWS.filter((row) => row.executeInventory && isInventoryRangeAllowed(row, allowedRanges)));
+  const [notExecutionRows, setNotExecutionRows] = useState(() => ASSET_ROWS.filter((row) => !row.executeInventory && isInventoryRangeAllowed(row, allowedRanges)));
+  const [excludedRows, setExcludedRows] = useState(() => UNINCLUDED_ASSET_ROWS.filter((row) => isInventoryRangeAllowed(row, allowedRanges)));
 
   const generatePlans = () => {
     Modal.confirm({
