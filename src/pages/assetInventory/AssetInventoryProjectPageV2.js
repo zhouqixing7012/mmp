@@ -8,7 +8,7 @@ import AssetInventoryPlansV2Refined from './AssetInventoryPlansV2Refined';
 import AssetInventoryImageReviewV2 from './AssetInventoryImageReviewV2';
 import AssetInventoryProgressV2 from './AssetInventoryProgressV2';
 import { AssetInventoryPlanAssetListV2 } from './AssetInventoryPlanViewsV2';
-import { IMAGE_RULE_ROWS, PROJECT_INFO, PROJECT_ROWS } from './mockData';
+import { ASSET_ROWS, IMAGE_RULE_ROWS, INITIAL_PLAN_ROWS, PROJECT_INFO, PROJECT_ROWS } from './mockData';
 
 function CardTitle({ children }) {
   return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>;
@@ -31,12 +31,7 @@ function ImageUploadRuleEditorV2() {
     { title: '上传百分比（%）', dataIndex: 'percent', width: 140, render: (value, row) => <InputNumber disabled={!row.uploadEnabled} min={0} max={100} value={value} className="w-full" onChange={(next) => changeRow(row.key, 'percent', next ?? 100)} /> },
     { title: '是否上传图片', width: 120, fixed: 'right', align: 'center', render: (_, row) => <Switch checked={Boolean(row.uploadEnabled)} onChange={(checked) => changeRow(row.key, 'uploadEnabled', checked)} /> },
   ];
-
-  return (
-    <Card size="small" title={<CardTitle>图片上传规则配置</CardTitle>}>
-      <Table rowKey="key" size="small" bordered columns={columns} dataSource={rows} scroll={{ x: 1800 }} pagination={false} />
-    </Card>
-  );
+  return <Card size="small" title={<CardTitle>图片上传规则配置</CardTitle>}><Table rowKey="key" size="small" bordered columns={columns} dataSource={rows} scroll={{ x: 1800 }} pagination={false} /></Card>;
 }
 
 function getCardTitle(card) {
@@ -61,11 +56,18 @@ export default function AssetInventoryProjectPageV2() {
   const [basePageTitle, setBasePageTitle] = useState('盘点项目');
   const [imageRuleSlot, setImageRuleSlot] = useState(null);
   const [customBuilderOpen, setCustomBuilderOpen] = useState(false);
+  const [customBuilderSource, setCustomBuilderSource] = useState('snapshot');
   const [planViewOpen, setPlanViewOpen] = useState(false);
   const [activePlan, setActivePlan] = useState(null);
   const [imageReviewOpen, setImageReviewOpen] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
   const [planProject, setPlanProject] = useState(PROJECT_INFO);
+  const [planRows, setPlanRows] = useState(() => INITIAL_PLAN_ROWS.map((row) => ({ ...row, status: row.status === '暂存' ? '草稿' : row.status })));
+  const [assetPlanMap, setAssetPlanMap] = useState(() => Object.fromEntries(ASSET_ROWS.map((asset) => [asset.key, INITIAL_PLAN_ROWS.some((plan) => plan.planNo === asset.planNo) ? asset.planNo : ''])));
+
+  const activePlanNos = new Set(planRows.map((row) => row.planNo));
+  const unplannedSnapshotAssets = ASSET_ROWS.filter((asset) => !assetPlanMap[asset.key] || !activePlanNos.has(assetPlanMap[asset.key]));
+  const canManualCreate = unplannedSnapshotAssets.length > 0;
 
   const resetOverlays = () => {
     setCustomBuilderOpen(false);
@@ -99,6 +101,88 @@ export default function AssetInventoryProjectPageV2() {
     if (!targetRow) return;
     if (action === 'project') Array.from(targetRow.querySelectorAll('button')).find((button) => button.textContent?.trim() === row.projectName)?.click();
   };
+  const returnToProjectList = () => {
+    resetOverlays();
+    const base = baseContainerRef.current;
+    const pageTitle = base?.querySelector('h4.ant-typography')?.textContent?.trim() || '';
+    if (!base || pageTitle === '盘点项目') return;
+    const returnButton = Array.from(base.querySelectorAll('button')).find((button) => button.textContent?.trim() === '返回');
+    returnButton?.click();
+  };
+  const returnToPlans = () => {
+    setCustomBuilderOpen(false);
+    setActivePlan(null);
+    setImageReviewOpen(false);
+    setProgressOpen(false);
+    setPlanViewOpen(true);
+  };
+  const openManualPlanBuilder = () => {
+    resetOverlays();
+    setCustomBuilderSource('plans');
+    setCustomBuilderOpen(true);
+  };
+  const closeCustomBuilder = () => {
+    setCustomBuilderOpen(false);
+    if (customBuilderSource === 'plans') setPlanViewOpen(true);
+  };
+  const createManualPlans = (draft) => {
+    const assets = draft.assets || [];
+    const groups = new Map();
+    assets.forEach((asset) => {
+      const range = asset.inventoryRange || '员工';
+      const list = groups.get(range) || [];
+      list.push(asset);
+      groups.set(range, list);
+    });
+    const created = Array.from(groups.entries()).map(([range, rangeAssets], index) => {
+      const personnel = draft.rows?.find((row) => row.range === range) || {};
+      const planNo = `PLAN-20260818-${String(planRows.length + index + 1).padStart(4, '0')}`;
+      return {
+        key: `manual-${Date.now()}-${index}`,
+        planNo,
+        planName: groups.size > 1 ? `${draft.planName}-${range}` : draft.planName,
+        status: '草稿',
+        organization: rangeAssets[0]?.organization || '集团',
+        city: rangeAssets[0]?.city || '-',
+        range,
+        assetCount: rangeAssets.length,
+        uncountedCount: rangeAssets.length,
+        countedCount: 0,
+        startDate: planProject.startDate || PROJECT_INFO.startDate,
+        endDate: planProject.endDate || PROJECT_INFO.endDate,
+        manager: '-',
+        supervisor: personnel.supervisor || '-',
+        executor: personnel.executor || '-',
+        financialSupervisor: '-',
+        assets: rangeAssets,
+      };
+    });
+    if (!created.length) return;
+    setPlanRows((current) => [...current, ...created]);
+    setAssetPlanMap((current) => {
+      const next = { ...current };
+      created.forEach((plan) => plan.assets.forEach((asset) => { next[asset.key] = plan.planNo; }));
+      return next;
+    });
+  };
+  const handleCustomPlanConfirm = (draft) => {
+    if (customBuilderSource === 'plans') {
+      createManualPlans(draft);
+      setCustomBuilderOpen(false);
+      setPlanViewOpen(true);
+      return;
+    }
+    setAssetPlanMap((current) => {
+      const next = { ...current };
+      (draft.assets || []).forEach((asset) => {
+        const targetPlan = planRows.find((plan) => plan.range === asset.inventoryRange);
+        if (targetPlan) next[asset.key] = targetPlan.planNo;
+      });
+      return next;
+    });
+    setCustomBuilderOpen(false);
+    openPlanView(null, true);
+  };
 
   const interceptNavigation = (event) => {
     if (customBuilderOpen || planViewOpen || activePlan || imageReviewOpen || progressOpen) return;
@@ -113,7 +197,7 @@ export default function AssetInventoryProjectPageV2() {
       Modal.confirm({
         title: '提示', content: '是否按照默认方式生成盘点计划？', okText: '是', cancelText: '否',
         onOk: () => openPlanView(button, true),
-        onCancel: () => { resetOverlays(); setCustomBuilderOpen(true); },
+        onCancel: () => { resetOverlays(); setCustomBuilderSource('snapshot'); setCustomBuilderOpen(true); },
       });
       return;
     }
@@ -172,7 +256,6 @@ export default function AssetInventoryProjectPageV2() {
       const baseCards = cards.filter((card) => !card.closest('[data-asset-inventory-v2-image-slot="true"]'));
       const isCreateView = pageTitle === '创建盘点项目' || pageTitle === '编辑盘点项目';
       const isProjectDetail = pageTitle === '盘点项目详情';
-
       if (isCreateView) {
         baseCards.forEach((card) => {
           const title = getCardTitle(card);
@@ -195,7 +278,6 @@ export default function AssetInventoryProjectPageV2() {
         }
         return;
       }
-
       removeImageRuleSlot();
       if (isProjectDetail) {
         baseCards.forEach((card) => {
@@ -221,6 +303,36 @@ export default function AssetInventoryProjectPageV2() {
     };
   }, []);
 
+  useEffect(() => {
+    const baseItems = [
+      { label: '首页' },
+      { label: '资产盘点' },
+      { label: '盘点项目（方案二）', onClick: returnToProjectList },
+    ];
+    let tail = [];
+    if (customBuilderOpen) {
+      tail = customBuilderSource === 'plans'
+        ? [{ label: '盘点计划', onClick: returnToPlans }, { label: '创建盘点计划' }]
+        : [{ label: '创建盘点计划' }];
+    } else if (activePlan) {
+      tail = [{ label: '盘点计划', onClick: returnToPlans }, { label: '盘点计划资产清单' }];
+    } else if (planViewOpen) {
+      tail = [{ label: '盘点计划' }];
+    } else if (progressOpen) {
+      tail = [{ label: '盘点进度' }];
+    } else if (imageReviewOpen) {
+      tail = [{ label: '图片审核' }];
+    } else if (basePageTitle && basePageTitle !== '盘点项目') {
+      tail = [{ label: basePageTitle }];
+    }
+    const items = tail.length ? [...baseItems, ...tail] : [{ label: '首页' }, { label: '资产盘点' }, { label: '盘点项目（方案二）' }];
+    window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', { detail: { items } }));
+  }, [activePlan, basePageTitle, customBuilderOpen, customBuilderSource, imageReviewOpen, planViewOpen, progressOpen]);
+
+  useEffect(() => () => {
+    window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', { detail: { items: null } }));
+  }, []);
+
   const overlayOpen = customBuilderOpen || planViewOpen || Boolean(activePlan) || imageReviewOpen || progressOpen;
   const showProjectListV2 = !overlayOpen && basePageTitle === '盘点项目';
 
@@ -232,8 +344,8 @@ export default function AssetInventoryProjectPageV2() {
       onOpenProgress={(row) => openProgressByProject(row)}
       onOpenImageReview={(row) => { resetOverlays(); setPlanProject(resolveProjectFromRow(row)); setImageReviewOpen(true); }}
     />}
-    {customBuilderOpen && <AssetInventoryCustomPlanBuilder onBack={() => setCustomBuilderOpen(false)} onConfirmPlan={() => openPlanView(null, true)} />}
-    {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} onBack={() => setPlanViewOpen(false)} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}
+    {customBuilderOpen && <AssetInventoryCustomPlanBuilder initialAssets={customBuilderSource === 'plans' ? unplannedSnapshotAssets : ASSET_ROWS} onBack={closeCustomBuilder} onConfirmPlan={handleCustomPlanConfirm} />}
+    {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} rows={planRows} setRows={setPlanRows} canManualCreate={canManualCreate} onManualCreate={openManualPlanBuilder} onBack={() => setPlanViewOpen(false)} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}
     {activePlan && <AssetInventoryPlanAssetListV2 plan={activePlan} onBack={() => setActivePlan(null)} />}
     {imageReviewOpen && <AssetInventoryImageReviewV2 project={planProject} onBack={() => setImageReviewOpen(false)} />}
     {progressOpen && <AssetInventoryProgressV2 project={planProject} onBack={() => setProgressOpen(false)} />}

@@ -5,7 +5,7 @@ import { BellRing, Download, PlayCircle, Plus, Search, Trash2, Upload } from 'lu
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
-import { EMPLOYEE_ROWS, INITIAL_PLAN_ROWS } from './mockData';
+import { EMPLOYEE_ROWS } from './mockData';
 
 const EMPTY_PLAN_FILTERS = { planNo: '', planName: '', planStatus: '', city: '', organization: '', range: '' };
 const RANGE_OPTIONS = ['员工', '库房', '公共', '机房'];
@@ -22,30 +22,13 @@ function ProjectInfoCard({ project }) {
     <div><span className="text-gray-500">盘点开始时间：</span>{project?.startDate || '-'}</div><div><span className="text-gray-500">盘点结束时间：</span>{project?.endDate || '-'}</div><div><span className="text-gray-500">项目状态：</span><StatusTag value={project?.status || '生成盘点计划'} /></div>
   </div></Card>;
 }
-function ManualPlanModal({ open, onCancel, onConfirm }) {
-  const [planName, setPlanName] = useState('自定义盘点计划');
-  const [rows, setRows] = useState(() => RANGE_OPTIONS.map((range) => ({ key: range, range, manager: '', supervisor: '', executor: '' })));
-  const [personTarget, setPersonTarget] = useState(null);
-  const updatePerson = (record) => { if (!personTarget) return; setRows((current) => current.map((row) => row.key === personTarget.key ? { ...row, [personTarget.field]: record.employeeName } : row)); setPersonTarget(null); };
-  const columns = [
-    { title: '盘点范围', dataIndex: 'range', width: 100 },
-    { title: '计划负责人', dataIndex: 'manager', width: 170, render: (value, row) => <PersonnelInput value={value} onClick={() => setPersonTarget({ key: row.key, field: 'manager' })} /> },
-    { title: '盘点监督人', dataIndex: 'supervisor', width: 170, render: (value, row) => <PersonnelInput value={value} onClick={() => setPersonTarget({ key: row.key, field: 'supervisor' })} /> },
-    { title: '盘点执行人', dataIndex: 'executor', width: 170, render: (value, row) => <PersonnelInput value={value} onClick={() => setPersonTarget({ key: row.key, field: 'executor' })} /> },
-  ];
-  return <><Modal open={open} title="自定义创建盘点计划" width={820} okText="生成计划" cancelText="取消" onCancel={onCancel} onOk={() => onConfirm({ planName, rows })}>
-    <Space direction="vertical" size={16} className="w-full"><Alert type="info" showIcon message="自定义计划从执行盘点资产清单中筛选资产，可按盘点范围分别配置人员；未填写时沿用自动生成规则。" /><div><Typography.Text type="secondary">计划名称</Typography.Text><Input value={planName} onChange={(event) => setPlanName(event.target.value)} /></div><Table rowKey="key" size="small" bordered columns={columns} dataSource={rows} pagination={false} /></Space>
-  </Modal><SelectModal open={Boolean(personTarget)} title="用户列表" rowKey="id" dataSource={EMPLOYEE_ROWS} searchFields={[{ label: '员工编号', name: 'employeeNo', dataIndex: 'employeeNo' }, { label: '员工姓名', name: 'employeeName', dataIndex: 'employeeName' }, { label: '部门名称', name: 'department', dataIndex: 'department' }]} columns={[{ title: '员工编号', dataIndex: 'employeeNo' }, { title: '员工姓名', dataIndex: 'employeeName' }, { title: '部门名称', dataIndex: 'department' }]} onCancel={() => setPersonTarget(null)} onConfirm={updatePerson} /></>;
-}
 
-export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPlanAssets }) {
+export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPlanAssets, rows, setRows, canManualCreate, onManualCreate }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [draftFilters, setDraftFilters] = useState(EMPTY_PLAN_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_PLAN_FILTERS);
-  const [rows, setRows] = useState(() => INITIAL_PLAN_ROWS.map((row) => ({ ...row, status: row.status === '暂存' ? '草稿' : row.status })));
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [personTarget, setPersonTarget] = useState(null);
-  const [customPlanOpen, setCustomPlanOpen] = useState(false);
   const [batchDateOpen, setBatchDateOpen] = useState(false);
   const [batchDates, setBatchDates] = useState({ startDate: '', endDate: '' });
   const updateFilter = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
@@ -59,7 +42,7 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
   const handleStart = () => {
     if (!selectedKeys.length) { messageApi.warning('请先选择需要启动的盘点计划'); return; }
     const selected = new Set(selectedKeys);
-    const missing = rows.find((row) => selected.has(row.key) && (!row.manager || !row.executor));
+    const missing = rows.find((row) => selected.has(row.key) && (!row.manager || row.manager === '-' || !row.executor || row.executor === '-'));
     if (missing) { Modal.warning({ title: '人员配置不完整', content: `盘点计划 ${missing.planNo} 未完整配置计划负责人/盘点执行人，请先完成配置。` }); return; }
     setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '启动' } : row));
     setSelectedKeys([]);
@@ -103,7 +86,7 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
         <QueryItem label="盘点组织"><Input value={draftFilters.organization} allowClear placeholder="请输入盘点组织" onChange={(event) => updateFilter('organization', event.target.value)} /></QueryItem>
         <QueryItem label="盘点范围"><Select value={draftFilters.range || undefined} allowClear placeholder="请选择" options={RANGE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('range', value)} /></QueryItem>
       </QueryBar>
-      <div className="mb-3 flex justify-end"><Space wrap>{!anyStarted && <Button icon={<Plus size={14} />} onClick={() => setCustomPlanOpen(true)}>手工创建计划</Button>}<Button onClick={openBatchDate}>批量编辑盘点日期</Button>{allSelectedDraft && <Button type="primary" icon={<PlayCircle size={14} />} onClick={handleStart}>启动盘点计划</Button>}{allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}<Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button><Button icon={<Download size={14} />}>导出</Button>{project?.projectType === '复盘' && anyStarted && <Button type="primary">提交审核</Button>}{anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已向盘点监督人、盘点执行人发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
+      <div className="mb-3 flex justify-end"><Space wrap>{canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}<Button onClick={openBatchDate}>批量编辑盘点日期</Button>{allSelectedDraft && <Button type="primary" icon={<PlayCircle size={14} />} onClick={handleStart}>启动盘点计划</Button>}{allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}<Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button><Button icon={<Download size={14} />}>导出</Button>{project?.projectType === '复盘' && anyStarted && <Button type="primary">提交审核</Button>}{anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已向盘点监督人、盘点执行人发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
       <Table rowKey="key" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
     </Card>
     <div className="flex justify-center pb-2"><Button onClick={onBack}>返回</Button></div>
@@ -112,6 +95,5 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
       <div className="grid grid-cols-2 gap-4 py-2"><div><Typography.Text type="secondary">盘点开始日期</Typography.Text><DatePicker className="w-full" value={batchDates.startDate ? dayjs(batchDates.startDate) : null} onChange={(date) => setBatchDates((current) => ({ ...current, startDate: date ? date.format('YYYY-MM-DD') : '' }))} /></div><div><Typography.Text type="secondary">盘点结束日期</Typography.Text><DatePicker className="w-full" value={batchDates.endDate ? dayjs(batchDates.endDate) : null} disabledDate={(date) => batchDates.startDate && date.isBefore(dayjs(batchDates.startDate), 'day')} onChange={(date) => setBatchDates((current) => ({ ...current, endDate: date ? date.format('YYYY-MM-DD') : '' }))} /></div></div>
     </Modal>
     <SelectModal open={Boolean(personTarget)} title="用户列表" rowKey="id" dataSource={EMPLOYEE_ROWS} searchFields={[{ label: '员工编号', name: 'employeeNo', dataIndex: 'employeeNo' }, { label: '员工姓名', name: 'employeeName', dataIndex: 'employeeName' }, { label: '部门名称', name: 'department', dataIndex: 'department' }]} columns={[{ title: '员工编号', dataIndex: 'employeeNo' }, { title: '员工姓名', dataIndex: 'employeeName' }, { title: '部门名称', dataIndex: 'department' }]} onCancel={() => setPersonTarget(null)} onConfirm={applyPersonnel} />
-    <ManualPlanModal open={customPlanOpen} onCancel={() => setCustomPlanOpen(false)} onConfirm={({ planName }) => { setRows((current) => [...current, { ...INITIAL_PLAN_ROWS[0], status: '草稿', key: `manual-${Date.now()}`, planNo: `PLAN-20260818-${String(current.length + 1).padStart(4, '0')}`, planName }]); setCustomPlanOpen(false); messageApi.success('手工盘点计划已生成'); }} />
   </Space>;
 }
