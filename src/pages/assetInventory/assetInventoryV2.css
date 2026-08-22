@@ -1,3 +1,8 @@
 [data-asset-inventory-v2-report-slot="true"] {
   display: none !important;
 }
+
+/* 查询栏右侧按钮位于内层 Card 中，分区操作同步 12px 右内边距，保持右边界一致。 */
+.ant-card-body > .ant-card.ant-card-small + .mb-3.flex.justify-end {
+  padding-right: 12px;
+}
