@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Card, InputNumber, Modal, Select, Space, Switch, Table, Typography } from 'antd';
+import { Card, InputNumber, Modal, Select, Switch, Table, Typography } from 'antd';
 import { createPortal } from 'react-dom';
-import { Plus } from 'lucide-react';
 import AssetInventoryProjectPage from './AssetInventoryProjectPage';
 import AssetInventoryCustomPlanBuilder from './AssetInventoryCustomPlanBuilder';
 import AssetInventoryProjectListV2 from './AssetInventoryProjectListV2';
@@ -11,37 +10,35 @@ import AssetInventoryProgressV2 from './AssetInventoryProgressV2';
 import { AssetInventoryPlanAssetListV2 } from './AssetInventoryPlanViewsV2';
 import { IMAGE_RULE_ROWS, PROJECT_INFO, PROJECT_ROWS } from './mockData';
 
-const RANGE_OPTIONS = ['库房', '公共', '机房', '员工'];
 function CardTitle({ children }) {
   return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>;
 }
+
 function ImageUploadRuleEditorV2() {
-  const [enabled, setEnabled] = useState(true);
-  const [rows, setRows] = useState(IMAGE_RULE_ROWS);
+  const [rows, setRows] = useState(() => IMAGE_RULE_ROWS.map((row) => ({ ...row, uploadEnabled: false })));
   const multiOptions = (values) => values.map((value) => ({ label: value, value }));
   const changeRow = (key, field, value) => setRows((current) => current.map((row) => row.key === key ? { ...row, [field]: value } : row));
   const columns = [
-    { title: '盘点范围', dataIndex: 'range', width: 100, fixed: 'left', render: (value, row) => <Select value={value} className="w-full" options={RANGE_OPTIONS.map((item) => ({ label: item, value: item }))} onChange={(next) => changeRow(row.key, 'range', next)} /> },
-    { title: '资产责任人职级', dataIndex: 'ownerLevel', width: 170, render: (value, row) => <Select mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '1', '5', '实习生', '公共'])} onChange={(next) => changeRow(row.key, 'ownerLevel', next)} /> },
-    { title: '部门', dataIndex: 'department', width: 170, render: (value, row) => <Select mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '集团总部.MIS部', '搜狐媒体.智能平台'])} onChange={(next) => changeRow(row.key, 'department', next)} /> },
-    { title: '资产类别', dataIndex: 'category', width: 180, render: (value, row) => <Select mode="multiple" value={value} className="w-full" options={multiOptions(['全部', 'SERVER', 'NET EQUIPMENT', 'NOTEBOOK', 'MONITOR'])} onChange={(next) => changeRow(row.key, 'category', next)} /> },
-    { title: '资产状态', dataIndex: 'assetStatus', width: 160, render: (value, row) => <Select mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '在用', '在库'])} onChange={(next) => changeRow(row.key, 'assetStatus', next)} /> },
-    { title: '盘点组织', dataIndex: 'organization', width: 150, render: (value, row) => <Select mode="multiple" value={value} className="w-full" options={multiOptions(['集团'])} onChange={(next) => changeRow(row.key, 'organization', next)} /> },
-    { title: 'City', dataIndex: 'city', width: 150, render: (value, row) => <Select mode="multiple" value={value} className="w-full" options={multiOptions(['北京市'])} onChange={(next) => changeRow(row.key, 'city', next)} /> },
-    { title: 'Building', dataIndex: 'building', width: 180, render: (value, row) => <Select mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '融科资讯中心D座', '搜狐媒体大厦'])} onChange={(next) => changeRow(row.key, 'building', next)} /> },
-    { title: 'Floor', dataIndex: 'floor', width: 150, render: (value, row) => <Select mode="multiple" value={value} className="w-full" options={multiOptions(['全部', 'B2', '6F', '8F'])} onChange={(next) => changeRow(row.key, 'floor', next)} /> },
-    { title: '上传百分比（%）', dataIndex: 'percent', width: 140, render: (value, row) => <InputNumber min={0} max={100} value={value} className="w-full" onChange={(next) => changeRow(row.key, 'percent', next ?? 100)} /> },
-    { title: '操作', width: 80, fixed: 'right', render: (_, row) => <Button type="link" danger onClick={() => setRows((current) => current.filter((item) => item.key !== row.key))}>删除</Button> },
+    { title: '盘点范围', dataIndex: 'range', width: 100, fixed: 'left', render: (value) => <Typography.Text>{value || '-'}</Typography.Text> },
+    { title: '资产责任人职级', dataIndex: 'ownerLevel', width: 170, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '1', '5', '实习生', '公共'])} onChange={(next) => changeRow(row.key, 'ownerLevel', next)} /> },
+    { title: '部门', dataIndex: 'department', width: 170, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '集团总部.MIS部', '搜狐媒体.智能平台'])} onChange={(next) => changeRow(row.key, 'department', next)} /> },
+    { title: '资产类别', dataIndex: 'category', width: 180, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', 'SERVER', 'NET EQUIPMENT', 'NOTEBOOK', 'MONITOR'])} onChange={(next) => changeRow(row.key, 'category', next)} /> },
+    { title: '资产状态', dataIndex: 'assetStatus', width: 160, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '在用', '在库'])} onChange={(next) => changeRow(row.key, 'assetStatus', next)} /> },
+    { title: '盘点组织', dataIndex: 'organization', width: 150, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['集团'])} onChange={(next) => changeRow(row.key, 'organization', next)} /> },
+    { title: 'City', dataIndex: 'city', width: 150, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['北京市'])} onChange={(next) => changeRow(row.key, 'city', next)} /> },
+    { title: 'Building', dataIndex: 'building', width: 180, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '融科资讯中心D座', '搜狐媒体大厦'])} onChange={(next) => changeRow(row.key, 'building', next)} /> },
+    { title: 'Floor', dataIndex: 'floor', width: 150, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', 'B2', '6F', '8F'])} onChange={(next) => changeRow(row.key, 'floor', next)} /> },
+    { title: '上传百分比（%）', dataIndex: 'percent', width: 140, render: (value, row) => <InputNumber disabled={!row.uploadEnabled} min={0} max={100} value={value} className="w-full" onChange={(next) => changeRow(row.key, 'percent', next ?? 100)} /> },
+    { title: '是否上传图片', width: 120, fixed: 'right', align: 'center', render: (_, row) => <Switch checked={Boolean(row.uploadEnabled)} onChange={(checked) => changeRow(row.key, 'uploadEnabled', checked)} /> },
   ];
+
   return (
-    <Card size="small" title={<CardTitle>图片上传规则配置</CardTitle>} extra={<Space><Typography.Text>是否上传图片</Typography.Text><Switch checked={enabled} onChange={setEnabled} /></Space>}>
-      {enabled && <>
-        <div className="mb-3 flex justify-end"><Button icon={<Plus size={14} />} onClick={() => setRows((current) => [...current, { key: `image-${Date.now()}`, range: '员工', ownerLevel: ['全部'], department: ['全部'], category: ['全部'], assetStatus: ['全部'], organization: ['集团'], city: ['北京市'], building: ['全部'], floor: ['全部'], percent: 100 }])}>增行</Button></div>
-        <Table rowKey="key" size="small" bordered columns={columns} dataSource={rows} scroll={{ x: 1800 }} pagination={false} />
-      </>}
+    <Card size="small" title={<CardTitle>图片上传规则配置</CardTitle>}>
+      <Table rowKey="key" size="small" bordered columns={columns} dataSource={rows} scroll={{ x: 1800 }} pagination={false} />
     </Card>
   );
 }
+
 function getCardTitle(card) {
   return card.querySelector('.ant-card-head-title')?.textContent?.trim() || '';
 }
@@ -141,6 +138,11 @@ export default function AssetInventoryProjectPageV2() {
         delete element.dataset.assetInventoryV2Hidden;
       });
     };
+    const hideVariantElement = (element) => {
+      if (!element) return;
+      element.dataset.assetInventoryV2Hidden = 'true';
+      element.style.display = 'none';
+    };
     const removeImageRuleSlot = () => {
       const existing = base.querySelector('[data-asset-inventory-v2-image-slot="true"]');
       if (existing) existing.remove();
@@ -149,6 +151,16 @@ export default function AssetInventoryProjectPageV2() {
     const normalizeDraftLabels = () => {
       base.querySelectorAll('.ant-tag, .ant-select-selection-item').forEach((element) => {
         if (element.textContent?.trim() === '暂存') element.textContent = '草稿';
+      });
+    };
+    const hideInitialOnlyFields = (project, baseCards) => {
+      if (project.projectType !== '初盘') return;
+      const projectInfoCard = baseCards.find((card) => getCardTitle(card) === '盘点项目信息');
+      if (!projectInfoCard) return;
+      ['初盘项目', '抽样方式', '比例'].forEach((label) => {
+        const labelCell = projectInfoCard.querySelector(`dt[data-prototype-label="${label}"]`);
+        hideVariantElement(labelCell);
+        if (labelCell?.nextElementSibling?.tagName === 'DD') hideVariantElement(labelCell.nextElementSibling);
       });
     };
     const applyVariant = () => {
@@ -165,17 +177,12 @@ export default function AssetInventoryProjectPageV2() {
         baseCards.forEach((card) => {
           const title = getCardTitle(card);
           if (title !== '盘点规则' && title !== '图片上传规则配置') return;
-          const item = card.closest('.ant-space-item') || card;
-          item.dataset.assetInventoryV2Hidden = 'true';
-          item.style.display = 'none';
+          hideVariantElement(card.closest('.ant-space-item') || card);
         });
         const assetRangeCard = baseCards.find((card) => getCardTitle(card) === '盘点资产范围明细');
         if (assetRangeCard) {
           const configButton = Array.from(assetRangeCard.querySelectorAll('button')).find((button) => button.textContent?.trim() === '配置');
-          if (configButton) {
-            configButton.dataset.assetInventoryV2Hidden = 'true';
-            configButton.style.display = 'none';
-          }
+          hideVariantElement(configButton);
           const rangeItem = assetRangeCard.closest('.ant-space-item') || assetRangeCard;
           let slot = base.querySelector('[data-asset-inventory-v2-image-slot="true"]');
           if (!slot) {
@@ -193,11 +200,9 @@ export default function AssetInventoryProjectPageV2() {
       if (isProjectDetail) {
         baseCards.forEach((card) => {
           if (getCardTitle(card) !== '图片上传规则配置') return;
-          const item = card.closest('.ant-space-item') || card;
-          item.dataset.assetInventoryV2Hidden = 'true';
-          item.style.display = 'none';
+          hideVariantElement(card.closest('.ant-space-item') || card);
         });
-        return;
+        hideInitialOnlyFields(resolveProject(base, null), baseCards);
       }
     };
     const scheduleApply = () => {
