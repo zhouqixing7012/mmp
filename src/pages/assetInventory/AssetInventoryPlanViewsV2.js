@@ -308,7 +308,6 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
     ...(project?.projectType === '复盘'
       ? [
         { title: '财务监督人', dataIndex: 'financialSupervisor', width: 130, render: (value, row) => <PersonnelInput disabled={!editable(row)} value={value} onClick={() => openPersonnel(row.key, 'financialSupervisor')} /> },
-        { title: '内审监督人', dataIndex: 'auditSupervisor', width: 130, render: (value, row) => <PersonnelInput disabled={!editable(row)} value={value} onClick={() => openPersonnel(row.key, 'auditSupervisor')} /> },
       ]
       : []),
     { title: '盘点范围', dataIndex: 'range', width: 100 },
