@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, Card, InputNumber, Modal, Select, Space, Switch, Table, Typography } from 'antd';
 import { createPortal } from 'react-dom';
-import { Download, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import AssetInventoryProjectPage from './AssetInventoryProjectPage';
 import AssetInventoryCustomPlanBuilder from './AssetInventoryCustomPlanBuilder';
 import AssetInventoryProjectListV2 from './AssetInventoryProjectListV2';
@@ -63,7 +63,6 @@ export default function AssetInventoryProjectPageV2() {
   const baseContainerRef = useRef(null);
   const [basePageTitle, setBasePageTitle] = useState('盘点项目');
   const [imageRuleSlot, setImageRuleSlot] = useState(null);
-  const [reportSlot, setReportSlot] = useState(null);
   const [customBuilderOpen, setCustomBuilderOpen] = useState(false);
   const [planViewOpen, setPlanViewOpen] = useState(false);
   const [activePlan, setActivePlan] = useState(null);
@@ -147,11 +146,6 @@ export default function AssetInventoryProjectPageV2() {
       if (existing) existing.remove();
       setImageRuleSlot(null);
     };
-    const removeReportSlot = () => {
-      const existing = base.querySelector('[data-asset-inventory-v2-report-slot="true"]');
-      if (existing) existing.remove();
-      setReportSlot(null);
-    };
     const normalizeDraftLabels = () => {
       base.querySelectorAll('.ant-tag, .ant-select-selection-item').forEach((element) => {
         if (element.textContent?.trim() === '暂存') element.textContent = '草稿';
@@ -168,7 +162,6 @@ export default function AssetInventoryProjectPageV2() {
       const isProjectDetail = pageTitle === '盘点项目详情';
 
       if (isCreateView) {
-        removeReportSlot();
         baseCards.forEach((card) => {
           const title = getCardTitle(card);
           if (title !== '盘点规则' && title !== '图片上传规则配置') return;
@@ -204,19 +197,8 @@ export default function AssetInventoryProjectPageV2() {
           item.dataset.assetInventoryV2Hidden = 'true';
           item.style.display = 'none';
         });
-        const currentProject = resolveProject(base, null);
-        if (currentProject.status === '盘点中') {
-          let slot = base.querySelector('[data-asset-inventory-v2-report-slot="true"]');
-          if (!slot) {
-            slot = document.createElement('div');
-            slot.dataset.assetInventoryV2ReportSlot = 'true';
-            base.appendChild(slot);
-          }
-          setReportSlot((current) => current === slot ? current : slot);
-        } else removeReportSlot();
         return;
       }
-      removeReportSlot();
     };
     const scheduleApply = () => {
       if (frameId) cancelAnimationFrame(frameId);
@@ -231,8 +213,6 @@ export default function AssetInventoryProjectPageV2() {
       restoreVariantChanges();
       const imageSlot = base.querySelector('[data-asset-inventory-v2-image-slot="true"]');
       if (imageSlot) imageSlot.remove();
-      const report = base.querySelector('[data-asset-inventory-v2-report-slot="true"]');
-      if (report) report.remove();
     };
   }, []);
 
@@ -254,11 +234,5 @@ export default function AssetInventoryProjectPageV2() {
     {progressOpen && <AssetInventoryProgressV2 project={planProject} onBack={() => setProgressOpen(false)} />}
     <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage /></div>
     {!overlayOpen && imageRuleSlot ? createPortal(<ImageUploadRuleEditorV2 />, imageRuleSlot) : null}
-    {!overlayOpen && reportSlot ? createPortal(
-      <div className="flex justify-center pb-2 mt-4">
-        <Button icon={<Download size={14} />} onClick={() => Modal.info({ title: '导出盘点报告', content: '盘点报告导出任务已创建。' })}>导出盘点报告</Button>
-      </div>,
-      reportSlot,
-    ) : null}
   </div>;
 }
