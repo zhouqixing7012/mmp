@@ -4,13 +4,14 @@ import dayjs from 'dayjs';
 import { Plus, Trash2, XCircle } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
-import { PROJECT_ROWS } from './mockData';
+import { PROJECT_LIST_ROWS } from './projectListMockData';
 
 const EMPTY_FILTERS = {
   projectNo: '', projectName: '', status: '', owner: '', startFrom: '', startTo: '', type: '', createdFrom: '', createdTo: '',
 };
 const PROJECT_STATUS_OPTIONS = ['草稿', '快照生成', '生成盘点计划', '盘点中', '盘点关闭'];
 const PROJECT_TYPE_OPTIONS = ['初盘', '抽盘', '复盘'];
+const PLAN_AVAILABLE_STATUSES = ['生成盘点计划', '盘点中', '盘点关闭'];
 
 function includesText(value, query) {
   if (!query) return true;
@@ -44,10 +45,16 @@ function displayGroupName(name) {
 function DisabledAction({ children }) {
   return <Typography.Text type="secondary">{children}</Typography.Text>;
 }
+function hasGeneratedPlan(row) {
+  return PLAN_AVAILABLE_STATUSES.includes(normalizeStatus(row?.status));
+}
+function isInventoryRunning(row) {
+  return normalizeStatus(row?.status) === '盘点中';
+}
 
 export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [rows, setRows] = useState(() => PROJECT_ROWS.map((row) => ({ ...row, status: normalizeStatus(row.status) })));
+  const [rows, setRows] = useState(() => PROJECT_LIST_ROWS.map((row) => ({ ...row, status: normalizeStatus(row.status) })));
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [selectedKeys, setSelectedKeys] = useState([]);
@@ -123,19 +130,19 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
     { title: '项目创建时间', dataIndex: 'createdAt', width: 130 },
     {
       title: '进入计划', width: 100, fixed: 'right',
-      render: (_, row) => row.planStatus
+      render: (_, row) => hasGeneratedPlan(row)
         ? <Button type="link" className="px-0" onClick={() => onOpenPlans(row)}>进入计划</Button>
         : <DisabledAction>进入计划</DisabledAction>,
     },
     {
       title: '项目进度', width: 100, fixed: 'right',
-      render: (_, row) => Number(row.executionCount || 0) > 0
+      render: (_, row) => isInventoryRunning(row)
         ? <Button type="link" className="px-0" onClick={() => onOpenProgress(row)}>查看进度</Button>
         : <DisabledAction>查看进度</DisabledAction>,
     },
     {
       title: '图片审核', width: 100, fixed: 'right',
-      render: (_, row) => row.imageApproval
+      render: (_, row) => isInventoryRunning(row)
         ? <Button type="link" className="px-0" onClick={() => onOpenImageReview(row)}>图片审核</Button>
         : <DisabledAction>图片审核</DisabledAction>,
     },
