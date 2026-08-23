@@ -48,8 +48,8 @@ function DisabledAction({ children }) {
 function hasGeneratedPlan(row) {
   return PLAN_AVAILABLE_STATUSES.includes(normalizeStatus(row?.status));
 }
-function isInventoryRunning(row) {
-  return normalizeStatus(row?.status) === '盘点中';
+function hasInventoryHistory(row) {
+  return ['盘点中', '盘点关闭'].includes(normalizeStatus(row?.status));
 }
 
 export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview }) {
@@ -136,13 +136,13 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
     },
     {
       title: '项目进度', width: 100, fixed: 'right',
-      render: (_, row) => isInventoryRunning(row)
+      render: (_, row) => hasInventoryHistory(row)
         ? <Button type="link" className="px-0" onClick={() => onOpenProgress(row)}>查看进度</Button>
         : <DisabledAction>查看进度</DisabledAction>,
     },
     {
       title: '图片审核', width: 100, fixed: 'right',
-      render: (_, row) => isInventoryRunning(row)
+      render: (_, row) => hasInventoryHistory(row)
         ? <Button type="link" className="px-0" onClick={() => onOpenImageReview(row)}>图片审核</Button>
         : <DisabledAction>图片审核</DisabledAction>,
     },
