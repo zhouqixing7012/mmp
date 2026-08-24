@@ -94,7 +94,7 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
         {contextHolder}
         <Typography.Title level={4} style={{ margin: 0 }}>进度详情</Typography.Title>
         <ProjectInfoCard project={project} />
-        <Card size="small" title={<CardTitle>进度详情</CardTitle>} extra={<Typography.Text type="secondary">盘点范围：员工</Typography.Text>}>
+        <Card size="small" title={<CardTitle>进度详情</CardTitle>}>
           <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={detailRows} pagination={false} scroll={{ x: 1350 }} />
         </Card>
         <div className="flex justify-center pb-2">
