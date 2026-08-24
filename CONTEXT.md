@@ -10,11 +10,12 @@
 - 2026-08-25 已将 ERP Figma `基础组件｜Library 修正版`（node `826:2`）新增规则补充到 `docs/UI_DESIGN_GUIDELINES.md`，规范升级为 V2.1。
 - V2.1 已确认覆盖 Input、Radio、Checkbox、Switch、Breadcrumb、Dropdown、Pagination、Tag、Badge、Popover、Grid、Layout、Divider、Anchor、Affix、FloatButton；Select、Table、Form、DatePicker、Upload 仍未确认完整 ERP 本地规范。
 - V2.1 新增关键边界：Dropdown ≠ Select；Tag 不替代 `StatusTag`；ERP Grid 管页面级布局、`DetailGrid` 管业务详情三列；Divider 优先让位于留白；语义 Token 优先于页面直接使用基础色号。
+- 2026-08-25 开始按 V2.1 收敛正式资产盘点 UI：新增统一 `SectionCardTitle`，首批覆盖盘点项目列表、盘点计划、盘点进度、图片审核、V3 盘点范围；盘点计划项目信息统一改用 `DetailGrid`；图片审核概览取消 Card 套 Card，改为单 Card 三列留白结构。
 
 # 当前停留位置
 
 - UI 规范已同步最新 Figma 基础组件规则，后续新增/重画页面默认按 `docs/UI_DESIGN_GUIDELINES.md` V2.1 执行。
-- 当前 UI 规则只完成文档层吸收，未批量改 Theme 或历史页面；后续具体页面改造仍按业务任务逐项执行。
+- 资产盘点首批三项纯 UI 收敛已落代码，未修改字段、流程、状态机、Mock 和操作行为；后续继续按具体任务逐项收敛，不批量改业务。
 - 原型标注下一阶段继续逐模块处理 Coverage `review`，先确认 PRD 口径，再决定改原型、改 PRD 或保留为后端/流程能力。
 - `review/rd-review` 仅保存阶段性已确认研发评审结论，不自动跟随 `main`。
 
@@ -26,3 +27,4 @@
 - 未被 Figma 明确覆盖的组件不猜测、不静默补齐、不以单页实现反向定义全局规范。
 - 状态继续统一通过 `StatusTag` 输出；选择弹窗继续使用 `SelectModal`；查询区继续使用 `QueryBar` + `QueryItem`。
 - 页面分组优先顺序：留白 → 分组结构 → 必要 Divider → 新增容器，避免 Card 套 Card、边框套边框。
+- 资产盘点公共 Card 标题优先复用 `SectionCardTitle`，ERP 主色只在该公共组件集中维护，业务页不再重复写标题蓝色值。
