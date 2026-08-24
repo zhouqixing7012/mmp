@@ -37,18 +37,21 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
   const detailRows = PROGRESS_DETAIL_ROWS.filter((row) => allowedRanges.includes(row.range) && row.range === detailRange);
 
   useEffect(() => {
-    if (!detailRange) return;
-    window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', {
-      detail: {
-        items: [
-          { label: '首页' },
-          { label: '资产盘点' },
-          { label: '盘点项目', onClick: onBack },
-          { label: '盘点进度', onClick: () => setDetailRange('') },
-          { label: '进度详情' },
-        ],
-      },
-    }));
+    const items = detailRange
+      ? [
+        { label: '首页' },
+        { label: '资产盘点' },
+        { label: '盘点项目', onClick: onBack },
+        { label: '盘点进度', onClick: () => setDetailRange('') },
+        { label: '进度详情' },
+      ]
+      : [
+        { label: '首页' },
+        { label: '资产盘点' },
+        { label: '盘点项目', onClick: onBack },
+        { label: '盘点进度' },
+      ];
+    window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', { detail: { items } }));
   }, [detailRange, onBack]);
 
   const progressColumns = [
