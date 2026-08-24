@@ -184,10 +184,24 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
 
     const result = importInventoryPhotoFiles({ projectNo, files, assets: rows });
     if (!result.matched.length) {
-      Modal.warning({
-        title: '未匹配到盘点资产',
-        content: '请将图片文件名设置为执行盘点资产的资产标签号，例如“114122102371.jpg”。',
-      });
+      if (result.unmatched.length) {
+        const tags = result.unmatched.map((item) => item.assetTag).filter(Boolean);
+        Modal.warning({
+          title: '资产标签号未匹配',
+          content: (
+            <Space direction="vertical" size={6}>
+              <Typography.Text>文件名格式已识别，但其中的资产标签号未在当前“执行盘点资产清单”中找到，请核对标签号是否正确。</Typography.Text>
+              {!!tags.length && <Typography.Text type="secondary">未匹配标签号：{tags.slice(0, 5).join('、')}{tags.length > 5 ? ' 等' : ''}</Typography.Text>}
+              <Typography.Text type="secondary">支持：资产标签号.jpg、资产标签号_整体.jpg、资产标签号_部分.jpg、资产标签号_局部.jpg。</Typography.Text>
+            </Space>
+          ),
+        });
+      } else {
+        Modal.warning({
+          title: '未识别到可导入的图片',
+          content: '请选择 JPG、PNG、WEBP 等图片文件后重新导入。',
+        });
+      }
       return;
     }
 
@@ -201,9 +215,9 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
       content: (
         <Space direction="vertical" size={6}>
           <Typography.Text>成功匹配：{result.matched.length} 张</Typography.Text>
-          {!!result.unmatched.length && <Typography.Text type="warning">未匹配：{result.unmatched.length} 张（文件名未找到对应资产标签号）</Typography.Text>}
+          {!!result.unmatched.length && <Typography.Text type="warning">未匹配：{result.unmatched.length} 张（文件名中的资产标签号不在当前执行盘点资产清单）</Typography.Text>}
           {!!result.invalid.length && <Typography.Text type="warning">非图片文件：{result.invalid.length} 个</Typography.Text>}
-          <Typography.Text type="secondary">图片命名规则：资产标签号.jpg；如需区分整体/部分照片，也支持“资产标签号_整体.jpg”“资产标签号_部分.jpg”。</Typography.Text>
+          <Typography.Text type="secondary">命名支持：资产标签号.jpg、资产标签号_整体.jpg、资产标签号_部分.jpg、资产标签号_局部.jpg。</Typography.Text>
         </Space>
       ),
     });
