@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -19,6 +19,7 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { ASSET_ROWS, UNINCLUDED_ASSET_ROWS } from './mockData';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
+import { importInventoryPhotoFiles } from './inventoryPhotoImportStore';
 
 const RANGE_OPTIONS = ['库房', '公共', '机房', '员工'];
 const EMPTY_FILTERS = { assetTag: '', category: '', status: '', owner: '', city: '', range: '' };
@@ -124,10 +125,11 @@ function SnapshotQuery({ filters, setFilters, onQuery, rangeOptions }) {
   );
 }
 
-function SnapshotAssetTab({ type, projectStatus, rows, setRows, setOtherRows, messageApi }) {
+function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOtherRows, messageApi }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const showMachineRoomFeatures = allowedRanges.includes('机房');
+  const photoInputRef = useRef(null);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -175,6 +177,38 @@ function SnapshotAssetTab({ type, projectStatus, rows, setRows, setOtherRows, me
     messageApi.success('已批量确认盘点结果');
   };
 
+  const handlePhotoImport = (event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (!files.length) return;
+
+    const result = importInventoryPhotoFiles({ projectNo, files, assets: rows });
+    if (!result.matched.length) {
+      Modal.warning({
+        title: '未匹配到盘点资产',
+        content: '请将图片文件名设置为执行盘点资产的资产标签号，例如“114122102371.jpg”。',
+      });
+      return;
+    }
+
+    if (!result.unmatched.length && !result.invalid.length) {
+      messageApi.success(`已导入 ${result.matched.length} 张盘点照片，并按资产标签号完成匹配，可前往图片审核处理`);
+      return;
+    }
+
+    Modal.info({
+      title: '盘点照片导入完成',
+      content: (
+        <Space direction="vertical" size={6}>
+          <Typography.Text>成功匹配：{result.matched.length} 张</Typography.Text>
+          {!!result.unmatched.length && <Typography.Text type="warning">未匹配：{result.unmatched.length} 张（文件名未找到对应资产标签号）</Typography.Text>}
+          {!!result.invalid.length && <Typography.Text type="warning">非图片文件：{result.invalid.length} 个</Typography.Text>}
+          <Typography.Text type="secondary">图片命名规则：资产标签号.jpg；如需区分整体/部分照片，也支持“资产标签号_整体.jpg”“资产标签号_部分.jpg”。</Typography.Text>
+        </Space>
+      ),
+    });
+  };
+
   const operations = [];
   if (type === 'execution' && beforeStart) {
     operations.push(
@@ -188,6 +222,7 @@ function SnapshotAssetTab({ type, projectStatus, rows, setRows, setOtherRows, me
   if (type === 'execution' && during) {
     operations.push(
       <Button key="importResult" icon={<Upload size={14} />}>导入盘点结果</Button>,
+      <Button key="importPhoto" icon={<Upload size={14} />} onClick={() => photoInputRef.current?.click()}>导入盘点照片</Button>,
       <Button key="exportResult" icon={<Download size={14} />}>导出盘点结果</Button>,
     );
   }
@@ -228,6 +263,9 @@ function SnapshotAssetTab({ type, projectStatus, rows, setRows, setOtherRows, me
 
   return (
     <Card size="small">
+      {type === 'execution' && during && (
+        <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoImport} />
+      )}
       <SnapshotQuery filters={filters} setFilters={setFilters} onQuery={() => setCurrentPage(1)} rangeOptions={rangeOptions} />
       <div className="mb-3 flex justify-end"><Space wrap>{operations}</Space></div>
       <Table
@@ -329,17 +367,17 @@ export default function AssetInventorySnapshotDetailV2({
     {
       key: 'execution',
       label: '执行盘点资产清单',
-      children: <SnapshotAssetTab type="execution" projectStatus={projectStatus} rows={executionRows} setRows={setExecutionRows} setOtherRows={setNotExecutionRows} messageApi={messageApi} />,
+      children: <SnapshotAssetTab type="execution" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={executionRows} setRows={setExecutionRows} setOtherRows={setNotExecutionRows} messageApi={messageApi} />,
     },
     {
       key: 'notExecution',
       label: '未执行盘点资产清单',
-      children: <SnapshotAssetTab type="notExecution" projectStatus={projectStatus} rows={notExecutionRows} setRows={setNotExecutionRows} setOtherRows={setExecutionRows} messageApi={messageApi} />,
+      children: <SnapshotAssetTab type="notExecution" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={notExecutionRows} setRows={setNotExecutionRows} setOtherRows={setExecutionRows} messageApi={messageApi} />,
     },
     {
       key: 'excluded',
       label: '未包含资产清单',
-      children: <SnapshotAssetTab type="excluded" projectStatus={projectStatus} rows={excludedRows} setRows={setExcludedRows} messageApi={messageApi} />,
+      children: <SnapshotAssetTab type="excluded" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={excludedRows} setRows={setExcludedRows} messageApi={messageApi} />,
     },
   ];
 
