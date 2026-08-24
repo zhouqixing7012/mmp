@@ -7,6 +7,7 @@ import StatusTag from '../../components/StatusTag';
 import { ASSET_ROWS, IMAGE_REVIEW_ROWS } from './mockData';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import { getImportedInventoryPhotos } from './inventoryPhotoImportStore';
+import SectionCardTitle from './SectionCardTitle';
 import overallPhoto from './images/inventory-review-overall.webp';
 import partialPhoto from './images/inventory-review-partial.webp';
 
@@ -41,10 +42,6 @@ function clamp(value, min, max) {
 
 function PageTitle({ children }) {
   return <Typography.Title level={4} style={{ margin: 0 }}>{children}</Typography.Title>;
-}
-
-function CardTitle({ children }) {
-  return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>;
 }
 
 function DateFilter({ value, onChange }) {
@@ -554,11 +551,18 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
   return <Space direction="vertical" size={16} className="w-full">
     {contextHolder}
     <PageTitle>图片审核</PageTitle>
-    <Card size="small" title={<CardTitle>审核概览</CardTitle>}>
-      <div className="grid grid-cols-3 gap-4">
-        <Card size="small"><Statistic title="待审核" value={pendingCount} suffix="条" /></Card>
-        <Card size="small"><Statistic title="已审核" value={reviewedCount} suffix="条" /></Card>
-        <Card size="small"><Typography.Text type="secondary">已审核百分比</Typography.Text><Progress percent={reviewedPercent} className="mt-3" /></Card>
+    <Card size="small" title={<SectionCardTitle>审核概览</SectionCardTitle>}>
+      <div className="grid grid-cols-3 gap-6">
+        <div className="min-w-0">
+          <Statistic title="待审核" value={pendingCount} suffix="条" />
+        </div>
+        <div className="min-w-0">
+          <Statistic title="已审核" value={reviewedCount} suffix="条" />
+        </div>
+        <div className="min-w-0">
+          <Typography.Text type="secondary">已审核百分比</Typography.Text>
+          <Progress percent={reviewedPercent} className="mt-3" />
+        </div>
       </div>
     </Card>
 
@@ -579,7 +583,7 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
 
     <Card
       size="small"
-      title={<CardTitle>图片审核信息</CardTitle>}
+      title={<SectionCardTitle>图片审核信息</SectionCardTitle>}
       extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => messageApi.success('图片审核导出已触发')}>导出</Button></Space>}
     >
       <Table

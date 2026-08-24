@@ -5,6 +5,7 @@ import { Plus, Trash2, XCircle } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
 import { PROJECT_LIST_ROWS } from './projectListMockData';
+import SectionCardTitle from './SectionCardTitle';
 
 const EMPTY_FILTERS = {
   projectNo: '', projectName: '', status: '', owner: '', startFrom: '', startTo: '', type: '', createdFrom: '', createdTo: '',
@@ -22,9 +23,6 @@ function inDateRange(value, from, to) {
   if (from && value < from) return false;
   if (to && value > to) return false;
   return true;
-}
-function CardTitle({ children }) {
-  return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>;
 }
 function DateFilter({ value, onChange, placeholder }) {
   return <DatePicker value={value ? dayjs(value) : null} format="YYYY-MM-DD" placeholder={placeholder} style={{ width: '100%' }} onChange={(date) => onChange(date ? date.format('YYYY-MM-DD') : '')} />;
@@ -162,7 +160,7 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
       <QueryItem label="创建时间从"><DateFilter value={draftFilters.createdFrom} placeholder="开始日期" onChange={(value) => updateFilter('createdFrom', value)} /></QueryItem>
       <QueryItem label="创建时间至"><DateFilter value={draftFilters.createdTo} placeholder="结束日期" onChange={(value) => updateFilter('createdTo', value)} /></QueryItem>
     </QueryBar>
-    <Card size="small" title={<CardTitle>盘点项目列表</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
+    <Card size="small" title={<SectionCardTitle>盘点项目列表</SectionCardTitle>} extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
       <div className="mb-3 flex justify-end"><Space wrap><Button type="primary" icon={<Plus size={14} />} onClick={onCreate}>创建项目</Button><Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除</Button><Button icon={<XCircle size={14} />} onClick={handleClose}>关闭项目</Button></Space></div>
       <Table
         rowKey="key"

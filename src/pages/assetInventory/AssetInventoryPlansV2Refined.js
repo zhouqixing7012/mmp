@@ -3,25 +3,34 @@ import { Alert, Button, Card, DatePicker, Input, Modal, Select, Space, Table, Ty
 import dayjs from 'dayjs';
 import { BellRing, Download, PlayCircle, Plus, Search, Trash2, Upload } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import { EMPLOYEE_ROWS } from './mockData';
 import { useAssetInventoryVariant } from './AssetInventoryVariantContext';
+import SectionCardTitle from './SectionCardTitle';
 
 const EMPTY_PLAN_FILTERS = { planNo: '', planName: '', planStatus: '', organization: '', range: '' };
 const RANGE_OPTIONS = ['员工', '库房', '公共', '机房'];
 function includesText(value, query) { if (!query) return true; return String(value || '').toLowerCase().includes(String(query).trim().toLowerCase()); }
 function PageTitle({ children }) { return <Typography.Title level={4} style={{ margin: 0 }}>{children}</Typography.Title>; }
-function CardTitle({ children }) { return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>; }
 function PersonnelInput({ value, onClick, disabled = false }) {
   if (disabled) return <Typography.Text>{value || '-'}</Typography.Text>;
   return <Input value={value === '-' ? '' : (value || '')} readOnly placeholder="请选择" suffix={<Search size={14} className="text-[#1677ff]" />} onClick={onClick} onChange={() => {}} />;
 }
 function ProjectInfoCard({ project }) {
-  return <Card size="small" title={<CardTitle>盘点项目信息</CardTitle>}><div className="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
-    <div><span className="text-gray-500">项目编号：</span>{project?.projectNo || '-'}</div><div><span className="text-gray-500">项目名称：</span>{project?.projectName || '-'}</div><div><span className="text-gray-500">项目类型：</span>{project?.projectType || '-'}</div>
-    <div><span className="text-gray-500">盘点开始时间：</span>{project?.startDate || '-'}</div><div><span className="text-gray-500">盘点结束时间：</span>{project?.endDate || '-'}</div><div><span className="text-gray-500">项目状态：</span><StatusTag value={project?.status || '生成盘点计划'} /></div>
-  </div></Card>;
+  return (
+    <Card size="small" title={<SectionCardTitle>盘点项目信息</SectionCardTitle>}>
+      <DetailGrid columns={3}>
+        <DetailItem label="项目编号">{project?.projectNo || '-'}</DetailItem>
+        <DetailItem label="项目名称">{project?.projectName || '-'}</DetailItem>
+        <DetailItem label="项目类型">{project?.projectType || '-'}</DetailItem>
+        <DetailItem label="盘点开始时间">{project?.startDate || '-'}</DetailItem>
+        <DetailItem label="盘点结束时间">{project?.endDate || '-'}</DetailItem>
+        <DetailItem label="项目状态"><StatusTag value={project?.status || '生成盘点计划'} /></DetailItem>
+      </DetailGrid>
+    </Card>
+  );
 }
 
 export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPlanAssets, rows, setRows, canManualCreate, onManualCreate }) {
@@ -91,7 +100,7 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
 
   return <Space direction="vertical" size={16} className="w-full">
     {contextHolder}<PageTitle>盘点计划</PageTitle><ProjectInfoCard project={project} />
-    <Card size="small" title={<CardTitle>盘点计划明细</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
+    <Card size="small" title={<SectionCardTitle>盘点计划明细</SectionCardTitle>} extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
       <QueryBar onQuery={() => { setAppliedFilters({ ...draftFilters }); setSelectedKeys([]); }} onReset={() => { setDraftFilters(EMPTY_PLAN_FILTERS); setAppliedFilters(EMPTY_PLAN_FILTERS); setSelectedKeys([]); }}>
         <QueryItem label="计划编码"><Input value={draftFilters.planNo} allowClear placeholder="请输入计划编码" onChange={(event) => updateFilter('planNo', event.target.value)} /></QueryItem>
         <QueryItem label="计划名称"><Input value={draftFilters.planName} allowClear placeholder="请输入计划名称" onChange={(event) => updateFilter('planName', event.target.value)} /></QueryItem>

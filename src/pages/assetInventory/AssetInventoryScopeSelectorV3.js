@@ -15,12 +15,9 @@ import {
 } from '../../mock/businessRulesMock';
 import { ASSET_ROWS, EMPLOYEE_ROWS, SCOPE_ROWS } from './mockData';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
+import SectionCardTitle from './SectionCardTitle';
 
 const SUBSIDIARY_OPTIONS = ['集团', '搜狐媒体', '焦点', '视频'];
-
-function CardTitle({ children }) {
-  return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>;
-}
 
 function unique(values) {
   return [...new Set(values.flatMap((value) => Array.isArray(value) ? value : [value]).filter(Boolean).map((value) => String(value).trim()).filter(Boolean))];
@@ -139,7 +136,7 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
   };
 
   return (
-    <Card size="small" title={<CardTitle>盘点范围筛选</CardTitle>}>
+    <Card size="small" title={<SectionCardTitle>盘点范围筛选</SectionCardTitle>}>
       {contextHolder}
       <div className="grid grid-cols-3 gap-x-6 gap-y-3">
         {fields.map(([label, field]) => (

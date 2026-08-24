@@ -5,10 +5,7 @@ import StatusTag from '../../components/StatusTag';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import { PROGRESS_DETAIL_ROWS, PROGRESS_ROWS } from './mockData';
 import { useAssetInventoryVariant } from './AssetInventoryVariantContext';
-
-function CardTitle({ children }) {
-  return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>;
-}
+import SectionCardTitle from './SectionCardTitle';
 
 function formatCount(value) {
   return Number(value || 0).toLocaleString('zh-CN');
@@ -16,7 +13,7 @@ function formatCount(value) {
 
 function ProjectInfoCard({ project }) {
   return (
-    <Card size="small" title={<CardTitle>盘点项目信息</CardTitle>}>
+    <Card size="small" title={<SectionCardTitle>盘点项目信息</SectionCardTitle>}>
       <DetailGrid columns={3}>
         <DetailItem label="项目编号">{project?.projectNo || '-'}</DetailItem>
         <DetailItem label="项目名称">{project?.projectName || '-'}</DetailItem>
@@ -94,7 +91,7 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
         {contextHolder}
         <Typography.Title level={4} style={{ margin: 0 }}>进度详情</Typography.Title>
         <ProjectInfoCard project={project} />
-        <Card size="small" title={<CardTitle>进度详情</CardTitle>}>
+        <Card size="small" title={<SectionCardTitle>进度详情</SectionCardTitle>}>
           <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={detailRows} pagination={false} scroll={{ x: 1350 }} />
         </Card>
         <div className="flex justify-center pb-2">
@@ -111,7 +108,7 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
       <ProjectInfoCard project={project} />
       <Card
         size="small"
-        title={<CardTitle>项目进度</CardTitle>}
+        title={<SectionCardTitle>项目进度</SectionCardTitle>}
         extra={<Button icon={<Download size={14} />} onClick={() => messageApi.success('项目进度导出已触发')}>导出</Button>}
       >
         <Table rowKey="key" size="small" bordered columns={progressColumns} dataSource={progressRows} pagination={false} scroll={{ x: 1250 }} />
