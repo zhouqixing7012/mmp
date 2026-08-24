@@ -2,10 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { Button, Card, InputNumber, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import { Eye, Search, Trash2 } from 'lucide-react';
 import {
-  mockAccountBookContentData,
   mockBuildings,
   mockCities,
-  mockCompanies,
   mockDepartments,
   mockLocationBasicDataData,
   mockMaterialCategories,
@@ -17,6 +15,8 @@ import {
 } from '../../mock/businessRulesMock';
 import { ASSET_ROWS, EMPLOYEE_ROWS, SCOPE_ROWS } from './mockData';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
+
+const SUBSIDIARY_OPTIONS = ['集团', '搜狐媒体', '焦点', '视频'];
 
 function CardTitle({ children }) {
   return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>;
@@ -52,12 +52,7 @@ export function getScheme3InventoryDemoOptions(allowedRanges) {
   ];
 
   return {
-    organization: withAll([
-      '集团',
-      ...mockCompanies.map((row) => `${row.code}.${row.desc}`),
-      ...mockAccountBookContentData.map((row) => row.company),
-      ...assets.map((row) => row.organization),
-    ]),
+    organization: SUBSIDIARY_OPTIONS,
     department: withAll([
       ...mockDepartments.map((row) => `${row.code}.${row.desc}`),
       ...assets.map((row) => row.ownerDept),
@@ -105,12 +100,12 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
   const [selectedKeys, setSelectedKeys] = useState([]);
 
   const fields = [
-    ['盘点组织', 'organization'], ['部门', 'department'], ['资产类别', 'assetCategory'], ['资产状态', 'assetStatus'], ['仓库', 'warehouse'],
+    ['子公司', 'organization'], ['部门', 'department'], ['资产类别', 'assetCategory'], ['资产状态', 'assetStatus'], ['仓库', 'warehouse'],
     ['City', 'city'], ['Building', 'building'], ['Floor', 'floor'], ['资产责任人', 'owner'], ['资产责任人职级', 'ownerLevel'],
   ];
 
   const columns = [
-    { title: '盘点组织', dataIndex: 'organization', width: 140 },
+    { title: '子公司', dataIndex: 'organization', width: 140 },
     { title: '部门', dataIndex: 'department', width: 190 },
     { title: '资产类别', dataIndex: 'assetCategory', width: 170 },
     { title: '资产状态', dataIndex: 'assetStatus', width: 130 },
