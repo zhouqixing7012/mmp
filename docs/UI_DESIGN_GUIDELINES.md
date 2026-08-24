@@ -1,4 +1,4 @@
-# ERP Figma × 资产系统 UI 设计规范 V2
+# ERP Figma × 资产系统 UI 设计规范 V2.1
 
 > 适用范围：资产系统桌面端业务页面、个人工作台、后台管理页面及其公共组件。
 >
@@ -6,7 +6,9 @@
 > 1. **ERP Design System 基础视觉规范**：来自 ERP Figma 设计语言与基础组件节点，负责颜色、字体、间距、圆角、阴影和基础组件视觉行为。
 > 2. **资产系统业务页面规范**：负责页面结构、Card 分区、详情栅格、审批、办理、员工确认、字段命名和资产领域交互。
 >
-> 本次 V2 仅升级设计与实现规范，**不代表现有页面已完成对应视觉改造**。后续页面新增或改造时按本规范执行。
+> V2.1 补充来源：ERP Figma `基础组件｜Library 修正版`（node `826:2`），新增吸收 Input、Radio、Checkbox、Switch、Breadcrumb、Dropdown、Pagination、Tag、Badge、Popover、Grid、Layout、Divider 等规则。设计系统中的其他业务示例只作为组件说明，不反向定义资产系统业务。
+>
+> 本规范升级设计与实现规则，**不代表现有页面已完成对应视觉改造**。后续页面新增或改造时按本规范执行。
 
 ---
 
@@ -21,23 +23,28 @@
 
 ### 1.1 组件能力不等于业务使用方式
 
-ERP Design System 可以提供带图标按钮、Success Button、居中 Dialog 等能力，但资产系统业务层仍可限制具体场景：
+ERP Design System 可以提供带图标按钮、Success Button、居中 Dialog、可删除 Tag、悬浮球等能力，但资产系统业务层仍可限制具体场景：
 
 - 流程按钮仍统一纯文字，不因为基础 Button 支持图标就增加图标。
 - “同意”等审批主操作仍按资产系统业务规则选择按钮类型，不因存在 Success Button 就自动改成绿色。
 - 页面底部流程操作仍居中；Dialog Footer 则按 Dialog 规范处理，两者不可混淆。
+- `Tag` 是通用标签组件，不替代资产系统统一业务状态出口 `StatusTag`。
+- `Dropdown` 是操作菜单，不等同于表单选择器 `Select`。
+- `Grid` 负责页面级布局，不替代资产系统详情字段的 `DetailGrid` 三列规则。
+- `Affix`、`FloatButton` 等能力只在真实业务需要时使用，不因为设计系统存在组件就默认加入页面。
 
-### 1.2 Figma 暂未覆盖的组件
+### 1.2 Figma 当前组件覆盖边界
 
-当前已拆解的 ERP Figma 节点主要覆盖：
+当前已拆解的 ERP Figma 节点覆盖：
 
-- Design Token：颜色、字体、间距、圆角、阴影
-- 基础组件：Button、Link、全局提示、Loading、Skeleton、Dialog
+- Design Token：颜色、字体、间距、圆角、阴影、语义变量方向。
+- 已确认基础组件：Button、Link、全局提示、Loading、Skeleton、Dialog、Input、Radio、Checkbox、Switch、Breadcrumb、Dropdown、Pagination、Tag、Badge、Popover、Grid、Layout、Divider、Anchor、Affix、FloatButton。
 
-当前节点**没有提供可作为 ERP 本地标准的完整 Input、Select、Table、Pagination、Form 规范**。因此：
+当前节点**仍未提供可作为 ERP 本地标准的完整 Select、Table、Form、DatePicker、Upload 规范**。因此：
 
-- 不得凭经验补写这些组件的 ERP 高度、圆角、边框或状态规范。
+- 不得凭经验补写这些未覆盖组件的 ERP 高度、圆角、边框或状态规范。
 - 继续优先使用 Ant Design 6.x 和项目现有公共组件。
+- `Dropdown ≠ Select`，不得因为已有下拉菜单规范就推断表单选择器规范已经完整。
 - 后续取得对应 ERP Figma 组件节点后，再补充进本文件。
 
 ---
@@ -61,10 +68,32 @@ ERP Design System 可以提供带图标按钮、Success Button、居中 Dialog �
   ↓
 公共组件 / Ant Design Component Token
   ↓
-ERP Design Token
+ERP Semantic Token
+  ↓
+ERP 基础色板
 ```
 
 业务页面只表达“这是主操作 / 危险状态 / 次要文字 / Card”，不自行决定具体色值、阴影和圆角。
+
+### 2.1 语义 Token 优先于基础色号
+
+Figma 新增亮色 / 暗色语义变量对照，说明设计系统正在从“直接使用 blue/gray 色号”转向“先表达用途，再由 Theme 映射实际色值”。
+
+资产系统应优先建立和使用以下语义层：
+
+| 类别 | 语义角色示例 |
+|---|---|
+| 背景 | 页面底色、Card/容器底色、输入区底色、覆盖层 |
+| 文字 | 主文字、次要文字、第三级文字、占位符、禁用、品牌色、成功/警告/危险 |
+| 图标 | 主图标、次要图标、品牌、成功/警告/危险、禁用 |
+| 边框 | 分割线、容器描边、激活指示线 |
+
+规则：
+
+- 业务页面优先引用“主文字 / 次要文字 / 分割线 / 危险”等语义，不直接引用 `gray/7`、`red/6` 等基础色号。
+- 亮色 / 暗色的具体映射由 Theme 负责，业务组件不维护两套颜色分支。
+- Figma 语义变量表中出现的聊天、通讯录、消息气泡等场景仅是设计系统应用示例，**不得复制成资产系统业务规则**。
+- `StatusTag`、Button、Input、Divider、Popover 等公共组件应逐步从统一语义 Token 取值。
 
 ---
 
@@ -104,7 +133,7 @@ ERP 核心主色：
 | Gray-1 | `#FFFFFF` | Card / Dialog / 内容背景 |
 | Gray-2 | `#F2F5FA` | 页面弱背景、Skeleton 起始色 |
 | Gray-3 | `#E2E6F0` | 次要按钮、Skeleton 结束色 |
-| Gray-4 | `#D3D9E5` | Border |
+| Gray-4 | `#D3D9E5` | Border / Divider |
 | Gray-5 | `#C5CCDB` | Disabled Border |
 | Gray-6 | `#848B99` | 弱辅助文字 |
 | Gray-7 | `#545B66` | 次级文字 |
@@ -490,6 +519,287 @@ Figma 提供：
 
 ---
 
+## 13A. Input 输入框
+
+### 13A.1 已确认类型
+
+Figma 已覆盖：
+
+- 单行输入框
+- Textarea
+- 前后置内容输入框
+- 组合输入框
+- IP 地址输入框
+- 搜索框
+- 可清空输入框
+- 密码输入框
+
+资产系统仍优先使用 Ant Design `Input` / `Input.TextArea` / 公共封装，不在业务页手写边框、状态和图标。
+
+### 13A.2 状态
+
+输入框至少包含：
+
+- Normal
+- Hover
+- Click / Focused
+- Disabled
+- Error
+- Success
+
+规则：
+
+- 校验反馈优先通过 Ant Design Form / Input 状态统一输出，不在单页自己实现红绿边框。
+- 只读业务字段直接展示文本或状态，不用 readOnly/disabled 输入框模拟只读。
+- 项目现有“点击只读输入框打开 SelectModal”的选择型输入场景继续按公共交互规则实现，它属于业务选择入口，不代表普通只读字段也要画成 Input。
+
+### 13A.3 尺寸
+
+| Size | 高度 |
+|---|---:|
+| Small | 28px |
+| Medium | 32px |
+| Large | 36px |
+
+规则：
+
+- 默认高度：32px。
+- 同一业务场景内 Input / Select 等表单控件高度保持一致。
+- 宽度由内容区和表单栅格决定，不为了“看起来完整”统一拉满无关字段。
+- 具体圆角、边框色等仍通过 Theme / Ant Design Component Token 落地，不在业务页重复硬编码。
+
+---
+
+## 13B. Radio / Checkbox / Switch
+
+### 13B.1 Radio
+
+Figma 已覆盖基础型与按钮型 Radio。
+
+状态：Normal / Hover / Selected / Disabled，并区分未选中、已选中及禁用态。
+
+按钮型尺寸：
+
+| Size | 高度 |
+|---|---:|
+| Small | 24px |
+| Medium | 32px |
+| Large | 36px |
+
+资产系统优先使用 Ant Design `Radio` / `Radio.Group` / `Radio.Button`。
+
+### 13B.2 Checkbox
+
+Figma 已覆盖：
+
+- 未选中
+- 已选中
+- 部分选中（Indeterminate）
+- 各自禁用态
+- 基础型 / 按钮型
+- Normal / Hover / Selected / Disabled
+
+资产系统优先使用 Ant Design `Checkbox` / `Checkbox.Group`，批量选择、表头“选中当页 / 选中全部”等场景必须保留真实选择语义，不用 Tag 或 Button 模拟复选。
+
+### 13B.3 Switch
+
+Figma 已覆盖 Normal / Disabled 基础状态。
+
+资产系统规则：
+
+- Switch 只用于“立即切换并能明确理解开/关结果”的布尔配置。
+- 需要填写表单后统一提交、危险确认或存在复杂审批含义的动作，不用 Switch 代替正式按钮或表单字段。
+- 统一使用 Ant Design `Switch`，颜色和尺寸走 Theme，不在页面自制开关。
+
+---
+
+## 13C. Breadcrumb 面包屑
+
+Figma 定义面包屑用于识别当前页面在层级结构中的位置，并支持向上返回。
+
+能力包括：
+
+- 自定义分隔符
+- 自定义图标
+- 带下拉菜单
+- 层级过多时省略
+- 长文案截断
+
+尺寸：12px / 14px；**页面级导航优先 14px**。
+
+资产系统规则：
+
+- 多层内部页面优先使用 Ant Design `Breadcrumb`，保持当前项目已有动态面包屑能力。
+- 上级层级可点击返回，当前页不做可点击链接。
+- Figma 示例以 8 个中文字符作为长文案截断参考；实际实现优先使用稳定的单行省略，不让超长页面名撑坏布局。
+- 面包屑是导航，不替代页面底部“返回”操作；流程页仍按业务保留底部返回按钮。
+
+---
+
+## 13D. Dropdown 下拉菜单
+
+Figma 已覆盖：
+
+- 文字型下拉菜单
+- 按钮型下拉菜单
+- 带图标下拉菜单
+- 多级菜单
+- Normal / Hover / Click / Disabled / Selected
+- 小 / 中 / 大尺寸
+
+资产系统规则：
+
+- Dropdown 用于一组“操作命令”的展开选择，例如更多操作、批量动作等。
+- **Dropdown 不等于 Select**：字段取值仍使用 Ant Design `Select` 或项目统一选择弹窗，不能用 Dropdown 替代表单控件。
+- 菜单项只保留当前上下文可执行动作；危险动作继续走二次确认。
+- 多级菜单只有真实存在层级关系时才使用，不为收纳按钮机械增加层级。
+
+---
+
+## 13E. Pagination 分页器
+
+Figma 已覆盖：
+
+- 基础分页
+- 显示数据总量
+- 页面展示数量选择
+- 快速跳转
+- 简易分页器
+- Normal / Hover / Selected / Disabled
+
+尺寸：
+
+| Size | 高度 |
+|---|---:|
+| Medium | 24px |
+| Large | 32px |
+
+规则：
+
+- 列表页继续使用 Ant Design Pagination / Table Pagination，不自行重画。
+- 业务列表默认保持紧凑密度，优先映射 Figma Medium 24px；若现有 Theme 尚未统一，不在单页用 CSS 强制改尺寸。
+- “共 X 条”继续按资产系统规则放在列表右上角；Pagination 是否同时显示 total 由页面信息密度决定，不重复堆两份相同总数。
+- pageSize、快速跳转只在用户确实需要跨大量数据浏览时提供，不因为组件支持就全部开启。
+
+---
+
+## 13F. Tag / Badge
+
+### 13F.1 Tag
+
+Figma Tag 覆盖：
+
+- 基础标签
+- 可删除标签
+- 可选中标签
+- 主题标签
+- 带边框标签
+- 动态编辑标签
+- primary / success / danger / info / warning
+- Normal / Hover / Click / Disabled
+
+高度：16 / 20 / 24 / 32px。
+
+规则：
+
+- 标签宽度随文案自适应；超长文案设置最大宽度并省略，不允许无限撑开布局。
+- `Tag` 用于分类、筛选条件、可删除关键词等普通标签语义。
+- **流程状态、资产状态、审批状态仍统一使用 `StatusTag`**；不得因为 ERP 有 Tag 就把业务状态改回页面手写 Tag。
+
+### 13F.2 Badge
+
+Badge 用于数量、未读、提醒等紧凑提示。
+
+资产系统规则：
+
+- 适用于工作台待办数、消息数量等真正的计数提醒。
+- Badge 只表达附属提醒，不替代页面主状态和业务结果。
+- 颜色走统一语义 Token；页面不单独维护红点 / 灰点色值。
+
+---
+
+## 13G. Popover 气泡卡片
+
+Figma 已覆盖：
+
+- 纯文字气泡
+- 操作型气泡
+- 带图标气泡
+- 顶 / 底 / 左 / 右方向
+
+尺寸：
+
+- 最小宽度：160px。
+- 最大宽度不强制固定，设计建议不超过 360px。
+
+资产系统规则：
+
+- 纯文字 Popover 适合字段解释、名称补充等轻量信息。
+- 操作型 Popover 适合低干扰的轻确认或小操作。
+- 删除、报废、停用等高风险动作仍优先使用 `Popconfirm` / Dialog，不因 Popover 可放按钮就降低确认强度。
+- Popover 属于高于 Card 的浮层，阴影和层级统一走 Theme。
+
+---
+
+## 13H. Grid / Layout
+
+### 13H.1 Grid
+
+Figma 支持 12 栅格和 24 栅格，默认 12 栅格；响应断点：
+
+**768 / 992 / 1200 / 1920**。
+
+资产系统规则：
+
+- ERP Grid 负责页面级区块、查询区、响应式列宽等整体布局。
+- 资产系统 `DetailGrid` 负责详情字段稳定三列对齐，两者职责不同，**不得用 12 栅格推翻详情三列业务规则**。
+- 后台查询区现有三列 Grid 继续保持稳定对齐；若后续做响应式改造，再映射 ERP 断点，不在单页各自定义断点。
+
+### 13H.2 Layout
+
+Figma 常见布局示例包含 Header、Aside、Main、Footer，其中展示过 Header 60px、Aside 200px、Footer 80px 的组合，并支持自定义宽高。
+
+资产系统规则：
+
+- 这些值视为设计系统常见版型示例，**不作为资产系统现有应用壳层的强制改造值**。
+- 主框架尺寸统一由项目 Layout / Theme 管理，业务页面不得自行定义另一套 Header / Aside 宽高。
+- Main 区域优先自动填充剩余空间。
+
+---
+
+## 13I. Divider 分割线
+
+Figma 对 Divider 的核心定义：**只用于内容分组与层级区隔，不承载操作含义；优先通过留白建立层级，仅在需要明确边界时使用。**
+
+基础规则：
+
+| 项目 | 规则 |
+|---|---|
+| 颜色 | Gray-4 |
+| 粗细 | 1px |
+| 方向 | 水平 / 垂直 |
+| 推荐间距 | spacing 8～24px |
+| 竖向 Divider | 默认高度约 12px，两侧各 spacing/8 |
+
+资产系统规则：
+
+- 页面分组优先顺序：**留白 → 分组结构 → 必要的 Divider → 新增容器**。
+- 不为每个字段组都增加边框 / Divider，避免 Card 套 Card、边框套边框。
+- 水平 Divider 用于同层级纵向内容区隔；竖向 Divider 只用于同一行并列信息或操作项。
+- Divider 不可当作可点击控件、步骤状态或权限边界。
+
+---
+
+## 13J. Anchor / Affix / FloatButton
+
+这些组件已经出现在 ERP Library，但资产系统只按真实业务场景使用：
+
+- **Anchor**：适用于很长的单页内容，需要快速跳转到稳定分区时使用；普通审批 / 办理页不默认增加。
+- **Affix**：适用于确实需要滚动时持续可见的操作或导航；不得与页面底部固定流程操作形成两套重复入口。
+- **FloatButton**：当前资产系统不作为默认交互模式；只有明确存在跨页面高频快捷动作时再使用。
+
+---
+
 # 第三部分：资产系统业务页面规范
 
 ## 14. 页面画布与区块
@@ -625,6 +935,7 @@ Figma 提供：
 - 非核心字段放入详情区、Drawer 或 Modal。
 - 列表必须具备 loading、空状态、查询无结果、查询、重置、分页等完整状态。
 - Figma Typography 将表格归入 T1 12/16；后续全局 Theme 统一时再整体收敛，禁止单页先行硬改造成视觉不一致。
+- Pagination 已有 ERP 基础规范，但仍通过 Ant Design Table / Pagination 公共能力统一落地，不在 Table 页面单独重画。
 
 ---
 
@@ -634,6 +945,7 @@ Figma 提供：
 - 查询字段顺序按主要检索路径组织，不为了填满一行随意改变字段宽度。
 - 查询、重置必须真实生效。
 - 搜索、刷新等属于工具操作，可以使用含义明确的图标。
+- 查询区输入类控件默认按 32px 中尺寸保持统一；已有公共组件未统一 Theme 前，不在单页用 CSS 强制改高。
 
 ---
 
@@ -694,6 +1006,7 @@ Figma 提供：
 - 是 / 否、启用 / 停用、停产状态继续使用现有 `yesNo`、`enabled`、`stop` 类型。
 - 同一状态在所有页面必须保持相同颜色。
 - `StatusTag` 底层色值后续应映射到 ERP Semantic Token，不改变页面业务状态定义。
+- ERP `Tag` 只补充通用标签能力，不改变本条状态规则。
 
 ---
 
@@ -773,6 +1086,7 @@ ERP 品牌方向强调统一、高效、简洁、专业、易用。资产系统�
 
 - 信息层级清晰优先于装饰。
 - 字段对齐、状态一致、操作可预期优先于“填满页面”。
+- 页面分组优先使用留白，Divider 只在需要明确边界时出现。
 - 不使用无意义动画、过度渐变、玻璃拟态、大面积彩色背景。
 - 不为了视觉丰满擅自增加业务字段、说明 Card、统计数字或按钮。
 - 设计系统的目标是减少页面自行决定视觉值，而不是让页面变得更花哨。
@@ -805,6 +1119,8 @@ ERP 品牌方向强调统一、高效、简洁、专业、易用。资产系统�
 
 - 上述代码仅记录已确认 Token 的映射方向，**本次文档升级不修改现有 Theme 代码**。
 - Blue-5、Blue-9、radius 4、Dialog Large 最终值等 Figma 存在差异的项不得在代码中自行拍板。
+- 语义变量优先在 Theme / 公共组件建立 light / dark 映射，业务页面不维护主题分支。
+- Input、Pagination、Breadcrumb、Tag、Divider 等新增确认组件的视觉收敛优先从 Ant Design Component Token / 公共组件层处理。
 - 优先修改 Theme / 公共组件，而不是全仓库逐页硬编码视觉值。
 
 ---
@@ -816,11 +1132,16 @@ ERP 品牌方向强调统一、高效、简洁、专业、易用。资产系统�
 ### Design System
 
 - [ ] 主色、语义色、灰阶没有在业务页重复硬编码
+- [ ] 页面优先表达主文字 / 次文字 / 分割线 / 危险等语义，不直接依赖基础色号
 - [ ] 页面字号符合 T0～T5 的业务层级，普通 B 端页面没有滥用运营大字号
 - [ ] 页面间距优先使用 ERP 全局梯度，组件内部特殊间距有明确依据
-- [ ] Button / Link / Message / Loading / Skeleton / Dialog 优先复用 AntD 或公共组件，不自行重画
+- [ ] Button / Link / Message / Loading / Skeleton / Dialog / Input / Radio / Checkbox / Switch / Breadcrumb / Dropdown / Pagination / Tag / Badge / Popover 优先复用 AntD 或公共组件，不自行重画
+- [ ] Input 同一业务场景高度一致，默认按 32px 中尺寸映射；Error / Success 等状态由 Form / Theme 统一输出
 - [ ] Dialog 使用 12px 圆角和高层浮层逻辑；普通 Footer 默认右对齐
-- [ ] 未为 Figma 暂未覆盖的 Input / Select / Table 等擅自创造“ERP 标准”
+- [ ] Dropdown 没有被当成 Select；Tag 没有替代业务 `StatusTag`
+- [ ] ERP Grid 只负责页面级布局，没有推翻 `DetailGrid` 三列字段规则
+- [ ] 页面优先用留白分组，Divider 只在确实需要边界时使用
+- [ ] 未为 Figma 暂未覆盖的 Select / Table / Form / DatePicker / Upload 擅自创造“ERP 标准”
 
 ### 页面结构
 
@@ -833,6 +1154,7 @@ ERP 品牌方向强调统一、高效、简洁、专业、易用。资产系统�
 - [ ] 删除字段后没有机械拉宽其他字段，补位 / 留空符合字段语义和长度
 - [ ] 需要留空时使用真实网格结构，不使用空格字符占位
 - [ ] 正常详情 Card 没有无必要的横向滚动条
+- [ ] 多层内部页面的 Breadcrumb 层级与当前页面真实层级一致，上级可返回、当前页不可点击
 
 ### 业务一致性
 
@@ -848,11 +1170,13 @@ ERP 品牌方向强调统一、高效、简洁、专业、易用。资产系统�
 - [ ] 弹窗没有重复标题
 - [ ] 普通 Dialog Footer 默认右对齐；业务明确要求时才居中
 - [ ] 空状态返回按钮为“返回工作台”
+- [ ] Switch 只用于明确的即时布尔切换，没有替代需提交 / 审批 / 危险确认的业务动作
 
 ### 交互完整性
 
 - [ ] 查询、重置真实生效
 - [ ] 列表存在 loading、空状态、查询无结果、分页
+- [ ] Pagination 的 total / pageSize / 快速跳转按实际浏览需求配置，没有机械全部开启
 - [ ] 表单有必填校验、提交 loading、防重复提交
 - [ ] 危险操作有二次确认
 - [ ] 所有主要按钮都有真实行为和反馈
@@ -868,6 +1192,6 @@ ERP 品牌方向强调统一、高效、简洁、专业、易用。资产系统�
 2. Blue-9 最终标准值。
 3. radius 4 的最终值。
 4. Dialog Large 应为 700px 还是 720px。
-5. Input、Select、Table、Pagination、Form 的 ERP 本地完整组件规范。
+5. Select、Table、Form、DatePicker、Upload 的 ERP 本地完整组件规范。
 
 在确认前：**不猜测、不静默补齐、不以单页实现反向定义全局规范。**
