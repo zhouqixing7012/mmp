@@ -4,8 +4,9 @@ import dayjs from 'dayjs';
 import { ChevronLeft, ChevronRight, Download, Maximize2, MousePointer2, ZoomIn, ZoomOut } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
-import { IMAGE_REVIEW_ROWS } from './mockData';
+import { ASSET_ROWS, IMAGE_REVIEW_ROWS } from './mockData';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
+import { getImportedInventoryPhotos } from './inventoryPhotoImportStore';
 import overallPhoto from './images/inventory-review-overall.webp';
 import partialPhoto from './images/inventory-review-partial.webp';
 
@@ -14,7 +15,7 @@ const EMPTY_FILTERS = {
   startDate: '', endDate: '', inventoryStatus: '', city: '', building: '',
 };
 
-const REVIEW_PHOTOS = [
+const DEFAULT_REVIEW_PHOTOS = [
   { key: 'overall', label: '整体照片', src: overallPhoto },
   { key: 'partial', label: '部分照片', src: partialPhoto },
 ];
@@ -50,6 +51,70 @@ function DateFilter({ value, onChange }) {
   return <DatePicker value={value ? dayjs(value) : null} format="YYYY-MM-DD" style={{ width: '100%' }} onChange={(date) => onChange(date ? date.format('YYYY-MM-DD') : '')} />;
 }
 
+function toImportedPhoto(record) {
+  if (!record) return null;
+  return {
+    key: record.photoType,
+    label: record.photoType === 'partial' ? '部分照片' : '整体照片',
+    src: record.src,
+    fileName: record.fileName,
+    imported: true,
+  };
+}
+
+function buildReviewRows(projectNo, allowedRanges) {
+  const rows = IMAGE_REVIEW_ROWS
+    .filter((row) => isInventoryRangeAllowed(row.asset, allowedRanges))
+    .map((row) => ({
+      ...row,
+      photos: {
+        overall: DEFAULT_REVIEW_PHOTOS[0],
+        partial: DEFAULT_REVIEW_PHOTOS[1],
+        gallery: DEFAULT_REVIEW_PHOTOS,
+      },
+    }));
+  const rowByTag = new Map(rows.map((row) => [String(row.asset?.assetTag || ''), row]));
+  const importedByTag = new Map();
+
+  getImportedInventoryPhotos(projectNo).forEach((record) => {
+    const list = importedByTag.get(record.assetTag) || [];
+    list.push(record);
+    importedByTag.set(record.assetTag, list);
+  });
+
+  importedByTag.forEach((records, assetTag) => {
+    const existing = rowByTag.get(assetTag);
+    const asset = existing?.asset || ASSET_ROWS.find((row) => String(row.assetTag || '') === assetTag);
+    if (!asset || !isInventoryRangeAllowed(asset, allowedRanges)) return;
+
+    const overall = toImportedPhoto(records.find((record) => record.photoType === 'overall'));
+    const partial = toImportedPhoto(records.find((record) => record.photoType === 'partial'));
+    const gallery = [overall, partial].filter(Boolean);
+    if (!gallery.length) return;
+
+    if (existing) {
+      existing.photos = { overall, partial, gallery };
+      existing.reviewStatus = '待审核';
+      existing.decision = '';
+      existing.photoSource = '批量导入';
+      return;
+    }
+
+    const reviewRow = {
+      key: `imported-review-${projectNo || 'project'}-${asset.key}`,
+      asset,
+      reviewStatus: '待审核',
+      decision: '',
+      photoSource: '批量导入',
+      photos: { overall, partial, gallery },
+    };
+    rows.push(reviewRow);
+    rowByTag.set(assetTag, reviewRow);
+  });
+
+  return rows;
+}
+
 function PhotoThumbnail({ photo, onOpen }) {
   return (
     <Button type="text" className="h-auto p-0" onClick={onOpen}>
@@ -81,7 +146,7 @@ function ViewerToolButton({ title, icon, active = false, disabled = false, onCli
   );
 }
 
-function PhotoPreviewModal({ open, index, onIndexChange, onClose }) {
+function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose }) {
   const viewportRef = useRef(null);
   const scaleRef = useRef(1);
   const positionRef = useRef({ x: 0, y: 0 });
@@ -94,7 +159,8 @@ function PhotoPreviewModal({ open, index, onIndexChange, onClose }) {
   const [selecting, setSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState(null);
   const [isPanning, setIsPanning] = useState(false);
-  const photo = REVIEW_PHOTOS[index] || REVIEW_PHOTOS[0];
+  const gallery = photos?.length ? photos : DEFAULT_REVIEW_PHOTOS;
+  const photo = gallery[index] || gallery[0];
 
   const setViewerScale = (next) => {
     scaleRef.current = next;
@@ -125,7 +191,8 @@ function PhotoPreviewModal({ open, index, onIndexChange, onClose }) {
   };
 
   const switchPhoto = (nextIndex) => {
-    const total = REVIEW_PHOTOS.length;
+    const total = gallery.length;
+    if (!total) return;
     onIndexChange((nextIndex + total) % total);
     resetTransform();
   };
@@ -271,8 +338,8 @@ function PhotoPreviewModal({ open, index, onIndexChange, onClose }) {
       title={(
         <div className="flex items-center gap-3">
           <span>图片预览</span>
-          <span className="rounded-full bg-[#e6f4ff] px-2 py-0.5 text-xs font-normal text-[#1677ff]">{photo.label}</span>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>{index + 1} / {REVIEW_PHOTOS.length}</Typography.Text>
+          <span className="rounded-full bg-[#e6f4ff] px-2 py-0.5 text-xs font-normal text-[#1677ff]">{photo?.label || '盘点照片'}</span>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>{index + 1} / {gallery.length}</Typography.Text>
         </div>
       )}
       onCancel={onClose}
@@ -307,17 +374,19 @@ function PhotoPreviewModal({ open, index, onIndexChange, onClose }) {
             onClick={() => switchPhoto(index - 1)}
           />
 
-          <img
-            src={photo.src}
-            alt={photo.label}
-            draggable={false}
-            className="max-h-[92%] max-w-[92%] select-none object-contain will-change-transform"
-            style={{
-              transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${scale}) scaleX(${flipX}) scaleY(${flipY})`,
-              transformOrigin: 'center center',
-            }}
-            onDragStart={(event) => event.preventDefault()}
-          />
+          {photo && (
+            <img
+              src={photo.src}
+              alt={photo.label}
+              draggable={false}
+              className="max-h-[92%] max-w-[92%] select-none object-contain will-change-transform"
+              style={{
+                transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${scale}) scaleX(${flipX}) scaleY(${flipY})`,
+                transformOrigin: 'center center',
+              }}
+              onDragStart={(event) => event.preventDefault()}
+            />
+          )}
 
           {selectionRect && (
             <div
@@ -350,9 +419,9 @@ function PhotoPreviewModal({ open, index, onIndexChange, onClose }) {
 
         <div className="border-t border-white/10 bg-[#111827] px-4 py-3">
           <div className="mb-3 flex items-center justify-center gap-3">
-            {REVIEW_PHOTOS.map((item, photoIndex) => (
+            {gallery.map((item, photoIndex) => (
               <Button
-                key={item.key}
+                key={`${item.key}-${photoIndex}`}
                 type="text"
                 className="h-auto p-0"
                 onClick={() => switchPhoto(photoIndex)}
@@ -384,18 +453,22 @@ function PhotoPreviewModal({ open, index, onIndexChange, onClose }) {
   );
 }
 
-export default function AssetInventoryImageReviewV2({ onBack }) {
+export default function AssetInventoryImageReviewV2({ project, onBack }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [rows, setRows] = useState(() => IMAGE_REVIEW_ROWS.filter((row) => isInventoryRangeAllowed(row.asset, allowedRanges)));
+  const [rows, setRows] = useState(() => buildReviewRows(project?.projectNo || '', allowedRanges));
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [previewPhotos, setPreviewPhotos] = useState(DEFAULT_REVIEW_PHOTOS);
 
-  const openPreview = (index) => {
-    setPreviewIndex(index);
+  const openPreview = (photos, photoKey) => {
+    const gallery = photos?.gallery?.length ? photos.gallery : DEFAULT_REVIEW_PHOTOS;
+    const nextIndex = Math.max(0, gallery.findIndex((photo) => photo.key === photoKey));
+    setPreviewPhotos(gallery);
+    setPreviewIndex(nextIndex);
     setPreviewOpen(true);
   };
 
@@ -458,8 +531,18 @@ export default function AssetInventoryImageReviewV2({ onBack }) {
         <div><span className="text-gray-500">盘点备注：</span>{row.asset.inventoryNote}</div>
       </div>,
     },
-    { title: '整体照片', width: 180, align: 'center', render: () => <PhotoThumbnail photo={REVIEW_PHOTOS[0]} onOpen={() => openPreview(0)} /> },
-    { title: '部分照片', width: 180, align: 'center', render: () => <PhotoThumbnail photo={REVIEW_PHOTOS[1]} onOpen={() => openPreview(1)} /> },
+    {
+      title: '整体照片', width: 180, align: 'center',
+      render: (_, row) => row.photos?.overall
+        ? <PhotoThumbnail photo={row.photos.overall} onOpen={() => openPreview(row.photos, 'overall')} />
+        : <Typography.Text type="secondary">-</Typography.Text>,
+    },
+    {
+      title: '部分照片', width: 180, align: 'center',
+      render: (_, row) => row.photos?.partial
+        ? <PhotoThumbnail photo={row.photos.partial} onOpen={() => openPreview(row.photos, 'partial')} />
+        : <Typography.Text type="secondary">-</Typography.Text>,
+    },
     {
       title: '审核结果', width: 220, fixed: 'right',
       render: (_, row) => row.reviewStatus === '待审核'
@@ -518,6 +601,7 @@ export default function AssetInventoryImageReviewV2({ onBack }) {
 
     <PhotoPreviewModal
       open={previewOpen}
+      photos={previewPhotos}
       index={previewIndex}
       onIndexChange={setPreviewIndex}
       onClose={() => setPreviewOpen(false)}
