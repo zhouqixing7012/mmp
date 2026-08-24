@@ -132,19 +132,19 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
       title: '进入计划', width: 100, fixed: 'right',
       render: (_, row) => hasGeneratedPlan(row)
         ? <Button type="link" className="px-0" onClick={() => onOpenPlans(row)}>进入计划</Button>
-        : <DisabledAction>进入计划</DisabledAction>,
+        : <DisabledAction>暂无计划</DisabledAction>,
     },
     {
       title: '项目进度', width: 100, fixed: 'right',
       render: (_, row) => hasInventoryHistory(row)
         ? <Button type="link" className="px-0" onClick={() => onOpenProgress(row)}>查看进度</Button>
-        : <DisabledAction>查看进度</DisabledAction>,
+        : <DisabledAction>暂无进度</DisabledAction>,
     },
     {
       title: '图片审核', width: 100, fixed: 'right',
       render: (_, row) => hasInventoryHistory(row)
         ? <Button type="link" className="px-0" onClick={() => onOpenImageReview(row)}>图片审核</Button>
-        : <DisabledAction>图片审核</DisabledAction>,
+        : <DisabledAction>-</DisabledAction>,
     },
   ];
 

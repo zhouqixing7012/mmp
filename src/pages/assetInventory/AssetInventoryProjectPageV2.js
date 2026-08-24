@@ -80,12 +80,12 @@ function resolveProject(root, sourceElement) {
   return current ? resolveProjectFromRow(current) : resolveProjectFromDetail(root);
 }
 
-export default function AssetInventoryProjectPageV2({ variantLabel = '方案二' } = {}) {
+export default function AssetInventoryProjectPageV2({ variantLabel = '方案二', menuLabel } = {}) {
   const { allowedRanges } = useAssetInventoryVariant();
   const allowedRangeKey = allowedRanges.join('|');
   const availableAssets = ASSET_ROWS.filter((asset) => isInventoryRangeAllowed(asset, allowedRanges));
   const initialPlanRows = INITIAL_PLAN_ROWS.filter((row) => allowedRanges.includes(row.range));
-  const variantMenuLabel = `盘点项目（${variantLabel}）`;
+  const variantMenuLabel = menuLabel || `盘点项目（${variantLabel}）`;
   const rootRef = useRef(null);
   const baseContainerRef = useRef(null);
   const [basePageTitle, setBasePageTitle] = useState('盘点项目');

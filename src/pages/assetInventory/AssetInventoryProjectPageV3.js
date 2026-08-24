@@ -88,7 +88,7 @@ export default function AssetInventoryProjectPageV3() {
   return (
     <AssetInventoryVariantProvider allowedRanges={V3_RANGES}>
       <div ref={rootRef} className="w-full">
-        <AssetInventoryProjectPageV2 variantLabel="方案三" />
+        <AssetInventoryProjectPageV2 menuLabel="盘点项目" />
         {scopeSlot ? createPortal(<AssetInventoryScopeSelectorV3 projectType={projectType} />, scopeSlot) : null}
       </div>
     </AssetInventoryVariantProvider>
