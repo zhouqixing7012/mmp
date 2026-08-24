@@ -71,6 +71,12 @@ function formatAccounting(value) {
   return Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatterForLabel(label) {
+  if (ACCOUNTING_LABELS.has(label)) return formatAccounting;
+  if (COUNT_LABELS.has(label)) return formatCount;
+  return null;
+}
+
 function formatNumericElement(element, formatter) {
   if (!element) return;
   if (element.querySelector('input, textarea, .ant-input-number, .ant-picker, .ant-progress')) return;
@@ -85,8 +91,7 @@ function applyTableNumberFormats(root) {
     const headerRow = table.querySelector('thead tr:last-child');
     if (!headerRow) return;
     Array.from(headerRow.children).forEach((header, index) => {
-      const label = header.textContent?.trim() || '';
-      const formatter = ACCOUNTING_LABELS.has(label) ? formatAccounting : COUNT_LABELS.has(label) ? formatCount : null;
+      const formatter = formatterForLabel(header.textContent?.trim() || '');
       if (!formatter) return;
       table.querySelectorAll('tbody tr').forEach((row) => formatNumericElement(row.children[index], formatter));
     });
@@ -95,18 +100,35 @@ function applyTableNumberFormats(root) {
 
 function applyDetailNumberFormats(root) {
   root.querySelectorAll('[data-prototype-label]').forEach((labelElement) => {
-    const label = labelElement.getAttribute('data-prototype-label') || '';
-    const formatter = ACCOUNTING_LABELS.has(label) ? formatAccounting : COUNT_LABELS.has(label) ? formatCount : null;
+    const formatter = formatterForLabel(labelElement.getAttribute('data-prototype-label') || '');
     if (!formatter) return;
-    const valueElement = labelElement.nextElementSibling;
-    formatNumericElement(valueElement, formatter);
+    formatNumericElement(labelElement.nextElementSibling, formatter);
   });
 
   root.querySelectorAll('.ant-statistic').forEach((statistic) => {
-    const title = statistic.querySelector('.ant-statistic-title')?.textContent?.trim() || '';
-    const formatter = ACCOUNTING_LABELS.has(title) ? formatAccounting : COUNT_LABELS.has(title) ? formatCount : null;
+    const formatter = formatterForLabel(statistic.querySelector('.ant-statistic-title')?.textContent?.trim() || '');
     if (!formatter) return;
     formatNumericElement(statistic.querySelector('.ant-statistic-content-value'), formatter);
+  });
+}
+
+function applyInlineLabeledNumberFormats(root) {
+  root.querySelectorAll('span').forEach((labelElement) => {
+    const label = (labelElement.textContent || '').trim().replace(/[：:]$/, '');
+    const formatter = formatterForLabel(label);
+    if (!formatter) return;
+
+    let sibling = labelElement.nextSibling;
+    while (sibling && sibling.nodeType === Node.TEXT_NODE && !sibling.nodeValue?.trim()) sibling = sibling.nextSibling;
+    if (!sibling) return;
+
+    if (sibling.nodeType === Node.TEXT_NODE) {
+      const numeric = parseNumericText(sibling.nodeValue);
+      if (numeric === null) return;
+      sibling.nodeValue = formatter(numeric);
+      return;
+    }
+    if (sibling.nodeType === Node.ELEMENT_NODE) formatNumericElement(sibling, formatter);
   });
 }
 
@@ -205,6 +227,7 @@ function applyFieldPolicy(root) {
 
   applyTableNumberFormats(root);
   applyDetailNumberFormats(root);
+  applyInlineLabeledNumberFormats(root);
   applyInlineTotalFormats(root);
 }
 
