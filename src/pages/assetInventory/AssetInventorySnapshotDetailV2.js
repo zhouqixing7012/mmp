@@ -23,6 +23,7 @@ import { importInventoryPhotoFiles } from './inventoryPhotoImportStore';
 
 const RANGE_OPTIONS = ['库房', '公共', '机房', '员工'];
 const EMPTY_FILTERS = { assetTag: '', category: '', status: '', owner: '', city: '', range: '' };
+const PRE_INVENTORY_STATUSES = new Set(['快照生成', '生成盘点计划']);
 
 function includesText(value, query) {
   if (!query) return true;
@@ -32,6 +33,18 @@ function includesText(value, query) {
 function formatMoney(value) {
   const numeric = Number(value || 0);
   return numeric.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function normalizeAssetForProjectStage(asset, projectStatus) {
+  if (!PRE_INVENTORY_STATUSES.has(projectStatus)) return { ...asset };
+  return {
+    ...asset,
+    inventoryStatus: '未盘',
+    counter: '-',
+    inventoryDate: '-',
+    inventoryNote: '-',
+    importMode: '-',
+  };
 }
 
 function PageTitle({ children }) {
@@ -91,7 +104,7 @@ function makeAssetColumns({ includeNo = true } = {}) {
     { title: 'City', dataIndex: 'city', width: 110 },
     { title: 'Building', dataIndex: 'building', width: 170 },
     { title: 'Floor', dataIndex: 'floor', width: 90 },
-    { title: '盘点组织', dataIndex: 'organization', width: 120 },
+    { title: '子公司', dataIndex: 'organization', width: 120 },
     { title: '成本中心', dataIndex: 'costCenter', width: 180 },
     { title: '启用日期', dataIndex: 'enableDate', width: 120 },
     { title: '主资产标签号', dataIndex: 'mainAssetTag', width: 140 },
@@ -307,7 +320,9 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
 
 function SnapshotStats({ projectStatus, onOpenPlans }) {
   const { allowedRanges } = useAssetInventoryVariant();
-  const assets = ASSET_ROWS.filter((row) => isInventoryRangeAllowed(row, allowedRanges));
+  const assets = ASSET_ROWS
+    .filter((row) => isInventoryRangeAllowed(row, allowedRanges))
+    .map((row) => normalizeAssetForProjectStage(row, projectStatus));
   const total = assets.reduce((sum, row) => sum + row.quantity, 0);
   const execution = assets.filter((row) => row.executeInventory).reduce((sum, row) => sum + row.quantity, 0);
   const notExecution = total - execution;
@@ -342,10 +357,17 @@ export default function AssetInventorySnapshotDetailV2({
 }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [projectStatus, setProjectStatus] = useState(project?.status === '草稿' ? '快照生成' : (project?.status || '快照生成'));
-  const [executionRows, setExecutionRows] = useState(() => ASSET_ROWS.filter((row) => row.executeInventory && isInventoryRangeAllowed(row, allowedRanges)));
-  const [notExecutionRows, setNotExecutionRows] = useState(() => ASSET_ROWS.filter((row) => !row.executeInventory && isInventoryRangeAllowed(row, allowedRanges)));
-  const [excludedRows, setExcludedRows] = useState(() => UNINCLUDED_ASSET_ROWS.filter((row) => isInventoryRangeAllowed(row, allowedRanges)));
+  const initialProjectStatus = project?.status === '草稿' ? '快照生成' : (project?.status || '快照生成');
+  const [projectStatus, setProjectStatus] = useState(initialProjectStatus);
+  const [executionRows, setExecutionRows] = useState(() => ASSET_ROWS
+    .filter((row) => row.executeInventory && isInventoryRangeAllowed(row, allowedRanges))
+    .map((row) => normalizeAssetForProjectStage(row, initialProjectStatus)));
+  const [notExecutionRows, setNotExecutionRows] = useState(() => ASSET_ROWS
+    .filter((row) => !row.executeInventory && isInventoryRangeAllowed(row, allowedRanges))
+    .map((row) => normalizeAssetForProjectStage(row, initialProjectStatus)));
+  const [excludedRows, setExcludedRows] = useState(() => UNINCLUDED_ASSET_ROWS
+    .filter((row) => isInventoryRangeAllowed(row, allowedRanges))
+    .map((row) => normalizeAssetForProjectStage(row, initialProjectStatus)));
 
   const generatePlans = () => {
     Modal.confirm({
@@ -355,7 +377,7 @@ export default function AssetInventorySnapshotDetailV2({
       cancelText: '否',
       onOk: () => {
         setProjectStatus('生成盘点计划');
-        messageApi.success('已按盘点组织、一级部门、City、盘点范围默认拆分生成盘点计划');
+        messageApi.success('已按子公司、一级部门、City、盘点范围默认拆分生成盘点计划');
         onGenerateDefault?.();
       },
       onCancel: () => onGenerateCustom?.(),
