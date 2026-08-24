@@ -5,8 +5,8 @@ import AssetInventoryFieldPolicy from './AssetInventoryFieldPolicy';
 import './assetInventoryV2.css';
 
 export const ASSET_INVENTORY_SUB_MENUS = [
-  '公司-账套对应关系',
   '盘点项目',
+  '盘点报表',
 ];
 
 function PendingAssetInventoryPage({ title }) {
@@ -16,10 +16,10 @@ function PendingAssetInventoryPage({ title }) {
       <Alert
         type="info"
         showIcon
-        message="本次操作轨迹未采集该页面字段和交互，因此只保留菜单入口，不补造业务字段。"
+        message="当前仅建立菜单入口，报表字段和交互待后续确认。"
       />
       <Card size="small">
-        <Empty description="等待对应页面轨迹或字段确认" />
+        <Empty description="等待盘点报表字段和交互确认" />
       </Card>
     </Space>
   );
