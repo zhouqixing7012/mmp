@@ -35,7 +35,6 @@ const { TextArea } = Input;
 const EMPTY_MATCH_QUERY = { assetTag: '', serialNo: '', block: '', assetDesc: '' };
 const EMPTY_APPLICANT_QUERY = {
   assetTag: '',
-  materialType: '',
   assetStatus: '',
   assetDesc: '',
   assetPurpose: '',
@@ -62,7 +61,6 @@ function enrichApplicantAsset(asset, index) {
   return {
     ...asset,
     rowNo: index + 1,
-    materialType: index % 2 === 0 ? '资产' : '低值耐用品',
     assetCategory: parts[0] || '电脑整机',
     assetSubCategory: parts[1] || '笔记本-技术笔记本',
     quantity: 1,
@@ -130,7 +128,6 @@ export default function EmployeeAssetAllocationPage() {
 
   const filteredApplicantAssets = useMemo(() => applicantAssetRows.filter((asset) => (
     (!appliedApplicantQuery.assetTag || asset.assetTag.toLowerCase().includes(appliedApplicantQuery.assetTag.toLowerCase()))
-    && (!appliedApplicantQuery.materialType || asset.materialType === appliedApplicantQuery.materialType)
     && (!appliedApplicantQuery.assetStatus || asset.assetStatus === appliedApplicantQuery.assetStatus)
     && (!appliedApplicantQuery.assetDesc || asset.assetDesc.toLowerCase().includes(appliedApplicantQuery.assetDesc.toLowerCase()))
     && (!appliedApplicantQuery.assetPurpose || asset.assetPurpose === appliedApplicantQuery.assetPurpose)
@@ -226,7 +223,6 @@ export default function EmployeeAssetAllocationPage() {
 
   const applicantAssetColumns = [
     { title: '行号', dataIndex: 'rowNo', width: 70, align: 'center' },
-    { title: '物资总类', dataIndex: 'materialType', width: 110 },
     { title: '资产大类', dataIndex: 'assetCategory', width: 130 },
     { title: '资产小类', dataIndex: 'assetSubCategory', width: 160 },
     { title: '资产标签号', dataIndex: 'assetTag', width: 160 },
@@ -337,7 +333,6 @@ export default function EmployeeAssetAllocationPage() {
           }}
         >
           <QueryItem label="资产标签号"><Input allowClear value={applicantQuery.assetTag} onChange={(event) => setApplicantQuery({ ...applicantQuery, assetTag: event.target.value })} /></QueryItem>
-          <QueryItem label="物资总类"><Select allowClear value={applicantQuery.materialType || undefined} options={[{ label: '资产', value: '资产' }, { label: '低值耐用品', value: '低值耐用品' }]} onChange={(value) => setApplicantQuery({ ...applicantQuery, materialType: value || '' })} /></QueryItem>
           <QueryItem label="资产状态"><Select allowClear value={applicantQuery.assetStatus || undefined} options={[...new Set(applicantAssetRows.map((item) => item.assetStatus))].map((value) => ({ label: value, value }))} onChange={(value) => setApplicantQuery({ ...applicantQuery, assetStatus: value || '' })} /></QueryItem>
           <QueryItem label="资产说明"><Input allowClear value={applicantQuery.assetDesc} onChange={(event) => setApplicantQuery({ ...applicantQuery, assetDesc: event.target.value })} /></QueryItem>
           <QueryItem label="资产用途"><Select allowClear value={applicantQuery.assetPurpose || undefined} options={[{ label: '员工用机', value: '员工用机' }, { label: '日常办公', value: '日常办公' }]} onChange={(value) => setApplicantQuery({ ...applicantQuery, assetPurpose: value || '' })} /></QueryItem>
