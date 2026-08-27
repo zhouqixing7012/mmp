@@ -12,6 +12,9 @@ import {
 const { TextArea } = Input;
 const OVER_STANDARD_ROWS = [];
 const SIMPLE_EMPTY_TEXT = <div className="py-6 text-center text-sm text-slate-400">无展示数据</div>;
+const APPLICANT_DEPARTMENT_MAP = Object.fromEntries(
+  UNIFIED_SUMMARY_APPLICANTS.map((record) => [record.applicant, record.department])
+);
 
 function formatMoney(value) {
   return Number(value || 0).toLocaleString('zh-CN', {
@@ -137,14 +140,20 @@ export default function UnifiedAssetApplySummary() {
     { title: '预计采购费用(元)', dataIndex: 'amount', width: 180, align: 'right', render: formatMoney },
   ];
 
-  const applicationColumns = [
+  const applicationColumns = (isEditable) => [
     { title: '申请人', dataIndex: 'applicant', width: 150 },
-    { title: '物资类别', dataIndex: 'category', width: 180 },
-    { title: '物料说明', dataIndex: 'assetDesc', width: 220 },
+    ...(isEditable ? [{
+      title: '申请部门',
+      dataIndex: 'department',
+      width: 230,
+      render: (_, record) => APPLICANT_DEPARTMENT_MAP[record.applicant] || '-',
+    }] : []),
+    { title: isEditable ? '资产小类' : '物资类别', dataIndex: 'category', width: 180 },
+    { title: isEditable ? '资产说明' : '物料说明', dataIndex: 'assetDesc', width: 220 },
     { title: '配置', dataIndex: 'config', width: 120 },
     { title: '采购数量', dataIndex: 'quantity', width: 100, align: 'center' },
     { title: '预计费用(元)', dataIndex: 'amount', width: 150, align: 'right', render: formatMoney },
-    { title: '详细说明', dataIndex: 'detail', width: 180 },
+    { title: isEditable ? '申请原因' : '详细说明', dataIndex: 'detail', width: 180 },
     { title: '在用资产', dataIndex: 'currentAssets', width: 100, align: 'center' },
     { title: 'ES建议', dataIndex: 'esAdvice', width: 120 },
   ];
@@ -161,9 +170,10 @@ export default function UnifiedAssetApplySummary() {
 
   const handleExport = () => {
     const rows = [...OVER_STANDARD_ROWS, ...NON_OVER_STANDARD_ROWS];
-    const headers = ['申请人', '物资类别', '物料说明', '配置', '采购数量', '预计费用(元)', '详细说明', '在用资产', 'ES建议'];
+    const headers = ['申请人', '申请部门', '资产小类', '资产说明', '配置', '采购数量', '预计费用(元)', '申请原因', '在用资产', 'ES建议'];
     const csvRows = rows.map((row) => [
       row.applicant,
+      APPLICANT_DEPARTMENT_MAP[row.applicant] || '-',
       row.category,
       row.assetDesc,
       row.config,
@@ -256,32 +266,32 @@ export default function UnifiedAssetApplySummary() {
     </Card>
   );
 
-  const renderApplicationTables = (showExport) => (
+  const renderApplicationTables = (isEditable) => (
     <>
-      {showExport && (
+      {isEditable && (
         <div className="flex justify-end">
           <Button icon={<Download size={14} />} onClick={handleExport}>导出申请明细</Button>
         </div>
       )}
 
       <Card title="超标申请" size="small">
-        <Table rowKey="key" columns={applicationColumns} dataSource={OVER_STANDARD_ROWS} pagination={false} size="small" scroll={{ x: 1250 }} locale={{ emptyText: SIMPLE_EMPTY_TEXT }} />
+        <Table rowKey="key" columns={applicationColumns(isEditable)} dataSource={OVER_STANDARD_ROWS} pagination={false} size="small" scroll={{ x: isEditable ? 1480 : 1250 }} locale={{ emptyText: SIMPLE_EMPTY_TEXT }} />
       </Card>
 
       <Card title="非超标申请" size="small">
         <Table
           rowKey="key"
-          columns={applicationColumns}
+          columns={applicationColumns(isEditable)}
           dataSource={NON_OVER_STANDARD_ROWS}
           pagination={false}
           size="small"
-          scroll={{ x: 1250 }}
+          scroll={{ x: isEditable ? 1480 : 1250 }}
           summary={() => (
             <Table.Summary.Row>
-              <Table.Summary.Cell index={0} colSpan={4} align="center">合计</Table.Summary.Cell>
-              <Table.Summary.Cell index={4} align="center">{nonOverTotals.quantity}</Table.Summary.Cell>
-              <Table.Summary.Cell index={5} align="right">{formatMoney(nonOverTotals.amount)}</Table.Summary.Cell>
-              <Table.Summary.Cell index={6} colSpan={3} />
+              <Table.Summary.Cell index={0} colSpan={isEditable ? 5 : 4} align="center">合计</Table.Summary.Cell>
+              <Table.Summary.Cell index={isEditable ? 5 : 4} align="center">{nonOverTotals.quantity}</Table.Summary.Cell>
+              <Table.Summary.Cell index={isEditable ? 6 : 5} align="right">{formatMoney(nonOverTotals.amount)}</Table.Summary.Cell>
+              <Table.Summary.Cell index={isEditable ? 7 : 6} colSpan={3} />
             </Table.Summary.Row>
           )}
         />
