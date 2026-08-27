@@ -109,9 +109,9 @@ export default function UnifiedAssetApplySummary() {
     { title: '物料小类', dataIndex: 'category', width: 180 },
     { title: '资产说明', dataIndex: 'assetDesc', width: 220 },
     { title: '配置', dataIndex: 'config', width: 100 },
-    { title: '详细说明', dataIndex: 'detail' },
+    { title: '申请原因', dataIndex: 'detail' },
     { title: '价格', dataIndex: 'price', width: 100, align: 'right', render: formatMoney },
-    { title: '超标', dataIndex: 'overStandard', width: 80, align: 'center' },
+    { title: '是否超标', dataIndex: 'overStandard', width: 80, align: 'center' },
     { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
     {
       title: 'ES建议',
