@@ -257,7 +257,7 @@ export default function EmployeeAssetAllocationPage() {
         </div>
 
         <ApplicantInfoCard
-          applicant={selectedOrder.applicant}
+          applicant={{ ...selectedOrder.applicant, company: '新媒体' }}
           applyDate={selectedOrder.applyDate}
           onViewAssets={() => setApplicantAssetsOpen(true)}
           showEmployeeStatus={false}
