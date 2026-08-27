@@ -209,6 +209,14 @@ export default function UnifiedAssetApplySummary() {
     setCurrentView('approval');
   };
 
+  const handleApproveSummary = () => {
+    messageApi.success('统一申请汇总审批已同意');
+  };
+
+  const handleRejectSummary = () => {
+    messageApi.warning('统一申请汇总审批已驳回');
+  };
+
   const renderList = () => (
     <Card>
       <Table
@@ -361,7 +369,9 @@ export default function UnifiedAssetApplySummary() {
       {renderCurrentUsage()}
 
       <Card size="small">
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-3">
+          <Button type="primary" onClick={handleApproveSummary}>同意</Button>
+          <Button danger onClick={handleRejectSummary}>驳回</Button>
           <Button onClick={() => setCurrentView('summary')}>返回</Button>
         </div>
       </Card>
