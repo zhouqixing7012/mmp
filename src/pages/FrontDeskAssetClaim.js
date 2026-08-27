@@ -146,25 +146,25 @@ export default function FrontDeskAssetClaim() {
                 </Form.Item>
               </Descriptions.Item>
               <Descriptions.Item label="序列号">{selectedAsset.serialNumber}</Descriptions.Item>
-              <Descriptions.Item label="所在仓库">{selectedAsset.warehouse}</Descriptions.Item>
               <Descriptions.Item label="资产说明">{selectedAsset.description}</Descriptions.Item>
               <Descriptions.Item label="配置">{selectedAsset.configuration}</Descriptions.Item>
               <Descriptions.Item label="部件数量">{selectedAsset.spareQuantity}</Descriptions.Item>
               <Descriptions.Item label="公司">{selectedAsset.company}</Descriptions.Item>
               <Descriptions.Item label="板块">{selectedAsset.block}</Descriptions.Item>
               <Descriptions.Item label="启用日期">{selectedAsset.enabledDate}</Descriptions.Item>
-              <Descriptions.Item label={<><span className="text-red-500">*</span> 城市</>}>
-                <Form.Item name="city" rules={[{ required: true, message: '请选择城市' }]} noStyle>
+              <Descriptions.Item label="备注">{application.remark || '-'}</Descriptions.Item>
+              <Descriptions.Item label={<><span className="text-red-500">*</span> city</>}>
+                <Form.Item name="city" rules={[{ required: true, message: '请选择city' }]} noStyle>
                   <Select allowClear options={cityOptions} onChange={() => form.setFieldsValue({ building: undefined, floor: undefined })} />
                 </Form.Item>
               </Descriptions.Item>
-              <Descriptions.Item label={<><span className="text-red-500">*</span> 建筑</>}>
-                <Form.Item name="building" rules={[{ required: true, message: '请选择建筑' }]} noStyle>
+              <Descriptions.Item label={<><span className="text-red-500">*</span> building</>}>
+                <Form.Item name="building" rules={[{ required: true, message: '请选择building' }]} noStyle>
                   <Select allowClear disabled={!city} options={buildingOptions} onChange={() => form.setFieldsValue({ floor: undefined })} />
                 </Form.Item>
               </Descriptions.Item>
-              <Descriptions.Item label={<><span className="text-red-500">*</span> 楼层</>}>
-                <Form.Item name="floor" rules={[{ required: true, message: '请选择楼层' }]} noStyle>
+              <Descriptions.Item label={<><span className="text-red-500">*</span> floor</>}>
+                <Form.Item name="floor" rules={[{ required: true, message: '请选择floor' }]} noStyle>
                   <Select allowClear disabled={!building} options={floorOptions} />
                 </Form.Item>
               </Descriptions.Item>
