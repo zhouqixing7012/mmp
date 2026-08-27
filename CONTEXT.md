@@ -11,11 +11,13 @@
 - V2.1 已确认覆盖 Input、Radio、Checkbox、Switch、Breadcrumb、Dropdown、Pagination、Tag、Badge、Popover、Grid、Layout、Divider、Anchor、Affix、FloatButton；Select、Table、Form、DatePicker、Upload 仍未确认完整 ERP 本地规范。
 - V2.1 新增关键边界：Dropdown ≠ Select；Tag 不替代 `StatusTag`；ERP Grid 管页面级布局、`DetailGrid` 管业务详情三列；Divider 优先让位于留白；语义 Token 优先于页面直接使用基础色号。
 - 2026-08-25 开始按 V2.1 收敛正式资产盘点 UI：新增统一 `SectionCardTitle`，首批覆盖盘点项目列表、盘点计划、盘点进度、图片审核、V3 盘点范围；盘点计划项目信息统一改用 `DetailGrid`；图片审核概览取消 Card 套 Card，改为单 Card 三列留白结构。
+- 2026-08-27 资产配给“员工名下资产明细”已删除“物资总类”查询条件和列表列，并同步清理该页面关联筛选与派生字段。
 
 # 当前停留位置
 
 - UI 规范已同步最新 Figma 基础组件规则，后续新增/重画页面默认按 `docs/UI_DESIGN_GUIDELINES.md` V2.1 执行。
 - 资产盘点首批三项纯 UI 收敛已落代码，未修改字段、流程、状态机、Mock 和操作行为；后续继续按具体任务逐项收敛，不批量改业务。
+- 当前停在“员工名下资产”同类弹窗范围确认：资产配给已调整；借用配给同类弹窗仍保留“物资总类”，待用户确认是否联动调整。
 - 原型标注下一阶段继续逐模块处理 Coverage `review`，先确认 PRD 口径，再决定改原型、改 PRD 或保留为后端/流程能力。
 - `review/rd-review` 仅保存阶段性已确认研发评审结论，不自动跟随 `main`。
 
