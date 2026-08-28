@@ -30,7 +30,14 @@ export function QueryItem({ label, children, labelWidth = 96 }) {
   );
 }
 
-export default function QueryBar({ children, buttons, labelWidth = 96, onQuery, onReset }) {
+export default function QueryBar({
+  children,
+  buttons,
+  labelWidth = 96,
+  onQuery,
+  onReset,
+  fieldColProps,
+}) {
   const fields = React.Children.toArray(children);
   const defaultButtons = (
     <>
@@ -39,6 +46,7 @@ export default function QueryBar({ children, buttons, labelWidth = 96, onQuery, 
     </>
   );
   const finalButtons = buttons !== undefined ? buttons : defaultButtons;
+  const resolvedFieldColProps = fieldColProps || { xs: 24, sm: 12, md: 12, lg: 8, xl: 7 };
 
   return (
     <Card size="small" style={{ marginBottom: 16 }}>
@@ -67,7 +75,7 @@ export default function QueryBar({ children, buttons, labelWidth = 96, onQuery, 
         <div style={{ flex: 1, minWidth: 0 }}>
           <Row gutter={[16, 16]}>
             {fields.map((field, i) => (
-              <Col key={i} xs={24} sm={12} md={12} lg={8} xl={7}>
+              <Col key={i} {...resolvedFieldColProps}>
                 <div className="qw">{field}</div>
               </Col>
             ))}
