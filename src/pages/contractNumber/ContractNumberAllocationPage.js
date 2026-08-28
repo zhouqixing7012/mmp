@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UploadCloud } from 'lucide-react';
+import { Trash2, UploadCloud } from 'lucide-react';
 import {
   Button,
   Card,
   Empty,
   Input,
+  Popconfirm,
   Space,
   Table,
   Typography,
@@ -43,6 +44,19 @@ function downloadAttachment(attachment) {
   URL.revokeObjectURL(url);
 }
 
+function formatSize(size = 0) {
+  if (!size) return '-';
+  if (typeof size === 'string') return size;
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function getAllocationAttachments(record) {
+  if (Array.isArray(record?.allocationAttachments)) return record.allocationAttachments;
+  return record?.allocationAttachment ? [record.allocationAttachment] : [];
+}
+
 function RequiredLabel({ children }) {
   return (
     <span>
@@ -76,6 +90,11 @@ export default function ContractNumberAllocationPage() {
     return [...(application.history || []), ...(application.delayRecords || [])];
   }, [application]);
 
+  const allocationAttachments = useMemo(
+    () => getAllocationAttachments(application),
+    [application]
+  );
+
   const chooseNumber = (number) => {
     if (!application || !number) return;
     updateContractNumberAllocation(application.id, { assignedNumber: number });
@@ -86,17 +105,38 @@ export default function ContractNumberAllocationPage() {
 
   const uploadAllocationAttachment = (file) => {
     if (!application || !file) return Upload.LIST_IGNORE;
-    updateContractNumberAllocation(application.id, {
-      allocationAttachment: {
-        id: `allocation-attachment-${Date.now()}`,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-      },
+    const attachment = {
+      id: `allocation-attachment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+    };
+    updateContractNumberAllocation(application.id, (record) => {
+      const nextAttachments = [...getAllocationAttachments(record), attachment];
+      return {
+        ...record,
+        allocationAttachments: nextAttachments,
+        allocationAttachment: nextAttachments[0] || null,
+      };
     });
-    messageApi.success('附件上传成功');
+    messageApi.success(`附件 ${file.name} 上传成功`);
     refresh();
     return Upload.LIST_IGNORE;
+  };
+
+  const deleteAllocationAttachment = (attachmentId) => {
+    if (!application || !attachmentId) return;
+    updateContractNumberAllocation(application.id, (record) => {
+      const nextAttachments = getAllocationAttachments(record)
+        .filter((attachment) => attachment.id !== attachmentId);
+      return {
+        ...record,
+        allocationAttachments: nextAttachments,
+        allocationAttachment: nextAttachments[0] || null,
+      };
+    });
+    messageApi.success('附件已删除');
+    refresh();
   };
 
   const decide = (action) => {
@@ -105,7 +145,7 @@ export default function ContractNumberAllocationPage() {
       messageApi.warning('请先选择电话号码');
       return;
     }
-    if (action === '同意' && !application.allocationAttachment) {
+    if (action === '同意' && getAllocationAttachments(application).length === 0) {
       messageApi.warning('请先上传附件信息');
       return;
     }
@@ -194,6 +234,36 @@ export default function ContractNumberAllocationPage() {
     { title: '审批意见', dataIndex: 'comment', render: (value) => value || '-' },
   ];
 
+  const allocationAttachmentColumns = [
+    { title: '附件名称', dataIndex: 'name', render: (value) => value || '-' },
+    { title: '附件大小', dataIndex: 'size', width: 140, render: formatSize },
+    {
+      title: '操作',
+      width: 120,
+      align: 'center',
+      render: (_, record) => (
+        <Popconfirm
+          title="确认删除该附件吗？"
+          okText="删除"
+          cancelText="取消"
+          disabled={application.status !== '待审批'}
+          onConfirm={() => deleteAllocationAttachment(record.id)}
+        >
+          <Button
+            danger
+            type="link"
+            size="small"
+            className="px-0"
+            icon={<Trash2 size={14} />}
+            disabled={application.status !== '待审批'}
+          >
+            删除
+          </Button>
+        </Popconfirm>
+      ),
+    },
+  ];
+
   return (
     <>
       {contextHolder}
@@ -247,24 +317,38 @@ export default function ContractNumberAllocationPage() {
               />
             </DetailItem>
             <DetailItem label="话费套餐" span={2}>{application.assignedNumber?.packageName || '-'}</DetailItem>
-            <DetailItem label={<RequiredLabel>附件信息</RequiredLabel>} span={3}>
-              <Space size={12} wrap>
-                <Upload
-                  maxCount={1}
-                  showUploadList={false}
-                  disabled={application.status !== '待审批'}
-                  beforeUpload={uploadAllocationAttachment}
-                >
-                  <Button icon={<UploadCloud size={14} />} disabled={application.status !== '待审批'}>
-                    {application.allocationAttachment ? '重新上传' : '上传附件'}
-                  </Button>
-                </Upload>
-                <Typography.Text type={application.allocationAttachment ? undefined : 'secondary'}>
-                  {application.allocationAttachment?.name || '未上传附件'}
-                </Typography.Text>
-              </Space>
-            </DetailItem>
           </DetailGrid>
+        </Card>
+
+        <Card
+          size="small"
+          title={<SectionTitle><RequiredLabel>附件信息</RequiredLabel></SectionTitle>}
+          extra={(
+            <Upload
+              multiple
+              showUploadList={false}
+              disabled={application.status !== '待审批'}
+              beforeUpload={uploadAllocationAttachment}
+            >
+              <Button
+                type="primary"
+                icon={<UploadCloud size={14} />}
+                disabled={application.status !== '待审批'}
+              >
+                上传附件
+              </Button>
+            </Upload>
+          )}
+        >
+          <Table
+            rowKey="id"
+            columns={allocationAttachmentColumns}
+            dataSource={allocationAttachments}
+            pagination={false}
+            size="small"
+            bordered
+            locale={{ emptyText: '暂无附件' }}
+          />
         </Card>
 
         <Card size="small" title={<SectionTitle>审批信息</SectionTitle>}>
