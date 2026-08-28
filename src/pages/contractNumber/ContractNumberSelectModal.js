@@ -9,13 +9,13 @@ export default function ContractNumberSelectModal({
   onCancel,
   onConfirm,
 }) {
-  const [imei, setImei] = useState('');
+  const [contractNumber, setContractNumber] = useState('');
   const [query, setQuery] = useState('');
   const [selectedRowKey, setSelectedRowKey] = useState(null);
 
   useEffect(() => {
     if (!open) return;
-    setImei('');
+    setContractNumber('');
     setQuery('');
     setSelectedRowKey(value?.id || null);
   }, [open, value?.id]);
@@ -23,11 +23,7 @@ export default function ContractNumberSelectModal({
   const dataSource = useMemo(() => {
     const keyword = query.trim();
     if (!keyword) return candidates;
-    return candidates.filter((item) => (
-      item.imei.includes(keyword)
-      || item.assetTag.includes(keyword)
-      || item.phoneNumber.includes(keyword)
-    ));
+    return candidates.filter((item) => item.imei.includes(keyword));
   }, [candidates, query]);
 
   const selectedRecord = candidates.find((item) => item.id === selectedRowKey) || null;
@@ -35,8 +31,8 @@ export default function ContractNumberSelectModal({
   const columns = [
     { title: '序号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
     { title: '标签号', dataIndex: 'assetTag', width: 160 },
-    { title: '电话号码', dataIndex: 'phoneNumber', width: 190 },
-    { title: '话费套餐', dataIndex: 'packageName', width: 180 },
+    { title: '会员号码', dataIndex: 'phoneNumber', width: 190 },
+    { title: '套餐金额', dataIndex: 'packageName', width: 180 },
   ];
 
   return (
@@ -60,19 +56,19 @@ export default function ContractNumberSelectModal({
       )}
     >
       <QueryBar
-        onQuery={() => setQuery(imei)}
+        onQuery={() => setQuery(contractNumber)}
         onReset={() => {
-          setImei('');
+          setContractNumber('');
           setQuery('');
         }}
       >
-        <QueryItem label="IMEI">
+        <QueryItem label="合约号码">
           <Input
-            value={imei}
+            value={contractNumber}
             allowClear
-            placeholder="请输入IMEI、标签号或电话号码"
-            onPressEnter={() => setQuery(imei)}
-            onChange={(event) => setImei(event.target.value)}
+            placeholder="请输入合约号码"
+            onPressEnter={() => setQuery(contractNumber)}
+            onChange={(event) => setContractNumber(event.target.value)}
           />
         </QueryItem>
       </QueryBar>
