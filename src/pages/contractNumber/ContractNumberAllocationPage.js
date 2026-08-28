@@ -251,7 +251,6 @@ export default function ContractNumberAllocationPage() {
 
   const applicationAttachmentColumns = [
     { title: '附件名称', dataIndex: 'name', render: (value) => value || '-' },
-    { title: '附件大小', dataIndex: 'size', width: 130, render: formatSize },
     {
       title: '操作',
       width: 90,
@@ -319,7 +318,8 @@ export default function ContractNumberAllocationPage() {
           <DetailGrid>
             <DetailItem label="申请原因" span={3}>{application.applyReason || '-'}</DetailItem>
             <DetailItem label="身份证号码">{application.idCard || '-'}</DetailItem>
-            <DetailItem label="附件" span={2}>
+            <div aria-hidden="true" style={{ gridColumn: 'span 2' }} />
+            <DetailItem label="附件" span={3}>
               <Table
                 rowKey="id"
                 size="small"
