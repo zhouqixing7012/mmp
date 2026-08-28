@@ -39,6 +39,24 @@ function downloadAttachment(attachment) {
   URL.revokeObjectURL(url);
 }
 
+function formatSize(size = 0) {
+  if (!size) return '-';
+  if (typeof size === 'string') return size;
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function getApplicationAttachments(record) {
+  if (Array.isArray(record?.applicationAttachments)) return record.applicationAttachments;
+  return record?.attachment ? [record.attachment] : [];
+}
+
+function getAllocationAttachments(record) {
+  if (Array.isArray(record?.allocationAttachments)) return record.allocationAttachments;
+  return record?.allocationAttachment ? [record.allocationAttachment] : [];
+}
+
 function SectionTitle({ children }) {
   return (
     <span className="inline-flex items-center gap-2">
@@ -61,6 +79,16 @@ export default function ContractNumberSupervisorApprovalPage() {
     if (!application) return [];
     return [...(application.history || []), ...(application.delayRecords || [])];
   }, [application]);
+
+  const applicationAttachments = useMemo(
+    () => getApplicationAttachments(application),
+    [application]
+  );
+
+  const allocationAttachments = useMemo(
+    () => getAllocationAttachments(application),
+    [application]
+  );
 
   const decide = (action) => {
     if (!application || application.status !== '待审批') return;
@@ -132,6 +160,19 @@ export default function ContractNumberSupervisorApprovalPage() {
     { title: '审批意见', dataIndex: 'comment', render: (value) => value || '-' },
   ];
 
+  const attachmentColumns = [
+    { title: '附件名称', dataIndex: 'name', render: (value) => value || '-' },
+    { title: '附件大小', dataIndex: 'size', width: 140, render: formatSize },
+    {
+      title: '操作',
+      width: 90,
+      align: 'center',
+      render: (_, record) => (
+        <Button type="link" size="small" className="px-0" onClick={() => downloadAttachment(record)}>下载</Button>
+      ),
+    },
+  ];
+
   return (
     <>
       {contextHolder}
@@ -157,16 +198,15 @@ export default function ContractNumberSupervisorApprovalPage() {
             <DetailItem label="申请原因" span={3}>{application.applyReason || '-'}</DetailItem>
             <DetailItem label="身份证号码">{application.idCard || '-'}</DetailItem>
             <DetailItem label="附件" span={2}>
-              {application.attachment ? (
-                <Button
-                  type="link"
-                  size="small"
-                  className="px-0"
-                  onClick={() => downloadAttachment(application.attachment)}
-                >
-                  {application.attachment.name}
-                </Button>
-              ) : '-'}
+              <Table
+                rowKey="id"
+                size="small"
+                bordered
+                columns={attachmentColumns}
+                dataSource={applicationAttachments}
+                pagination={false}
+                locale={{ emptyText: '暂无附件' }}
+              />
             </DetailItem>
           </DetailGrid>
         </Card>
@@ -175,8 +215,19 @@ export default function ContractNumberSupervisorApprovalPage() {
           <DetailGrid>
             <DetailItem label="电话号码">{application.assignedNumber?.phoneNumber || '-'}</DetailItem>
             <DetailItem label="话费套餐" span={2}>{application.assignedNumber?.packageName || '-'}</DetailItem>
-            <DetailItem label="附件信息" span={3}>{application.allocationAttachment?.name || '-'}</DetailItem>
           </DetailGrid>
+        </Card>
+
+        <Card size="small" title={<SectionTitle>附件信息</SectionTitle>}>
+          <Table
+            rowKey="id"
+            size="small"
+            bordered
+            columns={attachmentColumns}
+            dataSource={allocationAttachments}
+            pagination={false}
+            locale={{ emptyText: '暂无附件' }}
+          />
         </Card>
 
         <Card size="small" title={<SectionTitle>审批信息</SectionTitle>}>
