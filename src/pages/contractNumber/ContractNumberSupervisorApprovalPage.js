@@ -160,18 +160,6 @@ export default function ContractNumberSupervisorApprovalPage() {
     { title: '审批意见', dataIndex: 'comment', render: (value) => value || '-' },
   ];
 
-  const applicationAttachmentColumns = [
-    { title: '附件名称', dataIndex: 'name', render: (value) => value || '-' },
-    {
-      title: '操作',
-      width: 90,
-      align: 'center',
-      render: (_, record) => (
-        <Button type="link" size="small" className="px-0" onClick={() => downloadAttachment(record)}>下载</Button>
-      ),
-    },
-  ];
-
   const allocationAttachmentColumns = [
     { title: '附件名称', dataIndex: 'name', render: (value) => value || '-' },
     { title: '附件大小', dataIndex: 'size', width: 140, render: formatSize },
@@ -211,15 +199,23 @@ export default function ContractNumberSupervisorApprovalPage() {
             <DetailItem label="身份证号码">{application.idCard || '-'}</DetailItem>
             <div aria-hidden="true" style={{ gridColumn: 'span 2' }} />
             <DetailItem label="附件" span={3}>
-              <Table
-                rowKey="id"
-                size="small"
-                bordered
-                columns={applicationAttachmentColumns}
-                dataSource={applicationAttachments}
-                pagination={false}
-                locale={{ emptyText: '暂无附件' }}
-              />
+              {applicationAttachments.length ? (
+                <Space direction="vertical" size={2}>
+                  {applicationAttachments.map((attachment) => (
+                    <Space key={attachment.id} size={8}>
+                      <Typography.Text>{attachment.name || '-'}</Typography.Text>
+                      <Button
+                        type="link"
+                        size="small"
+                        className="px-0"
+                        onClick={() => downloadAttachment(attachment)}
+                      >
+                        下载
+                      </Button>
+                    </Space>
+                  ))}
+                </Space>
+              ) : '-'}
             </DetailItem>
           </DetailGrid>
         </Card>
