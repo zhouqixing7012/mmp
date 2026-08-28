@@ -306,7 +306,7 @@ export default function ContractNumberAllocationPage() {
           <DetailGrid>
             <DetailItem label="申请原因" span={3}>{application.applyReason || '-'}</DetailItem>
             <DetailItem label="身份证号码">{application.idCard || '-'}</DetailItem>
-            <div aria-hidden="true" style={{ gridColumn: 'span 2' }} />
+            <div aria-hidden="true" style={{ gridColumn: 'span 4' }} />
             <DetailItem label="附件" span={3}>
               {applicationAttachments.length ? (
                 <Space direction="vertical" size={2}>
