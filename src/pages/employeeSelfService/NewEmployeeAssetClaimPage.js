@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   Form,
-  Input,
   Modal,
   Select,
   Space,
@@ -23,8 +22,8 @@ const INITIAL_ROWS = [
     lineNo: 1,
     assetTag: '11216121700480',
     serialNumber: '8RYY3H2',
-    materialType: '资产',
     category: 'NOTEBOOK',
+    subCategory: '笔记本电脑',
     description: '戴尔 Latitude E7450 笔记本电脑',
     inventoryOwner: 'CW013250-莫雨欣',
     inventoryStatus: '已盘',
@@ -113,8 +112,8 @@ export default function NewEmployeeAssetClaimPage() {
         lineNo: current.length + 1,
         assetTag: '',
         serialNumber: '',
-        materialType: '资产',
         category: 'NOTEBOOK',
+        subCategory: '',
         description: '',
         inventoryOwner: '',
         inventoryStatus: '未盘',
@@ -215,8 +214,8 @@ export default function NewEmployeeAssetClaimPage() {
       ),
     },
     { title: 'SN序列号', dataIndex: 'serialNumber', width: 130, render: (value) => value || '-' },
-    { title: '物资总类', dataIndex: 'materialType', width: 100 },
-    { title: '大类', dataIndex: 'category', width: 110 },
+    { title: '资产大类', dataIndex: 'category', width: 110 },
+    { title: '资产小类', dataIndex: 'subCategory', width: 120, render: (value) => value || '-' },
     { title: '物资说明', dataIndex: 'description', width: 220, ellipsis: true, render: (value) => value || '-' },
     { title: '实际盘点人', dataIndex: 'inventoryOwner', width: 150, render: (value) => value || '-' },
     {
@@ -238,14 +237,6 @@ export default function NewEmployeeAssetClaimPage() {
       render: (value) => <StatusTag value={value} type="business" />,
     },
     { title: 'PR单号', dataIndex: 'prNo', width: 120, render: (value) => value || '-' },
-    {
-      title: '操作',
-      key: 'action',
-      width: 90,
-      fixed: 'right',
-      align: 'center',
-      render: (_, record) => <Button size="small" onClick={() => openAssetSelector(record.id)}>操作</Button>,
-    },
   ];
 
   const candidateColumns = [
@@ -266,7 +257,6 @@ export default function NewEmployeeAssetClaimPage() {
           city: '北京市',
           building: '搜狐媒体大厦',
           floor: '11层',
-          remark: '',
         }}
       >
         <Space direction="vertical" size={16} className="w-full">
@@ -282,15 +272,15 @@ export default function NewEmployeeAssetClaimPage() {
                   <Select options={WAREHOUSE_OPTIONS} style={{ maxWidth: 520 }} />
                 </Form.Item>
               </DetailItem>
-              <DetailItem label="领用单号">NE-202608110005</DetailItem>
               <DetailItem label="使用人">221171-王芷洋</DetailItem>
+              <DetailItem label="制单时间">2026-08-11</DetailItem>
               <DetailItem label="单据状态"><StatusTag value="处理中" type="business" /></DetailItem>
               <DetailItem label="公司">114.新媒体</DetailItem>
               <DetailItem label="板块">11.搜狐网-Web</DetailItem>
               <DetailItem label="成本中心">111002.财经中心_大内容</DetailItem>
               <DetailItem label="业务线">-</DetailItem>
               <DetailItem label="部门">搜狐媒体.内容中心.财经中心</DetailItem>
-              <DetailItem label="制单时间">2026-08-11</DetailItem>
+              <div aria-hidden="true" style={{ gridColumn: 'span 2' }} />
               <DetailItem label={<RequiredLabel>City</RequiredLabel>}>
                 <Form.Item name="city" rules={[{ required: true, message: '请选择 City' }]} noStyle>
                   <Select
@@ -316,11 +306,6 @@ export default function NewEmployeeAssetClaimPage() {
               <DetailItem label="单据类型">领用申请</DetailItem>
               <DetailItem label="出库单">-</DetailItem>
               <DetailItem label="资产配置">标准非技术笔记本</DetailItem>
-              <DetailItem label="备注" span={3}>
-                <Form.Item name="remark" noStyle>
-                  <Input placeholder="请输入备注" />
-                </Form.Item>
-              </DetailItem>
             </DetailGrid>
           </Card>
 
@@ -336,7 +321,7 @@ export default function NewEmployeeAssetClaimPage() {
               columns={columns}
               dataSource={displayRows}
               pagination={false}
-              scroll={{ x: 1900 }}
+              scroll={{ x: 1830 }}
               rowSelection={{
                 columnTitle: '选择',
                 columnWidth: 60,
@@ -398,8 +383,10 @@ export default function NewEmployeeAssetClaimPage() {
           columns={candidateColumns}
           dataSource={assetClaimSelectableAssets}
           pagination={false}
+          scroll={{ x: 1016 }}
           rowSelection={{
             type: 'radio',
+            columnWidth: 56,
             selectedRowKeys: candidateId ? [candidateId] : [],
             onChange: (keys) => setCandidateId(keys[0] || null),
           }}
