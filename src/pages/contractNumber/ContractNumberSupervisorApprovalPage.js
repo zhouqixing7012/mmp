@@ -160,7 +160,19 @@ export default function ContractNumberSupervisorApprovalPage() {
     { title: '审批意见', dataIndex: 'comment', render: (value) => value || '-' },
   ];
 
-  const attachmentColumns = [
+  const applicationAttachmentColumns = [
+    { title: '附件名称', dataIndex: 'name', render: (value) => value || '-' },
+    {
+      title: '操作',
+      width: 90,
+      align: 'center',
+      render: (_, record) => (
+        <Button type="link" size="small" className="px-0" onClick={() => downloadAttachment(record)}>下载</Button>
+      ),
+    },
+  ];
+
+  const allocationAttachmentColumns = [
     { title: '附件名称', dataIndex: 'name', render: (value) => value || '-' },
     { title: '附件大小', dataIndex: 'size', width: 140, render: formatSize },
     {
@@ -197,12 +209,13 @@ export default function ContractNumberSupervisorApprovalPage() {
           <DetailGrid>
             <DetailItem label="申请原因" span={3}>{application.applyReason || '-'}</DetailItem>
             <DetailItem label="身份证号码">{application.idCard || '-'}</DetailItem>
-            <DetailItem label="附件" span={2}>
+            <div aria-hidden="true" style={{ gridColumn: 'span 2' }} />
+            <DetailItem label="附件" span={3}>
               <Table
                 rowKey="id"
                 size="small"
                 bordered
-                columns={attachmentColumns}
+                columns={applicationAttachmentColumns}
                 dataSource={applicationAttachments}
                 pagination={false}
                 locale={{ emptyText: '暂无附件' }}
@@ -223,7 +236,7 @@ export default function ContractNumberSupervisorApprovalPage() {
             rowKey="id"
             size="small"
             bordered
-            columns={attachmentColumns}
+            columns={allocationAttachmentColumns}
             dataSource={allocationAttachments}
             pagination={false}
             locale={{ emptyText: '暂无附件' }}
