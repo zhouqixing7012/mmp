@@ -52,6 +52,11 @@ function formatSize(size = 0) {
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function getApplicationAttachments(record) {
+  if (Array.isArray(record?.applicationAttachments)) return record.applicationAttachments;
+  return record?.attachment ? [record.attachment] : [];
+}
+
 function getAllocationAttachments(record) {
   if (Array.isArray(record?.allocationAttachments)) return record.allocationAttachments;
   return record?.allocationAttachment ? [record.allocationAttachment] : [];
@@ -89,6 +94,11 @@ export default function ContractNumberAllocationPage() {
     if (!application) return [];
     return [...(application.history || []), ...(application.delayRecords || [])];
   }, [application]);
+
+  const applicationAttachments = useMemo(
+    () => getApplicationAttachments(application),
+    [application]
+  );
 
   const allocationAttachments = useMemo(
     () => getAllocationAttachments(application),
@@ -179,7 +189,7 @@ export default function ContractNumberAllocationPage() {
           ...record,
           status: approved ? '待审批' : '已驳回',
           currentNode: approved ? '合约号码配给主管审批' : '结束',
-          history: record.history.map((item) => (
+          history: (record.history || []).map((item) => (
             item.node === 'ES审批' && item.status === '待审批'
               ? {
                 ...item,
@@ -198,9 +208,14 @@ export default function ContractNumberAllocationPage() {
           }] : []),
         };
       });
-      messageApi.success(action === '同意' ? '配给信息已提交主管审批' : action === '驳回' ? '申请已驳回' : '已记录延期处理');
       setComment('');
-      refresh();
+
+      if (action === '同意') {
+        navigate('/yewurules', { state: { workspace: '合约号码配给主管审批' } });
+      } else {
+        messageApi.success(action === '驳回' ? '申请已驳回' : '已记录延期处理');
+        refresh();
+      }
     } finally {
       setLoadingAction('');
     }
@@ -234,32 +249,48 @@ export default function ContractNumberAllocationPage() {
     { title: '审批意见', dataIndex: 'comment', render: (value) => value || '-' },
   ];
 
+  const applicationAttachmentColumns = [
+    { title: '附件名称', dataIndex: 'name', render: (value) => value || '-' },
+    { title: '附件大小', dataIndex: 'size', width: 130, render: formatSize },
+    {
+      title: '操作',
+      width: 90,
+      align: 'center',
+      render: (_, record) => (
+        <Button type="link" size="small" className="px-0" onClick={() => downloadAttachment(record)}>下载</Button>
+      ),
+    },
+  ];
+
   const allocationAttachmentColumns = [
     { title: '附件名称', dataIndex: 'name', render: (value) => value || '-' },
     { title: '附件大小', dataIndex: 'size', width: 140, render: formatSize },
     {
       title: '操作',
-      width: 120,
+      width: 150,
       align: 'center',
       render: (_, record) => (
-        <Popconfirm
-          title="确认删除该附件吗？"
-          okText="删除"
-          cancelText="取消"
-          disabled={application.status !== '待审批'}
-          onConfirm={() => deleteAllocationAttachment(record.id)}
-        >
-          <Button
-            danger
-            type="link"
-            size="small"
-            className="px-0"
-            icon={<Trash2 size={14} />}
+        <Space size={8}>
+          <Button type="link" size="small" className="px-0" onClick={() => downloadAttachment(record)}>下载</Button>
+          <Popconfirm
+            title="确认删除该附件吗？"
+            okText="删除"
+            cancelText="取消"
             disabled={application.status !== '待审批'}
+            onConfirm={() => deleteAllocationAttachment(record.id)}
           >
-            删除
-          </Button>
-        </Popconfirm>
+            <Button
+              danger
+              type="link"
+              size="small"
+              className="px-0"
+              icon={<Trash2 size={14} />}
+              disabled={application.status !== '待审批'}
+            >
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -289,16 +320,15 @@ export default function ContractNumberAllocationPage() {
             <DetailItem label="申请原因" span={3}>{application.applyReason || '-'}</DetailItem>
             <DetailItem label="身份证号码">{application.idCard || '-'}</DetailItem>
             <DetailItem label="附件" span={2}>
-              {application.attachment ? (
-                <Button
-                  type="link"
-                  size="small"
-                  className="px-0"
-                  onClick={() => downloadAttachment(application.attachment)}
-                >
-                  {application.attachment.name}
-                </Button>
-              ) : '-'}
+              <Table
+                rowKey="id"
+                size="small"
+                bordered
+                columns={applicationAttachmentColumns}
+                dataSource={applicationAttachments}
+                pagination={false}
+                locale={{ emptyText: '暂无附件' }}
+              />
             </DetailItem>
           </DetailGrid>
         </Card>
