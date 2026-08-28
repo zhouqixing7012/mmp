@@ -216,7 +216,7 @@ export default function NewEmployeeAssetClaimPage() {
     { title: 'SN序列号', dataIndex: 'serialNumber', width: 130, render: (value) => value || '-' },
     { title: '资产大类', dataIndex: 'category', width: 110 },
     { title: '资产小类', dataIndex: 'subCategory', width: 120, render: (value) => value || '-' },
-    { title: '物资说明', dataIndex: 'description', width: 220, ellipsis: true, render: (value) => value || '-' },
+    { title: '资产说明', dataIndex: 'description', width: 220, ellipsis: true, render: (value) => value || '-' },
     { title: '实际盘点人', dataIndex: 'inventoryOwner', width: 150, render: (value) => value || '-' },
     {
       title: '盘点状态',
