@@ -11,6 +11,7 @@ import {
 } from 'antd';
 import { UploadCloud } from 'lucide-react';
 import DetailGrid, { DetailItem } from '../components/DetailGrid';
+import { submitCurrentContractNumberApplication } from '../services/contractNumberAllocationService';
 
 const { TextArea } = Input;
 
@@ -29,8 +30,20 @@ export default function ContractNumberApplicationPage() {
   const [fileList, setFileList] = useState([]);
 
   const submit = (values) => {
-    messageApi.success('合约号码申请已提交');
-    console.log('Contract number application submitted:', { ...values, attachments: fileList });
+    try {
+      submitCurrentContractNumberApplication({
+        applyReason: values.reason,
+        attachments: fileList.map((file) => ({
+          id: file.uid,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+        })),
+      });
+      messageApi.success('合约号码申请已提交，附件已同步到ES配给待办');
+    } catch (error) {
+      messageApi.warning(error.message || '合约号码申请提交失败');
+    }
   };
 
   return (
@@ -57,18 +70,18 @@ export default function ContractNumberApplicationPage() {
               </DetailItem>
               <DetailItem label="上传附件" span={3}>
                 <Upload
+                  multiple
                   fileList={fileList}
-                  maxCount={1}
                   beforeUpload={(file) => {
                     if (file.size > 10 * 1024 * 1024) {
-                      messageApi.warning('附件大小不能超过10M');
+                      messageApi.warning(`附件 ${file.name} 大小不能超过10M`);
                       return Upload.LIST_IGNORE;
                     }
-                    setFileList([file]);
+                    setFileList((current) => [...current, file]);
                     return false;
                   }}
-                  onRemove={() => {
-                    setFileList([]);
+                  onRemove={(file) => {
+                    setFileList((current) => current.filter((item) => item.uid !== file.uid));
                     return true;
                   }}
                 >
@@ -78,7 +91,7 @@ export default function ContractNumberApplicationPage() {
             </DetailGrid>
 
             <div className="mt-4 rounded-md bg-red-50 px-4 py-3 text-[13px] leading-6 text-red-600">
-              <div>由于运营商要求号码使用者需要进行实名认证，请上传身份证正反面的扫描文件作为实名认证材料（正反面应在一页中），上传文件最大支持10M。</div>
+              <div>由于运营商要求号码使用者需要进行实名认证，请上传身份证正反面的扫描文件作为实名认证材料，支持上传多个附件，单个文件最大支持10M。</div>
               <div>
                 关于公司电话卡申领政策，请参考
                 <Button type="link" size="small" className="px-1 align-baseline">《电信号码使用协议》</Button>。
