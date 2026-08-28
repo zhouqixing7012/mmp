@@ -31,7 +31,7 @@ export default function ContractNumberSelectModal({
   const columns = [
     { title: '序号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
     { title: '标签号', dataIndex: 'assetTag', width: 160 },
-    { title: '会员号码', dataIndex: 'phoneNumber', width: 190 },
+    { title: '合约号码', dataIndex: 'phoneNumber', width: 190 },
     { title: '套餐金额', dataIndex: 'packageName', width: 180 },
   ];
 
