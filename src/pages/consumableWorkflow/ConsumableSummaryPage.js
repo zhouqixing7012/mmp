@@ -88,8 +88,8 @@ function SummaryApplicationTable({ rows, onExport }) {
     { title: '部门', dataIndex: 'department', width: 210 },
     { title: '申请单号', dataIndex: 'applicationId', width: 180 },
     { title: '申请人', dataIndex: 'applicant', width: 150 },
-    { title: '物资类别', dataIndex: 'category', width: 140 },
-    { title: '物料说明', dataIndex: 'materialDesc', width: 240 },
+    { title: '耗材小类', dataIndex: 'category', width: 140 },
+    { title: '耗材说明', dataIndex: 'materialDesc', width: 240 },
     { title: '采购数量', dataIndex: 'quantity', width: 100, align: 'center' },
     { title: '预计费用（元）', dataIndex: 'estimatedAmount', width: 140, align: 'right', render: money },
     { title: '申请原因', dataIndex: 'detail', width: 210, render: (value) => value || '-' },
@@ -155,7 +155,7 @@ export default function ConsumableSummaryPage() {
       messageApi.warning('暂无可导出的申请明细');
       return;
     }
-    const headers = ['序号', '部门', '申请单号', '申请人', '物资类别', '物料说明', '采购数量', '预计费用（元）', '申请原因', 'ES建议'];
+    const headers = ['序号', '部门', '申请单号', '申请人', '耗材小类', '耗材说明', '采购数量', '预计费用（元）', '申请原因', 'ES建议'];
     const csvRows = exportRows.map((row, index) => [
       index + 1,
       row.department,
