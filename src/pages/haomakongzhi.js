@@ -14,22 +14,23 @@ import {
 import { Plus } from 'lucide-react';
 import QueryBar, { QueryItem } from '../components/QueryBar';
 import StatusTag from '../components/StatusTag';
+import { formatDepartment } from '../utils/displayFormat';
 
 const initialData = [
-  { key: '1', empId: '200620', name: '王英', department: '员工服务中心', status: true },
-  { key: '2', empId: '213852', name: '孙志强', department: '前端架构组', status: true },
-  { key: '3', empId: '210001', name: '李明', department: '财务部', status: false },
-  { key: '4', empId: '220784', name: '周琦星', department: '市场营销中心', status: true },
+  { key: '1', empId: '200620', name: '王英', department: '搜狐新动力信息技术有限公司/集团/资产管理部/员工服务中心', status: true },
+  { key: '2', empId: '213852', name: '孙志强', department: '搜狐新动力信息技术有限公司/集团/技术中心/平台研发部/前端架构组', status: true },
+  { key: '3', empId: '210001', name: '李明', department: '搜狐新动力信息技术有限公司/集团/财务中心/财务部', status: false },
+  { key: '4', empId: '220784', name: '周琦星', department: '搜狐新动力信息技术有限公司/新媒体/市场中心/市场营销中心', status: true },
 ];
 
 const mockAllUsers = [
-  { id: '200620', name: '王英', dept: '员工服务中心' },
-  { id: '213852', name: '孙志强', dept: '前端架构组' },
-  { id: '210001', name: '李明', dept: '财务部' },
-  { id: '220784', name: '周琦星', dept: '市场营销中心' },
-  { id: '208811', name: '张三', dept: '后端业务组' },
-  { id: '208812', name: '李四', dept: '资产管理部' },
-  { id: '208813', name: '王五', dept: '安全中心' },
+  { id: '200620', name: '王英', dept: '搜狐新动力信息技术有限公司/集团/资产管理部/员工服务中心' },
+  { id: '213852', name: '孙志强', dept: '搜狐新动力信息技术有限公司/集团/技术中心/平台研发部/前端架构组' },
+  { id: '210001', name: '李明', dept: '搜狐新动力信息技术有限公司/集团/财务中心/财务部' },
+  { id: '220784', name: '周琦星', dept: '搜狐新动力信息技术有限公司/新媒体/市场中心/市场营销中心' },
+  { id: '208811', name: '张三', dept: '搜狐新动力信息技术有限公司/集团/技术中心/平台研发部/后端业务组' },
+  { id: '208812', name: '李四', dept: '搜狐新动力信息技术有限公司/集团/资产管理部' },
+  { id: '208813', name: '王五', dept: '搜狐新动力信息技术有限公司/集团/安全中心' },
 ];
 
 const EMPTY_MAIN_FILTERS = {
@@ -86,7 +87,7 @@ function UserLinkModal({ open, onClose, linkedUsers, onConfirm }) {
   const columns = [
     { title: '工号', dataIndex: 'id', width: 140 },
     { title: '姓名', dataIndex: 'name', width: 140 },
-    { title: '部门', dataIndex: 'dept' },
+    { title: '部门', dataIndex: 'dept', render: formatDepartment },
   ];
 
   return (
@@ -231,7 +232,7 @@ export default function ContractPermissionAdmin() {
   const columns = [
     { title: '工号', dataIndex: 'empId', width: 150 },
     { title: '姓名', dataIndex: 'name', width: 150 },
-    { title: '所属部门', dataIndex: 'department', minWidth: 260 },
+    { title: '所属部门', dataIndex: 'department', minWidth: 420, render: formatDepartment },
     {
       title: '授权状态',
       dataIndex: 'status',
