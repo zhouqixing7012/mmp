@@ -224,11 +224,11 @@ export default function ConsumableSummaryPage() {
   }, {}));
 
   const detailColumns = [
-    { title: '物资类别', dataIndex: 'category', width: 150 },
-    { title: '物料说明', dataIndex: 'materialDesc', width: 240 },
+    { title: '耗材小类', dataIndex: 'category', width: 150 },
+    { title: '耗材说明', dataIndex: 'materialDesc', width: 240 },
     { title: '采购数量', dataIndex: 'quantity', width: 100, align: 'center' },
     { title: '预计费用（元）', dataIndex: 'estimatedAmount', width: 140, align: 'right', render: money },
-    { title: '详细说明', dataIndex: 'detail', width: 220, render: (value) => value || '-' },
+    { title: '申请原因', dataIndex: 'detail', width: 220, render: (value) => value || '-' },
     { title: 'ES建议', dataIndex: 'esAdvice', width: 260, render: (value, record) => <Input value={value} onChange={(event) => updateRow(record.id, { esAdvice: event.target.value })} /> },
   ];
 
