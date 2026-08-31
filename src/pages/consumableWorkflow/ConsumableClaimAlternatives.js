@@ -21,7 +21,6 @@ const WAREHOUSE_OPTIONS = [
 const CITY_OPTIONS = ['35.北京市', '31.上海市', '44.广州市'].map((value) => ({ label: value, value }));
 const BUILDING_OPTIONS = ['129753.搜狐媒体大厦', '129754.融科资讯中心', '129755.上海办公区'].map((value) => ({ label: value, value }));
 const FLOOR_OPTIONS = ['8层', '10层', '12层', '15层'].map((value) => ({ label: value, value }));
-const PURPOSE_OPTIONS = ['员工用机', '部门公用', '其他用途', '专业用途'].map((value) => ({ label: value, value }));
 
 const VARIANTS = {
   materialCode: {
@@ -90,16 +89,14 @@ function ConsumableClaimAlternativePage({ variant }) {
   const data = VARIANTS[variant];
   const isMaterialCode = variant === 'materialCode';
   const [warehouse, setWarehouse] = useState('I1001-耗材集团总库（新媒体）');
-  const [identifier, setIdentifier] = useState(data.identifier);
   const [remark, setRemark] = useState('');
   const [city, setCity] = useState('35.北京市');
   const [building, setBuilding] = useState('129753.搜狐媒体大厦');
   const [floor, setFloor] = useState('15层');
-  const [purpose, setPurpose] = useState('专业用途');
   const [usageNote, setUsageNote] = useState('');
 
   const submit = () => {
-    if (!warehouse || !identifier.trim() || !city || !building || !floor || (!isMaterialCode && !purpose)) {
+    if (!warehouse || !city || !building || !floor) {
       messageApi.warning('请完整填写必填字段');
       return;
     }
@@ -136,9 +133,7 @@ function ConsumableClaimAlternativePage({ variant }) {
 
       <Card size="small" title="申请耗材信息">
         <Descriptions bordered size="small" column={3}>
-          <Descriptions.Item label={<span><span className="text-red-500">*</span> {data.identifierLabel}</span>}>
-            <Input value={identifier} onChange={(event) => setIdentifier(event.target.value)} />
-          </Descriptions.Item>
+          <Descriptions.Item label={data.identifierLabel}>{data.identifier}</Descriptions.Item>
           {!isMaterialCode && <Descriptions.Item label="序列号">{data.serialNo}</Descriptions.Item>}
           <Descriptions.Item label={data.quantityLabel}>{data.quantity}</Descriptions.Item>
           <Descriptions.Item label="公司">{data.company}</Descriptions.Item>
@@ -158,12 +153,7 @@ function ConsumableClaimAlternativePage({ variant }) {
           <Descriptions.Item label={<span><span className="text-red-500">*</span> floor</span>}>
             <Select className="w-full" value={floor} options={FLOOR_OPTIONS} onChange={setFloor} />
           </Descriptions.Item>
-          {!isMaterialCode && (
-            <Descriptions.Item label={<span><span className="text-red-500">*</span> 使用用途</span>}>
-              <Select className="w-full" value={purpose} options={PURPOSE_OPTIONS} onChange={setPurpose} />
-            </Descriptions.Item>
-          )}
-          <Descriptions.Item label="使用说明" span={isMaterialCode ? 3 : 2}>
+          <Descriptions.Item label="使用说明" span={3}>
             <Input maxLength={400} value={usageNote} placeholder="请输入使用说明" onChange={(event) => setUsageNote(event.target.value)} />
           </Descriptions.Item>
         </Descriptions>
