@@ -21,9 +21,9 @@ import ContractNumberWarehousePage from '../../contractNumber/ContractNumberWare
 import ContractNumberReceiptConfirmPage from '../../contractNumber/ContractNumberReceiptConfirmPage';
 import {
   ConsumableMisApprovalPage,
-  ConsumableLeaderApprovalPage,
   ConsumableSummaryApprovalPage,
 } from '../../consumableWorkflow/refinedPages';
+import ConsumableLeaderApprovalPage from '../../consumableWorkflow/ConsumableLeaderApprovalPage';
 import ConsumableAllocationPage from '../../consumableWorkflow/ConsumableAllocationPage';
 import ConsumableClaimPage from '../../consumableWorkflow/ConsumableClaimPage';
 import ConsumableClaimConfirmPage from '../../consumableWorkflow/ConsumableClaimConfirmPage';
