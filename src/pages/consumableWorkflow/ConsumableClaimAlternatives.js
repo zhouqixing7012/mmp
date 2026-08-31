@@ -149,13 +149,13 @@ function ConsumableClaimAlternativePage({ variant }) {
           <Descriptions.Item label="备注" span={3}>
             <Input maxLength={400} value={remark} placeholder="请输入备注" onChange={(event) => setRemark(event.target.value)} />
           </Descriptions.Item>
-          <Descriptions.Item label={<span><span className="text-red-500">*</span> 城市</span>}>
+          <Descriptions.Item label={<span><span className="text-red-500">*</span> city</span>}>
             <Select className="w-full" value={city} options={CITY_OPTIONS} onChange={setCity} />
           </Descriptions.Item>
-          <Descriptions.Item label={<span><span className="text-red-500">*</span> 建筑</span>}>
+          <Descriptions.Item label={<span><span className="text-red-500">*</span> building</span>}>
             <Select className="w-full" value={building} options={BUILDING_OPTIONS} onChange={setBuilding} />
           </Descriptions.Item>
-          <Descriptions.Item label={<span><span className="text-red-500">*</span> 楼层</span>}>
+          <Descriptions.Item label={<span><span className="text-red-500">*</span> floor</span>}>
             <Select className="w-full" value={floor} options={FLOOR_OPTIONS} onChange={setFloor} />
           </Descriptions.Item>
           {!isMaterialCode && (
