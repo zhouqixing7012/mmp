@@ -17,20 +17,20 @@ import StatusTag from '../components/StatusTag';
 import { formatDepartment } from '../utils/displayFormat';
 
 const initialData = [
-  { key: '1', empId: '200620', name: '王英', department: '搜狐新动力信息技术有限公司/集团/资产管理部/员工服务中心', status: true },
-  { key: '2', empId: '213852', name: '孙志强', department: '搜狐新动力信息技术有限公司/集团/技术中心/平台研发部/前端架构组', status: true },
-  { key: '3', empId: '210001', name: '李明', department: '搜狐新动力信息技术有限公司/集团/财务中心/财务部', status: false },
-  { key: '4', empId: '220784', name: '周琦星', department: '搜狐新动力信息技术有限公司/新媒体/市场中心/市场营销中心', status: true },
+  { key: '1', empId: '200620', name: '王英', department: '集团/资产管理部/员工服务中心', status: true },
+  { key: '2', empId: '213852', name: '孙志强', department: '集团/ERP部/业务产品二组', status: true },
+  { key: '3', empId: '210001', name: '李明', department: '集团/财务中心/财务部', status: false },
+  { key: '4', empId: '220784', name: '周琦星', department: '媒体/市场中心/市场营销中心', status: true },
 ];
 
 const mockAllUsers = [
-  { id: '200620', name: '王英', dept: '搜狐新动力信息技术有限公司/集团/资产管理部/员工服务中心' },
-  { id: '213852', name: '孙志强', dept: '搜狐新动力信息技术有限公司/集团/技术中心/平台研发部/前端架构组' },
-  { id: '210001', name: '李明', dept: '搜狐新动力信息技术有限公司/集团/财务中心/财务部' },
-  { id: '220784', name: '周琦星', dept: '搜狐新动力信息技术有限公司/新媒体/市场中心/市场营销中心' },
-  { id: '208811', name: '张三', dept: '搜狐新动力信息技术有限公司/集团/技术中心/平台研发部/后端业务组' },
-  { id: '208812', name: '李四', dept: '搜狐新动力信息技术有限公司/集团/资产管理部' },
-  { id: '208813', name: '王五', dept: '搜狐新动力信息技术有限公司/集团/安全中心' },
+  { id: '200620', name: '王英', dept: '集团/资产管理部/员工服务中心' },
+  { id: '213852', name: '孙志强', dept: '集团/ERP部/业务产品二组' },
+  { id: '210001', name: '李明', dept: '集团/财务中心/财务部' },
+  { id: '220784', name: '周琦星', dept: '媒体/市场中心/市场营销中心' },
+  { id: '208811', name: '张三', dept: '集团/ERP部/业务产品一组' },
+  { id: '208812', name: '李四', dept: '焦点/资产管理部' },
+  { id: '208813', name: '王五', dept: '视频/技术中心/安全中心' },
 ];
 
 const EMPTY_MAIN_FILTERS = {
