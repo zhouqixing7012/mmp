@@ -7,7 +7,6 @@ const EMPTY_QUERY = {
   assetTag: '',
   status: [],
   assetDesc: '',
-  purpose: '',
   locked: '',
 };
 
@@ -19,7 +18,6 @@ export default function EmployeeAssetsModal({ open, onCancel, applicant = CURREN
     (!appliedQuery.assetTag || asset.assetTag.toLowerCase().includes(appliedQuery.assetTag.toLowerCase()))
     && (appliedQuery.status.length === 0 || appliedQuery.status.includes(asset.status))
     && (!appliedQuery.assetDesc || `${asset.assetDesc} ${asset.config}`.toLowerCase().includes(appliedQuery.assetDesc.toLowerCase()))
-    && (!appliedQuery.purpose || asset.purpose === appliedQuery.purpose)
     && (!appliedQuery.locked || asset.locked === appliedQuery.locked)
   )), [appliedQuery]);
 
@@ -51,7 +49,6 @@ export default function EmployeeAssetsModal({ open, onCancel, applicant = CURREN
         <QueryItem label="资产标签号"><Input value={query.assetTag} onChange={(event) => setQuery((current) => ({ ...current, assetTag: event.target.value }))} /></QueryItem>
         <QueryItem label="资产状态"><Select mode="multiple" allowClear value={query.status} placeholder="全部" options={options(BORROWER_EXISTING_ASSETS.map((asset) => asset.status))} onChange={(value) => setQuery((current) => ({ ...current, status: value }))} /></QueryItem>
         <QueryItem label="资产说明"><Input value={query.assetDesc} onChange={(event) => setQuery((current) => ({ ...current, assetDesc: event.target.value }))} /></QueryItem>
-        <QueryItem label="资产用途"><Select allowClear value={query.purpose || undefined} placeholder="全部" options={options(BORROWER_EXISTING_ASSETS.map((asset) => asset.purpose))} onChange={(value) => setQuery((current) => ({ ...current, purpose: value || '' }))} /></QueryItem>
         <QueryItem label="是否锁定"><Select allowClear value={query.locked || undefined} placeholder="全部" options={[{ label: '是', value: '是' }, { label: '否', value: '否' }]} onChange={(value) => setQuery((current) => ({ ...current, locked: value || '' }))} /></QueryItem>
       </QueryBar>
       <Table rowKey="id" columns={columns} dataSource={filteredAssets} pagination={{ pageSize: 5, showTotal: (total) => `共 ${total} 条` }} scroll={{ x: 1300 }} size="small" />
