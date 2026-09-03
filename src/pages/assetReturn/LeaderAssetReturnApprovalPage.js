@@ -12,6 +12,7 @@ import {
 } from 'antd';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
+import { formatDepartment } from '../../utils/displayFormat';
 
 const { TextArea } = Input;
 
@@ -26,12 +27,16 @@ function SectionTitle({ children }) {
 
 const RETURN_ORDER = {
   id: 'ERA-202607300022',
-  applicant: '152028-马力',
+  applicant: {
+    id: '152028',
+    name: '马力',
+    company: '114.新媒体',
+    officeArea: '北京-搜狐媒体大厦',
+    department: '搜狐媒体.网安中心.审核3-4组.3组',
+    phone: '010-56601449',
+    email: 'lima152028@sohu-inc.com',
+  },
   applyDate: '2026-07-30',
-  returnType: '资产退库',
-  department: '搜狐媒体.网安中心.审核3-4组.3组',
-  phone: '010-56601449',
-  email: 'lima152028@sohu-inc.com',
   reason: '列总使用',
 };
 
@@ -123,12 +128,13 @@ export default function LeaderAssetReturnApprovalPage() {
 
         <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>
           <DetailGrid>
-            <DetailItem label="申请人">{RETURN_ORDER.applicant}</DetailItem>
-            <DetailItem label="申请时间">{RETURN_ORDER.applyDate}</DetailItem>
-            <DetailItem label="退库类型">{RETURN_ORDER.returnType}</DetailItem>
-            <DetailItem label="部门">{RETURN_ORDER.department}</DetailItem>
-            <DetailItem label="联系电话">{RETURN_ORDER.phone}</DetailItem>
-            <DetailItem label="邮箱">{RETURN_ORDER.email}</DetailItem>
+            <DetailItem label="申请人">{RETURN_ORDER.applicant.id}-{RETURN_ORDER.applicant.name}</DetailItem>
+            <DetailItem label="申请日期">{RETURN_ORDER.applyDate}</DetailItem>
+            <DetailItem label="公司">{RETURN_ORDER.applicant.company}</DetailItem>
+            <DetailItem label="办公区">{RETURN_ORDER.applicant.officeArea}</DetailItem>
+            <DetailItem label="联系电话">{RETURN_ORDER.applicant.phone}</DetailItem>
+            <DetailItem label="邮箱">{RETURN_ORDER.applicant.email}</DetailItem>
+            <DetailItem label="部门" span={3}>{formatDepartment(RETURN_ORDER.applicant.department)}</DetailItem>
             <DetailItem label="退库原因" span={3}>{RETURN_ORDER.reason}</DetailItem>
           </DetailGrid>
         </Card>
