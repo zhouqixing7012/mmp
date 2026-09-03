@@ -130,8 +130,7 @@ export default function FrontDeskAssetClaim() {
               <Descriptions.Item label="公司">{application.company}</Descriptions.Item>
               <Descriptions.Item label="办公区">{application.officeArea}</Descriptions.Item>
               <Descriptions.Item label="申请日期">{application.applyDate}</Descriptions.Item>
-              <Descriptions.Item label="成本中心">{application.costCenter}</Descriptions.Item>
-              <Descriptions.Item label="部门" span={2}>{application.department}</Descriptions.Item>
+              <Descriptions.Item label="部门" span={3}>{application.department}</Descriptions.Item>
             </Descriptions>
           </Card>
 
