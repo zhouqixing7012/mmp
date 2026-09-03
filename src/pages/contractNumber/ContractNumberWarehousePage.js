@@ -209,10 +209,8 @@ export default function ContractNumberWarehousePage() {
             <DetailItem label="联系电话">{applicant.phone || '-'}</DetailItem>
             <DetailItem label="申请日期">{application.applyDate || '-'}</DetailItem>
             <DetailItem label="公司">{applicant.company || '-'}</DetailItem>
-            <DetailItem label="板块">{applicant.block || '-'}</DetailItem>
             <DetailItem label="办公区">{applicant.officeArea || '-'}</DetailItem>
-            <DetailItem label="成本中心">{applicant.costCenter || '-'}</DetailItem>
-            <DetailItem label="部门" span={2}>{formatDepartment(applicant.department)}</DetailItem>
+            <DetailItem label="部门" span={3}>{formatDepartment(applicant.department)}</DetailItem>
           </DetailGrid>
         </Card>
 
