@@ -1,34 +1,39 @@
 import { ASSET_APPLICATION_STORAGE_KEY, DEFAULT_ASSET_APPLICATIONS } from '../mock/assetApplicationMock';
+import { normalizeMockContactPhones } from '../mock/contactPhoneOverrides';
 
 const canUseLocalStorage = () => typeof window !== 'undefined' && Boolean(window.localStorage);
 
 const cloneValue = (value) => JSON.parse(JSON.stringify(value));
+const normalizeValue = (value) => normalizeMockContactPhones(cloneValue(value));
 
 export function readDemoData(key, defaultValue) {
   if (!canUseLocalStorage()) {
-    return cloneValue(defaultValue);
+    return normalizeValue(defaultValue);
   }
 
   const rawValue = window.localStorage.getItem(key);
   if (!rawValue) {
-    return cloneValue(defaultValue);
+    return normalizeValue(defaultValue);
   }
 
   try {
-    return JSON.parse(rawValue);
+    const parsedValue = normalizeMockContactPhones(JSON.parse(rawValue));
+    window.localStorage.setItem(key, JSON.stringify(parsedValue));
+    return parsedValue;
   } catch (error) {
     console.error(`读取演示数据失败：${key}`, error);
-    return cloneValue(defaultValue);
+    return normalizeValue(defaultValue);
   }
 }
 
 export function writeDemoData(key, value) {
+  const normalizedValue = normalizeValue(value);
   if (!canUseLocalStorage()) {
-    return value;
+    return normalizedValue;
   }
 
-  window.localStorage.setItem(key, JSON.stringify(value));
-  return value;
+  window.localStorage.setItem(key, JSON.stringify(normalizedValue));
+  return normalizedValue;
 }
 
 export function resetDemoData(key) {
