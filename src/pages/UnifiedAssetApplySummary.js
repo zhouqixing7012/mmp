@@ -276,11 +276,9 @@ export default function UnifiedAssetApplySummary() {
 
   const renderApplicationTables = (isEditable) => (
     <>
-      {isEditable && (
-        <div className="flex justify-end">
-          <Button icon={<Download size={14} />} onClick={handleExport}>导出申请明细</Button>
-        </div>
-      )}
+      <div className="flex justify-end">
+        <Button icon={<Download size={14} />} onClick={handleExport}>导出申请明细</Button>
+      </div>
 
       <Card title="超标申请" size="small">
         <Table rowKey="key" columns={applicationColumns(isEditable)} dataSource={OVER_STANDARD_ROWS} pagination={false} size="small" scroll={{ x: isEditable ? 1480 : 1250 }} locale={{ emptyText: SIMPLE_EMPTY_TEXT }} />
