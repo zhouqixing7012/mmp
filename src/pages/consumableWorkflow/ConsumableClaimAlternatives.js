@@ -34,7 +34,6 @@ const VARIANTS = {
       email: 'shanshanren@sohu-inc.com',
       company: '新媒体',
       officeArea: '北京-搜狐媒体大厦',
-      costCenter: '114101.汽车_总部_高管组_N',
       department: '搜狐媒体/汽车/管理组',
       applyDate: '2026-07-03',
     },
@@ -63,7 +62,6 @@ const VARIANTS = {
       email: 'huijunli@sohu-inc.com',
       company: '新媒体',
       officeArea: '北京-搜狐媒体大厦',
-      costCenter: '113155.汽车_总部_营销策略中心_N',
       department: '搜狐媒体/汽车/用户运营中心/智能家居组',
       applyDate: '2026-05-12',
     },
@@ -120,14 +118,13 @@ function ConsumableClaimAlternativePage({ variant }) {
           <Descriptions.Item label={<span><span className="text-red-500">*</span> 当前仓库</span>} span={3}>
             <Select className="w-full max-w-2xl" value={warehouse} options={WAREHOUSE_OPTIONS} onChange={setWarehouse} />
           </Descriptions.Item>
-          <Descriptions.Item label="使用人">{data.applicant.id}-{data.applicant.name}</Descriptions.Item>
+          <Descriptions.Item label="申请人">{data.applicant.id}-{data.applicant.name}</Descriptions.Item>
           <Descriptions.Item label="联系电话">{data.applicant.phone}</Descriptions.Item>
           <Descriptions.Item label="邮箱">{data.applicant.email}</Descriptions.Item>
           <Descriptions.Item label="公司">{data.applicant.company}</Descriptions.Item>
           <Descriptions.Item label="办公区">{data.applicant.officeArea}</Descriptions.Item>
           <Descriptions.Item label="申请日期">{data.applicant.applyDate}</Descriptions.Item>
-          <Descriptions.Item label="成本中心">{data.applicant.costCenter}</Descriptions.Item>
-          <Descriptions.Item label="部门" span={2}>{formatDepartment(data.applicant.department)}</Descriptions.Item>
+          <Descriptions.Item label="部门" span={3}>{formatDepartment(data.applicant.department)}</Descriptions.Item>
         </Descriptions>
       </Card>
 
