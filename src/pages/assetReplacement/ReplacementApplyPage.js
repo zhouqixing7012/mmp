@@ -32,6 +32,10 @@ function RequiredLabel({ children }) {
   );
 }
 
+function formatAssetDescription(asset) {
+  return [asset?.brand, asset?.model].filter(Boolean).join('.') || asset?.assetDesc || '-';
+}
+
 export default function ReplacementApplyPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -55,7 +59,7 @@ export default function ReplacementApplyPage() {
     return fallback ? [fallback] : [];
   }, [assets, location.state]);
   const totalQuantity = selectedAssets.reduce((sum, asset) => sum + (asset.quantity || 0), 0);
-  const visibleNotices = REPLACEMENT_NOTICE.filter((item) => !item.includes('苹果笔记本、苹果一体机、组装机、工作站'));
+  const visibleNotices = REPLACEMENT_NOTICE.slice(0, 1);
 
   const submit = () => {
     if (selectedAssets.length === 0) {
@@ -86,7 +90,7 @@ export default function ReplacementApplyPage() {
 
   const columns = [
     { title: '资产标签号', dataIndex: 'assetTag', width: 150, fixed: 'left' },
-    { title: '资产说明', dataIndex: 'assetDesc', width: 250, ellipsis: true },
+    { title: '资产说明', dataIndex: 'assetDesc', width: 250, ellipsis: true, render: (_, record) => formatAssetDescription(record) },
     { title: '配置', dataIndex: 'config', width: 270, ellipsis: true },
     { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
     { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
