@@ -42,6 +42,16 @@ function normalizePurpose(value) {
   return value && value !== '借用' ? value : '';
 }
 
+function formatAssetDescription(asset, detail) {
+  const rawDescription = asset?.assetDesc || detail?.assetDesc || '';
+  const subCategory = asset?.subCategory || detail?.subCategory || '';
+  if (!rawDescription) return '-';
+  const prefix = subCategory ? `${subCategory}.` : '';
+  return prefix && rawDescription.startsWith(prefix)
+    ? rawDescription.slice(prefix.length)
+    : rawDescription;
+}
+
 function hydrateDetails(application) {
   return (application?.details || []).map((item) => ({
     ...item,
@@ -96,7 +106,7 @@ export default function BorrowingIssuePage() {
       !item.issueCity || !item.issueBuilding || !item.issueFloor || !item.issuePurpose
     ));
     if (invalidLocation) {
-      messageApi.warning('请完善全部资产的城市、建筑、楼层和资产用途');
+      messageApi.warning('请完善全部资产的city、building、floor和资产用途');
       return false;
     }
     const invalidAsset = details.find((item) => (
@@ -274,10 +284,10 @@ export default function BorrowingIssuePage() {
                     <Descriptions.Item label="公司">{asset?.company || '-'}</Descriptions.Item>
                     <Descriptions.Item label="板块">{asset?.block || '-'}</Descriptions.Item>
                     <Descriptions.Item label="启用日期">{formatDateText(asset?.enabledDate)}</Descriptions.Item>
-                    <Descriptions.Item label="资产说明">{asset?.assetDesc || detail.assetDesc || '-'}</Descriptions.Item>
+                    <Descriptions.Item label="资产说明">{formatAssetDescription(asset, detail)}</Descriptions.Item>
                     <Descriptions.Item label="配置" span={2}>{asset?.config || detail.config || '-'}</Descriptions.Item>
                     <Descriptions.Item label="备注" span={3}>{asset?.note || '-'}</Descriptions.Item>
-                    <Descriptions.Item label={<><span className="text-red-500">*</span> 城市</>}>
+                    <Descriptions.Item label={<><span className="text-red-500">*</span> city</>}>
                       <Select
                         className="w-full"
                         value={detail.issueCity}
@@ -285,7 +295,7 @@ export default function BorrowingIssuePage() {
                         onChange={(value) => updateDetail(detail.id, { issueCity: value, issueBuilding: '', issueFloor: '' })}
                       />
                     </Descriptions.Item>
-                    <Descriptions.Item label={<><span className="text-red-500">*</span> 建筑</>}>
+                    <Descriptions.Item label={<><span className="text-red-500">*</span> building</>}>
                       <Select
                         className="w-full"
                         value={detail.issueBuilding || undefined}
@@ -293,7 +303,7 @@ export default function BorrowingIssuePage() {
                         onChange={(value) => updateDetail(detail.id, { issueBuilding: value, issueFloor: '' })}
                       />
                     </Descriptions.Item>
-                    <Descriptions.Item label={<><span className="text-red-500">*</span> 楼层</>}>
+                    <Descriptions.Item label={<><span className="text-red-500">*</span> floor</>}>
                       <Select
                         className="w-full"
                         value={detail.issueFloor || undefined}
