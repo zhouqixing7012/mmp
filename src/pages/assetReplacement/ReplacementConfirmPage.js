@@ -90,7 +90,7 @@ export default function ReplacementConfirmPage() {
         </div>
         <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>
           <DetailGrid>
-            <DetailItem label="使用人">{application.applicant.id}-{application.applicant.name}</DetailItem>
+            <DetailItem label="申请人">{application.applicant.id}-{application.applicant.name}</DetailItem>
             <DetailItem label="部门" span={2}>{formatDepartment(application.applicant.department)}</DetailItem>
           </DetailGrid>
         </Card>
