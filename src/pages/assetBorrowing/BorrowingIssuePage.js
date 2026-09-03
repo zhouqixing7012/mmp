@@ -13,6 +13,7 @@ import {
   Typography,
   message as antdMessage,
 } from 'antd';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import {
   getBorrowingIssueApplication,
@@ -235,8 +236,8 @@ export default function BorrowingIssuePage() {
         </div>
 
         <Card title="申请人信息" size="small">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label={<><span className="text-red-500">*</span> 当前仓库</>} span={3}>
+          <DetailGrid>
+            <DetailItem label={<><span className="text-red-500">*</span> 当前仓库</>} span={3}>
               <Select
                 className="w-full"
                 value={warehouse}
@@ -249,15 +250,15 @@ export default function BorrowingIssuePage() {
                   })));
                 }}
               />
-            </Descriptions.Item>
-            <Descriptions.Item label="申请人">{application.applicant.id}-{application.applicant.name}</Descriptions.Item>
-            <Descriptions.Item label="申请日期">{formatDateText(application.applyDate)}</Descriptions.Item>
-            <Descriptions.Item label="公司">{application.applicant.company || '-'}</Descriptions.Item>
-            <Descriptions.Item label="办公区">{application.applicant.officeArea || '-'}</Descriptions.Item>
-            <Descriptions.Item label="联系电话">{application.applicant.phone || '-'}</Descriptions.Item>
-            <Descriptions.Item label="邮箱">{application.applicant.email || '-'}</Descriptions.Item>
-            <Descriptions.Item label="部门" span={3}>{formatDepartment(application.applicant.department)}</Descriptions.Item>
-          </Descriptions>
+            </DetailItem>
+            <DetailItem label="申请人">{application.applicant.id}-{application.applicant.name}</DetailItem>
+            <DetailItem label="申请日期">{formatDateText(application.applyDate)}</DetailItem>
+            <DetailItem label="公司">{application.applicant.company || '-'}</DetailItem>
+            <DetailItem label="办公区">{application.applicant.officeArea || '-'}</DetailItem>
+            <DetailItem label="联系电话">{application.applicant.phone || '-'}</DetailItem>
+            <DetailItem label="邮箱">{application.applicant.email || '-'}</DetailItem>
+            <DetailItem label="部门" span={3}>{formatDepartment(application.applicant.department)}</DetailItem>
+          </DetailGrid>
         </Card>
 
         <Card title="借用资产明细" size="small">
