@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Descriptions,
   Empty,
   Input,
   Modal,
@@ -272,47 +271,47 @@ export default function BorrowingIssuePage() {
 
               return (
                 <div key={detail.id} className={index > 0 ? 'border-t border-slate-200 pt-4' : ''}>
-                  <Descriptions bordered size="small" column={3}>
-                    <Descriptions.Item label="资产标签号">
+                  <DetailGrid>
+                    <DetailItem label="资产标签号">
                       <Space.Compact className="w-full">
                         <Input readOnly value={asset?.assetTag || ''} placeholder="请选择资产" />
                         <Button icon={<Search size={14} />} onClick={() => setMatchDetailId(detail.id)} />
                         <Button danger icon={<XCircle size={14} />} disabled={!asset} onClick={() => updateDetail(detail.id, { matchedAsset: null })} />
                       </Space.Compact>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="序列号">{asset?.sn || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="部件数量">{componentCount}</Descriptions.Item>
-                    <Descriptions.Item label="公司">{asset?.company || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="板块">{asset?.block || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="启用日期">{formatDateText(asset?.enabledDate)}</Descriptions.Item>
-                    <Descriptions.Item label="资产说明">{formatAssetDescription(asset, detail)}</Descriptions.Item>
-                    <Descriptions.Item label="配置" span={2}>{asset?.config || detail.config || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="备注" span={3}>{asset?.note || '-'}</Descriptions.Item>
-                    <Descriptions.Item label={<><span className="text-red-500">*</span> city</>}>
+                    </DetailItem>
+                    <DetailItem label="序列号">{asset?.sn || '-'}</DetailItem>
+                    <DetailItem label="部件数量">{componentCount}</DetailItem>
+                    <DetailItem label="公司">{asset?.company || '-'}</DetailItem>
+                    <DetailItem label="板块">{asset?.block || '-'}</DetailItem>
+                    <DetailItem label="启用日期">{formatDateText(asset?.enabledDate)}</DetailItem>
+                    <DetailItem label="资产说明">{formatAssetDescription(asset, detail)}</DetailItem>
+                    <DetailItem label="配置" span={2}>{asset?.config || detail.config || '-'}</DetailItem>
+                    <DetailItem label="备注" span={3}>{asset?.note || '-'}</DetailItem>
+                    <DetailItem label={<><span className="text-red-500">*</span> city</>}>
                       <Select
                         className="w-full"
                         value={detail.issueCity}
                         options={Object.keys(LOCATION_OPTIONS).map((value) => ({ label: value, value }))}
                         onChange={(value) => updateDetail(detail.id, { issueCity: value, issueBuilding: '', issueFloor: '' })}
                       />
-                    </Descriptions.Item>
-                    <Descriptions.Item label={<><span className="text-red-500">*</span> building</>}>
+                    </DetailItem>
+                    <DetailItem label={<><span className="text-red-500">*</span> building</>}>
                       <Select
                         className="w-full"
                         value={detail.issueBuilding || undefined}
                         options={buildingOptions.map((value) => ({ label: value, value }))}
                         onChange={(value) => updateDetail(detail.id, { issueBuilding: value, issueFloor: '' })}
                       />
-                    </Descriptions.Item>
-                    <Descriptions.Item label={<><span className="text-red-500">*</span> floor</>}>
+                    </DetailItem>
+                    <DetailItem label={<><span className="text-red-500">*</span> floor</>}>
                       <Select
                         className="w-full"
                         value={detail.issueFloor || undefined}
                         options={floorOptions.map((value) => ({ label: value, value }))}
                         onChange={(value) => updateDetail(detail.id, { issueFloor: value })}
                       />
-                    </Descriptions.Item>
-                    <Descriptions.Item label={<><span className="text-red-500">*</span> 资产用途</>}>
+                    </DetailItem>
+                    <DetailItem label={<><span className="text-red-500">*</span> 资产用途</>}>
                       <Select
                         className="w-full"
                         value={detail.issuePurpose || undefined}
@@ -320,22 +319,22 @@ export default function BorrowingIssuePage() {
                         options={PURPOSE_OPTIONS.map((value) => ({ label: value, value }))}
                         onChange={(value) => updateDetail(detail.id, { issuePurpose: value })}
                       />
-                    </Descriptions.Item>
-                    <Descriptions.Item label="使用说明" span={2}>
+                    </DetailItem>
+                    <DetailItem label="使用说明" span={2}>
                       <Input
                         maxLength={400}
                         value={detail.issueUsageNote}
                         onChange={(event) => updateDetail(detail.id, { issueUsageNote: event.target.value })}
                       />
-                    </Descriptions.Item>
-                    <Descriptions.Item label="实际盘点人">{asset?.inventoryPerson || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="盘点状态" span={2}><StatusTag value={inventoryStatus} type="business" /></Descriptions.Item>
-                    <Descriptions.Item label="资产类别" span={3}>{[detail.category, detail.subCategory].filter(Boolean).join('.') || detail.assetDesc || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="借用开始日期">{formatDateText(detail.startDate)}</Descriptions.Item>
-                    <Descriptions.Item label="借用归还日期">{formatDateText(detail.endDate)}</Descriptions.Item>
-                    <Descriptions.Item label="借用原因">{detail.reason || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="需求说明" span={3}>{detail.detail || '-'}</Descriptions.Item>
-                  </Descriptions>
+                    </DetailItem>
+                    <DetailItem label="实际盘点人">{asset?.inventoryPerson || '-'}</DetailItem>
+                    <DetailItem label="盘点状态" span={2}><StatusTag value={inventoryStatus} type="business" /></DetailItem>
+                    <DetailItem label="资产类别" span={3}>{[detail.category, detail.subCategory].filter(Boolean).join('.') || detail.assetDesc || '-'}</DetailItem>
+                    <DetailItem label="借用开始日期">{formatDateText(detail.startDate)}</DetailItem>
+                    <DetailItem label="借用归还日期">{formatDateText(detail.endDate)}</DetailItem>
+                    <DetailItem label="借用原因">{detail.reason || '-'}</DetailItem>
+                    <DetailItem label="需求说明" span={3}>{detail.detail || '-'}</DetailItem>
+                  </DetailGrid>
                 </div>
               );
             })}
