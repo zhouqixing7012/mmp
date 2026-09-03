@@ -111,10 +111,11 @@ export default function AssetReturnApprovalPage() {
           <DetailGrid>
             <DetailItem label="申请人">{selected.applicant.id}-{selected.applicant.name}</DetailItem>
             <DetailItem label="申请日期">{formatDateText(selected.applyTime)}</DetailItem>
+            <DetailItem label="公司">{selected.applicant.company || '-'}</DetailItem>
+            <DetailItem label="办公区">{selected.applicant.officeArea || '-'}</DetailItem>
             <DetailItem label="联系电话">{selected.applicant.phone || '-'}</DetailItem>
             <DetailItem label="邮箱">{selected.applicant.email || '-'}</DetailItem>
-            <DetailItem label="退库类型">{selected.returnType || '-'}</DetailItem>
-            <DetailItem label="部门">{formatDepartment(selected.applicant.department)}</DetailItem>
+            <DetailItem label="部门" span={3}>{formatDepartment(selected.applicant.department)}</DetailItem>
             <DetailItem label="退库原因" span={3}>{selected.reason || '-'}</DetailItem>
           </DetailGrid>
         </Card>
