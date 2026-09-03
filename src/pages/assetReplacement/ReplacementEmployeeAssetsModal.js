@@ -3,7 +3,7 @@ import { Input, Modal, Select, Table, Tag } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { getEmployeeReplacementAssets } from '../../services/assetReplacementService';
 
-const EMPTY_QUERY = { assetTag: '', materialType: '', status: '', assetDesc: '', purpose: '', locked: '' };
+const EMPTY_QUERY = { assetTag: '', materialType: '', status: '', assetDesc: '', locked: '' };
 
 export default function ReplacementEmployeeAssetsModal({ open, applicant, onCancel }) {
   const [query, setQuery] = useState(EMPTY_QUERY);
@@ -15,7 +15,6 @@ export default function ReplacementEmployeeAssetsModal({ open, applicant, onCanc
     && (!appliedQuery.materialType || asset.materialType === appliedQuery.materialType)
     && (!appliedQuery.status || asset.status === appliedQuery.status)
     && (!appliedQuery.assetDesc || `${asset.assetDesc} ${asset.config}`.toLowerCase().includes(appliedQuery.assetDesc.toLowerCase()))
-    && (!appliedQuery.purpose || asset.purpose === appliedQuery.purpose)
     && (!appliedQuery.locked || (appliedQuery.locked === '是') === Boolean(asset.locked || asset.businessLocked))
   )), [assets, appliedQuery]);
 
@@ -47,7 +46,6 @@ export default function ReplacementEmployeeAssetsModal({ open, applicant, onCanc
         <QueryItem label="物资总类"><Select allowClear value={query.materialType || undefined} options={[...new Set(assets.map((item) => item.materialType))].map((value) => ({ label: value, value }))} onChange={(value) => setQuery({ ...query, materialType: value || '' })} /></QueryItem>
         <QueryItem label="资产状态"><Select allowClear value={query.status || undefined} options={[...new Set(assets.map((item) => item.status))].map((value) => ({ label: value, value }))} onChange={(value) => setQuery({ ...query, status: value || '' })} /></QueryItem>
         <QueryItem label="资产说明"><Input allowClear value={query.assetDesc} onChange={(event) => setQuery({ ...query, assetDesc: event.target.value })} /></QueryItem>
-        <QueryItem label="资产用途"><Select allowClear value={query.purpose || undefined} options={[...new Set(assets.map((item) => item.purpose))].map((value) => ({ label: value, value }))} onChange={(value) => setQuery({ ...query, purpose: value || '' })} /></QueryItem>
         <QueryItem label="是否锁定"><Select allowClear value={query.locked || undefined} options={['是', '否'].map((value) => ({ label: value, value }))} onChange={(value) => setQuery({ ...query, locked: value || '' })} /></QueryItem>
       </QueryBar>
       <Table rowKey="id" columns={columns} dataSource={filteredAssets} scroll={{ x: 1450, y: 380 }} pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }} />
