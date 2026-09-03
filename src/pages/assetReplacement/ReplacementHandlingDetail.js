@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Eye, Search } from 'lucide-react';
 import {
   Button,
   Card,
@@ -22,6 +22,7 @@ import {
 } from '../../services/assetReplacementService';
 import { formatDateText, formatDepartment } from '../../utils/displayFormat';
 import ReplacementAssetSelectModal from './ReplacementAssetSelectModal';
+import ReplacementEmployeeAssetsModal from './ReplacementEmployeeAssetsModal';
 import ReplacementHistoryCard from './ReplacementHistoryCard';
 
 const { TextArea } = Input;
@@ -76,6 +77,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
   const [usageNote, setUsageNote] = useState(application.issueProcess.usageNote || '');
   const [opinion, setOpinion] = useState('');
   const [assetModalOpen, setAssetModalOpen] = useState(false);
+  const [employeeAssetsOpen, setEmployeeAssetsOpen] = useState(false);
   const [addSignOpen, setAddSignOpen] = useState(false);
   const [addSignPerson, setAddSignPerson] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -288,7 +290,20 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
 
         <Card title={<SectionTitle>申请人信息</SectionTitle>} size="small">
           <DetailGrid>
-            <DetailItem label="申请人">{application.applicant.id}-{application.applicant.name}</DetailItem>
+            <DetailItem label="申请人">
+              <Space size={8}>
+                <span>{application.applicant.id}-{application.applicant.name}</span>
+                <Button
+                  type="link"
+                  size="small"
+                  className="px-0"
+                  icon={<Eye size={14} />}
+                  onClick={() => setEmployeeAssetsOpen(true)}
+                >
+                  查看名下资产
+                </Button>
+              </Space>
+            </DetailItem>
             <DetailItem label="申请日期">{applyDate}</DetailItem>
             <DetailItem label="公司">{application.applicant.company || '-'}</DetailItem>
             <DetailItem label="办公区">{application.applicant.officeArea || '-'}</DetailItem>
@@ -315,9 +330,9 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
             <DetailItem label="配置">{oldAsset.config || '-'}</DetailItem>
             <DetailItem label="资产状态"><StatusTag value={oldAsset.status} type="business" /></DetailItem>
             <DetailItem label="部件数量">{componentCount}</DetailItem>
-            <DetailItem label="城市">{oldAsset.city || '-'}</DetailItem>
-            <DetailItem label="建筑">{oldAsset.building || '-'}</DetailItem>
-            <DetailItem label="楼层">{oldAsset.floor || '-'}</DetailItem>
+            <DetailItem label="city">{oldAsset.city || '-'}</DetailItem>
+            <DetailItem label="building">{oldAsset.building || '-'}</DetailItem>
+            <DetailItem label="floor">{oldAsset.floor || '-'}</DetailItem>
             <DetailItem label="备注" span={3}>{oldAsset.note || '-'}</DetailItem>
             <DetailItem label="耗材信息" span={3}>{oldAsset.consumables || '-'}</DetailItem>
             <DetailItem label={<RequiredLabel>仓库</RequiredLabel>}>
@@ -395,7 +410,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
             <DetailItem label="配置" span={2}>{newAsset?.config || '-'}</DetailItem>
             <DetailItem label="备注" span={3}>{newAsset?.note || '-'}</DetailItem>
             <DetailItem label="耗材信息" span={3}>{newAsset?.consumables || '-'}</DetailItem>
-            <DetailItem label={<RequiredLabel>城市</RequiredLabel>}>
+            <DetailItem label={<RequiredLabel>city</RequiredLabel>}>
               <Select
                 className="w-full"
                 value={city}
@@ -407,7 +422,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
                 }}
               />
             </DetailItem>
-            <DetailItem label={<RequiredLabel>建筑</RequiredLabel>}>
+            <DetailItem label={<RequiredLabel>building</RequiredLabel>}>
               <Select
                 className="w-full"
                 value={building || undefined}
@@ -418,7 +433,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
                 }}
               />
             </DetailItem>
-            <DetailItem label={<RequiredLabel>楼层</RequiredLabel>}>
+            <DetailItem label={<RequiredLabel>floor</RequiredLabel>}>
               <Select
                 className="w-full"
                 value={floor || undefined}
@@ -470,6 +485,12 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
           </div>
         </ReplacementHistoryCard>
       </Space>
+
+      <ReplacementEmployeeAssetsModal
+        open={employeeAssetsOpen}
+        applicant={application.applicant}
+        onCancel={() => setEmployeeAssetsOpen(false)}
+      />
 
       <ReplacementAssetSelectModal
         open={assetModalOpen}
