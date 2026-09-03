@@ -150,6 +150,7 @@ export default function EmployeeAssetApprovalPage() {
   }
 
   const canApprove = selectedApplication.status === '处理中' && selectedApplication.currentNode !== '资产配给';
+  const approvalApplicant = { ...selectedApplication.applicant, company: '114.新媒体' };
 
   return (
     <div className="min-h-screen bg-slate-100 p-4">
@@ -161,7 +162,7 @@ export default function EmployeeAssetApprovalPage() {
         </div>
 
         <ApplicantInfoCard
-          applicant={selectedApplication.applicant}
+          applicant={approvalApplicant}
           applyDate={selectedApplication.applyDate}
           showEmployeeStatus={false}
         />
