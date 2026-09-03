@@ -101,6 +101,11 @@ export default function ReplacementConfirmPage() {
           <Typography.Paragraph type="danger" strong className="mb-0">
             {isReturn ? '提示：请核对退库资产明细后完成刷卡或扫码确认。' : '提示：请核对待发放资产明细后完成刷卡或扫码确认。'}
           </Typography.Paragraph>
+          {!isReturn && (
+            <Typography.Paragraph type="danger" className="mb-0 mt-2">
+              <strong>保管职责：</strong>领用人须承担妥善保管物资的责任，除自然损耗外，不得人为损坏或者疏于维护，否则承担相应的赔偿责任。应公司需要，领用人应当配合及时调换或归还借用物资，如延迟甚至拒绝交还公司物资，公司保留采取进一步手段的权利，包括但不限于留置领用人工资、奖金或者其他个人物资。
+            </Typography.Paragraph>
+          )}
         </Card>
         <Card size="small" title={<SectionTitle>刷卡/扫码确认</SectionTitle>}>
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center">
