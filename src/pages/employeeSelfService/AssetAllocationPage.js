@@ -37,7 +37,6 @@ const EMPTY_APPLICANT_QUERY = {
   assetTag: '',
   assetStatus: '',
   assetDesc: '',
-  assetPurpose: '',
   locked: '',
 };
 
@@ -130,7 +129,6 @@ export default function EmployeeAssetAllocationPage() {
     (!appliedApplicantQuery.assetTag || asset.assetTag.toLowerCase().includes(appliedApplicantQuery.assetTag.toLowerCase()))
     && (!appliedApplicantQuery.assetStatus || asset.assetStatus === appliedApplicantQuery.assetStatus)
     && (!appliedApplicantQuery.assetDesc || asset.assetDesc.toLowerCase().includes(appliedApplicantQuery.assetDesc.toLowerCase()))
-    && (!appliedApplicantQuery.assetPurpose || asset.assetPurpose === appliedApplicantQuery.assetPurpose)
     && (!appliedApplicantQuery.locked || asset.locked === appliedApplicantQuery.locked)
   )), [applicantAssetRows, appliedApplicantQuery]);
 
@@ -335,7 +333,6 @@ export default function EmployeeAssetAllocationPage() {
           <QueryItem label="资产标签号"><Input allowClear value={applicantQuery.assetTag} onChange={(event) => setApplicantQuery({ ...applicantQuery, assetTag: event.target.value })} /></QueryItem>
           <QueryItem label="资产状态"><Select allowClear value={applicantQuery.assetStatus || undefined} options={[...new Set(applicantAssetRows.map((item) => item.assetStatus))].map((value) => ({ label: value, value }))} onChange={(value) => setApplicantQuery({ ...applicantQuery, assetStatus: value || '' })} /></QueryItem>
           <QueryItem label="资产说明"><Input allowClear value={applicantQuery.assetDesc} onChange={(event) => setApplicantQuery({ ...applicantQuery, assetDesc: event.target.value })} /></QueryItem>
-          <QueryItem label="资产用途"><Select allowClear value={applicantQuery.assetPurpose || undefined} options={[{ label: '员工用机', value: '员工用机' }, { label: '日常办公', value: '日常办公' }]} onChange={(value) => setApplicantQuery({ ...applicantQuery, assetPurpose: value || '' })} /></QueryItem>
           <QueryItem label="是否锁定"><Select allowClear value={applicantQuery.locked || undefined} options={[{ label: '是', value: '是' }, { label: '否', value: '否' }]} onChange={(value) => setApplicantQuery({ ...applicantQuery, locked: value || '' })} /></QueryItem>
         </QueryBar>
         <Table rowKey="id" size="small" bordered columns={applicantAssetColumns} dataSource={filteredApplicantAssets} scroll={{ x: 1400, y: 400 }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
