@@ -157,6 +157,7 @@ export default function AssetReturnHandlingPage() {
             <DetailItem label="联系电话">{selected.applicant.phone || '-'}</DetailItem>
             <DetailItem label="邮箱">{selected.applicant.email || '-'}</DetailItem>
             <DetailItem label="部门" span={3}>{formatDepartment(selected.applicant.department)}</DetailItem>
+            <DetailItem label="退库原因" span={3}>{selected.reason || '-'}</DetailItem>
           </DetailGrid>
         </Card>
 
