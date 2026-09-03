@@ -127,7 +127,6 @@ const mockUserData = [
   { id: '200026', name: '陈菁', email: 'millychen@sohu-inc.com', level: '4A', isTech: '否', dept: '集团总部', deptCode: 'D0159', empStatus: 'resigned', usageStatus: 'inactive' },
   { id: '214644', name: '姜珊', email: 'shanjiang214644@sohu-inc.com', level: '3B', isTech: '是', dept: '集团总部', deptCode: 'D0159', empStatus: 'employed', usageStatus: 'active' },
 ];
-
 const mockUserDetail = {
   name: '杨',
   dept: 'D3879 焦点产研部',
@@ -141,7 +140,7 @@ const mockUserDetail = {
   fullDeptName: '焦点-焦点产研部',
   office: 'L003 北京-融科大厦C座',
   position: 'JC0456 高级电商专员',
-  phone: '18805025056',
+  phone: '010-56602506',
   statusValid: '无效',
   gender: '女',
   email: 'weiyang205266@sohu-inc.com',
@@ -258,7 +257,6 @@ const OrgManagementView = () => {
     }
     return true;
   });
-
   return (
     <div className="flex flex-col gap-4">
       <div className="bg-white border border-[#f0f0f0] rounded p-4">
