@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Eye } from 'lucide-react';
 import {
   Button,
   Card,
@@ -21,6 +22,7 @@ import {
   requestAssetReturnConfirmation,
 } from '../../services/assetReturnService';
 import { formatDateText, formatDepartment } from '../../utils/displayFormat';
+import AssetReturnEmployeeAssetsModal from './AssetReturnEmployeeAssetsModal';
 
 const { TextArea } = Input;
 
@@ -45,6 +47,7 @@ export default function AssetReturnHandlingPage() {
   const [assetMark, setAssetMark] = useState('');
   const [usageNote, setUsageNote] = useState('');
   const [opinion, setOpinion] = useState('');
+  const [employeeAssetsOpen, setEmployeeAssetsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -134,16 +137,26 @@ export default function AssetReturnHandlingPage() {
 
         <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>
           <DetailGrid>
-            <DetailItem label="申请人">{selected.applicant.id}-{selected.applicant.name}</DetailItem>
+            <DetailItem label="申请人">
+              <Space size={8}>
+                <span>{selected.applicant.id}-{selected.applicant.name}</span>
+                <Button
+                  type="link"
+                  size="small"
+                  className="px-0"
+                  icon={<Eye size={14} />}
+                  onClick={() => setEmployeeAssetsOpen(true)}
+                >
+                  查看名下资产
+                </Button>
+              </Space>
+            </DetailItem>
             <DetailItem label="申请日期">{formatDateText(selected.applyTime)}</DetailItem>
-            <DetailItem label="公司">{selected.applicant.company || '-'}</DetailItem>
-            <DetailItem label="板块">{selected.applicant.block || '-'}</DetailItem>
+            <DetailItem label="公司">114.新媒体</DetailItem>
             <DetailItem label="办公区">{selected.applicant.officeArea || '-'}</DetailItem>
             <DetailItem label="联系电话">{selected.applicant.phone || '-'}</DetailItem>
             <DetailItem label="邮箱">{selected.applicant.email || '-'}</DetailItem>
-            <DetailItem label="退库类型">{selected.returnType || '-'}</DetailItem>
-            <DetailItem label="部门">{formatDepartment(selected.applicant.department)}</DetailItem>
-            <DetailItem label="退库原因" span={3}>{selected.reason || '-'}</DetailItem>
+            <DetailItem label="部门" span={3}>{formatDepartment(selected.applicant.department)}</DetailItem>
           </DetailGrid>
         </Card>
 
@@ -155,9 +168,9 @@ export default function AssetReturnHandlingPage() {
             <DetailItem label="资产状态"><StatusTag value={asset.status} type="business" /></DetailItem>
             <DetailItem label="资产用途">{asset.purpose || '-'}</DetailItem>
             <DetailItem label="部件数量">{componentCount}</DetailItem>
-            <DetailItem label="城市">{asset.city || '-'}</DetailItem>
-            <DetailItem label="建筑">{asset.building || '-'}</DetailItem>
-            <DetailItem label="楼层">{asset.floor || '-'}</DetailItem>
+            <DetailItem label="city">{asset.city || '-'}</DetailItem>
+            <DetailItem label="building">{asset.building || '-'}</DetailItem>
+            <DetailItem label="floor">{asset.floor || '-'}</DetailItem>
             <DetailItem label="配置" span={3}>{asset.config || '-'}</DetailItem>
             <DetailItem label="备注" span={3}>{asset.note || '-'}</DetailItem>
             <DetailItem label="关联耗材" span={3}>
@@ -220,6 +233,12 @@ export default function AssetReturnHandlingPage() {
           </div>
         </Card>
       </Space>
+
+      <AssetReturnEmployeeAssetsModal
+        open={employeeAssetsOpen}
+        applicant={selected.applicant}
+        onCancel={() => setEmployeeAssetsOpen(false)}
+      />
     </>
   );
 }
