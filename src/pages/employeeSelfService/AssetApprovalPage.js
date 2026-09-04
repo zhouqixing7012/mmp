@@ -125,7 +125,7 @@ export default function EmployeeAssetApprovalPage() {
     { title: '配置', dataIndex: 'config', width: 220 },
     { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
     { title: '申请用途', dataIndex: 'purpose', width: 140 },
-    { title: '详细说明', dataIndex: 'detail' },
+    { title: '申请原因', dataIndex: 'detail' },
     {
       title: '是否超标',
       dataIndex: 'overStandard',
