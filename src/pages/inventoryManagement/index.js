@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Empty } from 'antd';
 import AssetReceiptPage from './AssetReceiptPage';
+import ConsumableReceiptPage from './ConsumableReceiptPage';
 import WarehouseWorkbenchPage from './WarehouseWorkbenchPage';
 import { InboundPage, OutboundPage, MovePage, TransferPage } from './InventoryDocumentPages';
 
@@ -25,6 +26,10 @@ function PendingInventoryPage({ title }) {
 export function InventoryManagementContent({ activeSubMenu }) {
   if (activeSubMenu === '资产接收') {
     return <AssetReceiptPage />;
+  }
+
+  if (activeSubMenu === '耗材接收') {
+    return <ConsumableReceiptPage />;
   }
 
   if (activeSubMenu === '入库') {
@@ -55,5 +60,6 @@ export function InventoryManagementContent({ activeSubMenu }) {
 }
 
 export { default as AssetReceiptPage } from './AssetReceiptPage';
+export { default as ConsumableReceiptPage } from './ConsumableReceiptPage';
 export { default as WarehouseWorkbenchPage } from './WarehouseWorkbenchPage';
 export { InboundPage, OutboundPage, MovePage, TransferPage } from './InventoryDocumentPages';
