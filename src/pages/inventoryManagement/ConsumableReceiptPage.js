@@ -220,7 +220,7 @@ export default function ConsumableReceiptPage() {
     { title: '接收状态', dataIndex: 'receiptStatus', width: 120, render: (v) => <StatusTag value={v} /> }, { title: 'PO单名称', dataIndex: 'poName', width: 220 },
     { title: '公司', dataIndex: 'company', width: 150 }, { title: '板块', dataIndex: 'plate', width: 110 }, { title: '办公区', dataIndex: 'officeArea', width: 190 },
     { title: '供应商', dataIndex: 'supplier', width: 250 }, { title: '推送日期', dataIndex: 'pushDate', width: 120 }, { title: '采购类型', dataIndex: 'purchaseType', width: 120 },
-    { title: '操作', width: 180, fixed: 'right', render: (_, r) => <Space size={2}><Button type="link" className="px-0" onClick={() => openPo(r)}>接收/查看接收</Button><Button type="link" className="px-0" onClick={() => openReceiptList(r)}>查看</Button></Space> },
+    { title: '操作', width: 140, fixed: 'right', render: (_, r) => <Space size={2}><Button type="link" className="px-0" onClick={() => openPo(r)}>接收</Button><Button type="link" className="px-0" onClick={() => openReceiptList(r)}>查看</Button></Space> },
   ];
   const itemColumns = [
     { title: '行号', dataIndex: 'id', width: 70 }, { title: '操作', width: 80, render: (_, r) => <Button type="link" className="px-0" disabled={!remainingQty(r)} onClick={() => { setEditItem(r); setEditDraft({ ...r }); }}>编辑</Button> },
