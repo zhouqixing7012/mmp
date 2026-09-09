@@ -3,8 +3,9 @@ import { Card, Empty } from 'antd';
 import AssetReceiptPage from './AssetReceiptPage';
 import ConsumableReceiptPage from './ConsumableReceiptPage';
 import InboundPage from './InboundPage';
+import OutboundPage from './OutboundPage';
 import WarehouseWorkbenchPage from './WarehouseWorkbenchPage';
-import { OutboundPage, MovePage, TransferPage } from './InventoryDocumentPages';
+import { MovePage, TransferPage } from './InventoryDocumentPages';
 
 export const INVENTORY_MANAGEMENT_SUB_MENUS = [
   '资产接收',
@@ -63,5 +64,6 @@ export function InventoryManagementContent({ activeSubMenu }) {
 export { default as AssetReceiptPage } from './AssetReceiptPage';
 export { default as ConsumableReceiptPage } from './ConsumableReceiptPage';
 export { default as InboundPage } from './InboundPage';
+export { default as OutboundPage } from './OutboundPage';
 export { default as WarehouseWorkbenchPage } from './WarehouseWorkbenchPage';
-export { OutboundPage, MovePage, TransferPage } from './InventoryDocumentPages';
+export { OutboundPage as LegacyOutboundPage, MovePage, TransferPage } from './InventoryDocumentPages';
