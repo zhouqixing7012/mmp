@@ -31,6 +31,7 @@
 | `src/pages/inventoryManagement/` | 库存管理。 |
 | `src/pages/inventoryManagement/ConsumableReceiptPage.js` | 耗材接收 PO、REC、低值耐用品逐件维护和低耗自动入库演示。 |
 | `src/pages/inventoryManagement/consumableReceiptMock.js` | 耗材接收演示 PO、接收单、物料和公司耗材仓匹配数据。 |
+| `src/pages/inventoryManagement/InboundPage.js` | 入库单列表、新增入库/采购接收/退库入库/借用归还四类编辑页，以及对应添加/选择物资弹窗。 |
 | `src/pages/assetInventory/` | 资产盘点。 |
 | `src/pages/yewurules/` | 后台框架、菜单和页面 scope。 |
 | `src/prototype-annotations/` | 标注基线、Coverage、target、定位、编辑、评审和诊断。 |
@@ -147,7 +148,7 @@ localStorage
 页面内演示状态 + Mock
 ```
 
-后台页面继续复用 `QueryBar / QueryItem`、`DetailGrid / DetailItem`、`StatusTag`、`SelectModal` 和 Ant Design Table。耗材接收复用资产接收的页面骨架，但按物资类型分为“低值耐用品逐件维护”和“低耗接收后自动入库”两条状态流。
+后台页面继续复用 `QueryBar / QueryItem`、`DetailGrid / DetailItem`、`StatusTag`、`SelectModal` 和 Ant Design Table。耗材接收复用资产接收的页面骨架，但按物资类型分为“低值耐用品逐件维护”和“低耗接收后自动入库”两条状态流。入库单由独立 `InboundPage` 承载：公共单据头保持一致，新增入库、采购接收、退库入库、借用归还只在物资列表和添加/选择物资区域按业务类型分叉。
 
 ## 研发评审交付架构
 
