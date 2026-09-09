@@ -78,6 +78,7 @@ export function DetailItem({ label, children, span = 1 }) {
   const { columns } = useContext(DetailGridContext);
   const normalizedSpan = normalizeSpan(span, columns);
   const valueColumnSpan = normalizedSpan * 2 - 1;
+  const isFullRow = normalizedSpan === columns;
   const prototypeLabel = toPrototypeLabel(label);
   const cellBaseStyle = {
     padding: `${token.paddingXS}px ${token.paddingSM}px`,
@@ -96,6 +97,7 @@ export function DetailItem({ label, children, span = 1 }) {
         data-prototype-label={prototypeLabel}
         style={{
           ...cellBaseStyle,
+          gridColumn: isFullRow ? '1 / 2' : undefined,
           background: token.colorFillAlter,
           color: token.colorText,
           fontWeight: 400,
@@ -108,7 +110,7 @@ export function DetailItem({ label, children, span = 1 }) {
         data-prototype-detail-value={prototypeLabel}
         style={{
           ...cellBaseStyle,
-          gridColumn: `span ${valueColumnSpan}`,
+          gridColumn: isFullRow ? '2 / -1' : `span ${valueColumnSpan}`,
           background: token.colorBgContainer,
           color: token.colorText,
           wordBreak: 'break-word',
