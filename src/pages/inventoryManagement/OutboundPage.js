@@ -5,7 +5,6 @@ import {
   Checkbox,
   DatePicker,
   Input,
-  InputNumber,
   Modal,
   Select,
   Space,
@@ -20,6 +19,7 @@ import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
 
 const { TextArea } = Input;
+const { RangePicker } = DatePicker;
 const OUTBOUND_TYPES = ['领用出库', '借用出库'];
 const WAREHOUSES = [
   'I0001-资产集团总库（新媒体）',
@@ -46,8 +46,6 @@ const SOURCE_ASSET = {
   model: 'ThinkPad T14',
   config: 'i7 / 32G / 1T SSD',
   unit: '台',
-  area: 'A区',
-  location: 'A-01-03',
   applicationBatch: '2026Q3',
   responsiblePerson: '114111-杨芊',
   quantity: 1,
@@ -78,7 +76,8 @@ function Readonly({ children }) {
   return <Typography.Text>{children === 0 ? 0 : (children || '-')}</Typography.Text>;
 }
 
-function LookupInput({ value, placeholder = '请选择', onClick }) {
+function LookupInput({ value, placeholder = '请选择', onClick, disabled = false }) {
+  if (disabled) return <Readonly>{value}</Readonly>;
   return (
     <div className="cursor-pointer" onClick={onClick}>
       <Input value={value} readOnly placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} />} />
@@ -86,8 +85,12 @@ function LookupInput({ value, placeholder = '请选择', onClick }) {
   );
 }
 
-function EditorField({ label, children, span = 1 }) {
-  return <DetailItem label={label} span={span}>{children}</DetailItem>;
+function FieldLabel({ label, required }) {
+  return <span>{label}{required && <span className="ml-0.5 text-red-500">*</span>}</span>;
+}
+
+function EditorField({ label, required = false, children, span = 1 }) {
+  return <DetailItem label={<FieldLabel label={label} required={required} />} span={span}>{children}</DetailItem>;
 }
 
 function OutboundItemModal({ open, mode, warehouse, initialLine, onCancel, onConfirm }) {
@@ -103,7 +106,8 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, onCancel, onCon
     building: initialLine?.building || '129753.搜狐媒体大厦',
     floor: initialLine?.floor || '15F',
     room: initialLine?.room || '1508',
-    outboundQty: initialLine?.quantity || 1,
+    outboundQty: initialLine?.quantity || initialAsset.quantity || 1,
+    outboundStatus: initialLine?.outboundStatus || (isBorrow ? '在用-借用中' : '在用-使用中'),
     costCenter: initialLine?.costCenter || '0.*',
     businessLine: initialLine?.businessLine || '0.*',
     outboundDate: initialLine?.outboundDate || '2026-09-10',
@@ -126,7 +130,7 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, onCancel, onCon
       issueDate: isBorrow ? '' : form.outboundDate,
       borrowDate: isBorrow ? form.outboundDate : '',
       borrowReason: isBorrow ? form.reason : '',
-      outboundStatus: isBorrow ? '在用-借用中' : '在用-使用中',
+      outboundStatus: form.outboundStatus,
       total,
     };
     onConfirm(payload, continuousAdd);
@@ -144,7 +148,7 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, onCancel, onCon
       destroyOnHidden
     >
       <Space direction="vertical" size={16} className="w-full">
-        <Typography.Text type="secondary">当前仓库：{warehouse}</Typography.Text>
+        <Typography.Text>当前仓库：{warehouse}</Typography.Text>
         <Card size="small" title="选择物资">
           <DetailGrid columns={3} labelWidth={96}>
             <EditorField label="资产标签号">
@@ -168,8 +172,6 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, onCancel, onCon
             <EditorField label="规格型号"><Readonly>{asset.model}</Readonly></EditorField>
             <EditorField label="配置"><Readonly>{asset.config}</Readonly></EditorField>
             <EditorField label="计量单位"><Readonly>{asset.unit}</Readonly></EditorField>
-            <EditorField label="库区"><Readonly>{asset.area}</Readonly></EditorField>
-            <EditorField label="库位"><Readonly>{asset.location}</Readonly></EditorField>
             <EditorField label="申请批次"><Readonly>{asset.applicationBatch}</Readonly></EditorField>
             <EditorField label="责任人"><Readonly>{asset.responsiblePerson}</Readonly></EditorField>
             <EditorField label="物资总类"><Readonly>{asset.materialGroup}</Readonly></EditorField>
@@ -192,25 +194,28 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, onCancel, onCon
 
         <Card size="small" title={isBorrow ? '借用出库' : '领用出库'}>
           <DetailGrid columns={3} labelWidth={96} minWidth={980}>
-            <EditorField label={isBorrow ? '借用人*' : '领用人*'}><LookupInput value={form.person} onClick={() => {}} /></EditorField>
+            <EditorField label={isBorrow ? '借用人' : '领用人'} required><LookupInput value={form.person} onClick={() => {}} /></EditorField>
             <EditorField label="部门"><Readonly>{form.department}</Readonly></EditorField>
             <EditorField label="公司"><Readonly>{form.company}</Readonly></EditorField>
-            {isBorrow && <EditorField label="资产状态"><Readonly>在用-借用中</Readonly></EditorField>}
-            {isBorrow && <EditorField label="出库数量*"><InputNumber className="w-full" min={1} precision={0} value={form.outboundQty} onChange={(v) => set('outboundQty', v || 1)} /></EditorField>}
-            {isBorrow && <EditorField label="成本中心*"><LookupInput value={form.costCenter} onClick={() => {}} /></EditorField>}
-            {isBorrow && <EditorField label="业务线"><LookupInput value={form.businessLine} onClick={() => {}} /></EditorField>}
-            <EditorField label="City*"><LookupInput value={form.city} onClick={() => {}} /></EditorField>
-            <EditorField label="Building*"><LookupInput value={form.building} onClick={() => {}} /></EditorField>
-            <EditorField label="Floor*"><Select className="w-full" value={form.floor} options={['15F', '16F', '17F'].map((v) => ({ label: v, value: v }))} onChange={(v) => set('floor', v)} /></EditorField>
+            <EditorField label="资产状态" required>
+              <Select
+                className="w-full"
+                value={form.outboundStatus}
+                options={(isBorrow ? ['在用-借用中', '在用-使用中'] : ['在用-使用中', '在用-借用中']).map((value) => ({ label: value, value }))}
+                onChange={(value) => set('outboundStatus', value)}
+              />
+            </EditorField>
+            <EditorField label="出库数量"><Readonly>{form.outboundQty}</Readonly></EditorField>
+            <EditorField label="成本中心" required><LookupInput value={form.costCenter} onClick={() => {}} /></EditorField>
+            <EditorField label="业务线"><LookupInput value={form.businessLine} onClick={() => {}} /></EditorField>
+            <EditorField label="City" required><LookupInput value={form.city} onClick={() => {}} /></EditorField>
+            <EditorField label="Building" required><LookupInput value={form.building} onClick={() => {}} /></EditorField>
+            <EditorField label="Floor" required><Select className="w-full" value={form.floor} options={['15F', '16F', '17F'].map((v) => ({ label: v, value: v }))} onChange={(v) => set('floor', v)} /></EditorField>
             <EditorField label="Room"><Input value={form.room} onChange={(e) => set('room', e.target.value)} /></EditorField>
-            {!isBorrow && <EditorField label="资产状态"><Readonly>在用-使用中</Readonly></EditorField>}
-            {!isBorrow && <EditorField label="出库数量*"><InputNumber className="w-full" min={1} precision={0} value={form.outboundQty} onChange={(v) => set('outboundQty', v || 1)} /></EditorField>}
-            {!isBorrow && <EditorField label="成本中心*"><LookupInput value={form.costCenter} onClick={() => {}} /></EditorField>}
-            {!isBorrow && <EditorField label="业务线"><LookupInput value={form.businessLine} onClick={() => {}} /></EditorField>}
-            {isBorrow && <EditorField label="借用原因*"><Input value={form.reason} onChange={(e) => set('reason', e.target.value)} /></EditorField>}
-            <EditorField label="用途*"><Select className="w-full" value={form.usage} options={['办公', '测试', '机房'].map((v) => ({ label: v, value: v }))} onChange={(v) => set('usage', v)} /></EditorField>
-            <EditorField label={isBorrow ? '借用日期*' : '领用日期*'}><DatePicker className="w-full" value={form.outboundDate ? dayjs(form.outboundDate) : null} onChange={(d) => set('outboundDate', d?.format('YYYY-MM-DD') || '')} /></EditorField>
-            {isBorrow && <EditorField label="预计归还日期*"><DatePicker className="w-full" value={form.expectedReturnDate ? dayjs(form.expectedReturnDate) : null} onChange={(d) => set('expectedReturnDate', d?.format('YYYY-MM-DD') || '')} /></EditorField>}
+            {isBorrow && <EditorField label="借用原因" required><Input value={form.reason} onChange={(e) => set('reason', e.target.value)} /></EditorField>}
+            <EditorField label="用途" required><Select className="w-full" value={form.usage} options={['办公', '测试', '机房'].map((v) => ({ label: v, value: v }))} onChange={(v) => set('usage', v)} /></EditorField>
+            <EditorField label={isBorrow ? '借用日期' : '领用日期'} required><DatePicker className="w-full" value={form.outboundDate ? dayjs(form.outboundDate) : null} onChange={(d) => set('outboundDate', d?.format('YYYY-MM-DD') || '')} /></EditorField>
+            {isBorrow && <EditorField label="预计归还日期" required><DatePicker className="w-full" value={form.expectedReturnDate ? dayjs(form.expectedReturnDate) : null} onChange={(d) => set('expectedReturnDate', d?.format('YYYY-MM-DD') || '')} /></EditorField>}
             <EditorField label="使用说明" span={3}><TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={form.usageDesc} onChange={(e) => set('usageDesc', e.target.value)} /></EditorField>
           </DetailGrid>
         </Card>
@@ -219,7 +224,7 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, onCancel, onCon
   );
 }
 
-function OutboundEditor({ source, onBack, onSave }) {
+function OutboundEditor({ source, onBack, onSave, onExecute }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [outboundType, setOutboundType] = useState(source?.outboundType || '领用出库');
   const [warehouse, setWarehouse] = useState(source?.warehouse || WAREHOUSES[0]);
@@ -233,6 +238,7 @@ function OutboundEditor({ source, onBack, onSave }) {
   const creator = source?.creator || '206984-何文';
   const status = source?.status || '草稿';
   const createdDate = source?.createdDate || dayjs().format('YYYY-MM-DD');
+  const editable = status === '草稿';
 
   const issueColumns = [
     { title: '行号', width: 64, render: (_, __, index) => index + 1 },
@@ -245,7 +251,7 @@ function OutboundEditor({ source, onBack, onSave }) {
     { title: '领用日期', dataIndex: 'issueDate', width: 120 },
     { title: '资产标记', dataIndex: 'assetMark', width: 100 },
     { title: '资产状态', dataIndex: 'outboundStatus', width: 130 },
-    { title: '操作', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button> },
+    ...(editable ? [{ title: '操作', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button> }] : []),
   ];
   const borrowColumns = [
     { title: '行号', width: 64, render: (_, __, index) => index + 1 },
@@ -259,8 +265,17 @@ function OutboundEditor({ source, onBack, onSave }) {
     { title: '借用原因', dataIndex: 'borrowReason', width: 180 },
     { title: '资产标记', dataIndex: 'assetMark', width: 100 },
     { title: '资产状态', dataIndex: 'outboundStatus', width: 130 },
-    { title: '操作', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button> },
+    ...(editable ? [{ title: '操作', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button> }] : []),
   ];
+
+  const payload = () => ({
+    outboundType,
+    warehouse,
+    remark,
+    cardClaim,
+    quantity: lines.reduce((sum, row) => sum + Number(row.quantity || 0), 0),
+    lines,
+  });
 
   const saveLine = (row, continuousAdd) => {
     if (editingLine) {
@@ -274,10 +289,7 @@ function OutboundEditor({ source, onBack, onSave }) {
   };
 
   const deleteLines = () => {
-    if (!selectedKeys.length) {
-      messageApi.warning('请先选择需要删除的物资');
-      return;
-    }
+    if (!selectedKeys.length) return messageApi.warning('请先选择需要删除的物资');
     const selected = new Set(selectedKeys);
     setLines((current) => current.filter((row) => !selected.has(row.id)));
     setSelectedKeys([]);
@@ -301,6 +313,12 @@ function OutboundEditor({ source, onBack, onSave }) {
     });
   };
 
+  const executeOutbound = () => {
+    if (!lines.length) return messageApi.warning('请先添加待出库物资');
+    onExecute(payload());
+    messageApi.success('执行出库成功');
+  };
+
   return (
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
@@ -310,23 +328,23 @@ function OutboundEditor({ source, onBack, onSave }) {
           <EditorField label="出库单号"><Readonly>{documentNo}</Readonly></EditorField>
           <EditorField label="单据类型"><Readonly>出库工单</Readonly></EditorField>
           <EditorField label="单据状态"><StatusTag value={status} /></EditorField>
-          <EditorField label="出库类型"><Select className="w-full" value={outboundType} options={OUTBOUND_TYPES.map((v) => ({ label: v, value: v }))} onChange={changeType} /></EditorField>
+          <EditorField label="出库类型">{editable ? <Select className="w-full" value={outboundType} options={OUTBOUND_TYPES.map((v) => ({ label: v, value: v }))} onChange={changeType} /> : <Readonly>{outboundType}</Readonly>}</EditorField>
           <EditorField label="制单人"><Readonly>{creator}</Readonly></EditorField>
           <EditorField label="制单时间"><Readonly>{createdDate}</Readonly></EditorField>
-          <EditorField label="是否刷卡领用"><Select className="w-full" value={cardClaim} options={['是', '否'].map((v) => ({ label: v, value: v }))} onChange={setCardClaim} /></EditorField>
-          <EditorField label="当前仓库"><Select className="w-full" value={warehouse} options={WAREHOUSES.map((v) => ({ label: v, value: v }))} onChange={setWarehouse} /></EditorField>
-          <EditorField label="备注" span={3}><TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={remark} onChange={(e) => setRemark(e.target.value)} /></EditorField>
+          <EditorField label="是否刷卡领用">{editable ? <Select className="w-full" value={cardClaim} options={['是', '否'].map((v) => ({ label: v, value: v }))} onChange={setCardClaim} /> : <Readonly>{cardClaim}</Readonly>}</EditorField>
+          <EditorField label="当前仓库">{editable ? <Select className="w-full" value={warehouse} options={WAREHOUSES.map((v) => ({ label: v, value: v }))} onChange={setWarehouse} /> : <Readonly>{warehouse}</Readonly>}</EditorField>
+          <EditorField label="备注" span={3}>{editable ? <TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={remark} onChange={(e) => setRemark(e.target.value)} /> : <Readonly>{remark}</Readonly>}</EditorField>
         </DetailGrid>
       </Card>
 
       <Card
         size="small"
         title="出库物资"
-        extra={<Space>
+        extra={editable ? <Space>
           <Button type="primary" icon={<Plus size={14} />} onClick={() => { setEditingLine(null); setLineModalOpen(true); }}>添加物资</Button>
           <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>
           <Button icon={<Upload size={14} />} onClick={() => messageApi.info('Excel导入沿用出库模板，本轮按截图字段展示')}>Excel导入</Button>
-        </Space>}
+        </Space> : null}
       >
         <Table
           rowKey="id"
@@ -334,19 +352,28 @@ function OutboundEditor({ source, onBack, onSave }) {
           bordered
           columns={outboundType === '借用出库' ? borrowColumns : issueColumns}
           dataSource={lines}
-          rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true }}
+          rowSelection={editable ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true } : undefined}
           scroll={{ x: 'max-content' }}
           pagination={false}
         />
       </Card>
 
       <div className="flex justify-center gap-3">
-        <Button type="primary" onClick={() => onSave({ outboundType, warehouse, remark, cardClaim, quantity: lines.reduce((sum, row) => sum + Number(row.quantity || 0), 0), lines })}>保存草稿</Button>
-        <Button icon={<Printer size={14} />} onClick={() => messageApi.success('出库单打印操作已记录（原型）')}>出库单打印</Button>
-        <Button onClick={onBack}>返回</Button>
+        {editable ? (
+          <>
+            <Button onClick={() => onSave(payload())}>保存草稿</Button>
+            <Button type="primary" onClick={executeOutbound}>执行出库</Button>
+            <Button onClick={onBack}>返回</Button>
+          </>
+        ) : (
+          <>
+            <Button type="primary" icon={<Printer size={14} />} onClick={() => messageApi.success('出库单打印操作已记录（原型）')}>打印</Button>
+            <Button onClick={onBack}>返回</Button>
+          </>
+        )}
       </div>
 
-      <OutboundItemModal
+      {editable && <OutboundItemModal
         key={`${outboundType}-${editingLine?.id || 'new'}-${lineModalOpen}`}
         open={lineModalOpen}
         mode={outboundType}
@@ -354,7 +381,7 @@ function OutboundEditor({ source, onBack, onSave }) {
         initialLine={editingLine}
         onCancel={() => { setLineModalOpen(false); setEditingLine(null); }}
         onConfirm={saveLine}
-      />
+      />}
     </Space>
   );
 }
@@ -388,21 +415,16 @@ export default function OutboundPage() {
     setView('editor');
   };
 
-  const saveDraft = (payload) => {
-    if (activeRow) {
-      setRows((current) => current.map((row) => row.id === activeRow.id ? { ...row, ...payload, status: '草稿' } : row));
-      messageApi.success('出库单草稿已保存');
-      return;
-    }
+  const buildRow = (payload, status) => {
     const id = Math.max(0, ...rows.map((row) => row.id)) + 1;
-    const created = {
+    return {
       id,
       documentNo: `OS-${dayjs().format('YYYYMMDD')}${String(id).padStart(4, '0')}`,
       applicationNo: '',
-      status: '草稿',
+      status,
       outboundType: payload.outboundType,
       warehouse: payload.warehouse,
-      outboundDate: '',
+      outboundDate: status === '已完成' ? dayjs().format('YYYY-MM-DD') : '',
       createdDate: dayjs().format('YYYY-MM-DD'),
       creator: '206984-何文',
       quantity: payload.quantity,
@@ -413,13 +435,35 @@ export default function OutboundPage() {
       remark: payload.remark,
       lines: payload.lines,
     };
+  };
+
+  const saveDraft = (payload) => {
+    if (activeRow) {
+      const updated = { ...activeRow, ...payload, status: '草稿' };
+      setRows((current) => current.map((row) => row.id === activeRow.id ? updated : row));
+      setActiveRow(updated);
+      messageApi.success('出库单草稿已保存');
+      return;
+    }
+    const created = buildRow(payload, '草稿');
     setRows((current) => [created, ...current]);
     setActiveRow(created);
     messageApi.success(`已生成出库单 ${created.documentNo}`);
   };
 
+  const executeOutbound = (payload) => {
+    if (activeRow) {
+      setRows((current) => current.map((row) => row.id === activeRow.id ? { ...row, ...payload, status: '已完成', outboundDate: dayjs().format('YYYY-MM-DD') } : row));
+    } else {
+      const created = buildRow(payload, '已完成');
+      setRows((current) => [created, ...current]);
+    }
+    setActiveRow(null);
+    setView('list');
+  };
+
   if (view === 'editor') {
-    return <OutboundEditor source={activeRow} onBack={() => { setView('list'); setActiveRow(null); }} onSave={saveDraft} />;
+    return <OutboundEditor source={activeRow} onBack={() => { setView('list'); setActiveRow(null); }} onSave={saveDraft} onExecute={executeOutbound} />;
   }
 
   const columns = [
@@ -434,14 +478,10 @@ export default function OutboundPage() {
     { title: '制单人', dataIndex: 'creator', width: 150 },
     { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right' },
     { title: '是否刷卡领用', dataIndex: 'cardClaim', width: 130, render: (value) => <StatusTag value={value} /> },
-    { title: '操作', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => openEditor(row)}>编辑</Button> },
   ];
 
   const deleteRows = () => {
-    if (!selectedKeys.length) {
-      messageApi.warning('请先选择需要删除的出库单');
-      return;
-    }
+    if (!selectedKeys.length) return messageApi.warning('请先选择需要删除的出库单');
     const selected = new Set(selectedKeys);
     setRows((current) => current.filter((row) => !selected.has(row.id)));
     setSelectedKeys([]);
@@ -463,8 +503,16 @@ export default function OutboundPage() {
         <QueryItem label="申请单号"><Input value={draft.applicationNo} allowClear placeholder="请输入申请单号" onChange={(e) => update('applicationNo', e.target.value)} /></QueryItem>
         <QueryItem label="资产标签号"><Input value={draft.assetTag} allowClear placeholder="请输入资产标签号" onChange={(e) => update('assetTag', e.target.value)} /></QueryItem>
         <QueryItem label="制单人"><Input value={draft.creator} allowClear placeholder="请输入制单人" onChange={(e) => update('creator', e.target.value)} /></QueryItem>
-        <QueryItem label="制单日期从"><DatePicker className="w-full" value={draft.createdFrom ? dayjs(draft.createdFrom) : null} onChange={(d) => update('createdFrom', d?.format('YYYY-MM-DD') || '')} /></QueryItem>
-        <QueryItem label="制单日期至"><DatePicker className="w-full" value={draft.createdTo ? dayjs(draft.createdTo) : null} onChange={(d) => update('createdTo', d?.format('YYYY-MM-DD') || '')} /></QueryItem>
+        <QueryItem label="制单日期">
+          <RangePicker
+            className="w-full"
+            value={[draft.createdFrom ? dayjs(draft.createdFrom) : null, draft.createdTo ? dayjs(draft.createdTo) : null]}
+            onChange={(dates) => {
+              update('createdFrom', dates?.[0]?.format('YYYY-MM-DD') || '');
+              update('createdTo', dates?.[1]?.format('YYYY-MM-DD') || '');
+            }}
+          />
+        </QueryItem>
         <QueryItem label="资产责任人"><Input value={draft.responsiblePerson} allowClear placeholder="请输入资产责任人" onChange={(e) => update('responsiblePerson', e.target.value)} /></QueryItem>
       </QueryBar>
 
