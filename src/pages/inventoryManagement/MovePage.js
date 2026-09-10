@@ -4,7 +4,6 @@ import {
   Card,
   Checkbox,
   DatePicker,
-  Empty,
   Input,
   InputNumber,
   Modal,
@@ -21,6 +20,7 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
+import MoveReceiveContent from './MoveReceiveContent';
 
 const { TextArea } = Input;
 
@@ -143,8 +143,7 @@ function MoveItemModal({ open, receiveWarehouse, initialLine, onCancel, onConfir
   const [moveDesc, setMoveDesc] = useState(initialLine?.moveDesc || '');
 
   const submit = (keepOpen) => {
-    if (!moveQty || moveQty < 1) return;
-    if (moveQty > Number(asset.availableQty || 0)) return;
+    if (!moveQty || moveQty < 1 || moveQty > Number(asset.availableQty || 0)) return;
     onConfirm({
       ...asset,
       moveQty,
@@ -175,18 +174,10 @@ function MoveItemModal({ open, receiveWarehouse, initialLine, onCancel, onConfir
 
         <Card size="small" title="选择物资">
           <DetailGrid columns={3} labelWidth={96}>
-            <DetailItem label="资产标签号">
-              <LookupInput value={asset.assetTag} placeholder="请选择资产标签号" onOpen={pickSourceAsset} />
-            </DetailItem>
-            <DetailItem label="SN号">
-              <LookupInput value={asset.sn} placeholder="请选择SN号" onOpen={pickSourceAsset} />
-            </DetailItem>
-            <DetailItem label="物资说明">
-              <LookupInput value={asset.materialDesc} placeholder="请选择物资说明" onOpen={pickSourceAsset} />
-            </DetailItem>
-            <DetailItem label="连续添加">
-              <Checkbox checked={continuousAdd} onChange={(event) => setContinuousAdd(event.target.checked)}>连续添加</Checkbox>
-            </DetailItem>
+            <DetailItem label="资产标签号"><LookupInput value={asset.assetTag} placeholder="请选择资产标签号" onOpen={pickSourceAsset} /></DetailItem>
+            <DetailItem label="SN号"><LookupInput value={asset.sn} placeholder="请选择SN号" onOpen={pickSourceAsset} /></DetailItem>
+            <DetailItem label="物资说明"><LookupInput value={asset.materialDesc} placeholder="请选择物资说明" onOpen={pickSourceAsset} /></DetailItem>
+            <DetailItem label="连续添加"><Checkbox checked={continuousAdd} onChange={(event) => setContinuousAdd(event.target.checked)}>连续添加</Checkbox></DetailItem>
           </DetailGrid>
         </Card>
 
@@ -234,9 +225,7 @@ function MoveItemModal({ open, receiveWarehouse, initialLine, onCancel, onConfir
               <InputNumber className="w-full" min={1} max={asset.availableQty} precision={0} value={moveQty} onChange={(value) => setMoveQty(value || 1)} />
             </DetailItem>
             <DetailItem label="接收仓库"><Readonly>{receiveWarehouse}</Readonly></DetailItem>
-            <DetailItem label="移库说明" span={3}>
-              <TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={moveDesc} onChange={(event) => setMoveDesc(event.target.value)} />
-            </DetailItem>
+            <DetailItem label="移库说明" span={3}><TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={moveDesc} onChange={(event) => setMoveDesc(event.target.value)} /></DetailItem>
           </DetailGrid>
         </Card>
       </Space>
@@ -268,13 +257,7 @@ function MoveEditor({ onBack, onSave }) {
     { title: '启用日期', dataIndex: 'enabledDate', width: 130 },
     { title: '资产状态', dataIndex: 'assetStatus', width: 130 },
     { title: '移库状态', dataIndex: 'moveStatus', width: 130 },
-    {
-      title: '操作',
-      key: 'operation',
-      width: 90,
-      fixed: 'right',
-      render: (_, row) => <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button>,
-    },
+    { title: '操作', key: 'operation', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button> },
   ];
 
   const saveLine = (line, keepOpen) => {
@@ -309,22 +292,13 @@ function MoveEditor({ onBack, onSave }) {
           <DetailItem label="单据类型"><Readonly>移库单</Readonly></DetailItem>
           <DetailItem label="单据状态"><StatusTag value="草稿" /></DetailItem>
           <DetailItem label="移库类型"><Readonly>当前仓库角色为出库方</Readonly></DetailItem>
-          <DetailItem label={<RequiredLabel>接收仓库</RequiredLabel>}>
-            <LookupInput value={receiveWarehouse} placeholder="请选择接收仓库" onOpen={() => setWarehouseModalOpen(true)} />
-          </DetailItem>
+          <DetailItem label={<RequiredLabel>接收仓库</RequiredLabel>}><LookupInput value={receiveWarehouse} placeholder="请选择接收仓库" onOpen={() => setWarehouseModalOpen(true)} /></DetailItem>
           <DetailItem label="当前仓库"><Readonly>{CURRENT_WAREHOUSE}</Readonly></DetailItem>
           <DetailItem label="制单人"><Readonly>admin-系统管理员</Readonly></DetailItem>
           <DetailItem label="制单时间"><Readonly>{createdDate}</Readonly></DetailItem>
-          <DetailItem label="备注" span={3}>
-            <TextArea autoSize={{ minRows: 3, maxRows: 6 }} value={remark} onChange={(event) => setRemark(event.target.value)} />
-          </DetailItem>
+          <DetailItem label="备注" span={3}><TextArea autoSize={{ minRows: 3, maxRows: 6 }} value={remark} onChange={(event) => setRemark(event.target.value)} /></DetailItem>
           <DetailItem label="资产扫描" span={3}>
-            <Input
-              value={scanAsset}
-              placeholder="扫描添加资产"
-              onChange={(event) => setScanAsset(event.target.value)}
-              onPressEnter={() => messageApi.info('已识别资产，可通过添加物资确认移库信息')}
-            />
+            <Input value={scanAsset} placeholder="扫描添加资产" onChange={(event) => setScanAsset(event.target.value)} onPressEnter={() => messageApi.info('已识别资产，可通过添加物资确认移库信息')} />
           </DetailItem>
         </DetailGrid>
       </Card>
@@ -385,12 +359,12 @@ export default function MovePage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [activeTab, setActiveTab] = useState('initiated');
   const [view, setView] = useState('list');
+  const [creatorModalOpen, setCreatorModalOpen] = useState(false);
 
   const creators = useMemo(
     () => [...new Set(rows.map((row) => row.creator))].map((name, index) => ({ id: index + 1, name })),
     [rows]
   );
-  const [creatorModalOpen, setCreatorModalOpen] = useState(false);
 
   const filteredRows = useMemo(() => rows.filter((row) => (
     includesText(row.documentNo, filters.documentNo)
@@ -472,7 +446,7 @@ export default function MovePage() {
       <Card size="small">
         <Tabs
           activeKey={activeTab}
-          onChange={setActiveTab}
+          onChange={(key) => { setActiveTab(key); setSelectedRowKeys([]); }}
           items={[
             { key: 'initiated', label: '发起单据' },
             { key: 'received', label: '接收单据' },
@@ -481,7 +455,7 @@ export default function MovePage() {
       </Card>
 
       {activeTab === 'received' ? (
-        <Card size="small"><Empty description="接收单据字段待确认" /></Card>
+        <MoveReceiveContent />
       ) : (
         <>
           <QueryBar
