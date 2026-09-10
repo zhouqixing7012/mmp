@@ -3,8 +3,6 @@ import {
   Button,
   Card,
   DatePicker,
-  Descriptions,
-  Empty,
   Input,
   Select,
   Space,
@@ -14,12 +12,13 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { Search, Trash2 } from 'lucide-react';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 
 const PO_ROWS = [
-  { id: 1, poNo: 'PO2603270001', receiptStatus: '待接收', poName: '电子设备采购订单', company: '新媒体', plate: '', supplier: '北京一新科技有限责任公司', pushDate: '2026-04-09', purchaseType: '电子设备' },
+  { id: 1, poNo: 'PO2608200004', receiptStatus: '待接收', poName: '电子设备采购订单', company: '北京新动力', plate: '搜狐网-web', supplier: '老六的公司', pushDate: '2026-08-20', purchaseType: '电子设备' },
   { id: 2, poNo: 'PO2410280002', receiptStatus: '待接收', poName: '服务器备件采购订单', company: '新媒体', plate: '', supplier: '上海华讯网络系统有限公司', pushDate: '2024-10-30', purchaseType: '服务器备件' },
   { id: 3, poNo: 'PO2103040001', receiptStatus: '待接收', poName: '服务器采购订单', company: '新媒体', plate: '', supplier: '北京亚康环宇科技有限公司', pushDate: '2021-06-08', purchaseType: '服务器' },
   { id: 4, poNo: 'PO2606030001', receiptStatus: '已入库', poName: '电子设备采购订单', company: '新媒体', plate: 'Corporate', supplier: '北京汉信成科技发展有限公司', pushDate: '2026-06-08', purchaseType: '电子设备' },
@@ -41,7 +40,87 @@ const RECEIPT_ROWS = [
     creator: '王英',
     createdAt: '2026-06-11 16:23:59',
   },
+  {
+    id: 2,
+    receiptNo: 'REC-202608200001',
+    status: '接收完成',
+    poNo: 'PO2608200004',
+    supplier: '老六的公司',
+    creator: 'admin-系统管理员',
+    createdAt: '2026-08-20 15:30:00',
+  },
 ];
+
+const ELECTRONIC_PO_DETAIL = {
+  supplierPhone: '-',
+  procurementUnit: '北京新动力',
+  contractSubject: '北京搜狐新动力信息技术有限公司',
+  untaxedAmount: '123.76',
+  taxAmount: '1.24',
+  totalAmount: '125.00',
+  buyer: '114664.薛毛毛',
+  buyerPhone: '18911208538',
+  items: [
+    {
+      id: 1,
+      editable: false,
+      receiptStatus: '已入库',
+      materialGroup: '1.资产',
+      assetClass: '13.OFFICE EQUIPMENT',
+      materialCode: '113028079006000',
+      materialDesc: '曼富图.MVR901EPEX变焦手柄',
+      poDesc: '曼富图.MVR901EPEX变焦手柄-16+512',
+      config: '16+512',
+      partQuantity: '-',
+      partDesc: '-',
+      currentReceiptQty: 0,
+      purchaseQty: 1,
+      untaxedUnitPrice: '-',
+      untaxedSubtotal: '-',
+      totalTax: '-',
+      taxedUnitPrice: '-',
+      taxedSubtotal: '-',
+      taxRate: '-',
+      receivedQty: 1,
+      draftQty: 0,
+      agreedArrivalDate: '-',
+      prLineNo: '-',
+      saLineNo: '-',
+      applicationNo: '-',
+      department: '-',
+      businessLine: '-',
+    },
+    {
+      id: 2,
+      editable: true,
+      receiptStatus: '待接收',
+      materialGroup: '1.资产',
+      assetClass: '13.OFFICE EQUIPMENT',
+      materialCode: '113004066005000',
+      materialDesc: '魅族.魅族 MX4 PRO(联通版)',
+      poDesc: '魅族.魅族 MX4 PRO(联通版)-16+512',
+      config: '16+512',
+      partQuantity: '-',
+      partDesc: '-',
+      currentReceiptQty: 1,
+      purchaseQty: 1,
+      untaxedUnitPrice: '-',
+      untaxedSubtotal: '-',
+      totalTax: '-',
+      taxedUnitPrice: '-',
+      taxedSubtotal: '-',
+      taxRate: '-',
+      receivedQty: 0,
+      draftQty: 0,
+      agreedArrivalDate: '-',
+      prLineNo: '-',
+      saLineNo: '-',
+      applicationNo: '-',
+      department: '-',
+      businessLine: '-',
+    },
+  ],
+};
 
 const SERVER_PO_DETAIL = {
   supplierPhone: '1058834065',
@@ -55,14 +134,32 @@ const SERVER_PO_DETAIL = {
   items: [
     {
       id: 1,
-      receiptStatus: '',
+      editable: true,
+      receiptStatus: '待接收',
       materialGroup: '1.资产',
       assetClass: '14.SERVER',
       materialCode: '114008042010000',
       materialDesc: 'Dell.R740',
-      poDesc: 'Dell.R740-Intel Silver4210*2,DDR4_2933MHz_16G*8,Seagate_SAS12Gb_2.5寸_10k_600GB*8,双口千兆+双光口万兆(Intel X710)*1,H740P_电池*1,白金750W热插拔*2,2U2.5寸8盘位机箱*1,',
-      config: 'Intel Silver4210*2,DDR4_2933MHz_16G*8,Seagate_SAS12Gb_2.5寸_10k_600GB*8,双口千兆+双光口万兆(Intel X710)*1,H740P_电池*1,白金750W热插拔*2,2U2.5寸8盘位机箱*1,',
-      partQuantity: '',
+      poDesc: 'Dell.R740-Intel Silver4210*2,DDR4_2933MHz_16G*8,Seagate_SAS12Gb_2.5寸_10k_600GB*8,双口千兆+双光口万兆(Intel X710)*1,H740P_电池*1,白金750W热插拔*2,2U2.5寸8盘位机箱*1',
+      config: 'Intel Silver4210*2,DDR4_2933MHz_16G*8,Seagate_SAS12Gb_2.5寸_10k_600GB*8,双口千兆+双光口万兆(Intel X710)*1,H740P_电池*1,白金750W热插拔*2,2U2.5寸8盘位机箱*1',
+      partQuantity: '-',
+      partDesc: '-',
+      currentReceiptQty: 1,
+      purchaseQty: 1,
+      untaxedUnitPrice: '-',
+      untaxedSubtotal: '-',
+      totalTax: '-',
+      taxedUnitPrice: '-',
+      taxedSubtotal: '-',
+      taxRate: '-',
+      receivedQty: 0,
+      draftQty: 0,
+      agreedArrivalDate: '-',
+      prLineNo: '-',
+      saLineNo: '-',
+      applicationNo: '-',
+      department: '-',
+      businessLine: '-',
     },
   ],
 };
@@ -85,6 +182,8 @@ const EMPTY_RECEIPT_FILTERS = {
   createdTo: '',
   supplier: '',
 };
+
+const DIRECT_INBOUND_TYPES = new Set(['服务器', '服务器备件', '网络设备', '网络设备备件']);
 
 function includesText(value, query) {
   if (!query) return true;
@@ -111,12 +210,11 @@ function SelectorInput({ value, placeholder, onOpen }) {
 }
 
 function PageTitle({ children }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div className="h-8 w-1.5 rounded bg-[#1677ff]" />
-      <Typography.Title level={3} className="mb-0">{children}</Typography.Title>
-    </div>
-  );
+  return <Typography.Title level={3} className="mb-0">{children}</Typography.Title>;
+}
+
+function Readonly({ children }) {
+  return <Typography.Text>{children === 0 ? 0 : (children || '-')}</Typography.Text>;
 }
 
 export default function AssetReceiptPage() {
@@ -214,7 +312,7 @@ export default function AssetReceiptPage() {
       dataIndex: 'poNo',
       width: 170,
       render: (value, row) => (
-        <Button type="link" className="px-0" onClick={() => (row.receiptStatus === '待接收' ? openPoDetail(row) : openReceiptList(row))}>
+        <Button type="link" className="px-0" onClick={() => openPoDetail(row)}>
           {value}
         </Button>
       ),
@@ -229,12 +327,13 @@ export default function AssetReceiptPage() {
     {
       title: '操作',
       key: 'operation',
-      width: 100,
+      width: 130,
       fixed: 'right',
       render: (_, row) => (
-        <Button type="link" className="px-0" onClick={() => (row.receiptStatus === '待接收' ? openPoDetail(row) : openReceiptList(row))}>
-          {row.receiptStatus === '待接收' ? '接收' : '查看'}
-        </Button>
+        <Space size={4}>
+          <Button type="link" className="px-0" onClick={() => openPoDetail(row)}>接收</Button>
+          <Button type="link" className="px-0" onClick={() => openReceiptList(row)}>查看</Button>
+        </Space>
       ),
     },
   ];
@@ -245,111 +344,145 @@ export default function AssetReceiptPage() {
     { title: '单据状态', dataIndex: 'status', width: 140, render: (value) => <StatusTag value={value} /> },
     { title: 'PO单号', dataIndex: 'poNo', width: 180 },
     { title: '供应商', dataIndex: 'supplier', width: 280 },
-    { title: '制单人', dataIndex: 'creator', width: 120 },
+    { title: '制单人', dataIndex: 'creator', width: 140 },
     { title: '制单时间', dataIndex: 'createdAt', width: 190 },
     {
       title: '操作',
       key: 'operation',
-      width: 100,
+      width: 90,
       fixed: 'right',
       render: () => <Button type="link" className="px-0" onClick={() => messageApi.info('接收单详情字段待确认')}>查看</Button>,
     },
   ];
 
-  const itemRows = activePO?.poNo === 'PO2103040001' ? SERVER_PO_DETAIL.items : [];
   const itemColumns = [
     { title: '行号', dataIndex: 'id', width: 70, align: 'center' },
-    { title: '操作', key: 'operation', width: 90, render: () => <Button type="link" className="px-0" onClick={() => messageApi.info('物资编辑字段待确认')}>编辑</Button> },
+    {
+      title: '操作',
+      key: 'operation',
+      width: 80,
+      fixed: 'left',
+      render: (_, row) => row.editable
+        ? <Button type="link" className="px-0" onClick={() => messageApi.info('物资编辑字段待确认')}>编辑</Button>
+        : '-',
+    },
     { title: '接收状态', dataIndex: 'receiptStatus', width: 120, render: (value) => value ? <StatusTag value={value} /> : '-' },
     { title: '物资总类', dataIndex: 'materialGroup', width: 120 },
-    { title: '资产大类', dataIndex: 'assetClass', width: 130 },
-    { title: '物料编码', dataIndex: 'materialCode', width: 180 },
-    { title: '物料说明', dataIndex: 'materialDesc', width: 140 },
-    { title: 'PO单说明', dataIndex: 'poDesc', width: 520 },
-    { title: '配置', dataIndex: 'config', width: 520 },
-    { title: '部件数量', dataIndex: 'partQuantity', width: 110, render: (value) => value || '-' },
+    { title: '资产大类', dataIndex: 'assetClass', width: 180 },
+    { title: '物料编码', dataIndex: 'materialCode', width: 170 },
+    { title: '物料说明', dataIndex: 'materialDesc', width: 230 },
+    { title: 'PO单说明', dataIndex: 'poDesc', width: 360 },
+    { title: '配置', dataIndex: 'config', width: 300 },
+    { title: '部件数量', dataIndex: 'partQuantity', width: 110 },
+    { title: '部件说明', dataIndex: 'partDesc', width: 180 },
+    { title: '本次接收数量', dataIndex: 'currentReceiptQty', width: 130, align: 'right' },
+    { title: '采购数量', dataIndex: 'purchaseQty', width: 100, align: 'right' },
+    { title: '不含税单价', dataIndex: 'untaxedUnitPrice', width: 120, align: 'right' },
+    { title: '不含税金额小计', dataIndex: 'untaxedSubtotal', width: 140, align: 'right' },
+    { title: '总税额', dataIndex: 'totalTax', width: 100, align: 'right' },
+    { title: '含税单价', dataIndex: 'taxedUnitPrice', width: 110, align: 'right' },
+    { title: '含税小计', dataIndex: 'taxedSubtotal', width: 110, align: 'right' },
+    { title: '税率', dataIndex: 'taxRate', width: 90, align: 'right' },
+    { title: '已接收数量', dataIndex: 'receivedQty', width: 120, align: 'right' },
+    { title: '草稿数量', dataIndex: 'draftQty', width: 100, align: 'right' },
+    { title: '约定到货日期', dataIndex: 'agreedArrivalDate', width: 130 },
+    { title: 'PR单/行号', dataIndex: 'prLineNo', width: 140 },
+    { title: 'SA单/行号', dataIndex: 'saLineNo', width: 140 },
+    { title: '申请单号', dataIndex: 'applicationNo', width: 160 },
+    { title: '部门', dataIndex: 'department', width: 180 },
+    { title: '业务线', dataIndex: 'businessLine', width: 140 },
   ];
 
   if (view === 'poDetail' && activePO) {
-    const detail = activePO.poNo === 'PO2103040001' ? SERVER_PO_DETAIL : {};
+    const detail = activePO.purchaseType === '电子设备'
+      ? ELECTRONIC_PO_DETAIL
+      : activePO.purchaseType === '服务器'
+        ? SERVER_PO_DETAIL
+        : {};
+    const itemRows = detail.items || [];
+    const canCreateReceipt = activePO.purchaseType === '电子设备';
+    const canExecuteInbound = DIRECT_INBOUND_TYPES.has(activePO.purchaseType);
+
     return (
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
         <PageTitle>资产接收</PageTitle>
 
-        <Card size="small" title="接收单信息">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="PO单号">{activePO.poNo}</Descriptions.Item>
-            <Descriptions.Item label="供应商">{activePO.supplier}</Descriptions.Item>
-            <Descriptions.Item label="供应商联系电话">{detail.supplierPhone || '-'}</Descriptions.Item>
-            <Descriptions.Item label="PO单说明">{activePO.poName}</Descriptions.Item>
-            <Descriptions.Item label="采购单位">{detail.procurementUnit || activePO.company || '-'}</Descriptions.Item>
-            <Descriptions.Item label="合同主体">{detail.contractSubject || '-'}</Descriptions.Item>
-            <Descriptions.Item label="不含税合计">{detail.untaxedAmount || '-'}</Descriptions.Item>
-            <Descriptions.Item label="合计税额">{detail.taxAmount || '-'}</Descriptions.Item>
-            <Descriptions.Item label="合计金额">{detail.totalAmount || '-'}</Descriptions.Item>
-            <Descriptions.Item label="采购员">{detail.buyer || '-'}</Descriptions.Item>
-            <Descriptions.Item label="采购员联系电话">{detail.buyerPhone || '-'}</Descriptions.Item>
-            <Descriptions.Item label="推送日期">{activePO.pushDate}</Descriptions.Item>
-            <Descriptions.Item label="板块">
+        <Card size="small" title="PO单信息">
+          <DetailGrid columns={3} labelWidth={112}>
+            <DetailItem label="PO单号"><Readonly>{activePO.poNo}</Readonly></DetailItem>
+            <DetailItem label="供应商"><Readonly>{activePO.supplier}</Readonly></DetailItem>
+            <DetailItem label="供应商联系电话"><Readonly>{detail.supplierPhone}</Readonly></DetailItem>
+            <DetailItem label="PO单说明"><Readonly>{activePO.poName}</Readonly></DetailItem>
+            <DetailItem label="采购单位"><Readonly>{detail.procurementUnit || activePO.company}</Readonly></DetailItem>
+            <DetailItem label="合同主体"><Readonly>{detail.contractSubject}</Readonly></DetailItem>
+            <DetailItem label="不含税合计"><Readonly>{detail.untaxedAmount}</Readonly></DetailItem>
+            <DetailItem label="合计税额"><Readonly>{detail.taxAmount}</Readonly></DetailItem>
+            <DetailItem label="合计金额"><Readonly>{detail.totalAmount}</Readonly></DetailItem>
+            <DetailItem label="采购员"><Readonly>{detail.buyer}</Readonly></DetailItem>
+            <DetailItem label="采购员联系电话"><Readonly>{detail.buyerPhone}</Readonly></DetailItem>
+            <DetailItem label="推送日期"><Readonly>{activePO.pushDate}</Readonly></DetailItem>
+            <DetailItem label="板块">
               <SelectorInput value={detailPlate} placeholder="请选择板块" onOpen={() => setSelectorType('detailPlate')} />
-            </Descriptions.Item>
-            <Descriptions.Item label="申请批次" span={2}>
+            </DetailItem>
+            <DetailItem label="申请批次">
               <Input value={applicationBatch} placeholder="请输入申请批次" onChange={(event) => setApplicationBatch(event.target.value)} />
-            </Descriptions.Item>
-          </Descriptions>
-
-          <div className="mt-4 flex justify-end">
-            <Space>
-              <Button
-                type="primary"
-                onClick={() => {
-                  if (selectedItemKeys.length === 0) {
-                    messageApi.warning('请先选择需要创建接收单的物资');
-                    return;
-                  }
-                  messageApi.success('创建接收单操作已记录（原型）');
-                }}
-              >
-                创建接收单
-              </Button>
-              <Button
-                onClick={() => {
-                  if (selectedItemKeys.length === 0) {
-                    messageApi.warning('请先选择需要入库的物资');
-                    return;
-                  }
-                  messageApi.info('执行入库的后续字段待确认');
-                }}
-              >
-                执行入库
-              </Button>
-              <Button onClick={() => setView('poList')}>返回</Button>
-            </Space>
-          </div>
+            </DetailItem>
+          </DetailGrid>
         </Card>
 
         <Card size="small" title="PO物资明细" extra={<Typography.Text type="secondary">共 {itemRows.length} 条</Typography.Text>}>
-          {itemRows.length > 0 ? (
-            <Table
-              rowKey="id"
-              size="small"
-              bordered
-              columns={itemColumns}
-              dataSource={itemRows}
-              rowSelection={{
-                type: 'checkbox',
-                selectedRowKeys: selectedItemKeys,
-                onChange: setSelectedItemKeys,
-                fixed: true,
-              }}
-              scroll={{ x: 'max-content' }}
-              pagination={false}
-            />
-          ) : (
-            <Empty description="该PO物资明细字段待确认" />
-          )}
+          <Table
+            rowKey="id"
+            size="small"
+            bordered
+            columns={itemColumns}
+            dataSource={itemRows}
+            rowSelection={{
+              type: 'checkbox',
+              selectedRowKeys: selectedItemKeys,
+              onChange: setSelectedItemKeys,
+              fixed: true,
+              columnTitle: '选择',
+              columnWidth: 64,
+              getCheckboxProps: (record) => ({ disabled: record.receiptStatus === '已入库' }),
+            }}
+            scroll={{ x: 'max-content' }}
+            pagination={false}
+          />
         </Card>
+
+        <div className="flex justify-center gap-3">
+          {canCreateReceipt && (
+            <Button
+              type="primary"
+              onClick={() => {
+                if (selectedItemKeys.length === 0) {
+                  messageApi.warning('请先选择需要创建接收单的物资');
+                  return;
+                }
+                messageApi.success('创建接收单操作已记录（原型）');
+              }}
+            >
+              创建接收单
+            </Button>
+          )}
+          {canExecuteInbound && (
+            <Button
+              type="primary"
+              onClick={() => {
+                if (selectedItemKeys.length === 0) {
+                  messageApi.warning('请先选择需要入库的物资');
+                  return;
+                }
+                messageApi.info('执行入库的后续字段待确认');
+              }}
+            >
+              执行入库
+            </Button>
+          )}
+          <Button onClick={() => setView('poList')}>返回</Button>
+        </div>
 
         {selectorConfig && (
           <SelectModal
@@ -455,11 +588,17 @@ export default function AssetReceiptPage() {
               selectedRowKeys: selectedReceiptKeys,
               onChange: setSelectedReceiptKeys,
               fixed: true,
+              columnTitle: '选择',
+              columnWidth: 64,
             }}
             scroll={{ x: 'max-content' }}
             pagination={{ pageSize: 10, showSizeChanger: true }}
           />
         </Card>
+
+        <div className="flex justify-center gap-3">
+          <Button onClick={() => setView('poList')}>返回</Button>
+        </div>
       </Space>
     );
   }
@@ -507,8 +646,10 @@ export default function AssetReceiptPage() {
             placeholder="全部"
             options={[
               { label: '电子设备', value: '电子设备' },
-              { label: '服务器备件', value: '服务器备件' },
               { label: '服务器', value: '服务器' },
+              { label: '服务器备件', value: '服务器备件' },
+              { label: '网络设备', value: '网络设备' },
+              { label: '网络设备备件', value: '网络设备备件' },
             ]}
             onChange={(value) => updatePoFilter('purchaseType', value)}
           />
