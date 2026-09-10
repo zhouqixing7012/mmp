@@ -60,8 +60,6 @@ const SOURCE_ASSET = {
   assetSubClass: '笔记本电脑',
   assetQty: 1,
   warehouse: CURRENT_WAREHOUSE,
-  area: 'A区',
-  location: 'A-01-03',
   applicationBatch: '2026Q3',
   brand: '联想',
   model: 'ThinkPad T14',
@@ -84,7 +82,6 @@ const SOURCE_ASSET = {
   floor: '15F',
   room: '1508',
   enabledDate: '2026-09-10',
-  printNo: '-',
   usage: '办公',
   remark: '-',
 };
@@ -107,6 +104,10 @@ function PageTitle({ children }) {
 
 function Readonly({ children }) {
   return <Typography.Text>{children === 0 ? 0 : (children || '-')}</Typography.Text>;
+}
+
+function RequiredLabel({ children }) {
+  return <><span className="text-[#ff4d4f] mr-1">*</span>{children}</>;
 }
 
 function LookupInput({ value, placeholder, onOpen }) {
@@ -170,7 +171,7 @@ function MoveItemModal({ open, receiveWarehouse, initialLine, onCancel, onConfir
       ]}
     >
       <Space direction="vertical" size={16} className="w-full">
-        <Typography.Text type="secondary">当前仓库：{CURRENT_WAREHOUSE}</Typography.Text>
+        <Typography.Text>当前仓库：{CURRENT_WAREHOUSE}</Typography.Text>
 
         <Card size="small" title="选择物资">
           <DetailGrid columns={3} labelWidth={96}>
@@ -200,8 +201,6 @@ function MoveItemModal({ open, receiveWarehouse, initialLine, onCancel, onConfir
             <DetailItem label="物资小类"><Readonly>{asset.assetSubClass}</Readonly></DetailItem>
             <DetailItem label="资产数量"><Readonly>{asset.assetQty}</Readonly></DetailItem>
             <DetailItem label="仓库"><Readonly>{asset.warehouse}</Readonly></DetailItem>
-            <DetailItem label="库区"><Readonly>{asset.area}</Readonly></DetailItem>
-            <DetailItem label="货位"><Readonly>{asset.location}</Readonly></DetailItem>
             <DetailItem label="申请批次"><Readonly>{asset.applicationBatch}</Readonly></DetailItem>
             <DetailItem label="品牌"><Readonly>{asset.brand}</Readonly></DetailItem>
             <DetailItem label="规格型号"><Readonly>{asset.model}</Readonly></DetailItem>
@@ -224,7 +223,6 @@ function MoveItemModal({ open, receiveWarehouse, initialLine, onCancel, onConfir
             <DetailItem label="Floor"><Readonly>{asset.floor}</Readonly></DetailItem>
             <DetailItem label="Room"><Readonly>{asset.room}</Readonly></DetailItem>
             <DetailItem label="启用日期"><Readonly>{asset.enabledDate}</Readonly></DetailItem>
-            <DetailItem label="印刷号"><Readonly>{asset.printNo}</Readonly></DetailItem>
             <DetailItem label="用途"><Readonly>{asset.usage}</Readonly></DetailItem>
             <DetailItem label="备注"><Readonly>{asset.remark}</Readonly></DetailItem>
           </DetailGrid>
@@ -232,7 +230,7 @@ function MoveItemModal({ open, receiveWarehouse, initialLine, onCancel, onConfir
 
         <Card size="small" title="移库信息">
           <DetailGrid columns={3} labelWidth={96}>
-            <DetailItem label="移库数量*">
+            <DetailItem label={<RequiredLabel>移库数量</RequiredLabel>}>
               <InputNumber className="w-full" min={1} max={asset.availableQty} precision={0} value={moveQty} onChange={(value) => setMoveQty(value || 1)} />
             </DetailItem>
             <DetailItem label="接收仓库"><Readonly>{receiveWarehouse}</Readonly></DetailItem>
@@ -310,8 +308,8 @@ function MoveEditor({ onBack, onSave }) {
           <DetailItem label="移库单号"><Readonly>自动生成</Readonly></DetailItem>
           <DetailItem label="单据类型"><Readonly>移库单</Readonly></DetailItem>
           <DetailItem label="单据状态"><StatusTag value="草稿" /></DetailItem>
-          <DetailItem label="移库类型*"><Readonly>当前仓库角色为出库方</Readonly></DetailItem>
-          <DetailItem label="接收仓库*">
+          <DetailItem label="移库类型"><Readonly>当前仓库角色为出库方</Readonly></DetailItem>
+          <DetailItem label={<RequiredLabel>接收仓库</RequiredLabel>}>
             <LookupInput value={receiveWarehouse} placeholder="请选择接收仓库" onOpen={() => setWarehouseModalOpen(true)} />
           </DetailItem>
           <DetailItem label="当前仓库"><Readonly>{CURRENT_WAREHOUSE}</Readonly></DetailItem>
