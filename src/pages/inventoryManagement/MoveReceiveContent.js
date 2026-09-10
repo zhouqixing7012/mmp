@@ -7,12 +7,15 @@ import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 
+const { RangePicker } = DatePicker;
+
 const EMPTY_FILTERS = {
   documentNo: '',
   status: '',
   creator: '',
   createdFrom: '',
   createdTo: '',
+  assetScan: '',
 };
 
 const RECEIVE_ASSET_DETAIL = {
@@ -98,6 +101,11 @@ function inDateRange(value, from, to) {
   return true;
 }
 
+function rowContainsAsset(row, query) {
+  if (!query) return true;
+  return (row.lines || []).some((asset) => includesText(asset.assetTag, query) || includesText(asset.sn, query));
+}
+
 function Readonly({ children }) {
   return <Typography.Text>{children === 0 ? 0 : (children || '-')}</Typography.Text>;
 }
@@ -105,26 +113,8 @@ function Readonly({ children }) {
 function LookupInput({ value, placeholder, onOpen }) {
   return (
     <div className="cursor-pointer" onClick={onOpen}>
-      <Input
-        value={value}
-        readOnly
-        placeholder={placeholder}
-        className="pointer-events-none"
-        suffix={<Search size={14} />}
-      />
+      <Input value={value} readOnly placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} />} />
     </div>
-  );
-}
-
-function DateFilter({ value, onChange, placeholder }) {
-  return (
-    <DatePicker
-      className="w-full"
-      value={value ? dayjs(value) : null}
-      format="YYYY-MM-DD"
-      placeholder={placeholder}
-      onChange={(date) => onChange(date ? date.format('YYYY-MM-DD') : '')}
-    />
   );
 }
 
@@ -202,24 +192,20 @@ function ReceiveAssetDetailModal({ open, document, asset, onCancel }) {
   );
 }
 
-function ReceiveDetail({ row, onBack, onStatusChange }) {
+function ReceiveDetail({ row, onBack, onLinesChange }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [scanAsset, setScanAsset] = useState('');
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [detailAsset, setDetailAsset] = useState(null);
-  const lines = row.lines || [];
+  const [lines, setLines] = useState(row.lines || []);
 
   const openAsset = (asset) => setDetailAsset(asset);
   const handleScan = () => {
     const value = scanAsset.trim();
     if (!value) return;
     const asset = lines.find((item) => item.assetTag === value || item.sn === value);
-    if (!asset) {
-      messageApi.warning('当前移库单中未找到该资产');
-      return;
-    }
+    if (!asset) return messageApi.warning('当前移库单中未找到该资产');
     setSelectedKeys([asset.id]);
-    setDetailAsset(asset);
   };
 
   const columns = [
@@ -235,37 +221,46 @@ function ReceiveDetail({ row, onBack, onStatusChange }) {
     { title: '启用日期', dataIndex: 'enabledDate', width: 120 },
     { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value) => <StatusTag value={value} /> },
     { title: '验证说明', dataIndex: 'verificationDesc', width: 120 },
-    { title: '操作', key: 'operation', width: 80, fixed: 'right', render: (_, asset) => <Button type="link" className="px-0" onClick={() => openAsset(asset)}>查看</Button> },
   ];
 
+  const deriveDocumentStatus = (nextLines) => {
+    if (!nextLines.length) return row.status;
+    if (nextLines.every((line) => line.moveStatus === '已接收')) return '已完成';
+    if (nextLines.every((line) => line.moveStatus === '已驳回')) return '已驳回';
+    return '出库待接收';
+  };
+
+  const changeSelectedLines = (nextMoveStatus) => {
+    if (!selectedKeys.length) return messageApi.warning('请先选择需要处理的物资');
+    const selected = new Set(selectedKeys);
+    const nextLines = lines.map((line) => selected.has(line.id) ? {
+      ...line,
+      moveStatus: nextMoveStatus,
+      verification: nextMoveStatus === '已接收' ? '已验证' : line.verification,
+    } : line);
+    const nextStatus = deriveDocumentStatus(nextLines);
+    setLines(nextLines);
+    setSelectedKeys([]);
+    onLinesChange(row.id, nextLines, nextStatus);
+    messageApi.success(nextMoveStatus === '已接收' ? '所选物资已确认接收' : '所选物资已驳回');
+  };
+
   const receive = () => {
-    if (lines.length && selectedKeys.length === 0) {
-      messageApi.warning('请先选择需要接收的物资');
-      return;
-    }
     Modal.confirm({
-      title: '确认接收当前移库单？',
+      title: `确认接收已选择的 ${selectedKeys.length} 条物资？`,
       okText: '确认接收',
       cancelText: '取消',
-      onOk: () => {
-        onStatusChange(row.id, '已完成');
-        messageApi.success('移库接收已确认');
-        onBack();
-      },
+      onOk: () => changeSelectedLines('已接收'),
     });
   };
 
   const reject = () => {
     Modal.confirm({
-      title: '确认驳回当前移库单？',
+      title: `确认驳回已选择的 ${selectedKeys.length} 条物资？`,
       okText: '驳回',
       cancelText: '取消',
       okButtonProps: { danger: true },
-      onOk: () => {
-        onStatusChange(row.id, '已驳回');
-        messageApi.success('移库单已驳回');
-        onBack();
-      },
+      onOk: () => changeSelectedLines('已驳回'),
     });
   };
 
@@ -287,17 +282,14 @@ function ReceiveDetail({ row, onBack, onStatusChange }) {
         </DetailGrid>
       </Card>
 
-      <Card size="small" title="资产扫描">
-        <Input
-          value={scanAsset}
-          allowClear
-          placeholder="扫描验证资产"
-          onChange={(event) => setScanAsset(event.target.value)}
-          onPressEnter={handleScan}
-        />
-      </Card>
-
       <Card size="small" title="接收物资" extra={<Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>}>
+        <div className="mb-3">
+          <QueryBar onQuery={handleScan} onReset={() => { setScanAsset(''); setSelectedKeys([]); }}>
+            <QueryItem label="资产扫描">
+              <Input value={scanAsset} allowClear placeholder="扫码或手输资产标签号/SN号" onChange={(event) => setScanAsset(event.target.value)} onPressEnter={handleScan} />
+            </QueryItem>
+          </QueryBar>
+        </div>
         <Table
           rowKey="id"
           size="small"
@@ -326,12 +318,11 @@ function ReceiveDetail({ row, onBack, onStatusChange }) {
   );
 }
 
-export default function MoveReceiveContent() {
+export default function MoveReceiveContent({ onDetailChange }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [rows, setRows] = useState(INITIAL_RECEIVE_ROWS);
   const [draft, setDraft] = useState(EMPTY_FILTERS);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [scanAsset, setScanAsset] = useState('');
   const [creatorModalOpen, setCreatorModalOpen] = useState(false);
   const [activeRowId, setActiveRowId] = useState(null);
 
@@ -346,36 +337,38 @@ export default function MoveReceiveContent() {
     && (!filters.status || row.status === filters.status)
     && includesText(row.creator, filters.creator)
     && inDateRange(row.createdDate, filters.createdFrom, filters.createdTo)
+    && rowContainsAsset(row, filters.assetScan)
   )), [rows, filters]);
 
   const update = (field, value) => setDraft((current) => ({ ...current, [field]: value || '' }));
-  const updateStatus = (id, status) => setRows((current) => current.map((row) => row.id === id ? { ...row, status } : row));
 
-  const openByScan = () => {
-    const value = scanAsset.trim();
-    if (!value) return;
-    const matched = rows.find((row) => (row.lines || []).some((asset) => asset.assetTag === value || asset.sn === value));
-    if (!matched) {
-      messageApi.warning('未找到包含该资产的接收单');
-      return;
-    }
-    setActiveRowId(matched.id);
+  const openDetail = (row) => {
+    setActiveRowId(row.id);
+    onDetailChange?.(true);
+  };
+
+  const closeDetail = () => {
+    setActiveRowId(null);
+    onDetailChange?.(false);
+  };
+
+  const updateLines = (id, lines, status) => {
+    setRows((current) => current.map((row) => row.id === id ? { ...row, lines, status } : row));
   };
 
   if (activeRow) {
-    return <ReceiveDetail row={activeRow} onBack={() => setActiveRowId(null)} onStatusChange={updateStatus} />;
+    return <ReceiveDetail row={activeRow} onBack={closeDetail} onLinesChange={updateLines} />;
   }
 
   const columns = [
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
-    { title: '移库单号', dataIndex: 'documentNo', width: 190, render: (value, row) => <Button type="link" className="px-0" onClick={() => setActiveRowId(row.id)}>{value}</Button> },
+    { title: '移库单号', dataIndex: 'documentNo', width: 190, render: (value, row) => <Button type="link" className="px-0" onClick={() => openDetail(row)}>{value}</Button> },
     { title: '单据状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} /> },
     { title: '移出仓库', dataIndex: 'fromWarehouse', width: 320 },
     { title: '移入仓库', dataIndex: 'toWarehouse', width: 320 },
     { title: '制单日期', dataIndex: 'createdDate', width: 130 },
     { title: '制单人', dataIndex: 'creator', width: 170 },
     { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right' },
-    { title: '操作', key: 'operation', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => setActiveRowId(row.id)}>查看</Button> },
   ];
 
   return (
@@ -383,24 +376,25 @@ export default function MoveReceiveContent() {
       {contextHolder}
       <QueryBar
         onQuery={() => setFilters({ ...draft })}
-        onReset={() => { setDraft(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setScanAsset(''); }}
+        onReset={() => { setDraft(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); }}
       >
         <QueryItem label="移库单号"><Input value={draft.documentNo} allowClear placeholder="请输入移库单号" onChange={(event) => update('documentNo', event.target.value)} /></QueryItem>
         <QueryItem label="单据状态"><Select className="w-full" value={draft.status || undefined} allowClear placeholder="全部" options={['出库待接收', '已完成', '已驳回'].map((value) => ({ label: value, value }))} onChange={(value) => update('status', value)} /></QueryItem>
         <QueryItem label="制单人"><LookupInput value={draft.creator} placeholder="请选择制单人" onOpen={() => setCreatorModalOpen(true)} /></QueryItem>
-        <QueryItem label="制单日期从"><DateFilter value={draft.createdFrom} placeholder="开始日期" onChange={(value) => update('createdFrom', value)} /></QueryItem>
-        <QueryItem label="制单日期至"><DateFilter value={draft.createdTo} placeholder="结束日期" onChange={(value) => update('createdTo', value)} /></QueryItem>
+        <QueryItem label="制单日期">
+          <RangePicker
+            className="w-full"
+            value={[draft.createdFrom ? dayjs(draft.createdFrom) : null, draft.createdTo ? dayjs(draft.createdTo) : null]}
+            onChange={(dates) => {
+              update('createdFrom', dates?.[0]?.format('YYYY-MM-DD') || '');
+              update('createdTo', dates?.[1]?.format('YYYY-MM-DD') || '');
+            }}
+          />
+        </QueryItem>
+        <QueryItem label="资产扫描">
+          <Input value={draft.assetScan} allowClear placeholder="扫码或手输资产标签号/SN号" onChange={(event) => update('assetScan', event.target.value)} onPressEnter={() => setFilters({ ...draft })} />
+        </QueryItem>
       </QueryBar>
-
-      <Card size="small" title="资产扫描">
-        <Input
-          value={scanAsset}
-          allowClear
-          placeholder="扫描资产打开单据"
-          onChange={(event) => setScanAsset(event.target.value)}
-          onPressEnter={openByScan}
-        />
-      </Card>
 
       <Card size="small" title="接收单列表" extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
         <Table
@@ -421,7 +415,7 @@ export default function MoveReceiveContent() {
         columns={[{ title: '名称', dataIndex: 'name' }]}
         searchFields={[{ label: '名称', name: 'name', dataIndex: 'name' }]}
         onCancel={() => setCreatorModalOpen(false)}
-        onConfirm={(record) => update('creator', record.name)}
+        onConfirm={(record) => { update('creator', record.name); setCreatorModalOpen(false); }}
       />
     </Space>
   );
