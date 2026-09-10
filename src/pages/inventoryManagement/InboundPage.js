@@ -61,11 +61,10 @@ const PURCHASE_PENDING_ROWS = [
 const SOURCE_ASSET = {
   assetTag: 'AST-2409010068', sn: 'SN-T14-0068', materialDesc: '联想.ThinkPad T14', enabledDate: '2024-09-01',
   materialGroup: '1.资产', assetClass: '10.电脑', assetSubClass: '笔记本电脑', mainAssetTag: '-', brand: '联想',
-  model: 'ThinkPad T14', config: 'i7 / 32G / 1T SSD', unit: '台', quantity: 1, assetStatus: '借出', printNo: 'PRINT-2409010068',
+  model: 'ThinkPad T14', config: 'i7 / 32G / 1T SSD', unit: '台', quantity: 1, assetStatus: '借出',
   company: '114.新媒体', plate: '集团', businessLine: '0.*', costCenter: 'ERP部', city: '010.北京市', building: '129753.搜狐媒体大厦',
   floor: '15F', room: '1508', expenseAccount: '固定资产', usage: '办公', partQuantity: 0, partDesc: '-', remark: '-',
-  responsiblePerson: '114111-杨芊', area: 'A区', location: 'A-01-03', assetMark: '主资产', appraisalNo: 'APP-20260901001',
-  appraisalResult: '正常', appraiser: '206984-何文', appraisalDate: '2026-09-01',
+  responsiblePerson: '114111-杨芊', assetMark: '主资产', appraisalNo: 'APP-20260901001', appraiser: '206984-何文', appraisalDate: '2026-09-01',
 };
 
 function includesText(value, query) {
@@ -145,10 +144,21 @@ function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
   };
 
   const isInfra = INFRA_ASSET_TYPES.has(form.assetSubClass);
+  const buildPayload = () => ({ ...form, total: Number(form.originalValue || 0) + Number(form.tax || 0) });
 
   return (
     <>
-      <Modal open={open} title="添加新增入库物资" width={1180} okText="添加并关闭" cancelText="取消" onCancel={onCancel} onOk={() => onConfirm({ ...form, total: Number(form.originalValue || 0) + Number(form.tax || 0) })}>
+      <Modal
+        open={open}
+        title="添加新增入库物资"
+        width={1180}
+        onCancel={onCancel}
+        footer={[
+          <Button key="cancel" onClick={onCancel}>取消</Button>,
+          <Button key="continue" onClick={() => onConfirm(buildPayload(), false)}>添加并继续</Button>,
+          <Button key="close" type="primary" onClick={() => onConfirm(buildPayload(), true)}>添加并关闭</Button>,
+        ]}
+      >
         <Space direction="vertical" size={16} className="w-full">
           <Typography.Text>当前仓库：{warehouse}</Typography.Text>
           <Card size="small" title="物资信息">
@@ -238,11 +248,22 @@ function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
 function AssetInboundItemModal({ open, mode, warehouse, onCancel, onConfirm }) {
   const isBorrow = mode === '借用归还';
   const [asset, setAsset] = useState({ ...SOURCE_ASSET });
-  const [form, setForm] = useState({ returnQty: 1, returnDate: '2026-09-10', returnReason: '员工退库', borrowReason: '项目临时使用', borrowDate: '2026-08-01', borrowApplicationNo: 'EBA-202608050001', renewCount: 0, usageDesc: '' });
+  const [form, setForm] = useState({ returnQty: 1, returnDate: '2026-09-10', returnReason: '员工退库', borrowReason: '项目临时使用', borrowDate: '2026-08-01', borrowApplicationNo: 'EBA-202608050001', usageDesc: '' });
   const set = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+  const buildPayload = () => ({ ...asset, ...form, quantity: form.returnQty || 1, inboundStatus: '在库-待处理', returnType: isBorrow ? '' : '一般退库' });
 
   return (
-    <Modal open={open} title={isBorrow ? '添加借用归还物资' : '添加退库入库物资'} width={1180} okText="添加并关闭" cancelText="取消" onCancel={onCancel} onOk={() => onConfirm({ ...asset, ...form, quantity: form.returnQty || 1, inboundStatus: '在库-待处理', returnType: isBorrow ? '' : '一般退库' })}>
+    <Modal
+      open={open}
+      title={isBorrow ? '添加借用归还物资' : '添加退库入库物资'}
+      width={1180}
+      onCancel={onCancel}
+      footer={[
+        <Button key="cancel" onClick={onCancel}>取消</Button>,
+        <Button key="continue" onClick={() => onConfirm(buildPayload(), false)}>添加并继续</Button>,
+        <Button key="close" type="primary" onClick={() => onConfirm(buildPayload(), true)}>添加并关闭</Button>,
+      ]}
+    >
       <Space direction="vertical" size={16} className="w-full">
         <Typography.Text>当前仓库：{warehouse}</Typography.Text>
         <Card size="small" title="选择物资">
@@ -268,8 +289,7 @@ function AssetInboundItemModal({ open, mode, warehouse, onCancel, onConfirm }) {
             <EditorField label="计量单位"><Readonly>{asset.unit}</Readonly></EditorField>
             <EditorField label={isBorrow ? '借用人' : '退库人'}><Readonly>206984-何文</Readonly></EditorField>
             <EditorField label={isBorrow ? '借用数量' : '资产数量'}><Readonly>{asset.quantity}</Readonly></EditorField>
-            <EditorField label="资产状态"><Readonly>{asset.assetStatus}</Readonly></EditorField>
-            <EditorField label="印刷号"><Readonly>{asset.printNo}</Readonly></EditorField>
+            <EditorField label="资产状态"><Readonly>{isBorrow ? asset.assetStatus : '在用-使用中'}</Readonly></EditorField>
             <EditorField label="公司"><Readonly>{asset.company}</Readonly></EditorField>
             <EditorField label="板块"><Readonly>{asset.plate}</Readonly></EditorField>
             <EditorField label="业务线"><Readonly>{asset.businessLine}</Readonly></EditorField>
@@ -285,22 +305,18 @@ function AssetInboundItemModal({ open, mode, warehouse, onCancel, onConfirm }) {
             {isBorrow && <EditorField label="借用开始日期"><Readonly>{form.borrowDate}</Readonly></EditorField>}
             {isBorrow && <EditorField label="借用申请单号"><Readonly>{form.borrowApplicationNo}</Readonly></EditorField>}
             {isBorrow && <EditorField label="借用原因"><Readonly>{form.borrowReason}</Readonly></EditorField>}
-            {isBorrow && <EditorField label="续借次数"><Readonly>{form.renewCount}</Readonly></EditorField>}
             <EditorField label="备注" span={3}><Readonly>{asset.remark}</Readonly></EditorField>
           </DetailGrid>
         </Card>
         <Card size="small" title={isBorrow ? '借用归还入库' : '一般退库入库'}>
           <DetailGrid columns={3} labelWidth={96}>
             <EditorField label="责任人" required><LookupInput value={asset.responsiblePerson} onClick={() => {}} /></EditorField>
-            <EditorField label="库区"><Input value={asset.area} onChange={(e) => setAsset((current) => ({ ...current, area: e.target.value }))} /></EditorField>
-            <EditorField label="货位"><Input value={asset.location} onChange={(e) => setAsset((current) => ({ ...current, location: e.target.value }))} /></EditorField>
             <EditorField label="资产标记"><Select className="w-full" value={asset.assetMark} options={['主资产', '附属资产'].map((v) => ({ label: v, value: v }))} onChange={(v) => setAsset((current) => ({ ...current, assetMark: v }))} /></EditorField>
-            <EditorField label={isBorrow ? '归还数量' : '退库数量'} required><InputNumber className="w-full" min={1} precision={0} value={form.returnQty} onChange={(v) => set('returnQty', v || 1)} /></EditorField>
+            <EditorField label={isBorrow ? '归还数量' : '退库数量'}><Readonly>{form.returnQty}</Readonly></EditorField>
             <EditorField label="资产状态"><Readonly>在库-待处理</Readonly></EditorField>
             <EditorField label={isBorrow ? '归还日期' : '退库日期'}><DatePicker className="w-full" value={dayjs(form.returnDate)} onChange={(d) => set('returnDate', d?.format('YYYY-MM-DD') || '')} /></EditorField>
             <EditorField label="鉴定单号"><Input value={asset.appraisalNo} onChange={(e) => setAsset((current) => ({ ...current, appraisalNo: e.target.value }))} /></EditorField>
             {!isBorrow && <EditorField label="退库原因"><Input value={form.returnReason} onChange={(e) => set('returnReason', e.target.value)} /></EditorField>}
-            <EditorField label="鉴定结果"><Select className="w-full" value={asset.appraisalResult} options={['正常', '维修', '报废'].map((v) => ({ label: v, value: v }))} onChange={(v) => setAsset((current) => ({ ...current, appraisalResult: v }))} /></EditorField>
             <EditorField label="鉴定人"><LookupInput value={asset.appraiser} onClick={() => {}} /></EditorField>
             <EditorField label="鉴定日期"><DatePicker className="w-full" value={dayjs(asset.appraisalDate)} onChange={(d) => setAsset((current) => ({ ...current, appraisalDate: d?.format('YYYY-MM-DD') || '' }))} /></EditorField>
             <EditorField label="使用说明" span={3}><Input value={form.usageDesc} onChange={(e) => set('usageDesc', e.target.value)} /></EditorField>
@@ -438,10 +454,10 @@ function InboundEditor({ source, onBack, onSave, onExecute }) {
 
   const payload = () => ({ inboundType, warehouse, quantity: lines.reduce((sum, row) => sum + Number(row.quantity || 0), 0), lines });
 
-  const addLine = (row) => {
-    const id = Date.now();
+  const addLine = (row, shouldClose = true) => {
+    const id = Date.now() + Math.random();
     setLines((current) => [...current, { id, materialGroup: row.materialGroup || '1.资产', materialDesc: row.materialDesc, quantity: row.quantity || 1, assetTag: row.assetTag || '', sn: row.sn || '', originalValue: Number(row.originalValue || 0), tax: Number(row.tax || 0), poNo: row.poNo || '', prNo: row.prNo || row.prLine || '', ...row }]);
-    setLineModal('');
+    if (shouldClose) setLineModal('');
   };
 
   const addPurchaseRows = (rows) => {
