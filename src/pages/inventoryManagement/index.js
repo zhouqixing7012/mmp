@@ -5,8 +5,8 @@ import ConsumableReceiptPage from './ConsumableReceiptPage';
 import InboundPage from './InboundPage';
 import OutboundPage from './OutboundPage';
 import MovePage from './MovePage';
+import TransferPage from './TransferPage';
 import WarehouseWorkbenchPage from './WarehouseWorkbenchPage';
-import { TransferPage } from './InventoryDocumentPages';
 
 export const INVENTORY_MANAGEMENT_SUB_MENUS = [
   '资产接收',
@@ -67,5 +67,6 @@ export { default as ConsumableReceiptPage } from './ConsumableReceiptPage';
 export { default as InboundPage } from './InboundPage';
 export { default as OutboundPage } from './OutboundPage';
 export { default as MovePage } from './MovePage';
+export { default as TransferPage } from './TransferPage';
 export { default as WarehouseWorkbenchPage } from './WarehouseWorkbenchPage';
-export { OutboundPage as LegacyOutboundPage, MovePage as LegacyMovePage, TransferPage } from './InventoryDocumentPages';
+export { OutboundPage as LegacyOutboundPage, MovePage as LegacyMovePage, TransferPage as LegacyTransferPage } from './InventoryDocumentPages';
