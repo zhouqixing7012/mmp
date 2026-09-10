@@ -49,9 +49,9 @@ const NOServiceView = () => {
 export default function App() {
   const location = useLocation();
   const workspaceState = location.state?.workspace;
-  const [activeMenu, setActiveMenu] = useState(workspaceState ? '个人工作台' : '后台基础配置');
-  const [activeSubMenu, setActiveSubMenu] = useState(workspaceState || '物料数据维护');
-  const [activeTab, setActiveTab] = useState(workspaceState || '物料大类');
+  const [activeMenu, setActiveMenu] = useState(workspaceState ? '个人工作台' : '库存管理');
+  const [activeSubMenu, setActiveSubMenu] = useState(workspaceState || '资产接收');
+  const [activeTab, setActiveTab] = useState(workspaceState ? workspaceState : '');
   const tabs = getTabsBySubMenu(activeSubMenu);
 
   useEffect(() => {
