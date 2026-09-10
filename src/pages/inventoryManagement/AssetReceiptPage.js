@@ -4,6 +4,7 @@ import {
   Card,
   DatePicker,
   Input,
+  Modal,
   Select,
   Space,
   Table,
@@ -11,7 +12,7 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
-import { Search, Trash2 } from 'lucide-react';
+import { Search, Trash2, Upload } from 'lucide-react';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
@@ -27,7 +28,7 @@ const PO_ROWS = [
   { id: 7, poNo: 'PO2606020004', receiptStatus: '已入库', poName: '电子设备采购订单', company: '北京新动力', plate: '视频', supplier: '北京汉信成科技发展有限公司', pushDate: '2026-06-08', purchaseType: '电子设备' },
   { id: 8, poNo: 'PO2606020003', receiptStatus: '已入库', poName: '电子设备采购订单', company: '天津飞狐', plate: '视频', supplier: '北京美捷美科技有限公司', pushDate: '2026-06-08', purchaseType: '电子设备' },
   { id: 9, poNo: 'PO2606020002', receiptStatus: '已入库', poName: '电子设备采购订单', company: '北京新动力', plate: '视频', supplier: '华盛天诚（北京）科技有限公司', pushDate: '2026-07-20', purchaseType: '电子设备' },
-  { id: 10, poNo: 'PO2606020001', receiptStatus: '已入库', poName: '电子设备采购订单', company: '天津飞狐', plate: '视频', supplier: '北京汉信成科技发展有限公司', pushDate: '2026-06-08', purchaseType: '电子设备' },
+  { id: 10, poNo: 'PO2606020001', receiptStatus: '已入库', poName: '电子设备采购订单', company: '天津飞狐', plate: '视频', supplier: '北京汉信成科技有限公司', pushDate: '2026-06-08', purchaseType: '电子设备' },
 ];
 
 const RECEIPT_ROWS = [
@@ -194,6 +195,13 @@ function toSelectData(values) {
   return [...new Set(values.filter(Boolean))].map((name, index) => ({ id: index + 1, name }));
 }
 
+function getPoDetail(po) {
+  if (!po) return {};
+  if (po.purchaseType === '电子设备') return ELECTRONIC_PO_DETAIL;
+  if (po.purchaseType === '服务器') return SERVER_PO_DETAIL;
+  return {};
+}
+
 function SelectorInput({ value, placeholder, onOpen }) {
   return (
     <div className="cursor-pointer" onClick={onOpen}>
@@ -221,12 +229,14 @@ export default function AssetReceiptPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [view, setView] = useState('poList');
   const [activePO, setActivePO] = useState(null);
+  const [activeReceipt, setActiveReceipt] = useState(null);
   const [poDraftFilters, setPoDraftFilters] = useState(EMPTY_PO_FILTERS);
   const [poAppliedFilters, setPoAppliedFilters] = useState(EMPTY_PO_FILTERS);
   const [receiptDraftFilters, setReceiptDraftFilters] = useState(EMPTY_RECEIPT_FILTERS);
   const [receiptAppliedFilters, setReceiptAppliedFilters] = useState(EMPTY_RECEIPT_FILTERS);
   const [receiptRows, setReceiptRows] = useState(RECEIPT_ROWS);
   const [selectedReceiptKeys, setSelectedReceiptKeys] = useState([]);
+  const [selectedReceiptLineKeys, setSelectedReceiptLineKeys] = useState([]);
   const [selectedItemKeys, setSelectedItemKeys] = useState([]);
   const [detailPlate, setDetailPlate] = useState('');
   const [applicationBatch, setApplicationBatch] = useState('');
@@ -265,6 +275,14 @@ export default function AssetReceiptPage() {
     setReceiptDraftFilters((current) => ({ ...current, [field]: value || '' }));
   };
 
+  const updateReceiptDateRange = (dates) => {
+    setReceiptDraftFilters((current) => ({
+      ...current,
+      createdFrom: dates?.[0] ? dates[0].format('YYYY-MM-DD') : '',
+      createdTo: dates?.[1] ? dates[1].format('YYYY-MM-DD') : '',
+    }));
+  };
+
   const openPoDetail = (row) => {
     setActivePO(row);
     setDetailPlate(row.plate || '');
@@ -276,10 +294,18 @@ export default function AssetReceiptPage() {
   const openReceiptList = (row) => {
     const filters = { ...EMPTY_RECEIPT_FILTERS, poNo: row.poNo };
     setActivePO(row);
+    setActiveReceipt(null);
     setReceiptDraftFilters(filters);
     setReceiptAppliedFilters(filters);
     setSelectedReceiptKeys([]);
     setView('receiptList');
+  };
+
+  const openReceiptDetail = (row) => {
+    setActiveReceipt(row);
+    setActivePO(PO_ROWS.find((item) => item.poNo === row.poNo) || activePO);
+    setSelectedReceiptLineKeys([]);
+    setView('receiptDetail');
   };
 
   const selectorConfig = {
@@ -340,19 +366,17 @@ export default function AssetReceiptPage() {
 
   const receiptColumns = [
     { title: '行号', dataIndex: 'id', width: 72, align: 'center' },
-    { title: '接收单号', dataIndex: 'receiptNo', width: 210, render: (value) => <Typography.Link>{value}</Typography.Link> },
+    {
+      title: '接收单号',
+      dataIndex: 'receiptNo',
+      width: 210,
+      render: (value, row) => <Typography.Link onClick={() => openReceiptDetail(row)}>{value}</Typography.Link>,
+    },
     { title: '单据状态', dataIndex: 'status', width: 140, render: (value) => <StatusTag value={value} /> },
     { title: 'PO单号', dataIndex: 'poNo', width: 180 },
     { title: '供应商', dataIndex: 'supplier', width: 280 },
     { title: '制单人', dataIndex: 'creator', width: 140 },
     { title: '制单时间', dataIndex: 'createdAt', width: 190 },
-    {
-      title: '操作',
-      key: 'operation',
-      width: 90,
-      fixed: 'right',
-      render: () => <Button type="link" className="px-0" onClick={() => messageApi.info('接收单详情字段待确认')}>查看</Button>,
-    },
   ];
 
   const itemColumns = [
@@ -393,12 +417,30 @@ export default function AssetReceiptPage() {
     { title: '业务线', dataIndex: 'businessLine', width: 140 },
   ];
 
+  const receiptDetailColumns = [
+    { title: '行号', dataIndex: 'id', width: 70, align: 'center' },
+    { title: '物料说明', dataIndex: 'materialDesc', width: 240 },
+    { title: '配置', dataIndex: 'config', width: 220 },
+    { title: '部件数量', dataIndex: 'partQuantity', width: 110 },
+    { title: '部件说明', dataIndex: 'partDesc', width: 180 },
+    { title: '本次接收数量', dataIndex: 'currentReceiptQty', width: 130, align: 'right' },
+    { title: '采购数量', dataIndex: 'purchaseQty', width: 100, align: 'right' },
+    { title: '不含税单价', dataIndex: 'untaxedUnitPrice', width: 120, align: 'right' },
+    { title: '不含税金额小计', dataIndex: 'untaxedSubtotal', width: 140, align: 'right' },
+    { title: '税额', dataIndex: 'totalTax', width: 100, align: 'right' },
+    { title: '含税单价', dataIndex: 'taxedUnitPrice', width: 110, align: 'right' },
+    { title: '含税小计', dataIndex: 'taxedSubtotal', width: 110, align: 'right' },
+    { title: '税率', dataIndex: 'taxRate', width: 90, align: 'right' },
+    { title: '约定到货日期', dataIndex: 'agreedArrivalDate', width: 130 },
+    { title: 'PR单/行号', dataIndex: 'prLineNo', width: 140 },
+    { title: 'SA单/行号', dataIndex: 'saLineNo', width: 140 },
+    { title: '申请单号', dataIndex: 'applicationNo', width: 160 },
+    { title: '部门', dataIndex: 'department', width: 180 },
+    { title: '业务线', dataIndex: 'businessLine', width: 140 },
+  ];
+
   if (view === 'poDetail' && activePO) {
-    const detail = activePO.purchaseType === '电子设备'
-      ? ELECTRONIC_PO_DETAIL
-      : activePO.purchaseType === '服务器'
-        ? SERVER_PO_DETAIL
-        : {};
+    const detail = getPoDetail(activePO);
     const itemRows = detail.items || [];
     const canCreateReceipt = activePO.purchaseType === '电子设备';
     const canExecuteInbound = DIRECT_INBOUND_TYPES.has(activePO.purchaseType);
@@ -499,7 +541,108 @@ export default function AssetReceiptPage() {
     );
   }
 
+  if (view === 'receiptDetail' && activeReceipt) {
+    const receiptPO = PO_ROWS.find((item) => item.poNo === activeReceipt.poNo) || activePO;
+    const detail = getPoDetail(receiptPO);
+    const detailItems = detail.items || [];
+    const receiptItems = detailItems.filter((item) => Number(item.currentReceiptQty || 0) > 0);
+    const visibleReceiptItems = receiptItems.length > 0 ? receiptItems : detailItems;
+
+    return (
+      <Space direction="vertical" size={16} className="w-full">
+        {contextHolder}
+        <PageTitle>资产接收</PageTitle>
+
+        <Card size="small" title="接收单信息">
+          <DetailGrid columns={3} labelWidth={120}>
+            <DetailItem label="采购接收单号"><Readonly>{activeReceipt.receiptNo}</Readonly></DetailItem>
+            <DetailItem label="PO单号"><Readonly>{activeReceipt.poNo}</Readonly></DetailItem>
+            <DetailItem label="PO单说明"><Readonly>{receiptPO?.poName}</Readonly></DetailItem>
+            <DetailItem label="供应商"><Readonly>{activeReceipt.supplier}</Readonly></DetailItem>
+            <DetailItem label="联系人"><Readonly>-</Readonly></DetailItem>
+            <DetailItem label="供应商联系电话"><Readonly>{detail.supplierPhone}</Readonly></DetailItem>
+            <DetailItem label="采购单位"><Readonly>{detail.procurementUnit || receiptPO?.company}</Readonly></DetailItem>
+            <DetailItem label="采购员"><Readonly>{detail.buyer}</Readonly></DetailItem>
+            <DetailItem label="采购员联系电话"><Readonly>{detail.buyerPhone}</Readonly></DetailItem>
+            <DetailItem label="合同主体"><Readonly>{detail.contractSubject}</Readonly></DetailItem>
+            <DetailItem label="板块"><Readonly>{receiptPO?.plate}</Readonly></DetailItem>
+            <DetailItem label="接收人"><Readonly>{activeReceipt.creator}</Readonly></DetailItem>
+            <DetailItem label="接收单状态"><StatusTag value={activeReceipt.status} /></DetailItem>
+            <DetailItem label="接收时间"><Readonly>{activeReceipt.createdAt?.slice(0, 10)}</Readonly></DetailItem>
+            <DetailItem label="申请批次"><Readonly>-</Readonly></DetailItem>
+          </DetailGrid>
+        </Card>
+
+        <Card
+          size="small"
+          title="接收物资明细"
+          extra={(
+            <Space>
+              <Button
+                danger
+                icon={<Trash2 size={14} />}
+                onClick={() => {
+                  if (selectedReceiptLineKeys.length === 0) {
+                    messageApi.warning('请先选择需要删除的接收行');
+                    return;
+                  }
+                  Modal.confirm({
+                    title: '确认删除所选接收行？',
+                    content: `共选择 ${selectedReceiptLineKeys.length} 条。`,
+                    okText: '删除',
+                    cancelText: '取消',
+                    okButtonProps: { danger: true },
+                    onOk: () => {
+                      setSelectedReceiptLineKeys([]);
+                      messageApi.success('删除接收行操作已记录（原型）');
+                    },
+                  });
+                }}
+              >
+                删除接收行
+              </Button>
+              <Button onClick={() => messageApi.info('维护接收明细字段待确认')}>维护接收明细</Button>
+              <Button icon={<Upload size={14} />} onClick={() => messageApi.info('导入规则待确认')}>导入</Button>
+            </Space>
+          )}
+        >
+          <Table
+            rowKey="id"
+            size="small"
+            bordered
+            columns={receiptDetailColumns}
+            dataSource={visibleReceiptItems}
+            rowSelection={{
+              type: 'checkbox',
+              selectedRowKeys: selectedReceiptLineKeys,
+              onChange: setSelectedReceiptLineKeys,
+              fixed: true,
+              columnTitle: '选择',
+              columnWidth: 64,
+            }}
+            scroll={{ x: 'max-content' }}
+            pagination={false}
+          />
+        </Card>
+
+        <div className="flex justify-center gap-3">
+          {activeReceipt.status === '草稿' && (
+            <>
+              <Button danger onClick={() => messageApi.info('取消接收规则待确认')}>取消接收</Button>
+              <Button type="primary" onClick={() => messageApi.info('接收确认规则待确认')}>接收确认</Button>
+            </>
+          )}
+          <Button onClick={() => setView('receiptList')}>返回</Button>
+        </div>
+      </Space>
+    );
+  }
+
   if (view === 'receiptList') {
+    const receiptDateRange = receiptDraftFilters.createdFrom && receiptDraftFilters.createdTo
+      ? [dayjs(receiptDraftFilters.createdFrom), dayjs(receiptDraftFilters.createdTo)]
+      : null;
+
     return (
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
@@ -528,29 +671,23 @@ export default function AssetReceiptPage() {
               value={receiptDraftFilters.status || undefined}
               allowClear
               placeholder="请选择"
-              options={[{ label: '接收完成', value: '接收完成' }]}
+              options={[
+                { label: '草稿', value: '草稿' },
+                { label: '接收完成', value: '接收完成' },
+              ]}
               onChange={(value) => updateReceiptFilter('status', value)}
             />
           </QueryItem>
           <QueryItem label="制单人">
             <Input value={receiptDraftFilters.creator} allowClear placeholder="请输入制单人" onChange={(event) => updateReceiptFilter('creator', event.target.value)} />
           </QueryItem>
-          <QueryItem label="制单时间从">
-            <DatePicker
-              value={receiptDraftFilters.createdFrom ? dayjs(receiptDraftFilters.createdFrom) : null}
+          <QueryItem label="制单时间">
+            <DatePicker.RangePicker
+              value={receiptDateRange}
               style={{ width: '100%' }}
               format="YYYY-MM-DD"
-              placeholder="开始日期"
-              onChange={(date) => updateReceiptFilter('createdFrom', date ? date.format('YYYY-MM-DD') : '')}
-            />
-          </QueryItem>
-          <QueryItem label="制单时间至">
-            <DatePicker
-              value={receiptDraftFilters.createdTo ? dayjs(receiptDraftFilters.createdTo) : null}
-              style={{ width: '100%' }}
-              format="YYYY-MM-DD"
-              placeholder="结束日期"
-              onChange={(date) => updateReceiptFilter('createdTo', date ? date.format('YYYY-MM-DD') : '')}
+              allowClear
+              onChange={updateReceiptDateRange}
             />
           </QueryItem>
           <QueryItem label="供应商">
