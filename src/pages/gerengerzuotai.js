@@ -228,7 +228,7 @@ export default function PersonalWorkspace() {
               size="large"
               icon={<Plus size={16} />}
               style={{ color: '#2563EB', borderColor: '#fff', fontWeight: 600 }}
-              onClick={() => navigate('/employee-self-service/asset-apply')}
+              onClick={() => navigate('/yewurules', { state: { workspace: '物资申请' } })}
             >
               物资申请
             </Button>
