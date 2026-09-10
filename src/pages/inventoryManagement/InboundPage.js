@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Card,
@@ -16,15 +16,34 @@ import dayjs from 'dayjs';
 import { Plus, Printer, Search, Trash2, Upload } from 'lucide-react';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
+import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 
 const { TextArea } = Input;
+const { RangePicker } = DatePicker;
 const INBOUND_TYPES = ['新增入库', '采购接收', '退库入库', '借用归还'];
 const WAREHOUSES = [
   'I0001-资产集团总库（新媒体）',
   'I0013-资产集团前台库（新媒体）',
   'I0022-资产集团前台库（焦点互动）',
 ];
+
+const WAREHOUSE_CONTEXT = {
+  'I0001-资产集团总库（新媒体）': { city: '010.北京市', building: '129753.搜狐媒体大厦', company: '114.新媒体' },
+  'I0013-资产集团前台库（新媒体）': { city: '010.北京市', building: '129753.搜狐媒体大厦', company: '114.新媒体' },
+};
+
+const NEW_MATERIAL_OPTIONS = [
+  { id: 1, materialDesc: '联想.ThinkPad T14', materialGroup: '1.资产', assetClass: '10.电脑', assetSubClass: '笔记本电脑', brand: '联想', model: 'ThinkPad T14', config: 'i7 / 32G / 1T SSD', unit: '台', expenseAccount: '固定资产' },
+  { id: 2, materialDesc: 'Dell.R740', materialGroup: '1.资产', assetClass: '14.SERVER', assetSubClass: '服务器', brand: 'Dell', model: 'R740', config: 'Silver4210*2 / 128G / 600G*8', unit: '台', expenseAccount: '固定资产' },
+];
+
+const RESPONSIBLE_OPTIONS = [
+  { id: 1, name: '114111-杨芊', department: 'ERP部.业务产品二组', costCenter: 'ERP部' },
+  { id: 2, name: '206984-何文', department: 'ERP部.业务产品二组', costCenter: 'ERP部' },
+];
+
+const INFRA_ASSET_TYPES = new Set(['服务器', '网络设备', '服务器备件', '网络设备备件']);
 
 const INITIAL_ROWS = [
   { id: 1, documentNo: 'PI-202608070025', applicationNo: 'ERA-202608070021', status: '已完成', inboundType: '退库入库', warehouse: 'I0022-资产集团前台库（焦点互动）', createdDate: '2026-08-07', creator: '114111-杨芊', quantity: 1, cardClaim: '是', poNo: '', prNo: '', assetTag: '' },
@@ -40,42 +59,13 @@ const PURCHASE_PENDING_ROWS = [
 ];
 
 const SOURCE_ASSET = {
-  assetTag: 'AST-2409010068',
-  sn: 'SN-T14-0068',
-  materialDesc: '联想.ThinkPad T14',
-  enabledDate: '2024-09-01',
-  materialGroup: '1.资产',
-  assetClass: '10.电脑',
-  assetSubClass: '笔记本电脑',
-  mainAssetTag: '-',
-  brand: '联想',
-  model: 'ThinkPad T14',
-  config: 'i7 / 32G / 1T SSD',
-  unit: '台',
-  quantity: 1,
-  assetStatus: '借出',
-  printNo: 'PRINT-2409010068',
-  company: '114.新媒体',
-  plate: '集团',
-  businessLine: '0.*',
-  costCenter: 'ERP部',
-  city: '010.北京市',
-  building: '129753.搜狐媒体大厦',
-  floor: '15F',
-  room: '1508',
-  expenseAccount: '固定资产',
-  usage: '办公',
-  partQuantity: 0,
-  partDesc: '-',
-  remark: '-',
-  responsiblePerson: '114111-杨芊',
-  area: 'A区',
-  location: 'A-01-03',
-  assetMark: '主资产',
-  appraisalNo: 'APP-20260901001',
-  appraisalResult: '正常',
-  appraiser: '206984-何文',
-  appraisalDate: '2026-09-01',
+  assetTag: 'AST-2409010068', sn: 'SN-T14-0068', materialDesc: '联想.ThinkPad T14', enabledDate: '2024-09-01',
+  materialGroup: '1.资产', assetClass: '10.电脑', assetSubClass: '笔记本电脑', mainAssetTag: '-', brand: '联想',
+  model: 'ThinkPad T14', config: 'i7 / 32G / 1T SSD', unit: '台', quantity: 1, assetStatus: '借出', printNo: 'PRINT-2409010068',
+  company: '114.新媒体', plate: '集团', businessLine: '0.*', costCenter: 'ERP部', city: '010.北京市', building: '129753.搜狐媒体大厦',
+  floor: '15F', room: '1508', expenseAccount: '固定资产', usage: '办公', partQuantity: 0, partDesc: '-', remark: '-',
+  responsiblePerson: '114111-杨芊', area: 'A区', location: 'A-01-03', assetMark: '主资产', appraisalNo: 'APP-20260901001',
+  appraisalResult: '正常', appraiser: '206984-何文', appraisalDate: '2026-09-01',
 };
 
 function includesText(value, query) {
@@ -92,83 +82,156 @@ function PageTitle({ children }) {
 }
 
 function Readonly({ children }) {
-  return <Typography.Text>{children || '-'}</Typography.Text>;
+  return <Typography.Text>{children === 0 ? 0 : (children || '-')}</Typography.Text>;
 }
 
 function LookupInput({ value, placeholder = '请选择', onClick }) {
   return (
     <div className="cursor-pointer" onClick={onClick}>
-      <Input value={value} readOnly placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} />} />
+      <Input value={value} readOnly placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} className="text-[#1677ff]" />} />
     </div>
   );
 }
 
-function EditorField({ label, children, span = 1 }) {
-  return <DetailItem label={label} span={span}>{children}</DetailItem>;
+function FieldLabel({ label, required }) {
+  return <span>{label}{required && <span className="ml-0.5 text-red-500">*</span>}</span>;
+}
+
+function EditorField({ label, required = false, children, span = 1 }) {
+  return <DetailItem label={<FieldLabel label={label} required={required} />} span={span}>{children}</DetailItem>;
 }
 
 function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
+  const warehouseContext = WAREHOUSE_CONTEXT[warehouse] || { city: '', building: '', company: '' };
+  const [selector, setSelector] = useState('');
   const [form, setForm] = useState({
-    materialDesc: '联想.ThinkPad T14', materialGroup: '1.资产', assetClass: '10.电脑', assetSubClass: '笔记本电脑', brand: '联想', model: 'ThinkPad T14', config: 'i7 / 32G / 1T SSD', unit: '台', area: 'A区', location: 'A-01-03', applicationBatch: '2026Q3', quantity: 1, contractNo: 'HT-2026-09001', originalValue: 8200, tax: 1066, assetTag: '', sn: '', assetLevel: '普通资产', city: '010.北京市', building: '129753.搜狐媒体大厦', floor: '15F', usage: '办公', department: 'ERP部.业务产品二组', responsiblePerson: '114111-杨芊', addType: '采购新增', company: '114.新媒体', costCenter: 'ERP部', businessLine: '0.*', project: '0.*', plate: '集团', expenseAccount: '固定资产', purchaseDate: '2026-09-10', enableDate: '2026-09-10', prNo: 'PR2603180007', applicationNo: '', poNo: '', applicant: '206984-何文', partQuantity: 0, partDesc: '', mainAssetTag: '', supplier: '北京一新科技有限责任公司', usageDesc: '', remark: ''
+    materialDesc: '联想.ThinkPad T14', materialGroup: '1.资产', assetClass: '10.电脑', assetSubClass: '笔记本电脑', brand: '联想',
+    model: 'ThinkPad T14', config: 'i7 / 32G / 1T SSD', unit: '台', applicationBatch: '2026Q3', quantity: 1, originalValue: 8200,
+    tax: 1066, assetTag: '', sn: '', city: warehouseContext.city, building: warehouseContext.building, floor: '15F',
+    responsiblePerson: '114111-杨芊', department: 'ERP部.业务产品二组', addType: '采购新增', originalAssetTag: '', company: warehouseContext.company,
+    costCenter: 'ERP部', businessLine: '0.*', project: '0.*', plate: '集团', expenseAccount: '固定资产', purchaseDate: '2026-09-10',
+    enableDate: '2026-09-10', prNo: 'PR2603180007', applicationNo: '', poNo: '', applicant: '206984-何文', partQuantity: 0,
+    partDesc: '', mainAssetTag: '', supplier: '北京一新科技有限责任公司', service: '', noLocation: '', usageDesc: '', remark: '',
   });
   const set = (field, value) => setForm((current) => ({ ...current, [field]: value }));
 
+  useEffect(() => {
+    if (!open) return;
+    const context = WAREHOUSE_CONTEXT[warehouse] || { city: '', building: '', company: '' };
+    setForm((current) => ({ ...current, city: context.city, building: context.building, company: context.company }));
+  }, [open, warehouse]);
+
+  const applyMaterial = (record) => {
+    setForm((current) => ({
+      ...current,
+      materialDesc: record.materialDesc,
+      materialGroup: record.materialGroup,
+      assetClass: record.assetClass,
+      assetSubClass: record.assetSubClass,
+      brand: record.brand,
+      model: record.model,
+      config: record.config,
+      unit: record.unit,
+      expenseAccount: record.expenseAccount,
+      service: INFRA_ASSET_TYPES.has(record.assetSubClass) ? current.service : '',
+      noLocation: INFRA_ASSET_TYPES.has(record.assetSubClass) ? current.noLocation : '',
+    }));
+    setSelector('');
+  };
+
+  const applyResponsible = (record) => {
+    setForm((current) => ({ ...current, responsiblePerson: record.name, department: record.department, costCenter: record.costCenter }));
+    setSelector('');
+  };
+
+  const isInfra = INFRA_ASSET_TYPES.has(form.assetSubClass);
+
   return (
-    <Modal open={open} title="添加新增入库物资" width={1180} okText="添加并关闭" cancelText="取消" onCancel={onCancel} onOk={() => onConfirm({ ...form, total: Number(form.originalValue || 0) + Number(form.tax || 0) })}>
-      <Space direction="vertical" size={16} className="w-full">
-        <Typography.Text type="secondary">当前仓库：{warehouse}</Typography.Text>
-        <Card size="small" title="物资信息">
-          <DetailGrid columns={3} labelWidth={96} minWidth={980}>
-            <EditorField label="物资说明*"><LookupInput value={form.materialDesc} onClick={() => {}} /></EditorField>
-            <EditorField label="物资总类"><Select className="w-full" value={form.materialGroup} options={[{ label: '1.资产', value: '1.资产' }]} onChange={(v) => set('materialGroup', v)} /></EditorField>
-            <EditorField label="物资大类"><Input value={form.assetClass} onChange={(e) => set('assetClass', e.target.value)} /></EditorField>
-            <EditorField label="物资小类"><Input value={form.assetSubClass} onChange={(e) => set('assetSubClass', e.target.value)} /></EditorField>
-            <EditorField label="品牌"><Input value={form.brand} onChange={(e) => set('brand', e.target.value)} /></EditorField>
-            <EditorField label="规格型号"><Input value={form.model} onChange={(e) => set('model', e.target.value)} /></EditorField>
-            <EditorField label="配置"><Input value={form.config} onChange={(e) => set('config', e.target.value)} /></EditorField>
-            <EditorField label="计量单位"><Input value={form.unit} onChange={(e) => set('unit', e.target.value)} /></EditorField>
-            <EditorField label="库区"><Input value={form.area} onChange={(e) => set('area', e.target.value)} /></EditorField>
-            <EditorField label="库位"><Input value={form.location} onChange={(e) => set('location', e.target.value)} /></EditorField>
-            <EditorField label="申请批次"><Input value={form.applicationBatch} onChange={(e) => set('applicationBatch', e.target.value)} /></EditorField>
-            <EditorField label="入库数量*"><InputNumber className="w-full" min={1} precision={0} value={form.quantity} onChange={(v) => set('quantity', v || 1)} /></EditorField>
-            <EditorField label="合同编号"><Input value={form.contractNo} onChange={(e) => set('contractNo', e.target.value)} /></EditorField>
-            <EditorField label="原值*"><InputNumber className="w-full" min={0} precision={2} value={form.originalValue} onChange={(v) => set('originalValue', v || 0)} /></EditorField>
-            <EditorField label="税金"><InputNumber className="w-full" min={0} precision={2} value={form.tax} onChange={(v) => set('tax', v || 0)} /></EditorField>
-            <EditorField label="合计"><Readonly>{money(Number(form.originalValue || 0) + Number(form.tax || 0))}</Readonly></EditorField>
-            <EditorField label="资产标签号"><Input value={form.assetTag} onChange={(e) => set('assetTag', e.target.value)} /></EditorField>
-            <EditorField label="SN号"><Input value={form.sn} onChange={(e) => set('sn', e.target.value)} /></EditorField>
-            <EditorField label="资产级别"><Select className="w-full" value={form.assetLevel} options={['普通资产', '重要资产'].map((v) => ({ label: v, value: v }))} onChange={(v) => set('assetLevel', v)} /></EditorField>
-            <EditorField label="资产状态*"><Readonly>在库-新增</Readonly></EditorField>
-            <EditorField label="City*"><Input value={form.city} onChange={(e) => set('city', e.target.value)} /></EditorField>
-            <EditorField label="Building*"><LookupInput value={form.building} onClick={() => {}} /></EditorField>
-            <EditorField label="Floor*"><Select className="w-full" value={form.floor} options={['15F', '16F', '17F'].map((v) => ({ label: v, value: v }))} onChange={(v) => set('floor', v)} /></EditorField>
-            <EditorField label="用途"><Select className="w-full" value={form.usage} options={['办公', '测试', '机房'].map((v) => ({ label: v, value: v }))} onChange={(v) => set('usage', v)} /></EditorField>
-            <EditorField label="所在部门"><Input value={form.department} onChange={(e) => set('department', e.target.value)} /></EditorField>
-            <EditorField label="责任人*"><LookupInput value={form.responsiblePerson} onClick={() => {}} /></EditorField>
-            <EditorField label="新增类型*"><Select className="w-full" value={form.addType} options={['采购新增', '盘盈新增', '其他新增'].map((v) => ({ label: v, value: v }))} onChange={(v) => set('addType', v)} /></EditorField>
-            <EditorField label="原资产标签号"><Input value={form.originalAssetTag || ''} onChange={(e) => set('originalAssetTag', e.target.value)} /></EditorField>
-            <EditorField label="公司*"><Readonly>{form.company}</Readonly></EditorField>
-            <EditorField label="成本中心*"><LookupInput value={form.costCenter} onClick={() => {}} /></EditorField>
-            <EditorField label="业务线"><LookupInput value={form.businessLine} onClick={() => {}} /></EditorField>
-            <EditorField label="项目"><LookupInput value={form.project} onClick={() => {}} /></EditorField>
-            <EditorField label="板块*"><LookupInput value={form.plate} onClick={() => {}} /></EditorField>
-            <EditorField label="费用账户"><Input value={form.expenseAccount} onChange={(e) => set('expenseAccount', e.target.value)} /></EditorField>
-            <EditorField label="购置日期*"><DatePicker className="w-full" value={dayjs(form.purchaseDate)} onChange={(d) => set('purchaseDate', d?.format('YYYY-MM-DD') || '')} /></EditorField>
-            <EditorField label="启用日期*"><DatePicker className="w-full" value={dayjs(form.enableDate)} onChange={(d) => set('enableDate', d?.format('YYYY-MM-DD') || '')} /></EditorField>
-            <EditorField label="PR单号"><Input value={form.prNo} onChange={(e) => set('prNo', e.target.value)} /></EditorField>
-            <EditorField label="申请单号"><Input value={form.applicationNo} onChange={(e) => set('applicationNo', e.target.value)} /></EditorField>
-            <EditorField label="PO单号"><Input value={form.poNo} onChange={(e) => set('poNo', e.target.value)} /></EditorField>
-            <EditorField label="申请人"><LookupInput value={form.applicant} onClick={() => {}} /></EditorField>
-            <EditorField label="部件数量"><InputNumber className="w-full" min={0} precision={0} value={form.partQuantity} onChange={(v) => set('partQuantity', v || 0)} /></EditorField>
-            <EditorField label="部件说明"><Input value={form.partDesc} onChange={(e) => set('partDesc', e.target.value)} /></EditorField>
-            <EditorField label="主资产标签号"><LookupInput value={form.mainAssetTag} onClick={() => {}} /></EditorField>
-            <EditorField label="供应商"><LookupInput value={form.supplier} onClick={() => {}} /></EditorField>
-            <EditorField label="使用说明" span={3}><Input value={form.usageDesc} onChange={(e) => set('usageDesc', e.target.value)} /></EditorField>
-            <EditorField label="备注" span={3}><TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={form.remark} onChange={(e) => set('remark', e.target.value)} /></EditorField>
-          </DetailGrid>
-        </Card>
-      </Space>
-    </Modal>
+    <>
+      <Modal open={open} title="添加新增入库物资" width={1180} okText="添加并关闭" cancelText="取消" onCancel={onCancel} onOk={() => onConfirm({ ...form, total: Number(form.originalValue || 0) + Number(form.tax || 0) })}>
+        <Space direction="vertical" size={16} className="w-full">
+          <Typography.Text>当前仓库：{warehouse}</Typography.Text>
+          <Card size="small" title="物资信息">
+            <DetailGrid columns={3} labelWidth={96} minWidth={980}>
+              <EditorField label="物资说明" required><LookupInput value={form.materialDesc} onClick={() => setSelector('material')} /></EditorField>
+              <EditorField label="物资总类"><Readonly>{form.materialGroup}</Readonly></EditorField>
+              <EditorField label="物资大类"><Readonly>{form.assetClass}</Readonly></EditorField>
+              <EditorField label="物资小类"><Readonly>{form.assetSubClass}</Readonly></EditorField>
+              <EditorField label="品牌"><Readonly>{form.brand}</Readonly></EditorField>
+              <EditorField label="规格型号"><Readonly>{form.model}</Readonly></EditorField>
+              <EditorField label="配置"><Readonly>{form.config}</Readonly></EditorField>
+              <EditorField label="计量单位"><Readonly>{form.unit}</Readonly></EditorField>
+              <EditorField label="申请批次"><Input value={form.applicationBatch} onChange={(e) => set('applicationBatch', e.target.value)} /></EditorField>
+              <EditorField label="入库数量" required><InputNumber className="w-full" min={1} precision={0} value={form.quantity} onChange={(v) => set('quantity', v || 1)} /></EditorField>
+              <EditorField label="原值" required><InputNumber className="w-full" min={0} precision={2} value={form.originalValue} onChange={(v) => set('originalValue', v || 0)} /></EditorField>
+              <EditorField label="税金"><InputNumber className="w-full" min={0} precision={2} value={form.tax} onChange={(v) => set('tax', v || 0)} /></EditorField>
+              <EditorField label="合计"><Readonly>{money(Number(form.originalValue || 0) + Number(form.tax || 0))}</Readonly></EditorField>
+              <EditorField label="资产标签号"><Input value={form.assetTag} onChange={(e) => set('assetTag', e.target.value)} /></EditorField>
+              <EditorField label="SN号"><Input value={form.sn} onChange={(e) => set('sn', e.target.value)} /></EditorField>
+              <EditorField label="资产状态"><Readonly>在库-新增</Readonly></EditorField>
+              <EditorField label="City"><Readonly>{form.city}</Readonly></EditorField>
+              <EditorField label="Building" required><Input value={form.building} onChange={(e) => set('building', e.target.value)} /></EditorField>
+              <EditorField label="Floor" required><Select className="w-full" value={form.floor} options={['15F', '16F', '17F'].map((v) => ({ label: v, value: v }))} onChange={(v) => set('floor', v)} /></EditorField>
+              <EditorField label="责任人" required><LookupInput value={form.responsiblePerson} onClick={() => setSelector('responsible')} /></EditorField>
+              <EditorField label="所在部门"><Input value={form.department} onChange={(e) => set('department', e.target.value)} /></EditorField>
+              <EditorField label="新增类型" required><Select className="w-full" value={form.addType} options={['采购新增', '盘盈新增', '其他新增'].map((v) => ({ label: v, value: v }))} onChange={(v) => set('addType', v)} /></EditorField>
+              <EditorField label="原资产标签号"><Input value={form.originalAssetTag} onChange={(e) => set('originalAssetTag', e.target.value)} /></EditorField>
+              <EditorField label="公司"><Readonly>{form.company}</Readonly></EditorField>
+              <EditorField label="成本中心" required><Input value={form.costCenter} onChange={(e) => set('costCenter', e.target.value)} /></EditorField>
+              <EditorField label="业务线"><LookupInput value={form.businessLine} onClick={() => {}} /></EditorField>
+              <EditorField label="项目"><LookupInput value={form.project} onClick={() => {}} /></EditorField>
+              <EditorField label="板块" required><LookupInput value={form.plate} onClick={() => {}} /></EditorField>
+              <EditorField label="费用账户"><Readonly>{form.expenseAccount}</Readonly></EditorField>
+              {isInfra && <EditorField label="服务"><Input value={form.service} onChange={(e) => set('service', e.target.value)} /></EditorField>}
+              {isInfra && <EditorField label="NO位置"><Input value={form.noLocation} onChange={(e) => set('noLocation', e.target.value)} /></EditorField>}
+              <EditorField label="购置日期" required><DatePicker className="w-full" value={form.purchaseDate ? dayjs(form.purchaseDate) : null} onChange={(d) => set('purchaseDate', d?.format('YYYY-MM-DD') || '')} /></EditorField>
+              <EditorField label="启用日期" required><DatePicker className="w-full" value={form.enableDate ? dayjs(form.enableDate) : null} onChange={(d) => set('enableDate', d?.format('YYYY-MM-DD') || '')} /></EditorField>
+              <EditorField label="PR单号"><Input value={form.prNo} onChange={(e) => set('prNo', e.target.value)} /></EditorField>
+              <EditorField label="申请单号"><Input value={form.applicationNo} onChange={(e) => set('applicationNo', e.target.value)} /></EditorField>
+              <EditorField label="PO单号"><Input value={form.poNo} onChange={(e) => set('poNo', e.target.value)} /></EditorField>
+              <EditorField label="申请人"><LookupInput value={form.applicant} onClick={() => {}} /></EditorField>
+              <EditorField label="部件数量"><InputNumber className="w-full" min={0} precision={0} value={form.partQuantity} onChange={(v) => set('partQuantity', v || 0)} /></EditorField>
+              <EditorField label="部件说明"><Input value={form.partDesc} onChange={(e) => set('partDesc', e.target.value)} /></EditorField>
+              <EditorField label="主资产标签号"><LookupInput value={form.mainAssetTag} onClick={() => {}} /></EditorField>
+              <EditorField label="供应商"><LookupInput value={form.supplier} onClick={() => {}} /></EditorField>
+              <EditorField label="使用说明" span={3}><Input value={form.usageDesc} onChange={(e) => set('usageDesc', e.target.value)} /></EditorField>
+              <EditorField label="备注" span={3}><TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={form.remark} onChange={(e) => set('remark', e.target.value)} /></EditorField>
+            </DetailGrid>
+          </Card>
+        </Space>
+      </Modal>
+
+      {selector === 'material' && (
+        <SelectModal
+          open
+          title="选择物资说明"
+          dataSource={NEW_MATERIAL_OPTIONS}
+          columns={[
+            { title: '物资说明', dataIndex: 'materialDesc' },
+            { title: '物资大类', dataIndex: 'assetClass' },
+            { title: '物资小类', dataIndex: 'assetSubClass' },
+          ]}
+          searchFields={[{ label: '物资说明', name: 'materialDesc', dataIndex: 'materialDesc' }]}
+          onCancel={() => setSelector('')}
+          onConfirm={applyMaterial}
+        />
+      )}
+      {selector === 'responsible' && (
+        <SelectModal
+          open
+          title="选择责任人"
+          dataSource={RESPONSIBLE_OPTIONS}
+          columns={[
+            { title: '责任人', dataIndex: 'name' },
+            { title: '所在部门', dataIndex: 'department' },
+            { title: '成本中心', dataIndex: 'costCenter' },
+          ]}
+          searchFields={[{ label: '责任人', name: 'name', dataIndex: 'name' }]}
+          onCancel={() => setSelector('')}
+          onConfirm={applyResponsible}
+        />
+      )}
+    </>
   );
 }
 
@@ -181,12 +244,12 @@ function AssetInboundItemModal({ open, mode, warehouse, onCancel, onConfirm }) {
   return (
     <Modal open={open} title={isBorrow ? '添加借用归还物资' : '添加退库入库物资'} width={1180} okText="添加并关闭" cancelText="取消" onCancel={onCancel} onOk={() => onConfirm({ ...asset, ...form, quantity: form.returnQty || 1, inboundStatus: '在库-待处理', returnType: isBorrow ? '' : '一般退库' })}>
       <Space direction="vertical" size={16} className="w-full">
-        <Typography.Text type="secondary">当前仓库：{warehouse}</Typography.Text>
+        <Typography.Text>当前仓库：{warehouse}</Typography.Text>
         <Card size="small" title="选择物资">
           <DetailGrid columns={3} labelWidth={96}>
             <EditorField label="资产标签号"><LookupInput value={asset.assetTag} onClick={() => {}} /></EditorField>
             <EditorField label="SN号"><LookupInput value={asset.sn} onClick={() => {}} /></EditorField>
-            <EditorField label="物资说明*"><LookupInput value={asset.materialDesc} onClick={() => {}} /></EditorField>
+            <EditorField label="物资说明" required><LookupInput value={asset.materialDesc} onClick={() => {}} /></EditorField>
           </DetailGrid>
         </Card>
         <Card size="small" title="物资信息">
@@ -228,12 +291,12 @@ function AssetInboundItemModal({ open, mode, warehouse, onCancel, onConfirm }) {
         </Card>
         <Card size="small" title={isBorrow ? '借用归还入库' : '一般退库入库'}>
           <DetailGrid columns={3} labelWidth={96}>
-            <EditorField label="责任人*"><LookupInput value={asset.responsiblePerson} onClick={() => {}} /></EditorField>
+            <EditorField label="责任人" required><LookupInput value={asset.responsiblePerson} onClick={() => {}} /></EditorField>
             <EditorField label="库区"><Input value={asset.area} onChange={(e) => setAsset((current) => ({ ...current, area: e.target.value }))} /></EditorField>
             <EditorField label="货位"><Input value={asset.location} onChange={(e) => setAsset((current) => ({ ...current, location: e.target.value }))} /></EditorField>
             <EditorField label="资产标记"><Select className="w-full" value={asset.assetMark} options={['主资产', '附属资产'].map((v) => ({ label: v, value: v }))} onChange={(v) => setAsset((current) => ({ ...current, assetMark: v }))} /></EditorField>
-            <EditorField label={isBorrow ? '归还数量*' : '退库数量*'}><InputNumber className="w-full" min={1} precision={0} value={form.returnQty} onChange={(v) => set('returnQty', v || 1)} /></EditorField>
-            <EditorField label="资产状态*"><Readonly>在库-待处理</Readonly></EditorField>
+            <EditorField label={isBorrow ? '归还数量' : '退库数量'} required><InputNumber className="w-full" min={1} precision={0} value={form.returnQty} onChange={(v) => set('returnQty', v || 1)} /></EditorField>
+            <EditorField label="资产状态"><Readonly>在库-待处理</Readonly></EditorField>
             <EditorField label={isBorrow ? '归还日期' : '退库日期'}><DatePicker className="w-full" value={dayjs(form.returnDate)} onChange={(d) => set('returnDate', d?.format('YYYY-MM-DD') || '')} /></EditorField>
             <EditorField label="鉴定单号"><Input value={asset.appraisalNo} onChange={(e) => setAsset((current) => ({ ...current, appraisalNo: e.target.value }))} /></EditorField>
             {!isBorrow && <EditorField label="退库原因"><Input value={form.returnReason} onChange={(e) => set('returnReason', e.target.value)} /></EditorField>}
@@ -249,11 +312,21 @@ function AssetInboundItemModal({ open, mode, warehouse, onCancel, onConfirm }) {
 }
 
 function PurchasePendingModal({ open, onCancel, onConfirm }) {
-  const [draft, setDraft] = useState({ company: '', plate: '', department: '', assetClass: '', supplier: '', poNo: '', receiptNo: '', assetTag: '', scan: '' });
-  const [filters, setFilters] = useState(draft);
+  const empty = { company: '', plate: '', department: '', assetClass: '', supplier: '', poNo: '', receiptNo: '', assetTag: '', scan: '' };
+  const [draft, setDraft] = useState(empty);
+  const [filters, setFilters] = useState(empty);
   const [selected, setSelected] = useState([]);
   const update = (field, value) => setDraft((current) => ({ ...current, [field]: value || '' }));
-  const rows = useMemo(() => PURCHASE_PENDING_ROWS.filter((row) => includesText(row.company, filters.company) && includesText(row.plate, filters.plate) && includesText(row.department, filters.department) && includesText(row.assetClass, filters.assetClass) && includesText(row.supplier, filters.supplier) && includesText(row.poNo, filters.poNo) && includesText(row.receiptNo, filters.receiptNo) && includesText(row.assetTag, filters.assetTag)), [filters]);
+  const applyQuery = () => setFilters({ ...draft });
+  const rows = useMemo(() => PURCHASE_PENDING_ROWS.filter((row) => includesText(row.company, filters.company)
+    && includesText(row.plate, filters.plate)
+    && includesText(row.department, filters.department)
+    && includesText(row.assetClass, filters.assetClass)
+    && includesText(row.supplier, filters.supplier)
+    && includesText(row.poNo, filters.poNo)
+    && includesText(row.receiptNo, filters.receiptNo)
+    && includesText(row.assetTag, filters.assetTag)
+    && includesText(row.assetTag, filters.scan)), [filters]);
   const columns = [
     { title: '行号', dataIndex: 'id', width: 64 },
     { title: '公司', dataIndex: 'company', width: 120 },
@@ -271,11 +344,12 @@ function PurchasePendingModal({ open, onCancel, onConfirm }) {
     { title: 'PR单/行', dataIndex: 'prLine', width: 150 },
   ];
   const selectedRows = PURCHASE_PENDING_ROWS.filter((row) => selected.includes(row.id));
+  const removeSelected = (id) => setSelected((current) => current.filter((key) => key !== id));
 
   return (
-    <Modal open={open} title="选择待入库物资" width={1240} okText="确认" cancelText="取消" onCancel={onCancel} onOk={() => onConfirm(selectedRows)}>
+    <Modal open={open} title="选择待入库物资" width={1280} okText="确认" cancelText="取消" onCancel={onCancel} onOk={() => onConfirm(selectedRows)}>
       <Space direction="vertical" size={16} className="w-full">
-        <QueryBar onQuery={() => setFilters({ ...draft })} onReset={() => { const empty = { company: '', plate: '', department: '', assetClass: '', supplier: '', poNo: '', receiptNo: '', assetTag: '', scan: '' }; setDraft(empty); setFilters(empty); }}>
+        <QueryBar onQuery={applyQuery} onReset={() => { setDraft(empty); setFilters(empty); }}>
           <QueryItem label="公司"><Input value={draft.company} onChange={(e) => update('company', e.target.value)} /></QueryItem>
           <QueryItem label="板块"><Input value={draft.plate} onChange={(e) => update('plate', e.target.value)} /></QueryItem>
           <QueryItem label="部门"><Input value={draft.department} onChange={(e) => update('department', e.target.value)} /></QueryItem>
@@ -284,20 +358,48 @@ function PurchasePendingModal({ open, onCancel, onConfirm }) {
           <QueryItem label="PO单号"><Input value={draft.poNo} onChange={(e) => update('poNo', e.target.value)} /></QueryItem>
           <QueryItem label="接收单号"><Input value={draft.receiptNo} onChange={(e) => update('receiptNo', e.target.value)} /></QueryItem>
           <QueryItem label="资产标签号"><Input value={draft.assetTag} onChange={(e) => update('assetTag', e.target.value)} /></QueryItem>
+          <QueryItem label="扫描光标">
+            <Input
+              value={draft.scan}
+              placeholder="可扫码或手输资产标签号，回车查询"
+              onChange={(e) => update('scan', e.target.value)}
+              onPressEnter={applyQuery}
+            />
+          </QueryItem>
         </QueryBar>
-        <Card size="small" title="扫描光标"><Input value={draft.scan} placeholder="扫描资产标签号" onChange={(e) => update('scan', e.target.value)} onPressEnter={() => { const matched = PURCHASE_PENDING_ROWS.find((row) => row.assetTag === draft.scan.trim()); if (matched) setSelected((current) => current.includes(matched.id) ? current : [...current, matched.id]); }} /></Card>
-        <Card size="small" title="待入库物资">
-          <Table rowKey="id" size="small" bordered columns={columns} dataSource={rows} rowSelection={{ selectedRowKeys: selected, onChange: setSelected, fixed: true }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10 }} />
-        </Card>
-        <Card size="small" title={`已选择（${selectedRows.length}）`}>
-          {selectedRows.length ? <Space wrap>{selectedRows.map((row) => <Typography.Text key={row.id}>{row.assetTag} / {row.materialDesc}</Typography.Text>)}</Space> : <Typography.Text type="secondary">暂未选择</Typography.Text>}
-        </Card>
+
+        <div className="flex items-stretch gap-4">
+          <Card size="small" title="待入库物资" className="min-w-0 flex-1">
+            <Table
+              rowKey="id"
+              size="small"
+              bordered
+              columns={columns}
+              dataSource={rows}
+              rowSelection={{ selectedRowKeys: selected, onChange: setSelected, fixed: true }}
+              scroll={{ x: 'max-content' }}
+              pagination={{ pageSize: 10 }}
+            />
+          </Card>
+          <Card size="small" title={`已选择（${selectedRows.length}）`} className="w-[280px] shrink-0">
+            {selectedRows.length ? (
+              <Space direction="vertical" size={4} className="w-full">
+                {selectedRows.map((row) => (
+                  <div key={row.id} className="flex items-center justify-between gap-2 border-b border-gray-100 py-2 last:border-b-0">
+                    <Typography.Text className="min-w-0 flex-1" ellipsis={{ tooltip: row.assetTag }}>{row.assetTag}</Typography.Text>
+                    <Button type="text" danger size="small" icon={<Trash2 size={14} />} onClick={() => removeSelected(row.id)} />
+                  </div>
+                ))}
+              </Space>
+            ) : <Typography.Text type="secondary">暂未选择</Typography.Text>}
+          </Card>
+        </div>
       </Space>
     </Modal>
   );
 }
 
-function InboundEditor({ source, onBack, onSave }) {
+function InboundEditor({ source, onBack, onSave, onExecute }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [inboundType, setInboundType] = useState(source?.inboundType || '新增入库');
   const [warehouse, setWarehouse] = useState(source?.warehouse || WAREHOUSES[0]);
@@ -310,6 +412,7 @@ function InboundEditor({ source, onBack, onSave }) {
   const creator = source?.creator || '206984-何文';
   const status = source?.status || '草稿';
   const createdDate = source?.createdDate || dayjs().format('YYYY-MM-DD');
+  const editable = status === '草稿';
   const totalOriginal = lines.reduce((sum, row) => sum + Number(row.originalValue || 0), 0);
   const totalTax = lines.reduce((sum, row) => sum + Number(row.tax || 0), 0);
 
@@ -333,6 +436,8 @@ function InboundEditor({ source, onBack, onSave }) {
     { title: '行号', width: 64, render: (_, __, index) => index + 1 }, { title: '资产标签号', dataIndex: 'assetTag', width: 160 }, { title: 'SN序列号', dataIndex: 'sn', width: 150 }, { title: '物资总类', dataIndex: 'materialGroup', width: 110 }, { title: '物资说明', dataIndex: 'materialDesc', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 80 }, { title: '退库类型', dataIndex: 'returnType', width: 110 }, { title: '资产标记', dataIndex: 'assetMark', width: 100 }, { title: '退库人', width: 130, render: () => '206984-何文' }, { title: '资产状态', dataIndex: 'inboundStatus', width: 130 },
   ] : inboundType === '采购接收' ? [...commonColumns, { title: '是否计费', dataIndex: 'billable', width: 100 }] : commonColumns;
 
+  const payload = () => ({ inboundType, warehouse, quantity: lines.reduce((sum, row) => sum + Number(row.quantity || 0), 0), lines });
+
   const addLine = (row) => {
     const id = Date.now();
     setLines((current) => [...current, { id, materialGroup: row.materialGroup || '1.资产', materialDesc: row.materialDesc, quantity: row.quantity || 1, assetTag: row.assetTag || '', sn: row.sn || '', originalValue: Number(row.originalValue || 0), tax: Number(row.tax || 0), poNo: row.poNo || '', prNo: row.prNo || row.prLine || '', ...row }]);
@@ -340,10 +445,7 @@ function InboundEditor({ source, onBack, onSave }) {
   };
 
   const addPurchaseRows = (rows) => {
-    if (!rows.length) {
-      messageApi.warning('请先选择待入库物资');
-      return;
-    }
+    if (!rows.length) return messageApi.warning('请先选择待入库物资');
     setLines((current) => [...current, ...rows.map((row) => ({ ...row, id: `${Date.now()}-${row.id}`, prNo: row.prLine }))]);
     setLineModal('');
   };
@@ -363,6 +465,12 @@ function InboundEditor({ source, onBack, onSave }) {
     setInboundType(value);
   };
 
+  const executeInbound = () => {
+    if (!lines.length) return messageApi.warning('请先添加待入库物资');
+    onExecute(payload());
+    messageApi.success('执行入库成功');
+  };
+
   return (
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
@@ -372,33 +480,34 @@ function InboundEditor({ source, onBack, onSave }) {
           <EditorField label="入库单号"><Readonly>{documentNo}</Readonly></EditorField>
           <EditorField label="单据类型"><Readonly>入库单</Readonly></EditorField>
           <EditorField label="单据状态"><StatusTag value={status} /></EditorField>
-          <EditorField label="入库类型"><Select className="w-full" value={inboundType} options={INBOUND_TYPES.map((v) => ({ label: v, value: v }))} onChange={changeType} /></EditorField>
+          <EditorField label="入库类型"><Select className="w-full" disabled={!editable} value={inboundType} options={INBOUND_TYPES.map((v) => ({ label: v, value: v }))} onChange={changeType} /></EditorField>
           <EditorField label="制单人"><Readonly>{creator}</Readonly></EditorField>
           <EditorField label="制单时间"><Readonly>{createdDate}</Readonly></EditorField>
           {(inboundType === '新增入库' || inboundType === '采购接收') && <EditorField label="合计原值"><Readonly>{money(totalOriginal)}</Readonly></EditorField>}
           {(inboundType === '新增入库' || inboundType === '采购接收') && <EditorField label="合计税金"><Readonly>{money(totalTax)}</Readonly></EditorField>}
           {(inboundType === '新增入库' || inboundType === '采购接收') && <EditorField label="合计金额"><Readonly>{money(totalOriginal + totalTax)}</Readonly></EditorField>}
           <EditorField label="是否刷卡领用"><Readonly>否</Readonly></EditorField>
-          {inboundType === '采购接收' && <EditorField label="是否计费"><Select className="w-full" value={billable} options={['是', '否'].map((v) => ({ label: v, value: v }))} onChange={setBillable} /></EditorField>}
-          <EditorField label="当前仓库"><Select className="w-full" value={warehouse} options={WAREHOUSES.map((v) => ({ label: v, value: v }))} onChange={setWarehouse} /></EditorField>
-          <EditorField label="备注" span={3}><TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={remark} onChange={(e) => setRemark(e.target.value)} /></EditorField>
+          {inboundType === '采购接收' && <EditorField label="是否计费"><Select className="w-full" disabled={!editable} value={billable} options={['是', '否'].map((v) => ({ label: v, value: v }))} onChange={setBillable} /></EditorField>}
+          <EditorField label="当前仓库"><Select className="w-full" disabled={!editable} value={warehouse} options={WAREHOUSES.map((v) => ({ label: v, value: v }))} onChange={setWarehouse} /></EditorField>
+          <EditorField label="备注" span={3}>{editable ? <TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={remark} onChange={(e) => setRemark(e.target.value)} /> : <Readonly>{remark}</Readonly>}</EditorField>
         </DetailGrid>
       </Card>
 
       <Card
         size="small"
         title="入库物资"
-        extra={<Space>
+        extra={editable ? <Space>
           <Button type="primary" icon={<Plus size={14} />} onClick={() => setLineModal(inboundType === '采购接收' ? 'purchase' : 'asset')}>{inboundType === '采购接收' ? '待入库物资' : '添加物资'}</Button>
           <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>
-          <Button icon={<Upload size={14} />} onClick={() => messageApi.info('Excel导入沿用现有入库模板，本轮先按截图字段展示')}>Excel导入</Button>
-        </Space>}
+          {inboundType !== '采购接收' && <Button icon={<Upload size={14} />} onClick={() => messageApi.info('Excel导入沿用现有入库模板')}>Excel导入</Button>}
+        </Space> : null}
       >
-        <Table rowKey="id" size="small" bordered columns={columns} dataSource={lines} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true }} scroll={{ x: 'max-content' }} pagination={false} />
+        <Table rowKey="id" size="small" bordered columns={columns} dataSource={lines} rowSelection={editable ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true } : undefined} scroll={{ x: 'max-content' }} pagination={false} />
       </Card>
 
       <div className="flex justify-center gap-3">
-        <Button type="primary" onClick={() => onSave({ inboundType, warehouse, quantity: lines.reduce((sum, row) => sum + Number(row.quantity || 0), 0), lines })}>保存草稿</Button>
+        {editable && <Button type="primary" onClick={executeInbound}>执行入库</Button>}
+        {editable && <Button onClick={() => onSave(payload())}>保存草稿</Button>}
         <Button onClick={onBack}>返回</Button>
       </div>
 
@@ -414,33 +523,74 @@ export default function InboundPage() {
   const [rows, setRows] = useState(INITIAL_ROWS);
   const [view, setView] = useState('list');
   const [activeRow, setActiveRow] = useState(null);
-  const [draft, setDraft] = useState({ documentNo: '', inboundType: '', status: '', poNo: '', prNo: '', assetTag: '', creator: '', createdFrom: '', createdTo: '' });
-  const [filters, setFilters] = useState(draft);
+  const emptyFilters = { documentNo: '', inboundType: '', status: '', poNo: '', prNo: '', assetTag: '', creator: '', createdFrom: '', createdTo: '' };
+  const [draft, setDraft] = useState(emptyFilters);
+  const [filters, setFilters] = useState(emptyFilters);
   const [selectedKeys, setSelectedKeys] = useState([]);
   const update = (field, value) => setDraft((current) => ({ ...current, [field]: value || '' }));
 
-  const filteredRows = useMemo(() => rows.filter((row) => includesText(row.documentNo, filters.documentNo) && (!filters.inboundType || row.inboundType === filters.inboundType) && (!filters.status || row.status === filters.status) && includesText(row.poNo, filters.poNo) && includesText(row.prNo, filters.prNo) && includesText(row.assetTag, filters.assetTag) && includesText(row.creator, filters.creator) && (!filters.createdFrom || row.createdDate >= filters.createdFrom) && (!filters.createdTo || row.createdDate <= filters.createdTo)), [rows, filters]);
+  const filteredRows = useMemo(() => rows.filter((row) => includesText(row.documentNo, filters.documentNo)
+    && (!filters.inboundType || row.inboundType === filters.inboundType)
+    && (!filters.status || row.status === filters.status)
+    && includesText(row.poNo, filters.poNo)
+    && includesText(row.prNo, filters.prNo)
+    && includesText(row.assetTag, filters.assetTag)
+    && includesText(row.creator, filters.creator)
+    && (!filters.createdFrom || row.createdDate >= filters.createdFrom)
+    && (!filters.createdTo || row.createdDate <= filters.createdTo)), [rows, filters]);
 
   const openEditor = (row = null) => {
     setActiveRow(row);
     setView('editor');
   };
 
+  const buildRow = (payload, status) => {
+    const id = Math.max(0, ...rows.map((row) => row.id)) + 1;
+    return {
+      id,
+      documentNo: `PI-${dayjs().format('YYYYMMDD')}${String(id).padStart(4, '0')}`,
+      applicationNo: '',
+      status,
+      inboundType: payload.inboundType,
+      warehouse: payload.warehouse,
+      createdDate: dayjs().format('YYYY-MM-DD'),
+      creator: '206984-何文',
+      quantity: payload.quantity,
+      cardClaim: '否',
+      poNo: '',
+      prNo: '',
+      assetTag: '',
+      lines: payload.lines,
+    };
+  };
+
   const saveDraft = (payload) => {
     if (activeRow) {
-      setRows((current) => current.map((row) => row.id === activeRow.id ? { ...row, ...payload, status: '草稿' } : row));
+      const updated = { ...activeRow, ...payload, status: '草稿' };
+      setRows((current) => current.map((row) => row.id === activeRow.id ? updated : row));
+      setActiveRow(updated);
       messageApi.success('入库单草稿已保存');
       return;
     }
-    const id = Math.max(0, ...rows.map((row) => row.id)) + 1;
-    const created = { id, documentNo: `PI-${dayjs().format('YYYYMMDD')}${String(id).padStart(4, '0')}`, applicationNo: '', status: '草稿', inboundType: payload.inboundType, warehouse: payload.warehouse, createdDate: dayjs().format('YYYY-MM-DD'), creator: '206984-何文', quantity: payload.quantity, cardClaim: '否', poNo: '', prNo: '', assetTag: '', lines: payload.lines };
+    const created = buildRow(payload, '草稿');
     setRows((current) => [created, ...current]);
     setActiveRow(created);
     messageApi.success(`已生成入库单 ${created.documentNo}`);
   };
 
+  const executeInbound = (payload) => {
+    if (activeRow) {
+      setRows((current) => current.map((row) => row.id === activeRow.id ? { ...row, ...payload, status: '已完成' } : row));
+    } else {
+      const created = buildRow(payload, '已完成');
+      setRows((current) => [created, ...current]);
+    }
+    setActiveRow(null);
+    setView('list');
+  };
+
   if (view === 'editor') {
-    return <InboundEditor source={activeRow} onBack={() => { setView('list'); setActiveRow(null); }} onSave={saveDraft} />;
+    return <InboundEditor source={activeRow} onBack={() => { setView('list'); setActiveRow(null); }} onSave={saveDraft} onExecute={executeInbound} />;
   }
 
   const columns = [
@@ -454,7 +604,14 @@ export default function InboundPage() {
     { title: '制单人', dataIndex: 'creator', width: 150 },
     { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right' },
     { title: '是否刷卡领用', dataIndex: 'cardClaim', width: 130, render: (value) => <StatusTag value={value} /> },
-    { title: '操作', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => openEditor(row)}>编辑</Button> },
+    {
+      title: '操作',
+      width: 90,
+      fixed: 'right',
+      render: (_, row) => row.status === '草稿'
+        ? <Button type="link" className="px-0" onClick={() => openEditor(row)}>编辑</Button>
+        : <Button type="link" className="px-0" onClick={() => messageApi.success(`已打开 ${row.documentNo} 打印预览（原型）`)}>打印</Button>,
+    },
   ];
 
   const deleteRows = () => {
@@ -469,7 +626,7 @@ export default function InboundPage() {
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
       <PageTitle>入库</PageTitle>
-      <QueryBar onQuery={() => { setFilters({ ...draft }); setSelectedKeys([]); }} onReset={() => { const empty = { documentNo: '', inboundType: '', status: '', poNo: '', prNo: '', assetTag: '', creator: '', createdFrom: '', createdTo: '' }; setDraft(empty); setFilters(empty); setSelectedKeys([]); }}>
+      <QueryBar onQuery={() => { setFilters({ ...draft }); setSelectedKeys([]); }} onReset={() => { setDraft(emptyFilters); setFilters(emptyFilters); setSelectedKeys([]); }}>
         <QueryItem label="入库单号"><Input value={draft.documentNo} allowClear placeholder="请输入入库单号" onChange={(e) => update('documentNo', e.target.value)} /></QueryItem>
         <QueryItem label="入库类型"><Select className="w-full" value={draft.inboundType || undefined} allowClear placeholder="全部" options={INBOUND_TYPES.map((v) => ({ label: v, value: v }))} onChange={(v) => update('inboundType', v)} /></QueryItem>
         <QueryItem label="单据状态"><Select className="w-full" value={draft.status || undefined} allowClear placeholder="全部" options={['草稿', '已完成'].map((v) => ({ label: v, value: v }))} onChange={(v) => update('status', v)} /></QueryItem>
@@ -477,8 +634,16 @@ export default function InboundPage() {
         <QueryItem label="PR单号"><Input value={draft.prNo} allowClear placeholder="请输入PR单号" onChange={(e) => update('prNo', e.target.value)} /></QueryItem>
         <QueryItem label="资产标签号"><Input value={draft.assetTag} allowClear placeholder="请输入资产标签号" onChange={(e) => update('assetTag', e.target.value)} /></QueryItem>
         <QueryItem label="制单人"><Input value={draft.creator} allowClear placeholder="请输入制单人" onChange={(e) => update('creator', e.target.value)} /></QueryItem>
-        <QueryItem label="制单日期从"><DatePicker className="w-full" value={draft.createdFrom ? dayjs(draft.createdFrom) : null} onChange={(d) => update('createdFrom', d?.format('YYYY-MM-DD') || '')} /></QueryItem>
-        <QueryItem label="制单日期至"><DatePicker className="w-full" value={draft.createdTo ? dayjs(draft.createdTo) : null} onChange={(d) => update('createdTo', d?.format('YYYY-MM-DD') || '')} /></QueryItem>
+        <QueryItem label="制单日期">
+          <RangePicker
+            className="w-full"
+            value={[draft.createdFrom ? dayjs(draft.createdFrom) : null, draft.createdTo ? dayjs(draft.createdTo) : null]}
+            onChange={(dates) => {
+              update('createdFrom', dates?.[0]?.format('YYYY-MM-DD') || '');
+              update('createdTo', dates?.[1]?.format('YYYY-MM-DD') || '');
+            }}
+          />
+        </QueryItem>
       </QueryBar>
       <Card size="small" title="入库单列表" extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
         <div className="mb-3 flex justify-end">
