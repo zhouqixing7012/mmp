@@ -87,7 +87,6 @@ function ConsumableClaimAlternativePage({ variant }) {
   const data = VARIANTS[variant];
   const isMaterialCode = variant === 'materialCode';
   const [warehouse, setWarehouse] = useState('I1001-耗材集团总库（新媒体）');
-  const [remark, setRemark] = useState('');
   const [city, setCity] = useState('35.北京市');
   const [building, setBuilding] = useState('129753.搜狐媒体大厦');
   const [floor, setFloor] = useState('15层');
@@ -138,9 +137,7 @@ function ConsumableClaimAlternativePage({ variant }) {
           <Descriptions.Item label="启用日期">{data.enableDate}</Descriptions.Item>
           <Descriptions.Item label="实际耗材说明">{data.actualDescription}</Descriptions.Item>
           <Descriptions.Item label="配置" span={2}>{data.configuration}</Descriptions.Item>
-          <Descriptions.Item label="备注" span={3}>
-            <Input maxLength={400} value={remark} placeholder="请输入备注" onChange={(event) => setRemark(event.target.value)} />
-          </Descriptions.Item>
+          <Descriptions.Item label="备注" span={3}>{data.remark || '-'}</Descriptions.Item>
           <Descriptions.Item label={<span><span className="text-red-500">*</span> city</span>}>
             <Select className="w-full" value={city} options={CITY_OPTIONS} onChange={setCity} />
           </Descriptions.Item>
