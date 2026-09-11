@@ -34,6 +34,23 @@ const CONSUMABLE_APPLICATION_REASON_OPTIONS = [
   '部门公共设备使用',
 ];
 
+function CountedTextArea({ value, maxLength = 400, style, ...props }) {
+  const text = String(value || '');
+  return (
+    <div className="relative">
+      <TextArea
+        {...props}
+        value={value}
+        maxLength={maxLength}
+        style={{ paddingBottom: 22, ...style }}
+      />
+      <span className="pointer-events-none absolute bottom-1.5 right-2 text-xs text-slate-400">
+        {text.length}/{maxLength}
+      </span>
+    </div>
+  );
+}
+
 function formatDate(date) {
   return date.toISOString().slice(0, 10);
 }
@@ -253,11 +270,10 @@ export default function EmployeeAssetApplyPage() {
           );
         }
         return (
-          <TextArea
+          <CountedTextArea
             value={value}
             rows={2}
             maxLength={400}
-            showCount
             placeholder="请填写申请原因，最多400字符"
             onChange={(event) => updateMaterial(record.id, 'purpose', event.target.value)}
           />
@@ -271,11 +287,10 @@ export default function EmployeeAssetApplyPage() {
       render: (value, record) => isPreview
         ? <Typography.Paragraph className="mb-0 whitespace-pre-wrap">{value}</Typography.Paragraph>
         : (
-          <TextArea
+          <CountedTextArea
             value={value}
             rows={2}
             maxLength={400}
-            showCount
             placeholder="请填写详细说明，最多400字符"
             onChange={(event) => updateMaterial(record.id, 'detail', event.target.value)}
           />
