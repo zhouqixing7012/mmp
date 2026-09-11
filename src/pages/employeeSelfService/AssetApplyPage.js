@@ -19,7 +19,6 @@ import {
 import { MY_EXISTING_ASSETS } from '../../mock/assetApplicationMock';
 import {
   APPLICATION_NOTICE,
-  APPLICATION_PURPOSE_OPTIONS,
   CURRENT_EMPLOYEE,
 } from '../../mock/employeeSelfServiceMock';
 import { addEmployeeSelfServiceApplication } from '../../services/employeeSelfServiceService';
@@ -27,6 +26,13 @@ import AssetStoreModal from './AssetStoreModal';
 import RelatedAssetSelectModal from './RelatedAssetSelectModal';
 
 const { TextArea } = Input;
+
+const CONSUMABLE_APPLICATION_REASON_OPTIONS = [
+  '日常办公使用',
+  '特殊项目采购',
+  '提升电脑配置使用',
+  '部门公共设备使用',
+];
 
 function formatDate(date) {
   return date.toISOString().slice(0, 10);
@@ -153,12 +159,12 @@ export default function EmployeeAssetApplyPage() {
       messageApi.warning('申请数量必须为大于等于1的整数');
       return false;
     }
-    if (materials.some((item) => !item.purpose)) {
-      messageApi.warning('请确保所有物资都已填写申请用途');
+    if (materials.some((item) => !item.purpose || !String(item.purpose).trim())) {
+      messageApi.warning('请确保所有物资都已填写申请原因');
       return false;
     }
     if (materials.some((item) => !item.detail.trim())) {
-      messageApi.warning('请确保所有物资都已填写申请原因');
+      messageApi.warning('请确保所有物资都已填写详细说明');
       return false;
     }
     if (materials.some((item) => item.type === 'consumable' && !item.relatedAsset)) {
@@ -206,22 +212,6 @@ export default function EmployeeAssetApplyPage() {
         : <InputNumber min={1} precision={0} value={value} onChange={(next) => updateMaterial(record.id, 'quantity', next || 1)} />,
     },
     {
-      title: '申请用途',
-      dataIndex: 'purpose',
-      width: 150,
-      render: (value, record) => isPreview
-        ? value
-        : (
-          <Select
-            style={{ width: '100%' }}
-            value={value || undefined}
-            placeholder="请选择"
-            options={APPLICATION_PURPOSE_OPTIONS.map((item) => ({ label: item, value: item }))}
-            onChange={(next) => updateMaterial(record.id, 'purpose', next)}
-          />
-        ),
-    },
-    {
       title: '关联主资产',
       dataIndex: 'relatedAsset',
       width: 260,
@@ -245,6 +235,37 @@ export default function EmployeeAssetApplyPage() {
     },
     {
       title: '申请原因',
+      dataIndex: 'purpose',
+      width: 280,
+      render: (value, record) => {
+        if (isPreview) {
+          return <Typography.Paragraph className="mb-0 whitespace-pre-wrap">{value || '-'}</Typography.Paragraph>;
+        }
+        if (record.type === 'consumable') {
+          return (
+            <Select
+              style={{ width: '100%' }}
+              value={value || undefined}
+              placeholder="请选择"
+              options={CONSUMABLE_APPLICATION_REASON_OPTIONS.map((item) => ({ label: item, value: item }))}
+              onChange={(next) => updateMaterial(record.id, 'purpose', next)}
+            />
+          );
+        }
+        return (
+          <TextArea
+            value={value}
+            rows={2}
+            maxLength={400}
+            showCount
+            placeholder="请填写申请原因，最多400字符"
+            onChange={(event) => updateMaterial(record.id, 'purpose', event.target.value)}
+          />
+        );
+      },
+    },
+    {
+      title: '详细说明',
       dataIndex: 'detail',
       width: 280,
       render: (value, record) => isPreview
@@ -255,7 +276,7 @@ export default function EmployeeAssetApplyPage() {
             rows={2}
             maxLength={400}
             showCount
-            placeholder="请填写申请原因，最多400字符"
+            placeholder="请填写详细说明，最多400字符"
             onChange={(event) => updateMaterial(record.id, 'detail', event.target.value)}
           />
         ),
@@ -314,7 +335,7 @@ export default function EmployeeAssetApplyPage() {
             columns={columns}
             dataSource={materials}
             pagination={false}
-            scroll={{ x: 1240 }}
+            scroll={{ x: 1320 }}
             locale={{ emptyText: <Empty description="请点击右上角“添加物资”选择申请物资" /> }}
           />
 
