@@ -103,7 +103,7 @@ function getPoDetail(po) {
   if (!po) return {};
   if (po.poNo === 'PO2410230001') return MAINTENANCE_PO_DETAIL;
   if (po.purchaseType === '电子设备') return ELECTRONIC_PO_DETAIL;
-  if (po.purchaseType === '服务器') return SERVER_PO_DETAIL;
+  if (DIRECT_INBOUND_TYPES.has(po.purchaseType)) return SERVER_PO_DETAIL;
   return {};
 }
 
@@ -243,6 +243,29 @@ export default function AssetReceiptPage() {
     setActivePO(PO_ROWS.find((item) => item.poNo === row.poNo) || activePO);
     setSelectedReceiptLineKeys([]);
     setView('receiptDetail');
+  };
+
+  const createReceipt = () => {
+    if (selectedItemKeys.length === 0) {
+      messageApi.warning('请先选择需要创建接收单的物资');
+      return;
+    }
+    const nextId = receiptRows.reduce((max, row) => Math.max(max, row.id), 0) + 1;
+    const nextReceipt = {
+      id: nextId,
+      receiptNo: `REC-${dayjs().format('YYYYMMDD')}${String(nextId).padStart(4, '0')}`,
+      status: '待接收',
+      poNo: activePO.poNo,
+      supplier: activePO.supplier,
+      creator: 'admin-系统管理员',
+      createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+      itemIds: [...selectedItemKeys],
+    };
+    setReceiptRows((current) => [...current, nextReceipt]);
+    setActiveReceipt(nextReceipt);
+    setSelectedReceiptLineKeys([]);
+    setView('receiptDetail');
+    messageApi.success('接收单创建成功');
   };
 
   const openReceiptMaintenance = () => {
@@ -447,6 +470,7 @@ export default function AssetReceiptPage() {
     const itemRows = detail.items || [];
     const canCreateReceipt = activePO.purchaseType === '电子设备';
     const canExecuteInbound = DIRECT_INBOUND_TYPES.has(activePO.purchaseType);
+    const hasReceipt = receiptRows.some((row) => row.poNo === activePO.poNo);
 
     return (
       <Space direction="vertical" size={16} className="w-full">
@@ -483,8 +507,9 @@ export default function AssetReceiptPage() {
           />
         </Card>
         <div className="flex justify-center gap-3">
-          {canCreateReceipt && <Button type="primary" onClick={() => selectedItemKeys.length === 0 ? messageApi.warning('请先选择需要创建接收单的物资') : messageApi.success('创建接收单操作已记录（原型）')}>创建接收单</Button>}
+          {canCreateReceipt && <Button type="primary" onClick={createReceipt}>创建接收单</Button>}
           {canExecuteInbound && <Button type="primary" onClick={() => selectedItemKeys.length === 0 ? messageApi.warning('请先选择需要入库的物资') : messageApi.info('执行入库的后续字段待确认')}>执行入库</Button>}
+          {hasReceipt && <Button onClick={() => openReceiptList(activePO)}>查看接收单</Button>}
           <Button onClick={() => setView('poList')}>返回</Button>
         </div>
         {selectorConfig && <SelectModal open title={selectorConfig.title} dataSource={selectorConfig.dataSource} columns={[{ title: '名称', dataIndex: 'name' }]} searchFields={[{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelectorType('')} onConfirm={selectorConfig.onConfirm} />}
@@ -496,12 +521,12 @@ export default function AssetReceiptPage() {
     const receiptPO = PO_ROWS.find((item) => item.poNo === activeReceipt.poNo) || activePO;
     const detail = getPoDetail(receiptPO);
     const isPending = activeReceipt.status === '待接收';
-    const scannedAsset = maintenanceFilterId ? maintenanceRows.find((row) => row.id === maintenanceFilterId) || null : null;
+    const scanTargetAsset = maintenanceScanTargetId ? maintenanceRows.find((row) => row.id === maintenanceScanTargetId) || null : null;
     const visibleMaintenanceRows = maintenanceFilterId ? maintenanceRows.filter((row) => row.id === maintenanceFilterId) : maintenanceRows;
     const scanPlaceholder = !maintenanceTagsGenerated
       ? '生成标签号后可使用扫描'
       : maintenanceScanTargetId
-        ? `已定位 ${scannedAsset?.assetTag || ''}，请扫描SN号`
+        ? `已定位 ${scanTargetAsset?.assetTag || ''}，请扫描SN号`
         : '请扫描资产标签号';
 
     return (
@@ -541,15 +566,6 @@ export default function AssetReceiptPage() {
             />
           </QueryItem>
         </QueryBar>
-
-        <Card size="small" title="扫描资产信息">
-          <DetailGrid columns={4} labelWidth={88}>
-            <DetailItem label="资产标签号"><Readonly>{scannedAsset?.assetTag}</Readonly></DetailItem>
-            <DetailItem label="SN号"><Readonly>{scannedAsset?.sn}</Readonly></DetailItem>
-            <DetailItem label="物资说明"><Readonly>{scannedAsset?.materialDesc}</Readonly></DetailItem>
-            <DetailItem label="配置"><Readonly>{scannedAsset?.config}</Readonly></DetailItem>
-          </DetailGrid>
-        </Card>
 
         <Card
           size="small"
@@ -595,7 +611,9 @@ export default function AssetReceiptPage() {
     const receiptPO = PO_ROWS.find((item) => item.poNo === activeReceipt.poNo) || activePO;
     const detail = getPoDetail(receiptPO);
     const detailItems = detail.items || [];
-    const receiptItems = detailItems.filter((item) => Number(item.currentReceiptQty || 0) > 0);
+    const receiptItems = activeReceipt.itemIds?.length
+      ? detailItems.filter((item) => activeReceipt.itemIds.includes(item.id))
+      : detailItems.filter((item) => Number(item.currentReceiptQty || 0) > 0);
     const visibleReceiptItems = receiptItems.length > 0 ? receiptItems : detailItems;
     const canOperateReceipt = activeReceipt.status !== '接收完成';
 
