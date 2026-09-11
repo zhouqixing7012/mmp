@@ -1,0 +1,227 @@
+name: One-off inbound detail field sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one-off-inbound-detail-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply confirmed inbound detail changes
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          page_path = Path('src/pages/inventoryManagement/InboundPage.js')
+          text = page_path.read_text()
+          detail_start = text.index('function InboundMaterialDetailModal')
+          detail_end = text.index('\nfunction InboundEditor', detail_start)
+          detail_func = text[detail_start:detail_end]
+
+          selection_block = '''          <Card size="small" title="选择物资">
+            <DetailGrid columns={3} labelWidth={96}>
+              <EditorField label="资产标签号"><Readonly>{detail.assetTag}</Readonly></EditorField>
+              <EditorField label="SN号"><Readonly>{detail.sn}</Readonly></EditorField>
+              <EditorField label="物资说明"><Readonly>{detail.materialDesc}</Readonly></EditorField>
+            </DetailGrid>
+          </Card>
+'''
+          if selection_block not in detail_func:
+              raise SystemExit('readonly selection block not found')
+          detail_func = detail_func.replace(selection_block, '', 1)
+
+          purchase_start = detail_func.index('  const pending = PURCHASE_PENDING_ROWS.find')
+          purchase_block = '''  const pending = PURCHASE_PENDING_ROWS.find((item) => item.assetTag === row.assetTag) || {};
+  const materialName = row.materialDesc || pending.materialDesc || '';
+  const nameParts = materialName.split('.');
+  const brandFromName = nameParts.shift() || '';
+  const modelFromName = nameParts.join('.') || '';
+  const warehouseContext = WAREHOUSE_CONTEXT[warehouse] || { city: '', building: '', company: '' };
+  const fallbackAssetClass = pending.assetClass || (materialName.includes('Dell') ? '14.SERVER' : '10.电脑');
+  const fallbackAssetSubClass = pending.assetSubClass || (materialName.includes('魅族') ? '移动数码-手机' : (materialName.includes('Dell') ? '服务器' : '笔记本电脑'));
+  const detail = {
+    ...pending,
+    materialDesc: materialName,
+    materialGroup: row.materialGroup || pending.materialGroup || '1.资产',
+    assetClass: fallbackAssetClass,
+    assetSubClass: fallbackAssetSubClass,
+    brand: brandFromName,
+    model: modelFromName,
+    config: row.config || pending.config || '',
+    unit: materialName.includes('魅族') ? '部' : '台',
+    area: '',
+    location: '',
+    applicationBatch: '',
+    contractNo: '',
+    level: '缺省',
+    assetStatus: '在库-新增',
+    city: warehouseContext.city,
+    building: warehouseContext.building,
+    floor: '15F',
+    originalAssetTag: '',
+    department: pending.department || 'ERP部.业务产品二组',
+    responsiblePerson: '206984-何文',
+    addType: '采购新增',
+    usage: '',
+    company: pending.company || warehouseContext.company,
+    costCenter: 'ERP部',
+    businessLine: '0.*',
+    project: '0.*',
+    plate: pending.plate || '集团',
+    expenseAccount: '固定资产',
+    purchaseDate: '2026-08-05',
+    enableDate: '2026-08-05',
+    applicationNo: '',
+    applicant: '206984-何文',
+    mainAssetTag: '',
+    usageDesc: '',
+    remark: '',
+    service: '',
+    subService: '',
+    noLocation: '',
+    cabinet: '',
+    ilo: '',
+    iloPw: '',
+    ip1: '',
+    ip2: '',
+    ip3: '',
+    ...row,
+  };
+  return (
+    <Modal open={open} title="入库物资信息" width={1320} onCancel={onCancel} footer={<Button onClick={onCancel}>关闭</Button>}>
+      <Space direction="vertical" size={16} className="w-full">
+        <Typography.Text>当前仓库：{warehouse}</Typography.Text>
+        <Card size="small" title="物资信息">
+          <DetailGrid columns={4} labelWidth={88} minWidth={1180}>
+            <EditorField label="物资说明"><Readonly>{detail.materialDesc}</Readonly></EditorField>
+            <EditorField label="物资总类"><Readonly>{detail.materialGroup}</Readonly></EditorField>
+            <EditorField label="物资大类"><Readonly>{detail.assetClass}</Readonly></EditorField>
+            <EditorField label="物资小类"><Readonly>{detail.assetSubClass}</Readonly></EditorField>
+            <EditorField label="品牌"><Readonly>{detail.brand}</Readonly></EditorField>
+            <EditorField label="规格型号"><Readonly>{detail.model}</Readonly></EditorField>
+            <EditorField label="配置"><Readonly>{detail.config}</Readonly></EditorField>
+            <EditorField label="计量单位"><Readonly>{detail.unit}</Readonly></EditorField>
+            <EditorField label="库区"><Readonly>{detail.area}</Readonly></EditorField>
+            <EditorField label="货位"><Readonly>{detail.location}</Readonly></EditorField>
+            <EditorField label="申请批次"><Readonly>{detail.applicationBatch}</Readonly></EditorField>
+            <EditorField label="入库数量"><Readonly>{detail.quantity}</Readonly></EditorField>
+            <EditorField label="合同编号"><Readonly>{detail.contractNo}</Readonly></EditorField>
+            <EditorField label="原值"><Readonly>{money(detail.originalValue)}</Readonly></EditorField>
+            <EditorField label="税金"><Readonly>{money(detail.tax)}</Readonly></EditorField>
+            <EditorField label="金额小计"><Readonly>{money(Number(detail.originalValue || 0) + Number(detail.tax || 0))}</Readonly></EditorField>
+            <EditorField label="资产标签号"><Readonly>{detail.assetTag}</Readonly></EditorField>
+            <EditorField label="SN号"><Readonly>{detail.sn}</Readonly></EditorField>
+            <EditorField label="级别"><Readonly>{detail.level}</Readonly></EditorField>
+            <EditorField label="资产状态"><Readonly>{detail.assetStatus}</Readonly></EditorField>
+            <EditorField label="City"><Readonly>{detail.city}</Readonly></EditorField>
+            <EditorField label="Building"><Readonly>{detail.building}</Readonly></EditorField>
+            <EditorField label="Floor"><Readonly>{detail.floor}</Readonly></EditorField>
+            <EditorField label="原资产标签号"><Readonly>{detail.originalAssetTag}</Readonly></EditorField>
+            <EditorField label="所在部门"><Readonly>{detail.department}</Readonly></EditorField>
+            <EditorField label="责任人"><Readonly>{detail.responsiblePerson}</Readonly></EditorField>
+            <EditorField label="新增类型"><Readonly>{detail.addType}</Readonly></EditorField>
+            <EditorField label="用途"><Readonly>{detail.usage}</Readonly></EditorField>
+            <EditorField label="公司"><Readonly>{detail.company}</Readonly></EditorField>
+            <EditorField label="成本中心"><Readonly>{detail.costCenter}</Readonly></EditorField>
+            <EditorField label="业务线"><Readonly>{detail.businessLine}</Readonly></EditorField>
+            <EditorField label="项目"><Readonly>{detail.project}</Readonly></EditorField>
+            <EditorField label="板块"><Readonly>{detail.plate}</Readonly></EditorField>
+            <EditorField label="费用账户"><Readonly>{detail.expenseAccount}</Readonly></EditorField>
+            <EditorField label="购置日期"><Readonly>{detail.purchaseDate}</Readonly></EditorField>
+            <EditorField label="启用日期"><Readonly>{detail.enableDate}</Readonly></EditorField>
+            <EditorField label="PR单号"><Readonly>{detail.prNo || detail.prLine}</Readonly></EditorField>
+            <EditorField label="申请单号"><Readonly>{detail.applicationNo}</Readonly></EditorField>
+            <EditorField label="PO单号"><Readonly>{detail.poNo}</Readonly></EditorField>
+            <EditorField label="申请人"><Readonly>{detail.applicant}</Readonly></EditorField>
+            <EditorField label="部件数量"><Readonly>{detail.partQuantity}</Readonly></EditorField>
+            <EditorField label="部件说明"><Readonly>{detail.partDesc}</Readonly></EditorField>
+            <EditorField label="主资产标签号"><Readonly>{detail.mainAssetTag}</Readonly></EditorField>
+            <EditorField label="供应商"><Readonly>{detail.supplier}</Readonly></EditorField>
+            <EditorField label="使用说明" span={4}><Readonly>{detail.usageDesc}</Readonly></EditorField>
+            <EditorField label="备注" span={4}><Readonly>{detail.remark}</Readonly></EditorField>
+          </DetailGrid>
+        </Card>
+        <Card size="small" title="NO设备信息">
+          <DetailGrid columns={4} labelWidth={88} minWidth={1180}>
+            <EditorField label="服务"><Readonly>{detail.service}</Readonly></EditorField>
+            <EditorField label="小服务"><Readonly>{detail.subService}</Readonly></EditorField>
+            <EditorField label="NO位置"><Readonly>{detail.noLocation}</Readonly></EditorField>
+            <EditorField label="Cabinet"><Readonly>{detail.cabinet}</Readonly></EditorField>
+            <EditorField label="ILO"><Readonly>{detail.ilo}</Readonly></EditorField>
+            <EditorField label="ILOPW"><Readonly>{detail.iloPw}</Readonly></EditorField>
+            <EditorField label="IP1"><Readonly>{detail.ip1}</Readonly></EditorField>
+            <EditorField label="IP2"><Readonly>{detail.ip2}</Readonly></EditorField>
+            <EditorField label="IP3"><Readonly>{detail.ip3}</Readonly></EditorField>
+          </DetailGrid>
+        </Card>
+      </Space>
+    </Modal>
+  );
+}'''
+          detail_func = detail_func[:purchase_start] + purchase_block
+          text = text[:detail_start] + detail_func + text[detail_end:]
+          page_path.write_text(text)
+
+          prd_path = Path('docs/PRD-库存管理-入库.md')
+          prd = prd_path.read_text()
+          old = '入库物资表中的“资产标签号”统一展示为蓝色链接文本；存在标签号时可点击打开只读的“入库物资信息”弹窗，查看当前物资的标签号、SN、物资说明、物资总类、入库数量及该入库类型下已有的金额、PO/PR、退库/借用等信息。'
+          new = '入库物资表中的“资产标签号”统一展示为蓝色链接文本；存在标签号时可点击打开只读的“入库物资信息”弹窗。只读弹窗不展示新增/编辑时的“选择物资”区块，避免与下方“物资信息”重复；新增入库、退库入库、借用归还继续沿用各自添加物资弹窗的字段口径并全部只读展示。采购接收的只读物资详情按历史页面截图单独确定字段。'
+          if old not in prd:
+              raise SystemExit('PRD target paragraph not found')
+          prd = prd.replace(old, new, 1)
+          anchor = '用户确认后将当前已选资产加入入库单。\n'
+          addition = '''\n### 5.4 采购接收入库物资只读详情\n\n点击采购接收入库物资的资产标签号后打开“入库物资信息”只读弹窗，不展示“选择物资”区域。\n\n“物资信息”字段按历史页面截图固定为：物资说明、物资总类、物资大类、物资小类、品牌、规格型号、配置、计量单位、库区、货位、申请批次、入库数量、合同编号、原值、税金、金额小计、资产标签号、SN号、级别、资产状态、City、Building、Floor、原资产标签号、所在部门、责任人、新增类型、用途、公司、成本中心、业务线、项目、板块、费用账户、购置日期、启用日期、PR单号、申请单号、PO单号、申请人、部件数量、部件说明、主资产标签号、供应商、使用说明、备注。\n\n弹窗另展示“NO设备信息”区域，字段为：服务、小服务、NO位置、Cabinet、ILO、ILOPW、IP1、IP2、IP3。\n'''
+          if addition.strip() not in prd:
+              if anchor not in prd:
+                  raise SystemExit('PRD purchase anchor not found')
+              prd = prd.replace(anchor, anchor + addition, 1)
+          prd_path.write_text(prd)
+
+          context_path = Path('CONTEXT.md')
+          context = context_path.read_text()
+          old_context = '- 入库物资表中的**资产标签号**统一为蓝色链接文本；点击后打开只读“入库物资信息”弹窗，查看当前物资已有详情字段。'
+          new_context = '- 入库物资表中的**资产标签号**统一为蓝色链接文本；点击后打开只读“入库物资信息”弹窗。只读弹窗不再展示与下方信息重复的“选择物资”区块；采购接收详情字段按历史页面截图展示完整“物资信息 + NO设备信息”。'
+          if old_context not in context:
+              raise SystemExit('CONTEXT target bullet not found')
+          context_path.write_text(context.replace(old_context, new_context, 1))
+
+          lessons_path = Path('lessons.md')
+          lessons = lessons_path.read_text()
+          anchor_lesson = '- 已完成单据进入详情后应切换成真正的查看态：所有不可编辑字段直接使用文本/状态展示，不能继续保留灰色 disabled Select/Input。当前入库的“入库类型 / 是否计费 / 当前仓库”都按此处理；物资表中的关键标识“资产标签号”使用蓝色链接作为下钻入口，点击打开只读物资详情。\n'
+          new_lesson = '- 只读物资详情如果“选择物资”区域与后续“物资信息”重复，不保留选择区；选择区只服务新增/编辑动作。采购接收入库的资产标签详情字段应按已确认历史页面字段集展示，不能直接复用“待入库物资”选择列表的精简字段。\n'
+          if new_lesson not in lessons:
+              if anchor_lesson not in lessons:
+                  raise SystemExit('lessons anchor not found')
+              lessons = lessons.replace(anchor_lesson, anchor_lesson + new_lesson, 1)
+          lessons_path.write_text(lessons)
+          PY
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Commit changes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/inventoryManagement/InboundPage.js docs/PRD-库存管理-入库.md CONTEXT.md lessons.md
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "refine inbound readonly material detail"
+          git push origin HEAD:main
