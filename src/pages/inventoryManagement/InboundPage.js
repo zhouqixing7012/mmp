@@ -593,6 +593,42 @@ function PurchasePendingModal({ open, onCancel, onConfirm }) {
   );
 }
 
+function InboundMaterialDetailModal({ open, row, inboundType, onCancel }) {
+  if (!row) return null;
+  const showMoney = inboundType === '新增入库' || inboundType === '采购接收';
+  return (
+    <Modal
+      open={open}
+      title="入库物资信息"
+      width={900}
+      onCancel={onCancel}
+      footer={<Button onClick={onCancel}>关闭</Button>}
+    >
+      <Card size="small" title="物资信息">
+        <DetailGrid columns={3} labelWidth={96}>
+          <EditorField label="资产标签号"><Readonly>{row.assetTag}</Readonly></EditorField>
+          <EditorField label="SN序列号"><Readonly>{row.sn}</Readonly></EditorField>
+          <EditorField label="物资说明"><Readonly>{row.materialDesc}</Readonly></EditorField>
+          <EditorField label="物资总类"><Readonly>{row.materialGroup}</Readonly></EditorField>
+          <EditorField label="入库数量"><Readonly>{row.quantity}</Readonly></EditorField>
+          {row.inboundStatus && <EditorField label="资产状态"><Readonly>{row.inboundStatus}</Readonly></EditorField>}
+          {row.assetMark && <EditorField label="资产标记"><Readonly>{row.assetMark}</Readonly></EditorField>}
+          {inboundType === '退库入库' && <EditorField label="退库类型"><Readonly>{row.returnType}</Readonly></EditorField>}
+          {inboundType === '退库入库' && <EditorField label="退库原因"><Readonly>{row.returnReason}</Readonly></EditorField>}
+          {inboundType === '借用归还' && <EditorField label="借用日期"><Readonly>{row.borrowDate}</Readonly></EditorField>}
+          {inboundType === '借用归还' && <EditorField label="借用原因"><Readonly>{row.borrowReason}</Readonly></EditorField>}
+          {showMoney && <EditorField label="原值"><Readonly>{money(row.originalValue)}</Readonly></EditorField>}
+          {showMoney && <EditorField label="税金"><Readonly>{money(row.tax)}</Readonly></EditorField>}
+          {showMoney && <EditorField label="合计"><Readonly>{money(Number(row.originalValue || 0) + Number(row.tax || 0))}</Readonly></EditorField>}
+          {row.poNo && <EditorField label="PO单号"><Readonly>{row.poNo}</Readonly></EditorField>}
+          {row.prNo && <EditorField label="PR单号"><Readonly>{row.prNo}</Readonly></EditorField>}
+          {inboundType === '采购接收' && <EditorField label="是否计费"><Readonly>{row.billable}</Readonly></EditorField>}
+        </DetailGrid>
+      </Card>
+    </Modal>
+  );
+}
+
 function InboundEditor({ source, onBack, onSave, onExecute }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [inboundType, setInboundType] = useState(source?.inboundType || '新增入库');
@@ -602,6 +638,7 @@ function InboundEditor({ source, onBack, onSave, onExecute }) {
   const [lines, setLines] = useState(source?.lines || []);
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [lineModal, setLineModal] = useState('');
+  const [materialDetail, setMaterialDetail] = useState(null);
   const documentNo = source?.documentNo || '保存后自动生成';
   const creator = source?.creator || '206984-何文';
   const status = source?.status || '草稿';
@@ -609,13 +646,14 @@ function InboundEditor({ source, onBack, onSave, onExecute }) {
   const editable = status === '草稿';
   const totalOriginal = lines.reduce((sum, row) => sum + Number(row.originalValue || 0), 0);
   const totalTax = lines.reduce((sum, row) => sum + Number(row.tax || 0), 0);
+  const assetTagLink = (value, row) => value ? <Button type="link" className="px-0" onClick={() => setMaterialDetail(row)}>{value}</Button> : '-';
 
   const commonColumns = [
     { title: '行号', width: 64, render: (_, __, index) => index + 1 },
     { title: '物资说明', dataIndex: 'materialDesc', width: 180 },
     { title: '物资总类', dataIndex: 'materialGroup', width: 110 },
     { title: '入库数量', dataIndex: 'quantity', width: 100 },
-    { title: '资产标签号', dataIndex: 'assetTag', width: 160, render: (v) => v || '-' },
+    { title: '资产标签号', dataIndex: 'assetTag', width: 160, render: assetTagLink },
     { title: 'SN序列号', dataIndex: 'sn', width: 160, render: (v) => v || '-' },
     { title: '原值', dataIndex: 'originalValue', width: 110, render: money },
     { title: '税金', dataIndex: 'tax', width: 100, render: money },
@@ -625,9 +663,9 @@ function InboundEditor({ source, onBack, onSave, onExecute }) {
   ];
 
   const columns = inboundType === '借用归还' ? [
-    { title: '行号', width: 64, render: (_, __, index) => index + 1 }, { title: '资产标签号', dataIndex: 'assetTag', width: 160 }, { title: 'SN序列号', dataIndex: 'sn', width: 150 }, { title: '物资总类', dataIndex: 'materialGroup', width: 110 }, { title: '物资说明', dataIndex: 'materialDesc', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 80 }, { title: '借用原因', dataIndex: 'borrowReason', width: 180 }, { title: '借用日期', dataIndex: 'borrowDate', width: 120 }, { title: '资产标记', dataIndex: 'assetMark', width: 100 }, { title: '借用人', width: 130, render: () => '206984-何文' }, { title: '资产状态', dataIndex: 'inboundStatus', width: 130 },
+    { title: '行号', width: 64, render: (_, __, index) => index + 1 }, { title: '资产标签号', dataIndex: 'assetTag', width: 160, render: assetTagLink }, { title: 'SN序列号', dataIndex: 'sn', width: 150 }, { title: '物资总类', dataIndex: 'materialGroup', width: 110 }, { title: '物资说明', dataIndex: 'materialDesc', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 80 }, { title: '借用原因', dataIndex: 'borrowReason', width: 180 }, { title: '借用日期', dataIndex: 'borrowDate', width: 120 }, { title: '资产标记', dataIndex: 'assetMark', width: 100 }, { title: '借用人', width: 130, render: () => '206984-何文' }, { title: '资产状态', dataIndex: 'inboundStatus', width: 130 },
   ] : inboundType === '退库入库' ? [
-    { title: '行号', width: 64, render: (_, __, index) => index + 1 }, { title: '资产标签号', dataIndex: 'assetTag', width: 160 }, { title: 'SN序列号', dataIndex: 'sn', width: 150 }, { title: '物资总类', dataIndex: 'materialGroup', width: 110 }, { title: '物资说明', dataIndex: 'materialDesc', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 80 }, { title: '退库类型', dataIndex: 'returnType', width: 110 }, { title: '资产标记', dataIndex: 'assetMark', width: 100 }, { title: '退库人', width: 130, render: () => '206984-何文' }, { title: '资产状态', dataIndex: 'inboundStatus', width: 130 },
+    { title: '行号', width: 64, render: (_, __, index) => index + 1 }, { title: '资产标签号', dataIndex: 'assetTag', width: 160, render: assetTagLink }, { title: 'SN序列号', dataIndex: 'sn', width: 150 }, { title: '物资总类', dataIndex: 'materialGroup', width: 110 }, { title: '物资说明', dataIndex: 'materialDesc', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 80 }, { title: '退库类型', dataIndex: 'returnType', width: 110 }, { title: '资产标记', dataIndex: 'assetMark', width: 100 }, { title: '退库人', width: 130, render: () => '206984-何文' }, { title: '资产状态', dataIndex: 'inboundStatus', width: 130 },
   ] : inboundType === '采购接收' ? [...commonColumns, { title: '是否计费', dataIndex: 'billable', width: 100 }] : commonColumns;
 
   const payload = () => ({ inboundType, warehouse, quantity: lines.reduce((sum, row) => sum + Number(row.quantity || 0), 0), lines });
@@ -674,15 +712,15 @@ function InboundEditor({ source, onBack, onSave, onExecute }) {
           <EditorField label="入库单号"><Readonly>{documentNo}</Readonly></EditorField>
           <EditorField label="单据类型"><Readonly>入库单</Readonly></EditorField>
           <EditorField label="单据状态"><StatusTag value={status} /></EditorField>
-          <EditorField label="入库类型"><Select className="w-full" disabled={!editable} value={inboundType} options={INBOUND_TYPES.map((v) => ({ label: v, value: v }))} onChange={changeType} /></EditorField>
+          <EditorField label="入库类型">{editable ? <Select className="w-full" value={inboundType} options={INBOUND_TYPES.map((v) => ({ label: v, value: v }))} onChange={changeType} /> : <Readonly>{inboundType}</Readonly>}</EditorField>
           <EditorField label="制单人"><Readonly>{creator}</Readonly></EditorField>
           <EditorField label="制单时间"><Readonly>{createdDate}</Readonly></EditorField>
           {(inboundType === '新增入库' || inboundType === '采购接收') && <EditorField label="合计原值"><Readonly>{money(totalOriginal)}</Readonly></EditorField>}
           {(inboundType === '新增入库' || inboundType === '采购接收') && <EditorField label="合计税金"><Readonly>{money(totalTax)}</Readonly></EditorField>}
           {(inboundType === '新增入库' || inboundType === '采购接收') && <EditorField label="合计金额"><Readonly>{money(totalOriginal + totalTax)}</Readonly></EditorField>}
           <EditorField label="是否刷卡领用"><Readonly>否</Readonly></EditorField>
-          {inboundType === '采购接收' && <EditorField label="是否计费"><Select className="w-full" disabled={!editable} value={billable} options={['是', '否'].map((v) => ({ label: v, value: v }))} onChange={setBillable} /></EditorField>}
-          <EditorField label="当前仓库"><Select className="w-full" disabled={!editable} value={warehouse} options={WAREHOUSES.map((v) => ({ label: v, value: v }))} onChange={setWarehouse} /></EditorField>
+          {inboundType === '采购接收' && <EditorField label="是否计费">{editable ? <Select className="w-full" value={billable} options={['是', '否'].map((v) => ({ label: v, value: v }))} onChange={setBillable} /> : <Readonly>{billable}</Readonly>}</EditorField>}
+          <EditorField label="当前仓库">{editable ? <Select className="w-full" value={warehouse} options={WAREHOUSES.map((v) => ({ label: v, value: v }))} onChange={setWarehouse} /> : <Readonly>{warehouse}</Readonly>}</EditorField>
           <EditorField label="备注" span={3}>{editable ? <TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={remark} onChange={(e) => setRemark(e.target.value)} /> : <Readonly>{remark}</Readonly>}</EditorField>
         </DetailGrid>
       </Card>
@@ -708,6 +746,7 @@ function InboundEditor({ source, onBack, onSave, onExecute }) {
       <NewInboundItemModal open={lineModal === 'asset' && inboundType === '新增入库'} warehouse={warehouse} onCancel={() => setLineModal('')} onConfirm={addLine} />
       <AssetInboundItemModal open={lineModal === 'asset' && (inboundType === '退库入库' || inboundType === '借用归还')} mode={inboundType} warehouse={warehouse} onCancel={() => setLineModal('')} onConfirm={addLine} />
       <PurchasePendingModal open={lineModal === 'purchase'} onCancel={() => setLineModal('')} onConfirm={addPurchaseRows} />
+      <InboundMaterialDetailModal open={Boolean(materialDetail)} row={materialDetail} inboundType={inboundType} onCancel={() => setMaterialDetail(null)} />
     </Space>
   );
 }
