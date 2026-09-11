@@ -115,8 +115,8 @@ export default function ConsumableLeaderApprovalPage() {
       align: 'right',
       render: money,
     },
-    { title: '申请用途', dataIndex: 'reason', width: 180 },
-    { title: '申请原因', dataIndex: 'detail', width: 260, render: (value) => value || '-' },
+    { title: '申请原因', dataIndex: 'reason', width: 180 },
+    { title: '详细说明', dataIndex: 'detail', width: 260, render: (value) => value || '-' },
   ];
 
   return (
