@@ -151,12 +151,8 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, onCancel, onCon
         <Typography.Text>当前仓库：{warehouse}</Typography.Text>
         <Card size="small" title="选择物资">
           <DetailGrid columns={3} labelWidth={96}>
-            <EditorField label="资产标签号">
-              <LookupInput value={asset.assetTag} onClick={() => setAsset((current) => ({ ...current, assetTag: SOURCE_ASSET.assetTag }))} />
-            </EditorField>
-            <EditorField label="SN号">
-              <LookupInput value={asset.sn} onClick={() => setAsset((current) => ({ ...current, sn: SOURCE_ASSET.sn }))} />
-            </EditorField>
+            <EditorField label="资产标签号"><LookupInput value={asset.assetTag} onClick={() => setAsset((current) => ({ ...current, assetTag: SOURCE_ASSET.assetTag }))} /></EditorField>
+            <EditorField label="SN号"><LookupInput value={asset.sn} onClick={() => setAsset((current) => ({ ...current, sn: SOURCE_ASSET.sn }))} /></EditorField>
             <EditorField label="连续添加"><Checkbox checked={continuousAdd} onChange={(e) => setContinuousAdd(e.target.checked)}>连续添加</Checkbox></EditorField>
           </DetailGrid>
         </Card>
@@ -198,12 +194,7 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, onCancel, onCon
             <EditorField label="部门"><Readonly>{form.department}</Readonly></EditorField>
             <EditorField label="公司"><Readonly>{form.company}</Readonly></EditorField>
             <EditorField label="资产状态" required>
-              <Select
-                className="w-full"
-                value={form.outboundStatus}
-                options={(isBorrow ? ['在用-借用中', '在用-使用中'] : ['在用-使用中', '在用-借用中']).map((value) => ({ label: value, value }))}
-                onChange={(value) => set('outboundStatus', value)}
-              />
+              <Select className="w-full" value={form.outboundStatus} options={(isBorrow ? ['在用-借用中', '在用-使用中'] : ['在用-使用中', '在用-借用中']).map((value) => ({ label: value, value }))} onChange={(value) => set('outboundStatus', value)} />
             </EditorField>
             <EditorField label="出库数量"><Readonly>{form.outboundQty}</Readonly></EditorField>
             <EditorField label="成本中心" required><LookupInput value={form.costCenter} onClick={() => {}} /></EditorField>
@@ -226,7 +217,7 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, onCancel, onCon
 
 function OutboundEditor({ source, onBack, onSave, onExecute }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [outboundType, setOutboundType] = useState(source?.outboundType || '领用出库');
+  const outboundType = source?.outboundType || '领用出库';
   const [warehouse, setWarehouse] = useState(source?.warehouse || WAREHOUSES[0]);
   const [remark, setRemark] = useState(source?.remark || '');
   const [cardClaim, setCardClaim] = useState(source?.cardClaim || '否');
@@ -295,24 +286,6 @@ function OutboundEditor({ source, onBack, onSave, onExecute }) {
     setSelectedKeys([]);
   };
 
-  const changeType = (value) => {
-    if (!lines.length) {
-      setOutboundType(value);
-      return;
-    }
-    Modal.confirm({
-      title: '切换出库类型？',
-      content: '领用出库与借用出库的维护字段不同，切换后当前物资行会清空。',
-      okText: '切换',
-      cancelText: '取消',
-      onOk: () => {
-        setOutboundType(value);
-        setLines([]);
-        setSelectedKeys([]);
-      },
-    });
-  };
-
   const executeOutbound = () => {
     if (!lines.length) return messageApi.warning('请先添加待出库物资');
     onExecute(payload());
@@ -328,7 +301,7 @@ function OutboundEditor({ source, onBack, onSave, onExecute }) {
           <EditorField label="出库单号"><Readonly>{documentNo}</Readonly></EditorField>
           <EditorField label="单据类型"><Readonly>出库工单</Readonly></EditorField>
           <EditorField label="单据状态"><StatusTag value={status} /></EditorField>
-          <EditorField label="出库类型">{editable ? <Select className="w-full" value={outboundType} options={OUTBOUND_TYPES.map((v) => ({ label: v, value: v }))} onChange={changeType} /> : <Readonly>{outboundType}</Readonly>}</EditorField>
+          <EditorField label="出库类型"><Readonly>{outboundType}</Readonly></EditorField>
           <EditorField label="制单人"><Readonly>{creator}</Readonly></EditorField>
           <EditorField label="制单时间"><Readonly>{createdDate}</Readonly></EditorField>
           <EditorField label="是否刷卡领用">{editable ? <Select className="w-full" value={cardClaim} options={['是', '否'].map((v) => ({ label: v, value: v }))} onChange={setCardClaim} /> : <Readonly>{cardClaim}</Readonly>}</EditorField>
@@ -337,25 +310,12 @@ function OutboundEditor({ source, onBack, onSave, onExecute }) {
         </DetailGrid>
       </Card>
 
-      <Card
-        size="small"
-        title="出库物资"
-        extra={editable ? <Space>
-          <Button type="primary" icon={<Plus size={14} />} onClick={() => { setEditingLine(null); setLineModalOpen(true); }}>添加物资</Button>
-          <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>
-          <Button icon={<Upload size={14} />} onClick={() => messageApi.info('Excel导入沿用出库模板，本轮按截图字段展示')}>Excel导入</Button>
-        </Space> : null}
-      >
-        <Table
-          rowKey="id"
-          size="small"
-          bordered
-          columns={outboundType === '借用出库' ? borrowColumns : issueColumns}
-          dataSource={lines}
-          rowSelection={editable ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true } : undefined}
-          scroll={{ x: 'max-content' }}
-          pagination={false}
-        />
+      <Card size="small" title="出库物资" extra={editable ? <Space>
+        <Button type="primary" icon={<Plus size={14} />} onClick={() => { setEditingLine(null); setLineModalOpen(true); }}>添加物资</Button>
+        <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>
+        <Button icon={<Upload size={14} />} onClick={() => messageApi.info('Excel导入沿用出库模板，本轮按截图字段展示')}>Excel导入</Button>
+      </Space> : null}>
+        <Table rowKey="id" size="small" bordered columns={outboundType === '借用出库' ? borrowColumns : issueColumns} dataSource={lines} rowSelection={editable ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true } : undefined} scroll={{ x: 'max-content' }} pagination={false} />
       </Card>
 
       <div className="flex justify-center gap-3">
@@ -492,10 +452,7 @@ export default function OutboundPage() {
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
       <PageTitle>出库</PageTitle>
-      <QueryBar
-        onQuery={() => { setFilters({ ...draft }); setSelectedKeys([]); }}
-        onReset={() => { setDraft(emptyFilters); setFilters(emptyFilters); setSelectedKeys([]); }}
-      >
+      <QueryBar onQuery={() => { setFilters({ ...draft }); setSelectedKeys([]); }} onReset={() => { setDraft(emptyFilters); setFilters(emptyFilters); setSelectedKeys([]); }}>
         <QueryItem label="出库单号"><Input value={draft.documentNo} allowClear placeholder="请输入出库单号" onChange={(e) => update('documentNo', e.target.value)} /></QueryItem>
         <QueryItem label="出库类型"><Select className="w-full" value={draft.outboundType || undefined} allowClear placeholder="全部" options={OUTBOUND_TYPES.map((v) => ({ label: v, value: v }))} onChange={(v) => update('outboundType', v)} /></QueryItem>
         <QueryItem label="单据状态"><Select className="w-full" value={draft.status || undefined} allowClear placeholder="全部" options={['草稿', '已完成'].map((v) => ({ label: v, value: v }))} onChange={(v) => update('status', v)} /></QueryItem>
@@ -503,16 +460,7 @@ export default function OutboundPage() {
         <QueryItem label="申请单号"><Input value={draft.applicationNo} allowClear placeholder="请输入申请单号" onChange={(e) => update('applicationNo', e.target.value)} /></QueryItem>
         <QueryItem label="资产标签号"><Input value={draft.assetTag} allowClear placeholder="请输入资产标签号" onChange={(e) => update('assetTag', e.target.value)} /></QueryItem>
         <QueryItem label="制单人"><Input value={draft.creator} allowClear placeholder="请输入制单人" onChange={(e) => update('creator', e.target.value)} /></QueryItem>
-        <QueryItem label="制单日期">
-          <RangePicker
-            className="w-full"
-            value={[draft.createdFrom ? dayjs(draft.createdFrom) : null, draft.createdTo ? dayjs(draft.createdTo) : null]}
-            onChange={(dates) => {
-              update('createdFrom', dates?.[0]?.format('YYYY-MM-DD') || '');
-              update('createdTo', dates?.[1]?.format('YYYY-MM-DD') || '');
-            }}
-          />
-        </QueryItem>
+        <QueryItem label="制单日期"><RangePicker className="w-full" value={[draft.createdFrom ? dayjs(draft.createdFrom) : null, draft.createdTo ? dayjs(draft.createdTo) : null]} onChange={(dates) => { update('createdFrom', dates?.[0]?.format('YYYY-MM-DD') || ''); update('createdTo', dates?.[1]?.format('YYYY-MM-DD') || ''); }} /></QueryItem>
         <QueryItem label="资产责任人"><Input value={draft.responsiblePerson} allowClear placeholder="请输入资产责任人" onChange={(e) => update('responsiblePerson', e.target.value)} /></QueryItem>
       </QueryBar>
 
