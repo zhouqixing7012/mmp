@@ -4,6 +4,7 @@ import {
   Card,
   DatePicker,
   Input,
+  InputNumber,
   Modal,
   Select,
   Space,
@@ -84,10 +85,16 @@ const SERVER_PO_DETAIL = {
 const EMPTY_PO_FILTERS = { company: '', plate: '', poNo: '', supplier: '', receiptStatus: '', purchaseType: '' };
 const EMPTY_RECEIPT_FILTERS = { receiptNo: '', poNo: '', status: '', creator: '', createdFrom: '', createdTo: '', supplier: '' };
 const DIRECT_INBOUND_TYPES = new Set(['服务器', '服务器备件', '网络设备', '网络设备备件']);
+const GENERATED_INBOUND_STORAGE_KEY = 'mmp.inventory.generatedInboundRows.v1';
 
 function includesText(value, query) {
   if (!query) return true;
   return String(value || '').toLowerCase().includes(String(query).trim().toLowerCase());
+}
+
+function numericValue(value) {
+  const parsed = Number(String(value ?? '').replace(/,/g, ''));
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function toSelectData(values) {
@@ -103,6 +110,7 @@ function getPoDetail(po) {
 }
 
 function getReceiptItems(receipt) {
+  if (receipt?.items?.length) return receipt.items;
   const po = PO_ROWS.find((item) => item.poNo === receipt?.poNo);
   const detailItems = getPoDetail(po).items || [];
   if (receipt?.itemIds?.length) return detailItems.filter((item) => receipt.itemIds.includes(item.id));
@@ -218,6 +226,10 @@ export default function AssetReceiptPage() {
   const [detailPlate, setDetailPlate] = useState('');
   const [applicationBatch, setApplicationBatch] = useState('');
   const [selectorType, setSelectorType] = useState('');
+  const [poItemOverrides, setPoItemOverrides] = useState({});
+  const [poStatusOverrides, setPoStatusOverrides] = useState({});
+  const [editItem, setEditItem] = useState(null);
+  const [editDraft, setEditDraft] = useState(null);
   const [maintenanceStore, setMaintenanceStore] = useState({});
   const [maintenanceSession, setMaintenanceSession] = useState({ rows: [], tagsGenerated: false, defaultSnApplied: false });
   const [selectedMaintenanceKeys, setSelectedMaintenanceKeys] = useState([]);
@@ -227,18 +239,24 @@ export default function AssetReceiptPage() {
   const [maintenanceFilterId, setMaintenanceFilterId] = useState(null);
 
   const maintenanceRows = maintenanceSession.rows;
-  const companyData = useMemo(() => toSelectData(PO_ROWS.map((item) => item.company)), []);
-  const plateData = useMemo(() => toSelectData(PO_ROWS.map((item) => item.plate)), []);
-  const supplierData = useMemo(() => toSelectData(PO_ROWS.map((item) => item.supplier)), []);
+  const effectivePoRows = useMemo(() => PO_ROWS.map((row) => ({ ...row, ...(poStatusOverrides[row.poNo] || {}) })), [poStatusOverrides]);
+  const companyData = useMemo(() => toSelectData(effectivePoRows.map((item) => item.company)), [effectivePoRows]);
+  const plateData = useMemo(() => toSelectData(effectivePoRows.map((item) => item.plate)), [effectivePoRows]);
+  const supplierData = useMemo(() => toSelectData(effectivePoRows.map((item) => item.supplier)), [effectivePoRows]);
 
-  const filteredPoRows = useMemo(() => PO_ROWS.filter((row) => (
+  const getEffectivePoItems = (po = activePO) => {
+    if (!po) return [];
+    return (getPoDetail(po).items || []).map((item) => ({ ...item, ...(poItemOverrides[po.poNo]?.[item.id] || {}) }));
+  };
+
+  const filteredPoRows = useMemo(() => effectivePoRows.filter((row) => (
     includesText(row.company, poAppliedFilters.company)
     && includesText(row.plate, poAppliedFilters.plate)
     && includesText(row.poNo, poAppliedFilters.poNo)
     && includesText(row.supplier, poAppliedFilters.supplier)
     && (!poAppliedFilters.receiptStatus || row.receiptStatus === poAppliedFilters.receiptStatus)
     && (!poAppliedFilters.purchaseType || row.purchaseType === poAppliedFilters.purchaseType)
-  )), [poAppliedFilters]);
+  )), [effectivePoRows, poAppliedFilters]);
 
   const filteredReceiptRows = useMemo(() => receiptRows.filter((row) => {
     const date = row.createdAt ? row.createdAt.slice(0, 10) : '';
@@ -273,6 +291,8 @@ export default function AssetReceiptPage() {
     setDetailPlate(row.plate || '');
     setApplicationBatch('');
     setSelectedItemKeys([]);
+    setEditItem(null);
+    setEditDraft(null);
     setView('poDetail');
   };
 
@@ -288,9 +308,49 @@ export default function AssetReceiptPage() {
 
   const openReceiptDetail = (row) => {
     setActiveReceipt(row);
-    setActivePO(PO_ROWS.find((item) => item.poNo === row.poNo) || activePO);
+    setActivePO(effectivePoRows.find((item) => item.poNo === row.poNo) || activePO);
     setSelectedReceiptLineKeys([]);
     setView('receiptDetail');
+  };
+
+  const editAvailableQty = (item) => Math.max(
+    Number(item?.currentReceiptQty || 0),
+    Math.max(0, Number(item?.purchaseQty || 0) - Number(item?.receivedQty || 0) - Number(item?.draftQty || 0)),
+  );
+
+  const openItemEditor = (row) => {
+    setEditItem(row);
+    setEditDraft({
+      ...row,
+      isPart: row.isPart ?? (row.partQuantity !== '-' && Number(row.partQuantity || 0) > 0),
+      partQuantity: row.partQuantity === '-' ? 0 : Number(row.partQuantity || 0),
+      partDesc: row.partDesc === '-' ? '' : (row.partDesc || ''),
+    });
+  };
+
+  const savePoItem = () => {
+    const qty = Number(editDraft?.currentReceiptQty || 0);
+    const maxQty = editAvailableQty(editItem);
+    if (!Number.isInteger(qty) || qty <= 0) return messageApi.error('接收数量必须为大于 0 的整数');
+    if (qty > maxQty) return messageApi.error(`接收数量不能超过可接收数量（当前可接收数量为 ${maxQty}）`);
+    if (editDraft.isPart && (!Number.isInteger(Number(editDraft.partQuantity)) || Number(editDraft.partQuantity) <= 0)) {
+      return messageApi.error('部件数量必须为大于 0 的整数');
+    }
+    setPoItemOverrides((current) => ({
+      ...current,
+      [activePO.poNo]: {
+        ...(current[activePO.poNo] || {}),
+        [editItem.id]: {
+          ...editDraft,
+          partQuantity: editDraft.isPart ? Number(editDraft.partQuantity) : '-',
+          partDesc: editDraft.isPart ? editDraft.partDesc : '-',
+        },
+      },
+    }));
+    setEditItem(null);
+    setEditDraft(null);
+    messageApi.success('接收信息已保存');
+    return undefined;
   };
 
   const createReceipt = () => {
@@ -298,6 +358,7 @@ export default function AssetReceiptPage() {
       messageApi.warning('请先选择需要创建接收单的物资');
       return;
     }
+    const selectedItems = getEffectivePoItems(activePO).filter((item) => selectedItemKeys.includes(item.id));
     const nextId = receiptRows.reduce((max, row) => Math.max(max, row.id), 0) + 1;
     const nextReceipt = {
       id: nextId,
@@ -308,12 +369,109 @@ export default function AssetReceiptPage() {
       creator: 'admin-系统管理员',
       createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
       itemIds: [...selectedItemKeys],
+      items: selectedItems,
     };
     setReceiptRows((current) => [...current, nextReceipt]);
     setActiveReceipt(nextReceipt);
     setSelectedReceiptLineKeys([]);
     setView('receiptDetail');
     messageApi.success('接收单创建成功');
+  };
+
+  const persistGeneratedInbound = (row) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(GENERATED_INBOUND_STORAGE_KEY) || '[]');
+      const next = [row, ...stored.filter((item) => item.documentNo !== row.documentNo)];
+      window.localStorage.setItem(GENERATED_INBOUND_STORAGE_KEY, JSON.stringify(next));
+    } catch (error) {
+      messageApi.warning('入库单已生成，但本地演示数据同步失败');
+    }
+  };
+
+  const confirmDirectPoReceipt = () => {
+    if (!selectedItemKeys.length) return messageApi.warning('请先选择需要接收确认的物资');
+    const selectedItems = getEffectivePoItems(activePO).filter((item) => selectedItemKeys.includes(item.id));
+    if (!selectedItems.length) return messageApi.warning('当前没有可接收确认的物资');
+
+    const nextReceiptId = receiptRows.reduce((max, row) => Math.max(max, row.id), 0) + 1;
+    const receiptNo = `REC-${dayjs().format('YYYYMMDD')}${String(nextReceiptId).padStart(4, '0')}`;
+    const inboundOrderNo = `PI-${dayjs().format('YYYYMMDD')}${String(nextReceiptId).padStart(4, '0')}`;
+    const completedReceipt = {
+      id: nextReceiptId,
+      receiptNo,
+      status: '已完成',
+      poNo: activePO.poNo,
+      supplier: activePO.supplier,
+      creator: 'admin-系统管理员',
+      createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+      itemIds: selectedItems.map((item) => item.id),
+      items: selectedItems,
+      inboundOrderNo,
+    };
+
+    setReceiptRows((current) => [...current, completedReceipt]);
+    setPoItemOverrides((current) => ({
+      ...current,
+      [activePO.poNo]: {
+        ...(current[activePO.poNo] || {}),
+        ...Object.fromEntries(selectedItems.map((item) => [item.id, {
+          ...item,
+          receiptStatus: '已接收',
+          receivedQty: Number(item.receivedQty || 0) + Number(item.currentReceiptQty || 0),
+          currentReceiptQty: 0,
+          draftQty: 0,
+          editable: false,
+        }])),
+      },
+    }));
+    setPoStatusOverrides((current) => ({ ...current, [activePO.poNo]: { receiptStatus: '已接收' } }));
+    setActivePO((current) => ({ ...current, receiptStatus: '已接收' }));
+    setSelectedItemKeys([]);
+
+    const quantity = selectedItems.reduce((sum, item) => sum + Number(item.currentReceiptQty || 0), 0);
+    const generatedInbound = {
+      id: Number(dayjs().format('YYMMDDHHmmss')),
+      documentNo: inboundOrderNo,
+      applicationNo: '',
+      status: '草稿',
+      inboundType: '采购接收',
+      warehouse: activePO.company?.includes('焦点') ? 'I0022-资产集团前台库（焦点互动）' : 'I0001-资产集团总库（新媒体）',
+      createdDate: dayjs().format('YYYY-MM-DD'),
+      creator: 'admin-系统管理员',
+      quantity,
+      cardClaim: '否',
+      poNo: activePO.poNo,
+      prNo: selectedItems[0]?.prLineNo || '',
+      assetTag: '',
+      receiptNo,
+      lines: selectedItems.map((item, index) => ({
+        id: `${receiptNo}-${index + 1}`,
+        company: activePO.company,
+        plate: detailPlate || activePO.plate,
+        department: item.department,
+        supplier: activePO.supplier,
+        assetTag: '',
+        sn: '',
+        poNo: activePO.poNo,
+        receiptNo,
+        materialGroup: item.materialGroup,
+        assetClass: item.assetClass,
+        assetSubClass: activePO.purchaseType,
+        materialDesc: item.materialDesc,
+        config: item.config,
+        partQuantity: item.isPart ? item.partQuantity : 0,
+        partDesc: item.isPart ? item.partDesc : (item.partDesc || '-'),
+        prLine: item.prLineNo,
+        quantity: Number(item.currentReceiptQty || 0),
+        originalValue: numericValue(item.untaxedSubtotal),
+        tax: numericValue(item.totalTax),
+        billable: '是',
+      })),
+    };
+    persistGeneratedInbound(generatedInbound);
+    messageApi.success(`接收确认成功：已生成已完成接收单 ${receiptNo} 和草稿入库单 ${inboundOrderNo}`);
+    return undefined;
   };
 
   const openReceiptMaintenance = () => {
@@ -432,7 +590,7 @@ export default function AssetReceiptPage() {
       onOk: () => {
         const selected = new Set(selectedReceiptLineKeys);
         const nextItemIds = visibleReceiptItems.filter((item) => !selected.has(item.id)).map((item) => item.id);
-        const nextReceipt = { ...activeReceipt, itemIds: nextItemIds };
+        const nextReceipt = { ...activeReceipt, itemIds: nextItemIds, items: visibleReceiptItems.filter((item) => !selected.has(item.id)) };
         setReceiptRows((current) => current.map((row) => row.id === activeReceipt.id ? nextReceipt : row));
         setActiveReceipt(nextReceipt);
         setMaintenanceStore((store) => {
@@ -456,7 +614,31 @@ export default function AssetReceiptPage() {
     company: { title: '选择公司', dataSource: companyData, onConfirm: (record) => updatePoFilter('company', record.name) },
     plate: { title: '选择板块', dataSource: plateData, onConfirm: (record) => updatePoFilter('plate', record.name) },
     supplier: { title: '选择供应商', dataSource: supplierData, onConfirm: (record) => updatePoFilter('supplier', record.name) },
-    detailPlate: { title: '选择板块', dataSource: plateData, onConfirm: (record) => setDetailPlate(record.name) },
+    detailPlate: { title: '选择板块', dataSource: plateData, onConfirm: (record) => { setDetailPlate(record.name); setSelectorType(''); } },
+    material: {
+      title: '选择物料',
+      dataSource: getEffectivePoItems(activePO).map((item) => ({ ...item, code: item.materialCode, name: item.materialDesc })),
+      columns: [
+        { title: '物料编码', dataIndex: 'code' },
+        { title: '物料名称', dataIndex: 'name' },
+        { title: '配置', dataIndex: 'config' },
+      ],
+      searchFields: [
+        { label: '物料编码', name: 'code', dataIndex: 'code' },
+        { label: '物料名称', name: 'name', dataIndex: 'name' },
+      ],
+      onConfirm: (record) => {
+        setEditDraft((current) => ({
+          ...current,
+          materialCode: record.materialCode,
+          materialDesc: record.materialDesc,
+          materialGroup: record.materialGroup,
+          assetClass: record.assetClass,
+          config: record.config,
+        }));
+        setSelectorType('');
+      },
+    },
   }[selectorType];
 
   const poColumns = [
@@ -491,7 +673,7 @@ export default function AssetReceiptPage() {
 
   const itemColumns = [
     { title: '行号', dataIndex: 'id', width: 70, align: 'center' },
-    { title: '操作', key: 'operation', width: 80, fixed: 'left', render: (_, row) => row.editable ? <Button type="link" className="px-0" onClick={() => messageApi.info('物资编辑字段待确认')}>编辑</Button> : '-' },
+    { title: '操作', key: 'operation', width: 80, fixed: 'left', render: (_, row) => row.editable && row.receiptStatus === '待接收' ? <Button type="link" className="px-0" onClick={() => openItemEditor(row)}>编辑</Button> : '-' },
     { title: '接收状态', dataIndex: 'receiptStatus', width: 120, render: (value) => value ? <StatusTag value={value} /> : '-' },
     { title: '物资总类', dataIndex: 'materialGroup', width: 120 },
     { title: '资产大类', dataIndex: 'assetClass', width: 180 },
@@ -543,9 +725,9 @@ export default function AssetReceiptPage() {
 
   if (view === 'poDetail' && activePO) {
     const detail = getPoDetail(activePO);
-    const itemRows = detail.items || [];
+    const itemRows = getEffectivePoItems(activePO);
     const canCreateReceipt = activePO.purchaseType === '电子设备';
-    const canExecuteInbound = DIRECT_INBOUND_TYPES.has(activePO.purchaseType);
+    const canDirectConfirm = DIRECT_INBOUND_TYPES.has(activePO.purchaseType);
     const hasReceipt = receiptRows.some((row) => row.poNo === activePO.poNo);
 
     return (
@@ -574,22 +756,77 @@ export default function AssetReceiptPage() {
           <Space>
             <Typography.Text type="secondary">共 {itemRows.length} 条</Typography.Text>
             {canCreateReceipt && <Button type="primary" onClick={createReceipt}>创建接收单</Button>}
+            {canDirectConfirm && <Button type="primary" onClick={confirmDirectPoReceipt}>接收确认</Button>}
           </Space>
         )}>
-          <Table rowKey="id" size="small" bordered columns={itemColumns} dataSource={itemRows} rowSelection={{ type: 'checkbox', selectedRowKeys: selectedItemKeys, onChange: setSelectedItemKeys, fixed: true, columnTitle: '选择', columnWidth: 64, getCheckboxProps: (record) => ({ disabled: record.receiptStatus === '已入库' }) }} scroll={{ x: 'max-content' }} pagination={false} />
+          <Table
+            rowKey="id"
+            size="small"
+            bordered
+            columns={itemColumns}
+            dataSource={itemRows}
+            rowSelection={{
+              type: 'checkbox',
+              selectedRowKeys: selectedItemKeys,
+              onChange: setSelectedItemKeys,
+              fixed: true,
+              columnTitle: '选择',
+              columnWidth: 64,
+              getCheckboxProps: (record) => ({ disabled: record.receiptStatus !== '待接收' || !Number(record.currentReceiptQty || 0) }),
+            }}
+            scroll={{ x: 'max-content' }}
+            pagination={false}
+          />
         </Card>
         <div className="flex justify-center gap-3">
-          {canExecuteInbound && <Button type="primary" onClick={() => selectedItemKeys.length === 0 ? messageApi.warning('请先选择需要入库的物资') : messageApi.info('执行入库的后续字段待确认')}>执行入库</Button>}
           {hasReceipt && <Button onClick={() => openReceiptList(activePO)}>查看接收单</Button>}
           <Button onClick={() => setView('poList')}>返回</Button>
         </div>
-        {selectorConfig && <SelectModal open title={selectorConfig.title} dataSource={selectorConfig.dataSource} columns={[{ title: '名称', dataIndex: 'name' }]} searchFields={[{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelectorType('')} onConfirm={selectorConfig.onConfirm} />}
+        <Modal
+          open={Boolean(editItem && editDraft)}
+          title="编辑接收信息"
+          width={720}
+          okText="保存"
+          onOk={savePoItem}
+          onCancel={() => { setEditItem(null); setEditDraft(null); }}
+        >
+          {editDraft && (
+            <Space direction="vertical" size={12} className="w-full">
+              <div onClick={() => setSelectorType('material')} className="cursor-pointer">
+                <Typography.Text>物料</Typography.Text>
+                <Input className="mt-1 pointer-events-none" readOnly value={`${editDraft.materialCode} / ${editDraft.materialDesc}`} suffix={<Search size={14} className="text-[#1677ff]" />} />
+              </div>
+              <div>
+                <Typography.Text>配置</Typography.Text>
+                <Input className="mt-1" value={editDraft.config} onChange={(event) => setEditDraft((item) => ({ ...item, config: event.target.value }))} />
+              </div>
+              <div>
+                <Typography.Text>接收数量</Typography.Text>
+                <InputNumber className="mt-1 w-full" min={1} max={editAvailableQty(editItem)} precision={0} value={editDraft.currentReceiptQty} onChange={(value) => setEditDraft((item) => ({ ...item, currentReceiptQty: value }))} />
+                <Typography.Text type="secondary">当前剩余可接收数量：{editAvailableQty(editItem)}</Typography.Text>
+              </div>
+              <div>
+                <Typography.Text>是否部件</Typography.Text>
+                <Select className="mt-1 w-full" value={editDraft.isPart ? 'Y' : 'N'} options={[{ label: '是', value: 'Y' }, { label: '否', value: 'N' }]} onChange={(value) => setEditDraft((item) => ({ ...item, isPart: value === 'Y' }))} />
+              </div>
+              <div>
+                <Typography.Text>部件数量</Typography.Text>
+                <InputNumber className="mt-1 w-full" disabled={!editDraft.isPart} min={1} precision={0} value={editDraft.partQuantity || undefined} onChange={(value) => setEditDraft((item) => ({ ...item, partQuantity: value || 0 }))} />
+              </div>
+              <div>
+                <Typography.Text>部件描述</Typography.Text>
+                <Input className="mt-1" disabled={!editDraft.isPart} value={editDraft.partDesc} onChange={(event) => setEditDraft((item) => ({ ...item, partDesc: event.target.value }))} />
+              </div>
+            </Space>
+          )}
+        </Modal>
+        {selectorConfig && <SelectModal open title={selectorConfig.title} dataSource={selectorConfig.dataSource} columns={selectorConfig.columns || [{ title: '名称', dataIndex: 'name' }]} searchFields={selectorConfig.searchFields || [{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelectorType('')} onConfirm={selectorConfig.onConfirm} />}
       </Space>
     );
   }
 
   if (view === 'receiptMaintenance' && activeReceipt) {
-    const receiptPO = PO_ROWS.find((item) => item.poNo === activeReceipt.poNo) || activePO;
+    const receiptPO = effectivePoRows.find((item) => item.poNo === activeReceipt.poNo) || activePO;
     const detail = getPoDetail(receiptPO);
     const isPending = activeReceipt.status !== '已完成';
     const scanTargetAsset = maintenanceScanTargetId ? maintenanceRows.find((row) => row.id === maintenanceScanTargetId) || null : null;
@@ -683,13 +920,9 @@ export default function AssetReceiptPage() {
   }
 
   if (view === 'receiptDetail' && activeReceipt) {
-    const receiptPO = PO_ROWS.find((item) => item.poNo === activeReceipt.poNo) || activePO;
+    const receiptPO = effectivePoRows.find((item) => item.poNo === activeReceipt.poNo) || activePO;
     const detail = getPoDetail(receiptPO);
-    const detailItems = detail.items || [];
-    const receiptItems = activeReceipt.itemIds?.length
-      ? detailItems.filter((item) => activeReceipt.itemIds.includes(item.id))
-      : detailItems.filter((item) => Number(item.currentReceiptQty || 0) > 0);
-    const visibleReceiptItems = receiptItems.length > 0 ? receiptItems : detailItems;
+    const visibleReceiptItems = getReceiptItems(activeReceipt);
     const canOperateReceipt = activeReceipt.status !== '已完成';
 
     return (
@@ -712,14 +945,14 @@ export default function AssetReceiptPage() {
             <DetailItem label="接收人"><Readonly>{activeReceipt.creator}</Readonly></DetailItem>
             <DetailItem label="接收单状态"><StatusTag value={activeReceipt.status} /></DetailItem>
             <DetailItem label="接收时间"><Readonly>{activeReceipt.createdAt?.slice(0, 10)}</Readonly></DetailItem>
-            <DetailItem label="申请批次"><Readonly>-</Readonly></DetailItem>
+            <DetailItem label="申请批次"><Readonly>{applicationBatch || '-'}</Readonly></DetailItem>
           </DetailGrid>
         </Card>
         <Card size="small" title="接收物资明细" extra={canOperateReceipt ? <Button danger icon={<Trash2 size={14} />} onClick={() => deleteReceiptLines(visibleReceiptItems)}>删除接收行</Button> : null}>
           <Table rowKey="id" size="small" bordered columns={receiptDetailColumns} dataSource={visibleReceiptItems} rowSelection={canOperateReceipt ? { type: 'checkbox', selectedRowKeys: selectedReceiptLineKeys, onChange: setSelectedReceiptLineKeys, fixed: true, columnTitle: '选择', columnWidth: 64 } : undefined} scroll={{ x: 'max-content' }} pagination={false} />
         </Card>
         <div className="flex justify-center gap-3">
-          <Button onClick={openReceiptMaintenance}>{canOperateReceipt ? '维护接收明细' : '查看接收明细'}</Button>
+          {!DIRECT_INBOUND_TYPES.has(receiptPO?.purchaseType) && <Button onClick={openReceiptMaintenance}>{canOperateReceipt ? '维护接收明细' : '查看接收明细'}</Button>}
           {canOperateReceipt && <Button danger onClick={() => messageApi.info('取消接收规则待确认')}>取消接收</Button>}
           {canOperateReceipt && <Button type="primary" onClick={confirmReceipt}>接收确认</Button>}
           <Button onClick={() => setView('receiptList')}>返回</Button>
@@ -776,13 +1009,13 @@ export default function AssetReceiptPage() {
         <QueryItem label="板块"><SelectorInput value={poDraftFilters.plate} placeholder="请选择板块" onOpen={() => setSelectorType('plate')} /></QueryItem>
         <QueryItem label="PO单号"><Input value={poDraftFilters.poNo} allowClear placeholder="请输入PO单号" onChange={(event) => updatePoFilter('poNo', event.target.value)} /></QueryItem>
         <QueryItem label="供应商"><SelectorInput value={poDraftFilters.supplier} placeholder="请选择供应商" onOpen={() => setSelectorType('supplier')} /></QueryItem>
-        <QueryItem label="接收状态"><Select value={poDraftFilters.receiptStatus || undefined} allowClear placeholder="全部" options={[{ label: '待接收', value: '待接收' }, { label: '已入库', value: '已入库' }]} onChange={(value) => updatePoFilter('receiptStatus', value)} /></QueryItem>
+        <QueryItem label="接收状态"><Select value={poDraftFilters.receiptStatus || undefined} allowClear placeholder="全部" options={['待接收', '已接收', '已入库'].map((value) => ({ label: value, value }))} onChange={(value) => updatePoFilter('receiptStatus', value)} /></QueryItem>
         <QueryItem label="采购类型"><Select value={poDraftFilters.purchaseType || undefined} allowClear placeholder="全部" options={['电子设备', '服务器', '服务器备件', '网络设备', '网络设备备件'].map((value) => ({ label: value, value }))} onChange={(value) => updatePoFilter('purchaseType', value)} /></QueryItem>
       </QueryBar>
       <Card size="small" title="PO单列表" extra={<Typography.Text type="secondary">共 {filteredPoRows.length} 条</Typography.Text>}>
         <Table rowKey="id" size="small" bordered columns={poColumns} dataSource={filteredPoRows} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true }} />
       </Card>
-      {selectorConfig && <SelectModal open title={selectorConfig.title} dataSource={selectorConfig.dataSource} columns={[{ title: '名称', dataIndex: 'name' }]} searchFields={[{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelectorType('')} onConfirm={selectorConfig.onConfirm} />}
+      {selectorConfig && <SelectModal open title={selectorConfig.title} dataSource={selectorConfig.dataSource} columns={selectorConfig.columns || [{ title: '名称', dataIndex: 'name' }]} searchFields={selectorConfig.searchFields || [{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelectorType('')} onConfirm={selectorConfig.onConfirm} />}
     </Space>
   );
 }
