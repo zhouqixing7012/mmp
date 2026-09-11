@@ -321,7 +321,6 @@ export default function ConsumableReceiptPage() {
             saLine: line.saLine,
             applicant: line.applicant || '-',
             businessLine: line.businessLine,
-            assetMark: '主耗材',
             remark: '',
           });
         });
@@ -343,7 +342,6 @@ export default function ConsumableReceiptPage() {
           saLine: line.saLine,
           applicant: line.applicant || '-',
           businessLine: line.businessLine,
-          assetMark: '主耗材',
           remark: '',
         });
       }
@@ -661,7 +659,6 @@ export default function ConsumableReceiptPage() {
     { title: 'SA单 / 行号', dataIndex: 'saLine', width: 150 },
     { title: '申请人', dataIndex: 'applicant', width: 120 },
     { title: '业务线', dataIndex: 'businessLine', width: 100 },
-    { title: '资产标记', dataIndex: 'assetMark', width: 100 },
     { title: '备注', dataIndex: 'remark', width: 120, render: (value) => value || '-' },
   ];
 
