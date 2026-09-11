@@ -44,6 +44,7 @@ const RESPONSIBLE_OPTIONS = [
 ];
 
 const INFRA_ASSET_TYPES = new Set(['服务器', '网络设备', '服务器备件', '网络设备备件']);
+const GENERATED_INBOUND_STORAGE_KEY = 'mmp.inventory.generatedInboundRows.v1';
 
 const INITIAL_ROWS = [
   { id: 1, documentNo: 'PI-202608070025', applicationNo: 'ERA-202608070021', status: '已完成', inboundType: '退库入库', warehouse: 'I0022-资产集团前台库（焦点互动）', createdDate: '2026-08-07', creator: '114111-杨芊', quantity: 1, cardClaim: '是', poNo: '', prNo: '', assetTag: '' },
@@ -70,6 +71,16 @@ const SOURCE_ASSET = {
 function includesText(value, query) {
   if (!query) return true;
   return String(value || '').toLowerCase().includes(String(query).trim().toLowerCase());
+}
+
+function readGeneratedInboundRows() {
+  if (typeof window === 'undefined') return [];
+  try {
+    const rows = JSON.parse(window.localStorage.getItem(GENERATED_INBOUND_STORAGE_KEY) || '[]');
+    return Array.isArray(rows) ? rows : [];
+  } catch (error) {
+    return [];
+  }
 }
 
 function money(value) {
@@ -536,7 +547,11 @@ function InboundEditor({ source, onBack, onSave, onExecute }) {
 
 export default function InboundPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [rows, setRows] = useState(INITIAL_ROWS);
+  const [rows, setRows] = useState(() => {
+    const generated = readGeneratedInboundRows();
+    const generatedNos = new Set(generated.map((row) => row.documentNo));
+    return [...generated, ...INITIAL_ROWS.filter((row) => !generatedNos.has(row.documentNo))];
+  });
   const [view, setView] = useState('list');
   const [activeRow, setActiveRow] = useState(null);
   const emptyFilters = { documentNo: '', inboundType: '', status: '', poNo: '', prNo: '', assetTag: '', creator: '', createdFrom: '', createdTo: '' };
