@@ -306,6 +306,7 @@ export default function EmployeeAssetApplyPage() {
     ...(!isPreview ? [{
       title: '操作',
       width: 70,
+      fixed: 'right',
       align: 'center',
       render: (_, record) => (
         <Button danger type="text" icon={<Trash2 size={14} />} onClick={() => setMaterials((current) => current.filter((item) => item.id !== record.id))} />
