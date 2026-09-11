@@ -570,11 +570,15 @@ export default function AssetReceiptPage() {
             <DetailItem label="申请批次"><Input value={applicationBatch} placeholder="请输入申请批次" onChange={(event) => setApplicationBatch(event.target.value)} /></DetailItem>
           </DetailGrid>
         </Card>
-        <Card size="small" title="PO物资明细" extra={<Typography.Text type="secondary">共 {itemRows.length} 条</Typography.Text>}>
+        <Card size="small" title="PO物资明细" extra={(
+          <Space>
+            <Typography.Text type="secondary">共 {itemRows.length} 条</Typography.Text>
+            {canCreateReceipt && <Button type="primary" onClick={createReceipt}>创建接收单</Button>}
+          </Space>
+        )}>
           <Table rowKey="id" size="small" bordered columns={itemColumns} dataSource={itemRows} rowSelection={{ type: 'checkbox', selectedRowKeys: selectedItemKeys, onChange: setSelectedItemKeys, fixed: true, columnTitle: '选择', columnWidth: 64, getCheckboxProps: (record) => ({ disabled: record.receiptStatus === '已入库' }) }} scroll={{ x: 'max-content' }} pagination={false} />
         </Card>
         <div className="flex justify-center gap-3">
-          {canCreateReceipt && <Button type="primary" onClick={createReceipt}>创建接收单</Button>}
           {canExecuteInbound && <Button type="primary" onClick={() => selectedItemKeys.length === 0 ? messageApi.warning('请先选择需要入库的物资') : messageApi.info('执行入库的后续字段待确认')}>执行入库</Button>}
           {hasReceipt && <Button onClick={() => openReceiptList(activePO)}>查看接收单</Button>}
           <Button onClick={() => setView('poList')}>返回</Button>
