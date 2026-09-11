@@ -226,7 +226,15 @@ export default function EmployeeAssetApplyPage() {
       width: 90,
       render: (value, record) => isPreview
         ? value
-        : <InputNumber min={1} precision={0} value={value} onChange={(next) => updateMaterial(record.id, 'quantity', next || 1)} />,
+        : (
+          <InputNumber
+            min={1}
+            precision={0}
+            value={value}
+            style={{ width: '100%', minWidth: 0 }}
+            onChange={(next) => updateMaterial(record.id, 'quantity', next || 1)}
+          />
+        ),
     },
     {
       title: '关联主资产',
