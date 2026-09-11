@@ -195,7 +195,7 @@ export default function EmployeeAssetAllocationPage() {
     { title: '物资说明', dataIndex: 'assetDesc', width: 210 },
     { title: '参考单价', dataIndex: 'referencePrice', width: 110, render: (value) => `¥${Number(value || 0).toFixed(2)}` },
     { title: '配置', dataIndex: 'config', width: 210 },
-    { title: '申请用途', dataIndex: 'purpose', width: 130 },
+    { title: '申请原因', dataIndex: 'purpose', width: 130 },
     { title: '详细说明', dataIndex: 'detail', width: 220, render: (value) => value || '-' },
     { title: '是否超标', dataIndex: 'overStandard', width: 100, align: 'center', render: (value) => <StatusTag value={value ? '已超标' : '未超标'} type="business" /> },
     { title: '数量', dataIndex: 'quantity', width: 80, align: 'center' },
