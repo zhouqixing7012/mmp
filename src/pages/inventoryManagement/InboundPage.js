@@ -713,13 +713,6 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, onCance
       <Modal open={open} title="入库物资信息" width={1180} onCancel={onCancel} footer={<Button onClick={onCancel}>关闭</Button>}>
         <Space direction="vertical" size={16} className="w-full">
           <Typography.Text>当前仓库：{warehouse}</Typography.Text>
-          <Card size="small" title="选择物资">
-            <DetailGrid columns={3} labelWidth={96}>
-              <EditorField label="资产标签号"><Readonly>{detail.assetTag}</Readonly></EditorField>
-              <EditorField label="SN号"><Readonly>{detail.sn}</Readonly></EditorField>
-              <EditorField label="物资说明"><Readonly>{detail.materialDesc}</Readonly></EditorField>
-            </DetailGrid>
-          </Card>
           <Card size="small" title="物资信息">
             <DetailGrid columns={3} labelWidth={96} minWidth={980}>
               <EditorField label="资产标签号"><Readonly>{detail.assetTag}</Readonly></EditorField>
@@ -775,30 +768,116 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, onCance
   }
 
   const pending = PURCHASE_PENDING_ROWS.find((item) => item.assetTag === row.assetTag) || {};
-  const detail = { ...pending, ...row };
+  const materialName = row.materialDesc || pending.materialDesc || '';
+  const [brandFromName = '', modelFromName = ''] = materialName.split(/\.(.+)/).filter((part) => part !== undefined);
+  const warehouseContext = WAREHOUSE_CONTEXT[warehouse] || { city: '', building: '', company: '' };
+  const detail = {
+    ...pending,
+    brand: brandFromName,
+    model: modelFromName,
+    unit: '台',
+    area: '',
+    location: '',
+    applicationBatch: '',
+    contractNo: '',
+    level: '缺省',
+    assetStatus: '在库-新增',
+    city: warehouseContext.city,
+    building: warehouseContext.building,
+    floor: '15F',
+    originalAssetTag: '',
+    responsiblePerson: '206984-何文',
+    addType: '采购新增',
+    usage: '',
+    company: pending.company || warehouseContext.company,
+    costCenter: 'ERP部',
+    businessLine: '0.*',
+    project: '0.*',
+    plate: pending.plate || '集团',
+    expenseAccount: '固定资产',
+    purchaseDate: '2026-08-05',
+    enableDate: '2026-08-05',
+    applicationNo: '',
+    applicant: '206984-何文',
+    mainAssetTag: '',
+    usageDesc: '',
+    remark: '',
+    service: '',
+    subService: '',
+    noLocation: '',
+    cabinet: '',
+    ilo: '',
+    iloPw: '',
+    ip1: '',
+    ip2: '',
+    ip3: '',
+    ...row,
+  };
   return (
-    <Modal open={open} title="入库物资信息" width={1180} onCancel={onCancel} footer={<Button onClick={onCancel}>关闭</Button>}>
+    <Modal open={open} title="入库物资信息" width={1320} onCancel={onCancel} footer={<Button onClick={onCancel}>关闭</Button>}>
       <Space direction="vertical" size={16} className="w-full">
         <Typography.Text>当前仓库：{warehouse}</Typography.Text>
         <Card size="small" title="物资信息">
-          <DetailGrid columns={3} labelWidth={96} minWidth={980}>
-            <EditorField label="公司"><Readonly>{detail.company}</Readonly></EditorField>
-            <EditorField label="资产标签号"><Readonly>{detail.assetTag}</Readonly></EditorField>
-            <EditorField label="SN号"><Readonly>{detail.sn}</Readonly></EditorField>
-            <EditorField label="PO单号"><Readonly>{detail.poNo}</Readonly></EditorField>
-            <EditorField label="接收单号"><Readonly>{detail.receiptNo}</Readonly></EditorField>
+          <DetailGrid columns={4} labelWidth={88} minWidth={1180}>
+            <EditorField label="物资说明"><Readonly>{detail.materialDesc}</Readonly></EditorField>
             <EditorField label="物资总类"><Readonly>{detail.materialGroup}</Readonly></EditorField>
-            <EditorField label="资产大类"><Readonly>{detail.assetClass}</Readonly></EditorField>
-            <EditorField label="资产小类"><Readonly>{detail.assetSubClass}</Readonly></EditorField>
-            <EditorField label="物料说明"><Readonly>{detail.materialDesc}</Readonly></EditorField>
+            <EditorField label="物资大类"><Readonly>{detail.assetClass}</Readonly></EditorField>
+            <EditorField label="物资小类"><Readonly>{detail.assetSubClass}</Readonly></EditorField>
+            <EditorField label="品牌"><Readonly>{detail.brand}</Readonly></EditorField>
+            <EditorField label="规格型号"><Readonly>{detail.model}</Readonly></EditorField>
             <EditorField label="配置"><Readonly>{detail.config}</Readonly></EditorField>
-            <EditorField label="部件数量"><Readonly>{detail.partQuantity}</Readonly></EditorField>
-            <EditorField label="部件说明"><Readonly>{detail.partDesc}</Readonly></EditorField>
-            <EditorField label="PR单/行"><Readonly>{detail.prLine || detail.prNo}</Readonly></EditorField>
+            <EditorField label="计量单位"><Readonly>{detail.unit}</Readonly></EditorField>
+            <EditorField label="库区"><Readonly>{detail.area}</Readonly></EditorField>
+            <EditorField label="货位"><Readonly>{detail.location}</Readonly></EditorField>
+            <EditorField label="申请批次"><Readonly>{detail.applicationBatch}</Readonly></EditorField>
             <EditorField label="入库数量"><Readonly>{detail.quantity}</Readonly></EditorField>
+            <EditorField label="合同编号"><Readonly>{detail.contractNo}</Readonly></EditorField>
             <EditorField label="原值"><Readonly>{money(detail.originalValue)}</Readonly></EditorField>
             <EditorField label="税金"><Readonly>{money(detail.tax)}</Readonly></EditorField>
-            <EditorField label="是否计费"><Readonly>{detail.billable}</Readonly></EditorField>
+            <EditorField label="金额小计"><Readonly>{money(Number(detail.originalValue || 0) + Number(detail.tax || 0))}</Readonly></EditorField>
+            <EditorField label="资产标签号"><Readonly>{detail.assetTag}</Readonly></EditorField>
+            <EditorField label="SN号"><Readonly>{detail.sn}</Readonly></EditorField>
+            <EditorField label="级别"><Readonly>{detail.level}</Readonly></EditorField>
+            <EditorField label="资产状态"><Readonly>{detail.assetStatus}</Readonly></EditorField>
+            <EditorField label="City"><Readonly>{detail.city}</Readonly></EditorField>
+            <EditorField label="Building"><Readonly>{detail.building}</Readonly></EditorField>
+            <EditorField label="Floor"><Readonly>{detail.floor}</Readonly></EditorField>
+            <EditorField label="原资产标签号"><Readonly>{detail.originalAssetTag}</Readonly></EditorField>
+            <EditorField label="所在部门"><Readonly>{detail.department}</Readonly></EditorField>
+            <EditorField label="责任人"><Readonly>{detail.responsiblePerson}</Readonly></EditorField>
+            <EditorField label="新增类型"><Readonly>{detail.addType}</Readonly></EditorField>
+            <EditorField label="用途"><Readonly>{detail.usage}</Readonly></EditorField>
+            <EditorField label="公司"><Readonly>{detail.company}</Readonly></EditorField>
+            <EditorField label="成本中心"><Readonly>{detail.costCenter}</Readonly></EditorField>
+            <EditorField label="业务线"><Readonly>{detail.businessLine}</Readonly></EditorField>
+            <EditorField label="项目"><Readonly>{detail.project}</Readonly></EditorField>
+            <EditorField label="板块"><Readonly>{detail.plate}</Readonly></EditorField>
+            <EditorField label="费用账户"><Readonly>{detail.expenseAccount}</Readonly></EditorField>
+            <EditorField label="购置日期"><Readonly>{detail.purchaseDate}</Readonly></EditorField>
+            <EditorField label="启用日期"><Readonly>{detail.enableDate}</Readonly></EditorField>
+            <EditorField label="PR单号"><Readonly>{detail.prNo || detail.prLine}</Readonly></EditorField>
+            <EditorField label="申请单号"><Readonly>{detail.applicationNo}</Readonly></EditorField>
+            <EditorField label="PO单号"><Readonly>{detail.poNo}</Readonly></EditorField>
+            <EditorField label="申请人"><Readonly>{detail.applicant}</Readonly></EditorField>
+            <EditorField label="部件数量"><Readonly>{detail.partQuantity}</Readonly></EditorField>
+            <EditorField label="部件说明"><Readonly>{detail.partDesc}</Readonly></EditorField>
+            <EditorField label="主资产标签号"><Readonly>{detail.mainAssetTag}</Readonly></EditorField>
+            <EditorField label="供应商"><Readonly>{detail.supplier}</Readonly></EditorField>
+            <EditorField label="使用说明" span={4}><Readonly>{detail.usageDesc}</Readonly></EditorField>
+            <EditorField label="备注" span={4}><Readonly>{detail.remark}</Readonly></EditorField>
+          </DetailGrid>
+        </Card>
+        <Card size="small" title="NO设备信息">
+          <DetailGrid columns={4} labelWidth={88} minWidth={1180}>
+            <EditorField label="服务"><Readonly>{detail.service}</Readonly></EditorField>
+            <EditorField label="小服务"><Readonly>{detail.subService}</Readonly></EditorField>
+            <EditorField label="NO位置"><Readonly>{detail.noLocation}</Readonly></EditorField>
+            <EditorField label="Cabinet"><Readonly>{detail.cabinet}</Readonly></EditorField>
+            <EditorField label="ILO"><Readonly>{detail.ilo}</Readonly></EditorField>
+            <EditorField label="ILOPW"><Readonly>{detail.iloPw}</Readonly></EditorField>
+            <EditorField label="IP1"><Readonly>{detail.ip1}</Readonly></EditorField>
+            <EditorField label="IP2"><Readonly>{detail.ip2}</Readonly></EditorField>
+            <EditorField label="IP3"><Readonly>{detail.ip3}</Readonly></EditorField>
           </DetailGrid>
         </Card>
       </Space>
