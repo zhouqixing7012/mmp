@@ -207,7 +207,7 @@ export default function BorrowingApplyPage() {
 
   const columns = [
     {
-      title: '资产说明',
+      title: '资产类别',
       width: 240,
       render: (_, record) => `${record.category || '-'}\.${record.subCategory || '-'}`,
     },
