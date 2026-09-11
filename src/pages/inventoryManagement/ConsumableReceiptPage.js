@@ -60,13 +60,7 @@ const lineMoney = (item, quantity) => {
 function SelectorInput({ value, placeholder, onOpen }) {
   return (
     <div className="cursor-pointer" onClick={onOpen}>
-      <Input
-        value={value}
-        readOnly
-        placeholder={placeholder}
-        className="pointer-events-none"
-        suffix={<Search size={14} className="text-[#1677ff]" />}
-      />
+      <Input value={value} readOnly placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} className="text-[#1677ff]" />} />
     </div>
   );
 }
@@ -178,7 +172,7 @@ export default function ConsumableReceiptPage() {
     }),
   }));
 
-  const completePoQty = (poNo, lines, inbound) => {
+  const completePoQty = (poNo, lines) => {
     const nextItems = (poItems[poNo] || []).map((item) => {
       const line = lines.find((candidate) => candidate.sourceItemId === item.id);
       if (!line) return item;
@@ -191,16 +185,14 @@ export default function ConsumableReceiptPage() {
       return {
         ...next,
         currentReceiveQty: remainingQty(next),
-        receiptStatus: next.receivedQty >= next.purchaseQty ? '已接收' : '待接收',
+        receiptStatus: next.receivedQty >= next.purchaseQty ? '已入库' : '待接收',
       };
     });
     setPoItems((current) => ({ ...current, [poNo]: nextItems }));
     const all = nextItems.every((item) => item.receivedQty >= item.purchaseQty);
     const any = nextItems.some((item) => item.receivedQty > 0);
     setPoRows((list) => list.map((row) => (
-      row.poNo === poNo
-        ? { ...row, receiptStatus: inbound && all ? '已入库' : (all || any ? '已接收' : '待接收') }
-        : row
+      row.poNo === poNo ? { ...row, receiptStatus: all ? '已入库' : (any ? '已接收' : '待接收') } : row
     )));
   };
 
@@ -309,12 +301,11 @@ export default function ConsumableReceiptPage() {
     const existing = receipt.details || [];
     const generated = [];
     receipt.lines.filter((line) => targetIds.has(line.id)).forEach((line) => {
+      if (existing.some((detail) => detail.lineId === line.id)) return;
       if (receipt.purchaseType === '低值耐用品') {
         Array.from({ length: Number(line.actualReceiveQty || 0) }, (_, index) => index + 1).forEach((sequence) => {
-          const id = `${line.id}-${sequence}`;
-          if (existing.some((detail) => detail.id === id)) return;
           generated.push({
-            id,
+            id: `${line.id}-${sequence}`,
             lineId: line.id,
             assetTag: '',
             sn: '',
@@ -334,7 +325,7 @@ export default function ConsumableReceiptPage() {
             remark: '',
           });
         });
-      } else if (!existing.some((detail) => detail.lineId === line.id)) {
+      } else {
         generated.push({
           id: `${line.id}-1`,
           lineId: line.id,
@@ -360,12 +351,13 @@ export default function ConsumableReceiptPage() {
     return [...existing, ...generated];
   };
 
-  const openMaintenance = (lineIds = selectedLines) => {
+  const openMaintenance = () => {
     if (!activeReceipt) return;
-    if (!lineIds.length) {
-      messageApi.warning('请先选择需要维护的接收行');
-      return;
-    }
+    const allLineIds = activeReceipt.lines.map((line) => line.id);
+    const lineIds = activeReceipt.purchaseType === '低值耐用品' || activeReceipt.status === '已完成'
+      ? allLineIds
+      : selectedLines;
+    if (!lineIds.length) return messageApi.warning('请先选择需要维护的接收行');
     const details = buildDetailsForLines(activeReceipt, lineIds);
     setReceipts((list) => list.map((receipt) => (
       receipt.receiptNo === activeReceipt.receiptNo ? { ...receipt, details } : receipt
@@ -374,6 +366,7 @@ export default function ConsumableReceiptPage() {
     setSelectedDetails([]);
     setScanInput({ value: '', stage: 'tag', detailId: null });
     setView('maintenance');
+    return undefined;
   };
 
   const deleteReceiptLines = () => {
@@ -396,32 +389,37 @@ export default function ConsumableReceiptPage() {
   };
 
   const confirmReceipt = () => {
-    const expectedDetailCount = activeReceipt.purchaseType === '低值耐用品'
+    if (!activeReceipt) return;
+    const isDurable = activeReceipt.purchaseType === '低值耐用品';
+    const expectedDetailCount = isDurable
       ? activeReceipt.lines.reduce((sum, line) => sum + Number(line.actualReceiveQty || 0), 0)
       : activeReceipt.lines.length;
-    if ((activeReceipt.details || []).length < expectedDetailCount) return messageApi.warning('请先完成全部接收行的接收明细维护');
-    if (activeReceipt.purchaseType === '低值耐用品') {
-      setReceipts((list) => list.map((receipt) => (
-        receipt.receiptNo === activeReceipt.receiptNo ? { ...receipt, status: '接收待维护' } : receipt
-      )));
-      return messageApi.success('接收单进入“接收待维护”');
+    if ((activeReceipt.details || []).length < expectedDetailCount) {
+      messageApi.warning('请先完成全部接收行的接收明细维护');
+      return;
+    }
+    if (isDurable && activeReceipt.details.some((detail) => !String(detail.assetTag || '').trim() || !String(detail.sn || '').trim())) {
+      messageApi.warning('接收确认失败：存在未维护资产标签号或SN号的明细；SN号为“缺省”视为已维护');
+      return;
     }
     const warehouse = WAREHOUSE_BY_COMPANY[activeReceipt.procurementUnit];
-    if (!warehouse) return messageApi.error('未找到当前公司对应的耗材仓库');
+    if (!isDurable && !warehouse) {
+      messageApi.error('未找到当前公司对应的耗材仓库');
+      return;
+    }
     const inboundResult = {
       inboundNo: docNo('IN', Math.max(0, ...receipts.map((item) => item.id)) + 1),
-      warehouse,
+      ...(warehouse ? { warehouse } : {}),
       status: '已完成',
       creator: '115102-王英',
       createdAt: dayjs().format('YYYY-MM-DD'),
-      quantity: activeReceipt.lines.reduce((sum, line) => sum + Number(line.actualReceiveQty), 0),
+      quantity: activeReceipt.lines.reduce((sum, line) => sum + Number(line.actualReceiveQty || 0), 0),
     };
-    completePoQty(activeReceipt.poNo, activeReceipt.lines, true);
+    completePoQty(activeReceipt.poNo, activeReceipt.lines);
     setReceipts((list) => list.map((receipt) => (
-      receipt.receiptNo === activeReceipt.receiptNo ? { ...receipt, status: '接收完成', inboundResult } : receipt
+      receipt.receiptNo === activeReceipt.receiptNo ? { ...receipt, status: '已完成', inboundResult } : receipt
     )));
-    messageApi.success('接收完成，系统已生成采购接收入库结果');
-    return undefined;
+    messageApi.success(`接收确认成功，已生成入库单 ${inboundResult.inboundNo}`);
   };
 
   const duplicateSn = (sn, detailId) => sn && sn !== '缺省' && receipts.some((receipt) => (
@@ -441,18 +439,15 @@ export default function ConsumableReceiptPage() {
     return undefined;
   };
 
-  const setDetailTag = (detailId, assetTag) => {
-    const value = String(assetTag || '').trim();
-    setReceipts((list) => list.map((receipt) => (
-      receipt.receiptNo === activeReceiptNo
-        ? { ...receipt, details: receipt.details.map((detail) => (detail.id === detailId ? { ...detail, assetTag: value } : detail)) }
-        : receipt
-    )));
-  };
+  const targetMaintenanceLineIds = () => (
+    activeReceipt?.purchaseType === '低值耐用品'
+      ? activeReceipt.lines.map((line) => line.id)
+      : maintenanceLineIds
+  );
 
   const generateTags = () => {
     let seq = (activeReceipt.details || []).filter((detail) => detail.assetTag).length + 1;
-    const lineIds = new Set(maintenanceLineIds);
+    const lineIds = new Set(targetMaintenanceLineIds());
     setReceipts((list) => list.map((receipt) => (
       receipt.receiptNo === activeReceiptNo
         ? {
@@ -465,11 +460,12 @@ export default function ConsumableReceiptPage() {
         }
         : receipt
     )));
-    messageApi.success('已为当前维护范围生成空标签号');
+    setScanInput({ value: '', stage: 'tag', detailId: null });
+    messageApi.success('已为全部接收明细生成标签号并实时保存');
   };
 
   const fillDefaultSn = () => {
-    const lineIds = new Set(maintenanceLineIds);
+    const lineIds = new Set(targetMaintenanceLineIds());
     setReceipts((list) => list.map((receipt) => (
       receipt.receiptNo === activeReceiptNo
         ? {
@@ -480,31 +476,14 @@ export default function ConsumableReceiptPage() {
         }
         : receipt
     )));
-    messageApi.success('已为当前维护范围内未维护的 SN 号填充“缺省”');
+    messageApi.success('已为全部未维护SN号填充“缺省”并实时保存');
   };
 
-  const printLabels = () => {
-    const targetDetails = maintenanceLineIds.length
-      ? (activeReceipt.details || []).filter((detail) => maintenanceLineIds.includes(detail.lineId))
-      : (activeReceipt.details || []);
-    return targetDetails.some((detail) => !detail.assetTag)
-      ? messageApi.warning('有未维护的标签号，请先维护接收明细。')
-      : messageApi.success('标签打印批次已生成');
-  };
-
-  const completeDurable = () => {
-    const expectedDetailCount = activeReceipt.lines.reduce((sum, line) => sum + Number(line.actualReceiveQty || 0), 0);
-    if ((activeReceipt.details || []).length < expectedDetailCount) return messageApi.warning('请先完成全部接收行的接收明细维护');
-    if (activeReceipt.details.some((detail) => !detail.assetTag || !detail.sn)) {
-      return messageApi.warning('有未维护的标签号或 SN 号，请先维护接收明细。');
-    }
-    completePoQty(activeReceipt.poNo, activeReceipt.lines, false);
-    setReceipts((list) => list.map((receipt) => (
-      receipt.receiptNo === activeReceiptNo ? { ...receipt, status: '接收完成' } : receipt
-    )));
-    messageApi.success('接收状态已更新为“接收完成”');
-    return undefined;
-  };
+  const printLabels = () => (
+    (activeReceipt.details || []).some((detail) => !detail.assetTag)
+      ? messageApi.warning('有未维护的标签号，请先生成标签号')
+      : messageApi.success('标签打印批次已生成')
+  );
 
   const deleteReceipts = () => {
     if (!selectedReceipts.length) return messageApi.warning('请先选择需要删除的接收单');
@@ -551,43 +530,33 @@ export default function ConsumableReceiptPage() {
       }),
     }));
     setSelectedDetails([]);
-    return undefined;
+    messageApi.success('已删除所选接收明细并实时保存');
   };
 
   const handleScanInput = () => {
     const value = scanInput.value.trim();
-    if (!value) return;
-    const visibleDetails = (activeReceipt.details || []).filter((detail) => maintenanceLineIds.includes(detail.lineId));
+    if (!value || !activeReceipt) return;
+    const details = (activeReceipt.details || []).filter((detail) => maintenanceLineIds.includes(detail.lineId));
+    const allTagsGenerated = details.length > 0 && details.every((detail) => String(detail.assetTag || '').trim());
+    if (!allTagsGenerated) return messageApi.warning('请先生成全部标签号');
 
     if (scanInput.stage === 'tag') {
-      const matched = visibleDetails.find((detail) => detail.assetTag === value);
-      if (matched) {
-        setScanInput({ value: '', stage: 'sn', detailId: matched.id });
-        setSelectedDetails([matched.id]);
-        return;
-      }
-      if (selectedDetails.length !== 1) {
-        messageApi.warning('手动录入资产标签号前，请先选择一条接收明细');
-        return;
-      }
-      const detailId = selectedDetails[0];
-      setDetailTag(detailId, value);
-      setScanInput({ value: '', stage: 'sn', detailId });
+      const matched = details.find((detail) => detail.assetTag === value);
+      if (!matched) return messageApi.warning('未找到对应标签号');
+      setScanInput({ value: '', stage: 'sn', detailId: matched.id });
+      setSelectedDetails([matched.id]);
       return;
     }
 
     if (!scanInput.detailId) {
-      messageApi.warning('请先扫描或录入资产标签号');
       setScanInput({ value: '', stage: 'tag', detailId: null });
-      return;
+      return messageApi.warning('请先扫描标签号');
     }
-    if (duplicateSn(value, scanInput.detailId)) {
-      messageApi.error(`SN 号：${value} 已存在！`);
-      return;
-    }
+    if (duplicateSn(value, scanInput.detailId)) return messageApi.error(`SN 号：${value} 已存在！`);
     setDetailSn(scanInput.detailId, value);
     setScanInput({ value: '', stage: 'tag', detailId: null });
     setSelectedDetails([]);
+    return messageApi.success('SN号已写入并实时保存');
   };
 
   const poColumns = [
@@ -602,10 +571,7 @@ export default function ConsumableReceiptPage() {
     { title: '推送日期', dataIndex: 'pushDate', width: 120 },
     { title: '采购类型', dataIndex: 'purchaseType', width: 120 },
     {
-      title: '操作',
-      width: 140,
-      fixed: 'right',
-      render: (_, row) => (
+      title: '操作', width: 140, fixed: 'right', render: (_, row) => (
         <Space size={2}>
           <Button type="link" className="px-0" onClick={() => openPo(row)}>接收</Button>
           <Button type="link" className="px-0" onClick={() => openReceiptList(row)}>查看</Button>
@@ -680,9 +646,9 @@ export default function ConsumableReceiptPage() {
     { title: '行号', width: 60, render: (_, __, index) => index + 1 },
     { title: '耗材标签号', dataIndex: 'assetTag', width: 220, render: (value) => value || '-' },
     { title: 'SN号', dataIndex: 'sn', width: 180, render: (value, row) => (
-      activeReceipt?.status === '接收完成'
+      activeReceipt?.purchaseType === '低值耐用品' || activeReceipt?.status === '已完成'
         ? (value || '-')
-        : <Input size="small" value={value} placeholder="扫描或录入SN" onChange={(event) => setDetailSn(row.id, event.target.value)} />
+        : <Input size="small" value={value} placeholder="录入SN" onChange={(event) => setDetailSn(row.id, event.target.value)} />
     ) },
     { title: '物资总类', dataIndex: 'materialGroup', width: 110 },
     { title: '耗材大类', dataIndex: 'consumableClass', width: 110 },
@@ -702,6 +668,7 @@ export default function ConsumableReceiptPage() {
   if (view === 'poDetail' && activePO) {
     const untaxed = activeItems.reduce((sum, item) => sum + lineMoney(item, item.purchaseQty).untaxedAmount, 0);
     const tax = activeItems.reduce((sum, item) => sum + lineMoney(item, item.purchaseQty).taxAmount, 0);
+    const hasReceipt = receipts.some((receipt) => receipt.poNo === activePO.poNo);
     return (
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
@@ -734,7 +701,11 @@ export default function ConsumableReceiptPage() {
             <DetailItem label="申请批次"><Readonly>{activePO.applicationBatch}</Readonly></DetailItem>
           </DetailGrid>
         </Card>
-        <Card size="small" title="采购明细">
+        <Card
+          size="small"
+          title="采购明细"
+          extra={<Button type="primary" onClick={createReceipt}>创建接收单</Button>}
+        >
           <Table
             rowKey="id"
             size="small"
@@ -753,8 +724,7 @@ export default function ConsumableReceiptPage() {
           />
         </Card>
         <div className="flex justify-center gap-3">
-          <Button type="primary" onClick={createReceipt}>创建接收单</Button>
-          <Button onClick={() => openReceiptList(activePO)}>查看接收单</Button>
+          {hasReceipt && <Button onClick={() => openReceiptList(activePO)}>查看接收单</Button>}
           <Button onClick={() => setView('poList')}>返回</Button>
         </div>
         <Modal
@@ -800,15 +770,7 @@ export default function ConsumableReceiptPage() {
           )}
         </Modal>
         {selectorConfig && (
-          <SelectModal
-            open
-            title={selectorConfig.title}
-            dataSource={selectorConfig.dataSource}
-            columns={selectorConfig.columns || [{ title: '名称', dataIndex: 'name' }]}
-            searchFields={selectorConfig.searchFields || [{ label: '名称', name: 'name', dataIndex: 'name' }]}
-            onCancel={() => setSelectorType('')}
-            onConfirm={(record) => { selectorConfig.confirm(record); setSelectorType(''); }}
-          />
+          <SelectModal open title={selectorConfig.title} dataSource={selectorConfig.dataSource} columns={selectorConfig.columns || [{ title: '名称', dataIndex: 'name' }]} searchFields={selectorConfig.searchFields || [{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelectorType('')} onConfirm={(record) => { selectorConfig.confirm(record); setSelectorType(''); }} />
         )}
       </Space>
     );
@@ -830,7 +792,7 @@ export default function ConsumableReceiptPage() {
         >
           <QueryItem label="接收单号"><Input value={receiptDraft.receiptNo} onChange={(event) => setReceiptFilter('receiptNo', event.target.value)} /></QueryItem>
           <QueryItem label="PO单号"><Input value={receiptDraft.poNo} onChange={(event) => setReceiptFilter('poNo', event.target.value)} /></QueryItem>
-          <QueryItem label="单据状态"><Select allowClear placeholder="全部" value={receiptDraft.status || undefined} options={['草稿', '接收待维护', '接收完成'].map((value) => ({ label: value, value }))} onChange={(value) => setReceiptFilter('status', value)} /></QueryItem>
+          <QueryItem label="单据状态"><Select allowClear placeholder="全部" value={receiptDraft.status || undefined} options={['草稿', '已完成'].map((value) => ({ label: value, value }))} onChange={(value) => setReceiptFilter('status', value)} /></QueryItem>
           <QueryItem label="制单人"><Input value={receiptDraft.creator} onChange={(event) => setReceiptFilter('creator', event.target.value)} /></QueryItem>
           <QueryItem label="制单时间">
             <RangePicker
@@ -844,11 +806,7 @@ export default function ConsumableReceiptPage() {
           </QueryItem>
           <QueryItem label="供应商"><SelectorInput value={receiptDraft.supplier} placeholder="请选择供应商" onOpen={() => setSelectorType('receiptSupplier')} /></QueryItem>
         </QueryBar>
-        <Card
-          size="small"
-          title="接收单列表"
-          extra={<Button danger icon={<Trash2 size={14} />} onClick={deleteReceipts}>删除接收单</Button>}
-        >
+        <Card size="small" title="接收单列表" extra={<Button danger icon={<Trash2 size={14} />} onClick={deleteReceipts}>删除接收单</Button>}>
           <Table
             rowKey="id"
             size="small"
@@ -868,21 +826,15 @@ export default function ConsumableReceiptPage() {
         </Card>
         <div className="flex justify-center"><Button onClick={() => setView('poList')}>返回</Button></div>
         {selectorConfig && (
-          <SelectModal
-            open
-            title={selectorConfig.title}
-            dataSource={selectorConfig.dataSource}
-            columns={[{ title: '名称', dataIndex: 'name' }]}
-            searchFields={[{ label: '名称', name: 'name', dataIndex: 'name' }]}
-            onCancel={() => setSelectorType('')}
-            onConfirm={(record) => { selectorConfig.confirm(record); setSelectorType(''); }}
-          />
+          <SelectModal open title={selectorConfig.title} dataSource={selectorConfig.dataSource} columns={[{ title: '名称', dataIndex: 'name' }]} searchFields={[{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelectorType('')} onConfirm={(record) => { selectorConfig.confirm(record); setSelectorType(''); }} />
         )}
       </Space>
     );
   }
 
   if (view === 'receiptDetail' && activeReceipt) {
+    const isDraft = activeReceipt.status === '草稿';
+    const isDurable = activeReceipt.purchaseType === '低值耐用品';
     return (
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
@@ -910,9 +862,9 @@ export default function ConsumableReceiptPage() {
         <Card
           size="small"
           title="接收行明细"
-          extra={activeReceipt.status === '草稿' ? (
+          extra={isDraft ? (
             <Space>
-              <Button onClick={() => openMaintenance()}>维护接收明细</Button>
+              {!isDurable && <Button onClick={openMaintenance}>维护接收明细</Button>}
               <Button danger icon={<Trash2 size={14} />} onClick={deleteReceiptLines}>删除接收行</Button>
             </Space>
           ) : undefined}
@@ -923,30 +875,18 @@ export default function ConsumableReceiptPage() {
             bordered
             columns={lineColumns}
             dataSource={activeReceipt.lines}
-            rowSelection={activeReceipt.status === '草稿' ? {
-              selectedRowKeys: selectedLines,
-              onChange: setSelectedLines,
-              fixed: true,
-              columnTitle: '选择',
-            } : undefined}
+            rowSelection={isDraft ? { selectedRowKeys: selectedLines, onChange: setSelectedLines, fixed: true, columnTitle: '选择' } : undefined}
             scroll={{ x: 'max-content' }}
             pagination={false}
           />
         </Card>
-        {activeReceipt.status === '接收待维护' && (
-          <div className="flex justify-center gap-3">
-            <Button onClick={() => openMaintenance(activeReceipt.lines.map((line) => line.id))}>维护接收明细</Button>
-            <Button icon={<Printer size={14} />} onClick={printLabels}>标签打印</Button>
-            <Button type="primary" onClick={completeDurable}>接收完成</Button>
-            <Button onClick={() => openReceiptList(activePO || poRows.find((row) => row.poNo === activeReceipt.poNo))}>返回</Button>
-          </div>
-        )}
-        {activeReceipt.status === '接收完成' && (
-          <div className="flex justify-center gap-3">
-            <Button icon={<Printer size={14} />} onClick={() => messageApi.success('已打开接收单打印预览（原型）')}>接收单打印</Button>
-            <Button onClick={() => openReceiptList(activePO || poRows.find((row) => row.poNo === activeReceipt.poNo))}>返回</Button>
-          </div>
-        )}
+        <div className="flex justify-center gap-3">
+          {isDraft && isDurable && <Button onClick={openMaintenance}>维护接收明细</Button>}
+          {isDraft && <Button type="primary" onClick={confirmReceipt}>接收确认</Button>}
+          {!isDraft && (activeReceipt.details || []).length > 0 && <Button onClick={openMaintenance}>查看接收明细</Button>}
+          {!isDraft && <Button icon={<Printer size={14} />} onClick={() => messageApi.success('已打开接收单打印预览（原型）')}>接收单打印</Button>}
+          <Button onClick={() => openReceiptList(activePO || poRows.find((row) => row.poNo === activeReceipt.poNo))}>返回</Button>
+        </div>
       </Space>
     );
   }
@@ -954,6 +894,10 @@ export default function ConsumableReceiptPage() {
   if (view === 'maintenance' && activeReceipt) {
     const details = (activeReceipt.details || []).filter((detail) => maintenanceLineIds.includes(detail.lineId));
     const currentDetail = details.find((detail) => detail.id === scanInput.detailId);
+    const isDraft = activeReceipt.status === '草稿';
+    const isDurable = activeReceipt.purchaseType === '低值耐用品';
+    const allTagsGenerated = details.length > 0 && details.every((detail) => String(detail.assetTag || '').trim());
+    const allSnMaintained = details.length > 0 && details.every((detail) => String(detail.sn || '').trim());
     return (
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
@@ -968,24 +912,18 @@ export default function ConsumableReceiptPage() {
             <DetailItem label="接收时间"><Readonly>{activeReceipt.createdAt?.slice(0, 10)}</Readonly></DetailItem>
           </DetailGrid>
         </Card>
-        {activeReceipt.purchaseType === '低值耐用品' && (
+        {isDurable && (
           <Card size="small" title="扫描维护">
             <div className="flex items-center gap-3">
-              <Typography.Text className="shrink-0">
-                {scanInput.stage === 'tag' ? '资产标签号' : 'SN号'}
-              </Typography.Text>
+              <Typography.Text className="shrink-0">扫描光标</Typography.Text>
               <Input
                 value={scanInput.value}
-                placeholder={scanInput.stage === 'tag' ? '扫描或手动输入资产标签号后回车' : '扫描或手动输入SN号后回车'}
+                disabled={!isDraft || !allTagsGenerated}
+                placeholder={!allTagsGenerated ? '生成标签号后可使用扫描' : scanInput.stage === 'tag' ? '请扫描耗材标签号' : `已定位 ${currentDetail?.assetTag || ''}，请扫描SN号`}
                 onChange={(event) => setScanInput((current) => ({ ...current, value: event.target.value }))}
                 onPressEnter={handleScanInput}
               />
             </div>
-            {scanInput.stage === 'sn' && currentDetail && (
-              <Typography.Text type="secondary" className="mt-2 block">
-                当前资产标签号：{currentDetail.assetTag}
-              </Typography.Text>
-            )}
           </Card>
         )}
         <Card
@@ -993,10 +931,10 @@ export default function ConsumableReceiptPage() {
           title="接收明细"
           extra={(
             <Space>
-              {activeReceipt.status === '草稿' && <Button danger icon={<Trash2 size={14} />} onClick={deleteDetails}>删除行</Button>}
-              {activeReceipt.purchaseType === '低值耐用品' && <Button onClick={generateTags}>生成标签号</Button>}
-              {activeReceipt.purchaseType === '低值耐用品' && <Button onClick={fillDefaultSn}>维护SN号</Button>}
-              {activeReceipt.status === '接收待维护' && activeReceipt.purchaseType === '低值耐用品' && <Button icon={<Printer size={14} />} onClick={printLabels}>标签打印</Button>}
+              {isDraft && <Button danger icon={<Trash2 size={14} />} onClick={deleteDetails}>删除行</Button>}
+              {isDurable && isDraft && !allTagsGenerated && <Button onClick={generateTags}>生成标签号</Button>}
+              {isDurable && isDraft && !allSnMaintained && <Button onClick={fillDefaultSn}>维护SN号</Button>}
+              {isDurable && allTagsGenerated && <Button icon={<Printer size={14} />} onClick={printLabels}>打印标签号</Button>}
             </Space>
           )}
         >
@@ -1006,21 +944,12 @@ export default function ConsumableReceiptPage() {
             bordered
             columns={detailColumns}
             dataSource={details}
-            rowSelection={activeReceipt.status === '草稿' ? {
-              selectedRowKeys: selectedDetails,
-              onChange: setSelectedDetails,
-              fixed: true,
-              columnTitle: '选择',
-            } : undefined}
+            rowSelection={isDraft ? { selectedRowKeys: selectedDetails, onChange: setSelectedDetails, fixed: true, columnTitle: '选择' } : undefined}
             scroll={{ x: 'max-content' }}
             pagination={{ pageSize: 10 }}
           />
         </Card>
-        <div className="flex justify-center gap-3">
-          {activeReceipt.status === '草稿' && <Button type="primary" onClick={confirmReceipt}>接收确认</Button>}
-          {activeReceipt.status === '接收待维护' && <Button type="primary" onClick={completeDurable}>接收完成</Button>}
-          <Button onClick={() => setView('receiptDetail')}>返回</Button>
-        </div>
+        <div className="flex justify-center gap-3"><Button onClick={() => setView('receiptDetail')}>返回</Button></div>
       </Space>
     );
   }
@@ -1029,10 +958,7 @@ export default function ConsumableReceiptPage() {
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
       <PageTitle />
-      <QueryBar
-        onQuery={() => setPoFilters({ ...poDraft })}
-        onReset={() => { setPoDraft(EMPTY_PO_FILTERS); setPoFilters(EMPTY_PO_FILTERS); }}
-      >
+      <QueryBar onQuery={() => setPoFilters({ ...poDraft })} onReset={() => { setPoDraft(EMPTY_PO_FILTERS); setPoFilters(EMPTY_PO_FILTERS); }}>
         <QueryItem label="公司"><SelectorInput value={poDraft.company} placeholder="请选择公司" onOpen={() => setSelectorType('company')} /></QueryItem>
         <QueryItem label="板块"><SelectorInput value={poDraft.plate} placeholder="请选择板块" onOpen={() => setSelectorType('plate')} /></QueryItem>
         <QueryItem label="PO单号"><Input value={poDraft.poNo} onChange={(event) => setPoFilter('poNo', event.target.value)} /></QueryItem>
@@ -1046,15 +972,7 @@ export default function ConsumableReceiptPage() {
         <Table rowKey="id" size="small" bordered columns={poColumns} dataSource={filteredPos} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10 }} />
       </Card>
       {selectorConfig && (
-        <SelectModal
-          open
-          title={selectorConfig.title}
-          dataSource={selectorConfig.dataSource}
-          columns={selectorConfig.columns || [{ title: '名称', dataIndex: 'name' }]}
-          searchFields={selectorConfig.searchFields || [{ label: '名称', name: 'name', dataIndex: 'name' }]}
-          onCancel={() => setSelectorType('')}
-          onConfirm={(record) => { selectorConfig.confirm(record); setSelectorType(''); }}
-        />
+        <SelectModal open title={selectorConfig.title} dataSource={selectorConfig.dataSource} columns={selectorConfig.columns || [{ title: '名称', dataIndex: 'name' }]} searchFields={selectorConfig.searchFields || [{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelectorType('')} onConfirm={(record) => { selectorConfig.confirm(record); setSelectorType(''); }} />
       )}
     </Space>
   );
