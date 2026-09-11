@@ -128,7 +128,7 @@ export const INITIAL_RECEIPTS = [
   {
     id: 1,
     receiptNo: 'REC-202608210001',
-    status: '接收完成',
+    status: '已完成',
     poNo: 'PO2608200004',
     poName: '会议室日常耗材采购订单',
     supplier: '北京美捷美科技有限公司',
