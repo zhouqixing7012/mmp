@@ -862,7 +862,7 @@ export default function AssetReceiptPage() {
 
     const realSns = session.rows.filter((row) => isRealSn(row.sn)).map((row) => normalizeSn(row.sn));
     const duplicateInCurrent = realSns.find((sn, index) => realSns.indexOf(sn) !== index);
-    if (duplicateInCurrent) return messageApi.error(`接收确认失败：SN号 ${duplicateInCurrent} 重复`);
+    if (duplicateInCurrent) return messageApi.error(`接收确认失败：SN号 ${duplicateInCurrent} 已存在`);
     const otherSns = collectKnownRealSns(activeReceipt.receiptNo, null, false);
     const duplicateWithOther = realSns.find((sn) => otherSns.has(sn));
     if (duplicateWithOther) return messageApi.error(`接收确认失败：SN号 ${duplicateWithOther} 已存在`);
@@ -1082,7 +1082,7 @@ export default function AssetReceiptPage() {
     { title: '物资总类', dataIndex: 'materialGroup', width: 120 },
     { title: '资产大类', dataIndex: 'assetClass', width: 180 },
     { title: '物料编码', dataIndex: 'materialCode', width: 170 },
-    { title: '物料说明', dataIndex: 'materialDesc', width: 230 },
+    { title: '资产说明', dataIndex: 'materialDesc', width: 230 },
     { title: 'PO单说明', dataIndex: 'poDesc', width: 360 },
     { title: '配置', dataIndex: 'config', width: 300 },
     { title: '部件数量', dataIndex: 'partQuantity', width: 110 },
