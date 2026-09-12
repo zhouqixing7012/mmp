@@ -47,6 +47,7 @@ Granularity / Coverage Check
 ```text
 src/
 ├── components/                     # QueryBar、DetailGrid、SelectModal、StatusTag 等公共组件
+├── hooks/                          # 可复用交互 Hook（含表格短暂高亮反馈）
 ├── mock/                           # 演示数据
 ├── services/                       # 业务流程和本地数据读写
 ├── prototype-annotations/          # 标注、target、Coverage、评审和诊断能力
@@ -154,6 +155,7 @@ npm test
 - 资产盘点“盘点项目”主链路。
 - 员工自助 10 个主要业务模块 PRD 深审和 Coverage Ledger。
 - 原型标注编辑、定位、动态浮层、质量检查、评审和诊断能力。
+- B 端统一动效基础设施：弹窗进退场、后台页面切换、侧边栏展开/收起、顶部下拉、React Router View Transition、可点击 Card 反馈和表格结果高亮能力。
 
 ## 待办事项
 
@@ -169,6 +171,8 @@ npm test
 - `AI_RULES.md`：AI 开发规则。
 - `CONTEXT.md`：当前进度和关键决定。
 - `ARCHITECTURE.md`：模块职责和调用关系。
+- `docs/UI_DESIGN_GUIDELINES.md`：ERP Figma × 资产系统 UI 设计规范。
+- `docs/UI_MOTION_GUIDELINES.md`：B 端统一动效规范和新增页面动效检查清单。
 - `docs/PRD-库存管理-入库.md`：入库四类编辑页与弹窗字段口径。
 - `docs/PRD-库存管理-出库.md`：领用出库、借用出库编辑页与弹窗字段口径。
 - `docs/PRD-库存管理-转移.md`：转移单创建页、物资列表和添加转移物资弹窗字段口径。
@@ -192,3 +196,4 @@ npm test
 - 2026-09-10 转移创建页继续复用现有库存管理 QueryBar、DetailGrid、StatusTag、SelectModal 与 Ant Design Table/Modal；只按 ERP 截图补齐字段和创建/添加物资链路，不复制旧视觉，不新增运行时依赖。
 - 2026-09-10 检查 ERP icon 库节点 `1973:350`：当前后台四个一级菜单均有可用候选，优先考虑 `电脑 desktop`（资产管理）、`图层 layer`（无形资产）、`eCommerce / Box`（库存管理）、`General / Scanner`（资产盘点）；本轮仅完成候选评估，尚未替换代码图标。
 - 2026-09-12 B 端动效调研参考 Ant Design 企业后台动效原则、Atlassian 高频交互时长和 React 组件进出场模式；最终优先用现有 React + CSS 实现 100/140/180/220ms 统一 Token、公共弹窗真实退出、后台页面轻过渡和可点击卡片 hover/press，不新增第三方动画依赖。
+- 2026-09-12 后续动效继续使用现有能力：侧边栏使用 CSS Grid 展开/收起，顶部路由下拉使用淡入 + 4px 位移；React Router 7 使用官方 `viewTransition` 做一级路由 Cross Fade；表格新增/修改反馈通过项目 Hook + CSS 行高亮实现，仍未新增运行时依赖。
