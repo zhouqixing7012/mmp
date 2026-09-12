@@ -70,9 +70,10 @@ export default function AdminContent({ activeMenu, activeSubMenu, activeTab, tab
           </div>
         )}
         <div
-          className={isWorkspace
+          key={prototypePageScope}
+          className={`${isWorkspace
             ? 'relative flex flex-1 flex-col'
-            : 'relative flex flex-1 flex-col bg-[#fafafa] p-4 md:p-5'}
+            : 'relative flex flex-1 flex-col bg-[#fafafa] p-4 md:p-5'} mmp-page-motion`}
         >
           {children}
         </div>
