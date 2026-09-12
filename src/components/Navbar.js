@@ -35,19 +35,31 @@ export default function Navbar() {
 
           return (
             <div key={group.key} className="relative">
-              <button type="button" className={groupClass(isActiveGroup)} onClick={() => toggleGroup(group.key)}>
+              <button
+                type="button"
+                className={groupClass(isActiveGroup)}
+                aria-expanded={isOpen}
+                onClick={() => toggleGroup(group.key)}
+              >
                 {group.name}
               </button>
 
-              {isOpen && (
-                <div className="absolute left-0 top-10 z-50 min-w-[220px] rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
-                  {group.routes.map((route) => (
-                    <Link key={route.path} to={route.path} className={linkClass(route.path)} onClick={() => setOpenGroupKey('')}>
-                      {route.name}
-                    </Link>
-                  ))}
-                </div>
-              )}
+              <div
+                className={`absolute left-0 top-10 z-50 min-w-[220px] rounded-lg border border-gray-200 bg-white p-2 shadow-lg mmp-nav-dropdown ${isOpen ? 'is-open' : ''}`}
+                aria-hidden={!isOpen}
+              >
+                {group.routes.map((route) => (
+                  <Link
+                    key={route.path}
+                    to={route.path}
+                    viewTransition
+                    className={linkClass(route.path)}
+                    onClick={() => setOpenGroupKey('')}
+                  >
+                    {route.name}
+                  </Link>
+                ))}
+              </div>
             </div>
           );
         })}
