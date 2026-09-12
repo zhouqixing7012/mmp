@@ -268,7 +268,7 @@ function ReceiptLineMaintenanceModal({ open, asset, readOnly, onCancel, onSave }
             <DetailItem label="资产说明"><Readonly>{asset?.materialDesc}</Readonly></DetailItem>
             <DetailItem label="SN号">{readOnly ? <Readonly>{sn}</Readonly> : <Input value={sn} onChange={(event) => setSn(event.target.value)} />}</DetailItem>
             <DetailItem label="资产标记">{readOnly ? <Readonly>{assetMark}</Readonly> : <Input value={assetMark} onChange={(event) => setAssetMark(event.target.value)} />}</DetailItem>
-            <DetailItem label="备注" span={2}>{readOnly ? <Readonly>{remark}</Readonly> : <Input value={remark} onChange={(event) => setRemark(event.target.value)} />}</DetailItem>
+            <DetailItem label="备注" span={2}>{readOnly ? <Readonly>{remark}</Readonly> : <Input.TextArea rows={3} value={remark} onChange={(event) => setRemark(event.target.value)} />}</DetailItem>
           </DetailGrid>
         </Card>
         <Card size="small" title="部件信息">
@@ -312,6 +312,9 @@ export default function AssetReceiptPage() {
   const [maintenanceFilterId, setMaintenanceFilterId] = useState(null);
 
   const maintenanceRows = maintenanceSession.rows;
+  const hasBlankMaintenanceTags = maintenanceRows.some((row) => !String(row.assetTag || '').trim());
+  const allMaintenanceTagsReady = maintenanceRows.length > 0 && !hasBlankMaintenanceTags;
+  const hasBlankMaintenanceSn = maintenanceRows.some((row) => !normalizeSn(row.sn));
 
   const getEffectivePoItems = (po = activePO, overrides = poItemOverrides) => {
     if (!po) return [];
@@ -779,23 +782,31 @@ export default function AssetReceiptPage() {
     const selected = new Set(selectedMaintenanceKeys);
     const removedRows = maintenanceRows.filter((row) => selected.has(row.id));
     const countsByItemId = removedRows.reduce((result, row) => ({ ...result, [row.sourceLineId]: (result[row.sourceLineId] || 0) + 1 }), {});
-    releaseDraftCounts(activeReceipt.poNo, countsByItemId);
-
-    const nextItems = getReceiptItems(activeReceipt).map((item) => ({
-      ...item,
-      currentReceiptQty: Math.max(0, Number(item.currentReceiptQty || 0) - Number(countsByItemId[item.id] || 0)),
-    })).filter((item) => Number(item.currentReceiptQty || 0) > 0);
-    const nextReceipt = { ...activeReceipt, itemIds: nextItems.map((item) => item.id), items: nextItems };
-    setActiveReceipt(nextReceipt);
-    setReceiptRows((current) => current.map((row) => row.id === nextReceipt.id ? nextReceipt : row));
-    updateMaintenanceSession((current) => ({
-      ...current,
-      rows: current.rows.filter((row) => !selected.has(row.id)).map((row, index) => ({ ...row, lineNo: index + 1 })),
-    }));
-    if (maintenanceScanTargetId && selected.has(maintenanceScanTargetId)) setMaintenanceScanTargetId(null);
-    if (maintenanceFilterId && selected.has(maintenanceFilterId)) setMaintenanceFilterId(null);
-    setSelectedMaintenanceKeys([]);
-    messageApi.success(`已删除 ${removedRows.length} 条明细，本次接收数量已同步减少并释放PO占用数量`);
+    Modal.confirm({
+      title: '确认删除选中的标签行吗？',
+      content: `共选择 ${removedRows.length} 条，删除后将同步减少接收数量并释放对应PO草稿占用数量。`,
+      okText: '删除',
+      cancelText: '取消',
+      okButtonProps: { danger: true },
+      onOk: () => {
+        releaseDraftCounts(activeReceipt.poNo, countsByItemId);
+        const nextItems = getReceiptItems(activeReceipt).map((item) => ({
+          ...item,
+          currentReceiptQty: Math.max(0, Number(item.currentReceiptQty || 0) - Number(countsByItemId[item.id] || 0)),
+        })).filter((item) => Number(item.currentReceiptQty || 0) > 0);
+        const nextReceipt = { ...activeReceipt, itemIds: nextItems.map((item) => item.id), items: nextItems };
+        setActiveReceipt(nextReceipt);
+        setReceiptRows((current) => current.map((row) => row.id === nextReceipt.id ? nextReceipt : row));
+        updateMaintenanceSession((current) => ({
+          ...current,
+          rows: current.rows.filter((row) => !selected.has(row.id)).map((row, index) => ({ ...row, lineNo: index + 1 })),
+        }));
+        if (maintenanceScanTargetId && selected.has(maintenanceScanTargetId)) setMaintenanceScanTargetId(null);
+        if (maintenanceFilterId && selected.has(maintenanceFilterId)) setMaintenanceFilterId(null);
+        setSelectedMaintenanceKeys([]);
+        messageApi.success(`已删除 ${removedRows.length} 条明细，本次接收数量已同步减少并释放PO占用数量`);
+      },
+    });
     return undefined;
   };
 
@@ -808,7 +819,7 @@ export default function AssetReceiptPage() {
 
   const handleMaintenanceScan = () => {
     if (activeReceipt?.status !== '草稿') return messageApi.warning('已完成接收单不可再维护SN号');
-    if (!maintenanceSession.tagsGenerated) return messageApi.warning('请先生成资产标签号');
+    if (!allMaintenanceTagsReady) return messageApi.warning('请先生成资产标签号');
     const value = maintenanceScan.trim();
     if (!value) return undefined;
 
@@ -1129,7 +1140,11 @@ export default function AssetReceiptPage() {
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
         <PageTitle>资产接收</PageTitle>
-        <Alert type="info" showIcon message="默认为全量接收，可点击编辑按钮修改接收数量！" />
+        <Alert
+          type="info"
+          showIcon
+          message={isDirectInbound ? '本次接收数量由 NO/MIS 数据决定，不支持人工修改。' : '默认为全量接收，可点击编辑按钮修改接收数量！'}
+        />
         <Card size="small" title="PO单信息">
           <DetailGrid columns={3} labelWidth={112}>
             <DetailItem label="PO单号"><Readonly>{currentPO.poNo}</Readonly></DetailItem>
@@ -1211,10 +1226,7 @@ export default function AssetReceiptPage() {
                     <div><Typography.Text type="secondary">由 NO/MIS 数据决定，不允许人工修改</Typography.Text></div>
                   </div>
                 ) : (
-                  <>
-                    <InputNumber className="mt-1 w-full" min={1} max={editAvailableQty(editItem)} precision={0} value={editDraft.currentReceiptQty} onChange={(value) => setEditDraft((item) => ({ ...item, currentReceiptQty: value }))} />
-                    <Typography.Text type="secondary">当前剩余可接收数量：{editAvailableQty(editItem)}</Typography.Text>
-                  </>
+                  <InputNumber className="mt-1 w-full" min={1} max={editAvailableQty(editItem)} precision={0} value={editDraft.currentReceiptQty} onChange={(value) => setEditDraft((item) => ({ ...item, currentReceiptQty: value }))} />
                 )}
               </div>
               <div>
@@ -1266,7 +1278,7 @@ export default function AssetReceiptPage() {
     const visibleMaintenanceRows = maintenanceFilterId ? maintenanceRows.filter((row) => row.id === maintenanceFilterId) : maintenanceRows;
     const scanPlaceholder = !isDraft
       ? '接收已完成'
-      : !maintenanceSession.tagsGenerated
+      : !allMaintenanceTagsReady
         ? '生成标签号后可使用扫描'
         : maintenanceScanTargetId
           ? `已定位 ${scanTargetAsset?.assetTag || ''}，请扫描SN号`
@@ -1292,7 +1304,6 @@ export default function AssetReceiptPage() {
       { title: '备注', dataIndex: 'remark', width: 180 },
       { title: '操作', key: 'operation', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => setMaintenanceAsset(row)}>{isDraft ? '编辑' : '查看'}</Button> },
     ];
-    const showDefaultSnButton = isDraft && !maintenanceSession.defaultSnApplied && maintenanceRows.some((row) => !normalizeSn(row.sn));
 
     return (
       <Space direction="vertical" size={16} className="w-full">
@@ -1321,7 +1332,7 @@ export default function AssetReceiptPage() {
 
         <QueryBar onQuery={handleMaintenanceScan} onReset={resetMaintenanceScan}>
           <QueryItem label="扫描光标">
-            <Input value={maintenanceScan} allowClear disabled={!isDraft || !maintenanceSession.tagsGenerated} placeholder={scanPlaceholder} onChange={(event) => setMaintenanceScan(event.target.value)} onPressEnter={handleMaintenanceScan} />
+            <Input value={maintenanceScan} allowClear disabled={!isDraft || !allMaintenanceTagsReady} placeholder={scanPlaceholder} onChange={(event) => setMaintenanceScan(event.target.value)} onPressEnter={handleMaintenanceScan} />
           </QueryItem>
         </QueryBar>
 
@@ -1329,9 +1340,9 @@ export default function AssetReceiptPage() {
           <Space>
             <Typography.Text type="secondary">共 {visibleMaintenanceRows.length} 条</Typography.Text>
             {isDraft && <Button danger onClick={deleteMaintenanceRows}>删除行</Button>}
-            {isDraft && !maintenanceSession.tagsGenerated && <Button onClick={generateMaintenanceTags}>生成标签号</Button>}
-            {showDefaultSnButton && <Button onClick={applyDefaultMaintenanceSn}>维护SN号</Button>}
-            {maintenanceSession.tagsGenerated && maintenanceRows.length > 0 && <Button onClick={() => messageApi.success('已发起全部标签号打印（原型）')}>打印标签号</Button>}
+            {isDraft && hasBlankMaintenanceTags && <Button onClick={generateMaintenanceTags}>生成标签号</Button>}
+            {isDraft && hasBlankMaintenanceSn && <Button onClick={applyDefaultMaintenanceSn}>维护SN号</Button>}
+            {allMaintenanceTagsReady && <Button onClick={() => messageApi.success('已发起全部标签号打印（原型）')}>打印标签号</Button>}
           </Space>
         )}>
           <Table rowKey="id" size="small" bordered columns={maintenanceColumns} dataSource={visibleMaintenanceRows} rowSelection={isDraft ? { selectedRowKeys: selectedMaintenanceKeys, onChange: setSelectedMaintenanceKeys, fixed: true, columnTitle: '选择', columnWidth: 64 } : undefined} scroll={{ x: 'max-content' }} pagination={false} />
@@ -1416,9 +1427,8 @@ export default function AssetReceiptPage() {
         {contextHolder}
         <PageTitle>资产接收</PageTitle>
         <QueryBar onQuery={() => { setReceiptAppliedFilters({ ...receiptDraftFilters }); setSelectedReceiptKeys([]); }} onReset={() => {
-          const filters = activePO ? { ...EMPTY_RECEIPT_FILTERS, poNo: activePO.poNo } : EMPTY_RECEIPT_FILTERS;
-          setReceiptDraftFilters(filters);
-          setReceiptAppliedFilters(filters);
+          setReceiptDraftFilters(EMPTY_RECEIPT_FILTERS);
+          setReceiptAppliedFilters(EMPTY_RECEIPT_FILTERS);
           setSelectedReceiptKeys([]);
         }}>
           <QueryItem label="接收单号"><Input value={receiptDraftFilters.receiptNo} allowClear placeholder="请输入接收单号" onChange={(event) => updateReceiptFilter('receiptNo', event.target.value)} /></QueryItem>
