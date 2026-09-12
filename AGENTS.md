@@ -130,6 +130,8 @@
 - AntSelect 使用 `className="flex-1"`（className 作用于外层 div，可正常覆盖）
 - 每行最多 3 个条件，不足 3 个用空 `<div></div>` 补齐
 - 查询/重置按钮在 grid 右侧，使用 `shrink-0`
+- `QueryBar` 的“查询 / 重置”会自动给同一查询区后面的首个 `Table / List` 播放约 140ms 结果刷新反馈；业务页不得再额外做整页动画或假 Loading。
+- 如果查询结果不是 Ant Design `Table / List`，在结果根节点加 `data-mmp-query-result`，继续复用公共查询反馈。
 
 ### 5. 页面级操作按钮位置
 - **页面级操作**（例如保存、提交、确认、返回、生成等对整页生效的动作）统一放在页面内容底部居中，使用 `flex justify-center gap-3`。
@@ -153,6 +155,7 @@
 - `PageMotionBoundary` 会同时根据页面 `h1/h2/h3/h4`、主要 `Card` 标题变化，以及页面出口第一层 Card/Table/Form/Descriptions 等主要业务区块替换识别内部整页视图切换；表格行更新、输入值变化、局部提示/按钮显隐不会触发整页动画。
 - Modal / Drawer / Popover / Dropdown 及项目自定义弹窗内部标题和结构必须被排除，打开浮层不能触发整页页面动效。
 - 如果两个内部视图既没有可区分标题、也没有可识别的主要业务区块替换，必须在当前视图根节点提供 `data-page-view-key="..."`，或使用 `src/components/PageViewMotion.jsx` 显式声明 `viewKey` 作为兜底。
+- `QueryBar` 查询/重置只对结果区播放短刷新反馈，不允许把查询动作升级成整页进入动画；没有真实异步等待时禁止制造 Loading。
 - 选择弹窗继续使用 `<SelectModal />`；普通弹窗优先使用 Ant Design `Modal`，已有自定义场景复用 `src/components/Modal.js`。
 - 明确可点击的卡片/操作块使用 `mmp-interactive-card`；查询 Card、详情 Card、表格 Card 等纯信息容器保持静止。
 - 新增/修改后需要回列表定位结果时，使用 `useTransientRowHighlight`，成功落数据后调用 `highlightRow(key)`，Table 用 `rowClassName` 接入。
@@ -195,7 +198,8 @@ highlightRow(record.id);
 2. 在 `src/config/routes.js` 中添加路由配置
 3. 在 `src/pages/yewurules.js` 中添加菜单和标签页
 4. 页面默认复用 `PageMotionBoundary` 自动识别列表 / 详情 / 编辑 / 创建切换；只有自动识别确实无法区分时才补 `data-page-view-key` 或 `PageViewMotion`
-5. 按 `docs/UI_MOTION_GUIDELINES.md` 检查页面切换、弹窗、可点击 Card、菜单/下拉、表格结果反馈和 reduced motion；不得为新页面另起一套动效
+5. 查询列表必须使用 `QueryBar` 的公共查询/重置结果反馈；非 Table/List 结果区补 `data-mmp-query-result`
+6. 按 `docs/UI_MOTION_GUIDELINES.md` 检查页面切换、查询结果反馈、弹窗、可点击 Card、菜单/下拉、表格结果反馈和 reduced motion；不得为新页面另起一套动效
 
 ### 2. 新增弹窗选择功能
 1. 创建对应的弹窗选择组件（如 `BrandSelectModal`）
