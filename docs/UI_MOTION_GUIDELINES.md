@@ -69,18 +69,23 @@ const [view, setView] = useState('list');
 详情 / 编辑 → 返回列表
 ```
 
-项目已经通过 `src/components/PageMotionBoundary.jsx` 在页面出口统一覆盖这类场景，不要求历史业务页面逐个手工套动画组件。
+项目通过 `src/components/PageMotionBoundary.jsx` 在页面出口统一覆盖这类场景，不要求历史业务页面逐个手工套动画组件。
 
-`PageMotionBoundary` 的识别规则：
+`PageMotionBoundary` 使用两层判定：
 
-- 监听当前页面的 `h1 / h2 / h3 / h4` 与主要 `Card` 标题。
-- 页面标题或主要分区标题变化时，视为整页业务视图已切换，重新播放一次 `mmp-page-motion`。
-- 普通表格数据刷新、查询、分页、排序、输入值变化不会因为业务值改变而触发整页动画。
-- Ant Design Modal / Drawer / Popover / Dropdown，以及项目自定义弹窗内的标题不参与页面视图识别，避免打开弹窗时整页跟着动画。
+1. **语义标题变化**：监听当前页面的 `h1 / h2 / h3 / h4` 与主要 `Card` 标题。
+2. **主要业务区块替换**：即使标题相同，只要页面出口第一层发生包含 Card / Table / Form / Descriptions 等主要业务区块的整体替换，也视为整页业务视图切换。
+
+以下变化不会触发整页动画：
+
+- 普通表格行增删、查询、分页、排序。
+- 输入值变化、字段校验。
+- 局部提示或按钮显隐。
+- Modal / Drawer / Popover / Dropdown 及项目自定义弹窗内部标题和结构变化。
 
 #### 特殊兜底
 
-如果两个内部视图的页面标题和主要 Card 标题完全相同，自动识别无法区分，此时必须显式提供视图标识：
+如果两个内部视图既没有可区分标题，也没有可识别的主要业务区块替换，必须显式提供视图标识：
 
 ```jsx
 <div data-page-view-key={view}>
@@ -101,7 +106,7 @@ import PageViewMotion from '../components/PageViewMotion';
 规则：
 
 - 默认依赖公共 `PageMotionBoundary`，不要为了常规 list/detail/editor/create 再手写动画。
-- `data-page-view-key` / `PageViewMotion` 只用于“标题完全相同但整块业务视图确实替换”的特殊情况。
+- `data-page-view-key` / `PageViewMotion` 只用于自动识别无法区分的特殊情况。
 - 详情页里的局部 Tab、折叠区、字段显隐继续使用各组件原生交互，不套整页动画。
 
 ## 4. 弹窗
@@ -246,7 +251,7 @@ transition: all 300ms;
 
 1. 菜单 / Tab 页面是否接入现有 `AdminContent + PageMotionBoundary`，而不是自己再做同层整页动画。
 2. React Router 路由跳转是否直接使用现有 App 路由出口，不重复加动画。
-3. 同 URL 内列表 / 详情 / 编辑 / 创建 / 返回是否能通过页面标题或主要 Card 标题被 `PageMotionBoundary` 区分；标题完全相同则补 `data-page-view-key` 或 `PageViewMotion`。
+3. 同 URL 内列表 / 详情 / 编辑 / 创建 / 返回是否能被“语义标题变化”或“主要业务区块替换”识别；两者都无法区分时才补 `data-page-view-key` 或 `PageViewMotion`。
 4. 弹窗是否使用 Ant Design Modal / `SelectModal` / 现有公共 Modal。
 5. 明确可点击 Card 是否使用 `mmp-interactive-card`；不可点击 Card 是否保持静止。
 6. 有“新增/修改后回列表”场景时，是否使用 `useTransientRowHighlight` 给目标行反馈。
