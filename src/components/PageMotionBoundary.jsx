@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 
 const OVERLAY_SELECTOR = '.ant-modal, .ant-drawer, .ant-popover, .ant-dropdown, .mmp-motion-overlay, [role="dialog"]';
+const TITLE_SELECTOR = 'h1, h2, h3, h4, .ant-card-head-title';
 const PAGE_SECTION_SELECTOR = 'h1, h2, h3, h4, .ant-card, .ant-table-wrapper, .ant-form, .ant-descriptions';
 
 function normalizeText(value) {
@@ -14,9 +15,7 @@ function getViewSignature(container) {
   const explicitKey = explicitView?.getAttribute('data-page-view-key');
   if (explicitKey) return `explicit:${explicitKey}`;
 
-  const semanticTitles = Array.from(
-    container.querySelectorAll('h1, h2, h3, h4, .ant-card-head-title')
-  )
+  const semanticTitles = Array.from(container.querySelectorAll(TITLE_SELECTOR))
     .filter((element) => !element.closest(OVERLAY_SELECTOR))
     .map((element) => normalizeText(element.textContent))
     .filter(Boolean)
@@ -45,15 +44,36 @@ function isTopLevelStructuralChange(container, mutation) {
   return changedNodes.some(containsMajorPageSection);
 }
 
+function isSemanticViewMutation(mutation) {
+  if (mutation.type === 'attributes') {
+    return mutation.attributeName === 'data-page-view-key';
+  }
+
+  const targetElement = mutation.target instanceof Element
+    ? mutation.target
+    : mutation.target.parentElement;
+  if (!targetElement || targetElement.closest(OVERLAY_SELECTOR)) return false;
+
+  if (targetElement.matches(TITLE_SELECTOR) || targetElement.closest(TITLE_SELECTOR)) return true;
+
+  if (mutation.type !== 'childList') return false;
+  const changedNodes = [...mutation.addedNodes, ...mutation.removedNodes];
+  return changedNodes.some((node) => (
+    node instanceof Element
+    && !node.closest(OVERLAY_SELECTOR)
+    && (node.matches(TITLE_SELECTOR) || Boolean(node.querySelector(TITLE_SELECTOR)))
+  ));
+}
+
 /**
  * 页面动效统一出口。
  * - 初次挂载播放 mmp-page-motion。
  * - 同一路由内如果页面标题/主要 Card 标题发生变化，视为 list/detail/editor/create
  *   等整页业务视图发生切换，并重新播放一次轻量页面进入动效。
  * - 即使两个视图标题相同，只要页面出口第一层替换了 Card/Table/Form/Descriptions 等主要业务区块，也会识别为整页切换。
- * - 普通表格数据刷新、输入值变化、局部提示/按钮显隐不会触发整页动画。
+ * - 普通表格数据刷新、输入值变化、局部提示/按钮显隐不会触发整页动画，也不会触发无意义的页面签名扫描。
  * - 弹窗/抽屉/Popover/Dropdown 内部标题和结构不会参与整页视图识别。
- * - 特殊页面仍可在当前视图根节点声明 data-page-view-key，提供稳定的显式视图标识。
+ * - 特殊页面可在当前视图根节点声明 data-page-view-key，属性变化会被直接监听。
  */
 export default function PageMotionBoundary({ children, className = '', disabled = false }) {
   const containerRef = useRef(null);
@@ -75,11 +95,13 @@ export default function PageMotionBoundary({ children, className = '', disabled 
     };
 
     const observer = new MutationObserver((mutations) => {
-      if (mutations.some((mutation) => isTopLevelStructuralChange(container, mutation))) {
-        structuralChangeRef.current = true;
-      }
+      const structuralViewChanged = mutations.some((mutation) => isTopLevelStructuralChange(container, mutation));
+      const semanticViewChanged = mutations.some(isSemanticViewMutation);
+      if (!structuralViewChanged && !semanticViewChanged) return;
 
+      if (structuralViewChanged) structuralChangeRef.current = true;
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
+
       frameRef.current = requestAnimationFrame(() => {
         frameRef.current = null;
         const nextSignature = getViewSignature(container);
@@ -87,10 +109,10 @@ export default function PageMotionBoundary({ children, className = '', disabled 
         const signatureChanged = Boolean(
           nextSignature && previousSignature && nextSignature !== previousSignature
         );
-        const structuralViewChanged = structuralChangeRef.current;
+        const structuralChanged = structuralChangeRef.current;
         structuralChangeRef.current = false;
 
-        if (signatureChanged || structuralViewChanged) replayMotion();
+        if (signatureChanged || structuralChanged) replayMotion();
         if (nextSignature) signatureRef.current = nextSignature;
       });
     });
@@ -99,6 +121,8 @@ export default function PageMotionBoundary({ children, className = '', disabled 
       childList: true,
       subtree: true,
       characterData: true,
+      attributes: true,
+      attributeFilter: ['data-page-view-key'],
     });
 
     return () => {
