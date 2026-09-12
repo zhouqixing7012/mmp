@@ -8,9 +8,10 @@ import PrototypeAnnotationLayer from './prototype-annotations/PrototypeAnnotatio
 
 function AppRoutes() {
   const location = useLocation();
+  const routeMotionClass = location.pathname === '/yewurules' ? '' : 'mmp-page-motion';
 
   return (
-    <div key={location.key} className="mmp-page-motion">
+    <div key={location.key} className={routeMotionClass}>
       <Routes location={location}>
         {routes.map((route) => {
           const Component = route.Page;
