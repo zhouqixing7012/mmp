@@ -91,6 +91,7 @@ export default function QueryBar({
   const resolvedFieldColProps = fieldColProps || { xs: 24, sm: 12, md: 12, lg: 8, xl: 7 };
 
   const handleActionClickCapture = (event) => {
+    if (!(event.target instanceof Element)) return;
     const button = event.target.closest('button');
     if (!button || !event.currentTarget.contains(button)) return;
     const actionLabel = normalizeActionLabel(button.textContent);
