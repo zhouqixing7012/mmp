@@ -30,17 +30,17 @@
 
 ### 3.1 `/yewurules` 菜单 / 子菜单 / Tab 切换
 
-后台主框架已经在 `AdminContent` 按 `activeMenu / activeSubMenu / activeTab` 统一处理页面进入动效：
+后台主框架在 `AdminContent` 通过 `PageMotionBoundary` 统一处理页面进入动效：
 
 - `opacity: 0 → 1`
 - `translateY(6px) → 0`
 - 约 180ms
 
-新增 `/yewurules` 页面时只需接入现有 `AdminContent`，禁止在具体页面重复添加同层整页进入动画。
+`activeMenu / activeSubMenu / activeTab` 变化时会重新挂载统一页面出口，因此菜单、子菜单和 Tab 切换自动获得页面动效。新增 `/yewurules` 页面时只需接入现有 `AdminContent`，禁止在具体业务页面重复添加同层整页进入动画。
 
 ### 3.2 React Router 路由切换
 
-`src/App.js` 的路由出口统一按 `location.key` 触发 `mmp-page-motion`。
+`src/App.js` 的普通路由出口统一使用 `PageMotionBoundary`，并按 `location.key` 重新挂载。
 
 这意味着以下方式都自动获得统一路由进入动效：
 
@@ -49,6 +49,8 @@
 - 其他正常 React Router 路由跳转
 
 业务页面不需要、也不应该为了按钮跳转再单独增加一套 Cross Fade 或 `viewTransition` 参数。
+
+`/yewurules` 不在 App 层重复播放整页动画，由内部 `AdminContent` 接管，避免双重淡入。
 
 ### 3.3 同一 URL 内部列表 / 详情 / 编辑 / 创建切换
 
@@ -67,7 +69,26 @@ const [view, setView] = useState('list');
 详情 / 编辑 → 返回列表
 ```
 
-这类变化不会触发路由出口，也不会触发 `AdminContent` 的菜单级动效，必须使用公共组件：
+项目已经通过 `src/components/PageMotionBoundary.jsx` 在页面出口统一覆盖这类场景，不要求历史业务页面逐个手工套动画组件。
+
+`PageMotionBoundary` 的识别规则：
+
+- 监听当前页面的 `h1 / h2 / h3 / h4` 与主要 `Card` 标题。
+- 页面标题或主要分区标题变化时，视为整页业务视图已切换，重新播放一次 `mmp-page-motion`。
+- 普通表格数据刷新、查询、分页、排序、输入值变化不会因为业务值改变而触发整页动画。
+- Ant Design Modal / Drawer / Popover / Dropdown，以及项目自定义弹窗内的标题不参与页面视图识别，避免打开弹窗时整页跟着动画。
+
+#### 特殊兜底
+
+如果两个内部视图的页面标题和主要 Card 标题完全相同，自动识别无法区分，此时必须显式提供视图标识：
+
+```jsx
+<div data-page-view-key={view}>
+  {view === 'list' ? <ListView /> : <EditorView />}
+</div>
+```
+
+如果页面结构无法提供统一根节点，再使用：
 
 ```jsx
 import PageViewMotion from '../components/PageViewMotion';
@@ -77,14 +98,10 @@ import PageViewMotion from '../components/PageViewMotion';
 </PageViewMotion>
 ```
 
-`PageViewMotion` 复用现有 `mmp-page-motion`，不创建新的时长和曲线。
-
 规则：
 
-- 只用于“整块业务视图替换”，不是普通字段显隐。
-- `viewKey` 必须真实对应当前视图状态，如 `list / detail / editor / create`。
-- 点击“查看 / 编辑 / 创建 / 返回”导致整页区域变化时必须接入。
-- 不允许因为 URL 没变化就瞬间替换整个页面。
+- 默认依赖公共 `PageMotionBoundary`，不要为了常规 list/detail/editor/create 再手写动画。
+- `data-page-view-key` / `PageViewMotion` 只用于“标题完全相同但整块业务视图确实替换”的特殊情况。
 - 详情页里的局部 Tab、折叠区、字段显隐继续使用各组件原生交互，不套整页动画。
 
 ## 4. 弹窗
@@ -227,9 +244,9 @@ transition: all 300ms;
 
 每次生成新页面必须检查：
 
-1. 菜单 / Tab 页面是否接入现有 `AdminContent`，而不是自己再做同层整页动画。
-2. React Router 路由跳转是否直接使用现有全局路由出口，不重复加动画。
-3. 同 URL 内通过按钮执行列表 / 详情 / 编辑 / 创建 / 返回切换时，是否使用 `PageViewMotion`。
+1. 菜单 / Tab 页面是否接入现有 `AdminContent + PageMotionBoundary`，而不是自己再做同层整页动画。
+2. React Router 路由跳转是否直接使用现有 App 路由出口，不重复加动画。
+3. 同 URL 内列表 / 详情 / 编辑 / 创建 / 返回是否能通过页面标题或主要 Card 标题被 `PageMotionBoundary` 区分；标题完全相同则补 `data-page-view-key` 或 `PageViewMotion`。
 4. 弹窗是否使用 Ant Design Modal / `SelectModal` / 现有公共 Modal。
 5. 明确可点击 Card 是否使用 `mmp-interactive-card`；不可点击 Card 是否保持静止。
 6. 有“新增/修改后回列表”场景时，是否使用 `useTransientRowHighlight` 给目标行反馈。
@@ -237,5 +254,6 @@ transition: all 300ms;
 8. 是否避免 `transition-all`、长动画和大位移。
 9. 是否尊重 `prefers-reduced-motion`。
 10. 是否没有为了动效新增不必要的依赖。
+11. 打开 Modal / Drawer / Popover / Dropdown 时，是否不会误触发整页页面动效。
 
-只要以上 10 项满足，新页面就视为符合本项目统一动效规范。
+只要以上 11 项满足，新页面就视为符合本项目统一动效规范。
