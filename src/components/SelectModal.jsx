@@ -60,7 +60,7 @@ export default function SelectModal({
     setSearchValues(init);
     setSelectedKey(null);
     setSelectedKeys([]);
-  }, [open, initialSearchValues, searchFields]);
+  }, [open, initialSearchValues]);
 
   useEffect(() => {
     let frameId;
