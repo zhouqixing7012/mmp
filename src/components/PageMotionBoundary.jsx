@@ -46,7 +46,10 @@ function isTopLevelStructuralChange(container, mutation) {
 
 function isSemanticViewMutation(mutation) {
   if (mutation.type === 'attributes') {
-    return mutation.attributeName === 'data-page-view-key';
+    const target = mutation.target;
+    return mutation.attributeName === 'data-page-view-key'
+      && target instanceof Element
+      && !target.closest(OVERLAY_SELECTOR);
   }
 
   const targetElement = mutation.target instanceof Element
@@ -72,7 +75,7 @@ function isSemanticViewMutation(mutation) {
  *   等整页业务视图发生切换，并重新播放一次轻量页面进入动效。
  * - 即使两个视图标题相同，只要页面出口第一层替换了 Card/Table/Form/Descriptions 等主要业务区块，也会识别为整页切换。
  * - 普通表格数据刷新、输入值变化、局部提示/按钮显隐不会触发整页动画，也不会触发无意义的页面签名扫描。
- * - 弹窗/抽屉/Popover/Dropdown 内部标题和结构不会参与整页视图识别。
+ * - 弹窗/抽屉/Popover/Dropdown 内部标题、结构和显式 view key 不会参与整页视图识别。
  * - 特殊页面可在当前视图根节点声明 data-page-view-key，属性变化会被直接监听。
  */
 export default function PageMotionBoundary({ children, className = '', disabled = false }) {
