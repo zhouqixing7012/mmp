@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 
 const OVERLAY_SELECTOR = '.ant-modal, .ant-drawer, .ant-popover, .ant-dropdown, .mmp-motion-overlay, [role="dialog"]';
+const PAGE_SECTION_SELECTOR = 'h1, h2, h3, h4, .ant-card, .ant-table-wrapper, .ant-form, .ant-descriptions';
 
 function normalizeText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
@@ -24,6 +25,11 @@ function getViewSignature(container) {
   return semanticTitles.join(' | ');
 }
 
+function containsMajorPageSection(node) {
+  if (!(node instanceof Element) || node.closest(OVERLAY_SELECTOR)) return false;
+  return node.matches(PAGE_SECTION_SELECTOR) || Boolean(node.querySelector(PAGE_SECTION_SELECTOR));
+}
+
 function isTopLevelStructuralChange(container, mutation) {
   if (mutation.type !== 'childList' || (!mutation.addedNodes.length && !mutation.removedNodes.length)) {
     return false;
@@ -32,9 +38,11 @@ function isTopLevelStructuralChange(container, mutation) {
   const target = mutation.target;
   if (!(target instanceof Element) || target.closest(OVERLAY_SELECTOR)) return false;
 
-  // 只认页面出口自身或其第一层业务根节点的大块替换。
-  // Table/Form 内部行、字段、校验信息等深层变化不会触发整页动画。
-  return target === container || target.parentElement === container;
+  const isPageRootMutation = target === container || target.parentElement === container;
+  if (!isPageRootMutation) return false;
+
+  const changedNodes = [...mutation.addedNodes, ...mutation.removedNodes];
+  return changedNodes.some(containsMajorPageSection);
 }
 
 /**
@@ -42,8 +50,8 @@ function isTopLevelStructuralChange(container, mutation) {
  * - 初次挂载播放 mmp-page-motion。
  * - 同一路由内如果页面标题/主要 Card 标题发生变化，视为 list/detail/editor/create
  *   等整页业务视图发生切换，并重新播放一次轻量页面进入动效。
- * - 即使两个视图标题相同，只要页面出口第一层发生大块结构替换，也会识别为整页切换。
- * - 普通表格数据刷新、输入值变化不会因为内容值变化而触发整页动画。
+ * - 即使两个视图标题相同，只要页面出口第一层替换了 Card/Table/Form/Descriptions 等主要业务区块，也会识别为整页切换。
+ * - 普通表格数据刷新、输入值变化、局部提示/按钮显隐不会触发整页动画。
  * - 弹窗/抽屉/Popover/Dropdown 内部标题和结构不会参与整页视图识别。
  * - 特殊页面仍可在当前视图根节点声明 data-page-view-key，提供稳定的显式视图标识。
  */
