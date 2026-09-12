@@ -20,6 +20,7 @@
 | 路径 | 职责 |
 |---|---|
 | `src/App.js` | 应用路由入口，全局挂载原型标注层。 |
+| `src/index.css` | 全局样式以及统一 B 端动效 Token、弹窗/页面/可点击卡片过渡。 |
 | `src/components/` | QueryBar、DetailGrid、SelectModal、StatusTag 等公共组件。 |
 | `src/mock/` | 演示数据。 |
 | `src/services/` | 演示流程、状态和 `demoStorage` 读写。 |
@@ -153,6 +154,15 @@ localStorage
 ```
 
 后台页面继续复用 `QueryBar / QueryItem`、`DetailGrid / DetailItem`、`StatusTag`、`SelectModal` 和 Ant Design Table。耗材接收复用资产接收的页面骨架，但按物资类型分为“低值耐用品逐件维护”和“低耗接收后自动入库”两条状态流。入库单由独立 `InboundPage` 承载：公共单据头保持一致，新增入库、采购接收、退库入库、借用归还只在物资列表和添加/选择物资区域按业务类型分叉。出库单由独立 `OutboundPage` 承载：领用出库、借用出库共用单据头，只在物资列表和出库业务维护字段分叉。移库由 `MovePage + MoveReceiveContent` 承载发起和接收两侧；库存转移由独立 `TransferPage` 承载现有查询列表、创建页和添加转移物资弹窗。
+
+### 统一动效
+
+- 动效参数集中在 `src/index.css`，优先使用 100 / 140 / 180 / 220ms 四档时长，只动画 `opacity / transform / box-shadow / border-color` 等明确属性。
+- `src/components/Modal.js` 与 `src/components/SelectModal.jsx` 通过延迟卸载完成进入/退出动画，关闭时先播放约 140ms 退出再移除 DOM。
+- `AdminContent` 以 `activeMenu / activeSubMenu / activeTab` 组成的页面 scope 作为 key，在统一内容出口触发 180ms 的轻量淡入 + 6px 上移动效，不在各业务页面重复实现。
+- 只有明确可点击的卡片/操作块才使用 `mmp-interactive-card`；普通信息 Card 不增加上浮反馈。
+- 全局遵循 `prefers-reduced-motion`，用户开启“减少动态效果”时关闭页面动效并将组件过渡压缩到近乎即时。
+- 当前实现不新增第三方动画依赖；如果后续出现复杂共享布局或多阶段编排，再评估 Motion for React。
 
 ## 研发评审交付架构
 
