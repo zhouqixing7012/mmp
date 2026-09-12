@@ -5,6 +5,7 @@ import { Search, RefreshCcw } from 'lucide-react';
 const QUERY_ACTION_LABELS = new Set(['查询', '重置']);
 const QUERY_RESULT_SELECTOR = '[data-mmp-query-result], .ant-table-wrapper, .ant-list';
 const QUERY_SCOPE_SELECTOR = '.ant-modal-content, .ant-drawer-content, [role="dialog"], [data-mmp-page-motion-boundary]';
+const queryResultTimers = new WeakMap();
 
 function normalizeActionLabel(value) {
   return String(value || '').replace(/\s+/g, '').trim();
@@ -34,13 +35,18 @@ function replayQueryResultMotion(queryBar) {
     const result = findQueryResult(queryBar);
     if (!result) return;
 
+    const previousTimer = queryResultTimers.get(result);
+    if (previousTimer) window.clearTimeout(previousTimer);
+
     result.classList.remove('mmp-query-result-refresh');
     void result.offsetWidth;
     result.classList.add('mmp-query-result-refresh');
 
-    window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       result.classList.remove('mmp-query-result-refresh');
+      queryResultTimers.delete(result);
     }, 220);
+    queryResultTimers.set(result, timer);
   });
 }
 
@@ -93,7 +99,8 @@ export default function QueryBar({
   const handleActionClickCapture = (event) => {
     if (!(event.target instanceof Element)) return;
     const button = event.target.closest('button');
-    if (!button || !event.currentTarget.contains(button)) return;
+    const actionArea = button?.closest('[data-mmp-query-actions]');
+    if (!button || !actionArea || !event.currentTarget.contains(actionArea)) return;
     const actionLabel = normalizeActionLabel(button.textContent);
     if (!QUERY_ACTION_LABELS.has(actionLabel)) return;
 
@@ -139,7 +146,10 @@ export default function QueryBar({
           </Row>
         </div>
         {finalButtons && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 80, width: 90, justifyContent: 'center' }}>
+          <div
+            data-mmp-query-actions
+            style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 80, width: 90, justifyContent: 'center' }}
+          >
             {finalButtons}
           </div>
         )}
