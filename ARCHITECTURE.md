@@ -20,10 +20,11 @@
 
 | 路径 | 职责 |
 |---|---|
-| `src/App.js` | 应用路由入口；统一为所有 React Router 路由切换触发页面进入动效，并挂载原型标注层。 |
+| `src/App.js` | 应用路由入口；普通路由统一通过 `PageMotionBoundary` 处理路由和同 URL 内语义视图切换，并挂载原型标注层。 |
 | `src/index.css` | 全局样式以及统一 B 端动效 Token、弹窗/页面/菜单/路由/表格反馈样式。 |
-| `src/components/` | QueryBar、DetailGrid、SelectModal、StatusTag、PageViewMotion 等公共组件。 |
-| `src/components/PageViewMotion.jsx` | 同一 URL 内列表 / 详情 / 编辑 / 创建等整块业务视图切换的统一动效容器。 |
+| `src/components/` | QueryBar、DetailGrid、SelectModal、StatusTag、PageMotionBoundary、PageViewMotion 等公共组件。 |
+| `src/components/PageMotionBoundary.jsx` | 页面动效统一出口：初次进入播放页面动效，并根据页面标题/主要 Card 标题变化自动识别同 URL 内列表/详情/编辑/创建切换；支持 `data-page-view-key` 显式视图标识。 |
+| `src/components/PageViewMotion.jsx` | 标题完全相同且无法通过公共边界识别时的显式兜底容器。 |
 | `src/hooks/` | 可复用交互 Hook；当前包含表格新增/修改后的短暂行高亮。 |
 | `src/mock/` | 演示数据。 |
 | `src/services/` | 演示流程、状态和 `demoStorage` 读写。 |
@@ -162,9 +163,10 @@ localStorage
 
 - 动效参数集中在 `src/index.css`，统一使用 100 / 140 / 180 / 220ms 四档时长，业务页面不得自定义另一套时长和缓动。
 - `src/components/Modal.js` 与 `src/components/SelectModal.jsx` 通过延迟卸载完成进入/退出动画，关闭时先播放约 140ms 退出再移除 DOM。
-- `AdminContent` 以 `activeMenu / activeSubMenu / activeTab` 组成的页面 scope 作为 key，在统一内容出口触发 180ms 的轻量淡入 + 6px 上移动效，不在各业务页面重复实现。
-- `src/App.js` 以 `location.key` 作为路由出口 key，所有 React Router 路由跳转统一复用 `mmp-page-motion`；按钮中的 `navigate()` 与普通 `Link` 不需要各自维护动画参数。
-- `src/components/PageViewMotion.jsx` 处理同一 URL 内的 `list / detail / editor / create` 等整块视图替换，业务页只传真实 `viewKey`，继续复用现有页面动效。
+- `src/components/PageMotionBoundary.jsx` 是整页动效统一出口：初次进入播放 `mmp-page-motion`，并通过页面标题和主要 Card 标题变化自动识别同 URL 内部 list/detail/editor/create 切换；Modal/Drawer/Popover/Dropdown 标题被排除，避免误触发。
+- `/yewurules` 由 `AdminContent` 按 `activeMenu / activeSubMenu / activeTab` 组成的页面 scope 重新挂载 `PageMotionBoundary`，同时覆盖菜单级切换和菜单内部本地 view 切换。
+- 普通 React Router 页面由 `src/App.js` 按 `location.key` 重新挂载 `PageMotionBoundary`；按钮中的 `navigate()` 与普通 `Link` 不需要各自维护动画参数。
+- 标题完全相同的特殊内部视图使用 `data-page-view-key`，只有无法提供统一根节点时才使用 `PageViewMotion` 显式兜底。
 - `AdminSidebar` 使用 `mmp-sidebar-collapse` 让二级菜单平滑展开/收起；`Navbar` 使用 `mmp-nav-dropdown` 处理顶部路由下拉。
 - 只有明确可点击的卡片/操作块才使用 `mmp-interactive-card`；普通信息 Card 不增加上浮反馈。
 - `src/hooks/useTransientRowHighlight.js` 为新增/修改成功后的表格行提供约 900ms 的短暂高亮，业务页只在数据真正成功落地后触发。
