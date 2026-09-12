@@ -204,10 +204,10 @@ function ReceiptLineMaintenanceModal({ open, asset, readOnly, onCancel, onSave }
       title="明细信息维护"
       width={760}
       okText="保存"
-      cancelText={readOnly ? '关闭' : '取消'}
+      cancelText="取消"
       onCancel={onCancel}
-      onOk={readOnly ? onCancel : () => onSave({ ...asset, sn, assetMark, remark })}
-      okButtonProps={readOnly ? { style: { display: 'none' } } : undefined}
+      onOk={() => onSave({ ...asset, sn, assetMark, remark })}
+      footer={readOnly ? null : undefined}
       destroyOnHidden
     >
       <Space direction="vertical" size={16} className="w-full">
@@ -619,7 +619,7 @@ export default function AssetReceiptPage() {
     return undefined;
   };
 
-  const collectKnownRealSns = (excludeReceiptNo, excludeRowId) => {
+  const collectKnownRealSns = (excludeReceiptNo, excludeRowId, includeCurrentReceipt = true) => {
     const values = [];
     Object.entries(maintenanceStore).forEach(([receiptNo, session]) => {
       if (receiptNo === excludeReceiptNo) return;
@@ -628,16 +628,18 @@ export default function AssetReceiptPage() {
     receiptRows.filter((receipt) => receipt.status === '已完成' && !maintenanceStore[receipt.receiptNo] && receipt.receiptNo !== excludeReceiptNo).forEach((receipt) => {
       buildMaintenanceSession(receipt).rows.forEach((row) => { if (isRealSn(row.sn)) values.push(normalizeSn(row.sn)); });
     });
-    maintenanceRows.forEach((row) => {
-      if (row.id !== excludeRowId && isRealSn(row.sn)) values.push(normalizeSn(row.sn));
-    });
+    if (includeCurrentReceipt) {
+      maintenanceRows.forEach((row) => {
+        if (row.id !== excludeRowId && isRealSn(row.sn)) values.push(normalizeSn(row.sn));
+      });
+    }
     return new Set(values);
   };
 
   const validateSn = (value, rowId) => {
     const normalized = normalizeSn(value);
     if (!isRealSn(normalized)) return true;
-    if (collectKnownRealSns(activeReceipt?.receiptNo, rowId).has(normalized)) {
+    if (collectKnownRealSns(activeReceipt?.receiptNo, rowId, true).has(normalized)) {
       messageApi.error(`SN号 ${normalized} 已存在，真实SN号不能重复`);
       return false;
     }
@@ -724,7 +726,7 @@ export default function AssetReceiptPage() {
     const realSns = session.rows.filter((row) => isRealSn(row.sn)).map((row) => normalizeSn(row.sn));
     const duplicateInCurrent = realSns.find((sn, index) => realSns.indexOf(sn) !== index);
     if (duplicateInCurrent) return messageApi.error(`接收确认失败：SN号 ${duplicateInCurrent} 重复`);
-    const otherSns = collectKnownRealSns(activeReceipt.receiptNo, null);
+    const otherSns = collectKnownRealSns(activeReceipt.receiptNo, null, false);
     const duplicateWithOther = realSns.find((sn) => otherSns.has(sn));
     if (duplicateWithOther) return messageApi.error(`接收确认失败：SN号 ${duplicateWithOther} 已存在`);
 
