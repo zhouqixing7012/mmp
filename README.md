@@ -191,3 +191,4 @@ npm test
 - 2026-09-10 出库两类编辑页继续复用 QueryBar、DetailGrid、StatusTag、Ant Design Modal/Table；领用出库和借用出库共用单据头，只在物资列表与业务维护字段分叉，不新增运行时依赖。
 - 2026-09-10 转移创建页继续复用现有库存管理 QueryBar、DetailGrid、StatusTag、SelectModal 与 Ant Design Table/Modal；只按 ERP 截图补齐字段和创建/添加物资链路，不复制旧视觉，不新增运行时依赖。
 - 2026-09-10 检查 ERP icon 库节点 `1973:350`：当前后台四个一级菜单均有可用候选，优先考虑 `电脑 desktop`（资产管理）、`图层 layer`（无形资产）、`eCommerce / Box`（库存管理）、`General / Scanner`（资产盘点）；本轮仅完成候选评估，尚未替换代码图标。
+- 2026-09-12 B 端动效调研参考 Ant Design 企业后台动效原则、Atlassian 高频交互时长和 React 组件进出场模式；最终优先用现有 React + CSS 实现 100/140/180/220ms 统一 Token、公共弹窗真实退出、后台页面轻过渡和可点击卡片 hover/press，不新增第三方动画依赖。
