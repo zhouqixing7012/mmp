@@ -1,93 +1,20 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
-import { Search } from 'lucide-react';
+import { Download, Search } from 'lucide-react';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 
 const { RangePicker } = DatePicker;
-
+const { TextArea } = Input;
+const TRANSIT_WAREHOUSE = 'V00001.集团在途总库';
+const CURRENT_RECEIVER = '114111-杨芊';
+const RECEIVE_STATUSES = ['出库待接收', '已完成', '已驳回'];
 const EMPTY_FILTERS = {
-  documentNo: '',
-  status: '',
-  creator: '',
-  createdFrom: '',
-  createdTo: '',
-  assetScan: '',
+  documentNo: '', status: '', creator: '', createdFrom: '', createdTo: '', assetScan: '',
 };
-
-const RECEIVE_ASSET_DETAIL = {
-  id: 1,
-  lineNo: 1,
-  verification: '已验证',
-  moveStatus: '待接收',
-  assetTag: '1141100184-V',
-  sn: 'SOHUXX156170',
-  materialDesc: '惠普.LE2202x显示器',
-  availableQty: 1,
-  materialGroup: '资产',
-  assetClass: 'PC',
-  assetSubClass: '显示器-标准显示器',
-  assetQty: 1,
-  warehouse: 'V00001.集团在途总库（新媒体）',
-  area: '',
-  location: '',
-  applicationBatch: '',
-  brand: '惠普',
-  model: '',
-  config: '',
-  unit: '台',
-  assetMark: '',
-  originalValue: 888.89,
-  netValue: 0,
-  assetStatus: '在库-待处理',
-  company: '114.新媒体',
-  plate: '16.视频',
-  department: '虚拟组织',
-  costCenter: '169001.视频_分摊费用',
-  businessLine: '0.*',
-  project: '',
-  expenseAccount: '114.16.909003.72101...',
-  responsiblePerson: 'SOHU05-库房管理员-...',
-  city: '北京市',
-  building: '搜狐媒体大厦',
-  floor: 'B2',
-  room: '',
-  enabledDate: '2013-03-15',
-  printNo: '10018401',
-  usage: '',
-  remark: '',
-  quantity: 1,
-  verificationDesc: '1',
-  receiveWarehouse: 'I0024.资产网络大厦库（新媒体）',
-  outboundDesc: '',
-};
-
-const INITIAL_RECEIVE_ROWS = [
-  {
-    id: 1,
-    documentNo: 'TS-202609090004',
-    status: '出库待接收',
-    fromWarehouse: 'I0001.资产集团总库（新媒体）',
-    toWarehouse: 'I0024.资产网络大厦库（新媒体）',
-    createdDate: '2026-09-09',
-    creator: '114111-杨芊',
-    quantity: 1,
-    remark: '测试',
-    lines: [RECEIVE_ASSET_DETAIL],
-  },
-  { id: 2, documentNo: 'TS-202609090003', status: '已完成', fromWarehouse: 'I0024.资产网络大厦库（新媒体）', toWarehouse: 'I0001.资产集团总库（新媒体）', createdDate: '2026-09-09', creator: '114111-杨芊', quantity: 1, remark: '', lines: [] },
-  { id: 3, documentNo: 'TS-202607290008', status: '已完成', fromWarehouse: 'I0001.资产集团总库（新媒体）', toWarehouse: 'I0024.资产网络大厦库（新媒体）', createdDate: '2026-07-29', creator: 'admin-系统管理员', quantity: 1, remark: '', lines: [] },
-  { id: 4, documentNo: 'TS-202607290007', status: '已完成', fromWarehouse: 'I0024.资产网络大厦库（新媒体）', toWarehouse: 'I0001.资产集团总库（新媒体）', createdDate: '2026-07-29', creator: 'admin-系统管理员', quantity: 1, remark: '', lines: [] },
-  { id: 5, documentNo: 'TS-202607290006', status: '已完成', fromWarehouse: 'I0001.资产集团总库（新媒体）', toWarehouse: 'I0024.资产网络大厦库（新媒体）', createdDate: '2026-07-29', creator: 'admin-系统管理员', quantity: 2, remark: '', lines: [] },
-  { id: 6, documentNo: 'TS-202607290003', status: '出库待接收', fromWarehouse: 'I0001.资产集团总库（新媒体）', toWarehouse: 'I0031.资产北京家具库（新媒体）', createdDate: '2026-07-29', creator: 'admin-系统管理员', quantity: 1, remark: '', lines: [] },
-  { id: 7, documentNo: 'TS-202607290001', status: '已完成', fromWarehouse: 'I0001.资产集团总库（新媒体）', toWarehouse: 'I0033.资产MIS备货库（新媒体）', createdDate: '2026-07-29', creator: 'admin-系统管理员', quantity: 1, remark: '', lines: [] },
-  { id: 8, documentNo: 'TS-202602090009', status: '已完成', fromWarehouse: 'I0001.资产集团总库（新媒体）', toWarehouse: 'I0031.资产北京家具库（新媒体）', createdDate: '2026-02-09', creator: 'admin-系统管理员', quantity: 1, remark: '', lines: [] },
-  { id: 9, documentNo: 'TS-202602090008', status: '已完成', fromWarehouse: 'I0001.资产集团总库（新媒体）', toWarehouse: 'I0033.资产MIS备货库（新媒体）', createdDate: '2026-02-09', creator: 'admin-系统管理员', quantity: 1, remark: '', lines: [] },
-  { id: 10, documentNo: 'TS-202602090007', status: '已完成', fromWarehouse: 'I0001.资产集团总库（新媒体）', toWarehouse: 'I0013.资产集团前台库（新媒体）', createdDate: '2026-02-09', creator: 'admin-系统管理员', quantity: 1, remark: '', lines: [] },
-];
 
 function includesText(value, query) {
   if (!query) return true;
@@ -118,73 +45,65 @@ function LookupInput({ value, placeholder, onOpen }) {
   );
 }
 
+function deriveDocumentStatus(lines) {
+  const effective = (lines || []).filter((line) => line.moveStatus !== '已取消');
+  if (!effective.length) return '已完成';
+  if (effective.every((line) => line.moveStatus === '已接收')) return '已完成';
+  if (effective.every((line) => line.moveStatus === '已驳回')) return '已驳回';
+  if (effective.some((line) => line.moveStatus === '待接收')) return '出库待接收';
+  return '已完成';
+}
+
 function ReceiveAssetDetailModal({ open, document, asset, onCancel }) {
   if (!document || !asset) return null;
+  const snapshot = asset.snapshot || asset;
   return (
-    <Modal
-      open={open}
-      title="移库资产明细"
-      width={1180}
-      footer={<Button onClick={onCancel}>关闭</Button>}
-      onCancel={onCancel}
-      destroyOnHidden
-    >
+    <Modal open={open} title="移库物资信息" width={980} footer={null} onCancel={onCancel} destroyOnHidden>
       <Space direction="vertical" size={16} className="w-full">
         <Card size="small" title="移库单信息">
-          <DetailGrid columns={4} labelWidth={110} minWidth={1040}>
+          <DetailGrid columns={3} labelWidth={110}>
             <DetailItem label="移库单号"><Readonly>{document.documentNo}</Readonly></DetailItem>
-            <DetailItem label="移库单行号"><Readonly>{asset.lineNo}</Readonly></DetailItem>
-            <DetailItem label="出库仓库"><Readonly>{document.fromWarehouse}</Readonly></DetailItem>
+            <DetailItem label="当前仓库"><Readonly>{document.fromWarehouse}</Readonly></DetailItem>
+            <DetailItem label="对方仓库"><Readonly>{document.toWarehouse}</Readonly></DetailItem>
+            <DetailItem label="来源移库单号"><Readonly>{document.sourceDocumentNo}</Readonly></DetailItem>
             <DetailItem label="出库仓库管理员"><Readonly>{document.creator}</Readonly></DetailItem>
           </DetailGrid>
         </Card>
 
-        <Card size="small" title="物资信息">
-          <DetailGrid columns={4} labelWidth={96} minWidth={1040}>
-            <DetailItem label="资产标签号"><Readonly>{asset.assetTag}</Readonly></DetailItem>
-            <DetailItem label="SN号"><Readonly>{asset.sn}</Readonly></DetailItem>
-            <DetailItem label="物资说明"><Readonly>{asset.materialDesc}</Readonly></DetailItem>
-            <DetailItem label="可用数量"><Readonly>{asset.availableQty}</Readonly></DetailItem>
-            <DetailItem label="物资总类"><Readonly>{asset.materialGroup}</Readonly></DetailItem>
-            <DetailItem label="物资大类"><Readonly>{asset.assetClass}</Readonly></DetailItem>
-            <DetailItem label="物资小类"><Readonly>{asset.assetSubClass}</Readonly></DetailItem>
-            <DetailItem label="资产数量"><Readonly>{asset.assetQty}</Readonly></DetailItem>
-            <DetailItem label="仓库"><Readonly>{asset.warehouse}</Readonly></DetailItem>
-            <DetailItem label="库区"><Readonly>{asset.area}</Readonly></DetailItem>
-            <DetailItem label="货位"><Readonly>{asset.location}</Readonly></DetailItem>
-            <DetailItem label="申请批次"><Readonly>{asset.applicationBatch}</Readonly></DetailItem>
-            <DetailItem label="品牌"><Readonly>{asset.brand}</Readonly></DetailItem>
-            <DetailItem label="规格/型号"><Readonly>{asset.model}</Readonly></DetailItem>
-            <DetailItem label="配置"><Readonly>{asset.config}</Readonly></DetailItem>
-            <DetailItem label="计量单位"><Readonly>{asset.unit}</Readonly></DetailItem>
-            <DetailItem label="资产标记"><Readonly>{asset.assetMark}</Readonly></DetailItem>
-            <DetailItem label="原值"><Readonly>{Number(asset.originalValue || 0).toFixed(2)}</Readonly></DetailItem>
-            <DetailItem label="净值"><Readonly>{Number(asset.netValue || 0).toFixed(2)}</Readonly></DetailItem>
-            <DetailItem label="资产状态"><Readonly>{asset.assetStatus}</Readonly></DetailItem>
-            <DetailItem label="公司"><Readonly>{asset.company}</Readonly></DetailItem>
-            <DetailItem label="板块"><Readonly>{asset.plate}</Readonly></DetailItem>
-            <DetailItem label="部门"><Readonly>{asset.department}</Readonly></DetailItem>
-            <DetailItem label="成本中心"><Readonly>{asset.costCenter}</Readonly></DetailItem>
-            <DetailItem label="业务线"><Readonly>{asset.businessLine}</Readonly></DetailItem>
-            <DetailItem label="项目"><Readonly>{asset.project}</Readonly></DetailItem>
-            <DetailItem label="费用账户"><Readonly>{asset.expenseAccount}</Readonly></DetailItem>
-            <DetailItem label="责任人"><Readonly>{asset.responsiblePerson}</Readonly></DetailItem>
-            <DetailItem label="City"><Readonly>{asset.city}</Readonly></DetailItem>
-            <DetailItem label="Building"><Readonly>{asset.building}</Readonly></DetailItem>
-            <DetailItem label="Floor"><Readonly>{asset.floor}</Readonly></DetailItem>
-            <DetailItem label="Room"><Readonly>{asset.room}</Readonly></DetailItem>
-            <DetailItem label="启用日期"><Readonly>{asset.enabledDate}</Readonly></DetailItem>
-            <DetailItem label="印刷号"><Readonly>{asset.printNo}</Readonly></DetailItem>
-            <DetailItem label="用途"><Readonly>{asset.usage}</Readonly></DetailItem>
-            <DetailItem label="备注"><Readonly>{asset.remark}</Readonly></DetailItem>
+        <Card size="small" title="资产信息">
+          <DetailGrid columns={3} labelWidth={110}>
+            <DetailItem label="标签号"><Readonly>{snapshot.assetTag}</Readonly></DetailItem>
+            <DetailItem label="SN"><Readonly>{snapshot.sn}</Readonly></DetailItem>
+            <DetailItem label="物资总类"><Readonly>{snapshot.materialGroup}</Readonly></DetailItem>
+            <DetailItem label="原值"><Readonly>{Number(snapshot.originalValue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</Readonly></DetailItem>
+            <DetailItem label="净值"><Readonly>{Number(snapshot.netValue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</Readonly></DetailItem>
+            <DetailItem label="资产状态"><Readonly>{snapshot.assetStatus}</Readonly></DetailItem>
+            <DetailItem label="板块"><Readonly>{snapshot.plate}</Readonly></DetailItem>
+            <DetailItem label="使用公司"><Readonly>{snapshot.company}</Readonly></DetailItem>
+            <DetailItem label="使用部门"><Readonly>{snapshot.department}</Readonly></DetailItem>
+            <DetailItem label="成本中心"><Readonly>{snapshot.costCenter}</Readonly></DetailItem>
+            <DetailItem label="业务线"><Readonly>{snapshot.businessLine}</Readonly></DetailItem>
+            <DetailItem label="费用账户"><Readonly>{snapshot.expenseAccount}</Readonly></DetailItem>
+            <DetailItem label="管理人"><Readonly>{snapshot.responsiblePerson}</Readonly></DetailItem>
+            <DetailItem label="City"><Readonly>{snapshot.city}</Readonly></DetailItem>
+            <DetailItem label="Building"><Readonly>{snapshot.building}</Readonly></DetailItem>
+            <DetailItem label="Floor"><Readonly>{snapshot.floor}</Readonly></DetailItem>
+            <DetailItem label="Room"><Readonly>{snapshot.room}</Readonly></DetailItem>
+            <DetailItem label="启用日期"><Readonly>{snapshot.enabledDate}</Readonly></DetailItem>
+            <DetailItem label="用途"><Readonly>{snapshot.usage}</Readonly></DetailItem>
           </DetailGrid>
         </Card>
 
-        <Card size="small" title="移库入库信息">
+        <Card size="small" title="移库结果">
           <DetailGrid columns={3} labelWidth={110}>
-            <DetailItem label="接收仓库"><Readonly>{asset.receiveWarehouse}</Readonly></DetailItem>
-            <DetailItem label="移库数量"><Readonly>{asset.quantity}</Readonly></DetailItem>
-            <DetailItem label="移库出库说明" span={3}><Readonly>{asset.outboundDesc}</Readonly></DetailItem>
+            <DetailItem label="目标仓"><Readonly>{document.toWarehouse}</Readonly></DetailItem>
+            <DetailItem label="数量"><Readonly>{asset.quantity}</Readonly></DetailItem>
+            <DetailItem label="资产验证"><Readonly>{asset.verification}</Readonly></DetailItem>
+            <DetailItem label="接收仓管员"><Readonly>{asset.receiver}</Readonly></DetailItem>
+            <DetailItem label="接收时间"><Readonly>{asset.receiveTime}</Readonly></DetailItem>
+            <DetailItem label="移库状态"><StatusTag value={asset.moveStatus} /></DetailItem>
+            <DetailItem label="调出说明" span={3}><Readonly>{asset.moveDesc}</Readonly></DetailItem>
+            <DetailItem label="接收说明" span={3}><Readonly>{asset.receiveDesc}</Readonly></DetailItem>
           </DetailGrid>
         </Card>
       </Space>
@@ -192,153 +111,375 @@ function ReceiveAssetDetailModal({ open, document, asset, onCancel }) {
   );
 }
 
-function ReceiveDetail({ row, onBack, onLinesChange }) {
+function VerificationModal({ open, asset, onCancel, onConfirm }) {
+  const [desc, setDesc] = useState('');
+  useEffect(() => setDesc(''), [open, asset?.id]);
+  return (
+    <Modal
+      open={open}
+      title="手工验证资产"
+      okText="确认验证"
+      cancelText="取消"
+      onCancel={onCancel}
+      onOk={() => onConfirm(desc)}
+      destroyOnHidden
+    >
+      <Space direction="vertical" size={12} className="w-full">
+        <Typography.Text>标签号：{asset?.assetTag || '-'}</Typography.Text>
+        <Typography.Text>SN：{asset?.sn || '-'}</Typography.Text>
+        <div>
+          <Typography.Text>验证说明：</Typography.Text>
+          <TextArea maxLength={200} showCount value={desc} onChange={(event) => setDesc(event.target.value)} autoSize={{ minRows: 3, maxRows: 5 }} placeholder="手工验证时必填" />
+        </div>
+      </Space>
+    </Modal>
+  );
+}
+
+function RejectModal({ open, count, onCancel, onConfirm }) {
+  const [reason, setReason] = useState('');
+  useEffect(() => setReason(''), [open]);
+  return (
+    <Modal
+      open={open}
+      title={`移库驳回（${count}条）`}
+      okText="确认驳回"
+      cancelText="取消"
+      okButtonProps={{ danger: true }}
+      onCancel={onCancel}
+      onOk={() => onConfirm(reason)}
+      destroyOnHidden
+    >
+      <Typography.Text>驳回后，所选明细变为“已驳回”，系统自动生成反向移库单。</Typography.Text>
+      <div className="mt-3">
+        <Typography.Text>驳回原因：</Typography.Text>
+        <TextArea maxLength={200} showCount value={reason} onChange={(event) => setReason(event.target.value)} autoSize={{ minRows: 3, maxRows: 5 }} placeholder="必填，最多200字" />
+      </div>
+    </Modal>
+  );
+}
+
+function ReceiveDetail({ row, documents, setDocuments, onBack }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [scanAsset, setScanAsset] = useState('');
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [detailAsset, setDetailAsset] = useState(null);
+  const [verificationAsset, setVerificationAsset] = useState(null);
+  const [rejectOpen, setRejectOpen] = useState(false);
   const [lines, setLines] = useState(row.lines || []);
 
-  const openAsset = (asset) => setDetailAsset(asset);
+  useEffect(() => {
+    setLines(row.lines || []);
+  }, [row.id, row.lines]);
+
+  const syncLines = (nextLines, extra = {}) => {
+    const nextStatus = deriveDocumentStatus(nextLines);
+    setLines(nextLines);
+    setDocuments((current) => current.map((document) => document.id === row.id ? { ...document, lines: nextLines, status: nextStatus, ...extra } : document));
+    return nextStatus;
+  };
+
+  const updateLineField = (lineId, field, value) => {
+    const nextLines = lines.map((line) => line.id === lineId ? { ...line, [field]: value } : line);
+    syncLines(nextLines);
+  };
+
   const handleScan = () => {
     const value = scanAsset.trim();
     if (!value) return;
     const asset = lines.find((item) => item.assetTag === value || item.sn === value);
     if (!asset) return messageApi.warning('当前移库单中未找到该资产');
-    setSelectedKeys([asset.id]);
-  };
-
-  const columns = [
-    { title: '资产验证', dataIndex: 'verification', width: 110, render: (value) => <StatusTag value={value} /> },
-    { title: '移库状态', dataIndex: 'moveStatus', width: 110, render: (value) => <StatusTag value={value} /> },
-    { title: '资产标签号', dataIndex: 'assetTag', width: 170, render: (value, asset) => <Button type="link" className="px-0" onClick={() => openAsset(asset)}>{value}</Button> },
-    { title: '物资说明', dataIndex: 'materialDesc', width: 220 },
-    { title: '物资总类', dataIndex: 'materialGroup', width: 120 },
-    { title: '数量', dataIndex: 'quantity', width: 80, align: 'right' },
-    { title: '公司', dataIndex: 'company', width: 150 },
-    { title: '板块', dataIndex: 'plate', width: 110 },
-    { title: '资产标记', dataIndex: 'assetMark', width: 110, render: (value) => value || '-' },
-    { title: '启用日期', dataIndex: 'enabledDate', width: 120 },
-    { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value) => <StatusTag value={value} /> },
-    { title: '验证说明', dataIndex: 'verificationDesc', width: 120 },
-  ];
-
-  const deriveDocumentStatus = (nextLines) => {
-    if (!nextLines.length) return row.status;
-    if (nextLines.every((line) => line.moveStatus === '已接收')) return '已完成';
-    if (nextLines.every((line) => line.moveStatus === '已驳回')) return '已驳回';
-    return '出库待接收';
-  };
-
-  const changeSelectedLines = (nextMoveStatus) => {
-    if (!selectedKeys.length) return messageApi.warning('请先选择需要处理的物资');
-    const selected = new Set(selectedKeys);
-    const nextLines = lines.map((line) => selected.has(line.id) ? {
+    if (asset.moveStatus !== '待接收') return messageApi.warning('当前资产已处理，不能重复验证');
+    if (asset.verification === '已验证') {
+      setSelectedKeys([asset.id]);
+      return messageApi.info('当前资产已验证');
+    }
+    const nextLines = lines.map((line) => line.id === asset.id ? {
       ...line,
-      moveStatus: nextMoveStatus,
-      verification: nextMoveStatus === '已接收' ? '已验证' : line.verification,
+      verification: '已验证',
+      verificationMethod: '扫码',
+      verificationTime: dayjs().format('YYYY-MM-DD HH:mm'),
+      verificationDesc: '扫码验证通过',
     } : line);
-    const nextStatus = deriveDocumentStatus(nextLines);
-    setLines(nextLines);
-    setSelectedKeys([]);
-    onLinesChange(row.id, nextLines, nextStatus);
-    messageApi.success(nextMoveStatus === '已接收' ? '所选物资已确认接收' : '所选物资已驳回');
+    syncLines(nextLines);
+    setSelectedKeys([asset.id]);
+    messageApi.success('扫码验证成功');
+    return undefined;
+  };
+
+  const manualVerify = (desc) => {
+    if (!verificationAsset) return;
+    if (!desc.trim()) {
+      messageApi.warning('手工验证必须填写验证说明');
+      return;
+    }
+    const nextLines = lines.map((line) => line.id === verificationAsset.id ? {
+      ...line,
+      verification: '已验证',
+      verificationMethod: '手工',
+      verificationTime: dayjs().format('YYYY-MM-DD HH:mm'),
+      verificationDesc: desc.trim(),
+    } : line);
+    syncLines(nextLines);
+    setVerificationAsset(null);
+    messageApi.success('手工验证成功');
+  };
+
+  const cancelVerification = (asset) => {
+    Modal.confirm({
+      title: '确认取消验证？',
+      content: `资产 ${asset.assetTag} 将恢复为“未验证”。`,
+      okText: '确认取消',
+      cancelText: '返回',
+      onOk: () => {
+        const nextLines = lines.map((line) => line.id === asset.id ? {
+          ...line,
+          verification: '未验证',
+          verificationMethod: '',
+          verificationTime: '',
+          verificationDesc: '',
+        } : line);
+        syncLines(nextLines);
+        setSelectedKeys((current) => current.filter((key) => key !== asset.id));
+      },
+    });
   };
 
   const receive = () => {
+    if (!selectedKeys.length) return messageApi.warning('请先选择需要处理的物资');
+    const selected = lines.filter((line) => selectedKeys.includes(line.id));
+    if (!selected.length || selected.some((line) => line.moveStatus !== '待接收' || line.verification !== '已验证')) {
+      return messageApi.warning('无已验证待接收的资产');
+    }
     Modal.confirm({
-      title: `确认接收已选择的 ${selectedKeys.length} 条物资？`,
-      okText: '确认接收',
+      title: '是否确定执行移库接收？',
+      content: `本次将接收 ${selected.length} 条物资。`,
+      okText: '确定',
       cancelText: '取消',
-      onOk: () => changeSelectedLines('已接收'),
+      onOk: () => {
+        const selectedSet = new Set(selectedKeys);
+        const now = dayjs().format('YYYY-MM-DD HH:mm');
+        const nextLines = lines.map((line) => selectedSet.has(line.id) ? {
+          ...line,
+          moveStatus: '已接收',
+          warehouse: row.toWarehouse,
+          receiver: CURRENT_RECEIVER,
+          receiveTime: now,
+          transactionIn: '25',
+        } : line);
+        const nextStatus = syncLines(nextLines, nextLines.every((line) => line.moveStatus !== '待接收') ? { reminderStatus: '已结束' } : {});
+        setSelectedKeys([]);
+        messageApi.success(nextStatus === '出库待接收' ? '所选物资已接收，单据仍有待接收物资' : `移库单已更新为${nextStatus}`);
+      },
     });
+    return undefined;
   };
 
-  const reject = () => {
-    Modal.confirm({
-      title: `确认驳回已选择的 ${selectedKeys.length} 条物资？`,
-      okText: '驳回',
-      cancelText: '取消',
-      okButtonProps: { danger: true },
-      onOk: () => changeSelectedLines('已驳回'),
-    });
+  const openReject = () => {
+    if (!selectedKeys.length) return messageApi.warning('请先选择需要处理的物资');
+    const selected = lines.filter((line) => selectedKeys.includes(line.id));
+    if (selected.some((line) => line.moveStatus !== '待接收')) return messageApi.warning('仅待接收物资允许驳回');
+    setRejectOpen(true);
+    return undefined;
   };
+
+  const reject = (reason) => {
+    const trimmed = reason.trim();
+    if (!trimmed) return messageApi.warning('请填写驳回原因');
+    if (trimmed.length > 200) return messageApi.warning('驳回原因最多允许填写200个字');
+    const selected = lines.filter((line) => selectedKeys.includes(line.id));
+    if (!selected.length) return messageApi.warning('请先选择需要处理的物资');
+    const selectedSet = new Set(selectedKeys);
+    const nextLines = lines.map((line) => selectedSet.has(line.id) ? {
+      ...line,
+      moveStatus: '已驳回',
+      rejectReason: trimmed,
+      rejectTime: dayjs().format('YYYY-MM-DD HH:mm'),
+    } : line);
+    const nextStatus = deriveDocumentStatus(nextLines);
+
+    setDocuments((current) => {
+      const maxId = Math.max(0, ...current.map((item) => Number(item.id) || 0));
+      const reverseId = maxId + 1;
+      const sameDayReverseCount = current.filter((item) => String(item.documentNo || '').startsWith(`TS-R${dayjs().format('YYYYMMDD')}`)).length + 1;
+      const reverseDocumentNo = `TS-R${dayjs().format('YYYYMMDD')}${String(sameDayReverseCount).padStart(4, '0')}`;
+      const reverseLines = selected.map((line, index) => ({
+        ...line,
+        id: `reverse-${reverseId}-${index + 1}`,
+        lineNo: index + 1,
+        moveStatus: '待接收',
+        verification: '未验证',
+        verificationMethod: '',
+        verificationTime: '',
+        verificationDesc: '',
+        receiveDesc: '',
+        receiver: '',
+        receiveTime: '',
+        warehouse: TRANSIT_WAREHOUSE,
+        transactionIn: '',
+        reverseReason: trimmed,
+      }));
+      const reverseDocument = {
+        id: reverseId,
+        documentNo: reverseDocumentNo,
+        status: '出库待接收',
+        fromWarehouse: row.toWarehouse,
+        toWarehouse: row.fromWarehouse,
+        createdDate: dayjs().format('YYYY-MM-DD'),
+        creator: 'system-系统',
+        quantity: reverseLines.reduce((sum, line) => sum + Number(line.quantity || 0), 0),
+        remark: trimmed,
+        reverseMove: true,
+        sourceDocumentNo: row.documentNo,
+        notificationStatus: '已通知',
+        reminderStatus: '未超期',
+        lines: reverseLines,
+      };
+      return [
+        reverseDocument,
+        ...current.map((document) => document.id === row.id ? {
+          ...document,
+          lines: nextLines,
+          status: nextStatus,
+          reverseDocumentNos: [...(document.reverseDocumentNos || []), reverseDocumentNo],
+          reminderStatus: nextStatus === '出库待接收' ? document.reminderStatus : '已结束',
+        } : document),
+      ];
+    });
+
+    setLines(nextLines);
+    setSelectedKeys([]);
+    setRejectOpen(false);
+    messageApi.success(`所选物资已驳回，已生成反向移库单；原单状态为${nextStatus}`);
+    return undefined;
+  };
+
+  const columns = [
+    { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
+    {
+      title: '资产验证', dataIndex: 'verification', width: 170,
+      render: (value, asset) => (
+        <Space size={4}>
+          {value === '未验证' ? <Typography.Text type="danger">未验证</Typography.Text> : <StatusTag value="已验证" />}
+          {asset.moveStatus === '待接收' && value === '未验证' && <Button type="link" className="px-0" onClick={() => setVerificationAsset(asset)}>手工验证</Button>}
+          {asset.moveStatus === '待接收' && value === '已验证' && <Button type="link" className="px-0" onClick={() => cancelVerification(asset)}>取消验证</Button>}
+        </Space>
+      ),
+    },
+    { title: '移库状态', dataIndex: 'moveStatus', width: 110, render: (value) => <StatusTag value={value} /> },
+    { title: '标签号', dataIndex: 'assetTag', width: 170, render: (value, asset) => <Button type="link" className="px-0 select-text" onClick={() => setDetailAsset(asset)}>{value}</Button> },
+    { title: 'SN', dataIndex: 'sn', width: 150 },
+    { title: '物资说明', dataIndex: 'materialDesc', width: 220 },
+    { title: '物资总类', dataIndex: 'materialGroup', width: 130 },
+    { title: '数量', dataIndex: 'quantity', width: 80, align: 'right', render: (value) => Number(value || 0).toLocaleString('zh-CN') },
+    { title: '公司', dataIndex: 'company', width: 150 },
+    { title: '板块', dataIndex: 'plate', width: 110 },
+    {
+      title: '资产标记', dataIndex: 'assetMark', width: 140,
+      render: (value, asset) => asset.moveStatus === '待接收'
+        ? <Select size="small" style={{ width: '100%' }} value={value || undefined} allowClear options={['主资产', '附属资产', '普通'].map((item) => ({ label: item, value: item }))} onChange={(next) => updateLineField(asset.id, 'assetMark', next || '')} />
+        : (value || '-'),
+    },
+    {
+      title: '接收说明', dataIndex: 'receiveDesc', width: 180,
+      render: (value, asset) => asset.moveStatus === '待接收'
+        ? <Input size="small" value={value || ''} maxLength={100} onChange={(event) => updateLineField(asset.id, 'receiveDesc', event.target.value)} />
+        : (value || '-'),
+    },
+    { title: '验证说明', dataIndex: 'verificationDesc', width: 160, render: (value) => value || '-' },
+    { title: '接收仓管员', dataIndex: 'receiver', width: 150, render: (value) => value || '-' },
+    { title: '接收时间', dataIndex: 'receiveTime', width: 160, render: (value) => value || '-' },
+  ];
+
+  const waiting = row.status === '出库待接收';
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
-      {contextHolder}
-      <Typography.Title level={3} className="mb-0">移库接收</Typography.Title>
+    <div data-page-view-key={`move-receive-${row.id}`}>
+      <Space direction="vertical" size={16} className="w-full">
+        {contextHolder}
+        <Typography.Title level={3} className="mb-0">移库接收</Typography.Title>
 
-      <Card size="small" title="移库单信息">
-        <DetailGrid columns={3} labelWidth={96}>
-          <DetailItem label="移库单号"><Readonly>{row.documentNo}</Readonly></DetailItem>
-          <DetailItem label="单据类型"><Readonly>移库单</Readonly></DetailItem>
-          <DetailItem label="单据状态"><StatusTag value={row.status} /></DetailItem>
-          <DetailItem label="出库仓库"><Readonly>{row.fromWarehouse}</Readonly></DetailItem>
-          <DetailItem label="接收仓库"><Readonly>{row.toWarehouse}</Readonly></DetailItem>
-          <DetailItem label="制单人"><Readonly>{row.creator}</Readonly></DetailItem>
-          <DetailItem label="制单时间"><Readonly>{row.createdDate}</Readonly></DetailItem>
-          <DetailItem label="备注" span={3}><Readonly>{row.remark}</Readonly></DetailItem>
-        </DetailGrid>
-      </Card>
+        <Card size="small" title="移库单信息">
+          <DetailGrid columns={3} labelWidth={100}>
+            <DetailItem label="移库单号"><Readonly>{row.documentNo}</Readonly></DetailItem>
+            <DetailItem label="单据类型"><Readonly>移库单</Readonly></DetailItem>
+            <DetailItem label="单据状态"><StatusTag value={row.status} /></DetailItem>
+            <DetailItem label="移出仓库"><Readonly>{row.fromWarehouse}</Readonly></DetailItem>
+            <DetailItem label="接收仓库"><Readonly>{row.toWarehouse}</Readonly></DetailItem>
+            <DetailItem label="制单人"><Readonly>{row.creator}</Readonly></DetailItem>
+            <DetailItem label="制单日期"><Readonly>{row.createdDate}</Readonly></DetailItem>
+            {row.sourceDocumentNo && <DetailItem label="来源移库单号"><Readonly>{row.sourceDocumentNo}</Readonly></DetailItem>}
+            <DetailItem label="通知状态"><Readonly>{row.notificationStatus}</Readonly></DetailItem>
+            <DetailItem label="催办状态"><Readonly>{row.reminderStatus}</Readonly></DetailItem>
+            <DetailItem label="备注" span={3}><Readonly>{row.remark}</Readonly></DetailItem>
+          </DetailGrid>
+        </Card>
 
-      <Card size="small" title="接收物资" extra={<Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>}>
-        <div className="mb-3">
-          <QueryBar onQuery={handleScan} onReset={() => { setScanAsset(''); setSelectedKeys([]); }}>
-            <QueryItem label="资产扫描">
-              <Input value={scanAsset} allowClear placeholder="扫码或手输资产标签号/SN号" onChange={(event) => setScanAsset(event.target.value)} onPressEnter={handleScan} />
-            </QueryItem>
-          </QueryBar>
+        <Card size="small" title="接收物资" extra={<Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>}>
+          <div className="mb-3">
+            <QueryBar onQuery={handleScan} onReset={() => { setScanAsset(''); setSelectedKeys([]); }}>
+              <QueryItem label="资产扫描">
+                <Input value={scanAsset} allowClear placeholder="扫码或手输标签号/SN进行验证" onChange={(event) => setScanAsset(event.target.value)} onPressEnter={handleScan} />
+              </QueryItem>
+            </QueryBar>
+          </div>
+          <Table
+            rowKey="id"
+            size="small"
+            bordered
+            columns={columns}
+            dataSource={lines}
+            rowSelection={waiting ? {
+              selectedRowKeys: selectedKeys,
+              onChange: setSelectedKeys,
+              fixed: true,
+              columnTitle: '选择',
+              getCheckboxProps: (record) => ({ disabled: record.moveStatus !== '待接收' }),
+            } : undefined}
+            scroll={{ x: 'max-content' }}
+            pagination={false}
+          />
+        </Card>
+
+        <div className="flex justify-center gap-3">
+          {waiting && <Button type="primary" onClick={receive}>移库接收确认</Button>}
+          {waiting && <Button danger onClick={openReject}>移库驳回</Button>}
+          {!waiting && <Button onClick={() => messageApi.info('移库单打印已生成（原型演示）')}>打印</Button>}
+          {!waiting && <Button onClick={() => messageApi.success('移库明细已导出（原型演示）')}>导出</Button>}
+          <Button onClick={onBack}>返回</Button>
         </div>
-        <Table
-          rowKey="id"
-          size="small"
-          bordered
-          columns={columns}
-          dataSource={lines}
-          rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true, columnTitle: '选择' }}
-          scroll={{ x: 'max-content' }}
-          pagination={false}
-        />
-      </Card>
 
-      <div className="flex justify-center gap-3">
-        {row.status === '出库待接收' && <Button type="primary" onClick={receive}>移库接收确认</Button>}
-        {row.status === '出库待接收' && <Button danger onClick={reject}>移库驳回</Button>}
-        <Button onClick={onBack}>返回</Button>
-      </div>
-
-      <ReceiveAssetDetailModal
-        open={Boolean(detailAsset)}
-        document={row}
-        asset={detailAsset}
-        onCancel={() => setDetailAsset(null)}
-      />
-    </Space>
+        <ReceiveAssetDetailModal open={Boolean(detailAsset)} document={row} asset={detailAsset} onCancel={() => setDetailAsset(null)} />
+        <VerificationModal open={Boolean(verificationAsset)} asset={verificationAsset} onCancel={() => setVerificationAsset(null)} onConfirm={manualVerify} />
+        <RejectModal open={rejectOpen} count={selectedKeys.length} onCancel={() => setRejectOpen(false)} onConfirm={reject} />
+      </Space>
+    </div>
   );
 }
 
-export default function MoveReceiveContent({ onDetailChange }) {
+export default function MoveReceiveContent({ documents, setDocuments, onDetailChange }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [rows, setRows] = useState(INITIAL_RECEIVE_ROWS);
   const [draft, setDraft] = useState(EMPTY_FILTERS);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [creatorModalOpen, setCreatorModalOpen] = useState(false);
   const [activeRowId, setActiveRowId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
+  const receiveRows = useMemo(() => documents.filter((row) => row.status !== '草稿'), [documents]);
   const creators = useMemo(
-    () => [...new Set(rows.map((row) => row.creator))].map((name, index) => ({ id: index + 1, name })),
-    [rows]
+    () => [...new Set(receiveRows.map((row) => row.creator))].map((name, index) => ({ id: index + 1, name })),
+    [receiveRows]
   );
 
-  const activeRow = rows.find((row) => row.id === activeRowId) || null;
-  const filteredRows = useMemo(() => rows.filter((row) => (
+  const activeRow = documents.find((row) => row.id === activeRowId) || null;
+  const filteredRows = useMemo(() => receiveRows.filter((row) => (
     includesText(row.documentNo, filters.documentNo)
     && (!filters.status || row.status === filters.status)
     && includesText(row.creator, filters.creator)
     && inDateRange(row.createdDate, filters.createdFrom, filters.createdTo)
     && rowContainsAsset(row, filters.assetScan)
-  )), [rows, filters]);
+  )), [receiveRows, filters]);
 
   const update = (field, value) => setDraft((current) => ({ ...current, [field]: value || '' }));
 
@@ -352,34 +493,30 @@ export default function MoveReceiveContent({ onDetailChange }) {
     onDetailChange?.(false);
   };
 
-  const updateLines = (id, lines, status) => {
-    setRows((current) => current.map((row) => row.id === id ? { ...row, lines, status } : row));
-  };
-
   if (activeRow) {
-    return <ReceiveDetail row={activeRow} onBack={closeDetail} onLinesChange={updateLines} />;
+    return <ReceiveDetail row={activeRow} documents={documents} setDocuments={setDocuments} onBack={closeDetail} />;
   }
 
   const columns = [
-    { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
-    { title: '移库单号', dataIndex: 'documentNo', width: 190, render: (value, row) => <Button type="link" className="px-0" onClick={() => openDetail(row)}>{value}</Button> },
+    { title: '行号', width: 70, align: 'center', render: (_, __, index) => (page - 1) * pageSize + index + 1 },
+    { title: '移库单号', dataIndex: 'documentNo', width: 190, render: (value, row) => <Button type="link" className="px-0 select-text" onClick={() => openDetail(row)}>{value}</Button> },
     { title: '单据状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} /> },
     { title: '移出仓库', dataIndex: 'fromWarehouse', width: 320 },
     { title: '移入仓库', dataIndex: 'toWarehouse', width: 320 },
     { title: '制单日期', dataIndex: 'createdDate', width: 130 },
     { title: '制单人', dataIndex: 'creator', width: 170 },
-    { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right' },
+    { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right', render: (value) => Number(value || 0).toLocaleString('zh-CN') },
   ];
 
   return (
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
       <QueryBar
-        onQuery={() => setFilters({ ...draft })}
-        onReset={() => { setDraft(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); }}
+        onQuery={() => { setFilters({ ...draft }); setPage(1); }}
+        onReset={() => { setDraft(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setPage(1); }}
       >
         <QueryItem label="移库单号"><Input value={draft.documentNo} allowClear placeholder="请输入移库单号" onChange={(event) => update('documentNo', event.target.value)} /></QueryItem>
-        <QueryItem label="单据状态"><Select className="w-full" value={draft.status || undefined} allowClear placeholder="全部" options={['出库待接收', '已完成', '已驳回'].map((value) => ({ label: value, value }))} onChange={(value) => update('status', value)} /></QueryItem>
+        <QueryItem label="单据状态"><Select className="w-full" value={draft.status || undefined} allowClear placeholder="全部" options={RECEIVE_STATUSES.map((value) => ({ label: value, value }))} onChange={(value) => update('status', value)} /></QueryItem>
         <QueryItem label="制单人"><LookupInput value={draft.creator} placeholder="请选择制单人" onOpen={() => setCreatorModalOpen(true)} /></QueryItem>
         <QueryItem label="制单日期">
           <RangePicker
@@ -392,11 +529,15 @@ export default function MoveReceiveContent({ onDetailChange }) {
           />
         </QueryItem>
         <QueryItem label="资产扫描">
-          <Input value={draft.assetScan} allowClear placeholder="扫码或手输资产标签号/SN号" onChange={(event) => update('assetScan', event.target.value)} onPressEnter={() => setFilters({ ...draft })} />
+          <Input value={draft.assetScan} allowClear placeholder="扫码或手输标签号/SN" onChange={(event) => update('assetScan', event.target.value)} onPressEnter={() => { setFilters({ ...draft }); setPage(1); }} />
         </QueryItem>
       </QueryBar>
 
-      <Card size="small" title="接收单列表" extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
+      <Card
+        size="small"
+        title="接收单列表"
+        extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => messageApi.success('当前查询结果已导出（原型演示）')}>导出</Button></Space>}
+      >
         <Table
           rowKey="id"
           size="small"
@@ -404,7 +545,12 @@ export default function MoveReceiveContent({ onDetailChange }) {
           columns={columns}
           dataSource={filteredRows}
           scroll={{ x: 'max-content' }}
-          pagination={{ pageSize: 10, showSizeChanger: true }}
+          pagination={{
+            current: page,
+            pageSize,
+            showSizeChanger: true,
+            onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); },
+          }}
         />
       </Card>
 
