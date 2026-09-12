@@ -150,8 +150,9 @@
 **固定规则**：
 - `/yewurules` 的菜单 / 子菜单 / Tab 切换，以及同一菜单内列表 / 详情 / 编辑 / 创建视图替换，默认由 `AdminContent + PageMotionBoundary` 统一处理，业务页禁止再叠加同层整页进入动画。
 - 普通 React Router 路由切换及其同 URL 内的语义视图替换，由 `src/App.js + PageMotionBoundary` 统一处理；无论 `Link` 还是按钮内 `navigate()`，业务页面都不得再单独写一套路由切换动画。
-- `PageMotionBoundary` 会根据页面 `h1/h2/h3/h4` 与主要 `Card` 标题变化识别内部整页视图切换；表格数据刷新和输入值变化不会触发整页动画。
-- 如果两个内部视图的标题和主要 Card 标题完全相同，必须在当前视图根节点提供 `data-page-view-key="..."`，或使用 `src/components/PageViewMotion.jsx` 显式声明 `viewKey` 作为兜底。
+- `PageMotionBoundary` 会同时根据页面 `h1/h2/h3/h4`、主要 `Card` 标题变化，以及页面出口第一层 Card/Table/Form/Descriptions 等主要业务区块替换识别内部整页视图切换；表格行更新、输入值变化、局部提示/按钮显隐不会触发整页动画。
+- Modal / Drawer / Popover / Dropdown 及项目自定义弹窗内部标题和结构必须被排除，打开浮层不能触发整页页面动效。
+- 如果两个内部视图既没有可区分标题、也没有可识别的主要业务区块替换，必须在当前视图根节点提供 `data-page-view-key="..."`，或使用 `src/components/PageViewMotion.jsx` 显式声明 `viewKey` 作为兜底。
 - 选择弹窗继续使用 `<SelectModal />`；普通弹窗优先使用 Ant Design `Modal`，已有自定义场景复用 `src/components/Modal.js`。
 - 明确可点击的卡片/操作块使用 `mmp-interactive-card`；查询 Card、详情 Card、表格 Card 等纯信息容器保持静止。
 - 新增/修改后需要回列表定位结果时，使用 `useTransientRowHighlight`，成功落数据后调用 `highlightRow(key)`，Table 用 `rowClassName` 接入。
@@ -163,12 +164,10 @@
 
 **同 URL 特殊视图兜底示例**：
 ```jsx
-// 两个视图标题完全相同时，优先在视图根节点提供显式 key。
 <div data-page-view-key={view}>
   {view === 'list' ? <ListView /> : <EditorView />}
 </div>
 
-// 只有无法提供根节点标识时才使用 PageViewMotion。
 <PageViewMotion viewKey={view}>
   {view === 'list' ? <ListView /> : <EditorView />}
 </PageViewMotion>
@@ -195,7 +194,7 @@ highlightRow(record.id);
 1. 在 `src/pages/` 目录下创建新的页面组件
 2. 在 `src/config/routes.js` 中添加路由配置
 3. 在 `src/pages/yewurules.js` 中添加菜单和标签页
-4. 页面默认复用 `PageMotionBoundary` 自动识别列表 / 详情 / 编辑 / 创建切换；若不同视图标题完全相同，补 `data-page-view-key` 或 `PageViewMotion`
+4. 页面默认复用 `PageMotionBoundary` 自动识别列表 / 详情 / 编辑 / 创建切换；只有自动识别确实无法区分时才补 `data-page-view-key` 或 `PageViewMotion`
 5. 按 `docs/UI_MOTION_GUIDELINES.md` 检查页面切换、弹窗、可点击 Card、菜单/下拉、表格结果反馈和 reduced motion；不得为新页面另起一套动效
 
 ### 2. 新增弹窗选择功能
