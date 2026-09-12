@@ -46,7 +46,7 @@ Granularity / Coverage Check
 
 ```text
 src/
-├── components/                     # QueryBar、DetailGrid、SelectModal、StatusTag 等公共组件
+├── components/                     # QueryBar、DetailGrid、SelectModal、StatusTag、PageMotionBoundary 等公共组件
 ├── hooks/                          # 可复用交互 Hook（含表格短暂高亮反馈）
 ├── mock/                           # 演示数据
 ├── services/                       # 业务流程和本地数据读写
@@ -155,7 +155,7 @@ npm test
 - 资产盘点“盘点项目”主链路。
 - 员工自助 10 个主要业务模块 PRD 深审和 Coverage Ledger。
 - 原型标注编辑、定位、动态浮层、质量检查、评审和诊断能力。
-- B 端统一动效基础设施：弹窗进退场、后台页面切换、侧边栏展开/收起、顶部下拉、React Router View Transition、可点击 Card 反馈和表格结果高亮能力。
+- B 端统一动效基础设施：弹窗进退场、页面/路由/同 URL 详情编辑切换、侧边栏展开/收起、顶部下拉、查询/重置结果刷新、可点击 Card 反馈和表格结果高亮能力。
 
 ## 待办事项
 
@@ -196,4 +196,5 @@ npm test
 - 2026-09-10 转移创建页继续复用现有库存管理 QueryBar、DetailGrid、StatusTag、SelectModal 与 Ant Design Table/Modal；只按 ERP 截图补齐字段和创建/添加物资链路，不复制旧视觉，不新增运行时依赖。
 - 2026-09-10 检查 ERP icon 库节点 `1973:350`：当前后台四个一级菜单均有可用候选，优先考虑 `电脑 desktop`（资产管理）、`图层 layer`（无形资产）、`eCommerce / Box`（库存管理）、`General / Scanner`（资产盘点）；本轮仅完成候选评估，尚未替换代码图标。
 - 2026-09-12 B 端动效调研参考 Ant Design 企业后台动效原则、Atlassian 高频交互时长和 React 组件进出场模式；最终优先用现有 React + CSS 实现 100/140/180/220ms 统一 Token、公共弹窗真实退出、后台页面轻过渡和可点击卡片 hover/press，不新增第三方动画依赖。
-- 2026-09-12 后续动效继续使用现有能力：侧边栏使用 CSS Grid 展开/收起，顶部路由下拉使用淡入 + 4px 位移；React Router 7 使用官方 `viewTransition` 做一级路由 Cross Fade；表格新增/修改反馈通过项目 Hook + CSS 行高亮实现，仍未新增运行时依赖。
+- 2026-09-12 后续动效继续使用现有能力：侧边栏使用 CSS Grid 展开/收起，顶部路由下拉使用淡入 + 4px 位移；React Router 7 路由进入与同 URL 内详情/编辑切换由公共页面边界统一处理；表格新增/修改反馈通过项目 Hook + CSS 行高亮实现，仍未新增运行时依赖。
+- 2026-09-12 查询/重置交互继续复用 QueryBar：公共组件自动识别“查询 / 重置”，只给对应结果 Table/List 做约 140ms 淡入 + 2px 轻位移，不重播整页动画、不制造假 Loading、未新增运行时依赖。
