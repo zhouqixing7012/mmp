@@ -28,7 +28,7 @@
 
 ## 3. 页面切换
 
-### 3.1 `/yewurules` 内部页面
+### 3.1 `/yewurules` 菜单 / 子菜单 / Tab 切换
 
 后台主框架已经在 `AdminContent` 按 `activeMenu / activeSubMenu / activeTab` 统一处理页面进入动效：
 
@@ -36,21 +36,56 @@
 - `translateY(6px) → 0`
 - 约 180ms
 
-新增 `/yewurules` 页面时只需接入现有 `AdminContent`，禁止在具体页面重复添加整页进入动画。
+新增 `/yewurules` 页面时只需接入现有 `AdminContent`，禁止在具体页面重复添加同层整页进入动画。
 
-### 3.2 React Router 一级路由
+### 3.2 React Router 路由切换
 
-顶部 `Navbar` 的 `Link` 使用 React Router `viewTransition`。
+`src/App.js` 的路由出口统一按 `location.key` 触发 `mmp-page-motion`。
 
-新增顶部一级路由入口时：
+这意味着以下方式都自动获得统一路由进入动效：
+
+- `<Link to="/example">`
+- 按钮中 `navigate('/example')`
+- 其他正常 React Router 路由跳转
+
+业务页面不需要、也不应该为了按钮跳转再单独增加一套 Cross Fade 或 `viewTransition` 参数。
+
+### 3.3 同一 URL 内部列表 / 详情 / 编辑 / 创建切换
+
+很多 B 端页面不会改变 URL，而是通过：
 
 ```jsx
-<Link to="/example" viewTransition>
-  示例页面
-</Link>
+const [view, setView] = useState('list');
 ```
 
-不要再额外叠加第二套整页淡入动画。
+在同一个组件内部切换：
+
+```text
+列表 → 详情
+列表 → 编辑
+列表 → 创建
+详情 / 编辑 → 返回列表
+```
+
+这类变化不会触发路由出口，也不会触发 `AdminContent` 的菜单级动效，必须使用公共组件：
+
+```jsx
+import PageViewMotion from '../components/PageViewMotion';
+
+<PageViewMotion viewKey={view}>
+  {view === 'list' ? <ListView /> : <EditorView />}
+</PageViewMotion>
+```
+
+`PageViewMotion` 复用现有 `mmp-page-motion`，不创建新的时长和曲线。
+
+规则：
+
+- 只用于“整块业务视图替换”，不是普通字段显隐。
+- `viewKey` 必须真实对应当前视图状态，如 `list / detail / editor / create`。
+- 点击“查看 / 编辑 / 创建 / 返回”导致整页区域变化时必须接入。
+- 不允许因为 URL 没变化就瞬间替换整个页面。
+- 详情页里的局部 Tab、折叠区、字段显隐继续使用各组件原生交互，不套整页动画。
 
 ## 4. 弹窗
 
@@ -192,13 +227,15 @@ transition: all 300ms;
 
 每次生成新页面必须检查：
 
-1. 页面是否接入现有 `AdminContent` / React Router 公共切换能力，而不是自己再做整页动画。
-2. 弹窗是否使用 Ant Design Modal / `SelectModal` / 现有公共 Modal。
-3. 明确可点击 Card 是否使用 `mmp-interactive-card`；不可点击 Card 是否保持静止。
-4. 有“新增/修改后回列表”场景时，是否使用 `useTransientRowHighlight` 给目标行反馈。
-5. 自定义菜单/下拉是否有 140～180ms 的进入/退出，而不是瞬间出现。
-6. 是否避免 `transition-all`、长动画和大位移。
-7. 是否尊重 `prefers-reduced-motion`。
-8. 是否没有为了动效新增不必要的依赖。
+1. 菜单 / Tab 页面是否接入现有 `AdminContent`，而不是自己再做同层整页动画。
+2. React Router 路由跳转是否直接使用现有全局路由出口，不重复加动画。
+3. 同 URL 内通过按钮执行列表 / 详情 / 编辑 / 创建 / 返回切换时，是否使用 `PageViewMotion`。
+4. 弹窗是否使用 Ant Design Modal / `SelectModal` / 现有公共 Modal。
+5. 明确可点击 Card 是否使用 `mmp-interactive-card`；不可点击 Card 是否保持静止。
+6. 有“新增/修改后回列表”场景时，是否使用 `useTransientRowHighlight` 给目标行反馈。
+7. 自定义菜单/下拉是否有 140～180ms 的进入/退出，而不是瞬间出现。
+8. 是否避免 `transition-all`、长动画和大位移。
+9. 是否尊重 `prefers-reduced-motion`。
+10. 是否没有为了动效新增不必要的依赖。
 
-只要以上 8 项满足，新页面就视为符合本项目统一动效规范。
+只要以上 10 项满足，新页面就视为符合本项目统一动效规范。
