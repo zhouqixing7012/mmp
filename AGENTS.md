@@ -3,7 +3,7 @@
 ## 项目信息
 
 - **项目名称**：企业资产管理系统（Asset Management System）
-- **技术栈**：React 18 + Create React App + Tailwind CSS
+- **技术栈**：React 19 + Create React App + Ant Design 6 + Tailwind CSS
 - **主要文件**：src/pages/yewurules.js（后台基础配置 + 业务视图）
 
 ## 代码规范
@@ -143,12 +143,44 @@
 - 百分比继续使用百分比格式，不强制补千分位；日期、编号、标签号、序列号、员工编号等标识类数字禁止套用千分位。
 - 表格、Statistic、详情字段、汇总卡片和导出前的页面展示均遵守同一套数字口径；新增页面时不得直接裸展示大额数量或金额。
 
+### 7. 统一动效规范（必须遵守）
+
+完整规范见 `docs/UI_MOTION_GUIDELINES.md`。新增页面和修改交互时必须先复用现有公共动效，不得自行发明动画参数。
+
+**固定规则**：
+- `/yewurules` 内页面切换由 `AdminContent` 统一处理，业务页禁止再叠加整页进入动画。
+- 顶部 React Router 路由入口使用 `Link viewTransition`，不再另写整页 Cross Fade。
+- 选择弹窗继续使用 `<SelectModal />`；普通弹窗优先使用 Ant Design `Modal`，已有自定义场景复用 `src/components/Modal.js`。
+- 明确可点击的卡片/操作块使用 `mmp-interactive-card`；查询 Card、详情 Card、表格 Card 等纯信息容器保持静止。
+- 新增/修改后需要回列表定位结果时，使用 `useTransientRowHighlight`，成功落数据后调用 `highlightRow(key)`，Table 用 `rowClassName` 接入。
+- 侧边栏展开使用 `mmp-sidebar-collapse`，自定义顶部轻量下拉使用 `mmp-nav-dropdown`；优先使用 Ant Design Dropdown/Popover。
+- 禁止业务页面自行写 300ms 以上常规动画、明显 bounce/spring、大距离飞入。
+- 禁止为简单动效引入新的动画依赖。
+- 避免 `transition-all`；只过渡真实需要变化的 `color / background-color / opacity / transform / box-shadow / border-color`。
+- 所有新增动效必须尊重 `prefers-reduced-motion`。
+
+**表格结果反馈示例**：
+```jsx
+import useTransientRowHighlight from '../hooks/useTransientRowHighlight';
+
+const { highlightRow, getRowClassName } = useTransientRowHighlight();
+
+<Table
+  rowKey="id"
+  rowClassName={(record) => getRowClassName(record, 'id')}
+/>
+
+// 新增/修改真正成功后调用
+highlightRow(record.id);
+```
+
 ## 开发流程
 
 ### 1. 新增页面
 1. 在 `src/pages/` 目录下创建新的页面组件
 2. 在 `src/config/routes.js` 中添加路由配置
 3. 在 `src/pages/yewurules.js` 中添加菜单和标签页
+4. 按 `docs/UI_MOTION_GUIDELINES.md` 检查页面切换、弹窗、可点击 Card、菜单/下拉、表格结果反馈和 reduced motion；不得为新页面另起一套动效
 
 ### 2. 新增弹窗选择功能
 1. 创建对应的弹窗选择组件（如 `BrandSelectModal`）
@@ -198,6 +230,8 @@ npm test
 ## 相关文档
 
 - README.md - 项目说明和架构
+- docs/UI_DESIGN_GUIDELINES.md - UI 设计规范
+- docs/UI_MOTION_GUIDELINES.md - B 端统一动效规范
 - docs/PRD-*.md - 产品需求文档
 - docs/员工自助功能PRD/12-当前原型补充口径.md - 来源 PDF 后续原型覆盖口径
 - MEMORY.md - Agent记忆索引
@@ -205,4 +239,4 @@ npm test
 ## 版本信息
 
 - 创建日期：2026-06-04
-- 最后更新：2026-09-04
+- 最后更新：2026-09-12
