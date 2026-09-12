@@ -10,7 +10,7 @@ function AppRoutes() {
   const location = useLocation();
 
   return (
-    <div key={location.key} className="mmp-route-motion">
+    <div key={location.key} className="mmp-page-motion">
       <Routes location={location}>
         {routes.map((route) => {
           const Component = route.Page;
