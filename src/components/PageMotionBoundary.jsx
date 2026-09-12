@@ -14,7 +14,9 @@ function getViewSignature(container) {
   const semanticTitles = Array.from(
     container.querySelectorAll('h1, h2, h3, h4, .ant-card-head-title')
   )
-    .filter((element) => !element.closest('.ant-modal, .ant-drawer, .ant-popover, .ant-dropdown'))
+    .filter((element) => !element.closest(
+      '.ant-modal, .ant-drawer, .ant-popover, .ant-dropdown, .mmp-motion-overlay, [role="dialog"]'
+    ))
     .map((element) => normalizeText(element.textContent))
     .filter(Boolean)
     .slice(0, 5);
@@ -28,6 +30,7 @@ function getViewSignature(container) {
  * - 同一路由内如果页面标题/主要 Card 标题发生变化，视为 list/detail/editor/create
  *   等整页业务视图发生切换，并重新播放一次轻量页面进入动效。
  * - 普通表格数据刷新、输入值变化不会因为内容值变化而触发整页动画。
+ * - 弹窗/抽屉/Popover/Dropdown 内部标题不会参与整页视图识别。
  * - 特殊页面可在当前视图根节点声明 data-page-view-key，提供稳定的显式视图标识。
  */
 export default function PageMotionBoundary({ children, className = '', disabled = false }) {
