@@ -803,7 +803,16 @@ export default function ConsumableReceiptPage() {
           </QueryItem>
           <QueryItem label="供应商"><SelectorInput value={receiptDraft.supplier} placeholder="请选择供应商" onOpen={() => setSelectorType('receiptSupplier')} /></QueryItem>
         </QueryBar>
-        <Card size="small" title="接收单列表" extra={<Button danger icon={<Trash2 size={14} />} onClick={deleteReceipts}>删除接收单</Button>}>
+        <Card
+          size="small"
+          title="接收单列表"
+          extra={(
+            <Space>
+              <Typography.Text type="secondary">共 {filteredReceipts.length} 条</Typography.Text>
+              <Button danger icon={<Trash2 size={14} />} onClick={deleteReceipts}>删除接收单</Button>
+            </Space>
+          )}
+        >
           <Table
             rowKey="id"
             size="small"
@@ -965,7 +974,7 @@ export default function ConsumableReceiptPage() {
         <QueryItem label="办公区"><Select allowClear placeholder="全部" value={poDraft.officeArea || undefined} options={OFFICE_AREAS.map((value) => ({ label: value, value }))} onChange={(value) => setPoFilter('officeArea', value)} /></QueryItem>
         <QueryItem label="推送日期"><RangePicker style={{ width: '100%' }} onChange={(dates) => { setPoFilter('pushFrom', dates?.[0]?.format('YYYY-MM-DD') || ''); setPoFilter('pushTo', dates?.[1]?.format('YYYY-MM-DD') || ''); }} /></QueryItem>
       </QueryBar>
-      <Card size="small" title="PO单列表">
+      <Card size="small" title="PO单列表" extra={<Typography.Text type="secondary">共 {filteredPos.length} 条</Typography.Text>}>
         <Table rowKey="id" size="small" bordered columns={poColumns} dataSource={filteredPos} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10 }} />
       </Card>
       {selectorConfig && (
