@@ -14,7 +14,7 @@ const MaterialBatchActionModal = ({ open, onCancel, onAction }) => (
       {ACTIONS.map(({ key, label, Icon, iconClassName }) => (
         <div
           key={key}
-          className="flex items-center gap-3 p-3 bg-[#f5f5f5] rounded cursor-pointer hover:bg-[#e6f7ff] transition-colors"
+          className="mmp-interactive-card flex items-center gap-3 p-3 bg-[#f5f5f5] rounded cursor-pointer hover:bg-[#e6f7ff] transition-colors"
           onClick={() => onAction?.(key)}
         >
           <Icon size={18} className={iconClassName} />
