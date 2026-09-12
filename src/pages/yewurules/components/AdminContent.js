@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
+import PageMotionBoundary from '../../../components/PageMotionBoundary';
 
 export default function AdminContent({ activeMenu, activeSubMenu, activeTab, tabs, onTabChange, children }) {
   const isWorkspace = activeMenu === '个人工作台';
@@ -69,14 +70,14 @@ export default function AdminContent({ activeMenu, activeSubMenu, activeTab, tab
             ))}
           </div>
         )}
-        <div
+        <PageMotionBoundary
           key={prototypePageScope}
-          className={`${isWorkspace
+          className={isWorkspace
             ? 'relative flex flex-1 flex-col'
-            : 'relative flex flex-1 flex-col bg-[#fafafa] p-4 md:p-5'} mmp-page-motion`}
+            : 'relative flex flex-1 flex-col bg-[#fafafa] p-4 md:p-5'}
         >
           {children}
-        </div>
+        </PageMotionBoundary>
       </div>
     </div>
   );
