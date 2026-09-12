@@ -21,9 +21,10 @@
 | 路径 | 职责 |
 |---|---|
 | `src/App.js` | 应用路由入口；普通路由统一通过 `PageMotionBoundary` 处理路由和同 URL 内语义视图切换，并挂载原型标注层。 |
-| `src/index.css` | 全局样式以及统一 B 端动效 Token、弹窗/页面/菜单/路由/表格反馈样式。 |
+| `src/index.css` | 全局样式以及统一 B 端动效 Token、弹窗/页面/菜单/路由/查询结果/表格反馈样式。 |
 | `src/components/` | QueryBar、DetailGrid、SelectModal、StatusTag、PageMotionBoundary、PageViewMotion 等公共组件。 |
-| `src/components/PageMotionBoundary.jsx` | 页面动效统一出口：初次进入播放页面动效；根据页面标题/主要 Card 标题变化，或页面出口第一层 Card/Table/Form/Descriptions 等主要业务区块替换，自动识别同 URL 内列表/详情/编辑/创建切换；支持 `data-page-view-key` 显式视图标识。 |
+| `src/components/QueryBar.jsx` | 查询条件公共容器；除统一布局外，自动识别“查询 / 重置”动作，并给同一作用域内后续首个 Table/List（或 `data-mmp-query-result`）触发短结果刷新反馈。 |
+| `src/components/PageMotionBoundary.jsx` | 页面动效统一出口：初次进入播放页面动效；根据页面标题/主要 Card 标题变化，或页面出口第一层 Card/Table/Form/Descriptions 等主要业务区块替换，自动识别同 URL 内列表/详情/编辑/创建切换；支持 `data-page-view-key` 显式视图标识，并通过 `data-mmp-page-motion-boundary` 为查询等局部交互提供稳定页面作用域。 |
 | `src/components/PageViewMotion.jsx` | 自动边界仍无法区分时的显式兜底容器。 |
 | `src/hooks/` | 可复用交互 Hook；当前包含表格新增/修改后的短暂行高亮。 |
 | `src/mock/` | 演示数据。 |
@@ -168,10 +169,11 @@ localStorage
 - `/yewurules` 由 `AdminContent` 按 `activeMenu / activeSubMenu / activeTab` 组成的页面 scope 重新挂载 `PageMotionBoundary`，同时覆盖菜单级切换和菜单内部本地 view 切换。
 - 普通 React Router 页面由 `src/App.js` 按 `location.key` 重新挂载 `PageMotionBoundary`；按钮中的 `navigate()` 与普通 `Link` 不需要各自维护动画参数。
 - 自动识别仍无法区分的特殊内部视图使用 `data-page-view-key`，只有无法提供统一根节点时才使用 `PageViewMotion` 显式兜底。
+- `QueryBar` 的查询/重置是局部数据刷新：默认定位当前作用域中该查询区后面的首个 `Table / List`，触发 `mmp-query-result-refresh` 约 140ms 淡入 + 2px 轻位移；非标准结果区使用 `data-mmp-query-result` 显式声明，不重播整页动效、不制造假 Loading。
 - `AdminSidebar` 使用 `mmp-sidebar-collapse` 让二级菜单平滑展开/收起；`Navbar` 使用 `mmp-nav-dropdown` 处理顶部路由下拉。
 - 只有明确可点击的卡片/操作块才使用 `mmp-interactive-card`；普通信息 Card 不增加上浮反馈。
 - `src/hooks/useTransientRowHighlight.js` 为新增/修改成功后的表格行提供约 900ms 的短暂高亮，业务页只在数据真正成功落地后触发。
-- 全局遵循 `prefers-reduced-motion`，用户开启“减少动态效果”时关闭页面、路由和表格反馈动画，并将组件过渡压缩到近乎即时。
+- 全局遵循 `prefers-reduced-motion`，用户开启“减少动态效果”时关闭页面、路由、查询结果和表格反馈动画，并将组件过渡压缩到近乎即时。
 - 当前实现不新增第三方动画依赖；如果后续出现复杂共享布局或多阶段编排，再评估 Motion for React。
 - 新页面必须遵循 `docs/UI_MOTION_GUIDELINES.md`，避免把统一动效重新拆散到页面内部。
 
