@@ -143,6 +143,12 @@
   }
 }
 
+/* 蓝色链接按钮既保留点击能力，也允许光标拖选复制文本。 */
+.ant-btn-link {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 /* React Router 一级路由使用浏览器原生 View Transition，统一到项目时长。 */
 ::view-transition-old(root),
 ::view-transition-new(root) {
