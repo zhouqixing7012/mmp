@@ -137,6 +137,7 @@ export default function PageMotionBoundary({ children, className = '', disabled 
   return (
     <div
       ref={containerRef}
+      data-mmp-page-motion-boundary
       className={`${className} ${disabled ? '' : 'mmp-page-motion'}`.trim()}
     >
       {children}
