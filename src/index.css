@@ -2,6 +2,84 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --mmp-motion-instant: 100ms;
+  --mmp-motion-fast: 140ms;
+  --mmp-motion-normal: 180ms;
+  --mmp-motion-slow: 220ms;
+  --mmp-motion-ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --mmp-motion-ease-in: cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* B 端动效只表达状态变化，不做明显弹跳或长距离位移。 */
+.mmp-motion-overlay {
+  opacity: 0;
+  transition: opacity var(--mmp-motion-fast) var(--mmp-motion-ease-out);
+}
+
+.mmp-motion-overlay.is-visible {
+  opacity: 1;
+}
+
+.mmp-motion-dialog {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transform-origin: center center;
+  transition:
+    opacity var(--mmp-motion-normal) var(--mmp-motion-ease-out),
+    transform var(--mmp-motion-normal) var(--mmp-motion-ease-out);
+  will-change: opacity, transform;
+}
+
+.mmp-motion-dialog.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.mmp-page-motion {
+  animation: mmp-page-enter var(--mmp-motion-normal) var(--mmp-motion-ease-out) both;
+}
+
+@keyframes mmp-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 只给明确可点击的卡片使用，普通信息 Card 不套用。 */
+.mmp-interactive-card {
+  transition:
+    transform var(--mmp-motion-instant) var(--mmp-motion-ease-out),
+    box-shadow var(--mmp-motion-fast) var(--mmp-motion-ease-out),
+    border-color var(--mmp-motion-fast) var(--mmp-motion-ease-out);
+}
+
+.mmp-interactive-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.mmp-interactive-card:active {
+  transform: translateY(0) scale(0.99);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mmp-motion-overlay,
+  .mmp-motion-dialog,
+  .mmp-interactive-card {
+    transition-duration: 0.01ms !important;
+  }
+
+  .mmp-page-motion {
+    animation: none !important;
+  }
+}
+
 /* 个人工作台由外层统一提供页面背景与留白，避免业务页重复套浅蓝色画布。 */
 .workspace-content > .min-h-screen {
   min-height: auto !important;
