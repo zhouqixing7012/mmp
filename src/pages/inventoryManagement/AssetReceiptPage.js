@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  Alert,
   Button,
   Card,
   DatePicker,
@@ -72,7 +73,7 @@ const SERVER_PO_DETAIL = {
   department: '-',
   orderDate: '2021-06-08',
   items: [
-    { id: 1, editable: true, receiptStatus: '待接收', materialGroup: '1.资产', assetClass: '14.SERVER', materialCode: '114008042010000', materialDesc: 'Dell.R740', poDesc: 'Dell.R740-Intel Silver4210*2,DDR4_2933MHz_16G*8,Seagate_SAS12Gb_2.5寸_10k_600GB*8,双口千兆+双光口万兆(Intel X710)*1,H740P_电池*1,白金750W热插拔*2,2U2.5寸8盘位机箱*1', config: 'Intel Silver4210*2,DDR4_2933MHz_16G*8,Seagate_SAS12Gb_2.5寸_10k_600GB*8,双口千兆+双光口万兆(Intel X710)*1,H740P_电池*1,白金750W热插拔*2,2U2.5寸8盘位机箱*1', partQuantity: '-', partDesc: '-', currentReceiptQty: 1, purchaseQty: 1, untaxedUnitPrice: '-', untaxedSubtotal: '-', totalTax: '-', taxedUnitPrice: '-', taxedSubtotal: '-', taxRate: '-', receivedQty: 0, draftQty: 0, agreedArrivalDate: '-', prLineNo: '-', saLineNo: '-', applicationNo: '', department: '-', businessLine: '' },
+    { id: 1, editable: true, receiptStatus: '待接收', materialGroup: '1.资产', assetClass: '14.SERVER', materialCode: '114008042010000', materialDesc: 'Dell.R740', poDesc: 'Dell.R740-Intel Silver4210*2,DDR4_2933MHz_16G*8,Seagate_SAS12Gb_2.5寸_10k_600GB*8,双口千兆+双光口万兆(Intel X710)*1,H740P_电池*1,白金750W热插拔*2,2U2.5寸8盘位机箱*1', config: 'Intel Silver4210*2,DDR4_2933MHz_16G*8,Seagate_SAS12Gb_2.5寸_10k_600GB*8,双口千兆+双光口万兆(Intel X710)*1,H740P_电池*1,白金750W热插拔*2,2U2.5寸8盘位机箱*1', partQuantity: '-', partDesc: '-', currentReceiptQty: 1, purchaseQty: 1, untaxedUnitPrice: '-', untaxedSubtotal: '-', totalTax: '-', taxedUnitPrice: '-', taxedSubtotal: '-', taxRate: '-', receivedQty: 0, draftQty: 0, agreedArrivalDate: '-', prLineNo: '-', saLineNo: '-', applicationNo: '', department: '-', businessLine: '', noLocation: '北京.搜狐网络大厦.5F' },
   ],
 };
 
@@ -88,6 +89,21 @@ const EMPTY_RECEIPT_FILTERS = { receiptNo: '', poNo: '', status: '', creator: ''
 const DIRECT_INBOUND_TYPES = new Set(['服务器', '服务器备件', '网络设备', '网络设备备件']);
 const GENERATED_INBOUND_STORAGE_KEY = 'mmp.inventory.generatedInboundRows.v1';
 const CURRENT_USER = 'admin-系统管理员';
+const PO_STATUS_ORDER = { 待接收: 0, 已接收: 1, 已入库: 2 };
+const PLATE_OPTIONS = [
+  { label: '11.搜狐网-web', value: '搜狐网-web' },
+  { label: '12.搜狐网-mobile', value: '搜狐网-mobile' },
+  { label: '13.汽车', value: '汽车' },
+  { label: '14.无线', value: '无线' },
+  { label: '15.焦点', value: '焦点' },
+  { label: '16.视频', value: '视频' },
+  { label: '17.Corporate', value: 'Corporate' },
+  { label: '51.焦点 Corporate', value: '焦点 Corporate' },
+  { label: '52.房产', value: '房产' },
+  { label: '53.家居', value: '家居' },
+  { label: '54.二手房', value: '二手房' },
+  { label: '56.SAAS', value: 'SAAS' },
+];
 
 function includesText(value, query) {
   if (!query) return true;
@@ -125,6 +141,26 @@ function getReceiptItems(receipt) {
   return receivedItems.length > 0 ? receivedItems : detailItems;
 }
 
+function splitPartDescriptions(value, count) {
+  const source = String(value || '').replace(/^-$|^暂无$/, '').split('@').filter(Boolean);
+  return Array.from({ length: Math.max(0, count) }, (_, index) => source[index] || `部件${index + 1}`);
+}
+
+function buildPartRows(item, assetTag = '') {
+  const count = Math.max(0, Number(item?.partQuantity || 0) - 1);
+  const names = splitPartDescriptions(item?.partDesc, count);
+  return Array.from({ length: count }, (_, index) => ({
+    id: `${item?.id || 'part'}-${index + 1}`,
+    partName: names[index],
+    partTag: assetTag ? `${assetTag}-${index + 1}` : '',
+    partSn: '',
+  }));
+}
+
+function serializeParts(parts) {
+  return (parts || []).map((part) => `${part.partName || ''}#${part.partTag || ''}#${part.partSn || ''}`).join('@');
+}
+
 function buildMaintenanceSession(receipt) {
   const completed = receipt?.status === '已完成';
   let lineNo = 1;
@@ -135,12 +171,13 @@ function buildMaintenanceSession(receipt) {
       const specialTag = receipt?.poNo === 'PO2410230001' ? String(112132600468 + rows.length) : null;
       const generatedTag = specialTag || `11213${String(2600000 + Number(receipt?.id || 0) * 100 + Number(item.id || 0) * 10 + index).padStart(7, '0')}`;
       const completedSn = `SOHUXX${String(156000 + Number(receipt?.id || 0) * 100 + Number(item.id || 0) * 10 + index)}`;
+      const assetTag = completed ? generatedTag : '';
       rows.push({
         id: `${item.id}-${index + 1}`,
         lineNo,
         sourceLineId: item.id,
         generatedTag,
-        assetTag: completed ? generatedTag : '',
+        assetTag,
         sn: completed ? completedSn : '',
         materialGroup: item.materialGroup,
         assetClass: item.assetClass,
@@ -148,6 +185,7 @@ function buildMaintenanceSession(receipt) {
         config: item.config,
         partQuantity: item.partQuantity,
         partDesc: item.partDesc,
+        parts: buildPartRows(item, assetTag),
         assetQty: 1,
         untaxedUnitPrice: item.untaxedUnitPrice,
         tax: item.totalTax,
@@ -197,16 +235,29 @@ function ReceiptLineMaintenanceModal({ open, asset, readOnly, onCancel, onSave }
   const [sn, setSn] = useState(asset?.sn || '');
   const [assetMark, setAssetMark] = useState(asset?.assetMark || '');
   const [remark, setRemark] = useState(asset?.remark || '');
+  const [parts, setParts] = useState(asset?.parts || buildPartRows(asset, asset?.assetTag || ''));
+
+  const partColumns = [
+    {
+      title: '部件名称', dataIndex: 'partName', width: 220,
+      render: (value, row) => readOnly ? <Readonly>{value}</Readonly> : <Input value={value} onChange={(event) => setParts((current) => current.map((item) => item.id === row.id ? { ...item, partName: event.target.value } : item))} />,
+    },
+    { title: '部件标签号', dataIndex: 'partTag', width: 220, render: (value) => <Readonly>{value}</Readonly> },
+    {
+      title: '部件SN', dataIndex: 'partSn', width: 220,
+      render: (value, row) => readOnly ? <Readonly>{value}</Readonly> : <Input value={value} onChange={(event) => setParts((current) => current.map((item) => item.id === row.id ? { ...item, partSn: event.target.value } : item))} />,
+    },
+  ];
 
   return (
     <Modal
       open={open}
       title="明细信息维护"
-      width={760}
+      width={820}
       okText="保存"
       cancelText="取消"
       onCancel={onCancel}
-      onOk={() => onSave({ ...asset, sn, assetMark, remark })}
+      onOk={() => onSave({ ...asset, sn, assetMark, remark, parts, partDesc: parts.length ? parts.map((part) => part.partName).join('@') : asset?.partDesc })}
       footer={readOnly ? null : undefined}
       destroyOnHidden
     >
@@ -220,7 +271,11 @@ function ReceiptLineMaintenanceModal({ open, asset, readOnly, onCancel, onSave }
             <DetailItem label="备注" span={2}>{readOnly ? <Readonly>{remark}</Readonly> : <Input value={remark} onChange={(event) => setRemark(event.target.value)} />}</DetailItem>
           </DetailGrid>
         </Card>
-        <Card size="small" title="部件信息"><Typography.Text type="secondary">暂无部件信息</Typography.Text></Card>
+        <Card size="small" title="部件信息">
+          {parts.length > 0
+            ? <Table rowKey="id" size="small" bordered pagination={false} columns={partColumns} dataSource={parts} scroll={{ x: 'max-content' }} />
+            : <Typography.Text type="secondary">暂无部件信息</Typography.Text>}
+        </Card>
       </Space>
     </Modal>
   );
@@ -241,10 +296,13 @@ export default function AssetReceiptPage() {
   const [selectedItemKeys, setSelectedItemKeys] = useState([]);
   const [detailPlate, setDetailPlate] = useState('');
   const [applicationBatch, setApplicationBatch] = useState('');
+  const [poReceiptDefaults, setPoReceiptDefaults] = useState({});
   const [selectorType, setSelectorType] = useState('');
   const [poItemOverrides, setPoItemOverrides] = useState({});
   const [editItem, setEditItem] = useState(null);
   const [editDraft, setEditDraft] = useState(null);
+  const [partDescriptionModalOpen, setPartDescriptionModalOpen] = useState(false);
+  const [partDescriptionDraft, setPartDescriptionDraft] = useState([]);
   const [maintenanceStore, setMaintenanceStore] = useState({});
   const [maintenanceSession, setMaintenanceSession] = useState({ rows: [], tagsGenerated: false, defaultSnApplied: false });
   const [selectedMaintenanceKeys, setSelectedMaintenanceKeys] = useState([]);
@@ -263,15 +321,16 @@ export default function AssetReceiptPage() {
   const availableQty = (item) => Math.max(0, Number(item?.purchaseQty || 0) - Number(item?.receivedQty || 0) - Number(item?.draftQty || 0));
 
   const effectivePoRows = useMemo(() => PO_ROWS.map((row) => {
-    if (row.receiptStatus === '已入库') return row;
+    const defaults = poReceiptDefaults[row.poNo] || {};
+    if (row.receiptStatus === '已入库') return { ...row, plate: defaults.plate ?? row.plate };
     const items = (getPoDetail(row).items || []).map((item) => ({ ...item, ...(poItemOverrides[row.poNo]?.[item.id] || {}) }));
     const fullyReceived = items.length > 0 && items.every((item) => Number(item.receivedQty || 0) >= Number(item.purchaseQty || 0));
-    return { ...row, receiptStatus: fullyReceived ? '已接收' : '待接收' };
-  }), [poItemOverrides]);
+    return { ...row, plate: defaults.plate ?? row.plate, receiptStatus: fullyReceived ? '已接收' : '待接收' };
+  }), [poItemOverrides, poReceiptDefaults]);
 
   const companyData = useMemo(() => toSelectData(effectivePoRows.map((item) => item.company)), [effectivePoRows]);
-  const plateData = useMemo(() => toSelectData(effectivePoRows.map((item) => item.plate)), [effectivePoRows]);
   const supplierData = useMemo(() => toSelectData(effectivePoRows.map((item) => item.supplier)), [effectivePoRows]);
+  const receiptSupplierData = useMemo(() => toSelectData(receiptRows.map((item) => item.supplier)), [receiptRows]);
 
   const filteredPoRows = useMemo(() => effectivePoRows.filter((row) => (
     includesText(row.company, poAppliedFilters.company)
@@ -280,7 +339,11 @@ export default function AssetReceiptPage() {
     && includesText(row.supplier, poAppliedFilters.supplier)
     && (!poAppliedFilters.receiptStatus || row.receiptStatus === poAppliedFilters.receiptStatus)
     && (!poAppliedFilters.purchaseType || row.purchaseType === poAppliedFilters.purchaseType)
-  )), [effectivePoRows, poAppliedFilters]);
+  )).sort((a, b) => {
+    const statusDiff = (PO_STATUS_ORDER[a.receiptStatus] ?? 99) - (PO_STATUS_ORDER[b.receiptStatus] ?? 99);
+    if (statusDiff !== 0) return statusDiff;
+    return String(b.pushDate || '').localeCompare(String(a.pushDate || ''));
+  }), [effectivePoRows, poAppliedFilters]);
 
   const filteredReceiptRows = useMemo(() => receiptRows.filter((row) => {
     const date = row.createdAt ? row.createdAt.slice(0, 10) : '';
@@ -291,7 +354,7 @@ export default function AssetReceiptPage() {
       && includesText(row.supplier, receiptAppliedFilters.supplier)
       && (!receiptAppliedFilters.createdFrom || date >= receiptAppliedFilters.createdFrom)
       && (!receiptAppliedFilters.createdTo || date <= receiptAppliedFilters.createdTo);
-  }), [receiptRows, receiptAppliedFilters]);
+  }).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))), [receiptRows, receiptAppliedFilters]);
 
   const updatePoFilter = (field, value) => setPoDraftFilters((current) => ({ ...current, [field]: value || '' }));
   const updateReceiptFilter = (field, value) => setReceiptDraftFilters((current) => ({ ...current, [field]: value || '' }));
@@ -300,6 +363,14 @@ export default function AssetReceiptPage() {
     createdFrom: dates?.[0] ? dates[0].format('YYYY-MM-DD') : '',
     createdTo: dates?.[1] ? dates[1].format('YYYY-MM-DD') : '',
   }));
+
+  const updatePoReceiptDefault = (field, value) => {
+    if (!activePO) return;
+    setPoReceiptDefaults((current) => ({
+      ...current,
+      [activePO.poNo]: { ...(current[activePO.poNo] || {}), [field]: value },
+    }));
+  };
 
   const updateMaintenanceSession = (updater) => {
     if (!activeReceipt) return;
@@ -376,9 +447,10 @@ export default function AssetReceiptPage() {
   };
 
   const openPoDetail = (row) => {
+    const defaults = poReceiptDefaults[row.poNo] || {};
     setActivePO(row);
-    setDetailPlate(row.plate || '');
-    setApplicationBatch('');
+    setDetailPlate(defaults.plate ?? row.plate ?? '');
+    setApplicationBatch(defaults.applicationBatch ?? '');
     setSelectedItemKeys([]);
     setEditItem(null);
     setEditDraft(null);
@@ -405,39 +477,54 @@ export default function AssetReceiptPage() {
   const editAvailableQty = (item) => availableQty(item);
 
   const openItemEditor = (row) => {
+    const partQuantity = row.partQuantity === '-' ? 0 : Number(row.partQuantity || 0);
     setEditItem(row);
     setEditDraft({
       ...row,
       currentReceiptQty: Math.min(Math.max(1, Number(row.currentReceiptQty || 1)), Math.max(1, availableQty(row))),
-      isPart: row.isPart ?? (row.partQuantity !== '-' && Number(row.partQuantity || 0) > 0),
-      partQuantity: row.partQuantity === '-' ? 0 : Number(row.partQuantity || 0),
-      partDesc: row.partDesc === '-' ? '' : (row.partDesc || ''),
+      isPart: row.isPart ?? (row.partQuantity !== '-' && partQuantity > 0),
+      partQuantity,
+      partDescriptions: splitPartDescriptions(row.partDesc, Math.max(0, partQuantity - 1)),
     });
+  };
+
+  const openPartDescriptionEditor = () => {
+    const quantity = Number(editDraft?.partQuantity || 0);
+    if (!editDraft?.isPart || !Number.isInteger(quantity) || quantity < 2 || quantity > 100) {
+      messageApi.warning('请填写部件数量！');
+      return;
+    }
+    setPartDescriptionDraft(Array.from({ length: quantity - 1 }, (_, index) => editDraft.partDescriptions?.[index] || `部件${index + 1}`));
+    setPartDescriptionModalOpen(true);
   };
 
   const savePoItem = () => {
     const qty = Number(editDraft?.currentReceiptQty || 0);
     const maxQty = editAvailableQty(editItem);
-    if (!Number.isInteger(qty) || qty <= 0) return messageApi.error('接收数量必须为大于 0 的整数');
-    if (qty > maxQty) return messageApi.error(`接收数量不能超过可接收数量（当前可接收数量为 ${maxQty}）`);
-    if (editDraft.isPart && (!Number.isInteger(Number(editDraft.partQuantity)) || Number(editDraft.partQuantity) <= 0)) {
-      return messageApi.error('部件数量必须为大于 0 的整数');
+    if (!DIRECT_INBOUND_TYPES.has(activePO?.purchaseType)) {
+      if (!Number.isInteger(qty) || qty <= 0) return messageApi.error('接收数量必须为大于 0 的整数');
+      if (qty > maxQty) return messageApi.error(`接收数量不能超过可接收数量（当前可接收数量为 ${maxQty}）`);
+    }
+    if (editDraft.isPart && (!Number.isInteger(Number(editDraft.partQuantity)) || Number(editDraft.partQuantity) < 2 || Number(editDraft.partQuantity) > 100)) {
+      return messageApi.error('请输入 2～100 之间的整数！');
     }
     setPoItemValues(activePO.poNo, {
       [editItem.id]: {
         ...editDraft,
         partQuantity: editDraft.isPart ? Number(editDraft.partQuantity) : '-',
-        partDesc: editDraft.isPart ? editDraft.partDesc : '-',
+        partDesc: editDraft.isPart ? (editDraft.partDescriptions || []).join('@') : '-',
       },
     });
     setEditItem(null);
     setEditDraft(null);
-    messageApi.success('接收信息已保存');
+    setPartDescriptionModalOpen(false);
+    messageApi.success('接收信息已保存，修改将用于该PO后续未完成接收数据');
     return undefined;
   };
 
   const createReceipt = () => {
-    if (selectedItemKeys.length === 0) return messageApi.warning('请先选择需要创建接收单的物资');
+    if (selectedItemKeys.length === 0) return messageApi.warning('请选择要接收的物料！');
+    if (!detailPlate) return messageApi.warning('请选择板块！');
     const selectedItems = getEffectivePoItems(activePO).filter((item) => selectedItemKeys.includes(item.id));
     const receiptItems = selectedItems.map((item) => {
       const maxQty = availableQty(item);
@@ -457,7 +544,7 @@ export default function AssetReceiptPage() {
       createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
       receiver: '',
       receiptAt: '',
-      plate: detailPlate || activePO.plate,
+      plate: detailPlate,
       applicationBatch: applicationBatch.trim(),
       itemIds: receiptItems.map((item) => item.id),
       items: receiptItems,
@@ -477,21 +564,25 @@ export default function AssetReceiptPage() {
     return undefined;
   };
 
-  const persistGeneratedInbound = (row) => {
-    if (typeof window === 'undefined') return;
+  const persistGeneratedInbounds = (rows) => {
+    if (typeof window === 'undefined') return true;
     try {
       const stored = JSON.parse(window.localStorage.getItem(GENERATED_INBOUND_STORAGE_KEY) || '[]');
-      const next = [row, ...stored.filter((item) => item.documentNo !== row.documentNo)];
+      const documentNos = new Set(rows.map((row) => row.documentNo));
+      const next = [...rows, ...stored.filter((item) => !documentNos.has(item.documentNo))];
       window.localStorage.setItem(GENERATED_INBOUND_STORAGE_KEY, JSON.stringify(next));
+      return true;
     } catch (error) {
-      messageApi.warning('入库单已生成，但本地演示数据同步失败');
+      messageApi.error('接收失败：入库草稿数据同步失败');
+      return false;
     }
   };
 
   const buildInboundWarehouse = (po) => po.company?.includes('焦点') ? 'I0022-资产集团前台库（焦点互动）' : 'I0001-资产集团总库（新媒体）';
 
   const confirmDirectPoReceipt = () => {
-    if (!selectedItemKeys.length) return messageApi.warning('请先选择需要接收确认的物资');
+    if (!selectedItemKeys.length) return messageApi.warning('请选择要接收的物料！');
+    if (!detailPlate) return messageApi.warning('请选择板块！');
     const selectedItems = getEffectivePoItems(activePO)
       .filter((item) => selectedItemKeys.includes(item.id))
       .map((item) => ({ ...item, currentReceiptQty: Math.min(Number(item.currentReceiptQty || 0), availableQty(item)) }))
@@ -501,7 +592,64 @@ export default function AssetReceiptPage() {
     const nextReceiptId = receiptRows.reduce((max, row) => Math.max(max, row.id), 0) + 1;
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
     const receiptNo = `REC-${dayjs().format('YYYYMMDD')}${String(nextReceiptId).padStart(4, '0')}`;
-    const inboundOrderNo = `PI-${dayjs().format('YYYYMMDD')}${String(nextReceiptId).padStart(4, '0')}`;
+    const groupedItems = selectedItems.reduce((result, item) => {
+      const key = item.noLocation || '默认NO位置';
+      result[key] = result[key] || [];
+      result[key].push(item);
+      return result;
+    }, {});
+    const inboundGroups = Object.entries(groupedItems);
+    const inboundRows = inboundGroups.map(([noLocation, items], groupIndex) => {
+      const inboundOrderNo = `PI-${dayjs().format('YYYYMMDD')}${String(nextReceiptId).padStart(4, '0')}${inboundGroups.length > 1 ? `-${String(groupIndex + 1).padStart(2, '0')}` : ''}`;
+      const quantity = items.reduce((sum, item) => sum + Number(item.currentReceiptQty || 0), 0);
+      return {
+        id: Number(`${dayjs().format('YYMMDDHHmm')}${String(groupIndex + 1).padStart(2, '0')}`),
+        documentNo: inboundOrderNo,
+        applicationNo: '',
+        applicationBatch: applicationBatch.trim(),
+        status: '草稿',
+        inboundType: '采购接收',
+        warehouse: buildInboundWarehouse(activePO),
+        createdDate: dayjs().format('YYYY-MM-DD'),
+        creator: CURRENT_USER,
+        quantity,
+        cardClaim: '否',
+        poNo: activePO.poNo,
+        prNo: items[0]?.prLineNo || '',
+        assetTag: '',
+        receiptNo,
+        noLocation,
+        lines: items.map((item, index) => ({
+          id: `${receiptNo}-${groupIndex + 1}-${index + 1}`,
+          company: activePO.company,
+          plate: detailPlate,
+          department: item.department,
+          supplier: activePO.supplier,
+          assetTag: '',
+          sn: '',
+          poNo: activePO.poNo,
+          receiptNo,
+          applicationBatch: applicationBatch.trim(),
+          materialGroup: item.materialGroup,
+          assetClass: item.assetClass,
+          assetSubClass: activePO.purchaseType,
+          materialDesc: item.materialDesc,
+          config: item.config,
+          partQuantity: item.isPart ? item.partQuantity : 0,
+          partDesc: item.isPart ? item.partDesc : (item.partDesc || '-'),
+          prLine: item.prLineNo,
+          quantity: Number(item.currentReceiptQty || 0),
+          originalValue: numericValue(item.untaxedSubtotal),
+          tax: numericValue(item.totalTax),
+          billable: '是',
+          noLocation,
+        })),
+      };
+    });
+
+    if (!persistGeneratedInbounds(inboundRows)) return undefined;
+
+    const inboundOrderNos = inboundRows.map((row) => row.documentNo);
     const completedReceipt = {
       id: nextReceiptId,
       receiptNo,
@@ -512,11 +660,12 @@ export default function AssetReceiptPage() {
       createdAt: now,
       receiver: CURRENT_USER,
       receiptAt: now,
-      plate: detailPlate || activePO.plate,
+      plate: detailPlate,
       applicationBatch: applicationBatch.trim(),
       itemIds: selectedItems.map((item) => item.id),
       items: selectedItems,
-      inboundOrderNo,
+      inboundOrderNo: inboundOrderNos[0],
+      inboundOrderNos,
     };
 
     setPoItemValues(activePO.poNo, Object.fromEntries(selectedItems.map((item) => [item.id, (previous) => {
@@ -532,55 +681,16 @@ export default function AssetReceiptPage() {
     }])));
     setReceiptRows((current) => [...current, completedReceipt]);
     setSelectedItemKeys([]);
-
-    const quantity = selectedItems.reduce((sum, item) => sum + Number(item.currentReceiptQty || 0), 0);
-    persistGeneratedInbound({
-      id: Number(dayjs().format('YYMMDDHHmmss')),
-      documentNo: inboundOrderNo,
-      applicationNo: '',
-      applicationBatch: completedReceipt.applicationBatch,
-      status: '草稿',
-      inboundType: '采购接收',
-      warehouse: buildInboundWarehouse(activePO),
-      createdDate: dayjs().format('YYYY-MM-DD'),
-      creator: CURRENT_USER,
-      quantity,
-      cardClaim: '否',
-      poNo: activePO.poNo,
-      prNo: selectedItems[0]?.prLineNo || '',
-      assetTag: '',
-      receiptNo,
-      lines: selectedItems.map((item, index) => ({
-        id: `${receiptNo}-${index + 1}`,
-        company: activePO.company,
-        plate: completedReceipt.plate,
-        department: item.department,
-        supplier: activePO.supplier,
-        assetTag: '',
-        sn: '',
-        poNo: activePO.poNo,
-        receiptNo,
-        applicationBatch: completedReceipt.applicationBatch,
-        materialGroup: item.materialGroup,
-        assetClass: item.assetClass,
-        assetSubClass: activePO.purchaseType,
-        materialDesc: item.materialDesc,
-        config: item.config,
-        partQuantity: item.isPart ? item.partQuantity : 0,
-        partDesc: item.isPart ? item.partDesc : (item.partDesc || '-'),
-        prLine: item.prLineNo,
-        quantity: Number(item.currentReceiptQty || 0),
-        originalValue: numericValue(item.untaxedSubtotal),
-        tax: numericValue(item.totalTax),
-        billable: '是',
-      })),
-    });
-    messageApi.success(`接收确认成功：已生成已完成接收单 ${receiptNo} 和草稿入库单 ${inboundOrderNo}`);
+    messageApi.success('接收成功，入库单已创建！');
     return undefined;
   };
 
   const openReceiptMaintenance = () => {
     if (!activeReceipt) return;
+    const receiptItems = getReceiptItems(activeReceipt);
+    if (!receiptItems.length) return messageApi.warning('请先维护接收信息！');
+    const invalidIndex = receiptItems.findIndex((item) => Number(item.currentReceiptQty || 0) <= 0);
+    if (invalidIndex >= 0) return messageApi.warning(`第 ${invalidIndex + 1} 行，未维护接收数量！`);
     const saved = maintenanceStore[activeReceipt.receiptNo];
     const session = saved || buildMaintenanceSession(activeReceipt);
     setMaintenanceSession(session);
@@ -597,12 +707,16 @@ export default function AssetReceiptPage() {
     updateMaintenanceSession((current) => ({
       ...current,
       tagsGenerated: true,
-      rows: current.rows.map((row) => ({ ...row, assetTag: row.generatedTag })),
+      rows: current.rows.map((row) => ({
+        ...row,
+        assetTag: row.assetTag || row.generatedTag,
+        parts: (row.parts || []).map((part, index) => ({ ...part, partTag: `${row.assetTag || row.generatedTag}-${index + 1}` })),
+      })),
     }));
     setMaintenanceScan('');
     setMaintenanceScanTargetId(null);
     setMaintenanceFilterId(null);
-    messageApi.success('已为全部接收明细生成资产标签号并实时保存');
+    messageApi.success('生成成功！');
     return undefined;
   };
 
@@ -640,14 +754,28 @@ export default function AssetReceiptPage() {
     const normalized = normalizeSn(value);
     if (!isRealSn(normalized)) return true;
     if (collectKnownRealSns(activeReceipt?.receiptNo, rowId, true).has(normalized)) {
-      messageApi.error(`SN号 ${normalized} 已存在，真实SN号不能重复`);
+      messageApi.error(`SN 号：${normalized} 已存在！`);
+      return false;
+    }
+    return true;
+  };
+
+  const validatePartInfo = (parts) => {
+    const realPartSns = (parts || []).map((part) => normalizeSn(part.partSn)).filter((sn) => isRealSn(sn));
+    const duplicate = realPartSns.find((sn, index) => realPartSns.indexOf(sn) !== index);
+    if (duplicate) {
+      messageApi.error('存在重复的部件序列号！');
+      return false;
+    }
+    if (serializeParts(parts).length > 500) {
+      messageApi.error('描述字符超长，总长度不能超过 500 字符！');
       return false;
     }
     return true;
   };
 
   const deleteMaintenanceRows = () => {
-    if (!selectedMaintenanceKeys.length) return messageApi.warning('请先选择需要删除的资产行');
+    if (!selectedMaintenanceKeys.length) return messageApi.warning('请先选择需要删除的标签行！');
     const selected = new Set(selectedMaintenanceKeys);
     const removedRows = maintenanceRows.filter((row) => selected.has(row.id));
     const countsByItemId = removedRows.reduce((result, row) => ({ ...result, [row.sourceLineId]: (result[row.sourceLineId] || 0) + 1 }), {});
@@ -704,7 +832,7 @@ export default function AssetReceiptPage() {
     }
 
     const matched = maintenanceRows.find((row) => row.assetTag === value);
-    if (!matched) return messageApi.warning('未找到对应资产标签号');
+    if (!matched) return messageApi.warning(`未找到匹配的标签号：${value}`);
     setMaintenanceFilterId(matched.id);
     setMaintenanceScanTargetId(matched.id);
     setSelectedMaintenanceKeys([matched.id]);
@@ -719,9 +847,7 @@ export default function AssetReceiptPage() {
 
     const missingTagCount = session.rows.filter((row) => !String(row.assetTag || '').trim()).length;
     const missingSnCount = session.rows.filter((row) => !normalizeSn(row.sn)).length;
-    if (missingTagCount > 0 || missingSnCount > 0) {
-      return messageApi.warning(`接收确认失败：${missingTagCount > 0 ? `${missingTagCount} 条资产标签号未维护` : ''}${missingTagCount > 0 && missingSnCount > 0 ? '，' : ''}${missingSnCount > 0 ? `${missingSnCount} 条SN号未维护` : ''}`);
-    }
+    if (missingTagCount > 0 || missingSnCount > 0) return messageApi.warning('有未维护的标签号或 SN 号，请先维护接收明细。');
 
     const realSns = session.rows.filter((row) => isRealSn(row.sn)).map((row) => normalizeSn(row.sn));
     const duplicateInCurrent = realSns.find((sn, index) => realSns.indexOf(sn) !== index);
@@ -733,18 +859,7 @@ export default function AssetReceiptPage() {
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
     const receiptPO = effectivePoRows.find((item) => item.poNo === activeReceipt.poNo) || activePO;
     const inboundOrderNo = `PI-${dayjs().format('YYYYMMDD')}${String(activeReceipt.id).padStart(4, '0')}`;
-    const completedReceipt = {
-      ...activeReceipt,
-      status: '已完成',
-      receiver: CURRENT_USER,
-      receiptAt: now,
-      inboundOrderNo,
-    };
-    setReceiptRows((current) => current.map((row) => row.id === activeReceipt.id ? completedReceipt : row));
-    setActiveReceipt(completedReceipt);
-    completeReceiptOnPo(activeReceipt);
-
-    persistGeneratedInbound({
+    const inboundRow = {
       id: Number(dayjs().format('YYMMDDHHmmss')),
       documentNo: inboundOrderNo,
       applicationNo: '',
@@ -778,13 +893,27 @@ export default function AssetReceiptPage() {
         config: row.config,
         partQuantity: row.partQuantity === '-' ? 0 : row.partQuantity,
         partDesc: row.partDesc || '-',
+        parts: row.parts || [],
         prLine: row.prLineNo,
         quantity: 1,
         originalValue: numericValue(row.untaxedUnitPrice),
         tax: numericValue(row.tax),
         billable: '是',
       })),
-    });
+    };
+
+    if (!persistGeneratedInbounds([inboundRow])) return undefined;
+
+    const completedReceipt = {
+      ...activeReceipt,
+      status: '已完成',
+      receiver: CURRENT_USER,
+      receiptAt: now,
+      inboundOrderNo,
+    };
+    setReceiptRows((current) => current.map((row) => row.id === activeReceipt.id ? completedReceipt : row));
+    setActiveReceipt(completedReceipt);
+    completeReceiptOnPo(activeReceipt);
     messageApi.success(`接收确认成功，已生成草稿入库单 ${inboundOrderNo}`);
     return undefined;
   };
@@ -815,9 +944,9 @@ export default function AssetReceiptPage() {
   };
 
   const deleteReceiptLines = (visibleReceiptItems) => {
-    if (selectedReceiptLineKeys.length === 0) return messageApi.warning('请先选择需要删除的接收行');
+    if (selectedReceiptLineKeys.length === 0) return messageApi.warning('请先选择需要删除的接收行！');
     Modal.confirm({
-      title: '确认删除所选接收行？',
+      title: '确认删除选中的接收行吗？',
       content: `共选择 ${selectedReceiptLineKeys.length} 条，删除后将释放对应PO占用数量。`,
       okText: '删除',
       cancelText: '取消',
@@ -849,13 +978,13 @@ export default function AssetReceiptPage() {
   };
 
   const deleteSelectedReceipts = () => {
-    if (!selectedReceiptKeys.length) return messageApi.warning('请先选择需要删除的接收单');
+    if (!selectedReceiptKeys.length) return messageApi.warning('请先选择需要删除的接收单！');
     const selected = new Set(selectedReceiptKeys);
     const targetRows = receiptRows.filter((row) => selected.has(row.id));
     const completedCount = targetRows.filter((row) => row.status === '已完成').length;
     if (completedCount) return messageApi.warning('已完成接收单不可删除，请只选择草稿接收单');
     Modal.confirm({
-      title: '确认删除所选草稿接收单？',
+      title: '确认删除选中的接收单吗？',
       content: '删除后将释放对应PO占用数量。',
       okText: '删除',
       cancelText: '取消',
@@ -877,9 +1006,8 @@ export default function AssetReceiptPage() {
 
   const selectorConfig = {
     company: { title: '选择公司', dataSource: companyData, onConfirm: (record) => updatePoFilter('company', record.name) },
-    plate: { title: '选择板块', dataSource: plateData, onConfirm: (record) => updatePoFilter('plate', record.name) },
     supplier: { title: '选择供应商', dataSource: supplierData, onConfirm: (record) => updatePoFilter('supplier', record.name) },
-    detailPlate: { title: '选择板块', dataSource: plateData, onConfirm: (record) => { setDetailPlate(record.name); setSelectorType(''); } },
+    receiptSupplier: { title: '选择供应商', dataSource: receiptSupplierData, onConfirm: (record) => { updateReceiptFilter('supplier', record.name); setSelectorType(''); } },
     material: {
       title: '选择物料',
       dataSource: getEffectivePoItems(activePO).map((item) => ({ ...item, code: item.materialCode, name: item.materialDesc })),
@@ -995,11 +1123,13 @@ export default function AssetReceiptPage() {
     const canCreateReceipt = currentPO.purchaseType === '电子设备';
     const canDirectConfirm = DIRECT_INBOUND_TYPES.has(currentPO.purchaseType);
     const hasReceipt = receiptRows.some((row) => row.poNo === currentPO.poNo);
+    const isDirectInbound = DIRECT_INBOUND_TYPES.has(currentPO.purchaseType);
 
     return (
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
         <PageTitle>资产接收</PageTitle>
+        <Alert type="info" showIcon message="默认为全量接收，可点击编辑按钮修改接收数量！" />
         <Card size="small" title="PO单信息">
           <DetailGrid columns={3} labelWidth={112}>
             <DetailItem label="PO单号"><Readonly>{currentPO.poNo}</Readonly></DetailItem>
@@ -1014,8 +1144,15 @@ export default function AssetReceiptPage() {
             <DetailItem label="采购员"><Readonly>{detail.buyer}</Readonly></DetailItem>
             <DetailItem label="采购员联系电话"><Readonly>{detail.buyerPhone}</Readonly></DetailItem>
             <DetailItem label="推送日期"><Readonly>{currentPO.pushDate}</Readonly></DetailItem>
-            <DetailItem label="板块"><SelectorInput value={detailPlate} placeholder="请选择板块" onOpen={() => setSelectorType('detailPlate')} /></DetailItem>
-            <DetailItem label="申请批次"><Input value={applicationBatch} placeholder="选填，请输入申请批次" onChange={(event) => setApplicationBatch(event.target.value)} /></DetailItem>
+            <DetailItem label="板块">
+              <Select
+                value={detailPlate || undefined}
+                placeholder="请选择板块"
+                options={PLATE_OPTIONS}
+                onChange={(value) => { setDetailPlate(value); updatePoReceiptDefault('plate', value); }}
+              />
+            </DetailItem>
+            <DetailItem label="申请批次"><Input value={applicationBatch} placeholder="选填，请输入申请批次" onChange={(event) => { const value = event.target.value; setApplicationBatch(value); updatePoReceiptDefault('applicationBatch', value); }} /></DetailItem>
           </DetailGrid>
         </Card>
         <Card size="small" title="PO物资明细" extra={(
@@ -1054,7 +1191,7 @@ export default function AssetReceiptPage() {
           width={720}
           okText="保存"
           onOk={savePoItem}
-          onCancel={() => { setEditItem(null); setEditDraft(null); }}
+          onCancel={() => { setEditItem(null); setEditDraft(null); setPartDescriptionModalOpen(false); }}
         >
           {editDraft && (
             <Space direction="vertical" size={12} className="w-full">
@@ -1068,23 +1205,53 @@ export default function AssetReceiptPage() {
               </div>
               <div>
                 <Typography.Text>接收数量</Typography.Text>
-                <InputNumber className="mt-1 w-full" min={1} max={editAvailableQty(editItem)} precision={0} value={editDraft.currentReceiptQty} onChange={(value) => setEditDraft((item) => ({ ...item, currentReceiptQty: value }))} />
-                <Typography.Text type="secondary">当前剩余可接收数量：{editAvailableQty(editItem)}</Typography.Text>
+                {isDirectInbound ? (
+                  <div className="mt-1">
+                    <Readonly>{editDraft.currentReceiptQty}</Readonly>
+                    <div><Typography.Text type="secondary">由 NO/MIS 数据决定，不允许人工修改</Typography.Text></div>
+                  </div>
+                ) : (
+                  <>
+                    <InputNumber className="mt-1 w-full" min={1} max={editAvailableQty(editItem)} precision={0} value={editDraft.currentReceiptQty} onChange={(value) => setEditDraft((item) => ({ ...item, currentReceiptQty: value }))} />
+                    <Typography.Text type="secondary">当前剩余可接收数量：{editAvailableQty(editItem)}</Typography.Text>
+                  </>
+                )}
               </div>
               <div>
                 <Typography.Text>是否部件</Typography.Text>
-                <Select className="mt-1 w-full" value={editDraft.isPart ? 'Y' : 'N'} options={[{ label: '是', value: 'Y' }, { label: '否', value: 'N' }]} onChange={(value) => setEditDraft((item) => ({ ...item, isPart: value === 'Y' }))} />
+                <Select className="mt-1 w-full" value={editDraft.isPart ? 'Y' : 'N'} options={[{ label: '是', value: 'Y' }, { label: '否', value: 'N' }]} onChange={(value) => setEditDraft((item) => value === 'Y' ? { ...item, isPart: true } : { ...item, isPart: false, partQuantity: 0, partDescriptions: [] })} />
               </div>
               <div>
                 <Typography.Text>部件数量</Typography.Text>
-                <InputNumber className="mt-1 w-full" disabled={!editDraft.isPart} min={1} precision={0} value={editDraft.partQuantity || undefined} onChange={(value) => setEditDraft((item) => ({ ...item, partQuantity: value || 0 }))} />
+                <InputNumber className="mt-1 w-full" disabled={!editDraft.isPart} min={2} max={100} precision={0} value={editDraft.partQuantity || undefined} onChange={(value) => setEditDraft((item) => ({ ...item, partQuantity: value || 0, partDescriptions: splitPartDescriptions((item.partDescriptions || []).join('@'), Math.max(0, Number(value || 0) - 1)) }))} />
               </div>
               <div>
-                <Typography.Text>部件描述</Typography.Text>
-                <Input className="mt-1" disabled={!editDraft.isPart} value={editDraft.partDesc} onChange={(event) => setEditDraft((item) => ({ ...item, partDesc: event.target.value }))} />
+                <Typography.Text>部件说明</Typography.Text>
+                <div className="mt-1 flex gap-2">
+                  <Input readOnly value={(editDraft.partDescriptions || []).join(' / ')} placeholder="请维护部件说明" />
+                  <Button disabled={!editDraft.isPart} onClick={openPartDescriptionEditor}>维护</Button>
+                </div>
               </div>
             </Space>
           )}
+        </Modal>
+        <Modal
+          open={partDescriptionModalOpen}
+          title="维护部件说明"
+          width={640}
+          okText="确定"
+          cancelText="取消"
+          onCancel={() => setPartDescriptionModalOpen(false)}
+          onOk={() => { setEditDraft((current) => ({ ...current, partDescriptions: [...partDescriptionDraft] })); setPartDescriptionModalOpen(false); }}
+        >
+          <Space direction="vertical" size={12} className="w-full">
+            {partDescriptionDraft.map((value, index) => (
+              <div key={index}>
+                <Typography.Text>子部件 {index + 1}</Typography.Text>
+                <Input className="mt-1" value={value} onChange={(event) => setPartDescriptionDraft((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} />
+              </div>
+            ))}
+          </Space>
         </Modal>
         {selectorConfig && <SelectModal open title={selectorConfig.title} dataSource={selectorConfig.dataSource} columns={selectorConfig.columns || [{ title: '名称', dataIndex: 'name' }]} searchFields={selectorConfig.searchFields || [{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelectorType('')} onConfirm={selectorConfig.onConfirm} />}
       </Space>
@@ -1179,6 +1346,7 @@ export default function AssetReceiptPage() {
           onCancel={() => setMaintenanceAsset(null)}
           onSave={(nextAsset) => {
             if (!validateSn(nextAsset.sn, nextAsset.id)) return;
+            if (!validatePartInfo(nextAsset.parts)) return;
             updateMaintenanceSession((current) => ({ ...current, rows: current.rows.map((row) => row.id === nextAsset.id ? nextAsset : row) }));
             setMaintenanceAsset(null);
             messageApi.success('明细信息已保存');
@@ -1231,6 +1399,7 @@ export default function AssetReceiptPage() {
           {!DIRECT_INBOUND_TYPES.has(receiptPO?.purchaseType) && <Button onClick={openReceiptMaintenance}>{canOperateReceipt ? '维护接收明细' : '查看接收明细'}</Button>}
           {canOperateReceipt && <Button danger onClick={cancelReceipt}>取消接收</Button>}
           {canOperateReceipt && <Button type="primary" onClick={confirmReceipt}>接收确认</Button>}
+          {!canOperateReceipt && <Button onClick={() => messageApi.success('已发起接收单打印（原型）')}>接收单打印</Button>}
           <Button onClick={() => setView('receiptList')}>返回</Button>
         </div>
       </Space>
@@ -1257,7 +1426,7 @@ export default function AssetReceiptPage() {
           <QueryItem label="单据状态"><Select value={receiptDraftFilters.status || undefined} allowClear placeholder="请选择" options={[{ label: '草稿', value: '草稿' }, { label: '已完成', value: '已完成' }]} onChange={(value) => updateReceiptFilter('status', value)} /></QueryItem>
           <QueryItem label="制单人"><Input value={receiptDraftFilters.creator} allowClear placeholder="请输入制单人" onChange={(event) => updateReceiptFilter('creator', event.target.value)} /></QueryItem>
           <QueryItem label="制单时间"><DatePicker.RangePicker value={receiptDateRange} style={{ width: '100%' }} format="YYYY-MM-DD" allowClear onChange={updateReceiptDateRange} /></QueryItem>
-          <QueryItem label="供应商"><Input value={receiptDraftFilters.supplier} allowClear placeholder="请输入供应商" onChange={(event) => updateReceiptFilter('supplier', event.target.value)} /></QueryItem>
+          <QueryItem label="供应商"><SelectorInput value={receiptDraftFilters.supplier} placeholder="请选择供应商" onOpen={() => setSelectorType('receiptSupplier')} /></QueryItem>
         </QueryBar>
         <Card size="small" title="接收单列表" extra={(
           <Space>
@@ -1285,6 +1454,7 @@ export default function AssetReceiptPage() {
           />
         </Card>
         <div className="flex justify-center gap-3"><Button onClick={() => setView('poList')}>返回</Button></div>
+        {selectorConfig && <SelectModal open title={selectorConfig.title} dataSource={selectorConfig.dataSource} columns={selectorConfig.columns || [{ title: '名称', dataIndex: 'name' }]} searchFields={selectorConfig.searchFields || [{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelectorType('')} onConfirm={selectorConfig.onConfirm} />}
       </Space>
     );
   }
@@ -1295,7 +1465,7 @@ export default function AssetReceiptPage() {
       <PageTitle>资产接收</PageTitle>
       <QueryBar onQuery={() => setPoAppliedFilters({ ...poDraftFilters })} onReset={() => { setPoDraftFilters(EMPTY_PO_FILTERS); setPoAppliedFilters(EMPTY_PO_FILTERS); }}>
         <QueryItem label="公司"><SelectorInput value={poDraftFilters.company} placeholder="请选择公司" onOpen={() => setSelectorType('company')} /></QueryItem>
-        <QueryItem label="板块"><SelectorInput value={poDraftFilters.plate} placeholder="请选择板块" onOpen={() => setSelectorType('plate')} /></QueryItem>
+        <QueryItem label="板块"><Select value={poDraftFilters.plate || undefined} allowClear placeholder="请选择板块" options={PLATE_OPTIONS} onChange={(value) => updatePoFilter('plate', value)} /></QueryItem>
         <QueryItem label="PO单号"><Input value={poDraftFilters.poNo} allowClear placeholder="请输入PO单号" onChange={(event) => updatePoFilter('poNo', event.target.value)} /></QueryItem>
         <QueryItem label="供应商"><SelectorInput value={poDraftFilters.supplier} placeholder="请选择供应商" onOpen={() => setSelectorType('supplier')} /></QueryItem>
         <QueryItem label="接收状态"><Select value={poDraftFilters.receiptStatus || undefined} allowClear placeholder="全部" options={['待接收', '已接收', '已入库'].map((value) => ({ label: value, value }))} onChange={(value) => updatePoFilter('receiptStatus', value)} /></QueryItem>
