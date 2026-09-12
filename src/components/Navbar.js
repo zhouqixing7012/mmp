@@ -52,7 +52,6 @@ export default function Navbar() {
                   <Link
                     key={route.path}
                     to={route.path}
-                    viewTransition
                     className={linkClass(route.path)}
                     onClick={() => setOpenGroupKey('')}
                   >
