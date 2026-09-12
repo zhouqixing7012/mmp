@@ -51,6 +51,48 @@
   }
 }
 
+/* 侧边栏二级菜单保持挂载，通过高度和透明度过渡，避免硬展开/硬收起。 */
+.mmp-sidebar-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    grid-template-rows var(--mmp-motion-normal) var(--mmp-motion-ease-out),
+    opacity var(--mmp-motion-fast) var(--mmp-motion-ease-out);
+}
+
+.mmp-sidebar-collapse.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mmp-menu-chevron {
+  transition: transform var(--mmp-motion-normal) var(--mmp-motion-ease-out);
+}
+
+/* 顶部导航下拉使用短距离位移 + 淡入，关闭时同步淡出。 */
+.mmp-nav-dropdown {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.985);
+  transform-origin: top left;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--mmp-motion-fast) var(--mmp-motion-ease-out),
+    transform var(--mmp-motion-fast) var(--mmp-motion-ease-out),
+    visibility 0s linear var(--mmp-motion-fast);
+}
+
+.mmp-nav-dropdown.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
 /* 只给明确可点击的卡片使用，普通信息 Card 不套用。 */
 .mmp-interactive-card {
   transition:
@@ -68,15 +110,42 @@
   transform: translateY(0) scale(0.99);
 }
 
+/* 新增/修改成功后给目标表格行一次轻量反馈，帮助用户快速定位变化。 */
+.mmp-table-row-flash > td {
+  animation: mmp-table-row-flash 900ms var(--mmp-motion-ease-out) both;
+}
+
+@keyframes mmp-table-row-flash {
+  0%, 18% {
+    background-color: rgba(20, 92, 255, 0.12);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* React Router 一级路由使用浏览器原生 View Transition，统一到项目时长。 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--mmp-motion-normal);
+  animation-timing-function: var(--mmp-motion-ease-out);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mmp-motion-overlay,
   .mmp-motion-dialog,
+  .mmp-sidebar-collapse,
+  .mmp-menu-chevron,
+  .mmp-nav-dropdown,
   .mmp-interactive-card {
     transition-duration: 0.01ms !important;
   }
 
-  .mmp-page-motion {
-    animation: none !important;
+  .mmp-page-motion,
+  .mmp-table-row-flash > td,
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.01ms !important;
   }
 }
 
