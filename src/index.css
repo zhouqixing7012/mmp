@@ -51,6 +51,25 @@
   }
 }
 
+/* 查询/重置后只刷新结果区，不重复播放整页动效。 */
+.mmp-query-result-refresh .ant-table-container,
+.mmp-query-result-refresh.ant-list,
+.mmp-query-result-refresh .ant-list-items,
+[data-mmp-query-result].mmp-query-result-refresh {
+  animation: mmp-query-result-refresh var(--mmp-motion-fast) var(--mmp-motion-ease-out) both;
+}
+
+@keyframes mmp-query-result-refresh {
+  from {
+    opacity: 0.45;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* 侧边栏二级菜单保持挂载，通过高度和透明度过渡，避免硬展开/硬收起。 */
 .mmp-sidebar-collapse {
   display: grid;
@@ -142,6 +161,10 @@
   }
 
   .mmp-page-motion,
+  .mmp-query-result-refresh .ant-table-container,
+  .mmp-query-result-refresh.ant-list,
+  .mmp-query-result-refresh .ant-list-items,
+  [data-mmp-query-result].mmp-query-result-refresh,
   .mmp-table-row-flash > td,
   ::view-transition-old(root),
   ::view-transition-new(root) {
