@@ -20,7 +20,7 @@
 | Token | 时长 | 使用场景 |
 |---|---:|---|
 | `--mmp-motion-instant` | 100ms | 按压、极高频 hover |
-| `--mmp-motion-fast` | 140ms | 遮罩、菜单、下拉、退出 |
+| `--mmp-motion-fast` | 140ms | 遮罩、菜单、下拉、退出、查询结果刷新 |
 | `--mmp-motion-normal` | 180ms | 页面进入、弹窗主体、常规切换 |
 | `--mmp-motion-slow` | 220ms | 低频、内容稍复杂的进入变化 |
 
@@ -209,6 +209,28 @@ highlightRow(updated.id);
 - 删除不做“残影动画”，删除成功后直接移除并用 Message 反馈。
 - 查询、分页、排序导致的普通列表刷新不触发行高亮。
 
+### 7.1 查询 / 重置结果反馈
+
+查询列表点击“查询”或“重置”后，不做整页页面动效，也不人为制造 Loading。统一由公共 `QueryBar` 给当前查询区后面的首个结果 `Table / List` 一次短刷新反馈：
+
+- 约 140ms。
+- `opacity: 0.45 → 1`。
+- `translateY(2px) → 0`。
+- 查询和重置使用同一反馈。
+- 默认按钮和 `buttons` 自定义的“查询 / 重置”按钮都应自动覆盖。
+- 查询条件 Card 本身保持静止，避免用户误以为整个页面重新加载。
+- `prefers-reduced-motion` 下压缩到近乎即时。
+
+如果一个查询区对应的结果不是普通 Ant Design `Table / List`，可在结果根节点增加：
+
+```jsx
+<div data-mmp-query-result>
+  ...
+</div>
+```
+
+不要为了表现“正在查询”增加固定延时或假的 `Spin / Skeleton`；只有真实异步等待才显示 Loading。
+
 ## 8. Hover / Press
 
 高频控件优先使用 Ant Design 原生状态；手写交互只允许针对明确属性：
@@ -255,10 +277,11 @@ transition: all 300ms;
 4. 弹窗是否使用 Ant Design Modal / `SelectModal` / 现有公共 Modal。
 5. 明确可点击 Card 是否使用 `mmp-interactive-card`；不可点击 Card 是否保持静止。
 6. 有“新增/修改后回列表”场景时，是否使用 `useTransientRowHighlight` 给目标行反馈。
-7. 自定义菜单/下拉是否有 140～180ms 的进入/退出，而不是瞬间出现。
-8. 是否避免 `transition-all`、长动画和大位移。
-9. 是否尊重 `prefers-reduced-motion`。
-10. 是否没有为了动效新增不必要的依赖。
-11. 打开 Modal / Drawer / Popover / Dropdown 时，是否不会误触发整页页面动效。
+7. 使用 `QueryBar` 的查询列表是否保留公共“查询 / 重置 → 结果区 140ms 刷新反馈”，而不是自行做整页动画或假 Loading。
+8. 自定义菜单/下拉是否有 140～180ms 的进入/退出，而不是瞬间出现。
+9. 是否避免 `transition-all`、长动画和大位移。
+10. 是否尊重 `prefers-reduced-motion`。
+11. 是否没有为了动效新增不必要的依赖。
+12. 打开 Modal / Drawer / Popover / Dropdown 时，是否不会误触发整页页面动效。
 
-只要以上 11 项满足，新页面就视为符合本项目统一动效规范。
+只要以上 12 项满足，新页面就视为符合本项目统一动效规范。
