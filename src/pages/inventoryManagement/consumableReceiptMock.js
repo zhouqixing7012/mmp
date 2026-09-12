@@ -1,20 +1,19 @@
-export const OFFICE_AREAS = [
-  '北京 - 搜狐网络大厦',
-  '北京 - 融科大厦 C 座',
-  '北京 - 搜狐媒体大厦',
-  '北京 - 融科大厦 A 座',
-];
-
 export const WAREHOUSE_BY_COMPANY = {
   '114.新媒体': '北京耗材仓',
   '116.天津飞狐': '天津耗材仓',
 };
 
+export const EXISTING_ASSET_SNS = [
+  'SN-R740-001',
+  'SN-T14-018',
+  'SN-MX4-003',
+];
+
 export const MATERIAL_OPTIONS = [
-  { id: 1, purchaseType: '低值耐用品', code: '114009001000101', name: '显示器.Dell.P2425H', config: '24英寸 / 1920×1080 / HDMI+DP' },
-  { id: 2, purchaseType: '低值耐用品', code: '114009001000102', name: '扩展坞.Dell.WD19S', config: 'USB-C / 130W' },
-  { id: 3, purchaseType: '耗材', code: '114010002000201', name: '网线.六类.2米', config: 'CAT6 / 2m / 蓝色' },
-  { id: 4, purchaseType: '耗材', code: '114010002000202', name: '鼠标垫.标准款', config: '黑色 / 300×250mm' },
+  { id: 1, purchaseType: '低值耐用品', materialGroup: '低值耐用品', consumableClass: '办公设备', code: '114009001000101', name: '显示器.Dell.P2425H', config: '24英寸 / 1920×1080 / HDMI+DP' },
+  { id: 2, purchaseType: '低值耐用品', materialGroup: '低值耐用品', consumableClass: '办公设备', code: '114009001000102', name: '扩展坞.Dell.WD19S', config: 'USB-C / 130W' },
+  { id: 3, purchaseType: '耗材', materialGroup: '耗材', consumableClass: '办公耗材', code: '114010002000201', name: '网线.六类.2米', config: 'CAT6 / 2m / 蓝色' },
+  { id: 4, purchaseType: '耗材', materialGroup: '耗材', consumableClass: '办公耗材', code: '114010002000202', name: '鼠标垫.标准款', config: '黑色 / 300×250mm' },
 ];
 
 export const INITIAL_PO_ROWS = [
@@ -91,7 +90,7 @@ export const INITIAL_PO_ITEMS = {
     },
     {
       id: 2, receiptStatus: '待接收', materialGroup: '低值耐用品', assetClass: '办公设备', materialCode: '114009001000102',
-      materialDesc: '扩展坞.Dell.WD19S', poDesc: '办公扩展坞', config: 'USB-C / 130W', isPart: true, partQuantity: 1,
+      materialDesc: '扩展坞.Dell.WD19S', poDesc: '办公扩展坞', config: 'USB-C / 130W', isPart: true, partQuantity: 2,
       partDesc: '130W电源适配器', currentReceiveQty: 5, purchaseQty: 5, untaxedUnitPrice: 707.96, taxRate: 0.13,
       receivedQty: 0, draftQty: 0, promisedArrivalDate: '2026-09-08', prLine: 'PR260820001/20', saLine: 'SA260821001/20',
       applicationNo: 'REQ260820001', department: 'ERP部.业务产品二组', businessLine: 'ERP', applicant: '115203.张璐',
@@ -134,13 +133,16 @@ export const INITIAL_RECEIPTS = [
     supplier: '北京美捷美科技有限公司',
     supplierPhone: '010-62728007',
     procurementUnit: '116.天津飞狐',
+    procurementUnitPhone: '010-62728008',
     buyer: '116201.李明',
     buyerPhone: '010-62728111',
     contractSubject: '天津飞狐信息技术有限公司',
     plate: '视频',
     department: '行政部',
-    receiver: '115102-王英',
+    creator: '115102-王英',
     createdAt: '2026-08-21 15:32:09',
+    receiver: '115102-王英',
+    receiptAt: '2026-08-21 15:32:09',
     orderDate: '2026-08-20',
     applicationBatch: 'BAT-20260820-04',
     purchaseType: '耗材',
@@ -153,7 +155,7 @@ export const INITIAL_RECEIPTS = [
       department: '行政部', businessLine: '视频', applicant: '116090.刘佳',
     }],
     inboundResult: {
-      inboundNo: 'IN-202608210001',
+      inboundNo: 'PI-CM-202608210001',
       warehouse: '天津耗材仓',
       status: '已完成',
       creator: '115102-王英',
