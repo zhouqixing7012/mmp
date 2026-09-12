@@ -9,16 +9,17 @@
 
 - 全局动效 Token 保持 100 / 140 / 180 / 220ms 四档，统一缓动，并支持 `prefers-reduced-motion`。
 - `src/components/Modal.js` 和 `src/components/SelectModal.jsx` 已增加淡入 + 轻微上移/缩放的进入动画，以及约 140ms 的真实退出动画；关闭后再卸载 DOM。
-- 新增 `src/components/PageMotionBoundary.jsx` 作为整页动效统一出口：初次进入播放 `mmp-page-motion`，并根据页面 `h1/h2/h3/h4` 与主要 Card 标题变化自动识别同一 URL 内的 list/detail/editor/create 等整块视图切换。
-- `PageMotionBoundary` 已排除 Ant Design Modal / Drawer / Popover / Dropdown，以及项目自定义 `mmp-motion-overlay` / `[role="dialog"]` 内部标题，避免打开弹窗时误触发整页页面动效。
+- 新增 `src/components/PageMotionBoundary.jsx` 作为整页动效统一出口：初次进入播放 `mmp-page-motion`；同 URL 内部视图切换使用“语义标题变化 + 页面出口第一层主要业务区块替换”双判定，覆盖 list/detail/editor/create/返回等整块视图变化。
+- `PageMotionBoundary` 的结构判定只认 Card / Table / Form / Descriptions 等主要业务区块；表格行更新、输入值变化、局部提示/按钮显隐不会触发整页动画。
+- `PageMotionBoundary` 已排除 Ant Design Modal / Drawer / Popover / Dropdown，以及项目自定义 `mmp-motion-overlay` / `[role="dialog"]` 内部标题和结构，避免打开浮层时误触发整页页面动效。
 - `src/App.js` 已改为普通 React Router 路由统一挂 `PageMotionBoundary`，并按 `location.key` 重新挂载；以后无论 `Link` 还是按钮内 `navigate()`，只要进入普通路由都会自动有统一页面进入动效。
-- `/yewurules` 不在 App 层重复播放整页动画，由 `AdminContent` 内部 `PageMotionBoundary` 接管；它既覆盖 `activeMenu / activeSubMenu / activeTab` 切换，也覆盖资产接收、耗材接收、入库、出库、移库、转移、盘点、角色/字典等同一菜单内通过本地 view 状态进行的详情/编辑/创建切换。
-- `src/components/PageViewMotion.jsx` 保留为特殊兜底：只有两个内部视图的页面标题和主要 Card 标题完全相同、无法被公共边界区分时才显式使用；优先可在视图根节点声明 `data-page-view-key`。
+- `/yewurules` 不在 App 层重复播放整页动画，由 `AdminContent` 内部 `PageMotionBoundary` 接管；`yewurules.js` 中角色、字典、个人工作台、资产管理、库存管理、盘点和后台基础配置全部位于该出口内，因此菜单切换与同一菜单内本地 `view/viewMode/currentView` 的详情/编辑/创建切换均统一覆盖。
+- `src/components/PageViewMotion.jsx` 保留为特殊兜底：只有自动边界既无法通过语义标题区分，也没有可识别主要业务区块替换时才显式使用；优先可在视图根节点声明 `data-page-view-key`。
 - `AdminSidebar` 二级菜单通过 CSS Grid 平滑展开/收起，Chevron 使用统一旋转过渡。
 - 顶部 `Navbar` 路由下拉保留约 140ms 的淡入 + 4px 位移；路由页面进入由 App / AdminContent 的公共边界统一负责。
 - `mmp-interactive-card` 作为明确可点击卡片/操作块的统一 hover/press 动效；普通信息 Card 不增加上浮。
 - `src/hooks/useTransientRowHighlight.js` 为新增/修改成功后的目标表格行提供约 900ms 的短暂品牌色高亮；查询/分页/删除不触发。
-- `docs/UI_MOTION_GUIDELINES.md` 与 `AGENTS.md` 已改为“公共 PageMotionBoundary 默认自动覆盖，标题完全相同才显式兜底”的规则，避免以后生成新页面时漏掉按钮进入详情/编辑/创建页的动效。
+- `docs/UI_MOTION_GUIDELINES.md` 与 `AGENTS.md` 已改为“公共 PageMotionBoundary 默认自动覆盖，自动识别无法区分时才显式兜底”的规则，避免以后生成新页面时漏掉按钮进入详情/编辑/创建页的动效。
 - 资产接收 PO 详情创建接收单必须先勾选 PO 物资行；“创建接收单”放在 PO 物资明细 Card 右上角，创建成功直接进入接收单详情。
 - 资产接收 PO 物资“编辑”弹窗已与耗材接收统一：物料、配置、接收数量、是否部件、部件数量、部件描述；接收数量受剩余可接收数量约束。
 - 服务器、服务器备件、网络设备、网络设备备件的 PO 详情使用勾选行后的“接收确认”，并生成 **已完成接收单 + 草稿采购接收入库单**。
@@ -31,9 +32,9 @@
 # 近期关键决定和原因
 
 - B 端动效以“解释状态变化”为目标，不做明显弹跳和长距离位移；公共入口统一实现，业务页面不自行定义动画时长和曲线。
-- 页面切换现在统一由两层公共边界处理：普通 React Router 页面由 `App.js + PageMotionBoundary`；`/yewurules` 由 `AdminContent + PageMotionBoundary`。公共边界同时负责同 URL 内语义视图切换，不再要求每个历史页面逐个套动画组件。
-- `PageMotionBoundary` 只根据页面标题和主要 Card 标题识别整页视图变化，不根据表格数据、输入值等业务内容值触发，避免查询/编辑时整页乱动。
-- 如果两个真实整页视图标题完全一致，使用 `data-page-view-key` 或 `PageViewMotion` 显式兜底；这条已写入新页面规范。
+- 页面切换统一由两层公共边界处理：普通 React Router 页面由 `App.js + PageMotionBoundary`；`/yewurules` 由 `AdminContent + PageMotionBoundary`。公共边界同时负责同 URL 内语义视图切换，不再要求每个历史页面逐个套动画组件。
+- `PageMotionBoundary` 优先看页面标题和主要 Card 标题；标题相同时再判断页面出口第一层是否替换了 Card/Table/Form/Descriptions 等主要业务区块。这样既覆盖同标题的详情/编辑切换，也避免普通数据刷新触发整页动画。
+- 如果两个真实整页视图仍无法被公共边界区分，使用 `data-page-view-key` 或 `PageViewMotion` 显式兜底；这条已写入新页面规范。
 - 新页面不依赖会话记忆判断动效，而以 `AGENTS.md + docs/UI_MOTION_GUIDELINES.md` 作为固定项目规则。
 - 当前需求用 React + CSS + Ant Design / React Router 自带能力已能稳定完成，因此本阶段不引入 Motion for React。
 - 页面切换只做进入过渡，不做复杂双页面叠加退出，避免后台高密度页面出现闪烁、布局重叠或状态管理复杂化。
