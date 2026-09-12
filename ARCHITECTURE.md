@@ -14,14 +14,16 @@
 | `README.md` | 功能、运行、部署、测试和搜索记录。 |
 | `ARCHITECTURE.md` | 模块职责、调用关系和交付方式。 |
 | `lessons.md` | 用户已确认的产品/实现经验。 |
+| `docs/UI_MOTION_GUIDELINES.md` | B 端统一动效规则和新增页面检查清单。 |
 
 ## src 目录职责
 
 | 路径 | 职责 |
 |---|---|
 | `src/App.js` | 应用路由入口，全局挂载原型标注层。 |
-| `src/index.css` | 全局样式以及统一 B 端动效 Token、弹窗/页面/可点击卡片过渡。 |
+| `src/index.css` | 全局样式以及统一 B 端动效 Token、弹窗/页面/菜单/路由/表格反馈样式。 |
 | `src/components/` | QueryBar、DetailGrid、SelectModal、StatusTag 等公共组件。 |
+| `src/hooks/` | 可复用交互 Hook；当前包含表格新增/修改后的短暂行高亮。 |
 | `src/mock/` | 演示数据。 |
 | `src/services/` | 演示流程、状态和 `demoStorage` 读写。 |
 | `src/pages/employeeSelfService/` | 资产申请、审批、配给等员工自助页面。 |
@@ -157,12 +159,15 @@ localStorage
 
 ### 统一动效
 
-- 动效参数集中在 `src/index.css`，优先使用 100 / 140 / 180 / 220ms 四档时长，只动画 `opacity / transform / box-shadow / border-color` 等明确属性。
+- 动效参数集中在 `src/index.css`，统一使用 100 / 140 / 180 / 220ms 四档时长，业务页面不得自定义另一套时长和缓动。
 - `src/components/Modal.js` 与 `src/components/SelectModal.jsx` 通过延迟卸载完成进入/退出动画，关闭时先播放约 140ms 退出再移除 DOM。
 - `AdminContent` 以 `activeMenu / activeSubMenu / activeTab` 组成的页面 scope 作为 key，在统一内容出口触发 180ms 的轻量淡入 + 6px 上移动效，不在各业务页面重复实现。
+- `AdminSidebar` 使用 `mmp-sidebar-collapse` 让二级菜单平滑展开/收起；`Navbar` 使用 `mmp-nav-dropdown` 处理顶部路由下拉，并在 `Link` 上启用 React Router 原生 `viewTransition`。
 - 只有明确可点击的卡片/操作块才使用 `mmp-interactive-card`；普通信息 Card 不增加上浮反馈。
-- 全局遵循 `prefers-reduced-motion`，用户开启“减少动态效果”时关闭页面动效并将组件过渡压缩到近乎即时。
+- `src/hooks/useTransientRowHighlight.js` 为新增/修改成功后的表格行提供约 900ms 的短暂高亮，业务页只在数据真正成功落地后触发。
+- 全局遵循 `prefers-reduced-motion`，用户开启“减少动态效果”时关闭页面、路由和表格反馈动画，并将组件过渡压缩到近乎即时。
 - 当前实现不新增第三方动画依赖；如果后续出现复杂共享布局或多阶段编排，再评估 Motion for React。
+- 新页面必须遵循 `docs/UI_MOTION_GUIDELINES.md`，避免把统一动效重新拆散到页面内部。
 
 ## 研发评审交付架构
 
