@@ -4,6 +4,16 @@ import { ChevronDown, LayoutDashboard, Settings, User } from 'lucide-react';
 import WorkspaceMenu from './WorkspaceMenu';
 import { BACKEND_CONFIG_MENU_ITEMS, MAIN_MENU_ITEMS } from '../config/menuConfig';
 
+function CollapsibleMenu({ open, children }) {
+  return (
+    <div className={`mmp-sidebar-collapse ${open ? 'is-open' : ''}`} aria-hidden={!open}>
+      <div className="min-h-0 overflow-hidden">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, onSubMenuSelect }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -29,7 +39,7 @@ export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, 
   }, [activeMenu, activeSubMenu, location.key, location.pathname, location.state, navigate]);
 
   return (
-    <div className="w-56 min-h-0 bg-[#001529] text-white flex flex-col transition-all duration-300 shadow-xl z-20 relative">
+    <div className="w-56 min-h-0 bg-[#001529] text-white flex flex-col shadow-xl z-20 relative">
       <div className="h-14 shrink-0 flex items-center gap-3 px-4 shadow-[0_1px_2px_rgba(0,0,0,0.3)] z-10 bg-[#002140]">
         <div className="w-8 h-8 rounded bg-[#1677ff] text-white flex items-center justify-center font-bold text-lg shadow-sm">E</div>
         <span className="font-semibold text-base tracking-wide text-white">企业资产管理系统</span>
@@ -46,18 +56,18 @@ export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, 
       <div className="min-h-0 flex-1 overflow-y-auto py-2">
         <div>
           <div
-            className="flex items-center justify-between px-5 py-3 cursor-pointer text-sm text-gray-300 hover:text-white hover:bg-white/5"
+            className="flex items-center justify-between px-5 py-3 cursor-pointer text-sm text-gray-300 transition-colors hover:text-white hover:bg-white/5"
             onClick={() => onMenuToggle('个人工作台')}
           >
             <div className="flex items-center gap-3">
               <LayoutDashboard size={16} />
               <span>个人工作台</span>
             </div>
-            <ChevronDown size={14} className={`transition-transform ${activeMenu === '个人工作台' ? 'rotate-180' : ''}`} />
+            <ChevronDown size={14} className={`mmp-menu-chevron ${activeMenu === '个人工作台' ? 'rotate-180' : ''}`} />
           </div>
-          {activeMenu === '个人工作台' && (
+          <CollapsibleMenu open={activeMenu === '个人工作台'}>
             <WorkspaceMenu activeSubMenu={activeSubMenu} onSelect={onSubMenuSelect} />
-          )}
+          </CollapsibleMenu>
         </div>
 
         {MAIN_MENU_ITEMS.map((item) => {
@@ -76,9 +86,9 @@ export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, 
                     <Icon size={16} />
                     <span>{item.label}</span>
                   </div>
-                  <ChevronDown size={14} className={`transition-transform ${isActive ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={14} className={`mmp-menu-chevron ${isActive ? 'rotate-180' : ''}`} />
                 </div>
-                {isActive && (
+                <CollapsibleMenu open={isActive}>
                   <div className="bg-[#000c17] py-1">
                     {item.children.map((subMenu) => (
                       <div
@@ -90,7 +100,7 @@ export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, 
                       </div>
                     ))}
                   </div>
-                )}
+                </CollapsibleMenu>
               </div>
             );
           }
@@ -109,16 +119,16 @@ export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, 
 
         <div className="mt-1">
           <div
-            className="flex items-center justify-between px-5 py-3 cursor-pointer text-sm text-gray-300 hover:text-white hover:bg-white/5"
+            className="flex items-center justify-between px-5 py-3 cursor-pointer text-sm text-gray-300 transition-colors hover:text-white hover:bg-white/5"
             onClick={() => onMenuToggle('后台基础配置')}
           >
             <div className="flex items-center gap-3">
               <Settings size={16} />
               <span>后台基础配置</span>
             </div>
-            <ChevronDown size={14} className={`transition-transform ${activeMenu === '后台基础配置' ? 'rotate-180' : ''}`} />
+            <ChevronDown size={14} className={`mmp-menu-chevron ${activeMenu === '后台基础配置' ? 'rotate-180' : ''}`} />
           </div>
-          {activeMenu === '后台基础配置' && (
+          <CollapsibleMenu open={activeMenu === '后台基础配置'}>
             <div className="bg-[#000c17] py-1">
               {BACKEND_CONFIG_MENU_ITEMS.map((subMenu) => (
                 <div
@@ -130,7 +140,7 @@ export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, 
                 </div>
               ))}
             </div>
-          )}
+          </CollapsibleMenu>
         </div>
       </div>
     </div>
