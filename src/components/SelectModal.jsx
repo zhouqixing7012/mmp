@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { Button } from 'antd';
 
 const DEFAULT_SEARCH_VALUES = {};
+const EXIT_DURATION = 140;
 
 /**
   * 通用选择弹窗组件
@@ -38,6 +39,8 @@ export default function SelectModal({
    });
    const [selectedKey, setSelectedKey] = useState(null);
   const [selectedKeys, setSelectedKeys] = useState([]);
+  const [shouldRender, setShouldRender] = useState(open);
+  const [isVisible, setIsVisible] = useState(false);
  
    const filteredData = dataSource.filter(item => {
      return searchFields.every(field => {
@@ -57,13 +60,38 @@ export default function SelectModal({
     setSearchValues(init);
     setSelectedKey(null);
     setSelectedKeys([]);
-  }, [open, initialSearchValues]);
+  }, [open, initialSearchValues, searchFields]);
+
+  useEffect(() => {
+    let frameId;
+    let exitTimer;
+
+    if (open) {
+      setShouldRender(true);
+      frameId = window.requestAnimationFrame(() => {
+        setIsVisible(true);
+      });
+    } else {
+      setIsVisible(false);
+      if (shouldRender) {
+        exitTimer = window.setTimeout(() => {
+          setShouldRender(false);
+        }, EXIT_DURATION);
+      }
+    }
+
+    return () => {
+      if (frameId) window.cancelAnimationFrame(frameId);
+      if (exitTimer) window.clearTimeout(exitTimer);
+    };
+  }, [open, shouldRender]);
 
   const resetState = () => {
     const init = {};
     searchFields.forEach(f => { init[f.name] = (initialSearchValues[f.name] || ''); });
     setSearchValues(init);
     setSelectedKey(null);
+    setSelectedKeys([]);
   };
  
   const handleConfirm = () => {
@@ -91,7 +119,7 @@ export default function SelectModal({
     resetState();
   };
  
-  if (!open) return null;
+  if (!shouldRender) return null;
 
   const rows = [];
   for (let i = 0; i < searchFields.length; i += 2) {
@@ -100,11 +128,11 @@ export default function SelectModal({
  
   return (
     <div
-      className="fixed inset-0 bg-black/40 z-[1050] flex items-center justify-center p-4"
+      className={`fixed inset-0 bg-black/40 z-[1050] flex items-center justify-center p-4 mmp-motion-overlay ${isVisible ? 'is-visible' : ''}`}
       data-prototype-overlay="select-modal"
     >
       <div
-        className="bg-white rounded-md shadow-xl flex flex-col overflow-hidden"
+        className={`bg-white rounded-md shadow-xl flex flex-col overflow-hidden mmp-motion-dialog ${isVisible ? 'is-visible' : ''}`}
         style={{ width: '700px', maxWidth: '100%' }}
         data-prototype-bindable="selection-modal"
         data-prototype-label={title}
@@ -132,7 +160,7 @@ export default function SelectModal({
                     value={searchValues[field.name] || ''}
                     onChange={(e) => setSearchValues(prev => ({ ...prev, [field.name]: e.target.value }))}
                     placeholder={field.placeholder || `请输入${field.label}`}
-                    className="flex-1 px-3 py-1.5 text-sm bg-white border border-[#d9d9d9] rounded hover:border-[#1677ff] focus:border-[#1677ff] focus:ring-2 focus:ring-[#1677ff] focus:ring-opacity-20 outline-none transition-all"
+                    className="flex-1 px-3 py-1.5 text-sm bg-white border border-[#d9d9d9] rounded hover:border-[#1677ff] focus:border-[#1677ff] focus:ring-2 focus:ring-[#1677ff] focus:ring-opacity-20 outline-none transition-colors"
                   />
                 </div>
               ))}
