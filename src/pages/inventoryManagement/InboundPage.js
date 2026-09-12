@@ -639,11 +639,11 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, onCance
     };
     const isInfra = INFRA_ASSET_TYPES.has(detail.assetSubClass);
     return (
-      <Modal open={open} title="入库物资信息" width={1180} onCancel={onCancel} footer={<Button onClick={onCancel}>关闭</Button>}>
+      <Modal open={open} title="入库物资信息" width={1180} onCancel={onCancel} footer={null}>
         <Space direction="vertical" size={16} className="w-full">
           <Typography.Text>当前仓库：{warehouse}</Typography.Text>
           <Card size="small" title="物资信息">
-            <DetailGrid columns={3} labelWidth={96} minWidth={980}>
+            <DetailGrid columns={3} labelWidth={112} minWidth={980}>
               <EditorField label="物资说明"><Readonly>{detail.materialDesc}</Readonly></EditorField>
               <EditorField label="物资总类"><Readonly>{detail.materialGroup}</Readonly></EditorField>
               <EditorField label="物资大类"><Readonly>{detail.assetClass}</Readonly></EditorField>
@@ -710,11 +710,11 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, onCance
       ...row,
     };
     return (
-      <Modal open={open} title="入库物资信息" width={1180} onCancel={onCancel} footer={<Button onClick={onCancel}>关闭</Button>}>
+      <Modal open={open} title="入库物资信息" width={1180} onCancel={onCancel} footer={null}>
         <Space direction="vertical" size={16} className="w-full">
           <Typography.Text>当前仓库：{warehouse}</Typography.Text>
           <Card size="small" title="物资信息">
-            <DetailGrid columns={3} labelWidth={96} minWidth={980}>
+            <DetailGrid columns={3} labelWidth={112} minWidth={980}>
               <EditorField label="资产标签号"><Readonly>{detail.assetTag}</Readonly></EditorField>
               <EditorField label="SN号"><Readonly>{detail.sn}</Readonly></EditorField>
               <EditorField label="物资说明"><Readonly>{detail.materialDesc}</Readonly></EditorField>
@@ -749,7 +749,7 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, onCance
             </DetailGrid>
           </Card>
           <Card size="small" title={isBorrow ? '借用归还入库' : '一般退库入库'}>
-            <DetailGrid columns={3} labelWidth={96}>
+            <DetailGrid columns={3} labelWidth={112}>
               <EditorField label="责任人"><Readonly>{detail.responsiblePerson}</Readonly></EditorField>
               <EditorField label="资产标记"><Readonly>{detail.assetMark}</Readonly></EditorField>
               <EditorField label={isBorrow ? '归还数量' : '退库数量'}><Readonly>{detail.returnQty || detail.quantity}</Readonly></EditorField>
@@ -768,19 +768,11 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, onCance
   }
 
   const pending = PURCHASE_PENDING_ROWS.find((item) => item.assetTag === row.assetTag) || {};
-  const materialName = row.materialDesc || pending.materialDesc || '';
-  const [brandFromName = '', modelFromName = ''] = materialName.split(/\.(.+)/).filter((part) => part !== undefined);
   const warehouseContext = WAREHOUSE_CONTEXT[warehouse] || { city: '', building: '', company: '' };
   const detail = {
     ...pending,
-    brand: brandFromName,
-    model: modelFromName,
     unit: '台',
-    area: '',
-    location: '',
     applicationBatch: '',
-    contractNo: '',
-    level: '缺省',
     assetStatus: '在库-新增',
     city: warehouseContext.city,
     building: warehouseContext.building,
@@ -803,45 +795,33 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, onCance
     usageDesc: '',
     remark: '',
     service: '',
-    subService: '',
     noLocation: '',
-    cabinet: '',
-    ilo: '',
-    iloPw: '',
-    ip1: '',
-    ip2: '',
-    ip3: '',
     ...row,
   };
   return (
-    <Modal open={open} title="入库物资信息" width={1320} onCancel={onCancel} footer={<Button onClick={onCancel}>关闭</Button>}>
+    <Modal open={open} title="入库物资信息" width={1320} onCancel={onCancel} footer={null}>
       <Space direction="vertical" size={16} className="w-full">
         <Typography.Text>当前仓库：{warehouse}</Typography.Text>
         <Card size="small" title="物资信息">
-          <DetailGrid columns={4} labelWidth={88} minWidth={1180}>
+          <DetailGrid columns={4} labelWidth={112} minWidth={1180}>
             <EditorField label="物资说明"><Readonly>{detail.materialDesc}</Readonly></EditorField>
             <EditorField label="物资总类"><Readonly>{detail.materialGroup}</Readonly></EditorField>
             <EditorField label="物资大类"><Readonly>{detail.assetClass}</Readonly></EditorField>
             <EditorField label="物资小类"><Readonly>{detail.assetSubClass}</Readonly></EditorField>
-            <EditorField label="品牌"><Readonly>{detail.brand}</Readonly></EditorField>
-            <EditorField label="规格型号"><Readonly>{detail.model}</Readonly></EditorField>
             <EditorField label="配置"><Readonly>{detail.config}</Readonly></EditorField>
             <EditorField label="计量单位"><Readonly>{detail.unit}</Readonly></EditorField>
-            <EditorField label="库区"><Readonly>{detail.area}</Readonly></EditorField>
-            <EditorField label="货位"><Readonly>{detail.location}</Readonly></EditorField>
             <EditorField label="申请批次"><Readonly>{detail.applicationBatch}</Readonly></EditorField>
             <EditorField label="入库数量"><Readonly>{detail.quantity}</Readonly></EditorField>
-            <EditorField label="合同编号"><Readonly>{detail.contractNo}</Readonly></EditorField>
             <EditorField label="原值"><Readonly>{money(detail.originalValue)}</Readonly></EditorField>
             <EditorField label="税金"><Readonly>{money(detail.tax)}</Readonly></EditorField>
             <EditorField label="金额小计"><Readonly>{money(Number(detail.originalValue || 0) + Number(detail.tax || 0))}</Readonly></EditorField>
             <EditorField label="资产标签号"><Readonly>{detail.assetTag}</Readonly></EditorField>
             <EditorField label="SN号"><Readonly>{detail.sn}</Readonly></EditorField>
-            <EditorField label="级别"><Readonly>{detail.level}</Readonly></EditorField>
             <EditorField label="资产状态"><Readonly>{detail.assetStatus}</Readonly></EditorField>
             <EditorField label="City"><Readonly>{detail.city}</Readonly></EditorField>
             <EditorField label="Building"><Readonly>{detail.building}</Readonly></EditorField>
             <EditorField label="Floor"><Readonly>{detail.floor}</Readonly></EditorField>
+            <EditorField label="NO位置"><Readonly>{detail.noLocation}</Readonly></EditorField>
             <EditorField label="原资产标签号"><Readonly>{detail.originalAssetTag}</Readonly></EditorField>
             <EditorField label="所在部门"><Readonly>{detail.department}</Readonly></EditorField>
             <EditorField label="责任人"><Readonly>{detail.responsiblePerson}</Readonly></EditorField>
@@ -853,6 +833,7 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, onCance
             <EditorField label="项目"><Readonly>{detail.project}</Readonly></EditorField>
             <EditorField label="板块"><Readonly>{detail.plate}</Readonly></EditorField>
             <EditorField label="费用账户"><Readonly>{detail.expenseAccount}</Readonly></EditorField>
+            <EditorField label="服务"><Readonly>{detail.service}</Readonly></EditorField>
             <EditorField label="购置日期"><Readonly>{detail.purchaseDate}</Readonly></EditorField>
             <EditorField label="启用日期"><Readonly>{detail.enableDate}</Readonly></EditorField>
             <EditorField label="PR单号"><Readonly>{detail.prNo || detail.prLine}</Readonly></EditorField>
@@ -865,19 +846,6 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, onCance
             <EditorField label="供应商"><Readonly>{detail.supplier}</Readonly></EditorField>
             <EditorField label="使用说明" span={4}><Readonly>{detail.usageDesc}</Readonly></EditorField>
             <EditorField label="备注" span={4}><Readonly>{detail.remark}</Readonly></EditorField>
-          </DetailGrid>
-        </Card>
-        <Card size="small" title="NO设备信息">
-          <DetailGrid columns={4} labelWidth={88} minWidth={1180}>
-            <EditorField label="服务"><Readonly>{detail.service}</Readonly></EditorField>
-            <EditorField label="小服务"><Readonly>{detail.subService}</Readonly></EditorField>
-            <EditorField label="NO位置"><Readonly>{detail.noLocation}</Readonly></EditorField>
-            <EditorField label="Cabinet"><Readonly>{detail.cabinet}</Readonly></EditorField>
-            <EditorField label="ILO"><Readonly>{detail.ilo}</Readonly></EditorField>
-            <EditorField label="ILOPW"><Readonly>{detail.iloPw}</Readonly></EditorField>
-            <EditorField label="IP1"><Readonly>{detail.ip1}</Readonly></EditorField>
-            <EditorField label="IP2"><Readonly>{detail.ip2}</Readonly></EditorField>
-            <EditorField label="IP3"><Readonly>{detail.ip3}</Readonly></EditorField>
           </DetailGrid>
         </Card>
       </Space>
