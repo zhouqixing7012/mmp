@@ -799,11 +799,11 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, onCance
     ...row,
   };
   return (
-    <Modal open={open} title="入库物资信息" width={1320} onCancel={onCancel} footer={null}>
+    <Modal open={open} title="入库物资信息" width={1180} onCancel={onCancel} footer={null}>
       <Space direction="vertical" size={16} className="w-full">
         <Typography.Text>当前仓库：{warehouse}</Typography.Text>
         <Card size="small" title="物资信息">
-          <DetailGrid columns={4} labelWidth={112} minWidth={1180}>
+          <DetailGrid columns={3} labelWidth={112} minWidth={980}>
             <EditorField label="物资说明"><Readonly>{detail.materialDesc}</Readonly></EditorField>
             <EditorField label="物资总类"><Readonly>{detail.materialGroup}</Readonly></EditorField>
             <EditorField label="物资大类"><Readonly>{detail.assetClass}</Readonly></EditorField>
@@ -844,8 +844,8 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, onCance
             <EditorField label="部件说明"><Readonly>{detail.partDesc}</Readonly></EditorField>
             <EditorField label="主资产标签号"><Readonly>{detail.mainAssetTag}</Readonly></EditorField>
             <EditorField label="供应商"><Readonly>{detail.supplier}</Readonly></EditorField>
-            <EditorField label="使用说明" span={4}><Readonly>{detail.usageDesc}</Readonly></EditorField>
-            <EditorField label="备注" span={4}><Readonly>{detail.remark}</Readonly></EditorField>
+            <EditorField label="使用说明" span={3}><Readonly>{detail.usageDesc}</Readonly></EditorField>
+            <EditorField label="备注" span={3}><Readonly>{detail.remark}</Readonly></EditorField>
           </DetailGrid>
         </Card>
       </Space>
