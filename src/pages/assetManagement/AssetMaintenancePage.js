@@ -716,7 +716,7 @@ export default function AssetMaintenancePage() {
           <DetailItem label="仓库">{displayText(source.warehouse)}</DetailItem>
           <DetailItem label="原值">{amount(source.originalValue)}</DetailItem>
           <DetailItem label="新增类型">{displayText(source.addType)}</DetailItem>
-          <DetailItem label="购置日期">{displayText(source.purchaseDate)}</DetailItem>
+          <DetailItem label="购买日期">{displayText(source.purchaseDate)}</DetailItem>
           <DetailItem label="启用日期">{displayText(source.enabledDate)}</DetailItem>
           <DetailItem label="资产状态">
             {editable('status', (
