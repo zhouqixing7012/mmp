@@ -23,7 +23,7 @@ const DEFAULT_ASSET_ROW_MAP = new Map(
 
 function deriveLatestInventoryYear(row) {
   const latest = [...(row.inventoryRecords || [])]
-    .filter(record => record?.time)
+    .filter(record => record?.time && record.projectStatus === '已关闭')
     .sort((a, b) => String(b.time).localeCompare(String(a.time)))[0];
   return latest?.time ? String(latest.time).slice(0, 4) : '';
 }
@@ -33,6 +33,7 @@ function normalizeInventoryRecords(records = []) {
     const inventoryYear = record?.time ? String(record.time).slice(0, 4) : '';
     return {
       ...record,
+      projectStatus: record.projectStatus || '已关闭',
       projectStartTime: record.projectStartTime || record.time || '',
       type: LEGACY_INVENTORY_TYPE_VALUES.has(record.type) ? '初盘' : record.type,
       flag: record.flag === '正常' && inventoryYear ? `年度-${inventoryYear}` : record.flag,
