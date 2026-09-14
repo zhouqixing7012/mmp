@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useMemo, useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from 'antd';
 
@@ -45,7 +45,19 @@ export default function SelectModal({
   const [shouldRender, setShouldRender] = useState(open);
   const [isVisible, setIsVisible] = useState(false);
 
-  const filteredData = dataSource.filter(item => {
+  const normalizedData = useMemo(() => {
+    const seenKeys = new Set();
+    return dataSource.filter((item) => {
+      const rawKey = item?.[rowKey];
+      if (rawKey === undefined || rawKey === null || rawKey === '') return true;
+      const normalizedKey = String(rawKey);
+      if (seenKeys.has(normalizedKey)) return false;
+      seenKeys.add(normalizedKey);
+      return true;
+    });
+  }, [dataSource, rowKey]);
+
+  const filteredData = normalizedData.filter(item => {
     return searchFields.every(field => {
       const searchValue = searchValues[field.name];
       if (!searchValue) return true;
@@ -101,7 +113,7 @@ export default function SelectModal({
 
   const handleConfirm = () => {
     if (multiple) {
-      const selected = dataSource.filter(item => selectedKeys.includes(String(item[rowKey])));
+      const selected = normalizedData.filter(item => selectedKeys.includes(String(item[rowKey])));
       (onConfirm || onSelect)?.(selected);
       onCancel();
       resetState();
@@ -109,7 +121,7 @@ export default function SelectModal({
     }
 
     if (selectedKey) {
-      const selected = dataSource.find(item => String(item[rowKey]) === String(selectedKey));
+      const selected = normalizedData.find(item => String(item[rowKey]) === String(selectedKey));
       if (selected) {
         (onConfirm || onSelect)?.(selected);
         onCancel();
