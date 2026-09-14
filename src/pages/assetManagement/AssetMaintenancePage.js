@@ -193,6 +193,18 @@ function uniqueValues(rows, field) {
   return [...new Set(rows.map((row) => row[field]).filter(Boolean))];
 }
 
+function allowedCostCenters(rows, asset) {
+  if (!asset) return [];
+  const scopedRows = asset.isMachineRoom
+    ? rows.filter((row) => (
+      asset.departmentCode
+        ? row.departmentCode === asset.departmentCode
+        : row.department === asset.department
+    ))
+    : rows.filter((row) => row.ownerId === asset.ownerId);
+  return [...new Set([asset.costCenter, ...scopedRows.map((row) => row.costCenter)].filter(Boolean))];
+}
+
 function copyFilters(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -523,8 +535,8 @@ export default function AssetMaintenancePage() {
       messageApi.error('当前 Floor 与 Building 关系无效');
       return;
     }
-    if (!uniqueValues(rows, 'costCenter').includes(editDraft.costCenter)) {
-      messageApi.error('当前成本中心无效');
+    if (!allowedCostCenters(rows, activeAsset).includes(editDraft.costCenter)) {
+      messageApi.error('当前成本中心不在该资产允许的候选范围内');
       return;
     }
     if (!STATUS_OPTIONS.includes(editDraft.status)) {
@@ -680,7 +692,15 @@ export default function AssetMaintenancePage() {
         />
       </QueryItem>
       <QueryItem label="Floor">
-        <Select mode="multiple" value={draftFilters.floors} allowClear placeholder="请选择" options={(FLOOR_BY_BUILDING[draftFilters.building] || []).map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('floors', value)} />
+        <Select
+          mode="multiple"
+          value={draftFilters.floors}
+          allowClear
+          disabled={!draftFilters.building}
+          placeholder={draftFilters.building ? '请选择' : '请先选择 Building'}
+          options={(FLOOR_BY_BUILDING[draftFilters.building] || []).map((value) => ({ label: value, value }))}
+          onChange={(value) => updateFilter('floors', value)}
+        />
       </QueryItem>
       <QueryItem label="新增类型">
         <Select mode="multiple" value={draftFilters.addTypes} allowClear placeholder="请选择" options={ADD_TYPE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('addTypes', value)} />
@@ -814,7 +834,17 @@ export default function AssetMaintenancePage() {
             ))}
           </DetailItem>
           <DetailItem label="Floor">
-            {editable('floor', <Select allowClear value={editDraft?.floor || undefined} style={{ width: '100%' }} options={(FLOOR_BY_BUILDING[editDraft?.building] || []).map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('floor', value || '')} />)}
+            {editable('floor', (
+              <Select
+                allowClear
+                disabled={!editDraft?.building}
+                value={editDraft?.floor || undefined}
+                style={{ width: '100%' }}
+                placeholder={editDraft?.building ? '请选择' : '请先选择 Building'}
+                options={(FLOOR_BY_BUILDING[editDraft?.building] || []).map((value) => ({ label: value, value }))}
+                onChange={(value) => updateEdit('floor', value || '')}
+              />
+            ))}
           </DetailItem>
           <DetailItem label="盘点标识">{displayText(source.inventoryFlag)}</DetailItem>
           <DetailItem label="ES实物报废期">{displayText(source.esScrapPeriod)}</DetailItem>
@@ -842,7 +872,7 @@ export default function AssetMaintenancePage() {
                 showSearch
                 value={editDraft?.costCenter || undefined}
                 style={{ width: '100%' }}
-                options={uniqueValues(rows, 'costCenter').map((value) => ({ label: value, value }))}
+                options={allowedCostCenters(rows, activeAsset).map((value) => ({ label: value, value }))}
                 onChange={(value) => updateEdit('costCenter', value || '')}
               />
             ))}
@@ -957,8 +987,11 @@ export default function AssetMaintenancePage() {
       pagination={false}
       locale={{ emptyText: '暂无资产盘点历史' }}
       dataSource={[...(source.inventoryRecords || [])]
-        .filter((record) => record.projectStatus === '已关闭')
-        .sort((a, b) => String(b.projectStartTime || '').localeCompare(String(a.projectStartTime || '')))}
+        .filter((record) => record.projectStatus === '盘点关闭')
+        .sort((a, b) => (
+          String(b.projectStartTime || '').localeCompare(String(a.projectStartTime || ''))
+          || String(b.id || '').localeCompare(String(a.id || ''), 'zh-CN', { numeric: true })
+        ))}
       scroll={{ x: 1230 }}
       columns={[
         { title: '盘点类型', dataIndex: 'type', width: 120 },
@@ -973,7 +1006,11 @@ export default function AssetMaintenancePage() {
     />
   ) : null;
 
-  const transactionRows = source ? [...(source.transactionHistory || [])].sort((a, b) => String(b.operationDate).localeCompare(String(a.operationDate))) : [];
+  const transactionRows = source ? [...(source.transactionHistory || [])].sort((a, b) => (
+    String(b.operationDate || '').localeCompare(String(a.operationDate || ''))
+    || Number(b.sortSequence || 0) - Number(a.sortSequence || 0)
+    || String(b.id || '').localeCompare(String(a.id || ''), 'zh-CN', { numeric: true })
+  )) : [];
   const transactionTab = (
     <Table
       rowKey="id"
