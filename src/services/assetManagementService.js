@@ -16,6 +16,20 @@ const ASSET_MAINTENANCE_EDIT_FIELDS = [
   'costCenter', 'city', 'building', 'floor', 'status', 'serialNumber', 'remarks', 'assetMark', 'usageDescription', 'purpose',
 ];
 
+function deriveLatestInventoryYear(row) {
+  const latest = [...(row.inventoryRecords || [])]
+    .filter(record => record?.time)
+    .sort((a, b) => String(b.time).localeCompare(String(a.time)))[0];
+  return latest?.time ? String(latest.time).slice(0, 4) : '';
+}
+
+function normalizeAssetMaintenanceRow(row) {
+  return {
+    ...row,
+    inventoryFlag: deriveLatestInventoryYear(row),
+  };
+}
+
 function buildAssetMaintenanceTransaction(row, operationDate) {
   return {
     id: `asset-maint-${row.id}-${Date.now()}`,
@@ -46,7 +60,8 @@ function buildAssetMaintenanceTransaction(row, operationDate) {
 }
 
 export function getAssetMaintenanceRows() {
-  return readDemoData(ASSET_MAINTENANCE_STORAGE_KEY, DEFAULT_ASSET_MAINTENANCE_ROWS);
+  return readDemoData(ASSET_MAINTENANCE_STORAGE_KEY, DEFAULT_ASSET_MAINTENANCE_ROWS)
+    .map(normalizeAssetMaintenanceRow);
 }
 
 export function updateAssetMaintenanceRow(id, patch) {
@@ -57,7 +72,7 @@ export function updateAssetMaintenanceRow(id, patch) {
       Object.prototype.hasOwnProperty.call(patch, field)
       && String(row[field] ?? '') !== String(patch[field] ?? '')
     ));
-    const nextRow = { ...row, ...patch };
+    const nextRow = normalizeAssetMaintenanceRow({ ...row, ...patch });
     if (!hasMaintenanceChange) return nextRow;
 
     const operationDate = patch.updatedAt || new Date().toISOString().replace('T', ' ').slice(0, 19);
