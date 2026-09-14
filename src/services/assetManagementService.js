@@ -16,6 +16,13 @@ const ASSET_MAINTENANCE_EDIT_FIELDS = [
   'costCenter', 'city', 'building', 'floor', 'status', 'serialNumber', 'remarks', 'assetMark', 'usageDescription', 'purpose',
 ];
 const LEGACY_INVENTORY_TYPE_VALUES = new Set(['普通盘点', '快速盘点', '扫码枪盘点']);
+const CLOSED_INVENTORY_PROJECT_STATUSES = new Set(['盘点关闭', '已关闭']);
+const INVENTORY_IMPORT_WAY_MAP = {
+  狐小e扫码: 'APP 导入',
+  狐小e快速扫描资产: '快速盘点导入',
+  扫码枪: '扫码枪导入',
+  人工上传盘点结果: '',
+};
 
 const DEFAULT_ASSET_ROW_MAP = new Map(
   DEFAULT_ASSET_MAINTENANCE_ROWS.map((row) => [String(row.id), row]),
@@ -23,7 +30,7 @@ const DEFAULT_ASSET_ROW_MAP = new Map(
 
 function deriveLatestInventoryYear(row) {
   const latest = [...(row.inventoryRecords || [])]
-    .filter(record => record?.time && record.projectStatus === '已关闭')
+    .filter(record => record?.time && record.projectStatus === '盘点关闭')
     .sort((a, b) => String(b.time).localeCompare(String(a.time)))[0];
   return latest?.time ? String(latest.time).slice(0, 4) : '';
 }
@@ -31,13 +38,19 @@ function deriveLatestInventoryYear(row) {
 function normalizeInventoryRecords(records = []) {
   return records.map((record) => {
     const inventoryYear = record?.time ? String(record.time).slice(0, 4) : '';
+    const projectStatus = !record.projectStatus || CLOSED_INVENTORY_PROJECT_STATUSES.has(record.projectStatus)
+      ? '盘点关闭'
+      : record.projectStatus;
     return {
       ...record,
-      projectStatus: record.projectStatus || '已关闭',
+      projectStatus,
       projectStartTime: record.projectStartTime || record.time || '',
       type: LEGACY_INVENTORY_TYPE_VALUES.has(record.type) ? '初盘' : record.type,
       flag: record.flag === '正常' && inventoryYear ? `年度-${inventoryYear}` : record.flag,
       status: record.status === '待盘' ? '代盘' : record.status,
+      importWay: Object.prototype.hasOwnProperty.call(INVENTORY_IMPORT_WAY_MAP, record.importWay)
+        ? INVENTORY_IMPORT_WAY_MAP[record.importWay]
+        : record.importWay,
     };
   });
 }
