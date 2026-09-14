@@ -42,13 +42,32 @@ function normalizeInventoryRecords(records = []) {
   });
 }
 
+function deriveTransactionSortSequence(record, fallbackIndex, total) {
+  const explicit = Number(record?.sortSequence);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  const idMatch = String(record?.id || '').match(/-(\d{10,})$/);
+  if (idMatch) return Number(idMatch[1]);
+  return Math.max(1, total - fallbackIndex);
+}
+
 function normalizeTransactionHistory(records = []) {
-  return records.map((record) => {
-    if (!record?.documentNo && record?.applicationNo) {
-      return { ...record, applicationNo: '' };
-    }
-    return record;
-  });
+  const total = records.length;
+  return records
+    .map((record, index) => {
+      const normalized = !record?.documentNo && record?.applicationNo
+        ? { ...record, applicationNo: '' }
+        : { ...record };
+      return {
+        ...normalized,
+        assetMark: normalized.assetMark || '',
+        sortSequence: deriveTransactionSortSequence(normalized, index, total),
+      };
+    })
+    .sort((a, b) => (
+      String(b.operationDate || '').localeCompare(String(a.operationDate || ''))
+      || Number(b.sortSequence || 0) - Number(a.sortSequence || 0)
+      || String(b.id || '').localeCompare(String(a.id || ''), 'zh-CN', { numeric: true })
+    ));
 }
 
 function normalizeAssetMaintenanceRow(row) {
@@ -69,8 +88,10 @@ function normalizeAssetMaintenanceRow(row) {
 }
 
 function buildAssetMaintenanceTransaction(row, operationDate) {
+  const sortSequence = Date.now();
   return {
-    id: `asset-maint-${row.id}-${Date.now()}`,
+    id: `asset-maint-${row.id}-${sortSequence}`,
+    sortSequence,
     operationType: '资产维护修改',
     operationDate,
     operator: '115102-王英',
@@ -88,6 +109,7 @@ function buildAssetMaintenanceTransaction(row, operationDate) {
     location: [row.city, row.building, row.floor].filter(Boolean).join('.'),
     purpose: row.purpose || '',
     status: row.status || '',
+    assetMark: row.assetMark || '',
     usageDescription: row.usageDescription || '',
     remarks: row.remarks || '',
     service: row.service || '',
@@ -117,7 +139,7 @@ export function updateAssetMaintenanceRow(id, patch) {
     const transaction = buildAssetMaintenanceTransaction(nextRow, operationDate);
     return {
       ...nextRow,
-      transactionHistory: [transaction, ...(nextRow.transactionHistory || [])],
+      transactionHistory: normalizeTransactionHistory([transaction, ...(nextRow.transactionHistory || [])]),
     };
   });
   writeDemoData(ASSET_MAINTENANCE_STORAGE_KEY, nextRows);
