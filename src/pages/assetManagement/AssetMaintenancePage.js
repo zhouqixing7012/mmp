@@ -197,6 +197,14 @@ function copyFilters(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function normalizeSerial(value) {
+  return String(value || '').trim();
+}
+
+function isPlaceholderSerial(value) {
+  return normalizeSerial(value) === '缺省';
+}
+
 function LookupInput({ value, placeholder, onOpen }) {
   return (
     <Input
@@ -491,7 +499,7 @@ export default function AssetMaintenancePage() {
 
   const saveAsset = () => {
     if (!activeAsset || !editDraft) return;
-    if (editDraft.building && !editDraft.city) {
+    if (!editDraft.city && (editDraft.building || editDraft.floor)) {
       messageApi.warning('请先选择城市！');
       return;
     }
@@ -499,18 +507,36 @@ export default function AssetMaintenancePage() {
       messageApi.error('当前 Building 与 City 关系无效');
       return;
     }
-    const serial = String(editDraft.serialNumber || '').trim();
-    if (serial && rows.some((row) => row.id !== activeAsset.id && String(row.serialNumber || '').trim().toLowerCase() === serial.toLowerCase())) {
+    if (editDraft.floor && !editDraft.building) {
+      messageApi.warning('请先选择 Building');
+      return;
+    }
+    if (editDraft.floor && !(FLOOR_BY_BUILDING[editDraft.building] || []).includes(editDraft.floor)) {
+      messageApi.error('当前 Floor 与 Building 关系无效');
+      return;
+    }
+
+    const serial = normalizeSerial(editDraft.serialNumber);
+    if (serial && !isPlaceholderSerial(serial) && rows.some((row) => (
+      row.id !== activeAsset.id
+      && !isPlaceholderSerial(row.serialNumber)
+      && normalizeSerial(row.serialNumber).toLowerCase() === serial.toLowerCase()
+    ))) {
       messageApi.error('当前资产序列号不唯一！');
       return;
     }
-    if (FORMAL_SCRAP_STATUSES.has(editDraft.status) && editDraft.status !== activeAsset.status) {
+    if (FORMAL_SCRAP_STATUSES.has(activeAsset.status) && editDraft.status !== activeAsset.status) {
+      messageApi.error('已报废资产状态不允许通过资产维护修改');
+      return;
+    }
+    if (!FORMAL_SCRAP_STATUSES.has(activeAsset.status) && FORMAL_SCRAP_STATUSES.has(editDraft.status)) {
       messageApi.error('报废状态必须通过资产报废功能处理');
       return;
     }
 
     const editableFields = ['costCenter', 'city', 'building', 'floor', 'status', 'serialNumber', 'remarks', 'assetMark', 'usageDescription', 'purpose'];
     const patch = editableFields.reduce((result, field) => ({ ...result, [field]: editDraft[field] ?? '' }), {});
+    patch.serialNumber = serial;
     patch.updatedAt = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
     const changed = editableFields.some((field) => String(activeAsset[field] ?? '') !== String(patch[field] ?? ''));
@@ -523,6 +549,8 @@ export default function AssetMaintenancePage() {
 
     const nextRows = updateAssetMaintenanceRow(activeAsset.id, patch);
     setRows(nextRows);
+    setSelectedRowKeys([]);
+    setPage(1);
     setAssetMode('view');
     setEditDraft(null);
     messageApi.success('保存成功！');
@@ -786,7 +814,16 @@ export default function AssetMaintenancePage() {
         <DetailGrid columns={3} labelWidth={104}>
           <DetailItem label="资产编号">{displayText(source.assetNo)}</DetailItem>
           <DetailItem label="成本中心">
-            {editable('costCenter', <Select showSearch value={editDraft?.costCenter || undefined} style={{ width: '100%' }} options={uniqueValues(rows, 'costCenter').map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('costCenter', value)} />)}
+            {editable('costCenter', (
+              <Select
+                showSearch
+                allowClear
+                value={editDraft?.costCenter || undefined}
+                style={{ width: '100%' }}
+                options={uniqueValues(rows, 'costCenter').map((value) => ({ label: value, value }))}
+                onChange={(value) => updateEdit('costCenter', value || '')}
+              />
+            ))}
           </DetailItem>
           <DetailItem label="板块">{displayText(source.plate)}</DetailItem>
           <DetailItem label="业务线">{displayText(source.businessLine)}</DetailItem>
@@ -874,7 +911,7 @@ export default function AssetMaintenancePage() {
       dataSource={source.repairRecords || []}
       pagination={false}
       locale={{ emptyText: '暂无资产维修记录' }}
-      scroll={{ x: 1250 }}
+      scroll={{ x: 1590 }}
       columns={[
         { title: '行号', width: 70, render: (_, __, index) => index + 1 },
         { title: '维修单号', dataIndex: 'workOrderNo', width: 170 },
@@ -897,7 +934,10 @@ export default function AssetMaintenancePage() {
       bordered
       pagination={false}
       locale={{ emptyText: '暂无资产盘点历史' }}
-      dataSource={[...(source.inventoryRecords || [])].sort((a, b) => String(b.time).localeCompare(String(a.time)))}
+      dataSource={[...(source.inventoryRecords || [])].sort((a, b) => (
+        String(b.projectStartTime || b.time || '').localeCompare(String(a.projectStartTime || a.time || ''))
+      ))}
+      scroll={{ x: 1230 }}
       columns={[
         { title: '盘点类型', dataIndex: 'type', width: 120 },
         { title: '盘点标识', dataIndex: 'flag', width: 110 },
@@ -920,7 +960,7 @@ export default function AssetMaintenancePage() {
       pagination={false}
       locale={{ emptyText: '暂无资产操作历史' }}
       dataSource={transactionRows}
-      scroll={{ x: 3750 }}
+      scroll={{ x: 3790 }}
       columns={TRANSACTION_COLUMNS.map(([title, dataIndex, width]) => ({
         title,
         dataIndex,
@@ -945,7 +985,7 @@ export default function AssetMaintenancePage() {
       pagination={false}
       locale={{ emptyText: '暂无 RFID 资产操作历史' }}
       dataSource={source.rfidHistory || []}
-      scroll={{ x: 3600 }}
+      scroll={{ x: 3680 }}
       columns={RFID_COLUMNS.map(([title, dataIndex, width]) => ({ title, dataIndex, width, render: displayText }))}
     />
   ) : null;
@@ -1010,6 +1050,9 @@ export default function AssetMaintenancePage() {
             onChange: setSelectedRowKeys,
             fixed: true,
             columnTitle: '选择',
+          }}
+          onChange={(_, __, ___, extra) => {
+            if (extra?.action === 'sort') setSelectedRowKeys([]);
           }}
           scroll={{ x: 2180 }}
           pagination={{
