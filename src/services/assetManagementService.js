@@ -81,6 +81,7 @@ function normalizeAssetMaintenanceRow(row) {
   return {
     ...mergedRow,
     assetType: mergedRow.assetType || '公司资产',
+    esScrapPeriod: mergedRow.esScrapPeriod || mergedRow.scrapInfo?.esPeriod || '',
     inventoryRecords,
     transactionHistory: normalizeTransactionHistory(mergedRow.transactionHistory || []),
     inventoryFlag: deriveLatestInventoryYear({ ...mergedRow, inventoryRecords }),
@@ -115,7 +116,7 @@ function buildAssetMaintenanceTransaction(row, operationDate) {
     service: row.service || '',
     config: row.config || '',
     noLocation: row.noLocation || '',
-    upgradeAmount: row.upgradeAmount || 0,
+    upgradeAmount: row.upgradeAmount ?? '',
   };
 }
 
