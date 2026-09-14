@@ -700,23 +700,23 @@ export default function AssetMaintenancePage() {
     <Space direction="vertical" size={12} className="w-full">
       <AssetSection title="基础信息">
         <DetailGrid columns={3} labelWidth={104}>
-          <DetailItem label="资产大类">{displayText(source.majorCategory)}</DetailItem>
-          <DetailItem label="资产小类">{displayText(source.minorCategory)}</DetailItem>
-          <DetailItem label="公司">{displayText(source.company)}</DetailItem>
-          <DetailItem label="部门">{displayText(source.department)}</DetailItem>
-          <DetailItem label="板块">{displayText(source.plate)}</DetailItem>
           <DetailItem label="资产标签号">{displayText(source.tag)}</DetailItem>
-          <DetailItem label="资产说明">{displayText(source.assetDesc)}</DetailItem>
-          <DetailItem label="资产序列号">
+          <DetailItem label="序列号">
             {editable('serialNumber', <Input value={editDraft?.serialNumber || ''} allowClear onChange={(event) => updateEdit('serialNumber', event.target.value)} />)}
           </DetailItem>
-          <DetailItem label="主资产标签号">{displayText(source.mainTag)}</DetailItem>
-          <DetailItem label="仓库">{displayText(source.warehouse)}</DetailItem>
+          <DetailItem label="公司">{displayText(source.company)}</DetailItem>
+          <DetailItem label="部门">{displayText(source.department)}</DetailItem>
+          <DetailItem label="资产大类">{displayText(source.majorCategory)}</DetailItem>
+          <DetailItem label="资产小类">{displayText(source.minorCategory)}</DetailItem>
+          <DetailItem label="资产说明">{displayText(source.assetDesc)}</DetailItem>
+          <DetailItem label="配置" span={3}>{displayText(source.config)}</DetailItem>
           <DetailItem label="数量">{count(source.quantity)}</DetailItem>
           <DetailItem label="单位">{displayText(source.unit)}</DetailItem>
+          <DetailItem label="主资产标签号">{displayText(source.mainTag)}</DetailItem>
+          <DetailItem label="仓库">{displayText(source.warehouse)}</DetailItem>
           <DetailItem label="原值">{amount(source.originalValue)}</DetailItem>
           <DetailItem label="新增类型">{displayText(source.addType)}</DetailItem>
-          <DetailItem label="购买日期">{displayText(source.purchaseDate)}</DetailItem>
+          <DetailItem label="购置日期">{displayText(source.purchaseDate)}</DetailItem>
           <DetailItem label="启用日期">{displayText(source.enabledDate)}</DetailItem>
           <DetailItem label="资产状态">
             {editable('status', (
@@ -730,8 +730,11 @@ export default function AssetMaintenancePage() {
               />
             ))}
           </DetailItem>
+          <DetailItem label="资产标记">
+            {editable('assetMark', <Select allowClear value={editDraft?.assetMark || undefined} style={{ width: '100%' }} options={ASSET_MARK_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('assetMark', value || '')} />)}
+          </DetailItem>
           <DetailItem label="资产责任人">{`${source.ownerId}-${source.ownerName}`}</DetailItem>
-          <DetailItem label="资产用途">
+          <DetailItem label="用途">
             {editable('purpose', <Select allowClear value={editDraft?.purpose || undefined} style={{ width: '100%' }} options={PURPOSE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('purpose', value || '')} />)}
           </DetailItem>
           <DetailItem label="City">
@@ -753,24 +756,14 @@ export default function AssetMaintenancePage() {
           <DetailItem label="Floor">
             {editable('floor', <Select allowClear value={editDraft?.floor || undefined} style={{ width: '100%' }} options={(FLOOR_BY_BUILDING[editDraft?.building] || []).map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('floor', value || '')} />)}
           </DetailItem>
-          <DetailItem label="成本中心">
-            {editable('costCenter', <Select showSearch value={editDraft?.costCenter || undefined} style={{ width: '100%' }} options={uniqueValues(rows, 'costCenter').map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('costCenter', value)} />)}
-          </DetailItem>
-          <DetailItem label="业务线">{displayText(source.businessLine)}</DetailItem>
           <DetailItem label="盘点标识">{displayText(source.inventoryFlag)}</DetailItem>
-          <DetailItem label="资产标记">
-            {editable('assetMark', <Select allowClear value={editDraft?.assetMark || undefined} style={{ width: '100%' }} options={ASSET_MARK_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('assetMark', value || '')} />)}
-          </DetailItem>
           <DetailItem label="ES实物报废期">{displayText(source.esScrapPeriod)}</DetailItem>
           <DetailItem label="升级日期">{displayText(source.upgradeDate)}</DetailItem>
           <DetailItem label="升级金额">{amount(source.upgradeAmount)}</DetailItem>
-          <DetailItem label="资产编号">{displayText(source.assetNo)}</DetailItem>
-          <DetailItem label="项目">{displayText(source.project)}</DetailItem>
           <DetailItem label="PR单号">{displayText(source.prNo)}</DetailItem>
           <DetailItem label="申请单号">{displayText(source.applicationNo)}</DetailItem>
           <DetailItem label="入库单号">{displayText(source.inboundNo)}</DetailItem>
           <DetailItem label="PO单号">{displayText(source.poNo)}</DetailItem>
-          <DetailItem label="配置" span={3}>{displayText(source.config)}</DetailItem>
           <DetailItem label="使用说明" span={3}>
             {editable('usageDescription', <TextArea value={editDraft?.usageDescription || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('usageDescription', event.target.value)} />)}
           </DetailItem>
@@ -782,8 +775,15 @@ export default function AssetMaintenancePage() {
 
       <AssetSection title="账务信息" collapsible collapsed={Boolean(collapsedSections.accounting)} onToggle={() => toggleSection('accounting')}>
         <DetailGrid columns={3} labelWidth={104}>
-          <DetailItem label="费用账户">{displayText(source.feeAccount)}</DetailItem>
+          <DetailItem label="资产编号">{displayText(source.assetNo)}</DetailItem>
+          <DetailItem label="成本中心">
+            {editable('costCenter', <Select showSearch value={editDraft?.costCenter || undefined} style={{ width: '100%' }} options={uniqueValues(rows, 'costCenter').map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('costCenter', value)} />)}
+          </DetailItem>
+          <DetailItem label="板块">{displayText(source.plate)}</DetailItem>
+          <DetailItem label="业务线">{displayText(source.businessLine)}</DetailItem>
+          <DetailItem label="项目">{displayText(source.project)}</DetailItem>
           <DetailItem label="内部费用账户">{displayText(source.internalFeeAccount)}</DetailItem>
+          <DetailItem label="费用账户">{displayText(source.feeAccount)}</DetailItem>
         </DetailGrid>
       </AssetSection>
 
