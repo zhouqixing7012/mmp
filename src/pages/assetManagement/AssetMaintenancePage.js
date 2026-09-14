@@ -499,23 +499,31 @@ export default function AssetMaintenancePage() {
 
   const saveAsset = () => {
     if (!activeAsset || !editDraft) return;
-    if (!editDraft.city && (editDraft.building || editDraft.floor)) {
-      messageApi.warning('请先选择城市！');
+    if (!editDraft.costCenter) {
+      messageApi.warning('请选择成本中心');
       return;
     }
-    if (editDraft.building && !(BUILDING_BY_CITY[editDraft.city] || []).includes(editDraft.building)) {
+    if (!editDraft.city) {
+      messageApi.warning('请选择 City');
+      return;
+    }
+    if (!editDraft.building) {
+      messageApi.warning('请选择 Building');
+      return;
+    }
+    if (!editDraft.status) {
+      messageApi.warning('请选择资产状态');
+      return;
+    }
+    if (!(BUILDING_BY_CITY[editDraft.city] || []).includes(editDraft.building)) {
       messageApi.error('当前 Building 与 City 关系无效');
-      return;
-    }
-    if (editDraft.floor && !editDraft.building) {
-      messageApi.warning('请先选择 Building');
       return;
     }
     if (editDraft.floor && !(FLOOR_BY_BUILDING[editDraft.building] || []).includes(editDraft.floor)) {
       messageApi.error('当前 Floor 与 Building 关系无效');
       return;
     }
-    if (editDraft.costCenter && !uniqueValues(rows, 'costCenter').includes(editDraft.costCenter)) {
+    if (!uniqueValues(rows, 'costCenter').includes(editDraft.costCenter)) {
       messageApi.error('当前成本中心无效');
       return;
     }
@@ -791,12 +799,11 @@ export default function AssetMaintenancePage() {
             {editable('purpose', <Select allowClear value={editDraft?.purpose || undefined} style={{ width: '100%' }} options={PURPOSE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('purpose', value || '')} />)}
           </DetailItem>
           <DetailItem label="City">
-            {editable('city', <Select allowClear value={editDraft?.city || undefined} style={{ width: '100%' }} options={CITY_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('city', value || '')} />)}
+            {editable('city', <Select value={editDraft?.city || undefined} style={{ width: '100%' }} options={CITY_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('city', value || '')} />)}
           </DetailItem>
           <DetailItem label="Building">
             {editable('building', (
               <Select
-                allowClear
                 value={editDraft?.building || undefined}
                 style={{ width: '100%' }}
                 placeholder={editDraft?.city ? '请选择' : '请先选择城市'}
@@ -833,7 +840,6 @@ export default function AssetMaintenancePage() {
             {editable('costCenter', (
               <Select
                 showSearch
-                allowClear
                 value={editDraft?.costCenter || undefined}
                 style={{ width: '100%' }}
                 options={uniqueValues(rows, 'costCenter').map((value) => ({ label: value, value }))}
@@ -1136,7 +1142,7 @@ export default function AssetMaintenancePage() {
             type="warning"
             showIcon
             message="批量修改采用覆盖式更新"
-            description="除资产标签号外，模板中的 10 个维护字段均按单元格值覆盖原值；空白单元格会将原字段覆盖为空。任一行校验失败时，本次文件全部不保存。"
+            description="资产标签号、成本中心、City、Building、资产状态为必填；任一必填单元格为空时整批校验失败。Floor、资产序列号、备注、资产标记、使用说明、资产用途为空时会将原字段覆盖为空。任一行校验失败时，本次文件全部不保存。"
           />
           <Button
             icon={<Download size={14} />}
