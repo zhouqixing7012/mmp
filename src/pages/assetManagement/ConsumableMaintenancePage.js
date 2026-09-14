@@ -100,6 +100,11 @@ const BATCH_TEMPLATE_FIELDS = [
   '启用日期', '主资产标签号', '仓库', '使用说明', '备注',
 ];
 
+const EDITABLE_FIELDS = [
+  'company', 'serialNumber', 'status', 'ownerId', 'ownerName', 'city', 'building', 'floor',
+  'enabledDate', 'mainTag', 'mainAssetDesc', 'warehouse', 'usageDescription', 'remarks',
+];
+
 const TRANSACTION_COLUMNS = [
   ['操作类型', 'operationType', 130],
   ['操作时间', 'operationDate', 160],
@@ -196,12 +201,8 @@ function SectionTitle({ children }) {
   );
 }
 
-function ConsumableSection({ title, children }) {
-  return (
-    <Card size="small" title={<SectionTitle>{title}</SectionTitle>}>
-      {children}
-    </Card>
-  );
+function QueryClearArea({ onClear, children }) {
+  return <div onDoubleClick={onClear}>{children}</div>;
 }
 
 export default function ConsumableMaintenancePage() {
@@ -246,132 +247,69 @@ export default function ConsumableMaintenancePage() {
   }, [rows]);
 
   const lookupConfig = useMemo(() => {
+    const companies = uniqueValues(rows, 'company').map((name, index) => ({
+      id: `company-${index}`,
+      code: rows.find((row) => row.company === name)?.companyCode || '',
+      name,
+    }));
+    const owners = [...new Map(rows.map((row) => [row.ownerId, {
+      id: row.ownerId,
+      code: row.ownerId,
+      name: row.ownerName,
+      department: row.department,
+    }])).values()];
     const configs = {
       companies: {
-        title: '选择公司',
-        multiple: true,
-        values: uniqueValues(rows, 'company').map((name, index) => ({
-          id: `company-${index}`,
-          code: rows.find((row) => row.company === name)?.companyCode || '',
-          name,
-        })),
-        searchFields: [
-          { name: 'code', label: '公司编码', dataIndex: 'code' },
-          { name: 'name', label: '公司名称', dataIndex: 'name' },
-        ],
+        title: '选择公司', multiple: true, values: companies, valueField: 'name',
+        searchFields: [{ name: 'code', label: '公司编码', dataIndex: 'code' }, { name: 'name', label: '公司名称', dataIndex: 'name' }],
         columns: [{ title: '公司编码', dataIndex: 'code' }, { title: '公司名称', dataIndex: 'name' }],
-        valueField: 'name',
       },
       department: {
-        title: '选择部门',
-        multiple: false,
+        title: '选择部门', multiple: false, valueField: 'name',
         values: uniqueValues(rows, 'department').map((name, index) => ({
           id: `department-${index}`,
           code: rows.find((row) => row.department === name)?.departmentCode || '',
           name,
           parent: rows.find((row) => row.department === name)?.parentDepartment || '-',
         })),
-        searchFields: [
-          { name: 'code', label: '部门编码', dataIndex: 'code' },
-          { name: 'name', label: '部门名称', dataIndex: 'name' },
-        ],
-        columns: [
-          { title: '部门编码', dataIndex: 'code' },
-          { title: '部门名称', dataIndex: 'name' },
-          { title: '上级部门', dataIndex: 'parent' },
-        ],
-        valueField: 'name',
+        searchFields: [{ name: 'code', label: '部门编码', dataIndex: 'code' }, { name: 'name', label: '部门名称', dataIndex: 'name' }],
+        columns: [{ title: '部门编码', dataIndex: 'code' }, { title: '部门名称', dataIndex: 'name' }, { title: '上级部门', dataIndex: 'parent' }],
       },
       owners: {
-        title: '选择耗材责任人',
-        multiple: true,
-        values: [...new Map(rows.map((row) => [row.ownerId, {
-          id: row.ownerId,
-          code: row.ownerId,
-          name: row.ownerName,
-          department: row.department,
-        }])).values()],
-        searchFields: [
-          { name: 'code', label: '员工编号', dataIndex: 'code' },
-          { name: 'name', label: '员工姓名', dataIndex: 'name' },
-          { name: 'department', label: '部门', dataIndex: 'department' },
-        ],
-        columns: [
-          { title: '员工编号', dataIndex: 'code' },
-          { title: '员工姓名', dataIndex: 'name' },
-          { title: '部门', dataIndex: 'department' },
-        ],
-        valueField: 'code',
+        title: '选择耗材责任人', multiple: true, values: owners, valueField: 'code',
+        searchFields: [{ name: 'code', label: '员工编号', dataIndex: 'code' }, { name: 'name', label: '员工姓名', dataIndex: 'name' }, { name: 'department', label: '部门', dataIndex: 'department' }],
+        columns: [{ title: '员工编号', dataIndex: 'code' }, { title: '员工姓名', dataIndex: 'name' }, { title: '部门', dataIndex: 'department' }],
       },
       warehouses: {
-        title: '选择仓库',
-        multiple: true,
+        title: '选择仓库', multiple: true, valueField: 'name',
         values: uniqueValues(rows, 'warehouse').map((name, index) => ({
           id: `warehouse-${index}`,
           name,
           company: rows.find((row) => row.warehouse === name)?.company || '',
         })),
-        searchFields: [
-          { name: 'name', label: '仓库', dataIndex: 'name' },
-          { name: 'company', label: '公司', dataIndex: 'company' },
-        ],
+        searchFields: [{ name: 'name', label: '仓库', dataIndex: 'name' }, { name: 'company', label: '公司', dataIndex: 'company' }],
         columns: [{ title: '仓库', dataIndex: 'name' }, { title: '公司', dataIndex: 'company' }],
-        valueField: 'name',
       },
       costCenter: {
-        title: '选择成本中心',
-        multiple: false,
+        title: '选择成本中心', multiple: false, valueField: 'name',
         values: uniqueValues(rows, 'costCenter').map((name, index) => ({ id: `cc-${index}`, name })),
         searchFields: [{ name: 'name', label: '成本中心', dataIndex: 'name' }],
         columns: [{ title: '成本中心', dataIndex: 'name' }],
-        valueField: 'name',
       },
       editCompany: {
-        title: '选择公司',
-        multiple: false,
-        values: uniqueValues(rows, 'company').map((name, index) => ({
-          id: `edit-company-${index}`,
-          code: rows.find((row) => row.company === name)?.companyCode || '',
-          name,
-        })),
-        searchFields: [
-          { name: 'code', label: '公司编码', dataIndex: 'code' },
-          { name: 'name', label: '公司名称', dataIndex: 'name' },
-        ],
+        title: '选择公司', multiple: false, values: companies, valueField: 'name',
+        searchFields: [{ name: 'code', label: '公司编码', dataIndex: 'code' }, { name: 'name', label: '公司名称', dataIndex: 'name' }],
         columns: [{ title: '公司编码', dataIndex: 'code' }, { title: '公司名称', dataIndex: 'name' }],
-        valueField: 'name',
       },
       editOwner: {
-        title: '选择耗材责任人',
-        multiple: false,
-        values: [...new Map(rows.map((row) => [row.ownerId, {
-          id: row.ownerId,
-          code: row.ownerId,
-          name: row.ownerName,
-          department: row.department,
-        }])).values()],
-        searchFields: [
-          { name: 'code', label: '员工编号', dataIndex: 'code' },
-          { name: 'name', label: '员工姓名', dataIndex: 'name' },
-          { name: 'department', label: '部门', dataIndex: 'department' },
-        ],
-        columns: [
-          { title: '员工编号', dataIndex: 'code' },
-          { title: '员工姓名', dataIndex: 'name' },
-          { title: '部门', dataIndex: 'department' },
-        ],
-        valueField: 'code',
+        title: '选择耗材责任人', multiple: false, values: owners, valueField: 'code',
+        searchFields: [{ name: 'code', label: '员工编号', dataIndex: 'code' }, { name: 'name', label: '员工姓名', dataIndex: 'name' }, { name: 'department', label: '部门', dataIndex: 'department' }],
+        columns: [{ title: '员工编号', dataIndex: 'code' }, { title: '员工姓名', dataIndex: 'name' }, { title: '部门', dataIndex: 'department' }],
       },
       editMainAsset: {
-        title: '选择主资产',
-        multiple: false,
-        values: MAIN_ASSET_OPTIONS,
-        searchFields: [
-          { name: 'tag', label: '资产标签号', dataIndex: 'tag' },
-          { name: 'desc', label: '资产说明', dataIndex: 'desc' },
-        ],
+        title: '选择主资产', multiple: false, values: MAIN_ASSET_OPTIONS, valueField: 'tag',
+        searchFields: [{ name: 'tag', label: '资产标签号', dataIndex: 'tag' }, { name: 'desc', label: '资产说明', dataIndex: 'desc' }],
         columns: [{ title: '资产标签号', dataIndex: 'tag' }, { title: '资产说明', dataIndex: 'desc' }],
-        valueField: 'tag',
       },
     };
     return configs[lookupKey] || null;
@@ -381,9 +319,9 @@ export default function ConsumableMaintenancePage() {
     if (!lookupConfig || !lookupKey) return [];
     const valueField = lookupConfig.valueField || 'name';
     let selectedValues = [];
-    if (lookupKey === 'companies' || lookupKey === 'owners' || lookupKey === 'warehouses') {
+    if (['companies', 'owners', 'warehouses'].includes(lookupKey)) {
       selectedValues = draftFilters[lookupKey] || [];
-    } else if (lookupKey === 'department' || lookupKey === 'costCenter') {
+    } else if (['department', 'costCenter'].includes(lookupKey)) {
       selectedValues = draftFilters[lookupKey] ? [draftFilters[lookupKey]] : [];
     } else if (lookupKey === 'editCompany') {
       selectedValues = editDraft?.company ? [editDraft.company] : [];
@@ -392,7 +330,7 @@ export default function ConsumableMaintenancePage() {
     } else if (lookupKey === 'editMainAsset') {
       selectedValues = editDraft?.mainTag ? [editDraft.mainTag] : [];
     }
-    const selectedSet = new Set(selectedValues.map((value) => String(value)));
+    const selectedSet = new Set(selectedValues.map(String));
     return lookupConfig.values
       .filter((record) => selectedSet.has(String(record[valueField])))
       .map((record) => String(record.id));
@@ -400,17 +338,15 @@ export default function ConsumableMaintenancePage() {
 
   const lookupDisplay = (field) => {
     const value = draftFilters[field];
-    if (Array.isArray(value)) {
-      if (!value.length) return '';
-      if (field === 'owners') {
-        return value.map((id) => {
-          const row = rows.find((item) => item.ownerId === id);
-          return row ? `${row.ownerId}-${row.ownerName}` : id;
-        }).join(', ');
-      }
-      return value.join(', ');
+    if (!Array.isArray(value)) return value || '';
+    if (!value.length) return '';
+    if (field === 'owners') {
+      return value.map((id) => {
+        const row = rows.find((item) => item.ownerId === id);
+        return row ? `${row.ownerId}-${row.ownerName}` : id;
+      }).join(', ');
     }
-    return value || '';
+    return value.join(', ');
   };
 
   const filteredRows = useMemo(() => {
@@ -422,12 +358,10 @@ export default function ConsumableMaintenancePage() {
       if (f.owners.length && !f.owners.includes(row.ownerId)) return false;
       if (!fuzzyMultiMatch(row.mainTag, f.mainTag)) return false;
       if (!fuzzyMultiMatch(row.assetDesc, f.assetDesc)) return false;
-      if (f.category) {
-        if (f.category.startsWith('major:') && row.majorCategory !== f.category.slice(6)) return false;
-        if (f.category.startsWith('minor:')) {
-          const [major, minor] = f.category.slice(6).split('|');
-          if (row.majorCategory !== major || row.minorCategory !== minor) return false;
-        }
+      if (f.category?.startsWith('major:') && row.majorCategory !== f.category.slice(6)) return false;
+      if (f.category?.startsWith('minor:')) {
+        const [major, minor] = f.category.slice(6).split('|');
+        if (row.majorCategory !== major || row.minorCategory !== minor) return false;
       }
       if (f.statuses.length && !f.statuses.includes(row.status)) return false;
       if (f.plate && row.plate !== f.plate) return false;
@@ -445,7 +379,6 @@ export default function ConsumableMaintenancePage() {
       if (!fuzzyMultiMatch(row.prNo, f.prNo)) return false;
       return true;
     });
-
     return [...result].sort((a, b) => (
       String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))
       || String(a.tag || '').localeCompare(String(b.tag || ''), 'zh-CN', { numeric: true })
@@ -457,9 +390,13 @@ export default function ConsumableMaintenancePage() {
   };
 
   const handleQuery = () => {
-    if (draftFilters.originalValueMin !== null && draftFilters.originalValueMax !== null
-      && draftFilters.originalValueMin !== '' && draftFilters.originalValueMax !== ''
-      && Number(draftFilters.originalValueMin) > Number(draftFilters.originalValueMax)) {
+    if (
+      draftFilters.originalValueMin !== null
+      && draftFilters.originalValueMax !== null
+      && draftFilters.originalValueMin !== ''
+      && draftFilters.originalValueMax !== ''
+      && Number(draftFilters.originalValueMin) > Number(draftFilters.originalValueMax)
+    ) {
       messageApi.warning('原值最小金额不能大于最大金额');
       return;
     }
@@ -539,6 +476,14 @@ export default function ConsumableMaintenancePage() {
     });
   };
 
+  const openMainAssetLookup = () => {
+    if (!editDraft?.ownerId) {
+      messageApi.warning('请选择责任人！');
+      return;
+    }
+    setLookupKey('editMainAsset');
+  };
+
   const saveConsumable = () => {
     if (!activeConsumable || !editDraft) return;
     if (!editDraft.company) {
@@ -581,7 +526,8 @@ export default function ConsumableMaintenancePage() {
       messageApi.error('主资产标签号不得关联自身');
       return;
     }
-    if (editDraft.warehouse && !(WAREHOUSES_BY_COMPANY[editDraft.company] || []).includes(editDraft.warehouse)) {
+    if (editDraft.warehouse && !(WAREHOUSES_BY_COMPANY[editDraft.company] || []).includes(editDraft.warehouse)
+      && !(editDraft.company === activeConsumable.company && editDraft.warehouse === activeConsumable.warehouse)) {
       messageApi.error('当前仓库不属于所选公司');
       return;
     }
@@ -600,29 +546,22 @@ export default function ConsumableMaintenancePage() {
       return;
     }
 
-    const editableFields = [
-      'company', 'serialNumber', 'status', 'ownerId', 'ownerName', 'city', 'building', 'floor',
-      'enabledDate', 'mainTag', 'mainAssetDesc', 'warehouse', 'usageDescription', 'remarks',
-    ];
-    const patch = editableFields.reduce((result, field) => ({ ...result, [field]: editDraft[field] ?? '' }), {});
+    const patch = EDITABLE_FIELDS.reduce((result, field) => ({ ...result, [field]: editDraft[field] ?? '' }), {});
     patch.serialNumber = serial;
-    patch.updatedAt = dayjs().format('YYYY-MM-DD HH:mm:ss');
-
-    const changed = editableFields.some((field) => String(activeConsumable[field] ?? '') !== String(patch[field] ?? ''));
+    const changed = EDITABLE_FIELDS.some((field) => String(activeConsumable[field] ?? '') !== String(patch[field] ?? ''));
     if (!changed) {
       messageApi.info('耗材信息未发生变化');
-      setCardMode('view');
-      setEditDraft(null);
       return;
     }
 
     try {
       const nextRows = updateConsumableMaintenanceRow(activeConsumable.id, patch);
+      const saved = nextRows.find((row) => row.id === activeConsumable.id);
       setRows(nextRows);
       setSelectedRowKeys([]);
       setPage(1);
-      setCardMode('view');
-      setEditDraft(null);
+      setCardMode('edit');
+      setEditDraft(saved ? { ...saved } : { ...editDraft });
       messageApi.success('保存成功！');
     } catch (error) {
       messageApi.error(error.message || '保存失败');
@@ -685,13 +624,19 @@ export default function ConsumableMaintenancePage() {
         <Input value={draftFilters.assetDesc} allowClear placeholder="支持模糊匹配" onChange={(event) => updateFilter('assetDesc', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('assetDesc', '')} />
       </QueryItem>
       <QueryItem label="耗材类别">
-        <TreeSelect treeData={categoryTree} value={draftFilters.category || undefined} allowClear placeholder="请选择耗材类别" style={{ width: '100%' }} onChange={(value) => updateFilter('category', value || '')} />
+        <QueryClearArea onClear={() => updateFilter('category', '')}>
+          <TreeSelect treeData={categoryTree} value={draftFilters.category || undefined} allowClear placeholder="请选择耗材类别" style={{ width: '100%' }} onChange={(value) => updateFilter('category', value || '')} />
+        </QueryClearArea>
       </QueryItem>
       <QueryItem label="耗材状态">
-        <Select mode="multiple" value={draftFilters.statuses} allowClear placeholder="请选择" options={STATUS_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('statuses', value)} />
+        <QueryClearArea onClear={() => updateFilter('statuses', [])}>
+          <Select mode="multiple" value={draftFilters.statuses} allowClear placeholder="请选择" options={STATUS_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('statuses', value)} />
+        </QueryClearArea>
       </QueryItem>
       <QueryItem label="板块">
-        <Select value={draftFilters.plate || undefined} allowClear placeholder="请选择" options={PLATE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('plate', value || '')} />
+        <QueryClearArea onClear={() => updateFilter('plate', '')}>
+          <Select value={draftFilters.plate || undefined} allowClear placeholder="请选择" options={PLATE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('plate', value || '')} />
+        </QueryClearArea>
       </QueryItem>
       <QueryItem label="PO单号">
         <Input value={draftFilters.poNo} allowClear placeholder="支持模糊检索" onChange={(event) => updateFilter('poNo', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('poNo', '')} />
@@ -703,36 +648,51 @@ export default function ConsumableMaintenancePage() {
   const renderMoreQuery = () => (
     <>
       <QueryItem label="City">
-        <Select value={draftFilters.city || undefined} allowClear placeholder="请选择" options={CITY_OPTIONS.map((value) => ({ label: value, value }))} onChange={handleCityFilterChange} />
+        <QueryClearArea onClear={() => handleCityFilterChange('')}>
+          <Select value={draftFilters.city || undefined} allowClear placeholder="请选择" options={CITY_OPTIONS.map((value) => ({ label: value, value }))} onChange={handleCityFilterChange} />
+        </QueryClearArea>
       </QueryItem>
       <QueryItem label="Building">
-        <Select
-          value={draftFilters.building || undefined}
-          allowClear
-          placeholder={draftFilters.city ? '请选择' : '请先选择城市'}
-          options={(BUILDING_BY_CITY[draftFilters.city] || []).map((value) => ({ label: value, value }))}
-          onDropdownVisibleChange={(open) => { if (open && !draftFilters.city) messageApi.warning('请先选择城市！'); }}
-          onChange={handleBuildingFilterChange}
-        />
+        <QueryClearArea onClear={() => updateFilter('building', '')}>
+          <Select
+            value={draftFilters.building || undefined}
+            allowClear
+            disabled={!draftFilters.city}
+            placeholder={draftFilters.city ? '请选择' : '请先选择城市'}
+            options={(BUILDING_BY_CITY[draftFilters.city] || []).map((value) => ({ label: value, value }))}
+            onOpenChange={(open) => { if (open && !draftFilters.city) messageApi.warning('请先选择城市！'); }}
+            onChange={handleBuildingFilterChange}
+          />
+        </QueryClearArea>
       </QueryItem>
       <QueryItem label="Floor">
-        <Select value={draftFilters.floor || undefined} allowClear placeholder="请选择" options={(FLOOR_BY_BUILDING[draftFilters.building] || []).map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('floor', value || '')} />
+        <QueryClearArea onClear={() => updateFilter('floor', '')}>
+          <Select value={draftFilters.floor || undefined} allowClear disabled={!draftFilters.building} placeholder="请选择" options={(FLOOR_BY_BUILDING[draftFilters.building] || []).map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('floor', value || '')} />
+        </QueryClearArea>
       </QueryItem>
       <QueryItem label="新增类型">
-        <Select value={draftFilters.addType || undefined} allowClear placeholder="请选择" options={ADD_TYPE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('addType', value || '')} />
+        <QueryClearArea onClear={() => updateFilter('addType', '')}>
+          <Select value={draftFilters.addType || undefined} allowClear placeholder="请选择" options={ADD_TYPE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('addType', value || '')} />
+        </QueryClearArea>
       </QueryItem>
       <QueryItem label="成本中心">{renderLookup('costCenter', '请选择成本中心')}</QueryItem>
       <QueryItem label="购置日期">
-        <RangePicker style={{ width: '100%' }} value={draftFilters.purchaseDate.length === 2 ? draftFilters.purchaseDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('purchaseDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
+        <QueryClearArea onClear={() => updateFilter('purchaseDate', [])}>
+          <RangePicker style={{ width: '100%' }} value={draftFilters.purchaseDate.length === 2 ? draftFilters.purchaseDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('purchaseDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
+        </QueryClearArea>
       </QueryItem>
       <QueryItem label="原值">
-        <Space.Compact block>
-          <InputNumber min={0} precision={2} placeholder="最小值" value={draftFilters.originalValueMin} onChange={(value) => updateFilter('originalValueMin', value)} style={{ width: '50%' }} />
-          <InputNumber min={0} precision={2} placeholder="最大值" value={draftFilters.originalValueMax} onChange={(value) => updateFilter('originalValueMax', value)} style={{ width: '50%' }} />
-        </Space.Compact>
+        <QueryClearArea onClear={() => setDraftFilters((current) => ({ ...current, originalValueMin: null, originalValueMax: null }))}>
+          <Space.Compact block>
+            <InputNumber min={0} precision={2} placeholder="最小值" value={draftFilters.originalValueMin} onChange={(value) => updateFilter('originalValueMin', value)} style={{ width: '50%' }} />
+            <InputNumber min={0} precision={2} placeholder="最大值" value={draftFilters.originalValueMax} onChange={(value) => updateFilter('originalValueMax', value)} style={{ width: '50%' }} />
+          </Space.Compact>
+        </QueryClearArea>
       </QueryItem>
       <QueryItem label="启用日期">
-        <RangePicker style={{ width: '100%' }} value={draftFilters.enabledDate.length === 2 ? draftFilters.enabledDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('enabledDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
+        <QueryClearArea onClear={() => updateFilter('enabledDate', [])}>
+          <RangePicker style={{ width: '100%' }} value={draftFilters.enabledDate.length === 2 ? draftFilters.enabledDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('enabledDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
+        </QueryClearArea>
       </QueryItem>
       <QueryItem label="PR单号">
         <Input value={draftFilters.prNo} allowClear placeholder="支持模糊检索" onChange={(event) => updateFilter('prNo', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('prNo', '')} />
@@ -783,17 +743,16 @@ export default function ConsumableMaintenancePage() {
   const warehouseOptions = useMemo(() => {
     if (!source?.company) return [];
     const normal = WAREHOUSES_BY_COMPANY[source.company] || [];
-    if (cardMode !== 'edit' && source.warehouse && !normal.includes(source.warehouse)) return [...normal, source.warehouse];
-    if (cardMode === 'edit' && source.warehouse && activeConsumable?.company === source.company && !normal.includes(source.warehouse)) {
+    if (source.warehouse && activeConsumable?.company === source.company && !normal.includes(source.warehouse)) {
       return [...normal, source.warehouse];
     }
     return normal;
-  }, [source, cardMode, activeConsumable]);
+  }, [source, activeConsumable]);
 
   const editable = (field, control) => (cardMode === 'edit' ? control : displayText(source?.[field]));
 
   const detailTab = source ? (
-    <ConsumableSection title="耗材信息">
+    <Card size="small" title={<SectionTitle>耗材信息</SectionTitle>}>
       <DetailGrid columns={3} labelWidth={112}>
         <DetailItem label="耗材说明">{displayText(source.assetDesc)}</DetailItem>
         <DetailItem label="耗材大类">{displayText(source.majorCategory)}</DetailItem>
@@ -835,15 +794,16 @@ export default function ConsumableMaintenancePage() {
               allowClear
               value={editDraft?.building || undefined}
               style={{ width: '100%' }}
+              disabled={!editDraft?.city}
               placeholder={editDraft?.city ? '请选择' : '请先选择城市'}
               options={(BUILDING_BY_CITY[editDraft?.city] || []).map((value) => ({ label: value, value }))}
-              onDropdownVisibleChange={(open) => { if (open && !editDraft?.city) messageApi.warning('请先选择城市！'); }}
+              onOpenChange={(open) => { if (open && !editDraft?.city) messageApi.warning('请先选择城市！'); }}
               onChange={(value) => updateEdit('building', value || '')}
             />
           ))}
         </DetailItem>
         <DetailItem label="Floor">
-          {editable('floor', <Select allowClear value={editDraft?.floor || undefined} style={{ width: '100%' }} options={(FLOOR_BY_BUILDING[editDraft?.building] || []).map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('floor', value || '')} />)}
+          {editable('floor', <Select allowClear value={editDraft?.floor || undefined} style={{ width: '100%' }} disabled={!editDraft?.building} options={(FLOOR_BY_BUILDING[editDraft?.building] || []).map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('floor', value || '')} />)}
         </DetailItem>
         <DetailItem label="启用日期">
           {cardMode === 'edit' ? (
@@ -858,7 +818,7 @@ export default function ConsumableMaintenancePage() {
         <DetailItem label="PO单号">{displayText(source.poNo)}</DetailItem>
         <DetailItem label="主资产标签号">
           {cardMode === 'edit' ? (
-            <LookupInput value={editDraft?.mainTag || ''} placeholder="请选择主资产" onOpen={() => setLookupKey('editMainAsset')} />
+            <LookupInput value={editDraft?.mainTag || ''} placeholder="请选择主资产" onOpen={openMainAssetLookup} />
           ) : displayText(source.mainTag)}
         </DetailItem>
         <DetailItem label="主资产说明">{displayText(source.mainAssetDesc)}</DetailItem>
@@ -875,6 +835,7 @@ export default function ConsumableMaintenancePage() {
               allowClear
               value={editDraft?.warehouse || undefined}
               style={{ width: '100%' }}
+              disabled={!editDraft?.company}
               placeholder={editDraft?.company ? '请选择仓库' : '请先选择公司'}
               options={warehouseOptions.map((value) => ({ label: value, value }))}
               onChange={(value) => updateEdit('warehouse', value || '')}
@@ -883,7 +844,7 @@ export default function ConsumableMaintenancePage() {
         </DetailItem>
         <DetailItem label="成本中心">{displayText(source.costCenter)}</DetailItem>
       </DetailGrid>
-    </ConsumableSection>
+    </Card>
   ) : null;
 
   const historyRows = useMemo(() => {
@@ -926,15 +887,10 @@ export default function ConsumableMaintenancePage() {
     },
   ] : [];
 
-  const activeLookup = lookupConfig;
-
   return (
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
-
-      <div className="flex items-center justify-between">
-        <Typography.Title level={4} className="mb-0">耗材维护</Typography.Title>
-      </div>
+      <Typography.Title level={4} className="mb-0">耗材维护</Typography.Title>
 
       <QueryBar
         onQuery={handleQuery}
@@ -953,11 +909,7 @@ export default function ConsumableMaintenancePage() {
         {moreOpen ? renderMoreQuery() : null}
       </QueryBar>
 
-      <Card
-        size="small"
-        title="耗材列表"
-        extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}
-      >
+      <Card size="small" title="耗材列表" extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
         <div className="mb-3 flex justify-end">
           <Space wrap>
             <Button icon={<Edit3 size={14} />} onClick={handleEditSelected}>编辑</Button>
@@ -994,23 +946,23 @@ export default function ConsumableMaintenancePage() {
       </Card>
 
       <SelectModal
-        open={Boolean(activeLookup)}
-        title={activeLookup?.title || ''}
+        open={Boolean(lookupConfig)}
+        title={lookupConfig?.title || ''}
         rowKey="id"
-        multiple={Boolean(activeLookup?.multiple)}
-        dataSource={activeLookup?.values || []}
-        searchFields={activeLookup?.searchFields || []}
-        columns={activeLookup?.columns || []}
+        multiple={Boolean(lookupConfig?.multiple)}
+        dataSource={lookupConfig?.values || []}
+        searchFields={lookupConfig?.searchFields || []}
+        columns={lookupConfig?.columns || []}
         initialSelectedKeys={lookupInitialSelectedKeys}
         onCancel={() => setLookupKey('')}
         onConfirm={(selected) => {
-          if (!activeLookup) return;
-          const valueField = activeLookup.valueField || 'name';
-          const records = activeLookup.multiple ? selected : [selected];
+          if (!lookupConfig) return;
+          const valueField = lookupConfig.valueField || 'name';
+          const records = lookupConfig.multiple ? selected : [selected];
           const values = records.filter(Boolean).map((record) => record[valueField]);
-          if (lookupKey === 'companies' || lookupKey === 'owners' || lookupKey === 'warehouses') {
+          if (['companies', 'owners', 'warehouses'].includes(lookupKey)) {
             updateFilter(lookupKey, values);
-          } else if (lookupKey === 'department' || lookupKey === 'costCenter') {
+          } else if (['department', 'costCenter'].includes(lookupKey)) {
             updateFilter(lookupKey, values[0] || '');
           } else if (lookupKey === 'editCompany') {
             updateEdit('company', selected?.name || '');
