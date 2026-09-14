@@ -363,9 +363,9 @@ export default function AssetMaintenancePage() {
     if (!lookupConfig || !lookupKey) return [];
     const selectedValues = new Set((draftFilters[lookupKey] || []).map((value) => String(value)));
     const valueField = lookupConfig.valueField || 'name';
-    return lookupConfig.values
+    return [...new Set(lookupConfig.values
       .filter((record) => selectedValues.has(String(record[valueField])))
-      .map((record) => String(record.id));
+      .map((record) => String(record.id)))];
   }, [lookupConfig, lookupKey, draftFilters]);
 
   const lookupDisplay = (field) => {
@@ -513,6 +513,22 @@ export default function AssetMaintenancePage() {
     }
     if (editDraft.floor && !(FLOOR_BY_BUILDING[editDraft.building] || []).includes(editDraft.floor)) {
       messageApi.error('当前 Floor 与 Building 关系无效');
+      return;
+    }
+    if (editDraft.costCenter && !uniqueValues(rows, 'costCenter').includes(editDraft.costCenter)) {
+      messageApi.error('当前成本中心无效');
+      return;
+    }
+    if (!STATUS_OPTIONS.includes(editDraft.status)) {
+      messageApi.error('当前资产状态无效');
+      return;
+    }
+    if (editDraft.assetMark && !ASSET_MARK_OPTIONS.includes(editDraft.assetMark)) {
+      messageApi.error('当前资产标记无效');
+      return;
+    }
+    if (editDraft.purpose && !PURPOSE_OPTIONS.includes(editDraft.purpose)) {
+      messageApi.error('当前资产用途无效');
       return;
     }
 
@@ -934,9 +950,9 @@ export default function AssetMaintenancePage() {
       bordered
       pagination={false}
       locale={{ emptyText: '暂无资产盘点历史' }}
-      dataSource={[...(source.inventoryRecords || [])].sort((a, b) => (
-        String(b.projectStartTime || b.time || '').localeCompare(String(a.projectStartTime || a.time || ''))
-      ))}
+      dataSource={[...(source.inventoryRecords || [])]
+        .filter((record) => record.projectStatus === '已关闭')
+        .sort((a, b) => String(b.projectStartTime || '').localeCompare(String(a.projectStartTime || '')))}
       scroll={{ x: 1230 }}
       columns={[
         { title: '盘点类型', dataIndex: 'type', width: 120 },
