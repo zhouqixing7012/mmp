@@ -233,11 +233,22 @@ function replaceDocumentNo(data, docNo) {
   return { ...data, meta };
 }
 
-function inferInboundKey(text) {
-  if (text.includes('采购接收') || text.includes('接收入库')) return 'inboundReceipt';
-  if (text.includes('借用归还') || text.includes('借用退库')) return 'inboundBorrowReturn';
-  if (text.includes('退库入库') || text.includes('领用退库')) return 'inboundReturn';
-  return 'inboundNew';
+const INBOUND_TYPE_TO_KEY = {
+  新增入库: 'inboundNew',
+  采购接收: 'inboundReceipt',
+  退库入库: 'inboundReturn',
+  借用归还: 'inboundBorrowReturn',
+};
+const OUTBOUND_TYPES = new Set(['领用出库', '借用出库']);
+
+function readBusinessType(row, activeSubMenu) {
+  if (!row) return '';
+  const values = [...row.querySelectorAll('td')]
+    .map((cell) => String(cell.innerText || '').trim())
+    .filter(Boolean);
+  if (activeSubMenu === '入库') return values.find((value) => Object.prototype.hasOwnProperty.call(INBOUND_TYPE_TO_KEY, value)) || '';
+  if (activeSubMenu === '出库') return values.find((value) => OUTBOUND_TYPES.has(value)) || '';
+  return '';
 }
 
 function inferDocNo(text, activeSubMenu) {
@@ -247,19 +258,20 @@ function inferDocNo(text, activeSubMenu) {
   return patterns.map((pattern)=>String(text||'').match(pattern)?.[0]).find(Boolean) || '';
 }
 
-function buildPreviewDocs(activeSubMenu, label, contexts) {
-  const source = contexts.length ? contexts : [''];
+function buildPreviewDocs(activeSubMenu, printAction, contexts) {
+  const source = contexts.length ? contexts : [{ text: '', businessType: '' }];
   return source.map((context) => {
-    const text = String(context || '');
+    const text = String(context?.text || '');
+    const businessType = String(context?.businessType || '');
     const docNo = inferDocNo(text, activeSubMenu);
     if (activeSubMenu === '资产接收' || activeSubMenu === '耗材接收') return { key: 'receipt', data: replaceDocumentNo(SAMPLE_DATA.receipt, docNo) };
     if (activeSubMenu === '入库') {
-      const key = inferInboundKey(text);
+      const key = INBOUND_TYPE_TO_KEY[businessType] || 'inboundNew';
       return { key, data: replaceDocumentNo(SAMPLE_DATA[key], docNo) };
     }
     if (activeSubMenu === '出库') {
-      if (label.includes('领用打印')) {
-        const key = text.includes('借用出库') || text.includes('员工借用') ? 'borrow' : 'claim';
+      if (printAction === '领用打印') {
+        const key = businessType === '借用出库' ? 'borrow' : 'claim';
         return { key, data: replaceDocumentNo(SAMPLE_DATA[key], docNo) };
       }
       return { key: 'outbound', data: replaceDocumentNo(SAMPLE_DATA.outbound, docNo) };
@@ -298,11 +310,15 @@ export default function InventoryPrintPrototypeBoundary({ activeSubMenu, childre
     const row = button.closest('tr');
     const selectedRows = [...rootRef.current.querySelectorAll('tr.ant-table-row-selected')];
     const pageText = rootRef.current.innerText || '';
+    const toContext = (element) => ({
+      text: element?.innerText || '',
+      businessType: readBusinessType(element, activeSubMenu),
+    });
     const contexts = row
-      ? [row.innerText]
+      ? [toContext(row)]
       : selectedRows.length
-        ? selectedRows.map((item) => item.innerText)
-        : [pageText];
+        ? selectedRows.map(toContext)
+        : [{ text: pageText, businessType: '' }];
 
     const docs = buildPreviewDocs(activeSubMenu, label, contexts);
     if (!docs.length) return;
