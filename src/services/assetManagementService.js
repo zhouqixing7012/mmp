@@ -33,6 +33,7 @@ function normalizeInventoryRecords(records = []) {
     const inventoryYear = record?.time ? String(record.time).slice(0, 4) : '';
     return {
       ...record,
+      projectStartTime: record.projectStartTime || record.time || '',
       type: LEGACY_INVENTORY_TYPE_VALUES.has(record.type) ? '初盘' : record.type,
       flag: record.flag === '正常' && inventoryYear ? `年度-${inventoryYear}` : record.flag,
       status: record.status === '待盘' ? '代盘' : record.status,
