@@ -21,7 +21,6 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
-  Edit3,
   FileSpreadsheet,
   Search,
   UploadCloud,
@@ -127,7 +126,6 @@ const TRANSACTION_COLUMNS = [
   ['配置', 'config', 220],
   ['NO位置', 'noLocation', 180],
   ['升级金额', 'upgradeAmount', 120],
-  ['资产担保人', 'guarantor', 140],
 ];
 const CHANGE_COMPARE_FIELDS = new Set([
   'serialNumber', 'mainTag', 'owner', 'costCenter', 'company', 'location', 'purpose', 'status',
@@ -696,7 +694,6 @@ export default function AssetMaintenancePage() {
   ];
 
   const source = assetMode === 'edit' && editDraft ? editDraft : activeAsset;
-
   const editable = (field, control) => (assetMode === 'edit' ? control : displayText(source?.[field]));
 
   const detailTab = source ? (
@@ -713,8 +710,6 @@ export default function AssetMaintenancePage() {
           <DetailItem label="资产序列号">
             {editable('serialNumber', <Input value={editDraft?.serialNumber || ''} allowClear onChange={(event) => updateEdit('serialNumber', event.target.value)} />)}
           </DetailItem>
-          <DetailItem label="品牌">{displayText(source.brand)}</DetailItem>
-          <DetailItem label="型号">{displayText(source.model)}</DetailItem>
           <DetailItem label="主资产标签号">{displayText(source.mainTag)}</DetailItem>
           <DetailItem label="仓库">{displayText(source.warehouse)}</DetailItem>
           <DetailItem label="数量">{count(source.quantity)}</DetailItem>
@@ -763,6 +758,9 @@ export default function AssetMaintenancePage() {
           </DetailItem>
           <DetailItem label="业务线">{displayText(source.businessLine)}</DetailItem>
           <DetailItem label="盘点标识">{displayText(source.inventoryFlag)}</DetailItem>
+          <DetailItem label="资产标记">
+            {editable('assetMark', <Select allowClear value={editDraft?.assetMark || undefined} style={{ width: '100%' }} options={ASSET_MARK_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('assetMark', value || '')} />)}
+          </DetailItem>
           <DetailItem label="ES实物报废期">{displayText(source.esScrapPeriod)}</DetailItem>
           <DetailItem label="升级日期">{displayText(source.upgradeDate)}</DetailItem>
           <DetailItem label="升级金额">{amount(source.upgradeAmount)}</DetailItem>
@@ -786,9 +784,6 @@ export default function AssetMaintenancePage() {
         <DetailGrid columns={3} labelWidth={104}>
           <DetailItem label="费用账户">{displayText(source.feeAccount)}</DetailItem>
           <DetailItem label="内部费用账户">{displayText(source.internalFeeAccount)}</DetailItem>
-          <DetailItem label="账簿">{displayText(source.book)}</DetailItem>
-          <DetailItem label="税额">{amount(source.taxAmount)}</DetailItem>
-          <DetailItem label="资产入库批次">{displayText(source.inboundBatch)}</DetailItem>
         </DetailGrid>
       </AssetSection>
 
@@ -812,17 +807,6 @@ export default function AssetMaintenancePage() {
             <DetailItem label="ES实物报废期">{displayText(source.scrapInfo.esPeriod)}</DetailItem>
           </DetailGrid>
         ) : <EmptyGroup>无报废信息</EmptyGroup>}
-      </AssetSection>
-
-      <AssetSection title="扩展信息" collapsible collapsed={Boolean(collapsedSections.extended)} onToggle={() => toggleSection('extended')}>
-        <DetailGrid columns={3} labelWidth={104}>
-          <DetailItem label="资产标记">
-            {editable('assetMark', <Select allowClear value={editDraft?.assetMark || undefined} style={{ width: '100%' }} options={ASSET_MARK_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('assetMark', value || '')} />)}
-          </DetailItem>
-          <DetailItem label="资产更换日期">{displayText(source.replacementDate)}</DetailItem>
-          <DetailItem label="可用标志">{displayText(source.availableFlag)}</DetailItem>
-          <DetailItem label="资产要求" span={3}>{displayText(source.assetRequirements)}</DetailItem>
-        </DetailGrid>
       </AssetSection>
 
       <AssetSection title="耗材信息" collapsible collapsed={Boolean(collapsedSections.consumables)} onToggle={() => toggleSection('consumables')}>
@@ -866,9 +850,10 @@ export default function AssetMaintenancePage() {
       <DetailItem label="原值">{amount(source.originalValue)}</DetailItem>
       <DetailItem label="净值">{amount(source.netValue)}</DetailItem>
       <DetailItem label="EBS净值">{amount(source.ebsNetValue)}</DetailItem>
-      <DetailItem label="税额">{amount(source.taxAmount)}</DetailItem>
+      <DetailItem label="EBS原值">{amount(source.ebsOriginalValue)}</DetailItem>
       <DetailItem label="折旧年限">{source.depreciationYears ? `${source.depreciationYears} 年` : '-'}</DetailItem>
       <DetailItem label="折旧剩余月份">{source.remainingMonths === -1 || source.remainingMonths === undefined || source.remainingMonths === null ? '-' : `${source.remainingMonths} 个月`}</DetailItem>
+      {source.isMachineRoom ? <DetailItem label="配置参考价值">{amount(source.configReferenceValue)}</DetailItem> : null}
     </DetailGrid>
   ) : null;
 
@@ -926,7 +911,7 @@ export default function AssetMaintenancePage() {
       pagination={false}
       locale={{ emptyText: '暂无资产操作历史' }}
       dataSource={transactionRows}
-      scroll={{ x: 3900 }}
+      scroll={{ x: 3750 }}
       columns={TRANSACTION_COLUMNS.map(([title, dataIndex, width]) => ({
         title,
         dataIndex,
@@ -974,6 +959,7 @@ export default function AssetMaintenancePage() {
       <QueryBar
         onQuery={handleQuery}
         onReset={handleReset}
+        fieldColProps={{ span: 8 }}
         buttons={(
           <>
             <Button type="primary" icon={<Search size={14} />} onClick={handleQuery}>查询</Button>
