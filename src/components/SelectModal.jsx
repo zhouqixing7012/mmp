@@ -1,6 +1,6 @@
 ﻿import React, { useMemo, useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { Button } from 'antd';
+import { Button, Checkbox } from 'antd';
 
 const DEFAULT_SEARCH_VALUES = {};
 const DEFAULT_SELECTED_KEYS = [];
@@ -65,6 +65,13 @@ export default function SelectModal({
       return String(targetValue || '').toLowerCase().includes(String(searchValue).toLowerCase());
     });
   });
+
+  const filteredKeys = filteredData
+    .map((item) => item?.[rowKey])
+    .filter((value) => value !== undefined && value !== null && value !== '')
+    .map((value) => String(value));
+  const allFilteredSelected = multiple && filteredKeys.length > 0 && filteredKeys.every((key) => selectedKeys.includes(key));
+  const someFilteredSelected = multiple && filteredKeys.some((key) => selectedKeys.includes(key));
 
   useEffect(() => {
     if (!open) return;
@@ -135,6 +142,16 @@ export default function SelectModal({
     resetState();
   };
 
+  const toggleFilteredSelection = () => {
+    if (!multiple || !filteredKeys.length) return;
+    setSelectedKeys((previous) => {
+      if (filteredKeys.every((key) => previous.includes(key))) {
+        return previous.filter((key) => !filteredKeys.includes(key));
+      }
+      return [...new Set([...previous, ...filteredKeys])];
+    });
+  };
+
   if (!shouldRender) return null;
 
   const rows = [];
@@ -194,7 +211,16 @@ export default function SelectModal({
                 <tr className="bg-[#fafafa] border-b border-[#f0f0f0]">
                   <th className="px-4 py-3 w-12 text-center">
                     <span className="w-4 h-4 flex items-center justify-center">
-                      <input type={multiple ? 'checkbox' : 'radio'} className="w-3.5 h-3.5" disabled />
+                      {multiple ? (
+                        <Checkbox
+                          checked={allFilteredSelected}
+                          indeterminate={someFilteredSelected && !allFilteredSelected}
+                          disabled={!filteredKeys.length}
+                          onChange={toggleFilteredSelection}
+                        />
+                      ) : (
+                        <input type="radio" className="w-3.5 h-3.5" disabled />
+                      )}
                     </span>
                   </th>
                   {columns.map((col, ci) => (
@@ -203,7 +229,11 @@ export default function SelectModal({
                 </tr>
               </thead>
               <tbody>
-                {filteredData.map((item) => {
+                {filteredData.length === 0 ? (
+                  <tr>
+                    <td colSpan={columns.length + 1} className="px-4 py-8 text-center text-sm text-gray-400">无数据</td>
+                  </tr>
+                ) : filteredData.map((item) => {
                   const keyVal = String(item[rowKey]);
                   return (
                     <tr
