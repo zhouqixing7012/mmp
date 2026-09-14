@@ -66,13 +66,7 @@ const BUILDING_BY_CITY = {
   广州: ['广州新媒体办公区'],
   天津: ['天津飞狐办公区'],
 };
-const FLOOR_BY_BUILDING = {
-  搜狐媒体大厦: ['B1', '8F', '10F', '12F', '15F', '18F'],
-  北京亦庄数据中心: ['1F', '2F', '3F'],
-  上海新媒体办公区: ['8F', '9F'],
-  广州新媒体办公区: ['6F', '7F'],
-  天津飞狐办公区: ['5F'],
-};
+const FLOOR_OPTIONS = ['B1', '1F', '2F', '3F', '5F', '6F', '7F', '8F', '9F', '10F', '12F', '15F', '18F'];
 
 const EMPTY_FILTERS = {
   tag: '',
@@ -191,18 +185,6 @@ function fuzzyMultiMatch(value, query) {
 
 function uniqueValues(rows, field) {
   return [...new Set(rows.map((row) => row[field]).filter(Boolean))];
-}
-
-function allowedCostCenters(rows, asset) {
-  if (!asset) return [];
-  const scopedRows = asset.isMachineRoom
-    ? rows.filter((row) => (
-      asset.departmentCode
-        ? row.departmentCode === asset.departmentCode
-        : row.department === asset.department
-    ))
-    : rows.filter((row) => row.ownerId === asset.ownerId);
-  return [...new Set([asset.costCenter, ...scopedRows.map((row) => row.costCenter)].filter(Boolean))];
 }
 
 function copyFilters(value) {
@@ -464,7 +446,7 @@ export default function AssetMaintenancePage() {
   };
 
   const handleCityFilterChange = (value) => {
-    setDraftFilters((current) => ({ ...current, city: value || '', building: '', floors: [] }));
+    setDraftFilters((current) => ({ ...current, city: value || '', building: '' }));
   };
 
   const handleBuildingFilterChange = (value) => {
@@ -472,7 +454,7 @@ export default function AssetMaintenancePage() {
       messageApi.warning('请先选择城市！');
       return;
     }
-    setDraftFilters((current) => ({ ...current, building: value || '', floors: [] }));
+    setDraftFilters((current) => ({ ...current, building: value || '' }));
   };
 
   const openAsset = (row, mode = 'view') => {
@@ -503,8 +485,7 @@ export default function AssetMaintenancePage() {
   const updateEdit = (field, value) => {
     setEditDraft((current) => {
       if (!current) return current;
-      if (field === 'city') return { ...current, city: value || '', building: '', floor: '' };
-      if (field === 'building') return { ...current, building: value || '', floor: '' };
+      if (field === 'city') return { ...current, city: value || '', building: '' };
       return { ...current, [field]: value ?? '' };
     });
   };
@@ -531,12 +512,12 @@ export default function AssetMaintenancePage() {
       messageApi.error('当前 Building 与 City 关系无效');
       return;
     }
-    if (editDraft.floor && !(FLOOR_BY_BUILDING[editDraft.building] || []).includes(editDraft.floor)) {
-      messageApi.error('当前 Floor 与 Building 关系无效');
+    if (editDraft.floor && !FLOOR_OPTIONS.includes(editDraft.floor)) {
+      messageApi.error('当前 Floor 无效');
       return;
     }
-    if (!allowedCostCenters(rows, activeAsset).includes(editDraft.costCenter)) {
-      messageApi.error('当前成本中心不在该资产允许的候选范围内');
+    if (!uniqueValues(rows, 'costCenter').includes(editDraft.costCenter)) {
+      messageApi.error('当前成本中心无效');
       return;
     }
     if (!STATUS_OPTIONS.includes(editDraft.status)) {
@@ -696,9 +677,8 @@ export default function AssetMaintenancePage() {
           mode="multiple"
           value={draftFilters.floors}
           allowClear
-          disabled={!draftFilters.building}
-          placeholder={draftFilters.building ? '请选择' : '请先选择 Building'}
-          options={(FLOOR_BY_BUILDING[draftFilters.building] || []).map((value) => ({ label: value, value }))}
+          placeholder="请选择"
+          options={FLOOR_OPTIONS.map((value) => ({ label: value, value }))}
           onChange={(value) => updateFilter('floors', value)}
         />
       </QueryItem>
@@ -837,11 +817,10 @@ export default function AssetMaintenancePage() {
             {editable('floor', (
               <Select
                 allowClear
-                disabled={!editDraft?.building}
                 value={editDraft?.floor || undefined}
                 style={{ width: '100%' }}
-                placeholder={editDraft?.building ? '请选择' : '请先选择 Building'}
-                options={(FLOOR_BY_BUILDING[editDraft?.building] || []).map((value) => ({ label: value, value }))}
+                placeholder="请选择"
+                options={FLOOR_OPTIONS.map((value) => ({ label: value, value }))}
                 onChange={(value) => updateEdit('floor', value || '')}
               />
             ))}
@@ -872,7 +851,7 @@ export default function AssetMaintenancePage() {
                 showSearch
                 value={editDraft?.costCenter || undefined}
                 style={{ width: '100%' }}
-                options={allowedCostCenters(rows, activeAsset).map((value) => ({ label: value, value }))}
+                options={uniqueValues(rows, 'costCenter').map((value) => ({ label: value, value }))}
                 onChange={(value) => updateEdit('costCenter', value || '')}
               />
             ))}
