@@ -20,6 +20,30 @@ const CONSUMABLE_MAINTENANCE_EDIT_FIELDS = [
   'enabledDate', 'mainTag', 'mainAssetDesc', 'warehouse', 'usageDescription', 'remarks',
 ];
 const CONSUMABLE_ALLOWED_PATCH_FIELDS = new Set([...CONSUMABLE_MAINTENANCE_EDIT_FIELDS, 'updatedAt']);
+const CONSUMABLE_STATUS_OPTIONS = new Set(['在用', '在库', '维修', '借用中', '待处理', '再利用', '已报废']);
+const CONSUMABLE_SCRAP_STATUSES = new Set(['已报废']);
+const CONSUMABLE_BUILDING_BY_CITY = {
+  北京: ['搜狐媒体大厦', '北京亦庄数据中心'],
+  上海: ['上海新媒体办公区'],
+  广州: ['广州新媒体办公区'],
+  天津: ['天津飞狐办公区'],
+};
+const CONSUMABLE_FLOOR_BY_BUILDING = {
+  搜狐媒体大厦: ['B1', '8F', '10F', '12F', '15F', '18F'],
+  北京亦庄数据中心: ['1F', '2F', '3F'],
+  上海新媒体办公区: ['8F', '9F'],
+  广州新媒体办公区: ['6F', '7F'],
+  天津飞狐办公区: ['5F'],
+};
+const CONSUMABLE_WAREHOUSES_BY_COMPANY = {
+  新媒体: ['WH001.北京耗材仓', 'WH002.上海耗材仓', 'WH003.广州耗材仓'],
+  天津飞狐: ['WH004.天津耗材仓'],
+};
+const CONSUMABLE_MAIN_ASSET_BY_TAG = new Map([
+  ['114111700922', '服务器.Dell PowerEdge R740'],
+  ['114121700944', '服务器.HPE ProLiant DL380 Gen10'],
+  ['114111700955', '台式机.Dell OptiPlex 7090'],
+]);
 const LEGACY_INVENTORY_TYPE_VALUES = new Set(['普通盘点', '快速盘点', '扫码枪盘点']);
 
 const DEFAULT_ASSET_ROW_MAP = new Map(
@@ -31,8 +55,11 @@ const DEFAULT_CONSUMABLE_ROW_MAP = new Map(
 const CONSUMABLE_COMPANY_CODE_BY_NAME = new Map(
   DEFAULT_CONSUMABLE_MAINTENANCE_ROWS.map((row) => [String(row.company), row.companyCode || '']),
 );
-const CONSUMABLE_OWNER_DEPARTMENT_BY_ID = new Map(
-  DEFAULT_CONSUMABLE_MAINTENANCE_ROWS.map((row) => [String(row.ownerId), row.department || '']),
+const CONSUMABLE_OWNER_BY_ID = new Map(
+  DEFAULT_CONSUMABLE_MAINTENANCE_ROWS.map((row) => [String(row.ownerId), {
+    ownerName: row.ownerName || '',
+    department: row.department || '',
+  }]),
 );
 
 function deriveLatestInventoryYear(row) {
@@ -145,6 +172,76 @@ function buildConsumableMaintenanceTransaction(row, operationDate, changes) {
   };
 }
 
+function isValidDate(value) {
+  if (!value) return true;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return false;
+  const parsed = new Date(`${value}T00:00:00`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+function buildCanonicalConsumablePatch(row, patch, rows) {
+  const next = { ...patch };
+  const company = Object.prototype.hasOwnProperty.call(patch, 'company') ? String(patch.company || '') : String(row.company || '');
+  const ownerId = Object.prototype.hasOwnProperty.call(patch, 'ownerId') ? String(patch.ownerId || '') : String(row.ownerId || '');
+  const city = Object.prototype.hasOwnProperty.call(patch, 'city') ? String(patch.city || '') : String(row.city || '');
+  const building = Object.prototype.hasOwnProperty.call(patch, 'building') ? String(patch.building || '') : String(row.building || '');
+  const floor = Object.prototype.hasOwnProperty.call(patch, 'floor') ? String(patch.floor || '') : String(row.floor || '');
+  const status = Object.prototype.hasOwnProperty.call(patch, 'status') ? String(patch.status || '') : String(row.status || '');
+  const warehouse = Object.prototype.hasOwnProperty.call(patch, 'warehouse') ? String(patch.warehouse || '') : String(row.warehouse || '');
+  const mainTag = Object.prototype.hasOwnProperty.call(patch, 'mainTag') ? String(patch.mainTag || '') : String(row.mainTag || '');
+  const serialNumber = Object.prototype.hasOwnProperty.call(patch, 'serialNumber') ? String(patch.serialNumber || '').trim() : String(row.serialNumber || '').trim();
+  const enabledDate = Object.prototype.hasOwnProperty.call(patch, 'enabledDate') ? String(patch.enabledDate || '') : String(row.enabledDate || '');
+
+  if (!company || !CONSUMABLE_COMPANY_CODE_BY_NAME.has(company)) throw new Error('公司不能为空且必须有效');
+  if (!ownerId || !CONSUMABLE_OWNER_BY_ID.has(ownerId)) throw new Error('责任人不能为空且必须有效');
+  if (!city || !CONSUMABLE_BUILDING_BY_CITY[city]) throw new Error('City不能为空且必须有效');
+  if (!building || !CONSUMABLE_BUILDING_BY_CITY[city].includes(building)) throw new Error('Building不能为空且必须属于当前 City');
+  if (floor && !(CONSUMABLE_FLOOR_BY_BUILDING[building] || []).includes(floor)) throw new Error('当前 Floor 与 Building 关系无效');
+  if (!CONSUMABLE_STATUS_OPTIONS.has(status)) throw new Error('当前耗材状态无效');
+  if (!CONSUMABLE_SCRAP_STATUSES.has(row.status) && CONSUMABLE_SCRAP_STATUSES.has(status)) {
+    throw new Error('资产状态为报废请走报废功能处理');
+  }
+  if (CONSUMABLE_SCRAP_STATUSES.has(row.status) && status !== row.status) {
+    throw new Error('已报废耗材状态不允许通过耗材维护修改');
+  }
+  if (serialNumber.length > 120) throw new Error('序列号最多120字');
+  if (serialNumber && serialNumber !== '缺省' && rows.some((item) => (
+    item.id !== row.id
+    && String(item.serialNumber || '').trim() !== '缺省'
+    && String(item.serialNumber || '').trim().toLowerCase() === serialNumber.toLowerCase()
+  ))) {
+    throw new Error('序列号不唯一');
+  }
+  if (!isValidDate(enabledDate)) throw new Error('启用日期格式无效');
+  if (mainTag) {
+    if (mainTag === row.tag) throw new Error('主资产标签号不得关联自身');
+    if (!CONSUMABLE_MAIN_ASSET_BY_TAG.has(mainTag)) throw new Error('主资产标签号无效');
+    next.mainAssetDesc = CONSUMABLE_MAIN_ASSET_BY_TAG.get(mainTag);
+  } else {
+    next.mainAssetDesc = '';
+  }
+  if (warehouse && !(CONSUMABLE_WAREHOUSES_BY_COMPANY[company] || []).includes(warehouse)) {
+    throw new Error('当前仓库不属于所选公司');
+  }
+
+  const owner = CONSUMABLE_OWNER_BY_ID.get(ownerId);
+  next.company = company;
+  next.companyCode = CONSUMABLE_COMPANY_CODE_BY_NAME.get(company) || '';
+  next.ownerId = ownerId;
+  next.ownerName = owner.ownerName;
+  next.department = owner.department;
+  next.city = city;
+  next.building = building;
+  next.floor = floor;
+  next.status = status;
+  next.warehouse = warehouse;
+  next.mainTag = mainTag;
+  next.serialNumber = serialNumber;
+  next.enabledDate = enabledDate;
+  delete next.updatedAt;
+  return next;
+}
+
 export function getAssetMaintenanceRows() {
   return readDemoData(ASSET_MAINTENANCE_STORAGE_KEY, DEFAULT_ASSET_MAINTENANCE_ROWS)
     .map(normalizeAssetMaintenanceRow);
@@ -182,9 +279,6 @@ export function updateConsumableMaintenanceRow(id, patch) {
   if (invalidFields.length) {
     throw new Error(`耗材维护存在不允许修改的字段：${invalidFields.join('、')}`);
   }
-  if (Object.prototype.hasOwnProperty.call(patch, 'mainAssetDesc') && !Object.prototype.hasOwnProperty.call(patch, 'mainTag')) {
-    throw new Error('主资产说明只能随主资产标签号一起更新');
-  }
 
   const rows = getConsumableMaintenanceRows();
   let targetFound = false;
@@ -192,22 +286,16 @@ export function updateConsumableMaintenanceRow(id, patch) {
     if (row.id !== id) return row;
     targetFound = true;
 
+    const canonicalPatch = buildCanonicalConsumablePatch(row, patch, rows);
     const changes = CONSUMABLE_MAINTENANCE_EDIT_FIELDS
-      .filter((field) => Object.prototype.hasOwnProperty.call(patch, field))
-      .filter((field) => String(row[field] ?? '') !== String(patch[field] ?? ''))
-      .map((field) => ({ field, before: row[field] ?? '', after: patch[field] ?? '' }));
+      .filter((field) => Object.prototype.hasOwnProperty.call(canonicalPatch, field))
+      .filter((field) => String(row[field] ?? '') !== String(canonicalPatch[field] ?? ''))
+      .map((field) => ({ field, before: row[field] ?? '', after: canonicalPatch[field] ?? '' }));
 
     if (!changes.length) return row;
 
-    let derivedPatch = { ...patch };
-    if (Object.prototype.hasOwnProperty.call(patch, 'company')) {
-      derivedPatch.companyCode = CONSUMABLE_COMPANY_CODE_BY_NAME.get(String(patch.company)) || '';
-    }
-    if (Object.prototype.hasOwnProperty.call(patch, 'ownerId')) {
-      derivedPatch.department = CONSUMABLE_OWNER_DEPARTMENT_BY_ID.get(String(patch.ownerId)) || '';
-    }
-    const nextRow = normalizeConsumableMaintenanceRow({ ...row, ...derivedPatch });
-    const operationDate = patch.updatedAt || new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const nextRow = normalizeConsumableMaintenanceRow({ ...row, ...canonicalPatch });
+    const operationDate = new Date().toISOString().replace('T', ' ').slice(0, 19);
     const transaction = buildConsumableMaintenanceTransaction(nextRow, operationDate, changes);
     return {
       ...nextRow,
