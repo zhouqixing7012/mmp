@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Button, Modal, Space, Typography, message as antdMessage } from 'antd';
+import { Button, Modal, Space, message as antdMessage } from 'antd';
 import { Printer } from 'lucide-react';
 
 const RESPONSIBILITY_TEXT = '领用人确认已收到上述资产及相关配件，认同公司资产仅作为工作用途使用。如无使用需要，应置于公司办公场所保存。领用人应承担妥善保管资产的责任，除自然损耗外，不得人为损坏或者疏于维护，否则承担相应的赔偿责任。应公司需要，领用人应当配合及时调换或归还领用资产。如领用人延迟甚至拒绝交还公司资产，公司保留采取进一步手段的权利，包括但不限于留置领用人工资、奖金或者其他个人资产。';
@@ -111,7 +111,11 @@ function MetaGrid({ items, columns = 2 }) {
 }
 
 function BlankRows({ colSpan, count = 6 }) {
-  return Array.from({ length: count }, (_, index) => <tr key={`blank-${index}`}><td colSpan={colSpan} style={{ ...cellStyle, height: 37 }} /></tr>);
+  return Array.from({ length: count }, (_, rowIndex) => (
+    <tr key={`blank-${rowIndex}`}>
+      {Array.from({ length: colSpan }, (_, cellIndex) => <td key={`blank-${rowIndex}-${cellIndex}`} style={{ ...cellStyle, height: 37 }} />)}
+    </tr>
+  ));
 }
 
 function SideLabel({ children }) {
@@ -346,7 +350,6 @@ export default function InventoryPrintPrototypeBoundary({ activeSubMenu, childre
           </Space>
         )}
       >
-        <Typography.Text type="secondary" style={{ display:'block', marginBottom:12 }}>原型按旧系统现状版式还原，用于核对打印字段、标题、联次和签字区。</Typography.Text>
         {previewDocs.map((doc, index) => <PrintSheet key={`${doc.key}-${index}`} doc={doc}/>) }
       </Modal>
     </div>
