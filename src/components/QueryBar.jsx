@@ -50,6 +50,15 @@ function replayQueryResultMotion(queryBar) {
   });
 }
 
+function flattenQueryChildren(children) {
+  return React.Children.toArray(children).flatMap((child) => {
+    if (React.isValidElement(child) && child.type === React.Fragment) {
+      return flattenQueryChildren(child.props.children);
+    }
+    return [child];
+  });
+}
+
 /**
  * 查询条件容器组件
  * fields: 查询字段（自动按 3 列栅格排列）
@@ -86,7 +95,7 @@ export default function QueryBar({
   onReset,
   fieldColProps,
 }) {
-  const fields = React.Children.toArray(children);
+  const fields = flattenQueryChildren(children);
   const defaultButtons = (
     <>
       <Button type="primary" icon={<Search size={14} />} onClick={onQuery}>查询</Button>
