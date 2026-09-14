@@ -16,6 +16,10 @@ const ASSET_MAINTENANCE_EDIT_FIELDS = [
   'costCenter', 'city', 'building', 'floor', 'status', 'serialNumber', 'remarks', 'assetMark', 'usageDescription', 'purpose',
 ];
 
+const DEFAULT_ASSET_ROW_MAP = new Map(
+  DEFAULT_ASSET_MAINTENANCE_ROWS.map((row) => [String(row.id), row]),
+);
+
 function deriveLatestInventoryYear(row) {
   const latest = [...(row.inventoryRecords || [])]
     .filter(record => record?.time)
@@ -23,10 +27,35 @@ function deriveLatestInventoryYear(row) {
   return latest?.time ? String(latest.time).slice(0, 4) : '';
 }
 
+function normalizeInventoryRecords(records = []) {
+  return records.map((record) => ({
+    ...record,
+    status: record.status === '待盘' ? '代盘' : record.status,
+  }));
+}
+
+function normalizeTransactionHistory(records = []) {
+  return records.map((record) => {
+    if (!record?.documentNo && record?.applicationNo) {
+      return { ...record, applicationNo: '' };
+    }
+    return record;
+  });
+}
+
 function normalizeAssetMaintenanceRow(row) {
-  return {
+  const defaultRow = DEFAULT_ASSET_ROW_MAP.get(String(row.id)) || {};
+  const mergedRow = {
+    ...defaultRow,
     ...row,
-    inventoryFlag: deriveLatestInventoryYear(row),
+  };
+  const inventoryRecords = normalizeInventoryRecords(mergedRow.inventoryRecords || []);
+
+  return {
+    ...mergedRow,
+    inventoryRecords,
+    transactionHistory: normalizeTransactionHistory(mergedRow.transactionHistory || []),
+    inventoryFlag: deriveLatestInventoryYear({ ...mergedRow, inventoryRecords }),
   };
 }
 
@@ -79,7 +108,7 @@ export function updateAssetMaintenanceRow(id, patch) {
     const transaction = buildAssetMaintenanceTransaction(nextRow, operationDate);
     return {
       ...nextRow,
-      transactionHistory: [transaction, ...(row.transactionHistory || [])],
+      transactionHistory: [transaction, ...(nextRow.transactionHistory || [])],
     };
   });
   writeDemoData(ASSET_MAINTENANCE_STORAGE_KEY, nextRows);
