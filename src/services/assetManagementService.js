@@ -220,7 +220,9 @@ function buildCanonicalConsumablePatch(row, patch, rows) {
   } else {
     next.mainAssetDesc = '';
   }
-  if (warehouse && !(CONSUMABLE_WAREHOUSES_BY_COMPANY[company] || []).includes(warehouse)) {
+
+  const warehouseIsCurrentHistoricalValue = company === String(row.company || '') && warehouse === String(row.warehouse || '');
+  if (warehouse && !(CONSUMABLE_WAREHOUSES_BY_COMPANY[company] || []).includes(warehouse) && !warehouseIsCurrentHistoricalValue) {
     throw new Error('当前仓库不属于所选公司');
   }
 
