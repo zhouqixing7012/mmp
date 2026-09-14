@@ -15,6 +15,7 @@ import { readDemoData, writeDemoData } from './demoStorage';
 const ASSET_MAINTENANCE_EDIT_FIELDS = [
   'costCenter', 'city', 'building', 'floor', 'status', 'serialNumber', 'remarks', 'assetMark', 'usageDescription', 'purpose',
 ];
+const LEGACY_INVENTORY_TYPE_VALUES = new Set(['普通盘点', '快速盘点', '扫码枪盘点']);
 
 const DEFAULT_ASSET_ROW_MAP = new Map(
   DEFAULT_ASSET_MAINTENANCE_ROWS.map((row) => [String(row.id), row]),
@@ -28,10 +29,15 @@ function deriveLatestInventoryYear(row) {
 }
 
 function normalizeInventoryRecords(records = []) {
-  return records.map((record) => ({
-    ...record,
-    status: record.status === '待盘' ? '代盘' : record.status,
-  }));
+  return records.map((record) => {
+    const inventoryYear = record?.time ? String(record.time).slice(0, 4) : '';
+    return {
+      ...record,
+      type: LEGACY_INVENTORY_TYPE_VALUES.has(record.type) ? '初盘' : record.type,
+      flag: record.flag === '正常' && inventoryYear ? `年度-${inventoryYear}` : record.flag,
+      status: record.status === '待盘' ? '代盘' : record.status,
+    };
+  });
 }
 
 function normalizeTransactionHistory(records = []) {
