@@ -23,7 +23,7 @@ function buildAssetMaintenanceTransaction(row, operationDate) {
     operationDate,
     operator: '115102-王英',
     documentNo: '',
-    applicationNo: row.applicationNo || '',
+    applicationNo: '',
     tag: row.tag || '',
     serialNumber: row.serialNumber || '',
     mainTag: row.mainTag || '',
@@ -42,7 +42,6 @@ function buildAssetMaintenanceTransaction(row, operationDate) {
     config: row.config || '',
     noLocation: row.noLocation || '',
     upgradeAmount: row.upgradeAmount || 0,
-    guarantor: row.guarantor || '',
   };
 }
 
