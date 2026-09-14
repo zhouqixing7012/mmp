@@ -28,6 +28,12 @@ const DEFAULT_ASSET_ROW_MAP = new Map(
 const DEFAULT_CONSUMABLE_ROW_MAP = new Map(
   DEFAULT_CONSUMABLE_MAINTENANCE_ROWS.map((row) => [String(row.id), row]),
 );
+const CONSUMABLE_COMPANY_CODE_BY_NAME = new Map(
+  DEFAULT_CONSUMABLE_MAINTENANCE_ROWS.map((row) => [String(row.company), row.companyCode || '']),
+);
+const CONSUMABLE_OWNER_DEPARTMENT_BY_ID = new Map(
+  DEFAULT_CONSUMABLE_MAINTENANCE_ROWS.map((row) => [String(row.ownerId), row.department || '']),
+);
 
 function deriveLatestInventoryYear(row) {
   const latest = [...(row.inventoryRecords || [])]
@@ -176,6 +182,9 @@ export function updateConsumableMaintenanceRow(id, patch) {
   if (invalidFields.length) {
     throw new Error(`耗材维护存在不允许修改的字段：${invalidFields.join('、')}`);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'mainAssetDesc') && !Object.prototype.hasOwnProperty.call(patch, 'mainTag')) {
+    throw new Error('主资产说明只能随主资产标签号一起更新');
+  }
 
   const rows = getConsumableMaintenanceRows();
   let targetFound = false;
@@ -190,7 +199,14 @@ export function updateConsumableMaintenanceRow(id, patch) {
 
     if (!changes.length) return row;
 
-    const nextRow = normalizeConsumableMaintenanceRow({ ...row, ...patch });
+    let derivedPatch = { ...patch };
+    if (Object.prototype.hasOwnProperty.call(patch, 'company')) {
+      derivedPatch.companyCode = CONSUMABLE_COMPANY_CODE_BY_NAME.get(String(patch.company)) || '';
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, 'ownerId')) {
+      derivedPatch.department = CONSUMABLE_OWNER_DEPARTMENT_BY_ID.get(String(patch.ownerId)) || '';
+    }
+    const nextRow = normalizeConsumableMaintenanceRow({ ...row, ...derivedPatch });
     const operationDate = patch.updatedAt || new Date().toISOString().replace('T', ' ').slice(0, 19);
     const transaction = buildConsumableMaintenanceTransaction(nextRow, operationDate, changes);
     return {
