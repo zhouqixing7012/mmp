@@ -7,6 +7,7 @@ import OutboundPage from './OutboundPage';
 import MovePage from './MovePage';
 import TransferPage from './TransferPage';
 import WarehouseWorkbenchPage from './WarehouseWorkbenchPage';
+import InventoryPrintPrototypeBoundary from './InventoryPrintPreview';
 
 export const INVENTORY_MANAGEMENT_SUB_MENUS = [
   '资产接收',
@@ -27,39 +28,33 @@ function PendingInventoryPage({ title }) {
 }
 
 export function InventoryManagementContent({ activeSubMenu }) {
+  let page = null;
+
   if (activeSubMenu === '资产接收') {
-    return <AssetReceiptPage />;
+    page = <AssetReceiptPage />;
+  } else if (activeSubMenu === '耗材接收') {
+    page = <ConsumableReceiptPage />;
+  } else if (activeSubMenu === '入库') {
+    page = <InboundPage />;
+  } else if (activeSubMenu === '出库') {
+    page = <OutboundPage />;
+  } else if (activeSubMenu === '移库') {
+    page = <MovePage />;
+  } else if (activeSubMenu === '转移') {
+    page = <TransferPage />;
+  } else if (activeSubMenu === '库管员工作台') {
+    page = <WarehouseWorkbenchPage />;
+  } else if (INVENTORY_MANAGEMENT_SUB_MENUS.includes(activeSubMenu)) {
+    page = <PendingInventoryPage title={activeSubMenu} />;
+  } else {
+    page = <AssetReceiptPage />;
   }
 
-  if (activeSubMenu === '耗材接收') {
-    return <ConsumableReceiptPage />;
-  }
-
-  if (activeSubMenu === '入库') {
-    return <InboundPage />;
-  }
-
-  if (activeSubMenu === '出库') {
-    return <OutboundPage />;
-  }
-
-  if (activeSubMenu === '移库') {
-    return <MovePage />;
-  }
-
-  if (activeSubMenu === '转移') {
-    return <TransferPage />;
-  }
-
-  if (activeSubMenu === '库管员工作台') {
-    return <WarehouseWorkbenchPage />;
-  }
-
-  if (INVENTORY_MANAGEMENT_SUB_MENUS.includes(activeSubMenu)) {
-    return <PendingInventoryPage title={activeSubMenu} />;
-  }
-
-  return <AssetReceiptPage />;
+  return (
+    <InventoryPrintPrototypeBoundary activeSubMenu={activeSubMenu || '资产接收'}>
+      {page}
+    </InventoryPrintPrototypeBoundary>
+  );
 }
 
 export { default as AssetReceiptPage } from './AssetReceiptPage';
