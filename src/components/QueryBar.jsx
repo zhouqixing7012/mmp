@@ -94,7 +94,7 @@ export default function QueryBar({
     </>
   );
   const finalButtons = buttons !== undefined ? buttons : defaultButtons;
-  const resolvedFieldColProps = fieldColProps || { xs: 24, sm: 12, md: 12, lg: 8, xl: 7 };
+  const resolvedFieldColProps = fieldColProps || { xs: 24, sm: 12, md: 8, lg: 8, xl: 8, xxl: 8 };
 
   const handleActionClickCapture = (event) => {
     if (!(event.target instanceof Element)) return;
