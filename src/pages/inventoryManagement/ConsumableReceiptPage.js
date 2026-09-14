@@ -433,6 +433,12 @@ export default function ConsumableReceiptPage() {
     return [...existing, ...generated];
   };
 
+  const resetScanInput = () => {
+    setScanInput({ value: '', stage: 'tag', detailId: null });
+    setSelectedDetails([]);
+    setMaintenancePage(1);
+  };
+
   const openMaintenance = () => {
     if (!activeReceipt || activeReceipt.purchaseType !== '低值耐用品') return;
     if (!activeReceipt.lines.length) return messageApi.warning('请先维护接收信息！');
@@ -441,9 +447,7 @@ export default function ConsumableReceiptPage() {
     const details = buildDetailsForReceipt(activeReceipt);
     setReceipts((list) => list.map((receipt) => (receipt.receiptNo === activeReceipt.receiptNo ? { ...receipt, details } : receipt)));
     setMaintenanceLineIds(activeReceipt.lines.map((line) => line.id));
-    setSelectedDetails([]);
-    setMaintenancePage(1);
-    setScanInput({ value: '', stage: 'tag', detailId: null });
+    resetScanInput();
     setView('maintenance');
     return undefined;
   };
@@ -530,7 +534,7 @@ export default function ConsumableReceiptPage() {
         }
         : receipt
     )));
-    setScanInput({ value: '', stage: 'tag', detailId: null });
+    resetScanInput();
     messageApi.success(`已为 ${blankCount} 条空白耗材标签号生成标签号并实时保存`);
   };
 
@@ -608,6 +612,10 @@ export default function ConsumableReceiptPage() {
       }),
     }));
     setMaintenanceLineIds(nextLines.map((line) => line.id));
+    if (scanInput.detailId && ids.has(scanInput.detailId)) {
+      setScanInput({ value: '', stage: 'tag', detailId: null });
+    }
+    setMaintenancePage(1);
     setSelectedDetails([]);
     messageApi.success('已删除所选接收明细并实时保存');
   };
@@ -637,17 +645,22 @@ export default function ConsumableReceiptPage() {
       if (!matched) return messageApi.warning('未找到对应标签号');
       setScanInput({ value: '', stage: 'sn', detailId: matched.id });
       setSelectedDetails([matched.id]);
+      setMaintenancePage(1);
       return;
     }
 
     if (!scanInput.detailId) {
-      setScanInput({ value: '', stage: 'tag', detailId: null });
+      resetScanInput();
       return messageApi.warning('请先扫描标签号');
     }
-    if (duplicateSn(value, scanInput.detailId)) return messageApi.error(`SN 号：${value} 已存在！`);
-    setDetailSn(scanInput.detailId, value);
+    const targetId = scanInput.detailId;
+    if (duplicateSn(value, targetId)) return messageApi.error(`SN 号：${value} 已存在！`);
+    setDetailSn(targetId, value);
+    const targetIndex = details.findIndex((detail) => detail.id === targetId);
+    const targetPage = targetIndex >= 0 ? Math.floor(targetIndex / maintenancePageSize) + 1 : 1;
     setScanInput({ value: '', stage: 'tag', detailId: null });
-    setSelectedDetails([]);
+    setSelectedDetails([targetId]);
+    setMaintenancePage(targetPage);
     return messageApi.success('SN号已写入并实时保存');
   };
 
@@ -1208,6 +1221,9 @@ export default function ConsumableReceiptPage() {
   if (view === 'maintenance' && activeReceipt) {
     const details = activeReceipt.details || [];
     const currentDetail = details.find((detail) => detail.id === scanInput.detailId);
+    const visibleDetails = scanInput.stage === 'sn' && scanInput.detailId
+      ? details.filter((detail) => detail.id === scanInput.detailId)
+      : details;
     const isDraft = activeReceipt.status === '草稿';
     const allTagsGenerated = details.length > 0 && details.every((detail) => String(detail.assetTag || '').trim());
     const allSnMaintained = details.length > 0 && details.every((detail) => String(detail.sn || '').trim());
@@ -1227,24 +1243,24 @@ export default function ConsumableReceiptPage() {
             <DetailItem label="接收时间"><Readonly>{activeReceipt.receiptAt}</Readonly></DetailItem>
           </DetailGrid>
         </Card>
-        <Card size="small" title="扫描维护">
-          <div className="flex items-center gap-3">
-            <Typography.Text className="shrink-0">扫描光标</Typography.Text>
+        <QueryBar onQuery={handleScanInput} onReset={resetScanInput}>
+          <QueryItem label="扫描光标">
             <Input
               value={scanInput.value}
+              allowClear
               disabled={!isDraft || !allTagsGenerated}
-              placeholder={!allTagsGenerated ? '生成标签号后可使用扫描' : scanInput.stage === 'tag' ? '请扫描耗材标签号' : `已定位 ${currentDetail?.assetTag || ''}，请扫描SN号`}
+              placeholder={!isDraft ? '接收已完成' : !allTagsGenerated ? '生成标签号后可使用扫描' : scanInput.stage === 'tag' ? '请扫描耗材标签号' : `已定位 ${currentDetail?.assetTag || ''}，请扫描SN号`}
               onChange={(event) => setScanInput((current) => ({ ...current, value: event.target.value }))}
               onPressEnter={handleScanInput}
             />
-          </div>
-        </Card>
+          </QueryItem>
+        </QueryBar>
         <Card
           size="small"
           title="接收明细"
           extra={(
             <Space>
-              <Typography.Text type="secondary">共 {details.length} 条</Typography.Text>
+              <Typography.Text type="secondary">共 {visibleDetails.length} 条</Typography.Text>
               {isDraft && <Button danger icon={<Trash2 size={14} />} onClick={deleteDetails}>删除行</Button>}
               {isDraft && !allTagsGenerated && <Button onClick={generateTags}>生成标签号</Button>}
               {isDraft && !allSnMaintained && <Button onClick={fillDefaultSn}>维护SN号</Button>}
@@ -1257,7 +1273,7 @@ export default function ConsumableReceiptPage() {
             size="small"
             bordered
             columns={detailColumns}
-            dataSource={details}
+            dataSource={visibleDetails}
             rowSelection={isDraft ? { selectedRowKeys: selectedDetails, onChange: setSelectedDetails, fixed: true, columnTitle: '选择' } : undefined}
             scroll={{ x: 'max-content' }}
             pagination={{
