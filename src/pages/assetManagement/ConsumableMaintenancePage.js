@@ -96,8 +96,8 @@ const EMPTY_FILTERS = {
 };
 
 const BATCH_TEMPLATE_FIELDS = [
-  '耗材标签号', '公司', '序列号', '耗材状态', '耗材责任人工号', 'City', 'Building', 'Floor',
-  '启用日期', '主资产标签号', '仓库', '使用说明', '备注',
+  '耗材标签号', '公司', '板块', 'City', 'Building', 'Floor', '耗材说明',
+  '主资产标签号', '数量', '耗材责任人工号', '耗材状态', '仓库', '启用日期',
 ];
 
 const EDITABLE_FIELDS = [
@@ -484,6 +484,10 @@ export default function ConsumableMaintenancePage() {
     setLookupKey('editMainAsset');
   };
 
+  const clearMainAsset = () => {
+    setEditDraft((current) => current ? { ...current, mainTag: '', mainAssetDesc: '' } : current);
+  };
+
   const saveConsumable = () => {
     if (!activeConsumable || !editDraft) return;
     if (!editDraft.company) {
@@ -653,14 +657,13 @@ export default function ConsumableMaintenancePage() {
         </QueryClearArea>
       </QueryItem>
       <QueryItem label="Building">
-        <QueryClearArea onClear={() => updateFilter('building', '')}>
+        <QueryClearArea onClear={() => handleBuildingFilterChange('')}>
           <Select
             value={draftFilters.building || undefined}
             allowClear
             disabled={!draftFilters.city}
             placeholder={draftFilters.city ? '请选择' : '请先选择城市'}
             options={(BUILDING_BY_CITY[draftFilters.city] || []).map((value) => ({ label: value, value }))}
-            onOpenChange={(open) => { if (open && !draftFilters.city) messageApi.warning('请先选择城市！'); }}
             onChange={handleBuildingFilterChange}
           />
         </QueryClearArea>
@@ -797,7 +800,6 @@ export default function ConsumableMaintenancePage() {
               disabled={!editDraft?.city}
               placeholder={editDraft?.city ? '请选择' : '请先选择城市'}
               options={(BUILDING_BY_CITY[editDraft?.city] || []).map((value) => ({ label: value, value }))}
-              onOpenChange={(open) => { if (open && !editDraft?.city) messageApi.warning('请先选择城市！'); }}
               onChange={(value) => updateEdit('building', value || '')}
             />
           ))}
@@ -818,7 +820,10 @@ export default function ConsumableMaintenancePage() {
         <DetailItem label="PO单号">{displayText(source.poNo)}</DetailItem>
         <DetailItem label="主资产标签号">
           {cardMode === 'edit' ? (
-            <LookupInput value={editDraft?.mainTag || ''} placeholder="请选择主资产" onOpen={openMainAssetLookup} />
+            <Space.Compact block>
+              <LookupInput value={editDraft?.mainTag || ''} placeholder="请选择主资产" onOpen={openMainAssetLookup} onDoubleClick={clearMainAsset} />
+              <Button disabled={!editDraft?.mainTag} onClick={clearMainAsset}>清空</Button>
+            </Space.Compact>
           ) : displayText(source.mainTag)}
         </DetailItem>
         <DetailItem label="主资产说明">{displayText(source.mainAssetDesc)}</DetailItem>
@@ -1017,7 +1022,7 @@ export default function ConsumableMaintenancePage() {
             type="warning"
             showIcon
             message="批量修改采用覆盖策略"
-            description="耗材标签号仅用于定位既有卡片；其余模板字段按单元格值覆盖原值，空白会覆盖为空。公司、责任人、City、Building 为必填字段，空白会直接校验失败。板块、耗材说明、数量不允许通过批量修改变更。任一行校验失败时，本次文件全部不保存。"
+            description="耗材标签号用于定位既有卡片；板块、耗材说明、数量为只读核对列，必须与系统当前值一致且不会写回。公司、City、Building、主资产标签号、责任人、耗材状态、仓库、启用日期按模板值覆盖，空白会覆盖为空；其中公司、责任人、City、Building为空时直接校验失败。任一行校验失败时，本次文件全部不保存。"
           />
           <div>
             <Typography.Text strong>模板列：</Typography.Text>
