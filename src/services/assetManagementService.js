@@ -61,6 +61,7 @@ function normalizeAssetMaintenanceRow(row) {
 
   return {
     ...mergedRow,
+    assetType: mergedRow.assetType || '公司资产',
     inventoryRecords,
     transactionHistory: normalizeTransactionHistory(mergedRow.transactionHistory || []),
     inventoryFlag: deriveLatestInventoryYear({ ...mergedRow, inventoryRecords }),
