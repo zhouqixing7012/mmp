@@ -1,4 +1,4 @@
-export const ASSET_MAINTENANCE_STORAGE_KEY = 'asset-management-maintenance-v3';
+export const ASSET_MAINTENANCE_STORAGE_KEY = 'asset-management-maintenance-v4';
 
 const baseAsset = {
   companyCode: '',
@@ -106,7 +106,7 @@ export const DEFAULT_ASSET_MAINTENANCE_ROWS = [
     ],
     inventoryRecords: [
       { id: 'i-1', type: '普通盘点', flag: '正常', projectName: '2026年上半年办公资产盘点', status: '已盘', time: '2026-06-18 15:30:22', note: '账实一致', executor: '115102-王英', importWay: 'APP 导入' },
-      { id: 'i-2', type: '快速盘点', flag: '正常', projectName: '2025年年终资产盘点', status: '已盘', time: '2025-12-20 11:06:42', note: '账实一致', executor: '115102-王英', importWay: '快速盘点导入' },
+      { id: 'i-2', type: '快速盘点', flag: '正常', projectName: '2025年年终资产盘点', status: '代盘', time: '2025-12-20 11:06:42', note: '账实一致', executor: '115102-王英', importWay: '快速盘点导入' },
     ],
     transactionHistory: [
       { id: 't-3', operationType: '资产维护修改', operationDate: '2026-09-10 14:20:11', operator: '115102-王英', documentNo: '', applicationNo: '', tag: 'NE3810', serialNumber: 'F2LZQ1ABC123', mainTag: '', category: 'OFFICE EQUIPMENT.移动数码-手机', assetDesc: '苹果.iPhone 11', owner: '117058-刘臻', costCenter: 'CC1001.产品技术中心', feeAccount: '66020301.办公设备', company: '115.新媒体', location: '北京.搜狐媒体大厦.15F', purpose: '员工用机', status: '在用-使用中', usageDescription: '焦点事业群.产品技术中心.客户端技术部', remarks: '员工办公使用', service: '', config: '128G / 黑色', noLocation: '', upgradeAmount: 0 },
