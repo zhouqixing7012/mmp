@@ -220,6 +220,37 @@ function EmptyGroup({ children }) {
   );
 }
 
+function SectionTitle({ children }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="inline-block h-4 w-1 rounded-sm bg-[#1677ff]" aria-hidden="true" />
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function AssetSection({ title, collapsible = false, collapsed = false, onToggle, children }) {
+  return (
+    <Card
+      size="small"
+      title={<SectionTitle>{title}</SectionTitle>}
+      extra={collapsible ? (
+        <Button
+          type="text"
+          size="small"
+          icon={collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          onClick={onToggle}
+        >
+          {collapsed ? '展开' : '收起'}
+        </Button>
+      ) : null}
+      styles={{ body: collapsed ? { display: 'none' } : undefined }}
+    >
+      {!collapsed && children}
+    </Card>
+  );
+}
+
 function compareValue(a, b, type) {
   if (type === 'number') return Number(a || 0) - Number(b || 0);
   return String(a ?? '').localeCompare(String(b ?? ''), 'zh-CN', { numeric: true });
@@ -240,6 +271,7 @@ export default function AssetMaintenancePage() {
   const [activeAssetId, setActiveAssetId] = useState('');
   const [activeTab, setActiveTab] = useState('detail');
   const [editDraft, setEditDraft] = useState(null);
+  const [collapsedSections, setCollapsedSections] = useState({});
   const [batchOpen, setBatchOpen] = useState(false);
   const [batchFiles, setBatchFiles] = useState([]);
 
@@ -421,6 +453,7 @@ export default function AssetMaintenancePage() {
     setAssetMode(mode);
     setActiveTab('detail');
     setEditDraft(mode === 'edit' ? { ...row } : null);
+    setCollapsedSections({});
     setAssetOpen(true);
   };
 
@@ -428,11 +461,16 @@ export default function AssetMaintenancePage() {
     setAssetOpen(false);
     setAssetMode('view');
     setEditDraft(null);
+    setCollapsedSections({});
   };
 
   const cancelEdit = () => {
     setAssetMode('view');
     setEditDraft(null);
+  };
+
+  const toggleSection = (key) => {
+    setCollapsedSections((current) => ({ ...current, [key]: !current[key] }));
   };
 
   const updateEdit = (field, value) => {
@@ -663,7 +701,7 @@ export default function AssetMaintenancePage() {
 
   const detailTab = source ? (
     <Space direction="vertical" size={12} className="w-full">
-      <Card size="small" title="基础信息">
+      <AssetSection title="基础信息">
         <DetailGrid columns={3} labelWidth={104}>
           <DetailItem label="资产大类">{displayText(source.majorCategory)}</DetailItem>
           <DetailItem label="资产小类">{displayText(source.minorCategory)}</DetailItem>
@@ -742,9 +780,9 @@ export default function AssetMaintenancePage() {
             {editable('remarks', <TextArea value={editDraft?.remarks || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('remarks', event.target.value)} />)}
           </DetailItem>
         </DetailGrid>
-      </Card>
+      </AssetSection>
 
-      <Card size="small" title="账务信息">
+      <AssetSection title="账务信息" collapsible collapsed={Boolean(collapsedSections.accounting)} onToggle={() => toggleSection('accounting')}>
         <DetailGrid columns={3} labelWidth={104}>
           <DetailItem label="费用账户">{displayText(source.feeAccount)}</DetailItem>
           <DetailItem label="内部费用账户">{displayText(source.internalFeeAccount)}</DetailItem>
@@ -752,18 +790,18 @@ export default function AssetMaintenancePage() {
           <DetailItem label="税额">{amount(source.taxAmount)}</DetailItem>
           <DetailItem label="资产入库批次">{displayText(source.inboundBatch)}</DetailItem>
         </DetailGrid>
-      </Card>
+      </AssetSection>
 
-      <Card size="small" title="NO 信息">
+      <AssetSection title="NO 信息" collapsible collapsed={Boolean(collapsedSections.noInfo)} onToggle={() => toggleSection('noInfo')}>
         {source.isMachineRoom && (source.noLocation || source.service) ? (
           <DetailGrid columns={3} labelWidth={104}>
             <DetailItem label="NO位置">{displayText(source.noLocation)}</DetailItem>
             <DetailItem label="服务">{displayText(source.service)}</DetailItem>
           </DetailGrid>
         ) : <EmptyGroup>无 NO 信息</EmptyGroup>}
-      </Card>
+      </AssetSection>
 
-      <Card size="small" title="报废信息">
+      <AssetSection title="报废信息" collapsible collapsed={Boolean(collapsedSections.scrap)} onToggle={() => toggleSection('scrap')}>
         {source.scrapInfo ? (
           <DetailGrid columns={3} labelWidth={104}>
             <DetailItem label="报废原因">{displayText(source.scrapInfo.reason)}</DetailItem>
@@ -774,9 +812,9 @@ export default function AssetMaintenancePage() {
             <DetailItem label="ES实物报废期">{displayText(source.scrapInfo.esPeriod)}</DetailItem>
           </DetailGrid>
         ) : <EmptyGroup>无报废信息</EmptyGroup>}
-      </Card>
+      </AssetSection>
 
-      <Card size="small" title="扩展信息">
+      <AssetSection title="扩展信息" collapsible collapsed={Boolean(collapsedSections.extended)} onToggle={() => toggleSection('extended')}>
         <DetailGrid columns={3} labelWidth={104}>
           <DetailItem label="资产标记">
             {editable('assetMark', <Select allowClear value={editDraft?.assetMark || undefined} style={{ width: '100%' }} options={ASSET_MARK_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('assetMark', value || '')} />)}
@@ -785,9 +823,9 @@ export default function AssetMaintenancePage() {
           <DetailItem label="可用标志">{displayText(source.availableFlag)}</DetailItem>
           <DetailItem label="资产要求" span={3}>{displayText(source.assetRequirements)}</DetailItem>
         </DetailGrid>
-      </Card>
+      </AssetSection>
 
-      <Card size="small" title="耗材信息">
+      <AssetSection title="耗材信息" collapsible collapsed={Boolean(collapsedSections.consumables)} onToggle={() => toggleSection('consumables')}>
         {(source.consumables || []).length ? (
           <Table
             rowKey="id"
@@ -802,9 +840,9 @@ export default function AssetMaintenancePage() {
             ]}
           />
         ) : <EmptyGroup>无耗材信息</EmptyGroup>}
-      </Card>
+      </AssetSection>
 
-      <Card size="small" title="部件信息">
+      <AssetSection title="部件信息" collapsible collapsed={Boolean(collapsedSections.parts)} onToggle={() => toggleSection('parts')}>
         {(source.parts || []).length ? (
           <Table
             rowKey="id"
@@ -819,7 +857,7 @@ export default function AssetMaintenancePage() {
             ]}
           />
         ) : <EmptyGroup>无部件信息</EmptyGroup>}
-      </Card>
+      </AssetSection>
     </Space>
   ) : null;
 
