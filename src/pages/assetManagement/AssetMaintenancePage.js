@@ -351,6 +351,15 @@ export default function AssetMaintenancePage() {
     return configs[lookupKey] || null;
   }, [lookupKey, rows]);
 
+  const lookupInitialSelectedKeys = useMemo(() => {
+    if (!lookupConfig || !lookupKey) return [];
+    const selectedValues = new Set((draftFilters[lookupKey] || []).map((value) => String(value)));
+    const valueField = lookupConfig.valueField || 'name';
+    return lookupConfig.values
+      .filter((record) => selectedValues.has(String(record[valueField])))
+      .map((record) => String(record.id));
+  }, [lookupConfig, lookupKey, draftFilters]);
+
   const lookupDisplay = (field) => {
     const values = draftFilters[field] || [];
     if (!values.length) return '';
@@ -1022,6 +1031,7 @@ export default function AssetMaintenancePage() {
         title={lookupConfig?.title || ''}
         multiple
         rowKey="id"
+        initialSelectedKeys={lookupInitialSelectedKeys}
         dataSource={lookupConfig?.values || []}
         searchFields={lookupConfig?.searchFields || []}
         columns={lookupConfig?.columns || []}
