@@ -237,6 +237,7 @@ export default function ContractNumberMaintenancePage() {
     name,
     code: rows.find((row) => row.useCompany === name)?.useCompanyCode || '',
   })), [rows]);
+
   const owners = useMemo(() => [...new Map(rows.map((row) => [row.ownerId, {
     id: row.ownerId,
     code: row.ownerId,
@@ -246,6 +247,7 @@ export default function ContractNumberMaintenancePage() {
     jobLevel: row.jobLevel,
     idCard: row.idCard,
   }])).values()], [rows]);
+
   const departmentOptions = useMemo(() => {
     const values = new Set();
     rows.forEach((row) => {
@@ -423,10 +425,6 @@ export default function ContractNumberMaintenancePage() {
     }
     if (editDraft.contractStartDate && editDraft.contractEndDate && editDraft.contractStartDate > editDraft.contractEndDate) {
       messageApi.error('合约期限开始日期不得晚于结束日期');
-      return;
-    }
-    if (String(editDraft.remarks || '').length > 120) {
-      messageApi.error('备注最多120字');
       return;
     }
     if (String(editDraft.status || '').includes('在用') && editDraft.warehouse) {
@@ -664,23 +662,14 @@ export default function ContractNumberMaintenancePage() {
 
   const detailTab = source ? (
     <Space direction="vertical" size={12} className="w-full">
-      <Card size="small" title={<SectionTitle>资产身份</SectionTitle>}>
+      <Card size="small" title={<SectionTitle>合约信息</SectionTitle>}>
         <DetailGrid columns={3} labelWidth={112}>
           <DetailItem label="标签号">{displayText(source.tag)}</DetailItem>
-          <DetailItem label="资产小类">{displayText(source.minorCategory)}</DetailItem>
-          <DetailItem label="品牌">{displayText(source.brand)}</DetailItem>
-          <DetailItem label="资产说明">{displayText(source.assetDesc)}</DetailItem>
-          <DetailItem label="配置">{displayText(source.config)}</DetailItem>
-          <DetailItem label="数量">{displayText(source.quantity)}</DetailItem>
-        </DetailGrid>
-      </Card>
-
-      <Card size="small" title={<SectionTitle>套餐与合约</SectionTitle>}>
-        <DetailGrid columns={3} labelWidth={112}>
           <DetailItem label="合约号码">{editable('contractNumber', <Input value={editDraft?.contractNumber || ''} maxLength={25} allowClear onChange={(event) => updateEdit('contractNumber', event.target.value)} />)}</DetailItem>
           <DetailItem label="使用公司">{cardMode === 'edit' ? <LookupInput value={editDraft?.useCompany || ''} placeholder="请选择使用公司" onOpen={() => setLookupKey('editCompany')} /> : displayText(source.useCompany)}</DetailItem>
+          <DetailItem label="资产小类">{displayText(source.minorCategory)}</DetailItem>
           <DetailItem label="合约号码说明">{editable('contractDesc', <Select value={editDraft?.contractDesc || undefined} allowClear showSearch style={{ width: '100%' }} options={contractDescOptions} onChange={(value) => updateEdit('contractDesc', value || '')} />)}</DetailItem>
-          <DetailItem label="套餐内容" span={2}>{editable('packageContent', <Select value={editDraft?.packageContent || undefined} allowClear showSearch style={{ width: '100%' }} options={packageOptions} onChange={(value) => updateEdit('packageContent', value || '')} />)}</DetailItem>
+          <DetailItem label="套餐内容">{editable('packageContent', <Select value={editDraft?.packageContent || undefined} allowClear showSearch style={{ width: '100%' }} options={packageOptions} onChange={(value) => updateEdit('packageContent', value || '')} />)}</DetailItem>
           <DetailItem label="合约期限">
             {cardMode === 'edit' ? (
               <RangePicker
@@ -694,11 +683,12 @@ export default function ContractNumberMaintenancePage() {
               />
             ) : contractTermText(source)}
           </DetailItem>
+          <DetailItem label="数量">{displayText(source.quantity)}</DetailItem>
           <DetailItem label="金额">{editable('amount', <InputNumber min={0} max={99999999.99} precision={2} style={{ width: '100%' }} value={editDraft?.amount} onChange={(value) => updateEdit('amount', value)} />)}</DetailItem>
         </DetailGrid>
       </Card>
 
-      <Card size="small" title={<SectionTitle>状态与仓库</SectionTitle>}>
+      <Card size="small" title={<SectionTitle>状态与使用</SectionTitle>}>
         <DetailGrid columns={3} labelWidth={112}>
           <DetailItem label="号码状态">{editable('status', <Select value={editDraft?.status || undefined} style={{ width: '100%' }} options={STATUS_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('status', value)} />)}</DetailItem>
           <DetailItem label="仓库">
@@ -714,39 +704,29 @@ export default function ContractNumberMaintenancePage() {
               />
             ))}
           </DetailItem>
-          <DetailItem label="备注">{editable('remarks', <TextArea value={editDraft?.remarks || ''} maxLength={120} showCount autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('remarks', event.target.value)} />)}</DetailItem>
+          <DetailItem label="使用说明">{editable('usageDescription', <TextArea value={editDraft?.usageDescription || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('usageDescription', event.target.value)} />)}</DetailItem>
         </DetailGrid>
       </Card>
 
-      <Card size="small" title={<SectionTitle>报废</SectionTitle>}>
+      <Card size="small" title={<SectionTitle>报废信息</SectionTitle>}>
         <DetailGrid columns={3} labelWidth={112}>
+          <DetailItem label="报废原因" span={2}>{editable('scrapReason', <TextArea disabled={!String(editDraft?.status || '').includes('报废')} value={editDraft?.scrapReason || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('scrapReason', event.target.value)} />)}</DetailItem>
           <DetailItem label="报废日期">
             {cardMode === 'edit' ? (
               <DatePicker disabled={!String(editDraft?.status || '').includes('报废')} style={{ width: '100%' }} value={editDraft?.scrapDate ? dayjs(editDraft.scrapDate) : null} onChange={(date) => updateEdit('scrapDate', date ? date.format('YYYY-MM-DD') : '')} />
             ) : displayText(source.scrapDate)}
           </DetailItem>
-          <DetailItem label="报废原因" span={2}>{editable('scrapReason', <TextArea disabled={!String(editDraft?.status || '').includes('报废')} value={editDraft?.scrapReason || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('scrapReason', event.target.value)} />)}</DetailItem>
         </DetailGrid>
       </Card>
 
-      <Card size="small" title={<SectionTitle>人员</SectionTitle>}>
+      <Card size="small" title={<SectionTitle>责任与申请</SectionTitle>}>
         <DetailGrid columns={3} labelWidth={112}>
           <DetailItem label="责任人">{cardMode === 'edit' ? <LookupInput value={editDraft?.ownerId ? `${editDraft.ownerId}-${editDraft.ownerName}` : ''} placeholder="请选择责任人" onOpen={() => setLookupKey('editOwner')} /> : `${source.ownerId}-${source.ownerName}`}</DetailItem>
-          <DetailItem label="子公司">{displayText(source.subsidiary)}</DetailItem>
           <DetailItem label="部门">{displayText(source.department)}</DetailItem>
           <DetailItem label="员工职级">{displayText(source.jobLevel)}</DetailItem>
-          <DetailItem label="身份证号码">{displayText(source.idCard)}</DetailItem>
-        </DetailGrid>
-      </Card>
-
-      <Card size="small" title={<SectionTitle>领用与扩展</SectionTitle>}>
-        <DetailGrid columns={3} labelWidth={112}>
           <DetailItem label="领用日期">{displayText(source.claimDate)}</DetailItem>
-          <DetailItem label="领用原因">{editable('claimReason', <Select allowClear value={editDraft?.claimReason || undefined} style={{ width: '100%' }} options={CLAIM_REASON_OPTIONS.filter((value) => value !== '空').map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('claimReason', value || '')} />)}</DetailItem>
+          <DetailItem label="申请类型">{displayText(source.applicationType)}</DetailItem>
           <DetailItem label="申请单号">{displayText(source.applicationNo)}</DetailItem>
-          <DetailItem label="领用说明" span={3}>{editable('claimDescription', <TextArea value={editDraft?.claimDescription || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('claimDescription', event.target.value)} />)}</DetailItem>
-          <DetailItem label="副卡">{displayText(source.secondaryCard)}</DetailItem>
-          <DetailItem label="维修记录" span={2}>{displayText(source.maintenanceRecord)}</DetailItem>
         </DetailGrid>
       </Card>
     </Space>
@@ -868,7 +848,7 @@ export default function ContractNumberMaintenancePage() {
       />
 
       <Modal
-        title={`${cardMode === 'edit' ? '合约机详细信息编辑页' : '合约号码信息'}${source?.tag ? `：${source.tag}` : ''}`}
+        title={`${cardMode === 'edit' ? '合约号码详细信息' : '合约号码信息'}${source?.tag ? `：${source.tag}` : ''}`}
         open={cardOpen}
         width={1120}
         style={{ maxWidth: 'calc(100vw - 48px)' }}
