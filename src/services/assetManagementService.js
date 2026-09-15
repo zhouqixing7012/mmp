@@ -101,8 +101,21 @@ function normalizeAssetMaintenanceRow(row) {
   };
 }
 
-function buildAssetMaintenanceTransaction(row, operationDate) {
+function maintenanceAuditValues(row) {
+  return ASSET_MAINTENANCE_EDIT_FIELDS.reduce((result, field) => ({
+    ...result,
+    [field]: row?.[field] ?? '',
+  }), {});
+}
+
+function buildAssetMaintenanceTransaction(row, operationDate, beforeRow) {
   const sortSequence = Date.now();
+  const beforeValues = maintenanceAuditValues(beforeRow);
+  const afterValues = maintenanceAuditValues(row);
+  const changedFields = ASSET_MAINTENANCE_EDIT_FIELDS.filter((field) => (
+    String(beforeValues[field] ?? '') !== String(afterValues[field] ?? '')
+  ));
+
   return {
     id: `asset-maint-${row.id}-${sortSequence}`,
     sortSequence,
@@ -130,6 +143,9 @@ function buildAssetMaintenanceTransaction(row, operationDate) {
     config: row.config || '',
     noLocation: row.noLocation || '',
     upgradeAmount: row.upgradeAmount ?? '',
+    changedFields,
+    beforeValues,
+    afterValues,
   };
 }
 
@@ -146,11 +162,11 @@ export function updateAssetMaintenanceRow(id, patch) {
       Object.prototype.hasOwnProperty.call(patch, field)
       && String(row[field] ?? '') !== String(patch[field] ?? '')
     ));
-    const nextRow = normalizeAssetMaintenanceRow({ ...row, ...patch });
-    if (!hasMaintenanceChange) return nextRow;
+    if (!hasMaintenanceChange) return normalizeAssetMaintenanceRow(row);
 
+    const nextRow = normalizeAssetMaintenanceRow({ ...row, ...patch });
     const operationDate = patch.updatedAt || new Date().toISOString().replace('T', ' ').slice(0, 19);
-    const transaction = buildAssetMaintenanceTransaction(nextRow, operationDate);
+    const transaction = buildAssetMaintenanceTransaction(nextRow, operationDate, row);
     return {
       ...nextRow,
       transactionHistory: normalizeTransactionHistory([transaction, ...(nextRow.transactionHistory || [])]),
