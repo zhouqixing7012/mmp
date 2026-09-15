@@ -79,7 +79,7 @@ const DEFAULT_ROWS = [
   },
   {
     id: 'tag-print-8', assetTag: '1231400381-H1', assetName: '其他.10K 300G SAS', department: '视频_技术成本',
-    location: '北京.长宽机房.1层', companyCn: '飞狐信息', companyEn: 'Fox Info', plateCn: '视频', serialNumber: '213807-H1',
+    location: '北京.长宽机房.1层', companyCn: '飞狐信息', companyEn: 'Fox Info', plateCn: '视频', serialNumber: '213023807-H1',
     assetCategory: '11412', assetStatus: '在用-使用中', userId: '10405', userName: '刘建', city: '北京市', printCount: 0,
   },
   {
