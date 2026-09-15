@@ -338,6 +338,14 @@ function RuleField({ label, children }) {
   );
 }
 
+function ReadOnlyRuleValue({ children }) {
+  return (
+    <div className="min-h-8 flex items-center py-1">
+      <Typography.Text strong>{children}</Typography.Text>
+    </div>
+  );
+}
+
 function getHighPrefix(category, subCategory) {
   if (category === '合约机' && subCategory === '合约手机') return 'P';
   if (category === '合约机' && subCategory === '合约电话卡') return 'N';
@@ -530,7 +538,7 @@ function GenerateLabelsPage({
             <DatePicker className="w-full" picker="year" value={normalYear} onChange={setNormalYear} allowClear />
           </RuleField>
           <RuleField label="当前最大序号">
-            <Input className="w-full" value={String(currentPoolValue).padStart(5, '0')} readOnly disabled />
+            <ReadOnlyRuleValue>{String(currentPoolValue).padStart(5, '0')}</ReadOnlyRuleValue>
           </RuleField>
         </>
       );
@@ -563,7 +571,7 @@ function GenerateLabelsPage({
             <DatePicker className="w-full" picker="year" value={highYear} onChange={setHighYear} allowClear />
           </RuleField>
           <RuleField label="当前最大序号">
-            <Input className="w-full" value={String(currentPoolValue).padStart(4, '0')} readOnly disabled />
+            <ReadOnlyRuleValue>{String(currentPoolValue).padStart(4, '0')}</ReadOnlyRuleValue>
           </RuleField>
         </>
       );
@@ -593,8 +601,8 @@ function GenerateLabelsPage({
     if (rule === 'mobile') {
       return (
         <>
-          <RuleField label="标签前缀"><Typography.Text strong>NE</Typography.Text></RuleField>
-          <RuleField label="当前最大序号"><Input className="w-full" value={String(currentPoolValue).padStart(4, '0')} readOnly disabled /></RuleField>
+          <RuleField label="标签前缀"><ReadOnlyRuleValue>NE</ReadOnlyRuleValue></RuleField>
+          <RuleField label="当前最大序号"><ReadOnlyRuleValue>{String(currentPoolValue).padStart(4, '0')}</ReadOnlyRuleValue></RuleField>
         </>
       );
     }
@@ -604,7 +612,7 @@ function GenerateLabelsPage({
         <RuleField label="选择备件类型">
           <Select className="w-full" value={sparePartType} options={SPARE_PART_OPTIONS} onChange={setSparePartType} />
         </RuleField>
-        <RuleField label="当前最大序号"><Input className="w-full" value={String(currentPoolValue).padStart(5, '0')} readOnly disabled /></RuleField>
+        <RuleField label="当前最大序号"><ReadOnlyRuleValue>{String(currentPoolValue).padStart(5, '0')}</ReadOnlyRuleValue></RuleField>
       </>
     );
   };
