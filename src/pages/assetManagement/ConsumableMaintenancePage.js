@@ -54,17 +54,16 @@ const BUILDING_BY_CITY = {
   广州: ['广州新媒体办公区'],
   天津: ['天津飞狐办公区'],
 };
-const FLOOR_BY_BUILDING = {
-  搜狐媒体大厦: ['B1', '8F', '10F', '12F', '15F', '18F'],
-  北京亦庄数据中心: ['1F', '2F', '3F'],
-  上海新媒体办公区: ['8F', '9F'],
-  广州新媒体办公区: ['6F', '7F'],
-  天津飞狐办公区: ['5F'],
-};
-const WAREHOUSES_BY_COMPANY = {
-  新媒体: ['WH001.北京耗材仓', 'WH002.上海耗材仓', 'WH003.广州耗材仓'],
-  天津飞狐: ['WH004.天津耗材仓'],
-};
+const ENABLED_FLOOR_OPTIONS = ['B1', '1F', '2F', '3F', '5F', '6F', '7F', '8F', '9F', '10F', '12F', '15F', '18F'];
+const ELIGIBLE_WAREHOUSE_PURPOSE_CODES = new Set(['IU0001', 'IU0003']);
+const WAREHOUSE_MASTER = [
+  { name: 'WH001.北京耗材仓', company: '新媒体', enabled: true, purposeCode: 'IU0001', purposeName: '耗材库' },
+  { name: 'WH002.上海耗材仓', company: '新媒体', enabled: true, purposeCode: 'IU0001', purposeName: '耗材库' },
+  { name: 'WH003.广州耗材仓', company: '新媒体', enabled: true, purposeCode: 'IU0003', purposeName: '资产高耗库' },
+  { name: 'WH004.天津耗材仓', company: '天津飞狐', enabled: true, purposeCode: 'IU0001', purposeName: '耗材库' },
+  { name: 'WH005.停用耗材仓', company: '新媒体', enabled: false, purposeCode: 'IU0001', purposeName: '耗材库' },
+  { name: 'WH006.普通仓库', company: '新媒体', enabled: true, purposeCode: 'IU0099', purposeName: '普通仓库' },
+];
 const MAIN_ASSET_OPTIONS = [
   { id: 'main-1', tag: '114111700922', desc: '服务器.Dell PowerEdge R740', ownerId: '203938', status: '在用' },
   { id: 'main-2', tag: '114121700944', desc: '服务器.HPE ProLiant DL380 Gen10', ownerId: 'SOHU01', status: '在用' },
@@ -183,6 +182,16 @@ function isPlaceholderSerial(value) {
 function compareValue(a, b, type) {
   if (type === 'number') return Number(a || 0) - Number(b || 0);
   return String(a ?? '').localeCompare(String(b ?? ''), 'zh-CN', { numeric: true });
+}
+
+function getEligibleWarehouseNames(company) {
+  return WAREHOUSE_MASTER
+    .filter((item) => (
+      item.enabled
+      && item.company === company
+      && ELIGIBLE_WAREHOUSE_PURPOSE_CODES.has(item.purposeCode)
+    ))
+    .map((item) => item.name);
 }
 
 function LookupInput({ value, placeholder, onOpen, onDoubleClick }) {
@@ -461,7 +470,7 @@ export default function ConsumableMaintenancePage() {
   };
 
   const handleCityFilterChange = (value) => {
-    setDraftFilters((current) => ({ ...current, city: value || '', building: '', floor: '' }));
+    setDraftFilters((current) => ({ ...current, city: value || '', building: '' }));
   };
 
   const handleBuildingFilterChange = (value) => {
@@ -469,7 +478,7 @@ export default function ConsumableMaintenancePage() {
       messageApi.warning('请先选择城市！');
       return;
     }
-    setDraftFilters((current) => ({ ...current, building: value || '', floor: '' }));
+    setDraftFilters((current) => ({ ...current, building: value || '' }));
   };
 
   const openCard = (row, mode = 'view') => {
@@ -510,15 +519,14 @@ export default function ConsumableMaintenancePage() {
     setEditDraft((current) => {
       if (!current) return current;
       if (field === 'company') {
-        const warehouses = WAREHOUSES_BY_COMPANY[value] || [];
+        const warehouses = getEligibleWarehouseNames(value);
         return {
           ...current,
           company: value || '',
           warehouse: warehouses.includes(current.warehouse) ? current.warehouse : '',
         };
       }
-      if (field === 'city') return { ...current, city: value || '', building: '', floor: '' };
-      if (field === 'building') return { ...current, building: value || '', floor: '' };
+      if (field === 'city') return { ...current, city: value || '', building: '' };
       return { ...current, [field]: value ?? '' };
     });
   };
@@ -557,8 +565,8 @@ export default function ConsumableMaintenancePage() {
       messageApi.error('当前 Building 与 City 关系无效');
       return;
     }
-    if (editDraft.floor && !(FLOOR_BY_BUILDING[editDraft.building] || []).includes(editDraft.floor)) {
-      messageApi.error('当前 Floor 与 Building 关系无效');
+    if (editDraft.floor && !ENABLED_FLOOR_OPTIONS.includes(editDraft.floor)) {
+      messageApi.error('当前 Floor 无效或未启用');
       return;
     }
     if (!STATUS_OPTIONS.includes(editDraft.status)) {
@@ -577,9 +585,22 @@ export default function ConsumableMaintenancePage() {
       messageApi.error('主资产标签号不得关联自身');
       return;
     }
-    if (editDraft.warehouse && !(WAREHOUSES_BY_COMPANY[editDraft.company] || []).includes(editDraft.warehouse)
+    if (editDraft.mainTag) {
+      const mainAsset = MAIN_ASSET_OPTIONS.find((item) => item.tag === editDraft.mainTag);
+      if (!mainAsset || mainAsset.status === '已报废') {
+        messageApi.error('主资产标签号无效或已报废');
+        return;
+      }
+      if (mainAsset.ownerId !== editDraft.ownerId) {
+        messageApi.error('主资产责任人与当前耗材责任人不一致');
+        return;
+      }
+    }
+
+    const eligibleWarehouses = getEligibleWarehouseNames(editDraft.company);
+    if (editDraft.warehouse && !eligibleWarehouses.includes(editDraft.warehouse)
       && !(editDraft.company === activeConsumable.company && editDraft.warehouse === activeConsumable.warehouse)) {
-      messageApi.error('当前仓库不属于所选公司');
+      messageApi.error('当前仓库不符合公司、启用状态或仓库用途规则');
       return;
     }
 
@@ -736,7 +757,13 @@ export default function ConsumableMaintenancePage() {
       </QueryItem>
       <QueryItem label="Floor">
         <QueryClearArea onClear={() => updateFilter('floor', '')}>
-          <Select value={draftFilters.floor || undefined} allowClear disabled={!draftFilters.building} placeholder="请选择" options={(FLOOR_BY_BUILDING[draftFilters.building] || []).map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('floor', value || '')} />
+          <Select
+            value={draftFilters.floor || undefined}
+            allowClear
+            placeholder="请选择全部启用 Floor"
+            options={ENABLED_FLOOR_OPTIONS.map((value) => ({ label: value, value }))}
+            onChange={(value) => updateFilter('floor', value || '')}
+          />
         </QueryClearArea>
       </QueryItem>
       <QueryItem label="新增类型">
@@ -811,7 +838,7 @@ export default function ConsumableMaintenancePage() {
   const source = cardMode === 'edit' && editDraft ? editDraft : activeConsumable;
   const warehouseOptions = useMemo(() => {
     if (!source?.company) return [];
-    const normal = WAREHOUSES_BY_COMPANY[source.company] || [];
+    const normal = getEligibleWarehouseNames(source.company);
     if (source.warehouse && activeConsumable?.company === source.company && !normal.includes(source.warehouse)) {
       return [...normal, source.warehouse];
     }
@@ -871,7 +898,16 @@ export default function ConsumableMaintenancePage() {
           ))}
         </DetailItem>
         <DetailItem label="Floor">
-          {editable('floor', <Select allowClear value={editDraft?.floor || undefined} style={{ width: '100%' }} disabled={!editDraft?.building} options={(FLOOR_BY_BUILDING[editDraft?.building] || []).map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('floor', value || '')} />)}
+          {editable('floor', (
+            <Select
+              allowClear
+              value={editDraft?.floor || undefined}
+              style={{ width: '100%' }}
+              placeholder="请选择全部启用 Floor"
+              options={ENABLED_FLOOR_OPTIONS.map((value) => ({ label: value, value }))}
+              onChange={(value) => updateEdit('floor', value || '')}
+            />
+          ))}
         </DetailItem>
         <DetailItem label="启用日期">
           {cardMode === 'edit' ? (
@@ -1046,12 +1082,22 @@ export default function ConsumableMaintenancePage() {
             if (!selected?.department && selected?.code && !String(selected.code).startsWith('SOHU')) {
               messageApi.warning('该员工对应的部门为空，请联系管理员添加');
             }
-            setEditDraft((current) => current ? {
-              ...current,
-              ownerId: selected?.code || '',
-              ownerName: selected?.name || '',
-              department: selected?.department || '',
-            } : current);
+            setEditDraft((current) => {
+              if (!current) return current;
+              const selectedCode = selected?.code || '';
+              const currentMainAsset = MAIN_ASSET_OPTIONS.find((item) => item.tag === current.mainTag);
+              const keepMainAsset = currentMainAsset
+                && currentMainAsset.status !== '已报废'
+                && currentMainAsset.ownerId === selectedCode;
+              return {
+                ...current,
+                ownerId: selectedCode,
+                ownerName: selected?.name || '',
+                department: selected?.department || '',
+                mainTag: keepMainAsset ? current.mainTag : '',
+                mainAssetDesc: keepMainAsset ? current.mainAssetDesc : '',
+              };
+            });
           } else if (lookupKey === 'editMainAsset') {
             setEditDraft((current) => current ? {
               ...current,
@@ -1096,7 +1142,7 @@ export default function ConsumableMaintenancePage() {
             type="warning"
             showIcon
             message="批量修改采用覆盖策略"
-            description="耗材标签号用于定位既有卡片；板块、耗材说明、数量为只读核对列，必须与系统当前值一致且不会写回。公司、City、Building、主资产标签号、责任人、耗材状态、仓库、启用日期按模板值覆盖，空白会覆盖为空；其中公司、责任人、City、Building为空时直接校验失败。任一行校验失败时，本次文件全部不保存。"
+            description="耗材标签号用于定位既有卡片；板块、耗材说明、数量为只读核对列，必须与系统当前值一致且不会写回。公司、City、Building、主资产标签号、责任人、耗材状态、仓库、启用日期按模板值覆盖，空白会覆盖为空；其中公司、责任人、City、Building为空时直接校验失败。Floor 从全部启用 Floor 中校验；仓库必须启用、属于当前公司，且仓库用途为 IU0001（耗材库）或 IU0003（资产高耗库）；启用日期有值时按 yyyy/MM/dd 读取。任一行校验失败时，本次文件全部不保存。"
           />
           <div>
             <Typography.Text strong>模板列：</Typography.Text>
