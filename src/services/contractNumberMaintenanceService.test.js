@@ -32,7 +32,15 @@ describe('合约号码维护保存边界', () => {
       .toThrow('合约号码维护存在不允许修改的字段');
   });
 
-  test('身份证号码不在单条维护白名单中', () => {
+  test('禁止客户端伪造最后修改时间和责任人姓名', () => {
+    const row = getRow();
+    expect(() => updateContractNumberMaintenanceRow(row.id, { updatedAt: '2099-01-01 00:00:00' }))
+      .toThrow('合约号码维护存在不允许修改的字段');
+    expect(() => updateContractNumberMaintenanceRow(row.id, { ownerName: '伪造姓名' }))
+      .toThrow('合约号码维护存在不允许修改的字段');
+  });
+
+  test('身份证号码不允许直接提交修改', () => {
     const row = getRow();
     expect(() => updateContractNumberMaintenanceRow(row.id, { idCard: '110101199901019999' }))
       .toThrow('合约号码维护存在不允许修改的字段');
@@ -120,6 +128,16 @@ describe('合约号码维护保存边界', () => {
     }))).toThrow('报废日期不能为空且必须有效');
   });
 
+  test('非法报废日期不能保存', () => {
+    const row = getRow();
+    expect(() => updateContractNumberMaintenanceRow(row.id, editablePatch(row, {
+      status: '已报废',
+      warehouse: 'I10086.集团合约机库',
+      scrapDate: '2026-02-31',
+      scrapReason: '报废测试',
+    }))).toThrow('报废日期不能为空且必须有效');
+  });
+
   test('非报废状态不能残留报废字段', () => {
     const row = getRow();
     expect(() => updateContractNumberMaintenanceRow(row.id, editablePatch(row, {
@@ -128,7 +146,7 @@ describe('合约号码维护保存边界', () => {
     }))).toThrow('非报废状态不允许填写报废日期或报废原因');
   });
 
-  test('责任人姓名部门子公司职级以系统主数据为准', () => {
+  test('责任人姓名部门子公司职级身份证以系统主数据为准', () => {
     const row = getRow('contract-number-2');
     const targetOwner = getRow('contract-number-3');
     const nextRows = updateContractNumberMaintenanceRow(row.id, editablePatch(row, {
@@ -139,6 +157,7 @@ describe('合约号码维护保存边界', () => {
     expect(saved.department).toBe(targetOwner.department);
     expect(saved.subsidiary).toBe(targetOwner.subsidiary);
     expect(saved.jobLevel).toBe(targetOwner.jobLevel);
+    expect(saved.idCard).toBe(targetOwner.idCard);
   });
 
   test('不存在的责任人不能保存', () => {
