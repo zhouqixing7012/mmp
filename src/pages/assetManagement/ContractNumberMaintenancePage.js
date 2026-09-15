@@ -124,6 +124,12 @@ function fuzzyMultiMatch(value, query) {
   return tokens.some((token) => target.includes(token));
 }
 
+function fuzzyMatch(value, query) {
+  const token = String(query || '').trim().toLowerCase();
+  if (!token) return true;
+  return String(value || '').toLowerCase().includes(token);
+}
+
 function copyFilters(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -238,7 +244,18 @@ export default function ContractNumberMaintenancePage() {
     department: row.department,
     subsidiary: row.subsidiary,
     jobLevel: row.jobLevel,
+    idCard: row.idCard,
   }])).values()], [rows]);
+  const departmentOptions = useMemo(() => {
+    const values = new Set();
+    rows.forEach((row) => {
+      const department = String(row.department || '').trim();
+      if (!department) return;
+      const parts = department.split('.').filter(Boolean);
+      parts.forEach((_, index) => values.add(parts.slice(0, index + 1).join('.')));
+    });
+    return [...values];
+  }, [rows]);
 
   const lookupConfig = useMemo(() => {
     const configs = {
@@ -282,8 +299,8 @@ export default function ContractNumberMaintenancePage() {
       if (f.useCompanies.length && !f.useCompanies.includes(row.useCompany)) return false;
       if (f.brands.length && !f.brands.includes(row.brand)) return false;
       if (f.minorCategories.length && !f.minorCategories.includes(row.minorCategory)) return false;
-      if (!fuzzyMultiMatch(row.contractDesc, f.contractDesc)) return false;
-      if (!fuzzyMultiMatch(row.packageContent, f.packageContent)) return false;
+      if (!fuzzyMatch(row.contractDesc, f.contractDesc)) return false;
+      if (!fuzzyMatch(row.packageContent, f.packageContent)) return false;
       if (f.contractTerm.length === 2) {
         if (!row.contractStartDate || !row.contractEndDate) return false;
         if (row.contractStartDate < f.contractTerm[0] || row.contractEndDate > f.contractTerm[1]) return false;
@@ -571,7 +588,7 @@ export default function ContractNumberMaintenancePage() {
         </QueryClearArea>
       </QueryItem>
       <QueryItem label="子公司">{multiSelect('subsidiaries', uniqueValues(rows, 'subsidiary'))}</QueryItem>
-      <QueryItem label="部门">{multiSelect('departments', uniqueValues(rows, 'department'))}</QueryItem>
+      <QueryItem label="部门">{multiSelect('departments', departmentOptions)}</QueryItem>
       <QueryItem label="员工职级">{multiSelect('jobLevels', uniqueValues(rows, 'jobLevel'))}</QueryItem>
       <QueryItem label="领用日期">
         <QueryClearArea onClear={() => updateFilter('claimDate', [])}>
@@ -843,6 +860,7 @@ export default function ContractNumberMaintenancePage() {
               subsidiary: selected?.subsidiary || '',
               department: selected?.department || '',
               jobLevel: selected?.jobLevel || '',
+              idCard: selected?.idCard || '',
             } : current);
           }
           setLookupKey('');
