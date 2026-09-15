@@ -41,7 +41,7 @@ const { Dragger } = Upload;
 
 const STATUS_OPTIONS = ['在用-使用中', '在库（新）', '在库（旧）', '已报废'];
 const MINOR_CATEGORY_OPTIONS = ['合约机', '合约号码'];
-const CLAIM_REASON_OPTIONS = ['4级升5级', '5级（含）以上入职', '业务使用', '空'];
+const APPLICATION_TYPE_OPTIONS = ['业务申请', '个人申请', '管理者配送'];
 const WAREHOUSE_OPTIONS = ['I10086.集团合约机库'];
 const PHONE_PATTERN = /^(13|14|15|17|18)\d{9}$/;
 
@@ -54,7 +54,6 @@ const EMPTY_FILTERS = {
   tag: '',
   contractNumber: '',
   useCompanies: [],
-  brands: [],
   minorCategories: [],
   contractDesc: '',
   packageContent: '',
@@ -64,12 +63,10 @@ const EMPTY_FILTERS = {
   statuses: [],
   warehouses: [],
   owners: [],
-  subsidiaries: [],
   departments: [],
   jobLevels: [],
   claimDate: [],
-  claimReasons: [],
-  claimDescription: '',
+  applicationTypes: [],
   applicationNo: '',
   scrapStatus: '',
   scrapReason: '',
@@ -243,9 +240,7 @@ export default function ContractNumberMaintenancePage() {
     code: row.ownerId,
     name: row.ownerName,
     department: row.department,
-    subsidiary: row.subsidiary,
     jobLevel: row.jobLevel,
-    idCard: row.idCard,
   }])).values()], [rows]);
 
   const departmentOptions = useMemo(() => {
@@ -299,7 +294,6 @@ export default function ContractNumberMaintenancePage() {
       if (!fuzzyMultiMatch(row.tag, f.tag)) return false;
       if (!fuzzyMultiMatch(row.contractNumber, f.contractNumber)) return false;
       if (f.useCompanies.length && !f.useCompanies.includes(row.useCompany)) return false;
-      if (f.brands.length && !f.brands.includes(row.brand)) return false;
       if (f.minorCategories.length && !f.minorCategories.includes(row.minorCategory)) return false;
       if (!fuzzyMatch(row.contractDesc, f.contractDesc)) return false;
       if (!fuzzyMatch(row.packageContent, f.packageContent)) return false;
@@ -312,15 +306,10 @@ export default function ContractNumberMaintenancePage() {
       if (f.statuses.length && !f.statuses.includes(row.status)) return false;
       if (f.warehouses.length && !f.warehouses.includes(row.warehouse)) return false;
       if (f.owners.length && !f.owners.includes(row.ownerId)) return false;
-      if (f.subsidiaries.length && !f.subsidiaries.includes(row.subsidiary)) return false;
       if (f.departments.length && !f.departments.some((department) => String(row.department || '').startsWith(department))) return false;
       if (f.jobLevels.length && !f.jobLevels.includes(row.jobLevel)) return false;
       if (f.claimDate.length === 2 && (!row.claimDate || row.claimDate < f.claimDate[0] || row.claimDate > f.claimDate[1])) return false;
-      if (f.claimReasons.length) {
-        const value = row.claimReason || '';
-        if (!f.claimReasons.some((item) => (item === '空' ? !value : item === value))) return false;
-      }
-      if (!fuzzyMultiMatch(row.claimDescription, f.claimDescription)) return false;
+      if (f.applicationTypes.length && !f.applicationTypes.includes(row.applicationType)) return false;
       if (!fuzzyMultiMatch(row.applicationNo, f.applicationNo)) return false;
       if (f.scrapStatus === '已报废' && !String(row.status).includes('报废')) return false;
       if (f.scrapStatus === '未报废' && String(row.status).includes('报废')) return false;
@@ -377,19 +366,6 @@ export default function ContractNumberMaintenancePage() {
     setCardMode('view');
     setEditDraft(null);
     setLookupKey('');
-  };
-
-  const handleEditSelected = () => {
-    if (!selectedRowKeys.length) {
-      messageApi.warning('请选中要编辑的数据！');
-      return;
-    }
-    if (selectedRowKeys.length > 1) {
-      messageApi.warning('只能选中一条要编辑的数据！');
-      return;
-    }
-    const row = rows.find((item) => item.id === selectedRowKeys[0]);
-    if (row) openCard(row, 'edit');
   };
 
   const updateEdit = (field, value) => {
@@ -552,7 +528,6 @@ export default function ContractNumberMaintenancePage() {
         <Input value={draftFilters.contractNumber} allowClear placeholder="支持模糊、多值" onChange={(event) => updateFilter('contractNumber', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('contractNumber', '')} />
       </QueryItem>
       <QueryItem label="使用公司">{multiSelect('useCompanies', uniqueValues(rows, 'useCompany'))}</QueryItem>
-      <QueryItem label="品牌">{multiSelect('brands', uniqueValues(rows, 'brand'))}</QueryItem>
       <QueryItem label="资产小类">{multiSelect('minorCategories', MINOR_CATEGORY_OPTIONS)}</QueryItem>
       <QueryItem label="合约号码说明">
         <Input value={draftFilters.contractDesc} allowClear placeholder="支持模糊" onChange={(event) => updateFilter('contractDesc', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('contractDesc', '')} />
@@ -585,7 +560,6 @@ export default function ContractNumberMaintenancePage() {
           </Space.Compact>
         </QueryClearArea>
       </QueryItem>
-      <QueryItem label="子公司">{multiSelect('subsidiaries', uniqueValues(rows, 'subsidiary'))}</QueryItem>
       <QueryItem label="部门">{multiSelect('departments', departmentOptions)}</QueryItem>
       <QueryItem label="员工职级">{multiSelect('jobLevels', uniqueValues(rows, 'jobLevel'))}</QueryItem>
       <QueryItem label="领用日期">
@@ -593,10 +567,7 @@ export default function ContractNumberMaintenancePage() {
           <RangePicker style={{ width: '100%' }} value={draftFilters.claimDate.length === 2 ? draftFilters.claimDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('claimDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
         </QueryClearArea>
       </QueryItem>
-      <QueryItem label="领用原因">{multiSelect('claimReasons', CLAIM_REASON_OPTIONS)}</QueryItem>
-      <QueryItem label="领用说明">
-        <Input value={draftFilters.claimDescription} allowClear placeholder="支持模糊、多值" onChange={(event) => updateFilter('claimDescription', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('claimDescription', '')} />
-      </QueryItem>
+      <QueryItem label="申请类型">{multiSelect('applicationTypes', APPLICATION_TYPE_OPTIONS)}</QueryItem>
       <QueryItem label="申请单号">
         <Input value={draftFilters.applicationNo} allowClear placeholder="支持文本、多值" onChange={(event) => updateFilter('applicationNo', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('applicationNo', '')} />
       </QueryItem>
@@ -633,7 +604,6 @@ export default function ContractNumberMaintenancePage() {
     },
     sortableColumn('合约号码', 'contractNumber', 140),
     sortableColumn('使用公司', 'useCompany', 220),
-    sortableColumn('品牌', 'brand', 100),
     sortableColumn('资产小类', 'minorCategory', 120),
     sortableColumn('合约号码说明', 'contractDesc', 200),
     sortableColumn('套餐内容', 'packageContent', 280),
@@ -642,17 +612,23 @@ export default function ContractNumberMaintenancePage() {
     sortableColumn('金额', 'amount', 120, { number: true, align: 'right', render: amountText }),
     sortableColumn('号码状态', 'status', 140, { render: (value) => <StatusTag value={value} type="business" /> }),
     sortableColumn('仓库', 'warehouse', 180),
-    sortableColumn('备注', 'remarks', 220),
+    sortableColumn('使用说明', 'usageDescription', 220),
     sortableColumn('报废原因', 'scrapReason', 220),
     sortableColumn('报废日期', 'scrapDate', 120),
     { title: '责任人', dataIndex: 'ownerName', width: 170, sorter: (a, b) => `${a.ownerId}-${a.ownerName}`.localeCompare(`${b.ownerId}-${b.ownerName}`, 'zh-CN'), render: (_, row) => `${row.ownerId}-${row.ownerName}` },
-    sortableColumn('子公司', 'subsidiary', 140),
     sortableColumn('部门', 'department', 200),
     sortableColumn('员工职级', 'jobLevel', 110),
     sortableColumn('领用日期', 'claimDate', 120),
-    sortableColumn('领用原因', 'claimReason', 160),
-    sortableColumn('领用说明', 'claimDescription', 220),
+    sortableColumn('申请类型', 'applicationType', 130),
     sortableColumn('申请单号', 'applicationNo', 150),
+    {
+      title: '操作',
+      key: 'action',
+      width: 90,
+      fixed: 'right',
+      align: 'center',
+      render: (_, row) => <Button type="link" icon={<Edit3 size={14} />} onClick={() => openCard(row, 'edit')}>编辑</Button>,
+    },
   ];
 
   const source = cardMode === 'edit' && editDraft ? editDraft : activeRow;
@@ -661,75 +637,56 @@ export default function ContractNumberMaintenancePage() {
   const packageOptions = uniqueValues(rows, 'packageContent').map((value) => ({ label: value, value }));
 
   const detailTab = source ? (
-    <Space direction="vertical" size={12} className="w-full">
-      <Card size="small" title={<SectionTitle>合约信息</SectionTitle>}>
-        <DetailGrid columns={3} labelWidth={112}>
-          <DetailItem label="标签号">{displayText(source.tag)}</DetailItem>
-          <DetailItem label="合约号码">{editable('contractNumber', <Input value={editDraft?.contractNumber || ''} maxLength={25} allowClear onChange={(event) => updateEdit('contractNumber', event.target.value)} />)}</DetailItem>
-          <DetailItem label="使用公司">{cardMode === 'edit' ? <LookupInput value={editDraft?.useCompany || ''} placeholder="请选择使用公司" onOpen={() => setLookupKey('editCompany')} /> : displayText(source.useCompany)}</DetailItem>
-          <DetailItem label="资产小类">{displayText(source.minorCategory)}</DetailItem>
-          <DetailItem label="合约号码说明">{editable('contractDesc', <Select value={editDraft?.contractDesc || undefined} allowClear showSearch style={{ width: '100%' }} options={contractDescOptions} onChange={(value) => updateEdit('contractDesc', value || '')} />)}</DetailItem>
-          <DetailItem label="套餐内容">{editable('packageContent', <Select value={editDraft?.packageContent || undefined} allowClear showSearch style={{ width: '100%' }} options={packageOptions} onChange={(value) => updateEdit('packageContent', value || '')} />)}</DetailItem>
-          <DetailItem label="合约期限">
-            {cardMode === 'edit' ? (
-              <RangePicker
-                style={{ width: '100%' }}
-                value={editDraft?.contractStartDate && editDraft?.contractEndDate ? [dayjs(editDraft.contractStartDate), dayjs(editDraft.contractEndDate)] : null}
-                onChange={(dates) => setEditDraft((current) => current ? {
-                  ...current,
-                  contractStartDate: dates ? dates[0].format('YYYY-MM-DD') : '',
-                  contractEndDate: dates ? dates[1].format('YYYY-MM-DD') : '',
-                } : current)}
-              />
-            ) : contractTermText(source)}
-          </DetailItem>
-          <DetailItem label="数量">{displayText(source.quantity)}</DetailItem>
-          <DetailItem label="金额">{editable('amount', <InputNumber min={0} max={99999999.99} precision={2} style={{ width: '100%' }} value={editDraft?.amount} onChange={(value) => updateEdit('amount', value)} />)}</DetailItem>
-        </DetailGrid>
-      </Card>
-
-      <Card size="small" title={<SectionTitle>状态与使用</SectionTitle>}>
-        <DetailGrid columns={3} labelWidth={112}>
-          <DetailItem label="号码状态">{editable('status', <Select value={editDraft?.status || undefined} style={{ width: '100%' }} options={STATUS_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('status', value)} />)}</DetailItem>
-          <DetailItem label="仓库">
-            {editable('warehouse', (
-              <Select
-                allowClear
-                disabled={String(editDraft?.status || '').includes('在用')}
-                value={editDraft?.warehouse || undefined}
-                placeholder={String(editDraft?.status || '').includes('在用') ? '在用状态仓库必须为空' : '请选择仓库'}
-                style={{ width: '100%' }}
-                options={WAREHOUSE_OPTIONS.map((value) => ({ label: value, value }))}
-                onChange={(value) => updateEdit('warehouse', value || '')}
-              />
-            ))}
-          </DetailItem>
-          <DetailItem label="使用说明">{editable('usageDescription', <TextArea value={editDraft?.usageDescription || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('usageDescription', event.target.value)} />)}</DetailItem>
-        </DetailGrid>
-      </Card>
-
-      <Card size="small" title={<SectionTitle>报废信息</SectionTitle>}>
-        <DetailGrid columns={3} labelWidth={112}>
-          <DetailItem label="报废原因" span={2}>{editable('scrapReason', <TextArea disabled={!String(editDraft?.status || '').includes('报废')} value={editDraft?.scrapReason || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('scrapReason', event.target.value)} />)}</DetailItem>
-          <DetailItem label="报废日期">
-            {cardMode === 'edit' ? (
-              <DatePicker disabled={!String(editDraft?.status || '').includes('报废')} style={{ width: '100%' }} value={editDraft?.scrapDate ? dayjs(editDraft.scrapDate) : null} onChange={(date) => updateEdit('scrapDate', date ? date.format('YYYY-MM-DD') : '')} />
-            ) : displayText(source.scrapDate)}
-          </DetailItem>
-        </DetailGrid>
-      </Card>
-
-      <Card size="small" title={<SectionTitle>责任与申请</SectionTitle>}>
-        <DetailGrid columns={3} labelWidth={112}>
-          <DetailItem label="责任人">{cardMode === 'edit' ? <LookupInput value={editDraft?.ownerId ? `${editDraft.ownerId}-${editDraft.ownerName}` : ''} placeholder="请选择责任人" onOpen={() => setLookupKey('editOwner')} /> : `${source.ownerId}-${source.ownerName}`}</DetailItem>
-          <DetailItem label="部门">{displayText(source.department)}</DetailItem>
-          <DetailItem label="员工职级">{displayText(source.jobLevel)}</DetailItem>
-          <DetailItem label="领用日期">{displayText(source.claimDate)}</DetailItem>
-          <DetailItem label="申请类型">{displayText(source.applicationType)}</DetailItem>
-          <DetailItem label="申请单号">{displayText(source.applicationNo)}</DetailItem>
-        </DetailGrid>
-      </Card>
-    </Space>
+    <DetailGrid columns={3} labelWidth={112}>
+      <DetailItem label="标签号">{displayText(source.tag)}</DetailItem>
+      <DetailItem label="合约号码">{editable('contractNumber', <Input value={editDraft?.contractNumber || ''} maxLength={25} allowClear onChange={(event) => updateEdit('contractNumber', event.target.value)} />)}</DetailItem>
+      <DetailItem label="使用公司">{cardMode === 'edit' ? <LookupInput value={editDraft?.useCompany || ''} placeholder="请选择使用公司" onOpen={() => setLookupKey('editCompany')} /> : displayText(source.useCompany)}</DetailItem>
+      <DetailItem label="资产小类">{displayText(source.minorCategory)}</DetailItem>
+      <DetailItem label="合约号码说明">{editable('contractDesc', <Select value={editDraft?.contractDesc || undefined} allowClear showSearch style={{ width: '100%' }} options={contractDescOptions} onChange={(value) => updateEdit('contractDesc', value || '')} />)}</DetailItem>
+      <DetailItem label="套餐内容">{editable('packageContent', <Select value={editDraft?.packageContent || undefined} allowClear showSearch style={{ width: '100%' }} options={packageOptions} onChange={(value) => updateEdit('packageContent', value || '')} />)}</DetailItem>
+      <DetailItem label="合约期限">
+        {cardMode === 'edit' ? (
+          <RangePicker
+            style={{ width: '100%' }}
+            value={editDraft?.contractStartDate && editDraft?.contractEndDate ? [dayjs(editDraft.contractStartDate), dayjs(editDraft.contractEndDate)] : null}
+            onChange={(dates) => setEditDraft((current) => current ? {
+              ...current,
+              contractStartDate: dates ? dates[0].format('YYYY-MM-DD') : '',
+              contractEndDate: dates ? dates[1].format('YYYY-MM-DD') : '',
+            } : current)}
+          />
+        ) : contractTermText(source)}
+      </DetailItem>
+      <DetailItem label="数量">{displayText(source.quantity)}</DetailItem>
+      <DetailItem label="金额">{editable('amount', <InputNumber min={0} max={99999999.99} precision={2} style={{ width: '100%' }} value={editDraft?.amount} onChange={(value) => updateEdit('amount', value)} />)}</DetailItem>
+      <DetailItem label="号码状态">{editable('status', <Select value={editDraft?.status || undefined} style={{ width: '100%' }} options={STATUS_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('status', value)} />)}</DetailItem>
+      <DetailItem label="仓库">
+        {editable('warehouse', (
+          <Select
+            allowClear
+            disabled={String(editDraft?.status || '').includes('在用')}
+            value={editDraft?.warehouse || undefined}
+            placeholder={String(editDraft?.status || '').includes('在用') ? '在用状态仓库必须为空' : '请选择仓库'}
+            style={{ width: '100%' }}
+            options={WAREHOUSE_OPTIONS.map((value) => ({ label: value, value }))}
+            onChange={(value) => updateEdit('warehouse', value || '')}
+          />
+        ))}
+      </DetailItem>
+      <DetailItem label="使用说明" span={3}>{editable('usageDescription', <TextArea value={editDraft?.usageDescription || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('usageDescription', event.target.value)} />)}</DetailItem>
+      <DetailItem label="报废原因" span={2}>{editable('scrapReason', <TextArea disabled={!String(editDraft?.status || '').includes('报废')} value={editDraft?.scrapReason || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('scrapReason', event.target.value)} />)}</DetailItem>
+      <DetailItem label="报废日期">
+        {cardMode === 'edit' ? (
+          <DatePicker disabled={!String(editDraft?.status || '').includes('报废')} style={{ width: '100%' }} value={editDraft?.scrapDate ? dayjs(editDraft.scrapDate) : null} onChange={(date) => updateEdit('scrapDate', date ? date.format('YYYY-MM-DD') : '')} />
+        ) : displayText(source.scrapDate)}
+      </DetailItem>
+      <DetailItem label="责任人">{cardMode === 'edit' ? <LookupInput value={editDraft?.ownerId ? `${editDraft.ownerId}-${editDraft.ownerName}` : ''} placeholder="请选择责任人" onOpen={() => setLookupKey('editOwner')} /> : `${source.ownerId}-${source.ownerName}`}</DetailItem>
+      <DetailItem label="部门">{displayText(source.department)}</DetailItem>
+      <DetailItem label="员工职级">{displayText(source.jobLevel)}</DetailItem>
+      <DetailItem label="领用日期">{displayText(source.claimDate)}</DetailItem>
+      <DetailItem label="申请类型">{displayText(source.applicationType)}</DetailItem>
+      <DetailItem label="申请单号">{displayText(source.applicationNo)}</DetailItem>
+    </DetailGrid>
   ) : null;
 
   const historyRows = useMemo(() => {
@@ -785,7 +742,6 @@ export default function ContractNumberMaintenancePage() {
       <Card size="small" title="合约号码列表" extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
         <div className="mb-3 flex justify-end">
           <Space wrap>
-            <Button icon={<Edit3 size={14} />} onClick={handleEditSelected}>编辑</Button>
             <Button icon={<FileSpreadsheet size={14} />} onClick={() => setBatchOpen(true)}>批量编辑</Button>
             <Button icon={<Download size={14} />} onClick={handleTemplateDownload}>模板下载</Button>
             <Button icon={<Download size={14} />} onClick={handleExport}>导出</Button>
@@ -837,10 +793,8 @@ export default function ContractNumberMaintenancePage() {
               ...current,
               ownerId: selected?.code || '',
               ownerName: selected?.name || '',
-              subsidiary: selected?.subsidiary || '',
               department: selected?.department || '',
               jobLevel: selected?.jobLevel || '',
-              idCard: selected?.idCard || '',
             } : current);
           }
           setLookupKey('');
@@ -848,7 +802,7 @@ export default function ContractNumberMaintenancePage() {
       />
 
       <Modal
-        title={`${cardMode === 'edit' ? '合约号码详细信息' : '合约号码信息'}${source?.tag ? `：${source.tag}` : ''}`}
+        title={`${cardMode === 'edit' ? '合约机详细信息编辑页' : '合约号码信息'}${source?.tag ? `：${source.tag}` : ''}`}
         open={cardOpen}
         width={1120}
         style={{ maxWidth: 'calc(100vw - 48px)' }}
