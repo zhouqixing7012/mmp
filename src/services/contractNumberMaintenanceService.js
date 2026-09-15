@@ -8,8 +8,6 @@ export const CONTRACT_NUMBER_EDIT_FIELDS = [
   'useCompany',
   'ownerId',
   'contractNumber',
-  'contractDesc',
-  'packageContent',
   'contractStartDate',
   'contractEndDate',
   'amount',
@@ -18,6 +16,7 @@ export const CONTRACT_NUMBER_EDIT_FIELDS = [
   'usageDescription',
   'scrapDate',
   'scrapReason',
+  'claimDate',
 ];
 
 const ALLOWED_PATCH_FIELDS = new Set(CONTRACT_NUMBER_EDIT_FIELDS);
@@ -102,12 +101,6 @@ function canonicalizePatch(row, patch) {
   const contractNumber = Object.prototype.hasOwnProperty.call(patch, 'contractNumber')
     ? String(patch.contractNumber || '').trim()
     : String(row.contractNumber || '').trim();
-  const contractDesc = Object.prototype.hasOwnProperty.call(patch, 'contractDesc')
-    ? String(patch.contractDesc || '')
-    : String(row.contractDesc || '');
-  const packageContent = Object.prototype.hasOwnProperty.call(patch, 'packageContent')
-    ? String(patch.packageContent || '')
-    : String(row.packageContent || '');
   const contractStartDate = Object.prototype.hasOwnProperty.call(patch, 'contractStartDate')
     ? String(patch.contractStartDate || '')
     : String(row.contractStartDate || '');
@@ -130,6 +123,9 @@ function canonicalizePatch(row, patch) {
   const scrapReason = Object.prototype.hasOwnProperty.call(patch, 'scrapReason')
     ? String(patch.scrapReason || '')
     : String(row.scrapReason || '');
+  const claimDate = Object.prototype.hasOwnProperty.call(patch, 'claimDate')
+    ? String(patch.claimDate || '')
+    : String(row.claimDate || '');
 
   if (!useCompany || !COMPANY_BY_NAME.has(useCompany)) throw new Error('使用公司不能为空且必须有效');
   if (!ownerId || !OWNER_BY_ID.has(ownerId)) throw new Error('责任人不能为空且必须有效');
@@ -148,6 +144,7 @@ function canonicalizePatch(row, patch) {
   if (contractStartDate && contractEndDate && contractStartDate > contractEndDate) {
     throw new Error('合约期限开始日期不得晚于结束日期');
   }
+  if (!isValidDate(claimDate)) throw new Error('领用日期格式无效');
 
   if (status.includes('在用')) {
     if (warehouse) throw new Error('仓库和状态不匹配。');
@@ -176,8 +173,6 @@ function canonicalizePatch(row, patch) {
   next.jobLevel = owner.jobLevel;
   next.idCard = owner.idCard;
   next.contractNumber = contractNumber;
-  next.contractDesc = contractDesc;
-  next.packageContent = packageContent;
   next.contractStartDate = contractStartDate;
   next.contractEndDate = contractEndDate;
   next.amount = numberAmount;
@@ -186,6 +181,7 @@ function canonicalizePatch(row, patch) {
   next.usageDescription = usageDescription;
   next.scrapDate = scrapDate;
   next.scrapReason = scrapReason;
+  next.claimDate = claimDate;
   return next;
 }
 
