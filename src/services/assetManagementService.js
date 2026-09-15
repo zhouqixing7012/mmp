@@ -28,22 +28,23 @@ const CONSUMABLE_BUILDING_BY_CITY = {
   广州: ['广州新媒体办公区'],
   天津: ['天津飞狐办公区'],
 };
-const CONSUMABLE_FLOOR_BY_BUILDING = {
-  搜狐媒体大厦: ['B1', '8F', '10F', '12F', '15F', '18F'],
-  北京亦庄数据中心: ['1F', '2F', '3F'],
-  上海新媒体办公区: ['8F', '9F'],
-  广州新媒体办公区: ['6F', '7F'],
-  天津飞狐办公区: ['5F'],
-};
-const CONSUMABLE_WAREHOUSES_BY_COMPANY = {
-  新媒体: ['WH001.北京耗材仓', 'WH002.上海耗材仓', 'WH003.广州耗材仓'],
-  天津飞狐: ['WH004.天津耗材仓'],
-};
+const CONSUMABLE_ENABLED_FLOORS = new Set([
+  'B1', '1F', '2F', '3F', '5F', '6F', '7F', '8F', '9F', '10F', '12F', '15F', '18F',
+]);
+const CONSUMABLE_WAREHOUSE_PURPOSE_CODES = new Set(['IU0001', 'IU0003']);
+const CONSUMABLE_WAREHOUSE_MASTER = [
+  { name: 'WH001.北京耗材仓', company: '新媒体', enabled: true, purposeCode: 'IU0001', purposeName: '耗材库' },
+  { name: 'WH002.上海耗材仓', company: '新媒体', enabled: true, purposeCode: 'IU0001', purposeName: '耗材库' },
+  { name: 'WH003.广州耗材仓', company: '新媒体', enabled: true, purposeCode: 'IU0003', purposeName: '资产高耗库' },
+  { name: 'WH004.天津耗材仓', company: '天津飞狐', enabled: true, purposeCode: 'IU0001', purposeName: '耗材库' },
+  { name: 'WH005.停用耗材仓', company: '新媒体', enabled: false, purposeCode: 'IU0001', purposeName: '耗材库' },
+  { name: 'WH006.普通仓库', company: '新媒体', enabled: true, purposeCode: 'IU0099', purposeName: '普通仓库' },
+];
 const CONSUMABLE_MAIN_ASSET_BY_TAG = new Map([
-  ['114111700922', { desc: '服务器.Dell PowerEdge R740', status: '在用' }],
-  ['114121700944', { desc: '服务器.HPE ProLiant DL380 Gen10', status: '在用' }],
-  ['114111700955', { desc: '台式机.Dell OptiPlex 7090', status: '在用' }],
-  ['114111700966', { desc: '台式机.历史报废主资产', status: '已报废' }],
+  ['114111700922', { desc: '服务器.Dell PowerEdge R740', ownerId: '203938', status: '在用' }],
+  ['114121700944', { desc: '服务器.HPE ProLiant DL380 Gen10', ownerId: 'SOHU01', status: '在用' }],
+  ['114111700955', { desc: '台式机.Dell OptiPlex 7090', ownerId: '220687', status: '在用' }],
+  ['114111700966', { desc: '台式机.历史报废主资产', ownerId: '220687', status: '已报废' }],
 ]);
 const LEGACY_INVENTORY_TYPE_VALUES = new Set(['普通盘点', '快速盘点', '扫码枪盘点']);
 
@@ -191,6 +192,16 @@ function resolveSingleEditEnabledDate(row, requestedValue) {
   return row.enabledDate || '';
 }
 
+function getEligibleConsumableWarehouseNames(company) {
+  return CONSUMABLE_WAREHOUSE_MASTER
+    .filter((item) => (
+      item.enabled
+      && item.company === company
+      && CONSUMABLE_WAREHOUSE_PURPOSE_CODES.has(item.purposeCode)
+    ))
+    .map((item) => item.name);
+}
+
 function buildCanonicalConsumablePatch(row, patch, rows) {
   const next = { ...patch };
   const company = Object.prototype.hasOwnProperty.call(patch, 'company') ? String(patch.company || '') : String(row.company || '');
@@ -209,7 +220,7 @@ function buildCanonicalConsumablePatch(row, patch, rows) {
   if (!ownerId || !CONSUMABLE_OWNER_BY_ID.has(ownerId)) throw new Error('责任人不能为空且必须有效');
   if (!city || !CONSUMABLE_BUILDING_BY_CITY[city]) throw new Error('City不能为空且必须有效');
   if (!building || !CONSUMABLE_BUILDING_BY_CITY[city].includes(building)) throw new Error('Building不能为空且必须属于当前 City');
-  if (floor && !(CONSUMABLE_FLOOR_BY_BUILDING[building] || []).includes(floor)) throw new Error('当前 Floor 与 Building 关系无效');
+  if (floor && !CONSUMABLE_ENABLED_FLOORS.has(floor)) throw new Error('当前 Floor 无效或未启用');
   if (!CONSUMABLE_STATUS_OPTIONS.has(status)) throw new Error('当前耗材状态无效');
   if (!CONSUMABLE_SCRAP_STATUSES.has(row.status) && CONSUMABLE_SCRAP_STATUSES.has(status)) {
     throw new Error('资产状态为报废请走报废功能处理');
@@ -231,14 +242,16 @@ function buildCanonicalConsumablePatch(row, patch, rows) {
     const mainAsset = CONSUMABLE_MAIN_ASSET_BY_TAG.get(mainTag);
     if (!mainAsset) throw new Error('主资产标签号无效');
     if (CONSUMABLE_SCRAP_STATUSES.has(mainAsset.status)) throw new Error('已报废主资产不允许关联');
+    if (mainAsset.ownerId !== ownerId) throw new Error('主资产责任人与当前耗材责任人不一致');
     next.mainAssetDesc = mainAsset.desc;
   } else {
     next.mainAssetDesc = '';
   }
 
+  const eligibleWarehouses = getEligibleConsumableWarehouseNames(company);
   const warehouseIsCurrentHistoricalValue = company === String(row.company || '') && warehouse === String(row.warehouse || '');
-  if (warehouse && !(CONSUMABLE_WAREHOUSES_BY_COMPANY[company] || []).includes(warehouse) && !warehouseIsCurrentHistoricalValue) {
-    throw new Error('当前仓库不属于所选公司');
+  if (warehouse && !eligibleWarehouses.includes(warehouse) && !warehouseIsCurrentHistoricalValue) {
+    throw new Error('当前仓库不符合公司、启用状态或仓库用途规则');
   }
 
   const owner = CONSUMABLE_OWNER_BY_ID.get(ownerId);
