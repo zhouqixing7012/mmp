@@ -15,7 +15,7 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
-import { ArrowLeft, Download, Printer, Search, Tags } from 'lucide-react';
+import { Download, Printer, Search, Tags } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
@@ -79,7 +79,7 @@ const DEFAULT_ROWS = [
   },
   {
     id: 'tag-print-8', assetTag: '1231400381-H1', assetName: '其他.10K 300G SAS', department: '视频_技术成本',
-    location: '北京.长宽机房.1层', companyCn: '飞狐信息', companyEn: 'Fox Info', plateCn: '视频', serialNumber: '213023807-H1',
+    location: '北京.长宽机房.1层', companyCn: '飞狐信息', companyEn: 'Fox Info', plateCn: '视频', serialNumber: '213807-H1',
     assetCategory: '11412', assetStatus: '在用-使用中', userId: '10405', userName: '刘建', city: '北京市', printCount: 0,
   },
   {
@@ -397,13 +397,13 @@ function GenerateLabelsPage({
 }) {
   const [ledger, setLedger] = useState('101');
   const [rule, setRule] = useState('normal');
-  const [assetType, setAssetType] = useState(undefined);
+  const [assetType, setAssetType] = useState(ASSET_TYPE_OPTIONS[0].value);
   const [normalYear, setNormalYear] = useState(dayjs());
-  const [highCategory, setHighCategory] = useState(undefined);
-  const [highSubCategory, setHighSubCategory] = useState(undefined);
+  const [highCategory, setHighCategory] = useState(HIGH_CATEGORY_OPTIONS[0].value);
+  const [highSubCategory, setHighSubCategory] = useState(HIGH_SUBCATEGORY_OPTIONS[HIGH_CATEGORY_OPTIONS[0].value][0]);
   const [highYear, setHighYear] = useState(dayjs());
-  const [furnitureType, setFurnitureType] = useState(undefined);
-  const [sparePartType, setSparePartType] = useState(undefined);
+  const [furnitureType, setFurnitureType] = useState(FURNITURE_OPTIONS[0].value);
+  const [sparePartType, setSparePartType] = useState(SPARE_PART_OPTIONS[0].value);
   const [mainCount, setMainCount] = useState(1);
   const [partCount, setPartCount] = useState(1);
   const [remark, setRemark] = useState('');
@@ -524,7 +524,7 @@ function GenerateLabelsPage({
       return (
         <>
           <RuleField label="选择资产类型">
-            <Select className="w-full" placeholder="请选择" value={assetType} options={ASSET_TYPE_OPTIONS} onChange={setAssetType} />
+            <Select className="w-full" value={assetType} options={ASSET_TYPE_OPTIONS} onChange={setAssetType} />
           </RuleField>
           <RuleField label="选择年份">
             <DatePicker className="w-full" picker="year" value={normalYear} onChange={setNormalYear} allowClear />
@@ -542,19 +542,18 @@ function GenerateLabelsPage({
           <RuleField label="选择高耗大类">
             <Select
               className="w-full"
-              placeholder="请选择"
               value={highCategory}
               options={HIGH_CATEGORY_OPTIONS}
               onChange={(value) => {
                 setHighCategory(value);
-                setHighSubCategory(undefined);
+                const nextSubCategories = HIGH_SUBCATEGORY_OPTIONS[value] || [];
+                setHighSubCategory(nextSubCategories[0]);
               }}
             />
           </RuleField>
           <RuleField label="选择高耗小类">
             <Select
               className="w-full"
-              placeholder="请选择"
               value={highSubCategory}
               options={(HIGH_SUBCATEGORY_OPTIONS[highCategory] || []).map((value) => ({ label: value, value }))}
               onChange={setHighSubCategory}
@@ -574,7 +573,7 @@ function GenerateLabelsPage({
       return (
         <>
           <RuleField label="选择家具类型">
-            <Select className="w-full" placeholder="请选择" value={furnitureType} options={FURNITURE_OPTIONS} onChange={setFurnitureType} />
+            <Select className="w-full" value={furnitureType} options={FURNITURE_OPTIONS} onChange={setFurnitureType} />
           </RuleField>
           <RuleField label="当前最大序号">
             <InputNumber
@@ -594,7 +593,7 @@ function GenerateLabelsPage({
     if (rule === 'mobile') {
       return (
         <>
-          <RuleField label="标签前缀"><Input className="w-full" value="NE" readOnly /></RuleField>
+          <RuleField label="标签前缀"><Typography.Text strong>NE</Typography.Text></RuleField>
           <RuleField label="当前最大序号"><Input className="w-full" value={String(currentPoolValue).padStart(4, '0')} readOnly disabled /></RuleField>
         </>
       );
@@ -603,7 +602,7 @@ function GenerateLabelsPage({
     return (
       <>
         <RuleField label="选择备件类型">
-          <Select className="w-full" placeholder="请选择" value={sparePartType} options={SPARE_PART_OPTIONS} onChange={setSparePartType} />
+          <Select className="w-full" value={sparePartType} options={SPARE_PART_OPTIONS} onChange={setSparePartType} />
         </RuleField>
         <RuleField label="当前最大序号"><Input className="w-full" value={String(currentPoolValue).padStart(5, '0')} readOnly disabled /></RuleField>
       </>
@@ -659,7 +658,7 @@ function GenerateLabelsPage({
       </Card>
 
       <div className="sticky bottom-0 z-30 flex justify-center gap-3 bg-white/95 px-5 py-3 backdrop-blur">
-        <Button className="min-w-[96px]" icon={<ArrowLeft size={14} />} onClick={onBack}>返回</Button>
+        <Button className="min-w-[96px]" onClick={onBack}>返回</Button>
         <Button type="primary" className="min-w-[116px]" icon={<Tags size={14} />} loading={generating} disabled={generating} onClick={handleGenerate}>生成标签</Button>
         {generatedBatch && (
           <Button className="min-w-[116px]" icon={<Printer size={14} />} onClick={() => onOpenLabels(generatedBatch.batch)}>打印标签</Button>
@@ -1099,7 +1098,7 @@ export default function TagPrintingPage() {
         </Card>
 
         <div className="flex justify-center pt-2">
-          <Button className="min-w-[112px]" icon={<ArrowLeft size={14} />} onClick={() => setPreviewMode(false)}>返回标签打印</Button>
+          <Button className="min-w-[112px]" onClick={() => setPreviewMode(false)}>返回</Button>
         </div>
 
         <Modal
