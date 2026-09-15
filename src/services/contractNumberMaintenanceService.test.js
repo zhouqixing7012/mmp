@@ -50,15 +50,21 @@ describe('合约号码维护保存边界', () => {
       .toThrow('合约号码维护存在不允许修改的字段');
   });
 
-  test('子公司、领用日期、申请类型和申请单号不能直接提交修改', () => {
+  test('子公司、申请类型和申请单号不能直接提交修改', () => {
     const row = getRow();
     expect(() => updateContractNumberMaintenanceRow(row.id, { subsidiary: '伪造子公司' }))
-      .toThrow('合约号码维护存在不允许修改的字段');
-    expect(() => updateContractNumberMaintenanceRow(row.id, { claimDate: '2099-01-01' }))
       .toThrow('合约号码维护存在不允许修改的字段');
     expect(() => updateContractNumberMaintenanceRow(row.id, { applicationType: '伪造申请类型' }))
       .toThrow('合约号码维护存在不允许修改的字段');
     expect(() => updateContractNumberMaintenanceRow(row.id, { applicationNo: 'FAKE-APP' }))
+      .toThrow('合约号码维护存在不允许修改的字段');
+  });
+
+  test('合约号码说明和套餐内容为只读字段', () => {
+    const row = getRow();
+    expect(() => updateContractNumberMaintenanceRow(row.id, { contractDesc: '伪造说明' }))
+      .toThrow('合约号码维护存在不允许修改的字段');
+    expect(() => updateContractNumberMaintenanceRow(row.id, { packageContent: '伪造套餐' }))
       .toThrow('合约号码维护存在不允许修改的字段');
   });
 
@@ -106,6 +112,18 @@ describe('合约号码维护保存边界', () => {
     const row = getRow();
     expect(() => updateContractNumberMaintenanceRow(row.id, editablePatch(row, { contractEndDate: '2026-02-31' })))
       .toThrow('合约期限日期格式无效');
+  });
+
+  test('领用日期属于单条可编辑字段', () => {
+    const row = getRow();
+    const nextRows = updateContractNumberMaintenanceRow(row.id, editablePatch(row, { claimDate: '2026-09-15' }));
+    expect(nextRows.find((item) => item.id === row.id).claimDate).toBe('2026-09-15');
+  });
+
+  test('非法领用日期不能保存', () => {
+    const row = getRow();
+    expect(() => updateContractNumberMaintenanceRow(row.id, editablePatch(row, { claimDate: '2026-02-31' })))
+      .toThrow('领用日期格式无效');
   });
 
   test('在用状态仓库必须为空', () => {
