@@ -188,11 +188,11 @@ const INITIAL_SEQUENCE_POOL = {
 };
 
 const RULE_OPTIONS = [
-  { label: '常规标签规则', value: 'normal' },
-  { label: '高耗标签规则', value: 'high' },
-  { label: '特殊规则-家具', value: 'furniture' },
-  { label: '特殊规则-手机', value: 'mobile' },
-  { label: '特殊规则-备件', value: 'sparePart' },
+  { label: '常规', value: 'normal' },
+  { label: '高耗', value: 'high' },
+  { label: '家具', value: 'furniture' },
+  { label: '手机', value: 'mobile' },
+  { label: '备件', value: 'sparePart' },
 ];
 
 function normalizeText(value) {
