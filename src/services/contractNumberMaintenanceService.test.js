@@ -40,25 +40,35 @@ describe('合约号码维护保存边界', () => {
       .toThrow('合约号码维护存在不允许修改的字段');
   });
 
-  test('身份证号码不允许直接提交修改', () => {
+  test('身份证、副卡、维修记录不在单条维护白名单中', () => {
     const row = getRow();
     expect(() => updateContractNumberMaintenanceRow(row.id, { idCard: '110101199901019999' }))
       .toThrow('合约号码维护存在不允许修改的字段');
-  });
-
-  test('副卡和维修记录不在单条维护白名单中', () => {
-    const row = getRow();
     expect(() => updateContractNumberMaintenanceRow(row.id, { secondaryCard: '伪造副卡' }))
       .toThrow('合约号码维护存在不允许修改的字段');
     expect(() => updateContractNumberMaintenanceRow(row.id, { maintenanceRecord: '伪造维修记录' }))
       .toThrow('合约号码维护存在不允许修改的字段');
   });
 
-  test('子公司和领用日期不能直接提交修改', () => {
+  test('子公司、领用日期、申请类型和申请单号不能直接提交修改', () => {
     const row = getRow();
     expect(() => updateContractNumberMaintenanceRow(row.id, { subsidiary: '伪造子公司' }))
       .toThrow('合约号码维护存在不允许修改的字段');
     expect(() => updateContractNumberMaintenanceRow(row.id, { claimDate: '2099-01-01' }))
+      .toThrow('合约号码维护存在不允许修改的字段');
+    expect(() => updateContractNumberMaintenanceRow(row.id, { applicationType: '伪造申请类型' }))
+      .toThrow('合约号码维护存在不允许修改的字段');
+    expect(() => updateContractNumberMaintenanceRow(row.id, { applicationNo: 'FAKE-APP' }))
+      .toThrow('合约号码维护存在不允许修改的字段');
+  });
+
+  test('不在卡片字段集中的备注、领用原因和领用说明不能单条修改', () => {
+    const row = getRow();
+    expect(() => updateContractNumberMaintenanceRow(row.id, { remarks: '伪造备注' }))
+      .toThrow('合约号码维护存在不允许修改的字段');
+    expect(() => updateContractNumberMaintenanceRow(row.id, { claimReason: '业务使用' }))
+      .toThrow('合约号码维护存在不允许修改的字段');
+    expect(() => updateContractNumberMaintenanceRow(row.id, { claimDescription: '伪造领用说明' }))
       .toThrow('合约号码维护存在不允许修改的字段');
   });
 
@@ -180,16 +190,10 @@ describe('合约号码维护保存边界', () => {
       .toThrow('使用公司不能为空且必须有效');
   });
 
-  test('领用原因只能使用管理员配置业务值', () => {
+  test('使用说明属于单条卡片可编辑字段', () => {
     const row = getRow();
-    expect(() => updateContractNumberMaintenanceRow(row.id, editablePatch(row, { claimReason: '随便填写' })))
-      .toThrow('领用原因无效');
-  });
-
-  test('备注最多120字', () => {
-    const row = getRow();
-    expect(() => updateContractNumberMaintenanceRow(row.id, editablePatch(row, { remarks: 'A'.repeat(121) })))
-      .toThrow('备注最多120字');
+    const nextRows = updateContractNumberMaintenanceRow(row.id, editablePatch(row, { usageDescription: '新的使用说明' }));
+    expect(nextRows.find((item) => item.id === row.id).usageDescription).toBe('新的使用说明');
   });
 
   test('不存在的标签ID不能静默成功', () => {
@@ -210,9 +214,9 @@ describe('合约号码维护保存边界', () => {
   test('实际变化更新时间并生成带来源的维护事务', () => {
     const row = getRow();
     const historyCount = row.transactionHistory.length;
-    const nextRows = updateContractNumberMaintenanceRow(row.id, editablePatch(row, { remarks: '测试维护历史' }));
+    const nextRows = updateContractNumberMaintenanceRow(row.id, editablePatch(row, { usageDescription: '测试维护历史' }));
     const saved = nextRows.find((item) => item.id === row.id);
-    expect(saved.remarks).toBe('测试维护历史');
+    expect(saved.usageDescription).toBe('测试维护历史');
     expect(saved.updatedAt).not.toBe(row.updatedAt);
     expect(saved.transactionHistory).toHaveLength(historyCount + 1);
     expect(saved.transactionHistory[saved.transactionHistory.length - 1].source).toBe('合约号码台账维护');
