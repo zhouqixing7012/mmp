@@ -629,8 +629,6 @@ export default function ContractNumberMaintenancePage() {
 
   const source = cardMode === 'edit' && editDraft ? editDraft : activeRow;
   const editable = (field, control) => (cardMode === 'edit' ? control : displayText(source?.[field]));
-  const contractDescOptions = uniqueValues(rows, 'contractDesc').map((value) => ({ label: value, value }));
-  const packageOptions = uniqueValues(rows, 'packageContent').map((value) => ({ label: value, value }));
 
   const detailTab = source ? (
     <DetailGrid columns={3} labelWidth={112}>
@@ -638,8 +636,8 @@ export default function ContractNumberMaintenancePage() {
       <DetailItem label="合约号码">{editable('contractNumber', <Input value={editDraft?.contractNumber || ''} maxLength={25} allowClear onChange={(event) => updateEdit('contractNumber', event.target.value)} />)}</DetailItem>
       <DetailItem label="使用公司">{cardMode === 'edit' ? <LookupInput value={editDraft?.useCompany || ''} placeholder="请选择使用公司" onOpen={() => setLookupKey('editCompany')} /> : displayText(source.useCompany)}</DetailItem>
       <DetailItem label="资产小类">{displayText(source.minorCategory)}</DetailItem>
-      <DetailItem label="合约号码说明">{editable('contractDesc', <Select value={editDraft?.contractDesc || undefined} allowClear showSearch style={{ width: '100%' }} options={contractDescOptions} onChange={(value) => updateEdit('contractDesc', value || '')} />)}</DetailItem>
-      <DetailItem label="套餐内容">{editable('packageContent', <Select value={editDraft?.packageContent || undefined} allowClear showSearch style={{ width: '100%' }} options={packageOptions} onChange={(value) => updateEdit('packageContent', value || '')} />)}</DetailItem>
+      <DetailItem label="合约号码说明">{displayText(source.contractDesc)}</DetailItem>
+      <DetailItem label="套餐内容">{displayText(source.packageContent)}</DetailItem>
       <DetailItem label="合约期限">
         {cardMode === 'edit' ? (
           <RangePicker
@@ -679,7 +677,11 @@ export default function ContractNumberMaintenancePage() {
       <DetailItem label="责任人">{cardMode === 'edit' ? <LookupInput value={editDraft?.ownerId ? `${editDraft.ownerId}-${editDraft.ownerName}` : ''} placeholder="请选择责任人" onOpen={() => setLookupKey('editOwner')} /> : `${source.ownerId}-${source.ownerName}`}</DetailItem>
       <DetailItem label="部门">{displayText(source.department)}</DetailItem>
       <DetailItem label="员工职级">{displayText(source.jobLevel)}</DetailItem>
-      <DetailItem label="领用日期">{displayText(source.claimDate)}</DetailItem>
+      <DetailItem label="领用日期">
+        {cardMode === 'edit' ? (
+          <DatePicker style={{ width: '100%' }} value={editDraft?.claimDate ? dayjs(editDraft.claimDate) : null} onChange={(date) => updateEdit('claimDate', date ? date.format('YYYY-MM-DD') : '')} />
+        ) : displayText(source.claimDate)}
+      </DetailItem>
       <DetailItem label="申请类型">{displayText(source.applicationType)}</DetailItem>
       <DetailItem label="申请单号">{displayText(source.applicationNo)}</DetailItem>
     </DetailGrid>
@@ -706,14 +708,18 @@ export default function ContractNumberMaintenancePage() {
     },
   }));
 
-  const tabItems = source ? [
-    { key: 'detail', label: '详细信息', children: detailTab },
-    {
-      key: 'history',
-      label: '合约号码操作历史',
-      children: <Table rowKey="id" size="small" bordered columns={historyColumns} dataSource={historyRows} pagination={false} scroll={{ x: 'max-content' }} />,
-    },
-  ] : [];
+  const tabItems = source ? (
+    cardMode === 'edit'
+      ? [{ key: 'detail', label: '详细信息', children: detailTab }]
+      : [
+          { key: 'detail', label: '详细信息', children: detailTab },
+          {
+            key: 'history',
+            label: '合约号码操作历史',
+            children: <Table rowKey="id" size="small" bordered columns={historyColumns} dataSource={historyRows} pagination={false} scroll={{ x: 'max-content' }} />,
+          },
+        ]
+  ) : [];
 
   return (
     <Space direction="vertical" size={16} className="w-full">
