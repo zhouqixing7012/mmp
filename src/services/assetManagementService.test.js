@@ -57,12 +57,17 @@ describe('耗材维护保存边界', () => {
       .toThrow('序列号不唯一');
   });
 
-  test('序列号唯一性忽略大小写和首尾空格', () => {
+  test('序列号唯一性比较忽略大小写和首尾空格但不改写原输入大小写', () => {
     const row = getRow('consumable-1');
     const duplicate = getRow('consumable-2');
     expect(() => updateConsumableMaintenanceRow(row.id, editablePatch(row, {
       serialNumber: `  ${String(duplicate.serialNumber).toLowerCase()}  `,
     }))).toThrow('序列号不唯一');
+
+    const mixedCase = 'Sn-Mixed-Case-001';
+    const nextRows = updateConsumableMaintenanceRow(row.id, editablePatch(row, { serialNumber: mixedCase }));
+    const saved = nextRows.find((item) => item.id === row.id);
+    expect(saved.serialNumber).toBe(mixedCase);
   });
 
   test('缺省序列号不参与唯一性冲突', () => {
@@ -79,7 +84,21 @@ describe('耗材维护保存边界', () => {
       building: '天津飞狐办公区',
       floor: '5F',
       warehouse: 'WH001.北京耗材仓',
-    }))).toThrow('当前仓库不属于所选公司');
+    }))).toThrow('当前仓库不符合公司、启用状态或仓库用途规则');
+  });
+
+  test('停用耗材仓不能作为新选择保存', () => {
+    const row = getRow('consumable-1');
+    expect(() => updateConsumableMaintenanceRow(row.id, editablePatch(row, {
+      warehouse: 'WH005.停用耗材仓',
+    }))).toThrow('当前仓库不符合公司、启用状态或仓库用途规则');
+  });
+
+  test('仓库用途非 IU0001 或 IU0003 时不能作为新选择保存', () => {
+    const row = getRow('consumable-1');
+    expect(() => updateConsumableMaintenanceRow(row.id, editablePatch(row, {
+      warehouse: 'WH006.普通仓库',
+    }))).toThrow('当前仓库不符合公司、启用状态或仓库用途规则');
   });
 
   test('公司未变化时允许保留历史已保存但退出候选的仓库', () => {
@@ -109,7 +128,7 @@ describe('耗材维护保存边界', () => {
       building: '天津飞狐办公区',
       floor: '5F',
       warehouse: 'WH-LEGACY.历史仓库',
-    }))).toThrow('当前仓库不属于所选公司');
+    }))).toThrow('当前仓库不符合公司、启用状态或仓库用途规则');
   });
 
   test('Building 必须属于当前 City', () => {
@@ -120,10 +139,16 @@ describe('耗材维护保存边界', () => {
     }))).toThrow('Building不能为空且必须属于当前 City');
   });
 
-  test('Floor 必须属于当前 Building', () => {
+  test('Floor 从全部启用 Floor 中选择，不要求属于当前 Building', () => {
     const row = getRow();
     expect(() => updateConsumableMaintenanceRow(row.id, editablePatch(row, { floor: '5F' })))
-      .toThrow('当前 Floor 与 Building 关系无效');
+      .not.toThrow();
+  });
+
+  test('未启用或不存在的 Floor 不能保存', () => {
+    const row = getRow();
+    expect(() => updateConsumableMaintenanceRow(row.id, editablePatch(row, { floor: '99F' })))
+      .toThrow('当前 Floor 无效或未启用');
   });
 
   test('非法启用日期不能保存', () => {
@@ -162,14 +187,21 @@ describe('耗材维护保存边界', () => {
       .toThrow('已报废主资产不允许关联');
   });
 
-  test('主资产说明不信任前端伪造值', () => {
-    const row = getRow();
-    const nextRows = updateConsumableMaintenanceRow(row.id, editablePatch(row, {
+  test('主资产责任人必须与当前耗材责任人一致', () => {
+    const row = getRow('consumable-1');
+    expect(() => updateConsumableMaintenanceRow(row.id, editablePatch(row, {
       mainTag: '114111700922',
+    }))).toThrow('主资产责任人与当前耗材责任人不一致');
+  });
+
+  test('主资产说明不信任前端伪造值', () => {
+    const row = getRow('consumable-1');
+    const nextRows = updateConsumableMaintenanceRow(row.id, editablePatch(row, {
+      mainTag: '114111700955',
       mainAssetDesc: '伪造说明',
     }));
     const saved = nextRows.find((item) => item.id === row.id);
-    expect(saved.mainAssetDesc).toBe('服务器.Dell PowerEdge R740');
+    expect(saved.mainAssetDesc).toBe('台式机.Dell OptiPlex 7090');
   });
 
   test('解除主资产关联时同时清空主资产说明', () => {
@@ -189,6 +221,7 @@ describe('耗材维护保存边界', () => {
     const nextRows = updateConsumableMaintenanceRow(row.id, editablePatch(row, {
       ownerId: targetOwner.ownerId,
       ownerName: '伪造姓名',
+      mainTag: '',
     }));
     const saved = nextRows.find((item) => item.id === row.id);
     expect(saved.ownerName).toBe(targetOwner.ownerName);
