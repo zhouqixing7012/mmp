@@ -179,9 +179,9 @@ const INITIAL_SEQUENCE_POOL = {
   'normal:101:11:26': 746,
   'normal:101:16:26': 215,
   'normal:123:14:26': 378,
-  'high:QT': 4434,
-  'high:P': 3,
-  'high:N': 1,
+  'high:QT:26': 4434,
+  'high:P:26': 3,
+  'high:N:26': 1,
   furniture: 617957,
   mobile: 3792,
   spare: 35,
@@ -226,6 +226,14 @@ function defaultAssetSort(a, b) {
 
 function makeBatchNo() {
   return `TPB-${dayjs().format('YYYYMMDDHHmmssSSS')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+}
+
+function makeUniqueBatchNo(existingBatchNumbers) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const batch = makeBatchNo();
+    if (!existingBatchNumbers?.has(batch)) return batch;
+  }
+  throw new Error('无法生成唯一标签批次，请稍后重试');
 }
 
 function makeHistoryId() {
@@ -330,28 +338,39 @@ function getHighPrefix(category, subCategory) {
   return 'QT';
 }
 
-function getSequenceKey({ rule, ledger, assetType, normalYear, highCategory, highSubCategory }) {
+function getSequenceKey({ rule, ledger, assetType, normalYear, highCategory, highSubCategory, highYear }) {
   if (rule === 'normal') return `normal:${ledger}:${assetType}:${normalYear?.format('YY') || ''}`;
-  if (rule === 'high') return `high:${getHighPrefix(highCategory, highSubCategory)}`;
+  if (rule === 'high') return `high:${getHighPrefix(highCategory, highSubCategory)}:${highYear?.format('YY') || ''}`;
   if (rule === 'furniture') return 'furniture';
   if (rule === 'mobile') return 'mobile';
   return 'spare';
 }
 
-function getNormalSequenceValue(sequencePool, ledger, assetType, normalYear) {
-  if (!assetType || !normalYear) return 0;
-  const selectedYear = Number(normalYear.format('YY'));
-  const exactKey = `normal:${ledger}:${assetType}:${String(selectedYear).padStart(2, '0')}`;
+function getInheritedYearSequenceValue(sequencePool, keyPrefix, selectedYear, maxValue) {
+  if (!selectedYear) return 0;
+  const year = Number(selectedYear.format('YY'));
+  const exactKey = `${keyPrefix}${String(year).padStart(2, '0')}`;
   if (Object.prototype.hasOwnProperty.call(sequencePool, exactKey)) return Number(sequencePool[exactKey] || 0);
 
-  const prefix = `normal:${ledger}:${assetType}:`;
   const previous = Object.entries(sequencePool)
-    .filter(([key]) => key.startsWith(prefix))
-    .map(([key, value]) => ({ year: Number(key.slice(prefix.length)), value: Number(value || 0) }))
-    .filter((item) => Number.isInteger(item.year) && item.year < selectedYear)
+    .filter(([key]) => key.startsWith(keyPrefix))
+    .map(([key, value]) => ({ year: Number(key.slice(keyPrefix.length)), value: Number(value || 0) }))
+    .filter((item) => Number.isInteger(item.year) && item.year < year)
     .sort((a, b) => b.year - a.year)[0];
 
-  return previous?.value || 0;
+  if (!previous) return 0;
+  return previous.value >= maxValue ? 0 : previous.value;
+}
+
+function getNormalSequenceValue(sequencePool, ledger, assetType, normalYear) {
+  if (!assetType || !normalYear) return 0;
+  return getInheritedYearSequenceValue(sequencePool, `normal:${ledger}:${assetType}:`, normalYear, 99999);
+}
+
+function getHighSequenceValue(sequencePool, highCategory, highSubCategory, highYear) {
+  if (!highCategory || !highSubCategory || !highYear) return 0;
+  const prefix = getHighPrefix(highCategory, highSubCategory);
+  return getInheritedYearSequenceValue(sequencePool, `high:${prefix}:`, highYear, 9999);
 }
 
 function getRuleMax(rule) {
@@ -387,10 +406,12 @@ function GenerateLabelsPage({
   const [generating, setGenerating] = useState(false);
   const generatingRef = useRef(false);
 
-  const sequenceKey = getSequenceKey({ rule, ledger, assetType, normalYear, highCategory, highSubCategory });
+  const sequenceKey = getSequenceKey({ rule, ledger, assetType, normalYear, highCategory, highSubCategory, highYear });
   const currentPoolValue = rule === 'normal'
     ? getNormalSequenceValue(sequencePool, ledger, assetType, normalYear)
-    : Number(sequencePool[sequenceKey] ?? 0);
+    : rule === 'high'
+      ? getHighSequenceValue(sequencePool, highCategory, highSubCategory, highYear)
+      : Number(sequencePool[sequenceKey] ?? 0);
   const currentMax = rule === 'furniture' ? Number(furnitureMaxInput || 0) : currentPoolValue;
 
   const validateRule = () => {
@@ -452,8 +473,7 @@ function GenerateLabelsPage({
     try {
       const start = Number(currentMax) + 1;
       const end = start + Number(mainCount) - 1;
-      const batchNo = makeBatchNo();
-      if (existingBatchNumbers.has(batchNo)) throw new Error('标签批次号重复，已阻止生成');
+      const batchNo = makeUniqueBatchNo(existingBatchNumbers);
 
       const labels = [];
       for (let index = 0; index < Number(mainCount); index += 1) {
@@ -789,7 +809,7 @@ export default function TagPrintingPage() {
       if (printTask.type === 'asset') {
         const idSet = new Set(printTask.ids);
         const targets = rows.filter((row) => idSet.has(row.id));
-        const batch = makeBatchNo();
+        const batch = makeUniqueBatchNo(existingBatchNumbers);
         setRows((current) => current.map((row) => (
           idSet.has(row.id) ? { ...row, printCount: Number(row.printCount || 0) + copies } : row
         )));
@@ -851,6 +871,8 @@ export default function TagPrintingPage() {
 
       messageApi.success(`${printTask.actionName}成功，打印 ${copies} 份；累计次数与详细日志已同步`);
       setPrintTask(null);
+    } catch (printError) {
+      messageApi.error(printError.message || '打印失败');
     } finally {
       releasePrintSubmitting();
     }
