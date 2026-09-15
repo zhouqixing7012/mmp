@@ -40,6 +40,7 @@ const OWNER_BY_ID = new Map(
     subsidiary: row.subsidiary || '',
     department: row.department || '',
     jobLevel: row.jobLevel || '',
+    idCard: row.idCard || '',
   }]),
 );
 
@@ -183,6 +184,7 @@ function canonicalizePatch(row, patch) {
   next.subsidiary = owner.subsidiary;
   next.department = owner.department;
   next.jobLevel = owner.jobLevel;
+  next.idCard = owner.idCard;
   next.contractNumber = contractNumber;
   next.contractDesc = contractDesc;
   next.packageContent = packageContent;
@@ -221,7 +223,7 @@ export function updateContractNumberMaintenanceRow(id, patch) {
       .filter((field) => String(row[field] ?? '') !== String(canonicalPatch[field] ?? ''))
       .map((field) => ({ field, before: row[field] ?? '', after: canonicalPatch[field] ?? '' }));
 
-    const derivedChanges = ['useCompanyCode', 'ownerName', 'subsidiary', 'department', 'jobLevel']
+    const derivedChanges = ['useCompanyCode', 'ownerName', 'subsidiary', 'department', 'jobLevel', 'idCard']
       .filter((field) => String(row[field] ?? '') !== String(canonicalPatch[field] ?? ''))
       .map((field) => ({ field, before: row[field] ?? '', after: canonicalPatch[field] ?? '' }));
     const allChanges = [...changes, ...derivedChanges];
