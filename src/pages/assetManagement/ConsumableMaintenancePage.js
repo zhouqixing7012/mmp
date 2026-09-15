@@ -127,6 +127,12 @@ const CHANGE_COMPARE_FIELDS = new Set([
   'serialNumber', 'owner', 'company', 'location', 'status', 'usageDescription', 'remarks', 'mainTag',
 ]);
 
+const BATCH_ERROR_COLUMNS = [
+  { title: '行号', dataIndex: 'rowNo', width: 80, align: 'center' },
+  { title: '耗材标签号', dataIndex: 'tag', width: 150 },
+  { title: '失败原因', dataIndex: 'reason' },
+];
+
 function displayText(value) {
   return value === undefined || value === null || value === '' ? '-' : value;
 }
@@ -205,6 +211,20 @@ function QueryClearArea({ onClear, children }) {
   return <div onDoubleClick={onClear}>{children}</div>;
 }
 
+function buildPrototypeBatchValidation(file) {
+  const name = String(file?.name || '');
+  if (/校验失败|invalid/i.test(name)) {
+    return {
+      status: 'failed',
+      errors: [
+        { id: 'batch-error-1', rowNo: 3, tag: 'QT-254523', reason: '板块与系统当前卡片值不一致' },
+        { id: 'batch-error-2', rowNo: 5, tag: 'QT-244520', reason: 'Building 不属于当前 City' },
+      ],
+    };
+  }
+  return { status: 'passed', errors: [] };
+}
+
 export default function ConsumableMaintenancePage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [rows, setRows] = useState(() => getConsumableMaintenanceRows());
@@ -222,6 +242,7 @@ export default function ConsumableMaintenancePage() {
   const [editDraft, setEditDraft] = useState(null);
   const [batchOpen, setBatchOpen] = useState(false);
   const [batchFiles, setBatchFiles] = useState([]);
+  const [batchValidation, setBatchValidation] = useState(null);
 
   const activeConsumable = useMemo(
     () => rows.find((row) => row.id === activeConsumableId) || null,
@@ -594,14 +615,32 @@ export default function ConsumableMaintenancePage() {
     messageApi.success(`已发起下载：耗材批量修改模板.xlsx（${BATCH_TEMPLATE_FIELDS.length}列，原型）`);
   };
 
-  const handleBatchSave = () => {
+  const resetBatchState = () => {
+    setBatchFiles([]);
+    setBatchValidation(null);
+  };
+
+  const handleBatchAction = () => {
     if (!batchFiles.length) {
       messageApi.warning('请先选择需要上传的 Excel 文件');
       return;
     }
-    setBatchOpen(false);
-    setBatchFiles([]);
-    messageApi.success('上传成功！');
+
+    if (batchValidation?.status === 'passed') {
+      setRows(getConsumableMaintenanceRows());
+      setBatchOpen(false);
+      resetBatchState();
+      messageApi.success('上传成功！');
+      return;
+    }
+
+    const result = buildPrototypeBatchValidation(batchFiles[0]);
+    setBatchValidation(result);
+    if (result.status === 'failed') {
+      messageApi.error('文件校验失败，本次文件未保存');
+    } else {
+      messageApi.success('文件校验通过，请确认保存');
+    }
   };
 
   const renderLookup = (field, placeholder) => (
@@ -809,7 +848,12 @@ export default function ConsumableMaintenancePage() {
         </DetailItem>
         <DetailItem label="启用日期">
           {cardMode === 'edit' ? (
-            <DatePicker style={{ width: '100%' }} value={editDraft?.enabledDate ? dayjs(editDraft.enabledDate) : null} onChange={(date) => updateEdit('enabledDate', date ? date.format('YYYY-MM-DD') : '')} />
+            <DatePicker
+              style={{ width: '100%' }}
+              value={editDraft?.enabledDate ? dayjs(editDraft.enabledDate) : null}
+              placeholder="留空按既有购置日期规则计算"
+              onChange={(date) => updateEdit('enabledDate', date ? date.format('YYYY-MM-DD') : '')}
+            />
           ) : displayText(source.enabledDate)}
         </DetailItem>
         <DetailItem label="单位">{displayText(source.unit)}</DetailItem>
@@ -972,6 +1016,9 @@ export default function ConsumableMaintenancePage() {
           } else if (lookupKey === 'editCompany') {
             updateEdit('company', selected?.name || '');
           } else if (lookupKey === 'editOwner') {
+            if (!selected?.department && selected?.code && !String(selected.code).startsWith('SOHU')) {
+              messageApi.warning('该员工对应的部门为空，请联系管理员添加');
+            }
             setEditDraft((current) => current ? {
               ...current,
               ownerId: selected?.code || '',
@@ -1009,12 +1056,12 @@ export default function ConsumableMaintenancePage() {
         title="耗材批量修改"
         open={batchOpen}
         width={760}
-        okText="确定"
+        okText={batchValidation?.status === 'passed' ? '保存' : '校验'}
         cancelText="取消"
-        onOk={handleBatchSave}
+        onOk={handleBatchAction}
         onCancel={() => {
           setBatchOpen(false);
-          setBatchFiles([]);
+          resetBatchState();
         }}
       >
         <Space direction="vertical" size={16} className="w-full">
@@ -1034,12 +1081,47 @@ export default function ConsumableMaintenancePage() {
             maxCount={1}
             beforeUpload={() => false}
             fileList={batchFiles}
-            onChange={({ fileList }) => setBatchFiles(fileList.slice(-1))}
+            onChange={({ fileList }) => {
+              setBatchFiles(fileList.slice(-1));
+              setBatchValidation(null);
+            }}
           >
             <p className="ant-upload-drag-icon"><UploadCloud size={36} /></p>
             <p className="ant-upload-text">点击或拖拽 Excel 文件到此区域上传</p>
-            <p className="ant-upload-hint">仅支持耗材批量修改模板 .xlsx 文件；保存前先校验全部行</p>
+            <p className="ant-upload-hint">仅支持耗材批量修改模板 .xlsx 文件；先校验全部行，通过后才能保存</p>
           </Dragger>
+
+          <Typography.Text type="secondary">
+            原型演示说明：当前不解析真实 Excel；文件名包含“校验失败”时可演示逐行错误结果，其余文件演示校验通过流程。正式实现按 PRD 读取模板并执行真实逐行校验。
+          </Typography.Text>
+
+          {batchValidation?.status === 'passed' ? (
+            <Alert
+              type="success"
+              showIcon
+              message="文件校验通过"
+              description="当前文件全部行校验通过，可点击“保存”执行整文件写入。"
+            />
+          ) : null}
+
+          {batchValidation?.status === 'failed' ? (
+            <Card size="small" title={<SectionTitle>校验结果</SectionTitle>}>
+              <Alert
+                className="mb-3"
+                type="error"
+                showIcon
+                message={`校验失败，共 ${batchValidation.errors.length} 条错误，本次文件未保存`}
+              />
+              <Table
+                rowKey="id"
+                size="small"
+                bordered
+                pagination={false}
+                columns={BATCH_ERROR_COLUMNS}
+                dataSource={batchValidation.errors}
+              />
+            </Card>
+          ) : null}
         </Space>
       </Modal>
     </Space>
