@@ -153,19 +153,24 @@ const RFID_COLUMNS = [
   ['IP地址3', 'ip3', 140],
 ];
 
+function isEmptyValue(value) {
+  return value === undefined || value === null || value === '';
+}
+
 function displayText(value) {
-  return value === undefined || value === null || value === '' ? '-' : value;
+  return isEmptyValue(value) ? '-' : value;
 }
 
 function amount(value) {
-  if (value === undefined || value === null || value === '') return '-';
+  if (isEmptyValue(value)) return '-';
   const number = Number(value);
   if (Number.isNaN(number)) return displayText(value);
   return number.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function count(value) {
-  const number = Number(value || 0);
+  if (isEmptyValue(value)) return '-';
+  const number = Number(value);
   return Number.isNaN(number) ? displayText(value) : number.toLocaleString('zh-CN');
 }
 
@@ -185,6 +190,17 @@ function fuzzyMultiMatch(value, query) {
 
 function uniqueValues(rows, field) {
   return [...new Set(rows.map((row) => row[field]).filter(Boolean))];
+}
+
+function uniqueLookupRecords(rows, codeField, nameField, idPrefix) {
+  const map = new Map();
+  rows.forEach((row) => {
+    const code = String(row?.[codeField] || '').trim();
+    const name = String(row?.[nameField] || '').trim();
+    if (!code || !name || map.has(code)) return;
+    map.set(code, { id: `${idPrefix}-${code}`, code, name });
+  });
+  return [...map.values()];
 }
 
 function copyFilters(value) {
@@ -302,23 +318,23 @@ export default function AssetMaintenancePage() {
     const configs = {
       companies: {
         title: '选择公司',
-        values: uniqueValues(rows, 'company').map((name, index) => ({ id: `company-${index}`, code: rows.find((row) => row.company === name)?.companyCode || '', name })),
+        values: uniqueLookupRecords(rows, 'companyCode', 'company', 'company'),
         searchFields: [
           { name: 'code', label: '公司编码', dataIndex: 'code' },
           { name: 'name', label: '公司名称', dataIndex: 'name' },
         ],
         columns: [{ title: '公司编码', dataIndex: 'code' }, { title: '公司名称', dataIndex: 'name' }],
-        valueField: 'name',
+        valueField: 'code',
       },
       departments: {
         title: '选择部门',
-        values: uniqueValues(rows, 'department').map((name, index) => ({ id: `department-${index}`, code: rows.find((row) => row.department === name)?.departmentCode || '', name })),
+        values: uniqueLookupRecords(rows, 'departmentCode', 'department', 'department'),
         searchFields: [
           { name: 'code', label: '部门编码', dataIndex: 'code' },
           { name: 'name', label: '部门名称', dataIndex: 'name' },
         ],
         columns: [{ title: '部门编码', dataIndex: 'code' }, { title: '部门名称', dataIndex: 'name' }],
-        valueField: 'name',
+        valueField: 'code',
       },
       owners: {
         title: '选择资产责任人',
@@ -365,6 +381,12 @@ export default function AssetMaintenancePage() {
   const lookupDisplay = (field) => {
     const values = draftFilters[field] || [];
     if (!values.length) return '';
+    if (field === 'companies') {
+      return values.map((code) => rows.find((item) => String(item.companyCode) === String(code))?.company || code).join(', ');
+    }
+    if (field === 'departments') {
+      return values.map((code) => rows.find((item) => String(item.departmentCode) === String(code))?.department || code).join(', ');
+    }
     if (field === 'owners') {
       return values.map((id) => {
         const row = rows.find((item) => item.ownerId === id);
@@ -378,8 +400,13 @@ export default function AssetMaintenancePage() {
     const result = rows.filter((row) => {
       const f = appliedFilters;
       if (!fuzzyMultiMatch(row.tag, f.tag)) return false;
-      if (f.companies.length && !f.companies.includes(row.company)) return false;
-      if (f.departments.length && !f.departments.some((item) => row.department === item || String(row.department || '').startsWith(`${item}.`))) return false;
+      if (f.companies.length && !f.companies.includes(row.companyCode)) return false;
+      if (f.departments.length) {
+        const selectedDepartmentNames = f.departments
+          .map((code) => rows.find((item) => String(item.departmentCode) === String(code))?.department)
+          .filter(Boolean);
+        if (!selectedDepartmentNames.some((name) => row.department === name || String(row.department || '').startsWith(`${name}.`))) return false;
+      }
       if (f.owners.length && !f.owners.includes(row.ownerId)) return false;
       if (!fuzzyMultiMatch(row.serialNumber, f.serialNumber)) return false;
       if (!fuzzyMultiMatch(row.assetDesc, f.assetDesc)) return false;
@@ -406,11 +433,14 @@ export default function AssetMaintenancePage() {
       if (f.floors.length && !f.floors.includes(row.floor)) return false;
       if (f.addTypes.length && !f.addTypes.includes(row.addType)) return false;
       if (!fuzzyMultiMatch(row.poNo, f.poNo)) return false;
-      if (f.purchaseDate.length === 2 && (row.purchaseDate < f.purchaseDate[0] || row.purchaseDate > f.purchaseDate[1])) return false;
-      if (f.originalValueMin !== null && f.originalValueMin !== '' && Number(row.originalValue || 0) < Number(f.originalValueMin)) return false;
-      if (f.originalValueMax !== null && f.originalValueMax !== '' && Number(row.originalValue || 0) > Number(f.originalValueMax)) return false;
+      if (f.purchaseDate.length === 2 && (isEmptyValue(row.purchaseDate) || row.purchaseDate < f.purchaseDate[0] || row.purchaseDate > f.purchaseDate[1])) return false;
+      const hasOriginalValueMin = f.originalValueMin !== null && f.originalValueMin !== '';
+      const hasOriginalValueMax = f.originalValueMax !== null && f.originalValueMax !== '';
+      if ((hasOriginalValueMin || hasOriginalValueMax) && isEmptyValue(row.originalValue)) return false;
+      if (hasOriginalValueMin && Number(row.originalValue) < Number(f.originalValueMin)) return false;
+      if (hasOriginalValueMax && Number(row.originalValue) > Number(f.originalValueMax)) return false;
       if (f.brands.length && !f.brands.includes(row.brand)) return false;
-      if (f.enabledDate.length === 2 && (row.enabledDate < f.enabledDate[0] || row.enabledDate > f.enabledDate[1])) return false;
+      if (f.enabledDate.length === 2 && (isEmptyValue(row.enabledDate) || row.enabledDate < f.enabledDate[0] || row.enabledDate > f.enabledDate[1])) return false;
       if (!fuzzyMultiMatch(row.prNo, f.prNo)) return false;
       return true;
     });
@@ -1092,7 +1122,7 @@ export default function AssetMaintenancePage() {
           onChange={(_, __, ___, extra) => {
             if (extra?.action === 'sort') setSelectedRowKeys([]);
           }}
-          scroll={{ x: 2180 }}
+          scroll={{ x: 2360 }}
           pagination={{
             current: page,
             pageSize,
