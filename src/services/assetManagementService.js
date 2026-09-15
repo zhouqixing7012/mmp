@@ -175,9 +175,13 @@ function buildConsumableMaintenanceTransaction(row, operationDate, changes) {
 
 function isValidDate(value) {
   if (!value) return true;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return false;
-  const parsed = new Date(`${value}T00:00:00`);
-  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+  const text = String(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false;
+  const [year, month, day] = text.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return parsed.getUTCFullYear() === year
+    && parsed.getUTCMonth() === month - 1
+    && parsed.getUTCDate() === day;
 }
 
 function resolveSingleEditEnabledDate(row, requestedValue) {
