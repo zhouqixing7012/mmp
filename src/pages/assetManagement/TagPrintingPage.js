@@ -15,7 +15,7 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
-import { ArrowLeft, Download, Eye, Printer, Search, Tags } from 'lucide-react';
+import { ArrowLeft, Download, Printer, Search, Tags } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
@@ -187,6 +187,14 @@ const INITIAL_SEQUENCE_POOL = {
   spare: 35,
 };
 
+const RULE_OPTIONS = [
+  { label: '常规标签规则', value: 'normal' },
+  { label: '高耗标签规则', value: 'high' },
+  { label: '特殊规则-家具', value: 'furniture' },
+  { label: '特殊规则-手机', value: 'mobile' },
+  { label: '特殊规则-备件', value: 'sparePart' },
+];
+
 function normalizeText(value) {
   return String(value ?? '').trim().toLowerCase();
 }
@@ -251,6 +259,11 @@ function escapeCsvValue(value) {
 }
 
 function LookupInput({ value, placeholder, onOpen, onClear }) {
+  const handleOpen = (event) => {
+    if (event?.target?.closest?.('.ant-input-clear-icon')) return;
+    onOpen?.();
+  };
+
   return (
     <Input
       value={value || ''}
@@ -259,7 +272,13 @@ function LookupInput({ value, placeholder, onOpen, onClear }) {
       placeholder={placeholder}
       suffix={<Search size={14} className="text-[#1677ff]" />}
       style={{ cursor: 'pointer' }}
-      onClick={onOpen}
+      onClick={handleOpen}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpen?.();
+        }
+      }}
       onChange={(event) => {
         if (!event.target.value) onClear?.();
       }}
@@ -278,10 +297,11 @@ function DateFilter({ value, onChange }) {
   );
 }
 
-function PrintCopiesModal({ open, copies, onChange, onConfirm, onCancel, confirmLoading }) {
+function PrintCopiesModal({ open, copies, targetCount, onChange, onConfirm, onCancel, confirmLoading }) {
+  const totalCopies = Number(targetCount || 0) * Number(copies || 0);
   return (
     <Modal
-      title="打印几份"
+      title="打印确认"
       open={open}
       onOk={onConfirm}
       onCancel={onCancel}
@@ -292,42 +312,28 @@ function PrintCopiesModal({ open, copies, onChange, onConfirm, onCancel, confirm
       maskClosable={!confirmLoading}
       keyboard={!confirmLoading}
     >
-      <div className="flex items-center gap-4 py-4">
-        <Typography.Text>打印份数</Typography.Text>
-        <InputNumber min={1} max={99} precision={0} value={copies} onChange={(value) => onChange(value || 1)} disabled={confirmLoading} />
-      </div>
-      <Typography.Text type="secondary">
-        原型按“打印成功”模拟：成功后才累计打印次数并写入包含打印任务、打印份数、来源和状态的详细日志；正式环境以 Brother 打印结果回执为准。
-      </Typography.Text>
+      <Space direction="vertical" size={16} className="w-full py-2">
+        <div className="flex items-center justify-between rounded-md bg-[#fafafa] px-4 py-3">
+          <Typography.Text type="secondary">本次标签数量</Typography.Text>
+          <Typography.Text strong>{targetCount || 0}</Typography.Text>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <Typography.Text>打印份数</Typography.Text>
+          <InputNumber min={1} max={99} precision={0} value={copies} onChange={(value) => onChange(value || 1)} disabled={confirmLoading} />
+        </div>
+        <Typography.Text type="secondary">
+          共打印 <Typography.Text strong>{totalCopies}</Typography.Text> 张标签。
+        </Typography.Text>
+      </Space>
     </Modal>
   );
 }
 
-const RULE_GRID_CLASS = 'grid min-w-[1020px] grid-cols-[repeat(4,240px)] gap-x-5 gap-y-4';
-const RULE_CONTROL_CLASS = 'mt-2 w-[220px]';
-
 function RuleField({ label, children }) {
   return (
-    <div className="w-[240px]">
+    <div className="min-w-0">
       <Typography.Text className="text-[13px] text-gray-600">{label}</Typography.Text>
-      <div>{children}</div>
-    </div>
-  );
-}
-
-function RuleRow({ active, title, onSelect, children }) {
-  return (
-    <div className={`rounded-md border p-4 transition-colors ${active ? 'border-[#91caff] bg-[#f5faff]' : 'border-[#f0f0f0] bg-[#fafafa]'}`}>
-      <div className="grid grid-cols-[180px_1fr] items-start gap-5">
-        <div className="pt-1">
-          <Radio checked={active} onChange={onSelect}>
-            <Typography.Text strong>{title}</Typography.Text>
-          </Radio>
-        </div>
-        <div className="overflow-x-auto pb-1">
-          <div className={`${RULE_GRID_CLASS} ${active ? '' : 'opacity-55'}`}>{children}</div>
-        </div>
-      </div>
+      <div className="mt-2">{children}</div>
     </div>
   );
 }
@@ -474,8 +480,8 @@ function GenerateLabelsPage({
       const start = Number(currentMax) + 1;
       const end = start + Number(mainCount) - 1;
       const batchNo = makeUniqueBatchNo(existingBatchNumbers);
-
       const labels = [];
+
       for (let index = 0; index < Number(mainCount); index += 1) {
         const mainTag = buildMainTag(start + index);
         if (existingTags.has(mainTag) || labels.some((row) => row.tag === mainTag)) throw new Error(`标签号 ${mainTag} 已存在，禁止重复生成`);
@@ -513,98 +519,126 @@ function GenerateLabelsPage({
     }
   };
 
+  const renderRuleFields = () => {
+    if (rule === 'normal') {
+      return (
+        <>
+          <RuleField label="选择资产类型">
+            <Select className="w-full" placeholder="请选择" value={assetType} options={ASSET_TYPE_OPTIONS} onChange={setAssetType} />
+          </RuleField>
+          <RuleField label="选择年份">
+            <DatePicker className="w-full" picker="year" value={normalYear} onChange={setNormalYear} allowClear />
+          </RuleField>
+          <RuleField label="当前最大序号">
+            <Input className="w-full" value={String(currentPoolValue).padStart(5, '0')} readOnly disabled />
+          </RuleField>
+        </>
+      );
+    }
+
+    if (rule === 'high') {
+      return (
+        <>
+          <RuleField label="选择高耗大类">
+            <Select
+              className="w-full"
+              placeholder="请选择"
+              value={highCategory}
+              options={HIGH_CATEGORY_OPTIONS}
+              onChange={(value) => {
+                setHighCategory(value);
+                setHighSubCategory(undefined);
+              }}
+            />
+          </RuleField>
+          <RuleField label="选择高耗小类">
+            <Select
+              className="w-full"
+              placeholder="请选择"
+              value={highSubCategory}
+              options={(HIGH_SUBCATEGORY_OPTIONS[highCategory] || []).map((value) => ({ label: value, value }))}
+              onChange={setHighSubCategory}
+            />
+          </RuleField>
+          <RuleField label="选择年份">
+            <DatePicker className="w-full" picker="year" value={highYear} onChange={setHighYear} allowClear />
+          </RuleField>
+          <RuleField label="当前最大序号">
+            <Input className="w-full" value={String(currentPoolValue).padStart(4, '0')} readOnly disabled />
+          </RuleField>
+        </>
+      );
+    }
+
+    if (rule === 'furniture') {
+      return (
+        <>
+          <RuleField label="选择家具类型">
+            <Select className="w-full" placeholder="请选择" value={furnitureType} options={FURNITURE_OPTIONS} onChange={setFurnitureType} />
+          </RuleField>
+          <RuleField label="当前最大序号">
+            <InputNumber
+              className="w-full"
+              min={1}
+              max={999999}
+              precision={0}
+              value={furnitureMaxInput}
+              onChange={(value) => setFurnitureMaxInput(value || 1)}
+              style={{ width: '100%' }}
+            />
+          </RuleField>
+        </>
+      );
+    }
+
+    if (rule === 'mobile') {
+      return (
+        <>
+          <RuleField label="标签前缀"><Input className="w-full" value="NE" readOnly /></RuleField>
+          <RuleField label="当前最大序号"><Input className="w-full" value={String(currentPoolValue).padStart(4, '0')} readOnly disabled /></RuleField>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <RuleField label="选择备件类型">
+          <Select className="w-full" placeholder="请选择" value={sparePartType} options={SPARE_PART_OPTIONS} onChange={setSparePartType} />
+        </RuleField>
+        <RuleField label="当前最大序号"><Input className="w-full" value={String(currentPoolValue).padStart(5, '0')} readOnly disabled /></RuleField>
+      </>
+    );
+  };
+
   return (
     <Space direction="vertical" size={16} className="w-full pb-4">
-      <div className="flex items-center gap-2">
-        <div className="h-7 w-1 rounded bg-[#1677ff]" />
-        <Typography.Title level={4} className="!mb-0">生成标签</Typography.Title>
-      </div>
+      <Typography.Title level={4} className="!mb-0">生成标签</Typography.Title>
 
-      <Card size="small" title="标签设置" className="shadow-sm">
-        <div className="mb-5 flex items-center gap-5 border-b border-[#f0f0f0] pb-5">
-          <Typography.Text strong className="w-[160px] shrink-0">选择账套</Typography.Text>
-          <Select className="w-[260px]" value={ledger} options={LEDGER_OPTIONS} onChange={setLedger} />
+      <Card size="small" title="标签设置">
+        <div className="mb-5 grid grid-cols-1 gap-4 border-b border-[#f0f0f0] pb-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-center">
+          <Typography.Text strong>选择账套</Typography.Text>
+          <Select className="w-full max-w-[360px]" value={ledger} options={LEDGER_OPTIONS} onChange={setLedger} />
         </div>
 
-        <div className="mb-3 text-[13px] font-medium text-gray-500">选择标签规则</div>
-        <Space direction="vertical" size={10} className="w-full">
-          <RuleRow active={rule === 'normal'} title="常规标签规则" onSelect={() => setRule('normal')}>
-            <RuleField label="选择资产类型">
-              <Select className={RULE_CONTROL_CLASS} placeholder="请选择" value={assetType} options={ASSET_TYPE_OPTIONS} onChange={setAssetType} disabled={rule !== 'normal'} />
-            </RuleField>
-            <RuleField label="选择年份">
-              <DatePicker className={RULE_CONTROL_CLASS} picker="year" value={normalYear} onChange={setNormalYear} disabled={rule !== 'normal'} allowClear />
-            </RuleField>
-            <RuleField label="当前最大序号">
-              <Input className={RULE_CONTROL_CLASS} value={String(currentPoolValue).padStart(5, '0')} readOnly disabled />
-            </RuleField>
-          </RuleRow>
+        <div className="mb-5">
+          <Typography.Text strong>选择标签规则</Typography.Text>
+          <div className="mt-3 overflow-x-auto pb-1">
+            <Radio.Group
+              optionType="button"
+              buttonStyle="solid"
+              options={RULE_OPTIONS}
+              value={rule}
+              onChange={(event) => setRule(event.target.value)}
+            />
+          </div>
+        </div>
 
-          <RuleRow active={rule === 'high'} title="高耗标签规则" onSelect={() => setRule('high')}>
-            <RuleField label="选择高耗大类">
-              <Select
-                className={RULE_CONTROL_CLASS}
-                placeholder="请选择"
-                value={highCategory}
-                options={HIGH_CATEGORY_OPTIONS}
-                onChange={(value) => {
-                  setHighCategory(value);
-                  setHighSubCategory(undefined);
-                }}
-                disabled={rule !== 'high'}
-              />
-            </RuleField>
-            <RuleField label="选择高耗小类">
-              <Select
-                className={RULE_CONTROL_CLASS}
-                placeholder="请选择"
-                value={highSubCategory}
-                options={(HIGH_SUBCATEGORY_OPTIONS[highCategory] || []).map((value) => ({ label: value, value }))}
-                onChange={setHighSubCategory}
-                disabled={rule !== 'high'}
-              />
-            </RuleField>
-            <RuleField label="选择年份">
-              <DatePicker className={RULE_CONTROL_CLASS} picker="year" value={highYear} onChange={setHighYear} disabled={rule !== 'high'} allowClear />
-            </RuleField>
-            <RuleField label="当前最大序号">
-              <Input className={RULE_CONTROL_CLASS} value={String(currentPoolValue).padStart(4, '0')} readOnly disabled />
-            </RuleField>
-          </RuleRow>
-
-          <RuleRow active={rule === 'furniture'} title="特殊规则-家具" onSelect={() => setRule('furniture')}>
-            <RuleField label="选择家具类型">
-              <Select className={RULE_CONTROL_CLASS} placeholder="请选择" value={furnitureType} options={FURNITURE_OPTIONS} onChange={setFurnitureType} disabled={rule !== 'furniture'} />
-            </RuleField>
-            <RuleField label="当前最大序号">
-              <InputNumber
-                className={RULE_CONTROL_CLASS}
-                min={1}
-                max={999999}
-                precision={0}
-                value={furnitureMaxInput}
-                onChange={(value) => setFurnitureMaxInput(value || 1)}
-                disabled={rule !== 'furniture'}
-                style={{ width: 220 }}
-              />
-            </RuleField>
-          </RuleRow>
-
-          <RuleRow active={rule === 'mobile'} title="特殊规则-手机" onSelect={() => setRule('mobile')}>
-            <RuleField label="标签前缀"><Input className={RULE_CONTROL_CLASS} value="NE" readOnly /></RuleField>
-            <RuleField label="当前最大序号"><Input className={RULE_CONTROL_CLASS} value={String(currentPoolValue).padStart(4, '0')} readOnly /></RuleField>
-          </RuleRow>
-
-          <RuleRow active={rule === 'sparePart'} title="特殊规则-备件" onSelect={() => setRule('sparePart')}>
-            <RuleField label="选择备件类型">
-              <Select className={RULE_CONTROL_CLASS} placeholder="请选择" value={sparePartType} options={SPARE_PART_OPTIONS} onChange={setSparePartType} disabled={rule !== 'sparePart'} />
-            </RuleField>
-            <RuleField label="当前最大序号"><Input className={RULE_CONTROL_CLASS} value={String(currentPoolValue).padStart(5, '0')} readOnly disabled /></RuleField>
-          </RuleRow>
-        </Space>
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2 xl:grid-cols-3">
+          {renderRuleFields()}
+        </div>
       </Card>
 
-      <Card size="small" title="标签生成" className="shadow-sm">
+      <Card size="small" title="标签生成">
         <Descriptions bordered size="small" column={3} labelStyle={{ width: 128 }}>
           <Descriptions.Item label="打印标签数量">
             <InputNumber min={1} max={MAX_MAIN_LABEL_COUNT} precision={0} value={mainCount} onChange={(value) => setMainCount(value || 1)} style={{ width: 180 }} />
@@ -613,7 +647,7 @@ function GenerateLabelsPage({
             <InputNumber min={1} max={99} precision={0} value={partCount} onChange={(value) => setPartCount(value || 1)} style={{ width: 180 }} />
           </Descriptions.Item>
           <Descriptions.Item label="标签批次">
-            {generatedBatch?.batch || <Typography.Text type="danger">生成标签后自动生成</Typography.Text>}
+            {generatedBatch?.batch || <Typography.Text type="secondary">生成标签后自动生成</Typography.Text>}
           </Descriptions.Item>
           <Descriptions.Item label="操作员">{CURRENT_USER}</Descriptions.Item>
           <Descriptions.Item label="当前日期">{dayjs().format('YYYY-MM-DD')}</Descriptions.Item>
@@ -624,7 +658,7 @@ function GenerateLabelsPage({
         </Descriptions>
       </Card>
 
-      <div className="sticky bottom-0 z-30 flex justify-center gap-3 border-t border-[#e5e7eb] bg-white/95 px-5 py-3 shadow-[0_-6px_20px_rgba(15,23,42,0.06)] backdrop-blur">
+      <div className="sticky bottom-0 z-30 flex justify-center gap-3 bg-white/95 px-5 py-3 backdrop-blur">
         <Button className="min-w-[96px]" icon={<ArrowLeft size={14} />} onClick={onBack}>返回</Button>
         <Button type="primary" className="min-w-[116px]" icon={<Tags size={14} />} loading={generating} disabled={generating} onClick={handleGenerate}>生成标签</Button>
         {generatedBatch && (
@@ -869,7 +903,7 @@ export default function TagPrintingPage() {
         setLabelSelectedKeys([]);
       }
 
-      messageApi.success(`${printTask.actionName}成功，打印 ${copies} 份；累计次数与详细日志已同步`);
+      messageApi.success(`${printTask.actionName}成功，打印 ${copies} 份`);
       setPrintTask(null);
     } catch (printError) {
       messageApi.error(printError.message || '打印失败');
@@ -950,8 +984,19 @@ export default function TagPrintingPage() {
     { title: '创建人', dataIndex: 'creator', width: 120, render: displayText },
     { title: '创建时间', dataIndex: 'createdAt', width: 130, render: displayText },
     { title: '备注说明', dataIndex: 'remark', width: 160, render: displayText },
-    { title: '详细', key: 'detail', width: 110, render: (_, record) => <Button type="link" size="small" onClick={() => openLabelList(record.batch)}>标签清单</Button> },
-    { title: '打印历史', key: 'history', width: 110, render: (_, record) => <Button type="link" size="small" onClick={() => openHistory(record.batch)}>打印历史</Button> },
+    {
+      title: '操作',
+      key: 'action',
+      width: 180,
+      fixed: 'right',
+      align: 'center',
+      render: (_, record) => (
+        <Space size={0}>
+          <Button type="link" size="small" onClick={() => openLabelList(record.batch)}>标签清单</Button>
+          <Button type="link" size="small" onClick={() => openHistory(record.batch)}>打印历史</Button>
+        </Space>
+      ),
+    },
   ];
 
   const labelColumns = [
@@ -959,20 +1004,20 @@ export default function TagPrintingPage() {
     { title: '标签号', dataIndex: 'tag', width: 200, sorter: (a, b) => textCompare(a.tag, b.tag), render: displayText },
     { title: '打印次数', dataIndex: 'printCount', width: 120, align: 'right' },
     { title: '是否已打印', dataIndex: 'printed', width: 130, align: 'center', render: (value) => <StatusTag value={value} type="yesNo" /> },
-    { title: '操作', key: 'action', width: 120, render: (_, record) => <Button type="link" size="small" onClick={() => openHistory(record.batch, record.tag)}>打印历史</Button> },
+    { title: '操作', key: 'action', width: 110, fixed: 'right', align: 'center', render: (_, record) => <Button type="link" size="small" onClick={() => openHistory(record.batch, record.tag)}>打印历史</Button> },
   ];
 
   const historyColumns = [
-    { title: '打印任务ID', dataIndex: 'printTaskId', width: 220, render: displayText },
-    { title: '标签批次', dataIndex: 'batch', width: 230, render: displayText },
-    { title: '标签号', dataIndex: 'tag', width: 180, render: displayText },
+    { title: '标签号', dataIndex: 'tag', width: 180, fixed: 'left', render: displayText },
+    { title: '打印状态', dataIndex: 'printStatus', width: 120, render: (value) => <StatusTag value={value} type="business" /> },
     { title: '来源', dataIndex: 'source', width: 130, render: displayText },
-    { title: '打印份数', dataIndex: 'copies', width: 110, align: 'right', render: displayText },
-    { title: '打印状态', dataIndex: 'printStatus', width: 120, render: displayText },
-    { title: '失败原因', dataIndex: 'failureReason', width: 180, render: displayText },
+    { title: '打印份数', dataIndex: 'copies', width: 100, align: 'right', render: displayText },
     { title: '打印时间', dataIndex: 'printedAt', width: 180, render: displayText },
-    { title: '打印IP', dataIndex: 'printIp', width: 150, render: displayText },
     { title: '打印人', dataIndex: 'printer', width: 120, render: displayText },
+    { title: '标签批次', dataIndex: 'batch', width: 230, render: displayText },
+    { title: '打印任务ID', dataIndex: 'printTaskId', width: 220, render: displayText },
+    { title: '打印IP', dataIndex: 'printIp', width: 150, render: displayText },
+    { title: '失败原因', dataIndex: 'failureReason', width: 180, render: displayText },
   ];
 
   if (previewMode && generateMode) {
@@ -998,12 +1043,9 @@ export default function TagPrintingPage() {
 
   if (previewMode) {
     return (
-      <Space direction="vertical" size={16} className="w-full">
+      <Space direction="vertical" size={16} className="w-full pb-4">
         {contextHolder}
-        <div className="flex items-center gap-3">
-          <Button icon={<ArrowLeft size={14} />} onClick={() => setPreviewMode(false)}>返回标签打印</Button>
-          <Typography.Title level={4} className="mb-0">标签批次 / 预打印</Typography.Title>
-        </div>
+        <Typography.Title level={4} className="!mb-0">标签预打印</Typography.Title>
 
         <QueryBar
           onQuery={() => {
@@ -1045,15 +1087,28 @@ export default function TagPrintingPage() {
           <div className="mb-3 flex justify-end">
             <Button type="primary" icon={<Tags size={14} />} onClick={() => setGenerateMode(true)}>生成标签</Button>
           </div>
-          <Table rowKey="id" size="small" bordered columns={batchColumns} dataSource={filteredBatchRows} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true }} />
+          <Table
+            rowKey="id"
+            size="small"
+            bordered
+            columns={batchColumns}
+            dataSource={filteredBatchRows}
+            scroll={{ x: 'max-content' }}
+            pagination={{ pageSize: 10, showSizeChanger: true }}
+          />
         </Card>
 
+        <div className="flex justify-center pt-2">
+          <Button className="min-w-[112px]" icon={<ArrowLeft size={14} />} onClick={() => setPreviewMode(false)}>返回标签打印</Button>
+        </div>
+
         <Modal
-          title="查看标签"
+          title="标签清单"
           open={labelListOpen}
-          width={1050}
+          width="86vw"
+          style={{ maxWidth: 1100 }}
           onCancel={() => setLabelListOpen(false)}
-          footer={<div className="flex justify-center"><Button className="min-w-[96px]" icon={<ArrowLeft size={14} />} onClick={() => setLabelListOpen(false)}>返回</Button></div>}
+          footer={null}
         >
           <Space direction="vertical" size={14} className="w-full">
             <QueryBar
@@ -1068,7 +1123,7 @@ export default function TagPrintingPage() {
               }}
             >
               <QueryItem label="标签号"><Input value={labelDraftFilters.tag} allowClear placeholder="请输入标签号" onChange={(event) => updateLabelFilter('tag', event.target.value)} /></QueryItem>
-              <QueryItem label="是否打印">
+              <QueryItem label="是否已打印">
                 <Select value={labelDraftFilters.printed || undefined} allowClear placeholder="全部" options={[{ label: '是', value: '是' }, { label: '否', value: '否' }]} onChange={(value) => updateLabelFilter('printed', value)} />
               </QueryItem>
             </QueryBar>
@@ -1076,7 +1131,14 @@ export default function TagPrintingPage() {
             <div className="flex items-center justify-between gap-3">
               <Typography.Text type="secondary">标签批次：{labelBatch || '-'}</Typography.Text>
               <Space wrap>
-                <Button icon={<Printer size={14} />} onClick={() => requestLabelPrint(labelSelectedKeys, '打印所选', labelBatch)}>打印所选</Button>
+                <Button
+                  type="primary"
+                  icon={<Printer size={14} />}
+                  disabled={!labelSelectedKeys.length}
+                  onClick={() => requestLabelPrint(labelSelectedKeys, '打印所选', labelBatch)}
+                >
+                  打印所选（{labelSelectedKeys.length}）
+                </Button>
                 <Button
                   icon={<Printer size={14} />}
                   onClick={() => requestLabelPrint(labelRows.filter((row) => row.batch === labelBatch).map((row) => row.id), '打印全部', labelBatch)}
@@ -1094,12 +1156,20 @@ export default function TagPrintingPage() {
               dataSource={filteredLabelRows}
               rowSelection={{ selectedRowKeys: labelSelectedKeys, onChange: setLabelSelectedKeys, fixed: true, columnTitle: '选择' }}
               pagination={{ pageSize: 10, showSizeChanger: true }}
+              scroll={{ x: 'max-content' }}
               locale={{ emptyText: '暂无标签数据' }}
             />
           </Space>
         </Modal>
 
-        <Modal title="打印历史" open={historyOpen} width={1450} footer={null} onCancel={() => setHistoryOpen(false)}>
+        <Modal
+          title="打印历史"
+          open={historyOpen}
+          width="90vw"
+          style={{ maxWidth: 1280 }}
+          footer={null}
+          onCancel={() => setHistoryOpen(false)}
+        >
           <QueryBar
             onQuery={() => {
               if (invalidRange(historyDraftFilters.printedFrom, historyDraftFilters.printedTo)) {
@@ -1120,12 +1190,22 @@ export default function TagPrintingPage() {
             <QueryItem label="打印时间至"><DateFilter value={historyDraftFilters.printedTo} onChange={(value) => updateHistoryFilter('printedTo', value)} /></QueryItem>
           </QueryBar>
           <div className="mt-4 flex justify-end text-sm text-gray-500">共 {filteredHistoryRows.length} 条</div>
-          <Table className="mt-2" rowKey="id" size="small" bordered columns={historyColumns} dataSource={filteredHistoryRows} pagination={{ pageSize: 10, showSizeChanger: true }} scroll={{ x: 'max-content' }} />
+          <Table
+            className="mt-2"
+            rowKey="id"
+            size="small"
+            bordered
+            columns={historyColumns}
+            dataSource={filteredHistoryRows}
+            pagination={{ pageSize: 10, showSizeChanger: true }}
+            scroll={{ x: 'max-content' }}
+          />
         </Modal>
 
         <PrintCopiesModal
           open={Boolean(printTask)}
           copies={printCopies}
+          targetCount={printTask?.ids?.length || 0}
           onChange={setPrintCopies}
           onConfirm={confirmPrint}
           onCancel={() => {
@@ -1140,7 +1220,7 @@ export default function TagPrintingPage() {
   return (
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
-      <Typography.Title level={4} className="mb-0">标签打印</Typography.Title>
+      <Typography.Title level={4} className="!mb-0">标签打印</Typography.Title>
 
       <QueryBar
         onQuery={() => {
@@ -1174,11 +1254,18 @@ export default function TagPrintingPage() {
 
       <Card size="small" title="标签打印列表" extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
         <div className="mb-3 flex justify-end">
-          <Space>
-            <Button icon={<Printer size={14} />} onClick={() => requestAssetPrint(selectedRowKeys, '打印所选')}>打印所选</Button>
+          <Space wrap>
+            <Button
+              type="primary"
+              icon={<Printer size={14} />}
+              disabled={!selectedRowKeys.length}
+              onClick={() => requestAssetPrint(selectedRowKeys, '打印所选')}
+            >
+              打印所选（{selectedRowKeys.length}）
+            </Button>
             <Button icon={<Printer size={14} />} onClick={() => requestAssetPrint(filteredRows.map((row) => row.id), '打印全部')}>打印全部</Button>
             <Button icon={<Download size={14} />} onClick={handleExport}>导出</Button>
-            <Button type="primary" icon={<Eye size={14} />} onClick={() => setPreviewMode(true)}>预打印</Button>
+            <Button icon={<Tags size={14} />} onClick={() => setPreviewMode(true)}>预打印</Button>
           </Space>
         </div>
 
@@ -1219,6 +1306,7 @@ export default function TagPrintingPage() {
       <PrintCopiesModal
         open={Boolean(printTask)}
         copies={printCopies}
+        targetCount={printTask?.ids?.length || 0}
         onChange={setPrintCopies}
         onConfirm={confirmPrint}
         onCancel={() => {
