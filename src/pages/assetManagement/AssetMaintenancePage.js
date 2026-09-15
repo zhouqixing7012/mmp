@@ -203,6 +203,29 @@ function uniqueLookupRecords(rows, codeField, nameField, idPrefix) {
   return [...map.values()];
 }
 
+function costCenterCode(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  const separatorIndex = text.indexOf('.');
+  return separatorIndex > 0 ? text.slice(0, separatorIndex) : text;
+}
+
+function costCenterLookupRecords(rows) {
+  const map = new Map();
+  rows.forEach((row) => {
+    const name = String(row.costCenter || '').trim();
+    const code = costCenterCode(name);
+    if (!code || !name || map.has(code)) return;
+    map.set(code, { id: `cc-${code}`, code, name });
+  });
+  return [...map.values()];
+}
+
+function formatOwner(row) {
+  const values = [row?.ownerId, row?.ownerName].filter((value) => !isEmptyValue(value));
+  return values.length ? values.join('-') : '-';
+}
+
 function copyFilters(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -245,6 +268,10 @@ function SectionTitle({ children }) {
   );
 }
 
+function DetailSpacer() {
+  return <DetailItem label={null}>{null}</DetailItem>;
+}
+
 function AssetSection({ title, collapsible = false, collapsed = false, onToggle, children }) {
   return (
     <Card
@@ -268,7 +295,16 @@ function AssetSection({ title, collapsible = false, collapsed = false, onToggle,
 }
 
 function compareValue(a, b, type) {
-  if (type === 'number') return Number(a || 0) - Number(b || 0);
+  if (type === 'number') {
+    const aEmpty = isEmptyValue(a);
+    const bEmpty = isEmptyValue(b);
+    if (aEmpty && bEmpty) return 0;
+    if (aEmpty) return 1;
+    if (bEmpty) return -1;
+    const aNumber = Number(a);
+    const bNumber = Number(b);
+    if (!Number.isNaN(aNumber) && !Number.isNaN(bNumber)) return aNumber - bNumber;
+  }
   return String(a ?? '').localeCompare(String(b ?? ''), 'zh-CN', { numeric: true });
 }
 
@@ -353,10 +389,13 @@ export default function AssetMaintenancePage() {
       },
       costCenters: {
         title: '选择成本中心',
-        values: uniqueValues(rows, 'costCenter').map((name, index) => ({ id: `cc-${index}`, name })),
-        searchFields: [{ name: 'name', label: '成本中心', dataIndex: 'name' }],
-        columns: [{ title: '成本中心', dataIndex: 'name' }],
-        valueField: 'name',
+        values: costCenterLookupRecords(rows),
+        searchFields: [
+          { name: 'code', label: '成本中心编码', dataIndex: 'code' },
+          { name: 'name', label: '成本中心', dataIndex: 'name' },
+        ],
+        columns: [{ title: '成本中心编码', dataIndex: 'code' }, { title: '成本中心', dataIndex: 'name' }],
+        valueField: 'code',
       },
       brands: {
         title: '选择品牌',
@@ -390,8 +429,11 @@ export default function AssetMaintenancePage() {
     if (field === 'owners') {
       return values.map((id) => {
         const row = rows.find((item) => item.ownerId === id);
-        return row ? `${row.ownerId}-${row.ownerName}` : id;
+        return row ? formatOwner(row) : id;
       }).join(', ');
+    }
+    if (field === 'costCenters') {
+      return values.map((code) => rows.find((item) => costCenterCode(item.costCenter) === String(code))?.costCenter || code).join(', ');
     }
     return values.join(', ');
   };
@@ -423,7 +465,7 @@ export default function AssetMaintenancePage() {
       }
       if (f.statuses.length && !f.statuses.includes(row.status)) return false;
       if (f.plates.length && !f.plates.includes(row.plate)) return false;
-      if (f.costCenters.length && !f.costCenters.includes(row.costCenter)) return false;
+      if (f.costCenters.length && !f.costCenters.includes(costCenterCode(row.costCenter))) return false;
       if (f.purposes.length && !f.purposes.includes(row.purpose || '空')) return false;
       if (f.warehouses.length && !f.warehouses.includes(row.warehouse)) return false;
       if (f.assetTypes.length && !f.assetTypes.includes(row.assetType || '公司资产')) return false;
@@ -766,8 +808,8 @@ export default function AssetMaintenancePage() {
       title: '资产责任人',
       dataIndex: 'ownerName',
       width: 170,
-      sorter: (a, b) => `${a.ownerId}-${a.ownerName}`.localeCompare(`${b.ownerId}-${b.ownerName}`, 'zh-CN'),
-      render: (_, row) => `${row.ownerId}-${row.ownerName}`,
+      sorter: (a, b) => formatOwner(a).localeCompare(formatOwner(b), 'zh-CN'),
+      render: (_, row) => formatOwner(row),
     },
     sortableColumn('资产状态', 'status', 140, { render: (value) => <StatusTag value={value} type="business" /> }),
     sortableColumn('成本中心', 'costCenter', 180),
@@ -800,6 +842,8 @@ export default function AssetMaintenancePage() {
           <DetailItem label="资产大类">{displayText(source.majorCategory)}</DetailItem>
           <DetailItem label="资产小类">{displayText(source.minorCategory)}</DetailItem>
           <DetailItem label="资产说明">{displayText(source.assetDesc)}</DetailItem>
+          <DetailSpacer />
+          <DetailSpacer />
           <DetailItem label="配置" span={3}>{displayText(source.config)}</DetailItem>
           <DetailItem label="数量">{count(source.quantity)}</DetailItem>
           <DetailItem label="单位">{displayText(source.unit)}</DetailItem>
@@ -824,7 +868,7 @@ export default function AssetMaintenancePage() {
           <DetailItem label="资产标记">
             {editable('assetMark', <Select allowClear value={editDraft?.assetMark || undefined} style={{ width: '100%' }} options={ASSET_MARK_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('assetMark', value || '')} />)}
           </DetailItem>
-          <DetailItem label="资产责任人">{`${source.ownerId}-${source.ownerName}`}</DetailItem>
+          <DetailItem label="资产责任人">{formatOwner(source)}</DetailItem>
           <DetailItem label="用途">
             {editable('purpose', <Select allowClear value={editDraft?.purpose || undefined} style={{ width: '100%' }} options={PURPOSE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('purpose', value || '')} />)}
           </DetailItem>
@@ -863,6 +907,7 @@ export default function AssetMaintenancePage() {
           <DetailItem label="申请单号">{displayText(source.applicationNo)}</DetailItem>
           <DetailItem label="入库单号">{displayText(source.inboundNo)}</DetailItem>
           <DetailItem label="PO单号">{displayText(source.poNo)}</DetailItem>
+          <DetailSpacer />
           <DetailItem label="使用说明" span={3}>
             {editable('usageDescription', <TextArea value={editDraft?.usageDescription || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('usageDescription', event.target.value)} />)}
           </DetailItem>
@@ -958,8 +1003,8 @@ export default function AssetMaintenancePage() {
       <DetailItem label="净值">{amount(source.netValue)}</DetailItem>
       <DetailItem label="EBS净值">{amount(source.ebsNetValue)}</DetailItem>
       <DetailItem label="EBS原值">{amount(source.ebsOriginalValue)}</DetailItem>
-      <DetailItem label="折旧年限">{source.depreciationYears ? `${source.depreciationYears} 年` : '-'}</DetailItem>
-      <DetailItem label="折旧剩余月份">{source.remainingMonths === -1 || source.remainingMonths === undefined || source.remainingMonths === null ? '-' : `${source.remainingMonths} 个月`}</DetailItem>
+      <DetailItem label="折旧年限">{isEmptyValue(source.depreciationYears) ? '-' : `${source.depreciationYears} 年`}</DetailItem>
+      <DetailItem label="折旧剩余月份">{source.remainingMonths === -1 || isEmptyValue(source.remainingMonths) ? '-' : `${source.remainingMonths} 个月`}</DetailItem>
       {source.isMachineRoom ? <DetailItem label="配置参考价值">{amount(source.configReferenceValue)}</DetailItem> : null}
     </DetailGrid>
   ) : null;
@@ -1188,7 +1233,7 @@ export default function AssetMaintenancePage() {
             type="warning"
             showIcon
             message="批量修改采用覆盖式更新"
-            description="资产标签号、成本中心、City、Building、资产状态为必填；任一必填单元格为空时整批校验失败。Floor、资产序列号、备注、资产标记、使用说明、资产用途为空时会将原字段覆盖为空。任一行校验失败时，本次文件全部不保存。"
+            description="资产标签号、成本中心、City、Building、资产状态为必填；任一必填单元格为空时整批校验失败。成本中心按“编码.名称”填写并按编码识别；City、Building、Floor按名称填写。资产标签号、资产序列号按文本处理，避免科学计数法或前导零丢失。Floor、资产序列号、备注、资产标记、使用说明、资产用途为空时会将原字段覆盖为空；任一行校验失败时，本次文件全部不保存。"
           />
           <Button
             icon={<Download size={14} />}
