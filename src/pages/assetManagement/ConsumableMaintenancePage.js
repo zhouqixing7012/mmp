@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Button,
@@ -66,9 +66,10 @@ const WAREHOUSES_BY_COMPANY = {
   天津飞狐: ['WH004.天津耗材仓'],
 };
 const MAIN_ASSET_OPTIONS = [
-  { id: 'main-1', tag: '114111700922', desc: '服务器.Dell PowerEdge R740' },
-  { id: 'main-2', tag: '114121700944', desc: '服务器.HPE ProLiant DL380 Gen10' },
-  { id: 'main-3', tag: '114111700955', desc: '台式机.Dell OptiPlex 7090' },
+  { id: 'main-1', tag: '114111700922', desc: '服务器.Dell PowerEdge R740', ownerId: '203938', status: '在用' },
+  { id: 'main-2', tag: '114121700944', desc: '服务器.HPE ProLiant DL380 Gen10', ownerId: 'SOHU01', status: '在用' },
+  { id: 'main-3', tag: '114111700955', desc: '台式机.Dell OptiPlex 7090', ownerId: '220687', status: '在用' },
+  { id: 'main-4', tag: '114111700966', desc: '台式机.历史报废主资产', ownerId: '220687', status: '已报废' },
 ];
 
 const EMPTY_FILTERS = {
@@ -185,6 +186,28 @@ function compareValue(a, b, type) {
 }
 
 function LookupInput({ value, placeholder, onOpen, onDoubleClick }) {
+  const clickTimerRef = useRef(null);
+  const handleClick = () => {
+    if (!onDoubleClick) {
+      onOpen?.();
+      return;
+    }
+    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+    clickTimerRef.current = setTimeout(() => {
+      clickTimerRef.current = null;
+      onOpen?.();
+    }, 220);
+  };
+  const handleDoubleClick = (event) => {
+    if (!onDoubleClick) return;
+    event.preventDefault();
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+    onDoubleClick();
+  };
+
   return (
     <Input
       value={value}
@@ -192,8 +215,8 @@ function LookupInput({ value, placeholder, onOpen, onDoubleClick }) {
       placeholder={placeholder}
       suffix={<Search size={14} className="text-[#1677ff]" />}
       style={{ cursor: 'pointer' }}
-      onClick={onOpen}
-      onDoubleClick={onDoubleClick}
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
     />
   );
 }
@@ -279,6 +302,9 @@ export default function ConsumableMaintenancePage() {
       name: row.ownerName,
       department: row.department,
     }])).values()];
+    const mainAssets = MAIN_ASSET_OPTIONS.filter((item) => (
+      item.status !== '已报废' && item.ownerId === editDraft?.ownerId
+    ));
     const configs = {
       companies: {
         title: '选择公司', multiple: true, values: companies, valueField: 'name',
@@ -328,13 +354,13 @@ export default function ConsumableMaintenancePage() {
         columns: [{ title: '员工编号', dataIndex: 'code' }, { title: '员工姓名', dataIndex: 'name' }, { title: '部门', dataIndex: 'department' }],
       },
       editMainAsset: {
-        title: '选择主资产', multiple: false, values: MAIN_ASSET_OPTIONS, valueField: 'tag',
+        title: '选择主资产', multiple: false, values: mainAssets, valueField: 'tag',
         searchFields: [{ name: 'tag', label: '资产标签号', dataIndex: 'tag' }, { name: 'desc', label: '资产说明', dataIndex: 'desc' }],
         columns: [{ title: '资产标签号', dataIndex: 'tag' }, { title: '资产说明', dataIndex: 'desc' }],
       },
     };
     return configs[lookupKey] || null;
-  }, [lookupKey, rows]);
+  }, [lookupKey, rows, editDraft]);
 
   const lookupInitialSelectedKeys = useMemo(() => {
     if (!lookupConfig || !lookupKey) return [];
@@ -573,6 +599,7 @@ export default function ConsumableMaintenancePage() {
 
     const patch = EDITABLE_FIELDS.reduce((result, field) => ({ ...result, [field]: editDraft[field] ?? '' }), {});
     patch.serialNumber = serial;
+    patch.enabledDate = patch.enabledDate || activeConsumable.enabledDate || '';
     const changed = EDITABLE_FIELDS.some((field) => String(activeConsumable[field] ?? '') !== String(patch[field] ?? ''));
     if (!changed) {
       messageApi.info('耗材信息未发生变化');
@@ -630,7 +657,7 @@ export default function ConsumableMaintenancePage() {
       setRows(getConsumableMaintenanceRows());
       setBatchOpen(false);
       resetBatchState();
-      messageApi.success('上传成功！');
+      messageApi.success('校验及保存流程演示完成（原型未解析实际 Excel 数据）');
       return;
     }
 
@@ -700,9 +727,9 @@ export default function ConsumableMaintenancePage() {
           <Select
             value={draftFilters.building || undefined}
             allowClear
-            disabled={!draftFilters.city}
             placeholder={draftFilters.city ? '请选择' : '请先选择城市'}
             options={(BUILDING_BY_CITY[draftFilters.city] || []).map((value) => ({ label: value, value }))}
+            onOpenChange={(open) => { if (open && !draftFilters.city) messageApi.warning('请先选择城市！'); }}
             onChange={handleBuildingFilterChange}
           />
         </QueryClearArea>
@@ -836,9 +863,9 @@ export default function ConsumableMaintenancePage() {
               allowClear
               value={editDraft?.building || undefined}
               style={{ width: '100%' }}
-              disabled={!editDraft?.city}
               placeholder={editDraft?.city ? '请选择' : '请先选择城市'}
               options={(BUILDING_BY_CITY[editDraft?.city] || []).map((value) => ({ label: value, value }))}
+              onOpenChange={(open) => { if (open && !editDraft?.city) messageApi.warning('请先选择城市！'); }}
               onChange={(value) => updateEdit('building', value || '')}
             />
           ))}
@@ -1037,7 +1064,7 @@ export default function ConsumableMaintenancePage() {
       />
 
       <Modal
-        title={`耗材卡片信息${source?.tag ? `：${source.tag}` : ''}`}
+        title={`${cardMode === 'edit' ? '耗材详细信息' : '耗材卡片信息'}${source?.tag ? `：${source.tag}` : ''}`}
         open={cardOpen}
         width={1080}
         style={{ maxWidth: 'calc(100vw - 48px)' }}
@@ -1100,7 +1127,7 @@ export default function ConsumableMaintenancePage() {
               type="success"
               showIcon
               message="文件校验通过"
-              description="当前文件全部行校验通过，可点击“保存”执行整文件写入。"
+              description="当前文件全部行校验通过，可点击“保存”完成原型流程；正式落数需接入 Excel 解析。"
             />
           ) : null}
 
