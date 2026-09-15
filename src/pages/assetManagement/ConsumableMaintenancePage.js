@@ -21,7 +21,6 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
-  Edit3,
   FileSpreadsheet,
   Search,
   UploadCloud,
@@ -826,7 +825,7 @@ export default function ConsumableMaintenancePage() {
       width: 90,
       fixed: 'right',
       align: 'center',
-      render: (_, row) => <Button type="link" icon={<Edit3 size={14} />} onClick={() => openCard(row, 'edit')}>编辑</Button>,
+      render: (_, row) => <Button type="link" onClick={() => openCard(row, 'edit')}>编辑</Button>,
     },
   ];
 
