@@ -502,19 +502,6 @@ export default function ConsumableMaintenancePage() {
     setLookupKey('');
   };
 
-  const handleEditSelected = () => {
-    if (!selectedRowKeys.length) {
-      messageApi.warning('请选中要编辑的数据！');
-      return;
-    }
-    if (selectedRowKeys.length > 1) {
-      messageApi.warning('只能选中一条要编辑的数据！');
-      return;
-    }
-    const row = rows.find((item) => item.id === selectedRowKeys[0]);
-    if (row) openCard(row, 'edit');
-  };
-
   const updateEdit = (field, value) => {
     setEditDraft((current) => {
       if (!current) return current;
@@ -772,7 +759,7 @@ export default function ConsumableMaintenancePage() {
         </QueryClearArea>
       </QueryItem>
       <QueryItem label="成本中心">{renderLookup('costCenter', '请选择成本中心')}</QueryItem>
-      <QueryItem label="购置日期">
+      <QueryItem label="购买日期">
         <QueryClearArea onClear={() => updateFilter('purchaseDate', [])}>
           <RangePicker style={{ width: '100%' }} value={draftFilters.purchaseDate.length === 2 ? draftFilters.purchaseDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('purchaseDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
         </QueryClearArea>
@@ -833,6 +820,14 @@ export default function ConsumableMaintenancePage() {
     sortableColumn('成本中心', 'costCenter', 180),
     sortableColumn('仓库', 'warehouse', 180),
     sortableColumn('启用日期', 'enabledDate', 120),
+    {
+      title: '操作',
+      key: 'action',
+      width: 90,
+      fixed: 'right',
+      align: 'center',
+      render: (_, row) => <Button type="link" icon={<Edit3 size={14} />} onClick={() => openCard(row, 'edit')}>编辑</Button>,
+    },
   ];
 
   const source = cardMode === 'edit' && editDraft ? editDraft : activeConsumable;
@@ -874,7 +869,7 @@ export default function ConsumableMaintenancePage() {
           ))}
         </DetailItem>
         <DetailItem label="原值">{amount(source.originalValue)}</DetailItem>
-        <DetailItem label="购置日期">{displayText(source.purchaseDate)}</DetailItem>
+        <DetailItem label="购买日期">{displayText(source.purchaseDate)}</DetailItem>
         <DetailItem label="耗材责任人">
           {cardMode === 'edit' ? (
             <LookupInput value={editDraft?.ownerId ? `${editDraft.ownerId}.${editDraft.ownerName}` : ''} placeholder="请选择责任人" onOpen={() => setLookupKey('editOwner')} />
@@ -914,7 +909,7 @@ export default function ConsumableMaintenancePage() {
             <DatePicker
               style={{ width: '100%' }}
               value={editDraft?.enabledDate ? dayjs(editDraft.enabledDate) : null}
-              placeholder="留空按既有购置日期规则计算"
+              placeholder="留空按既有购买日期规则计算"
               onChange={(date) => updateEdit('enabledDate', date ? date.format('YYYY-MM-DD') : '')}
             />
           ) : displayText(source.enabledDate)}
@@ -1024,7 +1019,6 @@ export default function ConsumableMaintenancePage() {
       <Card size="small" title="耗材列表" extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
         <div className="mb-3 flex justify-end">
           <Space wrap>
-            <Button icon={<Edit3 size={14} />} onClick={handleEditSelected}>编辑</Button>
             <Button icon={<FileSpreadsheet size={14} />} onClick={() => setBatchOpen(true)}>批量修改</Button>
             <Button icon={<Download size={14} />} onClick={handleTemplateDownload}>模板下载</Button>
             <Button icon={<Download size={14} />} onClick={handleExport}>导出</Button>
