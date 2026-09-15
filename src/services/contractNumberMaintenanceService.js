@@ -15,16 +15,13 @@ export const CONTRACT_NUMBER_EDIT_FIELDS = [
   'amount',
   'status',
   'warehouse',
-  'remarks',
+  'usageDescription',
   'scrapDate',
   'scrapReason',
-  'claimReason',
-  'claimDescription',
 ];
 
 const ALLOWED_PATCH_FIELDS = new Set(CONTRACT_NUMBER_EDIT_FIELDS);
 const STATUS_OPTIONS = new Set(['在用-使用中', '在库（新）', '在库（旧）', '已报废']);
-const CLAIM_REASON_OPTIONS = new Set(['', '4级升5级', '5级（含）以上入职', '业务使用']);
 const WAREHOUSE_OPTIONS = new Set(['I10086.集团合约机库']);
 const PHONE_PATTERN = /^(13|14|15|17|18)\d{9}$/;
 
@@ -89,6 +86,7 @@ function buildTransaction(row, operationDate, changes) {
     status: row.status || '',
     warehouse: row.warehouse || '',
     remarks: row.remarks || '',
+    usageDescription: row.usageDescription || '',
     changes,
   };
 }
@@ -123,21 +121,15 @@ function canonicalizePatch(row, patch) {
   const warehouse = Object.prototype.hasOwnProperty.call(patch, 'warehouse')
     ? String(patch.warehouse || '')
     : String(row.warehouse || '');
-  const remarks = Object.prototype.hasOwnProperty.call(patch, 'remarks')
-    ? String(patch.remarks || '')
-    : String(row.remarks || '');
+  const usageDescription = Object.prototype.hasOwnProperty.call(patch, 'usageDescription')
+    ? String(patch.usageDescription || '')
+    : String(row.usageDescription || '');
   const scrapDate = Object.prototype.hasOwnProperty.call(patch, 'scrapDate')
     ? String(patch.scrapDate || '')
     : String(row.scrapDate || '');
   const scrapReason = Object.prototype.hasOwnProperty.call(patch, 'scrapReason')
     ? String(patch.scrapReason || '')
     : String(row.scrapReason || '');
-  const claimReason = Object.prototype.hasOwnProperty.call(patch, 'claimReason')
-    ? String(patch.claimReason || '')
-    : String(row.claimReason || '');
-  const claimDescription = Object.prototype.hasOwnProperty.call(patch, 'claimDescription')
-    ? String(patch.claimDescription || '')
-    : String(row.claimDescription || '');
 
   if (!useCompany || !COMPANY_BY_NAME.has(useCompany)) throw new Error('使用公司不能为空且必须有效');
   if (!ownerId || !OWNER_BY_ID.has(ownerId)) throw new Error('责任人不能为空且必须有效');
@@ -156,8 +148,6 @@ function canonicalizePatch(row, patch) {
   if (contractStartDate && contractEndDate && contractStartDate > contractEndDate) {
     throw new Error('合约期限开始日期不得晚于结束日期');
   }
-  if (remarks.length > 120) throw new Error('备注最多120字');
-  if (!CLAIM_REASON_OPTIONS.has(claimReason)) throw new Error('领用原因无效');
 
   if (status.includes('在用')) {
     if (warehouse) throw new Error('仓库和状态不匹配。');
@@ -193,11 +183,9 @@ function canonicalizePatch(row, patch) {
   next.amount = numberAmount;
   next.status = status;
   next.warehouse = warehouse;
-  next.remarks = remarks;
+  next.usageDescription = usageDescription;
   next.scrapDate = scrapDate;
   next.scrapReason = scrapReason;
-  next.claimReason = claimReason;
-  next.claimDescription = claimDescription;
   return next;
 }
 
