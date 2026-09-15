@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -105,22 +105,29 @@ const INITIAL_BATCH_ROWS = [
 }));
 
 const INITIAL_HISTORY_ROWS = [
-  ['history-1', 'TPB-202604100001', '114132601682', '2026-04-10 10:35:20', '10.2.156.220', '刘建', 1, '预打印', '打印成功'],
-  ['history-2', 'TPB-202604100001', '114132601681', '2026-04-10 10:35:20', '10.2.156.220', '刘建', 2, '预打印', '打印成功'],
-  ['history-3', 'TPB-202603310001', '114132601679', '2026-03-31 15:22:08', '10.2.156.45', '刘建', 1, '预打印', '打印成功'],
-].map(([id, batch, tag, printedAt, printIp, printer, copies, source, printStatus]) => ({
-  id, batch, tag, printedAt, printIp, printer, copies, source, printStatus,
+  ['history-1', 'PRINT-20260410-001', 'TPB-202604100001', '114132601682', '2026-04-10 10:35:20', '10.2.156.220', '刘建', 1, '预打印', '打印成功', '-'],
+  ['history-2', 'PRINT-20260410-002', 'TPB-202604100001', '114132601681', '2026-04-10 10:35:20', '10.2.156.220', '刘建', 2, '预打印', '打印成功', '-'],
+  ['history-3', 'PRINT-20260331-001', 'TPB-202603310001', '114132601679', '2026-03-31 15:22:08', '10.2.156.45', '刘建', 1, '预打印', '打印成功', '-'],
+  ['history-4', 'PRINT-20260320-001', 'TPB-202603200001', '123132600871', '2026-03-20 09:10:11', '10.2.156.45', '刘建', 1, '预打印', '打印成功', '-'],
+  ['history-5', 'PRINT-20260209-001', 'TPB-202602090001', '132121800162', '2026-02-09 11:08:32', '10.2.156.45', '刘建', 1, '接收入库打印', '打印成功', '-'],
+].map(([id, printTaskId, batch, tag, printedAt, printIp, printer, copies, source, printStatus, failureReason]) => ({
+  id, printTaskId, batch, tag, printedAt, printIp, printer, copies, source, printStatus, failureReason,
 }));
 
-const INITIAL_LABEL_DETAIL_ROWS = INITIAL_HISTORY_ROWS.map((row) => ({
-  id: `label-${row.id}`,
-  batch: row.batch,
-  tag: row.tag,
-  printCount: row.copies,
-  printed: '是',
-  source: row.source,
-  assetRowId: '',
-}));
+const INITIAL_LABEL_DETAIL_ROWS = [
+  { id: 'label-b1-1', batch: 'TPB-202604100001', tag: '114132601680', printCount: 0, printed: '否', source: '预打印', assetRowId: '' },
+  { id: 'label-b1-2', batch: 'TPB-202604100001', tag: '114132601681', printCount: 2, printed: '是', source: '预打印', assetRowId: '' },
+  { id: 'label-b1-3', batch: 'TPB-202604100001', tag: '114132601682', printCount: 1, printed: '是', source: '预打印', assetRowId: '' },
+  { id: 'label-b2-1', batch: 'TPB-202603310001', tag: '114132601676', printCount: 0, printed: '否', source: '预打印', assetRowId: '' },
+  { id: 'label-b2-2', batch: 'TPB-202603310001', tag: '114132601677', printCount: 0, printed: '否', source: '预打印', assetRowId: '' },
+  { id: 'label-b2-3', batch: 'TPB-202603310001', tag: '114132601678', printCount: 0, printed: '否', source: '预打印', assetRowId: '' },
+  { id: 'label-b2-4', batch: 'TPB-202603310001', tag: '114132601679', printCount: 1, printed: '是', source: '预打印', assetRowId: '' },
+  { id: 'label-b3-1', batch: 'TPB-202603200001', tag: '123132600871', printCount: 1, printed: '是', source: '预打印', assetRowId: '' },
+  { id: 'label-b4-1', batch: 'TPB-202603060021', tag: '114132601675', printCount: 0, printed: '否', source: '预打印', assetRowId: '' },
+  { id: 'label-b5-1', batch: 'TPB-202602090001', tag: '132121800162', printCount: 1, printed: '是', source: '接收入库打印', assetRowId: 'tag-print-1' },
+  { id: 'label-b5-2', batch: 'TPB-202602090001', tag: '132111800605-V', printCount: 0, printed: '否', source: '接收入库打印', assetRowId: 'tag-print-2' },
+  { id: 'label-b5-3', batch: 'TPB-202602090001', tag: '115121700002', printCount: 0, printed: '否', source: '接收入库打印', assetRowId: 'tag-print-3' },
+];
 
 const DEFAULT_BATCH_FILTERS = {
   batch: '', printed: '', creator: '', orderNo: '', assetTag: '', createdFrom: '', createdTo: '',
@@ -143,12 +150,14 @@ const HIGH_CATEGORY_OPTIONS = [
   { label: '电脑配件', value: '电脑配件' },
   { label: '电脑外设', value: '电脑外设' },
   { label: '办公设备', value: '办公设备' },
+  { label: '家电（ES权限）', value: '家电（ES权限）' },
   { label: '合约机', value: '合约机' },
 ];
 const HIGH_SUBCATEGORY_OPTIONS = {
   电脑配件: ['内存', '内置硬盘', '板卡'],
   电脑外设: ['移动硬盘', '移动光驱'],
-  办公设备: ['会议白板', '碎纸机', '饮水机'],
+  办公设备: ['会议白板', '验钞机', '考勤机', '碎纸机'],
+  '家电（ES权限）': ['微波炉', '电扇|空调扇', '饮水机', '咖啡机', '电暖器', '机顶盒'],
   合约机: ['合约手机', '合约电话卡'],
 };
 const FURNITURE_OPTIONS = [
@@ -175,11 +184,7 @@ const INITIAL_SEQUENCE_POOL = {
   'high:N': 1,
   furniture: 617957,
   mobile: 3792,
-  'spare:CPU': 7,
-  'spare:Card': 12,
-  'spare:HD': 35,
-  'spare:ME': 20,
-  'spare:SP': 6,
+  spare: 35,
 };
 
 function normalizeText(value) {
@@ -227,6 +232,10 @@ function makeHistoryId() {
   return `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function makePrintTaskId() {
+  return `PRINT-${dayjs().format('YYYYMMDDHHmmssSSS')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+}
+
 function escapeCsvValue(value) {
   const original = value === undefined || value === null ? '' : String(value);
   const safe = /^[\s]*[=+\-@]/.test(original) ? `'${original}` : original;
@@ -261,15 +270,26 @@ function DateFilter({ value, onChange }) {
   );
 }
 
-function PrintCopiesModal({ open, copies, onChange, onConfirm, onCancel }) {
+function PrintCopiesModal({ open, copies, onChange, onConfirm, onCancel, confirmLoading }) {
   return (
-    <Modal title="打印几份" open={open} onOk={onConfirm} onCancel={onCancel} okText="确认打印" cancelText="取消" width={440}>
+    <Modal
+      title="打印几份"
+      open={open}
+      onOk={onConfirm}
+      onCancel={onCancel}
+      okText="确认打印"
+      cancelText="取消"
+      width={440}
+      confirmLoading={confirmLoading}
+      maskClosable={!confirmLoading}
+      keyboard={!confirmLoading}
+    >
       <div className="flex items-center gap-4 py-4">
         <Typography.Text>打印份数</Typography.Text>
-        <InputNumber min={1} max={99} precision={0} value={copies} onChange={(value) => onChange(value || 1)} />
+        <InputNumber min={1} max={99} precision={0} value={copies} onChange={(value) => onChange(value || 1)} disabled={confirmLoading} />
       </div>
       <Typography.Text type="secondary">
-        原型按“打印成功”模拟：成功后才累计打印次数并写入包含打印份数、来源和状态的详细日志；正式环境以 Brother 打印结果回执为准。
+        原型按“打印成功”模拟：成功后才累计打印次数并写入包含打印任务、打印份数、来源和状态的详细日志；正式环境以 Brother 打印结果回执为准。
       </Typography.Text>
     </Modal>
   );
@@ -310,12 +330,28 @@ function getHighPrefix(category, subCategory) {
   return 'QT';
 }
 
-function getSequenceKey({ rule, ledger, assetType, normalYear, highCategory, highSubCategory, sparePartType }) {
+function getSequenceKey({ rule, ledger, assetType, normalYear, highCategory, highSubCategory }) {
   if (rule === 'normal') return `normal:${ledger}:${assetType}:${normalYear?.format('YY') || ''}`;
   if (rule === 'high') return `high:${getHighPrefix(highCategory, highSubCategory)}`;
   if (rule === 'furniture') return 'furniture';
   if (rule === 'mobile') return 'mobile';
-  return `spare:${sparePartType || ''}`;
+  return 'spare';
+}
+
+function getNormalSequenceValue(sequencePool, ledger, assetType, normalYear) {
+  if (!assetType || !normalYear) return 0;
+  const selectedYear = Number(normalYear.format('YY'));
+  const exactKey = `normal:${ledger}:${assetType}:${String(selectedYear).padStart(2, '0')}`;
+  if (Object.prototype.hasOwnProperty.call(sequencePool, exactKey)) return Number(sequencePool[exactKey] || 0);
+
+  const prefix = `normal:${ledger}:${assetType}:`;
+  const previous = Object.entries(sequencePool)
+    .filter(([key]) => key.startsWith(prefix))
+    .map(([key, value]) => ({ year: Number(key.slice(prefix.length)), value: Number(value || 0) }))
+    .filter((item) => Number.isInteger(item.year) && item.year < selectedYear)
+    .sort((a, b) => b.year - a.year)[0];
+
+  return previous?.value || 0;
 }
 
 function getRuleMax(rule) {
@@ -332,6 +368,7 @@ function GenerateLabelsPage({
   sequencePool,
   reserveSequence,
   existingTags,
+  existingBatchNumbers,
 }) {
   const [ledger, setLedger] = useState('101');
   const [rule, setRule] = useState('normal');
@@ -348,9 +385,12 @@ function GenerateLabelsPage({
   const [furnitureMaxInput, setFurnitureMaxInput] = useState(sequencePool.furniture || 617957);
   const [generatedBatch, setGeneratedBatch] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const generatingRef = useRef(false);
 
-  const sequenceKey = getSequenceKey({ rule, ledger, assetType, normalYear, highCategory, highSubCategory, sparePartType });
-  const currentPoolValue = sequencePool[sequenceKey] ?? 0;
+  const sequenceKey = getSequenceKey({ rule, ledger, assetType, normalYear, highCategory, highSubCategory });
+  const currentPoolValue = rule === 'normal'
+    ? getNormalSequenceValue(sequencePool, ledger, assetType, normalYear)
+    : Number(sequencePool[sequenceKey] ?? 0);
   const currentMax = rule === 'furniture' ? Number(furnitureMaxInput || 0) : currentPoolValue;
 
   const validateRule = () => {
@@ -392,21 +432,30 @@ function GenerateLabelsPage({
     return `${sparePartType}${String(sequence).padStart(5, '0')}`;
   };
 
+  const releaseGenerating = () => {
+    setTimeout(() => {
+      generatingRef.current = false;
+      setGenerating(false);
+    }, 0);
+  };
+
   const handleGenerate = () => {
-    if (generating) return;
+    if (generatingRef.current) return;
     const error = validateRule();
     if (error) {
       messageApi.error(error);
       return;
     }
 
+    generatingRef.current = true;
     setGenerating(true);
     try {
       const start = Number(currentMax) + 1;
       const end = start + Number(mainCount) - 1;
       const batchNo = makeBatchNo();
-      const labels = [];
+      if (existingBatchNumbers.has(batchNo)) throw new Error('标签批次号重复，已阻止生成');
 
+      const labels = [];
       for (let index = 0; index < Number(mainCount); index += 1) {
         const mainTag = buildMainTag(start + index);
         if (existingTags.has(mainTag) || labels.some((row) => row.tag === mainTag)) throw new Error(`标签号 ${mainTag} 已存在，禁止重复生成`);
@@ -430,15 +479,17 @@ function GenerateLabelsPage({
         remark: remark || '-',
       };
 
+      const committed = onGenerated(batch, labels);
+      if (!committed) throw new Error('标签批次写入失败，流水号未推进');
+
       reserveSequence(sequenceKey, end);
       if (rule === 'furniture') setFurnitureMaxInput(end);
       setGeneratedBatch(batch);
-      onGenerated(batch, labels);
       messageApi.success(`标签生成成功，共生成 ${labels.length} 条标签明细`);
-    } catch (error) {
-      messageApi.error(error.message || '标签生成失败');
+    } catch (generateError) {
+      messageApi.error(generateError.message || '标签生成失败');
     } finally {
-      setGenerating(false);
+      releaseGenerating();
     }
   };
 
@@ -555,7 +606,7 @@ function GenerateLabelsPage({
 
       <div className="sticky bottom-0 z-30 flex justify-center gap-3 border-t border-[#e5e7eb] bg-white/95 px-5 py-3 shadow-[0_-6px_20px_rgba(15,23,42,0.06)] backdrop-blur">
         <Button className="min-w-[96px]" icon={<ArrowLeft size={14} />} onClick={onBack}>返回</Button>
-        <Button type="primary" className="min-w-[116px]" icon={<Tags size={14} />} loading={generating} onClick={handleGenerate}>生成标签</Button>
+        <Button type="primary" className="min-w-[116px]" icon={<Tags size={14} />} loading={generating} disabled={generating} onClick={handleGenerate}>生成标签</Button>
         {generatedBatch && (
           <Button className="min-w-[116px]" icon={<Printer size={14} />} onClick={() => onOpenLabels(generatedBatch.batch)}>打印标签</Button>
         )}
@@ -588,6 +639,8 @@ export default function TagPrintingPage() {
   const [labelSelectedKeys, setLabelSelectedKeys] = useState([]);
   const [printTask, setPrintTask] = useState(null);
   const [printCopies, setPrintCopies] = useState(1);
+  const [printSubmitting, setPrintSubmitting] = useState(false);
+  const printSubmittingRef = useRef(false);
   const [sequencePool, setSequencePool] = useState(INITIAL_SEQUENCE_POOL);
 
   const filteredRows = useMemo(() => rows.filter((row) => (
@@ -630,7 +683,11 @@ export default function TagPrintingPage() {
     && includesText(row.printed, labelAppliedFilters.printed)
   )).sort((a, b) => textCompare(a.tag, b.tag)), [labelAppliedFilters, labelBatch, labelRows]);
 
-  const existingTags = useMemo(() => new Set(labelRows.map((row) => row.tag)), [labelRows]);
+  const existingTags = useMemo(() => new Set([
+    ...labelRows.map((row) => row.tag),
+    ...rows.map((row) => row.assetTag),
+  ].filter(Boolean)), [labelRows, rows]);
+  const existingBatchNumbers = useMemo(() => new Set(batchRows.map((row) => row.batch).filter(Boolean)), [batchRows]);
   const statusOptions = useMemo(() => uniqueValues(rows, 'assetStatus').map((value) => ({ label: value, value })), [rows]);
   const cityOptions = useMemo(() => uniqueValues(rows, 'city').map((value) => ({ label: value, value })), [rows]);
   const userLookupData = useMemo(() => {
@@ -677,7 +734,7 @@ export default function TagPrintingPage() {
       return;
     }
     setPrintCopies(1);
-    setPrintTask({ type: 'asset', ids: targetIds, actionName, source: '标签打印' });
+    setPrintTask({ type: 'asset', ids: targetIds, actionName, source: '标签打印', printTaskId: makePrintTaskId() });
   };
 
   const requestLabelPrint = (targetIds, actionName, batch) => {
@@ -687,13 +744,14 @@ export default function TagPrintingPage() {
     }
     const source = batchRows.find((row) => row.batch === batch)?.source || '预打印';
     setPrintCopies(1);
-    setPrintTask({ type: 'label', ids: targetIds, actionName, batch, source });
+    setPrintTask({ type: 'label', ids: targetIds, actionName, batch, source, printTaskId: makePrintTaskId() });
   };
 
-  const appendPrintLogs = (targets, { batch, source, copies, operationTime }) => {
+  const appendPrintLogs = (targets, { batch, source, copies, operationTime, printTaskId }) => {
     setHistoryRows((current) => [
       ...targets.map((row) => ({
         id: makeHistoryId(),
+        printTaskId,
         batch,
         tag: row.assetTag || row.tag,
         printedAt: operationTime,
@@ -702,74 +760,100 @@ export default function TagPrintingPage() {
         copies,
         source,
         printStatus: '打印成功',
+        failureReason: '-',
       })),
       ...current,
     ]);
   };
 
+  const releasePrintSubmitting = () => {
+    setTimeout(() => {
+      printSubmittingRef.current = false;
+      setPrintSubmitting(false);
+    }, 0);
+  };
+
   const confirmPrint = () => {
-    if (!printTask) return;
+    if (!printTask || printSubmittingRef.current) return;
     const copies = Number(printCopies || 0);
     if (!Number.isInteger(copies) || copies < 1 || copies > 99) {
       messageApi.error('打印份数必须为1～99的整数');
       return;
     }
 
-    const operationTime = dayjs().format('YYYY-MM-DD HH:mm:ss');
+    printSubmittingRef.current = true;
+    setPrintSubmitting(true);
+    try {
+      const operationTime = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
-    if (printTask.type === 'asset') {
-      const idSet = new Set(printTask.ids);
-      const targets = rows.filter((row) => idSet.has(row.id));
-      const batch = makeBatchNo();
-      setRows((current) => current.map((row) => (
-        idSet.has(row.id) ? { ...row, printCount: Number(row.printCount || 0) + copies } : row
-      )));
-      setBatchRows((current) => [{
-        id: `batch-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        batch,
-        orderNo: '-',
-        labelCount: targets.length,
-        printed: '是',
-        creator: CURRENT_USER,
-        createdAt: dayjs().format('YYYY-MM-DD'),
-        source: '标签打印',
-        remark: '标签打印',
-      }, ...current]);
-      setLabelRows((current) => [
-        ...targets.map((row) => ({
-          id: `${batch}-${row.assetTag}`,
-          batch,
-          tag: row.assetTag,
-          printCount: copies,
-          printed: '是',
-          source: '标签打印',
-          assetRowId: row.id,
-        })),
-        ...current,
-      ]);
-      appendPrintLogs(targets, { batch, source: '标签打印', copies, operationTime });
-      setSelectedRowKeys([]);
-    } else {
-      const idSet = new Set(printTask.ids);
-      const targets = labelRows.filter((row) => idSet.has(row.id));
-      setLabelRows((current) => current.map((row) => (
-        idSet.has(row.id) ? { ...row, printCount: Number(row.printCount || 0) + copies, printed: '是' } : row
-      )));
-      const linkedAssetIds = new Set(targets.map((row) => row.assetRowId).filter(Boolean));
-      if (linkedAssetIds.size) {
+      if (printTask.type === 'asset') {
+        const idSet = new Set(printTask.ids);
+        const targets = rows.filter((row) => idSet.has(row.id));
+        const batch = makeBatchNo();
         setRows((current) => current.map((row) => (
-          linkedAssetIds.has(row.id) ? { ...row, printCount: Number(row.printCount || 0) + copies } : row
+          idSet.has(row.id) ? { ...row, printCount: Number(row.printCount || 0) + copies } : row
         )));
+        setBatchRows((current) => [{
+          id: `batch-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          batch,
+          orderNo: '-',
+          labelCount: targets.length,
+          printed: '是',
+          creator: CURRENT_USER,
+          createdAt: dayjs().format('YYYY-MM-DD'),
+          source: '标签打印',
+          remark: '标签打印',
+        }, ...current]);
+        setLabelRows((current) => [
+          ...targets.map((row) => ({
+            id: `${batch}-${row.assetTag}`,
+            batch,
+            tag: row.assetTag,
+            printCount: copies,
+            printed: '是',
+            source: '标签打印',
+            assetRowId: row.id,
+          })),
+          ...current,
+        ]);
+        appendPrintLogs(targets, {
+          batch,
+          source: '标签打印',
+          copies,
+          operationTime,
+          printTaskId: printTask.printTaskId,
+        });
+        setSelectedRowKeys([]);
+      } else {
+        const idSet = new Set(printTask.ids);
+        const targets = labelRows.filter((row) => idSet.has(row.id));
+        setLabelRows((current) => current.map((row) => (
+          idSet.has(row.id) ? { ...row, printCount: Number(row.printCount || 0) + copies, printed: '是' } : row
+        )));
+        const linkedAssetIds = new Set(targets.map((row) => row.assetRowId).filter(Boolean));
+        if (linkedAssetIds.size) {
+          setRows((current) => current.map((row) => (
+            linkedAssetIds.has(row.id) ? { ...row, printCount: Number(row.printCount || 0) + copies } : row
+          )));
+        }
+        setBatchRows((current) => current.map((row) => (
+          row.batch === printTask.batch ? { ...row, printed: '是' } : row
+        )));
+        appendPrintLogs(targets, {
+          batch: printTask.batch,
+          source: printTask.source,
+          copies,
+          operationTime,
+          printTaskId: printTask.printTaskId,
+        });
+        setLabelSelectedKeys([]);
       }
-      setBatchRows((current) => current.map((row) => (
-        row.batch === printTask.batch ? { ...row, printed: '是' } : row
-      )));
-      appendPrintLogs(targets, { batch: printTask.batch, source: printTask.source, copies, operationTime });
-      setLabelSelectedKeys([]);
-    }
 
-    messageApi.success(`${printTask.actionName}成功，打印 ${copies} 份；累计次数与详细日志已同步`);
-    setPrintTask(null);
+      messageApi.success(`${printTask.actionName}成功，打印 ${copies} 份；累计次数与详细日志已同步`);
+      setPrintTask(null);
+    } finally {
+      releasePrintSubmitting();
+    }
   };
 
   const handleExport = () => {
@@ -813,10 +897,11 @@ export default function TagPrintingPage() {
   const handleGenerated = (batch, labels) => {
     if (batchRows.some((row) => row.batch === batch.batch)) {
       messageApi.error('标签批次号重复，已阻止写入');
-      return;
+      return false;
     }
     setBatchRows((current) => [batch, ...current]);
     setLabelRows((current) => [...labels, ...current]);
+    return true;
   };
 
   const columns = [
@@ -856,11 +941,13 @@ export default function TagPrintingPage() {
   ];
 
   const historyColumns = [
+    { title: '打印任务ID', dataIndex: 'printTaskId', width: 220, render: displayText },
     { title: '标签批次', dataIndex: 'batch', width: 230, render: displayText },
     { title: '标签号', dataIndex: 'tag', width: 180, render: displayText },
     { title: '来源', dataIndex: 'source', width: 130, render: displayText },
     { title: '打印份数', dataIndex: 'copies', width: 110, align: 'right', render: displayText },
     { title: '打印状态', dataIndex: 'printStatus', width: 120, render: displayText },
+    { title: '失败原因', dataIndex: 'failureReason', width: 180, render: displayText },
     { title: '打印时间', dataIndex: 'printedAt', width: 180, render: displayText },
     { title: '打印IP', dataIndex: 'printIp', width: 150, render: displayText },
     { title: '打印人', dataIndex: 'printer', width: 120, render: displayText },
@@ -881,6 +968,7 @@ export default function TagPrintingPage() {
           sequencePool={sequencePool}
           reserveSequence={reserveSequence}
           existingTags={existingTags}
+          existingBatchNumbers={existingBatchNumbers}
         />
       </>
     );
@@ -989,7 +1077,7 @@ export default function TagPrintingPage() {
           </Space>
         </Modal>
 
-        <Modal title="打印历史" open={historyOpen} width={1250} footer={null} onCancel={() => setHistoryOpen(false)}>
+        <Modal title="打印历史" open={historyOpen} width={1450} footer={null} onCancel={() => setHistoryOpen(false)}>
           <QueryBar
             onQuery={() => {
               if (invalidRange(historyDraftFilters.printedFrom, historyDraftFilters.printedTo)) {
@@ -1013,7 +1101,16 @@ export default function TagPrintingPage() {
           <Table className="mt-2" rowKey="id" size="small" bordered columns={historyColumns} dataSource={filteredHistoryRows} pagination={{ pageSize: 10, showSizeChanger: true }} scroll={{ x: 'max-content' }} />
         </Modal>
 
-        <PrintCopiesModal open={Boolean(printTask)} copies={printCopies} onChange={setPrintCopies} onConfirm={confirmPrint} onCancel={() => setPrintTask(null)} />
+        <PrintCopiesModal
+          open={Boolean(printTask)}
+          copies={printCopies}
+          onChange={setPrintCopies}
+          onConfirm={confirmPrint}
+          onCancel={() => {
+            if (!printSubmitting) setPrintTask(null);
+          }}
+          confirmLoading={printSubmitting}
+        />
       </Space>
     );
   }
@@ -1097,7 +1194,16 @@ export default function TagPrintingPage() {
         }}
       />
 
-      <PrintCopiesModal open={Boolean(printTask)} copies={printCopies} onChange={setPrintCopies} onConfirm={confirmPrint} onCancel={() => setPrintTask(null)} />
+      <PrintCopiesModal
+        open={Boolean(printTask)}
+        copies={printCopies}
+        onChange={setPrintCopies}
+        onConfirm={confirmPrint}
+        onCancel={() => {
+          if (!printSubmitting) setPrintTask(null);
+        }}
+        confirmLoading={printSubmitting}
+      />
     </Space>
   );
 }
