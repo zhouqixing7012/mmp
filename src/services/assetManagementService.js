@@ -179,6 +179,13 @@ function isValidDate(value) {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
+function resolveSingleEditEnabledDate(row, requestedValue) {
+  if (requestedValue) return requestedValue;
+  // 正式系统留空时调用既有“按购置日期计算启用日期”规则。
+  // 原型没有该算法来源，不能编造公式；这里保留当前可见结果，仅表达“留空不会直接落空值”。
+  return row.enabledDate || '';
+}
+
 function buildCanonicalConsumablePatch(row, patch, rows) {
   const next = { ...patch };
   const company = Object.prototype.hasOwnProperty.call(patch, 'company') ? String(patch.company || '') : String(row.company || '');
@@ -190,7 +197,8 @@ function buildCanonicalConsumablePatch(row, patch, rows) {
   const warehouse = Object.prototype.hasOwnProperty.call(patch, 'warehouse') ? String(patch.warehouse || '') : String(row.warehouse || '');
   const mainTag = Object.prototype.hasOwnProperty.call(patch, 'mainTag') ? String(patch.mainTag || '') : String(row.mainTag || '');
   const serialNumber = Object.prototype.hasOwnProperty.call(patch, 'serialNumber') ? String(patch.serialNumber || '').trim() : String(row.serialNumber || '').trim();
-  const enabledDate = Object.prototype.hasOwnProperty.call(patch, 'enabledDate') ? String(patch.enabledDate || '') : String(row.enabledDate || '');
+  const requestedEnabledDate = Object.prototype.hasOwnProperty.call(patch, 'enabledDate') ? String(patch.enabledDate || '') : String(row.enabledDate || '');
+  const enabledDate = resolveSingleEditEnabledDate(row, requestedEnabledDate);
 
   if (!company || !CONSUMABLE_COMPANY_CODE_BY_NAME.has(company)) throw new Error('公司不能为空且必须有效');
   if (!ownerId || !CONSUMABLE_OWNER_BY_ID.has(ownerId)) throw new Error('责任人不能为空且必须有效');
@@ -227,6 +235,10 @@ function buildCanonicalConsumablePatch(row, patch, rows) {
   }
 
   const owner = CONSUMABLE_OWNER_BY_ID.get(ownerId);
+  if (!owner.department && !ownerId.startsWith('SOHU')) {
+    throw new Error('该员工对应的部门为空，请联系管理员添加');
+  }
+
   next.company = company;
   next.companyCode = CONSUMABLE_COMPANY_CODE_BY_NAME.get(company) || '';
   next.ownerId = ownerId;
