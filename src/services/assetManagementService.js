@@ -19,7 +19,7 @@ const CONSUMABLE_MAINTENANCE_EDIT_FIELDS = [
   'company', 'serialNumber', 'status', 'ownerId', 'ownerName', 'city', 'building', 'floor',
   'enabledDate', 'mainTag', 'mainAssetDesc', 'warehouse', 'usageDescription', 'remarks',
 ];
-const CONSUMABLE_ALLOWED_PATCH_FIELDS = new Set([...CONSUMABLE_MAINTENANCE_EDIT_FIELDS, 'updatedAt']);
+const CONSUMABLE_ALLOWED_PATCH_FIELDS = new Set(CONSUMABLE_MAINTENANCE_EDIT_FIELDS);
 const CONSUMABLE_STATUS_OPTIONS = new Set(['在用', '在库', '维修', '借用中', '待处理', '再利用', '已报废']);
 const CONSUMABLE_SCRAP_STATUSES = new Set(['已报废']);
 const CONSUMABLE_BUILDING_BY_CITY = {
@@ -40,9 +40,10 @@ const CONSUMABLE_WAREHOUSES_BY_COMPANY = {
   天津飞狐: ['WH004.天津耗材仓'],
 };
 const CONSUMABLE_MAIN_ASSET_BY_TAG = new Map([
-  ['114111700922', '服务器.Dell PowerEdge R740'],
-  ['114121700944', '服务器.HPE ProLiant DL380 Gen10'],
-  ['114111700955', '台式机.Dell OptiPlex 7090'],
+  ['114111700922', { desc: '服务器.Dell PowerEdge R740', status: '在用' }],
+  ['114121700944', { desc: '服务器.HPE ProLiant DL380 Gen10', status: '在用' }],
+  ['114111700955', { desc: '台式机.Dell OptiPlex 7090', status: '在用' }],
+  ['114111700966', { desc: '台式机.历史报废主资产', status: '已报废' }],
 ]);
 const LEGACY_INVENTORY_TYPE_VALUES = new Set(['普通盘点', '快速盘点', '扫码枪盘点']);
 
@@ -223,8 +224,10 @@ function buildCanonicalConsumablePatch(row, patch, rows) {
   if (!isValidDate(enabledDate)) throw new Error('启用日期格式无效');
   if (mainTag) {
     if (mainTag === row.tag) throw new Error('主资产标签号不得关联自身');
-    if (!CONSUMABLE_MAIN_ASSET_BY_TAG.has(mainTag)) throw new Error('主资产标签号无效');
-    next.mainAssetDesc = CONSUMABLE_MAIN_ASSET_BY_TAG.get(mainTag);
+    const mainAsset = CONSUMABLE_MAIN_ASSET_BY_TAG.get(mainTag);
+    if (!mainAsset) throw new Error('主资产标签号无效');
+    if (CONSUMABLE_SCRAP_STATUSES.has(mainAsset.status)) throw new Error('已报废主资产不允许关联');
+    next.mainAssetDesc = mainAsset.desc;
   } else {
     next.mainAssetDesc = '';
   }
@@ -252,7 +255,6 @@ function buildCanonicalConsumablePatch(row, patch, rows) {
   next.mainTag = mainTag;
   next.serialNumber = serialNumber;
   next.enabledDate = enabledDate;
-  delete next.updatedAt;
   return next;
 }
 
