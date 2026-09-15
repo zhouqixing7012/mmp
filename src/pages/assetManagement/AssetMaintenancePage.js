@@ -394,7 +394,10 @@ export default function AssetMaintenancePage() {
           { name: 'code', label: '成本中心编码', dataIndex: 'code' },
           { name: 'name', label: '成本中心', dataIndex: 'name' },
         ],
-        columns: [{ title: '成本中心编码', dataIndex: 'code' }, { title: '成本中心', dataIndex: 'name' }],
+        columns: [
+          { title: '成本中心编码', dataIndex: 'code' },
+          { title: '成本中心', dataIndex: 'name' },
+        ],
         valueField: 'code',
       },
       brands: {
@@ -433,7 +436,8 @@ export default function AssetMaintenancePage() {
       }).join(', ');
     }
     if (field === 'costCenters') {
-      return values.map((code) => rows.find((item) => costCenterCode(item.costCenter) === String(code))?.costCenter || code).join(', ');
+      const lookup = new Map(costCenterLookupRecords(rows).map((record) => [String(record.code), record.name]));
+      return values.map((code) => lookup.get(String(code)) || code).join(', ');
     }
     return values.join(', ');
   };
@@ -842,9 +846,7 @@ export default function AssetMaintenancePage() {
           <DetailItem label="资产大类">{displayText(source.majorCategory)}</DetailItem>
           <DetailItem label="资产小类">{displayText(source.minorCategory)}</DetailItem>
           <DetailItem label="资产说明">{displayText(source.assetDesc)}</DetailItem>
-          <DetailSpacer />
-          <DetailSpacer />
-          <DetailItem label="配置" span={3}>{displayText(source.config)}</DetailItem>
+          <DetailItem label="配置" span={2}>{displayText(source.config)}</DetailItem>
           <DetailItem label="数量">{count(source.quantity)}</DetailItem>
           <DetailItem label="单位">{displayText(source.unit)}</DetailItem>
           <DetailItem label="主资产标签号">{displayText(source.mainTag)}</DetailItem>
@@ -854,13 +856,11 @@ export default function AssetMaintenancePage() {
           <DetailItem label="购买日期">{displayText(source.purchaseDate)}</DetailItem>
           <DetailItem label="启用日期">{displayText(source.enabledDate)}</DetailItem>
           <DetailItem label="资产状态">
-            {editable('status', (
+            {assetMode === 'edit' && FORMAL_SCRAP_STATUSES.has(activeAsset?.status) ? displayText(source.status) : editable('status', (
               <Select
                 value={editDraft?.status || undefined}
                 style={{ width: '100%' }}
-                disabled={FORMAL_SCRAP_STATUSES.has(activeAsset?.status)}
-                options={(FORMAL_SCRAP_STATUSES.has(activeAsset?.status) ? [activeAsset.status, ...EDITABLE_STATUS_OPTIONS] : EDITABLE_STATUS_OPTIONS)
-                  .map((value) => ({ label: value, value, disabled: FORMAL_SCRAP_STATUSES.has(value) }))}
+                options={EDITABLE_STATUS_OPTIONS.map((value) => ({ label: value, value }))}
                 onChange={(value) => updateEdit('status', value)}
               />
             ))}
@@ -1213,7 +1213,7 @@ export default function AssetMaintenancePage() {
         onCancel={closeAsset}
         destroyOnHidden
       >
-        <Tabs activeKey={activeTab} items={tabItems} onChange={setActiveTab} />
+        {assetMode === 'edit' ? detailTab : <Tabs activeKey={activeTab} items={tabItems} onChange={setActiveTab} />}
       </Modal>
 
       <Modal
