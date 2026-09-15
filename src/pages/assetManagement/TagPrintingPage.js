@@ -24,6 +24,8 @@ const { RangePicker } = DatePicker;
 
 const CURRENT_USER = '系统管理员';
 const CURRENT_IP = '10.2.156.220';
+const MAX_MAIN_LABEL_COUNT = 500;
+const MAX_DETAIL_LABEL_COUNT = 5000;
 
 const DEFAULT_FILTERS = {
   companyCn: '',
@@ -92,51 +94,40 @@ const DEFAULT_ROWS = [
   },
 ];
 
-const INITIAL_PREPRINT_ROWS = [
-  ['batch-1', 'TPB-202604100001', '-', 3, '是', '刘建', '2026-04-10', '预打印批次'],
-  ['batch-2', 'TPB-202603310001', '-', 4, '是', '刘建', '2026-03-31', '预打印批次'],
-  ['batch-3', 'TPB-202603200001', '-', 1, '是', '刘建', '2026-03-20', '预打印批次'],
-  ['batch-4', 'TPB-202603060021', '-', 1, '否', '刘建', '2026-03-06', '待打印'],
-  ['batch-5', 'TPB-202603060001', '-', 1, '否', '刘建', '2026-03-06', '待打印'],
-  ['batch-6', 'TPB-202602090001', 'REC-202602090001', 3, '是', '刘建', '2026-02-09', '接收入库打印'],
-  ['batch-7', 'TPB-202602060001', 'REC-202602060021', 1, '是', '刘建', '2026-02-06', '接收入库打印'],
-  ['batch-8', 'TPB-202601290001', 'REC-202601290001', 2, '是', '刘建', '2026-01-29', '接收入库打印'],
-  ['batch-9', 'TPB-202601270001', '-', 1, '是', '刘建', '2026-01-27', '预打印批次'],
-  ['batch-10', 'TPB-202601260001', 'REC-202601260001', 2, '是', '刘建', '2026-01-26', '接收入库打印'],
-].map(([id, batch, orderNo, labelCount, printed, creator, createdAt, remark]) => ({
-  id, batch, orderNo, labelCount, printed, creator, createdAt, remark,
+const INITIAL_BATCH_ROWS = [
+  ['batch-1', 'TPB-202604100001', '-', 3, '是', '刘建', '2026-04-10', '预打印', '预打印批次'],
+  ['batch-2', 'TPB-202603310001', '-', 4, '是', '刘建', '2026-03-31', '预打印', '预打印批次'],
+  ['batch-3', 'TPB-202603200001', '-', 1, '是', '刘建', '2026-03-20', '预打印', '预打印批次'],
+  ['batch-4', 'TPB-202603060021', '-', 1, '否', '刘建', '2026-03-06', '预打印', '待打印'],
+  ['batch-5', 'TPB-202602090001', 'REC-202602090001', 3, '是', '刘建', '2026-02-09', '接收入库打印', '接收入库打印'],
+].map(([id, batch, orderNo, labelCount, printed, creator, createdAt, source, remark]) => ({
+  id, batch, orderNo, labelCount, printed, creator, createdAt, source, remark,
 }));
 
 const INITIAL_HISTORY_ROWS = [
-  ['history-1', 'TPB-202604100001', '114132601682', '2026-04-10 10:35:20', '10.2.156.220', '刘建'],
-  ['history-2', 'TPB-202604100001', '114132601681', '2026-04-10 10:35:20', '10.2.156.220', '刘建'],
-  ['history-3', 'TPB-202604100001', '114132601680', '2026-04-10 10:35:20', '10.2.156.220', '刘建'],
-  ['history-4', 'TPB-202603310001', '114132601679', '2026-03-31 15:22:08', '10.2.156.45', '刘建'],
-  ['history-5', 'TPB-202603310001', '114132601678', '2026-03-31 15:22:08', '10.2.156.45', '刘建'],
-  ['history-6', 'TPB-202603310001', '114132601677', '2026-03-31 15:22:08', '10.2.156.45', '刘建'],
-  ['history-7', 'TPB-202603310001', '114132601676', '2026-03-31 15:22:08', '10.2.156.45', '刘建'],
-  ['history-8', 'TPB-202603200001', '123132600871', '2026-03-20 09:10:11', '10.2.156.45', '刘建'],
-].map(([id, batch, tag, printedAt, printIp, printer]) => ({ id, batch, tag, printedAt, printIp, printer }));
+  ['history-1', 'TPB-202604100001', '114132601682', '2026-04-10 10:35:20', '10.2.156.220', '刘建', 1, '预打印', '打印成功'],
+  ['history-2', 'TPB-202604100001', '114132601681', '2026-04-10 10:35:20', '10.2.156.220', '刘建', 2, '预打印', '打印成功'],
+  ['history-3', 'TPB-202603310001', '114132601679', '2026-03-31 15:22:08', '10.2.156.45', '刘建', 1, '预打印', '打印成功'],
+].map(([id, batch, tag, printedAt, printIp, printer, copies, source, printStatus]) => ({
+  id, batch, tag, printedAt, printIp, printer, copies, source, printStatus,
+}));
 
-const INITIAL_LABEL_DETAIL_ROWS = [
-  { id: 'label-202501130001-1', batch: 'TPB-202501130001', tag: '114122502032', printCount: 1, printed: '是' },
-  ...INITIAL_HISTORY_ROWS.map((row) => ({
-    id: `label-${row.id}`,
-    batch: row.batch,
-    tag: row.tag,
-    printCount: 1,
-    printed: '是',
-  })),
-];
+const INITIAL_LABEL_DETAIL_ROWS = INITIAL_HISTORY_ROWS.map((row) => ({
+  id: `label-${row.id}`,
+  batch: row.batch,
+  tag: row.tag,
+  printCount: row.copies,
+  printed: '是',
+  source: row.source,
+  assetRowId: '',
+}));
 
-const DEFAULT_PREPRINT_FILTERS = {
+const DEFAULT_BATCH_FILTERS = {
   batch: '', printed: '', creator: '', orderNo: '', assetTag: '', createdFrom: '', createdTo: '',
 };
-
 const DEFAULT_HISTORY_FILTERS = {
   batch: '', tag: '', printer: '', printedFrom: '', printedTo: '',
 };
-
 const DEFAULT_LABEL_FILTERS = { tag: '', printed: '' };
 
 const LEDGER_OPTIONS = [
@@ -175,6 +166,22 @@ const SPARE_PART_OPTIONS = [
   { label: '板块备件-SP', value: 'SP' },
 ];
 
+const INITIAL_SEQUENCE_POOL = {
+  'normal:101:11:26': 746,
+  'normal:101:16:26': 215,
+  'normal:123:14:26': 378,
+  'high:QT': 4434,
+  'high:P': 3,
+  'high:N': 1,
+  furniture: 617957,
+  mobile: 3792,
+  'spare:CPU': 7,
+  'spare:Card': 12,
+  'spare:HD': 35,
+  'spare:ME': 20,
+  'spare:SP': 6,
+};
+
 function normalizeText(value) {
   return String(value ?? '').trim().toLowerCase();
 }
@@ -200,6 +207,10 @@ function inDateRange(value, from, to) {
   return true;
 }
 
+function invalidRange(from, to) {
+  return Boolean(from && to && from > to);
+}
+
 function textCompare(a, b) {
   return String(a ?? '').localeCompare(String(b ?? ''), 'zh-CN', { numeric: true });
 }
@@ -209,14 +220,20 @@ function defaultAssetSort(a, b) {
 }
 
 function makeBatchNo() {
-  return `TPB-${dayjs().format('YYYYMMDDHHmmss')}`;
+  return `TPB-${dayjs().format('YYYYMMDDHHmmssSSS')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 }
 
 function makeHistoryId() {
   return `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function LookupInput({ value, placeholder, onOpen }) {
+function escapeCsvValue(value) {
+  const original = value === undefined || value === null ? '' : String(value);
+  const safe = /^[\s]*[=+\-@]/.test(original) ? `'${original}` : original;
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+
+function LookupInput({ value, placeholder, onOpen, onClear }) {
   return (
     <Input
       value={value || ''}
@@ -226,6 +243,9 @@ function LookupInput({ value, placeholder, onOpen }) {
       suffix={<Search size={14} className="text-[#1677ff]" />}
       style={{ cursor: 'pointer' }}
       onClick={onOpen}
+      onChange={(event) => {
+        if (!event.target.value) onClear?.();
+      }}
     />
   );
 }
@@ -243,12 +263,14 @@ function DateFilter({ value, onChange }) {
 
 function PrintCopiesModal({ open, copies, onChange, onConfirm, onCancel }) {
   return (
-    <Modal title="打印几份" open={open} onOk={onConfirm} onCancel={onCancel} okText="确认打印" cancelText="取消" width={420}>
+    <Modal title="打印几份" open={open} onOk={onConfirm} onCancel={onCancel} okText="确认打印" cancelText="取消" width={440}>
       <div className="flex items-center gap-4 py-4">
         <Typography.Text>打印份数</Typography.Text>
-        <InputNumber min={1} max={99} value={copies} onChange={(value) => onChange(value || 1)} />
+        <InputNumber min={1} max={99} precision={0} value={copies} onChange={(value) => onChange(value || 1)} />
       </div>
-      <Typography.Text type="secondary">打印次数将按本次打印份数累计，并生成详细打印日志。</Typography.Text>
+      <Typography.Text type="secondary">
+        原型按“打印成功”模拟：成功后才累计打印次数并写入包含打印份数、来源和状态的详细日志；正式环境以 Brother 打印结果回执为准。
+      </Typography.Text>
     </Modal>
   );
 }
@@ -282,7 +304,35 @@ function RuleRow({ active, title, onSelect, children }) {
   );
 }
 
-function GenerateLabelsPage({ onBack, onGenerated, onOpenLabels, messageApi }) {
+function getHighPrefix(category, subCategory) {
+  if (category === '合约机' && subCategory === '合约手机') return 'P';
+  if (category === '合约机' && subCategory === '合约电话卡') return 'N';
+  return 'QT';
+}
+
+function getSequenceKey({ rule, ledger, assetType, normalYear, highCategory, highSubCategory, sparePartType }) {
+  if (rule === 'normal') return `normal:${ledger}:${assetType}:${normalYear?.format('YY') || ''}`;
+  if (rule === 'high') return `high:${getHighPrefix(highCategory, highSubCategory)}`;
+  if (rule === 'furniture') return 'furniture';
+  if (rule === 'mobile') return 'mobile';
+  return `spare:${sparePartType || ''}`;
+}
+
+function getRuleMax(rule) {
+  if (rule === 'high' || rule === 'mobile') return 9999;
+  if (rule === 'furniture') return 999999;
+  return 99999;
+}
+
+function GenerateLabelsPage({
+  onBack,
+  onGenerated,
+  onOpenLabels,
+  messageApi,
+  sequencePool,
+  reserveSequence,
+  existingTags,
+}) {
   const [ledger, setLedger] = useState('101');
   const [rule, setRule] = useState('normal');
   const [assetType, setAssetType] = useState(undefined);
@@ -295,26 +345,37 @@ function GenerateLabelsPage({ onBack, onGenerated, onOpenLabels, messageApi }) {
   const [mainCount, setMainCount] = useState(1);
   const [partCount, setPartCount] = useState(1);
   const [remark, setRemark] = useState('');
-  const [maxValues, setMaxValues] = useState({ normal: 746, high: 4434, furniture: 617957, mobile: 3792, sparePart: 7 });
-  const [furnitureMaxInput, setFurnitureMaxInput] = useState(617957);
+  const [furnitureMaxInput, setFurnitureMaxInput] = useState(sequencePool.furniture || 617957);
   const [generatedBatch, setGeneratedBatch] = useState(null);
+  const [generating, setGenerating] = useState(false);
 
-  const currentMax = rule === 'furniture' ? furnitureMaxInput : maxValues[rule];
+  const sequenceKey = getSequenceKey({ rule, ledger, assetType, normalYear, highCategory, highSubCategory, sparePartType });
+  const currentPoolValue = sequencePool[sequenceKey] ?? 0;
+  const currentMax = rule === 'furniture' ? Number(furnitureMaxInput || 0) : currentPoolValue;
 
   const validateRule = () => {
     if (!ledger) return '请选择账套';
     if (rule === 'normal' && !assetType) return '请选择资产类型';
+    if (rule === 'normal' && !normalYear) return '请选择年份';
     if (rule === 'high' && (!highCategory || !highSubCategory)) return '请选择高耗大类和高耗小类';
+    if (rule === 'high' && !highYear) return '请选择年份';
     if (rule === 'furniture' && !furnitureType) return '请选择家具类型';
     if (rule === 'sparePart' && !sparePartType) return '请选择备件类型';
-    if (!Number.isInteger(Number(mainCount)) || Number(mainCount) <= 0) return '打印标签数量必须为正整数';
+    if (!Number.isInteger(Number(mainCount)) || Number(mainCount) <= 0 || Number(mainCount) > MAX_MAIN_LABEL_COUNT) {
+      return `打印标签数量必须为1～${MAX_MAIN_LABEL_COUNT}的整数`;
+    }
     if (!Number.isInteger(Number(partCount)) || Number(partCount) < 1 || Number(partCount) > 99) return '部件数量必须为1～99的整数';
-    if (rule === 'furniture' && Number(furnitureMaxInput) < 617957) return '当前输入的流水号，存在已经被使用的情况！';
+    if (Number(mainCount) * Number(partCount) > MAX_DETAIL_LABEL_COUNT) return `本次标签明细总数不能超过${MAX_DETAIL_LABEL_COUNT}条`;
+    if (rule === 'furniture') {
+      if (!Number.isInteger(Number(furnitureMaxInput)) || Number(furnitureMaxInput) < 1) return '家具当前最大序号必须为正整数';
+      if (Number(furnitureMaxInput) < Number(sequencePool.furniture || 0)) return '当前输入的流水号，存在已经被使用的情况！';
+    }
+    if (Number(currentMax) + Number(mainCount) > getRuleMax(rule)) return '当前规则剩余流水号不足，请调整生成数量或检查流水号配置';
     return '';
   };
 
   const buildMainTag = (sequence) => {
-    const year = (rule === 'normal' ? normalYear : highYear)?.format('YY') || dayjs().format('YY');
+    const year = rule === 'normal' ? normalYear.format('YY') : highYear?.format('YY');
     if (rule === 'normal') {
       const base = `${ledger}${assetType}${year}${String(sequence).padStart(5, '0')}`;
       const tag = assetType === '11' ? `${base}-V` : base;
@@ -323,9 +384,8 @@ function GenerateLabelsPage({ onBack, onGenerated, onOpenLabels, messageApi }) {
         : tag;
     }
     if (rule === 'high') {
-      if (highCategory === '合约机' && highSubCategory === '合约手机') return `P-${year}${String(sequence).padStart(4, '0')}`;
-      if (highCategory === '合约机' && highSubCategory === '合约电话卡') return `N-${year}${String(sequence).padStart(4, '0')}`;
-      return `QT-${year}${String(sequence).padStart(4, '0')}`;
+      const prefix = getHighPrefix(highCategory, highSubCategory);
+      return `${prefix}-${year}${String(sequence).padStart(4, '0')}`;
     }
     if (rule === 'furniture') return `${String(sequence).padStart(6, '0')}${furnitureType}`;
     if (rule === 'mobile') return `NE${String(sequence).padStart(4, '0')}`;
@@ -333,41 +393,53 @@ function GenerateLabelsPage({ onBack, onGenerated, onOpenLabels, messageApi }) {
   };
 
   const handleGenerate = () => {
+    if (generating) return;
     const error = validateRule();
     if (error) {
       messageApi.error(error);
       return;
     }
 
-    const start = Number(currentMax) + 1;
-    const batchNo = makeBatchNo();
-    const labels = [];
-    for (let index = 0; index < Number(mainCount); index += 1) {
-      const mainTag = buildMainTag(start + index);
-      labels.push({ id: `${batchNo}-${mainTag}`, batch: batchNo, tag: mainTag, printCount: 0, printed: '否' });
-      for (let partIndex = 1; partIndex < Number(partCount); partIndex += 1) {
-        const partTag = `${mainTag}-${String(partIndex).padStart(2, '0')}`;
-        labels.push({ id: `${batchNo}-${partTag}`, batch: batchNo, tag: partTag, printCount: 0, printed: '否' });
+    setGenerating(true);
+    try {
+      const start = Number(currentMax) + 1;
+      const end = start + Number(mainCount) - 1;
+      const batchNo = makeBatchNo();
+      const labels = [];
+
+      for (let index = 0; index < Number(mainCount); index += 1) {
+        const mainTag = buildMainTag(start + index);
+        if (existingTags.has(mainTag) || labels.some((row) => row.tag === mainTag)) throw new Error(`标签号 ${mainTag} 已存在，禁止重复生成`);
+        labels.push({ id: `${batchNo}-${mainTag}`, batch: batchNo, tag: mainTag, printCount: 0, printed: '否', source: '预打印', assetRowId: '' });
+        for (let partIndex = 1; partIndex < Number(partCount); partIndex += 1) {
+          const partTag = `${mainTag}-${String(partIndex).padStart(2, '0')}`;
+          if (existingTags.has(partTag) || labels.some((row) => row.tag === partTag)) throw new Error(`标签号 ${partTag} 已存在，禁止重复生成`);
+          labels.push({ id: `${batchNo}-${partTag}`, batch: batchNo, tag: partTag, printCount: 0, printed: '否', source: '预打印', assetRowId: '' });
+        }
       }
+
+      const batch = {
+        id: `batch-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        batch: batchNo,
+        orderNo: '-',
+        labelCount: labels.length,
+        printed: '否',
+        creator: CURRENT_USER,
+        createdAt: dayjs().format('YYYY-MM-DD'),
+        source: '预打印',
+        remark: remark || '-',
+      };
+
+      reserveSequence(sequenceKey, end);
+      if (rule === 'furniture') setFurnitureMaxInput(end);
+      setGeneratedBatch(batch);
+      onGenerated(batch, labels);
+      messageApi.success(`标签生成成功，共生成 ${labels.length} 条标签明细`);
+    } catch (error) {
+      messageApi.error(error.message || '标签生成失败');
+    } finally {
+      setGenerating(false);
     }
-
-    const batch = {
-      id: `batch-${Date.now()}`,
-      batch: batchNo,
-      orderNo: '-',
-      labelCount: labels.length,
-      printed: '否',
-      creator: CURRENT_USER,
-      createdAt: dayjs().format('YYYY-MM-DD'),
-      remark: remark || '-',
-    };
-
-    const nextMax = start + Number(mainCount) - 1;
-    setMaxValues((current) => ({ ...current, [rule]: nextMax }));
-    if (rule === 'furniture') setFurnitureMaxInput(nextMax);
-    setGeneratedBatch(batch);
-    onGenerated(batch, labels);
-    messageApi.success(`标签生成成功，共生成 ${labels.length} 条标签明细`);
   };
 
   return (
@@ -390,10 +462,10 @@ function GenerateLabelsPage({ onBack, onGenerated, onOpenLabels, messageApi }) {
               <Select className={RULE_CONTROL_CLASS} placeholder="请选择" value={assetType} options={ASSET_TYPE_OPTIONS} onChange={setAssetType} disabled={rule !== 'normal'} />
             </RuleField>
             <RuleField label="选择年份">
-              <DatePicker className={RULE_CONTROL_CLASS} picker="year" value={normalYear} onChange={setNormalYear} disabled={rule !== 'normal'} />
+              <DatePicker className={RULE_CONTROL_CLASS} picker="year" value={normalYear} onChange={setNormalYear} disabled={rule !== 'normal'} allowClear />
             </RuleField>
             <RuleField label="当前最大序号">
-              <Input className={RULE_CONTROL_CLASS} value={String(maxValues.normal).padStart(5, '0')} readOnly disabled />
+              <Input className={RULE_CONTROL_CLASS} value={String(currentPoolValue).padStart(5, '0')} readOnly disabled />
             </RuleField>
           </RuleRow>
 
@@ -422,10 +494,10 @@ function GenerateLabelsPage({ onBack, onGenerated, onOpenLabels, messageApi }) {
               />
             </RuleField>
             <RuleField label="选择年份">
-              <DatePicker className={RULE_CONTROL_CLASS} picker="year" value={highYear} onChange={setHighYear} disabled={rule !== 'high'} />
+              <DatePicker className={RULE_CONTROL_CLASS} picker="year" value={highYear} onChange={setHighYear} disabled={rule !== 'high'} allowClear />
             </RuleField>
             <RuleField label="当前最大序号">
-              <Input className={RULE_CONTROL_CLASS} value={String(maxValues.high).padStart(4, '0')} readOnly disabled />
+              <Input className={RULE_CONTROL_CLASS} value={String(currentPoolValue).padStart(4, '0')} readOnly disabled />
             </RuleField>
           </RuleRow>
 
@@ -437,6 +509,8 @@ function GenerateLabelsPage({ onBack, onGenerated, onOpenLabels, messageApi }) {
               <InputNumber
                 className={RULE_CONTROL_CLASS}
                 min={1}
+                max={999999}
+                precision={0}
                 value={furnitureMaxInput}
                 onChange={(value) => setFurnitureMaxInput(value || 1)}
                 disabled={rule !== 'furniture'}
@@ -447,14 +521,14 @@ function GenerateLabelsPage({ onBack, onGenerated, onOpenLabels, messageApi }) {
 
           <RuleRow active={rule === 'mobile'} title="特殊规则-手机" onSelect={() => setRule('mobile')}>
             <RuleField label="标签前缀"><Input className={RULE_CONTROL_CLASS} value="NE" readOnly /></RuleField>
-            <RuleField label="当前最大序号"><Input className={RULE_CONTROL_CLASS} value={String(maxValues.mobile).padStart(4, '0')} readOnly /></RuleField>
+            <RuleField label="当前最大序号"><Input className={RULE_CONTROL_CLASS} value={String(currentPoolValue).padStart(4, '0')} readOnly /></RuleField>
           </RuleRow>
 
           <RuleRow active={rule === 'sparePart'} title="特殊规则-备件" onSelect={() => setRule('sparePart')}>
             <RuleField label="选择备件类型">
               <Select className={RULE_CONTROL_CLASS} placeholder="请选择" value={sparePartType} options={SPARE_PART_OPTIONS} onChange={setSparePartType} disabled={rule !== 'sparePart'} />
             </RuleField>
-            <RuleField label="当前最大序号"><Input className={RULE_CONTROL_CLASS} value={String(maxValues.sparePart).padStart(5, '0')} readOnly disabled /></RuleField>
+            <RuleField label="当前最大序号"><Input className={RULE_CONTROL_CLASS} value={String(currentPoolValue).padStart(5, '0')} readOnly disabled /></RuleField>
           </RuleRow>
         </Space>
       </Card>
@@ -462,10 +536,10 @@ function GenerateLabelsPage({ onBack, onGenerated, onOpenLabels, messageApi }) {
       <Card size="small" title="标签生成" className="shadow-sm">
         <Descriptions bordered size="small" column={3} labelStyle={{ width: 128 }}>
           <Descriptions.Item label="打印标签数量">
-            <InputNumber min={1} value={mainCount} onChange={(value) => setMainCount(value || 1)} style={{ width: 180 }} />
+            <InputNumber min={1} max={MAX_MAIN_LABEL_COUNT} precision={0} value={mainCount} onChange={(value) => setMainCount(value || 1)} style={{ width: 180 }} />
           </Descriptions.Item>
           <Descriptions.Item label="部件数量">
-            <InputNumber min={1} max={99} value={partCount} onChange={(value) => setPartCount(value || 1)} style={{ width: 180 }} />
+            <InputNumber min={1} max={99} precision={0} value={partCount} onChange={(value) => setPartCount(value || 1)} style={{ width: 180 }} />
           </Descriptions.Item>
           <Descriptions.Item label="标签批次">
             {generatedBatch?.batch || <Typography.Text type="danger">生成标签后自动生成</Typography.Text>}
@@ -481,7 +555,7 @@ function GenerateLabelsPage({ onBack, onGenerated, onOpenLabels, messageApi }) {
 
       <div className="sticky bottom-0 z-30 flex justify-center gap-3 border-t border-[#e5e7eb] bg-white/95 px-5 py-3 shadow-[0_-6px_20px_rgba(15,23,42,0.06)] backdrop-blur">
         <Button className="min-w-[96px]" icon={<ArrowLeft size={14} />} onClick={onBack}>返回</Button>
-        <Button type="primary" className="min-w-[116px]" icon={<Tags size={14} />} onClick={handleGenerate}>生成标签</Button>
+        <Button type="primary" className="min-w-[116px]" icon={<Tags size={14} />} loading={generating} onClick={handleGenerate}>生成标签</Button>
         {generatedBatch && (
           <Button className="min-w-[116px]" icon={<Printer size={14} />} onClick={() => onOpenLabels(generatedBatch.batch)}>打印标签</Button>
         )}
@@ -499,9 +573,9 @@ export default function TagPrintingPage() {
   const [lookupKey, setLookupKey] = useState('');
   const [previewMode, setPreviewMode] = useState(false);
   const [generateMode, setGenerateMode] = useState(false);
-  const [preprintRows, setPreprintRows] = useState(INITIAL_PREPRINT_ROWS);
-  const [preprintDraftFilters, setPreprintDraftFilters] = useState(DEFAULT_PREPRINT_FILTERS);
-  const [preprintAppliedFilters, setPreprintAppliedFilters] = useState(DEFAULT_PREPRINT_FILTERS);
+  const [batchRows, setBatchRows] = useState(INITIAL_BATCH_ROWS);
+  const [batchDraftFilters, setBatchDraftFilters] = useState(DEFAULT_BATCH_FILTERS);
+  const [batchAppliedFilters, setBatchAppliedFilters] = useState(DEFAULT_BATCH_FILTERS);
   const [historyRows, setHistoryRows] = useState(INITIAL_HISTORY_ROWS);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyDraftFilters, setHistoryDraftFilters] = useState(DEFAULT_HISTORY_FILTERS);
@@ -514,6 +588,7 @@ export default function TagPrintingPage() {
   const [labelSelectedKeys, setLabelSelectedKeys] = useState([]);
   const [printTask, setPrintTask] = useState(null);
   const [printCopies, setPrintCopies] = useState(1);
+  const [sequencePool, setSequencePool] = useState(INITIAL_SEQUENCE_POOL);
 
   const filteredRows = useMemo(() => rows.filter((row) => (
     includesText(row.companyCn, appliedFilters.companyCn)
@@ -528,19 +603,19 @@ export default function TagPrintingPage() {
     && includesText(row.city, appliedFilters.city)
   )).sort(defaultAssetSort), [rows, appliedFilters]);
 
-  const filteredPreprintRows = useMemo(() => {
-    const matchedBatches = preprintAppliedFilters.assetTag
-      ? new Set(labelRows.filter((row) => includesText(row.tag, preprintAppliedFilters.assetTag)).map((row) => row.batch))
+  const filteredBatchRows = useMemo(() => {
+    const matchedBatches = batchAppliedFilters.assetTag
+      ? new Set(labelRows.filter((row) => includesText(row.tag, batchAppliedFilters.assetTag)).map((row) => row.batch))
       : null;
-    return preprintRows.filter((row) => (
-      includesText(row.batch, preprintAppliedFilters.batch)
-      && includesText(row.printed, preprintAppliedFilters.printed)
-      && includesText(row.creator, preprintAppliedFilters.creator)
-      && includesText(row.orderNo, preprintAppliedFilters.orderNo)
+    return batchRows.filter((row) => (
+      includesText(row.batch, batchAppliedFilters.batch)
+      && includesText(row.printed, batchAppliedFilters.printed)
+      && includesText(row.creator, batchAppliedFilters.creator)
+      && includesText(row.orderNo, batchAppliedFilters.orderNo)
       && (!matchedBatches || matchedBatches.has(row.batch))
-      && inDateRange(row.createdAt, preprintAppliedFilters.createdFrom, preprintAppliedFilters.createdTo)
+      && inDateRange(row.createdAt, batchAppliedFilters.createdFrom, batchAppliedFilters.createdTo)
     )).sort((a, b) => textCompare(b.batch, a.batch));
-  }, [labelRows, preprintAppliedFilters, preprintRows]);
+  }, [batchAppliedFilters, batchRows, labelRows]);
 
   const filteredHistoryRows = useMemo(() => historyRows.filter((row) => (
     includesText(row.batch, historyAppliedFilters.batch)
@@ -555,6 +630,7 @@ export default function TagPrintingPage() {
     && includesText(row.printed, labelAppliedFilters.printed)
   )).sort((a, b) => textCompare(a.tag, b.tag)), [labelAppliedFilters, labelBatch, labelRows]);
 
+  const existingTags = useMemo(() => new Set(labelRows.map((row) => row.tag)), [labelRows]);
   const statusOptions = useMemo(() => uniqueValues(rows, 'assetStatus').map((value) => ({ label: value, value })), [rows]);
   const cityOptions = useMemo(() => uniqueValues(rows, 'city').map((value) => ({ label: value, value })), [rows]);
   const userLookupData = useMemo(() => {
@@ -571,8 +647,12 @@ export default function TagPrintingPage() {
     return uniqueValues(rows, activeLookup).map((value, index) => ({ id: `${activeLookup}-${index}`, value }));
   }, [activeLookup, rows, userLookupData]);
 
+  const reserveSequence = (key, nextValue) => {
+    setSequencePool((current) => ({ ...current, [key]: Math.max(Number(current[key] || 0), Number(nextValue || 0)) }));
+  };
+
   const updateFilter = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
-  const updatePreprintFilter = (field, value) => setPreprintDraftFilters((current) => ({ ...current, [field]: value || '' }));
+  const updateBatchFilter = (field, value) => setBatchDraftFilters((current) => ({ ...current, [field]: value || '' }));
   const updateHistoryFilter = (field, value) => setHistoryDraftFilters((current) => ({ ...current, [field]: value || '' }));
   const updateLabelFilter = (field, value) => setLabelDraftFilters((current) => ({ ...current, [field]: value || '' }));
 
@@ -597,7 +677,7 @@ export default function TagPrintingPage() {
       return;
     }
     setPrintCopies(1);
-    setPrintTask({ type: 'asset', ids: targetIds, actionName });
+    setPrintTask({ type: 'asset', ids: targetIds, actionName, source: '标签打印' });
   };
 
   const requestLabelPrint = (targetIds, actionName, batch) => {
@@ -605,14 +685,37 @@ export default function TagPrintingPage() {
       messageApi.warning(actionName === '打印所选' ? '请选择要打印的资产标签！' : '当前没有可打印的标签');
       return;
     }
+    const source = batchRows.find((row) => row.batch === batch)?.source || '预打印';
     setPrintCopies(1);
-    setPrintTask({ type: 'label', ids: targetIds, actionName, batch });
+    setPrintTask({ type: 'label', ids: targetIds, actionName, batch, source });
+  };
+
+  const appendPrintLogs = (targets, { batch, source, copies, operationTime }) => {
+    setHistoryRows((current) => [
+      ...targets.map((row) => ({
+        id: makeHistoryId(),
+        batch,
+        tag: row.assetTag || row.tag,
+        printedAt: operationTime,
+        printIp: CURRENT_IP,
+        printer: CURRENT_USER,
+        copies,
+        source,
+        printStatus: '打印成功',
+      })),
+      ...current,
+    ]);
   };
 
   const confirmPrint = () => {
     if (!printTask) return;
+    const copies = Number(printCopies || 0);
+    if (!Number.isInteger(copies) || copies < 1 || copies > 99) {
+      messageApi.error('打印份数必须为1～99的整数');
+      return;
+    }
+
     const operationTime = dayjs().format('YYYY-MM-DD HH:mm:ss');
-    const copies = Number(printCopies || 1);
 
     if (printTask.type === 'asset') {
       const idSet = new Set(printTask.ids);
@@ -621,24 +724,30 @@ export default function TagPrintingPage() {
       setRows((current) => current.map((row) => (
         idSet.has(row.id) ? { ...row, printCount: Number(row.printCount || 0) + copies } : row
       )));
-      setPreprintRows((current) => [{
-        id: `batch-${Date.now()}`,
+      setBatchRows((current) => [{
+        id: `batch-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         batch,
         orderNo: '-',
         labelCount: targets.length,
         printed: '是',
         creator: CURRENT_USER,
         createdAt: dayjs().format('YYYY-MM-DD'),
+        source: '标签打印',
         remark: '标签打印',
       }, ...current]);
       setLabelRows((current) => [
-        ...targets.map((row) => ({ id: `${batch}-${row.assetTag}`, batch, tag: row.assetTag, printCount: copies, printed: '是' })),
+        ...targets.map((row) => ({
+          id: `${batch}-${row.assetTag}`,
+          batch,
+          tag: row.assetTag,
+          printCount: copies,
+          printed: '是',
+          source: '标签打印',
+          assetRowId: row.id,
+        })),
         ...current,
       ]);
-      setHistoryRows((current) => [
-        ...targets.map((row) => ({ id: makeHistoryId(), batch, tag: row.assetTag, printedAt: operationTime, printIp: CURRENT_IP, printer: CURRENT_USER })),
-        ...current,
-      ]);
+      appendPrintLogs(targets, { batch, source: '标签打印', copies, operationTime });
       setSelectedRowKeys([]);
     } else {
       const idSet = new Set(printTask.ids);
@@ -646,17 +755,20 @@ export default function TagPrintingPage() {
       setLabelRows((current) => current.map((row) => (
         idSet.has(row.id) ? { ...row, printCount: Number(row.printCount || 0) + copies, printed: '是' } : row
       )));
-      setPreprintRows((current) => current.map((row) => (
+      const linkedAssetIds = new Set(targets.map((row) => row.assetRowId).filter(Boolean));
+      if (linkedAssetIds.size) {
+        setRows((current) => current.map((row) => (
+          linkedAssetIds.has(row.id) ? { ...row, printCount: Number(row.printCount || 0) + copies } : row
+        )));
+      }
+      setBatchRows((current) => current.map((row) => (
         row.batch === printTask.batch ? { ...row, printed: '是' } : row
       )));
-      setHistoryRows((current) => [
-        ...targets.map((row) => ({ id: makeHistoryId(), batch: row.batch, tag: row.tag, printedAt: operationTime, printIp: CURRENT_IP, printer: CURRENT_USER })),
-        ...current,
-      ]);
+      appendPrintLogs(targets, { batch: printTask.batch, source: printTask.source, copies, operationTime });
       setLabelSelectedKeys([]);
     }
 
-    messageApi.success(`${printTask.actionName}已提交，打印 ${copies} 份；原型已模拟写入详细打印日志`);
+    messageApi.success(`${printTask.actionName}成功，打印 ${copies} 份；累计次数与详细日志已同步`);
     setPrintTask(null);
   };
 
@@ -672,7 +784,7 @@ export default function TagPrintingPage() {
       row.assetTag, row.assetName, row.department, row.location, row.companyCn, row.companyEn, row.plateCn,
       row.serialNumber, row.assetCategory, row.assetStatus, `${row.userId}-${row.userName}`, row.printCount,
     ]);
-    const csv = [headers, ...body].map((line) => line.map((value) => `"${String(value ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const csv = [headers, ...body].map((line) => line.map(escapeCsvValue).join(',')).join('\n');
     const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -699,7 +811,11 @@ export default function TagPrintingPage() {
   };
 
   const handleGenerated = (batch, labels) => {
-    setPreprintRows((current) => [batch, ...current]);
+    if (batchRows.some((row) => row.batch === batch.batch)) {
+      messageApi.error('标签批次号重复，已阻止写入');
+      return;
+    }
+    setBatchRows((current) => [batch, ...current]);
     setLabelRows((current) => [...labels, ...current]);
   };
 
@@ -718,8 +834,9 @@ export default function TagPrintingPage() {
     { title: '打印次数', dataIndex: 'printCount', width: 100, align: 'right', sorter: (a, b) => Number(a.printCount || 0) - Number(b.printCount || 0) },
   ];
 
-  const preprintColumns = [
-    { title: '标签批次', dataIndex: 'batch', width: 190, render: displayText },
+  const batchColumns = [
+    { title: '标签批次', dataIndex: 'batch', width: 230, render: displayText },
+    { title: '来源', dataIndex: 'source', width: 130, render: displayText },
     { title: '订单编号', dataIndex: 'orderNo', width: 190, render: displayText },
     { title: '生成标签数量', dataIndex: 'labelCount', width: 130, align: 'right' },
     { title: '是否已打印', dataIndex: 'printed', width: 120, align: 'center', render: (value) => <StatusTag value={value} type="yesNo" /> },
@@ -731,7 +848,7 @@ export default function TagPrintingPage() {
   ];
 
   const labelColumns = [
-    { title: '标签批次', dataIndex: 'batch', width: 210, render: displayText },
+    { title: '标签批次', dataIndex: 'batch', width: 230, render: displayText },
     { title: '标签号', dataIndex: 'tag', width: 200, sorter: (a, b) => textCompare(a.tag, b.tag), render: displayText },
     { title: '打印次数', dataIndex: 'printCount', width: 120, align: 'right' },
     { title: '是否已打印', dataIndex: 'printed', width: 130, align: 'center', render: (value) => <StatusTag value={value} type="yesNo" /> },
@@ -739,8 +856,11 @@ export default function TagPrintingPage() {
   ];
 
   const historyColumns = [
-    { title: '标签批次', dataIndex: 'batch', width: 190, render: displayText },
+    { title: '标签批次', dataIndex: 'batch', width: 230, render: displayText },
     { title: '标签号', dataIndex: 'tag', width: 180, render: displayText },
+    { title: '来源', dataIndex: 'source', width: 130, render: displayText },
+    { title: '打印份数', dataIndex: 'copies', width: 110, align: 'right', render: displayText },
+    { title: '打印状态', dataIndex: 'printStatus', width: 120, render: displayText },
     { title: '打印时间', dataIndex: 'printedAt', width: 180, render: displayText },
     { title: '打印IP', dataIndex: 'printIp', width: 150, render: displayText },
     { title: '打印人', dataIndex: 'printer', width: 120, render: displayText },
@@ -758,6 +878,9 @@ export default function TagPrintingPage() {
             openLabelList(batch);
           }}
           messageApi={messageApi}
+          sequencePool={sequencePool}
+          reserveSequence={reserveSequence}
+          existingTags={existingTags}
         />
       </>
     );
@@ -769,31 +892,37 @@ export default function TagPrintingPage() {
         {contextHolder}
         <div className="flex items-center gap-3">
           <Button icon={<ArrowLeft size={14} />} onClick={() => setPreviewMode(false)}>返回标签打印</Button>
-          <Typography.Title level={4} className="mb-0">预打印</Typography.Title>
+          <Typography.Title level={4} className="mb-0">标签批次 / 预打印</Typography.Title>
         </div>
 
         <QueryBar
-          onQuery={() => setPreprintAppliedFilters({ ...preprintDraftFilters })}
+          onQuery={() => {
+            if (invalidRange(batchDraftFilters.createdFrom, batchDraftFilters.createdTo)) {
+              messageApi.error('创建时间结束日期不能早于开始日期');
+              return;
+            }
+            setBatchAppliedFilters({ ...batchDraftFilters });
+          }}
           onReset={() => {
-            setPreprintDraftFilters(DEFAULT_PREPRINT_FILTERS);
-            setPreprintAppliedFilters(DEFAULT_PREPRINT_FILTERS);
+            setBatchDraftFilters(DEFAULT_BATCH_FILTERS);
+            setBatchAppliedFilters(DEFAULT_BATCH_FILTERS);
           }}
         >
-          <QueryItem label="标签批次"><Input value={preprintDraftFilters.batch} allowClear placeholder="请输入标签批次" onChange={(event) => updatePreprintFilter('batch', event.target.value)} /></QueryItem>
+          <QueryItem label="标签批次"><Input value={batchDraftFilters.batch} allowClear placeholder="请输入标签批次" onChange={(event) => updateBatchFilter('batch', event.target.value)} /></QueryItem>
           <QueryItem label="是否已打印">
-            <Select value={preprintDraftFilters.printed || undefined} allowClear placeholder="全部" options={[{ label: '是', value: '是' }, { label: '否', value: '否' }]} onChange={(value) => updatePreprintFilter('printed', value)} />
+            <Select value={batchDraftFilters.printed || undefined} allowClear placeholder="全部" options={[{ label: '是', value: '是' }, { label: '否', value: '否' }]} onChange={(value) => updateBatchFilter('printed', value)} />
           </QueryItem>
           <QueryItem label="创建人">
-            <Select value={preprintDraftFilters.creator || undefined} allowClear placeholder="请选择" options={uniqueValues(preprintRows, 'creator').map((value) => ({ label: value, value }))} onChange={(value) => updatePreprintFilter('creator', value)} />
+            <Select value={batchDraftFilters.creator || undefined} allowClear placeholder="请选择" options={uniqueValues(batchRows, 'creator').map((value) => ({ label: value, value }))} onChange={(value) => updateBatchFilter('creator', value)} />
           </QueryItem>
-          <QueryItem label="订单编号"><Input value={preprintDraftFilters.orderNo} allowClear placeholder="请输入订单编号" onChange={(event) => updatePreprintFilter('orderNo', event.target.value)} /></QueryItem>
-          <QueryItem label="资产标签号"><Input value={preprintDraftFilters.assetTag} allowClear placeholder="请输入资产标签号" onChange={(event) => updatePreprintFilter('assetTag', event.target.value)} /></QueryItem>
+          <QueryItem label="订单编号"><Input value={batchDraftFilters.orderNo} allowClear placeholder="请输入订单编号" onChange={(event) => updateBatchFilter('orderNo', event.target.value)} /></QueryItem>
+          <QueryItem label="资产标签号"><Input value={batchDraftFilters.assetTag} allowClear placeholder="请输入资产标签号" onChange={(event) => updateBatchFilter('assetTag', event.target.value)} /></QueryItem>
           <QueryItem label="创建时间">
             <RangePicker
               className="w-full"
-              value={preprintDraftFilters.createdFrom && preprintDraftFilters.createdTo ? [dayjs(preprintDraftFilters.createdFrom), dayjs(preprintDraftFilters.createdTo)] : null}
+              value={batchDraftFilters.createdFrom && batchDraftFilters.createdTo ? [dayjs(batchDraftFilters.createdFrom), dayjs(batchDraftFilters.createdTo)] : null}
               format="YYYY-MM-DD"
-              onChange={(dates) => setPreprintDraftFilters((current) => ({
+              onChange={(dates) => setBatchDraftFilters((current) => ({
                 ...current,
                 createdFrom: dates?.[0] ? dates[0].format('YYYY-MM-DD') : '',
                 createdTo: dates?.[1] ? dates[1].format('YYYY-MM-DD') : '',
@@ -802,11 +931,11 @@ export default function TagPrintingPage() {
           </QueryItem>
         </QueryBar>
 
-        <Card size="small" title="预打印列表" extra={<Typography.Text type="secondary">共 {filteredPreprintRows.length} 条</Typography.Text>}>
+        <Card size="small" title="标签批次列表" extra={<Typography.Text type="secondary">共 {filteredBatchRows.length} 条</Typography.Text>}>
           <div className="mb-3 flex justify-end">
             <Button type="primary" icon={<Tags size={14} />} onClick={() => setGenerateMode(true)}>生成标签</Button>
           </div>
-          <Table rowKey="id" size="small" bordered columns={preprintColumns} dataSource={filteredPreprintRows} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true }} />
+          <Table rowKey="id" size="small" bordered columns={batchColumns} dataSource={filteredBatchRows} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true }} />
         </Card>
 
         <Modal
@@ -860,9 +989,15 @@ export default function TagPrintingPage() {
           </Space>
         </Modal>
 
-        <Modal title="打印历史" open={historyOpen} width={1100} footer={null} onCancel={() => setHistoryOpen(false)}>
+        <Modal title="打印历史" open={historyOpen} width={1250} footer={null} onCancel={() => setHistoryOpen(false)}>
           <QueryBar
-            onQuery={() => setHistoryAppliedFilters({ ...historyDraftFilters })}
+            onQuery={() => {
+              if (invalidRange(historyDraftFilters.printedFrom, historyDraftFilters.printedTo)) {
+                messageApi.error('打印时间结束日期不能早于开始日期');
+                return;
+              }
+              setHistoryAppliedFilters({ ...historyDraftFilters });
+            }}
             onReset={() => {
               setHistoryDraftFilters(DEFAULT_HISTORY_FILTERS);
               setHistoryAppliedFilters(DEFAULT_HISTORY_FILTERS);
@@ -875,7 +1010,7 @@ export default function TagPrintingPage() {
             <QueryItem label="打印时间至"><DateFilter value={historyDraftFilters.printedTo} onChange={(value) => updateHistoryFilter('printedTo', value)} /></QueryItem>
           </QueryBar>
           <div className="mt-4 flex justify-end text-sm text-gray-500">共 {filteredHistoryRows.length} 条</div>
-          <Table className="mt-2" rowKey="id" size="small" bordered columns={historyColumns} dataSource={filteredHistoryRows} pagination={{ pageSize: 10, showSizeChanger: true }} />
+          <Table className="mt-2" rowKey="id" size="small" bordered columns={historyColumns} dataSource={filteredHistoryRows} pagination={{ pageSize: 10, showSizeChanger: true }} scroll={{ x: 'max-content' }} />
         </Modal>
 
         <PrintCopiesModal open={Boolean(printTask)} copies={printCopies} onChange={setPrintCopies} onConfirm={confirmPrint} onCancel={() => setPrintTask(null)} />
@@ -901,13 +1036,20 @@ export default function TagPrintingPage() {
       >
         <QueryItem label="公司中文名称"><Input value={draftFilters.companyCn} allowClear placeholder="请输入公司中文名称" onChange={(event) => updateFilter('companyCn', event.target.value)} /></QueryItem>
         <QueryItem label="公司英文名称"><Input value={draftFilters.companyEn} allowClear placeholder="请输入公司英文名称" onChange={(event) => updateFilter('companyEn', event.target.value)} /></QueryItem>
-        <QueryItem label="部门"><LookupInput value={draftFilters.department} placeholder="请选择部门" onOpen={() => setLookupKey('department')} /></QueryItem>
+        <QueryItem label="部门"><LookupInput value={draftFilters.department} placeholder="请选择部门" onOpen={() => setLookupKey('department')} onClear={() => updateFilter('department', '')} /></QueryItem>
         <QueryItem label="板块中文名称"><Input value={draftFilters.plateCn} allowClear placeholder="请输入板块中文名称" onChange={(event) => updateFilter('plateCn', event.target.value)} /></QueryItem>
         <QueryItem label="资产状态"><Select value={draftFilters.assetStatus || undefined} allowClear placeholder="全部" options={statusOptions} onChange={(value) => updateFilter('assetStatus', value)} /></QueryItem>
         <QueryItem label="资产标签号"><Input value={draftFilters.assetTag} allowClear placeholder="请输入资产标签号" onChange={(event) => updateFilter('assetTag', event.target.value)} /></QueryItem>
         <QueryItem label="序列号"><Input value={draftFilters.serialNumber} allowClear placeholder="请输入序列号" onChange={(event) => updateFilter('serialNumber', event.target.value)} /></QueryItem>
-        <QueryItem label="使用人"><LookupInput value={draftFilters.userDisplay} placeholder="请选择使用人" onOpen={() => setLookupKey('user')} /></QueryItem>
-        <QueryItem label="资产类别"><LookupInput value={draftFilters.assetCategory} placeholder="请选择资产类别" onOpen={() => setLookupKey('assetCategory')} /></QueryItem>
+        <QueryItem label="使用人">
+          <LookupInput
+            value={draftFilters.userDisplay}
+            placeholder="请选择使用人"
+            onOpen={() => setLookupKey('user')}
+            onClear={() => setDraftFilters((current) => ({ ...current, userId: '', userDisplay: '' }))}
+          />
+        </QueryItem>
+        <QueryItem label="资产类别"><LookupInput value={draftFilters.assetCategory} placeholder="请选择资产类别" onOpen={() => setLookupKey('assetCategory')} onClear={() => updateFilter('assetCategory', '')} /></QueryItem>
         <QueryItem label="城市"><Select value={draftFilters.city || undefined} allowClear placeholder="全部" options={cityOptions} onChange={(value) => updateFilter('city', value)} /></QueryItem>
       </QueryBar>
 
