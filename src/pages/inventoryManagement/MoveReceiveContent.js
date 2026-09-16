@@ -75,8 +75,8 @@ function ReceiveAssetDetailModal({ open, document, asset, onCancel }) {
             <DetailItem label="标签号"><Readonly>{snapshot.assetTag}</Readonly></DetailItem>
             <DetailItem label="SN"><Readonly>{snapshot.sn}</Readonly></DetailItem>
             <DetailItem label="物资总类"><Readonly>{snapshot.materialGroup}</Readonly></DetailItem>
-            <DetailItem label="原值"><Readonly>{Number(snapshot.originalValue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</Readonly></DetailItem>
-            <DetailItem label="净值"><Readonly>{Number(snapshot.netValue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</Readonly></DetailItem>
+            <DetailItem label="原值"><Readonly>{Number(snapshot.originalValue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Readonly></DetailItem>
+            <DetailItem label="净值"><Readonly>{Number(snapshot.netValue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Readonly></DetailItem>
             <DetailItem label="资产状态"><Readonly>{snapshot.assetStatus}</Readonly></DetailItem>
             <DetailItem label="板块"><Readonly>{snapshot.plate}</Readonly></DetailItem>
             <DetailItem label="使用公司"><Readonly>{snapshot.company}</Readonly></DetailItem>
@@ -99,11 +99,9 @@ function ReceiveAssetDetailModal({ open, document, asset, onCancel }) {
             <DetailItem label="目标仓"><Readonly>{document.toWarehouse}</Readonly></DetailItem>
             <DetailItem label="数量"><Readonly>{asset.quantity}</Readonly></DetailItem>
             <DetailItem label="资产验证"><Readonly>{asset.verification}</Readonly></DetailItem>
-            <DetailItem label="接收仓管员"><Readonly>{asset.receiver}</Readonly></DetailItem>
-            <DetailItem label="接收时间"><Readonly>{asset.receiveTime}</Readonly></DetailItem>
             <DetailItem label="移库状态"><StatusTag value={asset.moveStatus} /></DetailItem>
-            <DetailItem label="调出说明" span={3}><Readonly>{asset.moveDesc}</Readonly></DetailItem>
-            <DetailItem label="接收说明" span={3}><Readonly>{asset.receiveDesc}</Readonly></DetailItem>
+            <DetailItem label="移库说明" span={3}><Readonly>{asset.moveDesc}</Readonly></DetailItem>
+            <DetailItem label="验证说明" span={3}><Readonly>{asset.verificationDesc}</Readonly></DetailItem>
           </DetailGrid>
         </Card>
       </Space>
@@ -117,7 +115,7 @@ function VerificationModal({ open, asset, onCancel, onConfirm }) {
   return (
     <Modal
       open={open}
-      title="手工验证资产"
+      title="手动验证"
       okText="确认验证"
       cancelText="取消"
       onCancel={onCancel}
@@ -125,24 +123,27 @@ function VerificationModal({ open, asset, onCancel, onConfirm }) {
       destroyOnHidden
     >
       <Space direction="vertical" size={12} className="w-full">
-        <Typography.Text>标签号：{asset?.assetTag || '-'}</Typography.Text>
-        <Typography.Text>SN：{asset?.sn || '-'}</Typography.Text>
-        <div>
-          <Typography.Text>验证说明：</Typography.Text>
-          <TextArea maxLength={200} showCount value={desc} onChange={(event) => setDesc(event.target.value)} autoSize={{ minRows: 3, maxRows: 5 }} placeholder="手工验证时必填" />
-        </div>
+        <Typography.Text>您没有进行验证，请输入备注(最多允许填写60个字):</Typography.Text>
+        <TextArea
+          maxLength={60}
+          showCount
+          value={desc}
+          onChange={(event) => setDesc(event.target.value)}
+          autoSize={{ minRows: 3, maxRows: 5 }}
+          placeholder="请输入验证说明"
+        />
       </Space>
     </Modal>
   );
 }
 
-function RejectModal({ open, count, onCancel, onConfirm }) {
+function RejectModal({ open, onCancel, onConfirm }) {
   const [reason, setReason] = useState('');
   useEffect(() => setReason(''), [open]);
   return (
     <Modal
       open={open}
-      title={`移库驳回（${count}条）`}
+      title="移库驳回"
       okText="确认驳回"
       cancelText="取消"
       okButtonProps={{ danger: true }}
@@ -150,7 +151,7 @@ function RejectModal({ open, count, onCancel, onConfirm }) {
       onOk={() => onConfirm(reason)}
       destroyOnHidden
     >
-      <Typography.Text>驳回后，所选明细变为“已驳回”，系统自动生成反向移库单。</Typography.Text>
+      <Typography.Text>驳回后，该条物资变为“已驳回”，系统自动生成反向移库单。</Typography.Text>
       <div className="mt-3">
         <Typography.Text>驳回原因：</Typography.Text>
         <TextArea maxLength={200} showCount value={reason} onChange={(event) => setReason(event.target.value)} autoSize={{ minRows: 3, maxRows: 5 }} placeholder="必填，最多200字" />
@@ -165,7 +166,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [detailAsset, setDetailAsset] = useState(null);
   const [verificationAsset, setVerificationAsset] = useState(null);
-  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectAsset, setRejectAsset] = useState(null);
   const [lines, setLines] = useState(row.lines || []);
 
   useEffect(() => {
@@ -177,11 +178,6 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
     setLines(nextLines);
     setDocuments((current) => current.map((document) => document.id === row.id ? { ...document, lines: nextLines, status: nextStatus, ...extra } : document));
     return nextStatus;
-  };
-
-  const updateLineField = (lineId, field, value) => {
-    const nextLines = lines.map((line) => line.id === lineId ? { ...line, [field]: value } : line);
-    syncLines(nextLines);
   };
 
   const handleScan = () => {
@@ -209,8 +205,13 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
 
   const manualVerify = (desc) => {
     if (!verificationAsset) return;
-    if (!desc.trim()) {
-      messageApi.warning('手工验证必须填写验证说明');
+    const trimmed = desc.trim();
+    if (!trimmed) {
+      messageApi.warning('请输入验证说明');
+      return;
+    }
+    if (trimmed.length > 60) {
+      messageApi.warning('验证说明最多允许填写60个字');
       return;
     }
     const nextLines = lines.map((line) => line.id === verificationAsset.id ? {
@@ -218,11 +219,11 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
       verification: '已验证',
       verificationMethod: '手工',
       verificationTime: dayjs().format('YYYY-MM-DD HH:mm'),
-      verificationDesc: desc.trim(),
+      verificationDesc: trimmed,
     } : line);
     syncLines(nextLines);
     setVerificationAsset(null);
-    messageApi.success('手工验证成功');
+    messageApi.success('手动验证成功');
   };
 
   const cancelVerification = (asset) => {
@@ -275,22 +276,15 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
     return undefined;
   };
 
-  const openReject = () => {
-    if (!selectedKeys.length) return messageApi.warning('请先选择需要处理的物资');
-    const selected = lines.filter((line) => selectedKeys.includes(line.id));
-    if (selected.some((line) => line.moveStatus !== '待接收')) return messageApi.warning('仅待接收物资允许驳回');
-    setRejectOpen(true);
-    return undefined;
-  };
-
   const reject = (reason) => {
+    if (!rejectAsset) return;
     const trimmed = reason.trim();
     if (!trimmed) return messageApi.warning('请填写驳回原因');
     if (trimmed.length > 200) return messageApi.warning('驳回原因最多允许填写200个字');
-    const selected = lines.filter((line) => selectedKeys.includes(line.id));
-    if (!selected.length) return messageApi.warning('请先选择需要处理的物资');
-    const selectedSet = new Set(selectedKeys);
-    const nextLines = lines.map((line) => selectedSet.has(line.id) ? {
+    if (rejectAsset.moveStatus !== '待接收') return messageApi.warning('仅待接收物资允许驳回');
+
+    const selected = [rejectAsset];
+    const nextLines = lines.map((line) => line.id === rejectAsset.id ? {
       ...line,
       moveStatus: '已驳回',
       rejectReason: trimmed,
@@ -348,47 +342,56 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
     });
 
     setLines(nextLines);
-    setSelectedKeys([]);
-    setRejectOpen(false);
-    messageApi.success(`所选物资已驳回，已生成反向移库单；原单状态为${nextStatus}`);
+    setSelectedKeys((current) => current.filter((key) => key !== rejectAsset.id));
+    setRejectAsset(null);
+    messageApi.success(`该物资已驳回，已生成反向移库单；原单状态为${nextStatus}`);
     return undefined;
   };
 
   const columns = [
-    { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
     {
-      title: '资产验证', dataIndex: 'verification', width: 170,
-      render: (value, asset) => (
-        <Space size={4}>
-          {value === '未验证' ? <Typography.Text type="danger">未验证</Typography.Text> : <StatusTag value="已验证" />}
-          {asset.moveStatus === '待接收' && value === '未验证' && <Button type="link" className="px-0" onClick={() => setVerificationAsset(asset)}>手工验证</Button>}
-          {asset.moveStatus === '待接收' && value === '已验证' && <Button type="link" className="px-0" onClick={() => cancelVerification(asset)}>取消验证</Button>}
-        </Space>
-      ),
+      title: '资产标签号',
+      dataIndex: 'assetTag',
+      width: 170,
+      fixed: 'left',
+      render: (value, asset) => <Button type="link" className="px-0 select-text" onClick={() => setDetailAsset(asset)}>{value}</Button>,
     },
-    { title: '移库状态', dataIndex: 'moveStatus', width: 110, render: (value) => <StatusTag value={value} /> },
-    { title: '标签号', dataIndex: 'assetTag', width: 170, render: (value, asset) => <Button type="link" className="px-0 select-text" onClick={() => setDetailAsset(asset)}>{value}</Button> },
     { title: 'SN', dataIndex: 'sn', width: 150 },
     { title: '物资说明', dataIndex: 'materialDesc', width: 220 },
     { title: '物资总类', dataIndex: 'materialGroup', width: 130 },
-    { title: '数量', dataIndex: 'quantity', width: 80, align: 'right', render: (value) => Number(value || 0).toLocaleString('zh-CN') },
+    { title: '数量', dataIndex: 'quantity', width: 80, align: 'right', render: (value) => value ?? 0 },
     { title: '公司', dataIndex: 'company', width: 150 },
     { title: '板块', dataIndex: 'plate', width: 110 },
+    { title: '资产标记', dataIndex: 'assetMark', width: 120, render: (value) => value || '-' },
+    { title: '启用日期', dataIndex: 'enabledDate', width: 120, render: (value, asset) => value || asset.snapshot?.enabledDate || '-' },
+    { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value, asset) => value || asset.snapshot?.assetStatus || '-' },
+    { title: '验证说明', dataIndex: 'verificationDesc', width: 180, render: (value) => value || '-' },
     {
-      title: '资产标记', dataIndex: 'assetMark', width: 140,
-      render: (value, asset) => asset.moveStatus === '待接收'
-        ? <Select size="small" style={{ width: '100%' }} value={value || undefined} allowClear options={['主资产', '附属资产', '普通'].map((item) => ({ label: item, value: item }))} onChange={(next) => updateLineField(asset.id, 'assetMark', next || '')} />
-        : (value || '-'),
+      title: '资产验证',
+      dataIndex: 'verification',
+      width: 110,
+      render: (value) => value === '未验证' ? <Typography.Text type="danger">未验证</Typography.Text> : <StatusTag value="已验证" />,
     },
+    { title: '移库状态', dataIndex: 'moveStatus', width: 110, render: (value) => <StatusTag value={value} /> },
     {
-      title: '接收说明', dataIndex: 'receiveDesc', width: 180,
-      render: (value, asset) => asset.moveStatus === '待接收'
-        ? <Input size="small" value={value || ''} maxLength={100} onChange={(event) => updateLineField(asset.id, 'receiveDesc', event.target.value)} />
-        : (value || '-'),
+      title: '操作',
+      key: 'operation',
+      width: 190,
+      fixed: 'right',
+      render: (_, asset) => {
+        if (asset.moveStatus !== '待接收') return '-';
+        return (
+          <Space size={8}>
+            {asset.verification === '未验证' ? (
+              <Button type="link" className="px-0" onClick={() => setVerificationAsset(asset)}>手动验证</Button>
+            ) : (
+              <Button type="link" className="px-0" onClick={() => cancelVerification(asset)}>取消验证</Button>
+            )}
+            <Button type="link" danger className="px-0" onClick={() => setRejectAsset(asset)}>移库驳回</Button>
+          </Space>
+        );
+      },
     },
-    { title: '验证说明', dataIndex: 'verificationDesc', width: 160, render: (value) => value || '-' },
-    { title: '接收仓管员', dataIndex: 'receiver', width: 150, render: (value) => value || '-' },
-    { title: '接收时间', dataIndex: 'receiveTime', width: 160, render: (value) => value || '-' },
   ];
 
   const waiting = row.status === '出库待接收';
@@ -443,15 +446,14 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
 
         <div className="flex justify-center gap-3">
           {waiting && <Button type="primary" onClick={receive}>移库接收确认</Button>}
-          {waiting && <Button danger onClick={openReject}>移库驳回</Button>}
-          {!waiting && <Button onClick={() => messageApi.info('移库单打印已生成（原型演示）')}>打印</Button>}
-          {!waiting && <Button onClick={() => messageApi.success('移库明细已导出（原型演示）')}>导出</Button>}
+          {!waiting && <Button onClick={() => messageApi.info('移库单打印已生成')}>打印</Button>}
+          {!waiting && <Button onClick={() => messageApi.success('移库明细已导出')}>导出</Button>}
           <Button onClick={onBack}>返回</Button>
         </div>
 
         <ReceiveAssetDetailModal open={Boolean(detailAsset)} document={row} asset={detailAsset} onCancel={() => setDetailAsset(null)} />
         <VerificationModal open={Boolean(verificationAsset)} asset={verificationAsset} onCancel={() => setVerificationAsset(null)} onConfirm={manualVerify} />
-        <RejectModal open={rejectOpen} count={selectedKeys.length} onCancel={() => setRejectOpen(false)} onConfirm={reject} />
+        <RejectModal open={Boolean(rejectAsset)} onCancel={() => setRejectAsset(null)} onConfirm={reject} />
       </Space>
     </div>
   );
@@ -505,7 +507,7 @@ export default function MoveReceiveContent({ documents, setDocuments, onDetailCh
     { title: '移入仓库', dataIndex: 'toWarehouse', width: 320 },
     { title: '制单日期', dataIndex: 'createdDate', width: 130 },
     { title: '制单人', dataIndex: 'creator', width: 170 },
-    { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right', render: (value) => Number(value || 0).toLocaleString('zh-CN') },
+    { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right', render: (value) => value ?? 0 },
   ];
 
   return (
@@ -536,7 +538,7 @@ export default function MoveReceiveContent({ documents, setDocuments, onDetailCh
       <Card
         size="small"
         title="接收单列表"
-        extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => messageApi.success('当前查询结果已导出（原型演示）')}>导出</Button></Space>}
+        extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => messageApi.success('当前查询结果已导出')}>导出</Button></Space>}
       >
         <Table
           rowKey="id"
