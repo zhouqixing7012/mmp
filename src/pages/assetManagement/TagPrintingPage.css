@@ -1,0 +1,18 @@
+/*
+ * 标签打印相关列现在由 TagPrintingPage.js 的 columns 直接控制。
+ * 这里仅中和历史全局 CSS 中基于 nth-child 的隐藏规则，避免源码删列后误伤相邻列。
+ */
+.tag-batch-table .ant-table-container colgroup col,
+.tag-label-list-table .ant-table-container colgroup col,
+.tag-print-history-table .ant-table-container colgroup col {
+  display: table-column !important;
+}
+
+.tag-batch-table .ant-table-thead > tr > th,
+.tag-batch-table .ant-table-tbody > tr > td,
+.tag-label-list-table .ant-table-thead > tr > th,
+.tag-label-list-table .ant-table-tbody > tr > td,
+.tag-print-history-table .ant-table-thead > tr > th,
+.tag-print-history-table .ant-table-tbody > tr > td {
+  display: table-cell !important;
+}
