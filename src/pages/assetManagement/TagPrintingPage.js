@@ -134,7 +134,7 @@ const DEFAULT_BATCH_FILTERS = {
   batch: '', printed: '', creator: '', orderNo: '', assetTag: '', createdFrom: '', createdTo: '',
 };
 const DEFAULT_HISTORY_FILTERS = {
-  batch: '', tag: '', printer: '', printedFrom: '', printedTo: '',
+  tag: '', printer: '', printedFrom: '', printedTo: '',
 };
 const DEFAULT_LABEL_FILTERS = { tag: '', printed: '' };
 
@@ -680,6 +680,8 @@ export default function TagPrintingPage() {
   const [batchAppliedFilters, setBatchAppliedFilters] = useState(DEFAULT_BATCH_FILTERS);
   const [historyRows, setHistoryRows] = useState(INITIAL_HISTORY_ROWS);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyBatch, setHistoryBatch] = useState('');
+  const [historyLockedTag, setHistoryLockedTag] = useState('');
   const [historyDraftFilters, setHistoryDraftFilters] = useState(DEFAULT_HISTORY_FILTERS);
   const [historyAppliedFilters, setHistoryAppliedFilters] = useState(DEFAULT_HISTORY_FILTERS);
   const [labelRows, setLabelRows] = useState(INITIAL_LABEL_DETAIL_ROWS);
@@ -722,11 +724,11 @@ export default function TagPrintingPage() {
   }, [batchAppliedFilters, batchRows, labelRows]);
 
   const filteredHistoryRows = useMemo(() => historyRows.filter((row) => (
-    includesText(row.batch, historyAppliedFilters.batch)
+    row.batch === historyBatch
     && includesText(row.tag, historyAppliedFilters.tag)
     && includesText(row.printer, historyAppliedFilters.printer)
     && inDateRange(row.printedAt, historyAppliedFilters.printedFrom, historyAppliedFilters.printedTo)
-  )).sort((a, b) => textCompare(b.printedAt, a.printedAt)), [historyAppliedFilters, historyRows]);
+  )).sort((a, b) => textCompare(b.printedAt, a.printedAt)), [historyAppliedFilters, historyBatch, historyRows]);
 
   const filteredLabelRows = useMemo(() => labelRows.filter((row) => (
     row.batch === labelBatch
@@ -933,7 +935,9 @@ export default function TagPrintingPage() {
   };
 
   const openHistory = (batch, tag = '') => {
-    const filters = { ...DEFAULT_HISTORY_FILTERS, batch, tag };
+    setHistoryBatch(batch);
+    setHistoryLockedTag(tag);
+    const filters = { ...DEFAULT_HISTORY_FILTERS, tag };
     setHistoryDraftFilters(filters);
     setHistoryAppliedFilters(filters);
     setHistoryOpen(true);
@@ -1171,12 +1175,20 @@ export default function TagPrintingPage() {
               setHistoryAppliedFilters({ ...historyDraftFilters });
             }}
             onReset={() => {
-              setHistoryDraftFilters(DEFAULT_HISTORY_FILTERS);
-              setHistoryAppliedFilters(DEFAULT_HISTORY_FILTERS);
+              const filters = { ...DEFAULT_HISTORY_FILTERS, tag: historyLockedTag };
+              setHistoryDraftFilters(filters);
+              setHistoryAppliedFilters(filters);
             }}
           >
-            <QueryItem label="标签批次"><Input value={historyDraftFilters.batch} allowClear placeholder="请输入标签批次" onChange={(event) => updateHistoryFilter('batch', event.target.value)} /></QueryItem>
-            <QueryItem label="标签号"><Input value={historyDraftFilters.tag} allowClear placeholder="请输入标签号" onChange={(event) => updateHistoryFilter('tag', event.target.value)} /></QueryItem>
+            <QueryItem label="标签号">
+              <Input
+                value={historyDraftFilters.tag}
+                allowClear={!historyLockedTag}
+                disabled={Boolean(historyLockedTag)}
+                placeholder="请输入标签号"
+                onChange={(event) => updateHistoryFilter('tag', event.target.value)}
+              />
+            </QueryItem>
             <QueryItem label="打印人"><Input value={historyDraftFilters.printer} allowClear placeholder="请输入打印人" onChange={(event) => updateHistoryFilter('printer', event.target.value)} /></QueryItem>
             <QueryItem label="打印时间">
               <RangePicker
