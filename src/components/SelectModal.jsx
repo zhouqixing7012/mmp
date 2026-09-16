@@ -21,6 +21,7 @@ const EXIT_DURATION = 140;
   *   initialSearchValues - object, 可选的初始搜索值 (如 { brand: '华硕' })
   *   initialSelectedKeys - Array<string|number>, 可选的已选行，用于多选回显
   *   rowKey        - string, 行标识字段 (默认 'id')
+  *   width         - number|string, 弹窗宽度，默认 700px
   */
 export default function SelectModal({
   open,
@@ -35,6 +36,7 @@ export default function SelectModal({
   initialSelectedKeys = DEFAULT_SELECTED_KEYS,
   rowKey = 'id',
   multiple = false,
+  width = 700,
 }) {
   const [searchValues, setSearchValues] = useState(() => {
     const init = {};
@@ -167,7 +169,7 @@ export default function SelectModal({
     >
       <div
         className={`bg-white rounded-md shadow-xl flex flex-col overflow-hidden mmp-motion-dialog ${isVisible ? 'is-visible' : ''}`}
-        style={{ width: '700px', maxWidth: '100%' }}
+        style={{ width, maxWidth: '96vw' }}
         data-prototype-bindable="selection-modal"
         data-prototype-label={title}
       >
@@ -178,13 +180,13 @@ export default function SelectModal({
           </button>
         </div>
 
-        <div className="p-4">
+        <div className="p-4 min-w-0">
           {rows.map((row, ri) => (
             <div key={ri} className="flex gap-4 mb-4">
               {row.map((field) => (
                 <div
                   key={field.name}
-                  className="flex items-center gap-2 flex-1"
+                  className="flex items-center gap-2 flex-1 min-w-0"
                   data-prototype-bindable="selection-search-field"
                   data-prototype-label={field.label}
                 >
@@ -194,7 +196,7 @@ export default function SelectModal({
                     value={searchValues[field.name] || ''}
                     onChange={(e) => setSearchValues(prev => ({ ...prev, [field.name]: e.target.value }))}
                     placeholder={field.placeholder || `请输入${field.label}`}
-                    className="flex-1 px-3 py-1.5 text-sm bg-white border border-[#d9d9d9] rounded hover:border-[#1677ff] focus:border-[#1677ff] focus:ring-2 focus:ring-[#1677ff] focus:ring-opacity-20 outline-none transition-colors"
+                    className="flex-1 min-w-0 px-3 py-1.5 text-sm bg-white border border-[#d9d9d9] rounded hover:border-[#1677ff] focus:border-[#1677ff] focus:ring-2 focus:ring-[#1677ff] focus:ring-opacity-20 outline-none transition-colors"
                   />
                 </div>
               ))}
@@ -203,14 +205,14 @@ export default function SelectModal({
           ))}
 
           <div
-            className="border border-[#f0f0f0] rounded overflow-hidden"
+            className="border border-[#f0f0f0] rounded overflow-x-auto"
             data-prototype-bindable="selection-table"
             data-prototype-label={`${title}列表`}
           >
-            <table className="w-full text-left border-collapse">
+            <table className="w-full min-w-max text-left border-collapse">
               <thead>
                 <tr className="bg-[#fafafa] border-b border-[#f0f0f0]">
-                  <th className="px-4 py-3 w-12 text-center">
+                  <th className="px-4 py-3 w-12 text-center whitespace-nowrap">
                     <span className="w-4 h-4 flex items-center justify-center">
                       {multiple ? (
                         <Checkbox
@@ -225,7 +227,7 @@ export default function SelectModal({
                     </span>
                   </th>
                   {columns.map((col, ci) => (
-                    <th key={ci} className="px-4 py-3 text-sm font-semibold text-gray-800">{col.title}</th>
+                    <th key={ci} className="px-4 py-3 text-sm font-semibold text-gray-800 whitespace-nowrap">{col.title}</th>
                   ))}
                 </tr>
               </thead>
@@ -250,7 +252,7 @@ export default function SelectModal({
                         }
                       }}
                     >
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center whitespace-nowrap">
                         <input
                           type={multiple ? 'checkbox' : 'radio'}
                           className="w-3.5 h-3.5"
@@ -268,7 +270,7 @@ export default function SelectModal({
                         />
                       </td>
                       {columns.map((col, ci) => (
-                        <td key={ci} className="px-4 py-3 text-sm text-gray-600">
+                        <td key={ci} className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
                           {item[col.dataIndex]}
                         </td>
                       ))}
