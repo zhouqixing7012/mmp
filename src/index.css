@@ -154,6 +154,54 @@
   display: none;
 }
 
+/* 标签预打印批次列表不展示内部“来源”字段；来源仅保留给打印链路内部识别。 */
+.workspace-content:has([data-prototype-label="订单编号"]):has([data-prototype-label="创建时间"])
+  .ant-card:has(.ant-table-wrapper) .ant-table-container colgroup col:nth-child(2),
+.workspace-content:has([data-prototype-label="订单编号"]):has([data-prototype-label="创建时间"])
+  .ant-card:has(.ant-table-wrapper) .ant-table-thead > tr > th:nth-child(2),
+.workspace-content:has([data-prototype-label="订单编号"]):has([data-prototype-label="创建时间"])
+  .ant-card:has(.ant-table-wrapper) .ant-table-tbody > tr > td:nth-child(2) {
+  display: none;
+}
+
+/* 标签清单已在弹窗顶部明确当前批次，表格不再重复展示“标签批次”列。 */
+.ant-modal-content:has([data-prototype-label="标签号"]):has([data-prototype-label="是否已打印"])
+  .ant-table-container colgroup col:nth-child(2),
+.ant-modal-content:has([data-prototype-label="标签号"]):has([data-prototype-label="是否已打印"])
+  .ant-table-thead > tr > th:nth-child(2),
+.ant-modal-content:has([data-prototype-label="标签号"]):has([data-prototype-label="是否已打印"])
+  .ant-table-tbody > tr > td:nth-child(2) {
+  display: none;
+}
+
+/* 打印历史面向业务用户只展示业务追溯字段；任务状态、来源、任务ID和失败原因保留为内部日志字段。 */
+.ant-modal-content:has([data-prototype-label="打印人"]):has([data-prototype-label="打印时间"])
+  .ant-table-container colgroup col:nth-child(2),
+.ant-modal-content:has([data-prototype-label="打印人"]):has([data-prototype-label="打印时间"])
+  .ant-table-container colgroup col:nth-child(3),
+.ant-modal-content:has([data-prototype-label="打印人"]):has([data-prototype-label="打印时间"])
+  .ant-table-container colgroup col:nth-child(8),
+.ant-modal-content:has([data-prototype-label="打印人"]):has([data-prototype-label="打印时间"])
+  .ant-table-container colgroup col:nth-child(10),
+.ant-modal-content:has([data-prototype-label="打印人"]):has([data-prototype-label="打印时间"])
+  .ant-table-thead > tr > th:nth-child(2),
+.ant-modal-content:has([data-prototype-label="打印人"]):has([data-prototype-label="打印时间"])
+  .ant-table-thead > tr > th:nth-child(3),
+.ant-modal-content:has([data-prototype-label="打印人"]):has([data-prototype-label="打印时间"])
+  .ant-table-thead > tr > th:nth-child(8),
+.ant-modal-content:has([data-prototype-label="打印人"]):has([data-prototype-label="打印时间"])
+  .ant-table-thead > tr > th:nth-child(10),
+.ant-modal-content:has([data-prototype-label="打印人"]):has([data-prototype-label="打印时间"])
+  .ant-table-tbody > tr > td:nth-child(2),
+.ant-modal-content:has([data-prototype-label="打印人"]):has([data-prototype-label="打印时间"])
+  .ant-table-tbody > tr > td:nth-child(3),
+.ant-modal-content:has([data-prototype-label="打印人"]):has([data-prototype-label="打印时间"])
+  .ant-table-tbody > tr > td:nth-child(8),
+.ant-modal-content:has([data-prototype-label="打印人"]):has([data-prototype-label="打印时间"])
+  .ant-table-tbody > tr > td:nth-child(10) {
+  display: none;
+}
+
 /* React Router 一级路由使用浏览器原生 View Transition，统一到项目时长。 */
 ::view-transition-old(root),
 ::view-transition-new(root) {
