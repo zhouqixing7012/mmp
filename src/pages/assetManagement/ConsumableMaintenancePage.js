@@ -939,28 +939,24 @@ export default function ConsumableMaintenancePage() {
     },
   }));
 
-  const tabItems = source ? (
-    cardMode === 'edit'
-      ? [{ key: 'detail', label: '详细信息', children: detailTab }]
-      : [
-          { key: 'detail', label: '详细信息', children: detailTab },
-          {
-            key: 'history',
-            label: '资产操作历史',
-            children: (
-              <Table
-                rowKey="id"
-                size="small"
-                bordered
-                columns={historyColumns}
-                dataSource={historyRows}
-                pagination={false}
-                scroll={{ x: 'max-content' }}
-              />
-            ),
-          },
-        ]
-  ) : [];
+  const tabItems = source ? [
+    { key: 'detail', label: '详细信息', children: detailTab },
+    {
+      key: 'history',
+      label: '资产操作历史',
+      children: (
+        <Table
+          rowKey="id"
+          size="small"
+          bordered
+          columns={historyColumns}
+          dataSource={historyRows}
+          pagination={false}
+          scroll={{ x: 'max-content' }}
+        />
+      ),
+    },
+  ] : [];
 
   return (
     <Space direction="vertical" size={16} className="w-full">
@@ -1084,7 +1080,7 @@ export default function ConsumableMaintenancePage() {
         onCancel={closeCard}
         destroyOnHidden
       >
-        <Tabs activeKey={activeTab} items={tabItems} onChange={setActiveTab} />
+        {cardMode === 'edit' ? detailTab : <Tabs activeKey={activeTab} items={tabItems} onChange={setActiveTab} />}
       </Modal>
 
       <Modal
