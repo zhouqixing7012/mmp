@@ -117,7 +117,7 @@
 ```jsx
 <div className="flex-1 grid grid-cols-[repeat(3,minmax(0,1fr))] gap-x-6 gap-y-3 items-center">
   <div className="flex items-center justify-end gap-2">
-    <span className="text-sm text-gray-600 whitespace-nowrap w-24 text-right">标签名:</span>
+    <span className="text-sm text-gray-600 whitespace-nowrap w-[88px] text-right">标签名:</span>
     <div className="flex-1"><AntInput placeholder="请输入..." /></div>
   </div>
   {/* AntSelect 同理，className="flex-1" */}
@@ -125,11 +125,13 @@
 ```
 
 **关键规则**：
-- 标签固定 `w-24 text-right whitespace-nowrap`（96px 右对齐）
+- 查询条件标签默认 88px 右对齐；个别超长标签可通过 `labelWidth` 显式覆盖，不得为单页需求整体放大公共标签宽度。
 - AntInput 包在 `<div className="flex-1">` 中（因 AntInput 自带 `w-full` 无法被 className 覆盖）
 - AntSelect 使用 `className="flex-1"`（className 作用于外层 div，可正常覆盖）
 - 每行最多 3 个条件，不足 3 个用空 `<div></div>` 补齐
+- 查询条件区域与右侧查询/重置操作区保持约 24px 间距，第三列不得贴住按钮区。
 - 查询/重置按钮在 grid 右侧，使用 `shrink-0`
+- 范围查询由业务页面显式使用 `RangePicker` 等范围控件，不允许 QueryBar 根据字段名称自动合并或改写业务查询条件。
 - `QueryBar` 的“查询 / 重置”会自动给同一查询区后面的首个 `Table / List` 播放约 140ms 结果刷新反馈；业务页不得再额外做整页动画或假 Loading。
 - 如果查询结果不是 Ant Design `Table / List`，在结果根节点加 `data-mmp-query-result`，继续复用公共查询反馈。
 
@@ -191,6 +193,25 @@ const { highlightRow, getRowClassName } = useTransientRowHighlight();
 highlightRow(record.id);
 ```
 
+### 8. 结构性 UI 变更必须修改源码结构（必须遵守）
+
+以下变化必须直接修改对应页面的 JSX、`columns`、Tabs `items` 或条件渲染逻辑：
+
+- 删除/新增表格列；
+- 隐藏/新增页签；
+- 字段显隐；
+- 编辑态与查看态结构差异；
+- 查询条件合并、拆分、改为范围控件；
+- 业务字段从页面移除。
+
+**禁止用 CSS 代替业务结构修改**：
+- 禁止通过全局 `:has()`、`nth-child`、DOM 顺序等方式隐藏业务列或页签；
+- 禁止依赖 Ant Design 内部 DOM 层级猜测业务字段位置；
+- 禁止在公共组件里按字段名称自动重写某个具体业务页面结构；
+- CSS 只负责视觉样式，不负责决定业务字段是否存在。
+
+完成结构性 UI 变更后，除构建成功外还必须核对最终分支源码，确认目标列/页签/字段已经从实际渲染结构中删除或按条件不渲染。详细检查清单见 `docs/IMPLEMENTATION_GUARDRAILS.md`。
+
 ## 开发流程
 
 ### 1. 新增页面
@@ -251,6 +272,7 @@ npm test
 - README.md - 项目说明和架构
 - docs/UI_DESIGN_GUIDELINES.md - UI 设计规范
 - docs/UI_MOTION_GUIDELINES.md - B 端统一动效规范
+- docs/IMPLEMENTATION_GUARDRAILS.md - 结构性 UI 变更与回归检查
 - docs/PRD-*.md - 产品需求文档
 - docs/员工自助功能PRD/12-当前原型补充口径.md - 来源 PDF 后续原型覆盖口径
 - MEMORY.md - Agent记忆索引
