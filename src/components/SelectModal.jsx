@@ -1,4 +1,5 @@
 ﻿import React, { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { Button, Checkbox } from 'antd';
 
@@ -152,16 +153,16 @@ export default function SelectModal({
     });
   };
 
-  if (!shouldRender) return null;
+  if (!shouldRender || typeof document === 'undefined') return null;
 
   const rows = [];
   for (let i = 0; i < searchFields.length; i += 2) {
     rows.push(searchFields.slice(i, i + 2));
   }
 
-  return (
+  return createPortal(
     <div
-      className={`fixed inset-0 bg-black/40 z-[1050] flex items-center justify-center p-4 mmp-motion-overlay ${isVisible ? 'is-visible' : ''}`}
+      className={`fixed inset-0 bg-black/40 z-[1200] flex items-center justify-center p-4 mmp-motion-overlay ${isVisible ? 'is-visible' : ''}`}
       data-prototype-overlay="select-modal"
     >
       <div
@@ -284,6 +285,7 @@ export default function SelectModal({
           <Button onClick={handleCancel}>取消</Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
