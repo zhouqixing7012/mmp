@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -144,8 +144,7 @@ function amount(value) {
 }
 
 function count(value) {
-  const number = Number(value || 0);
-  return Number.isNaN(number) ? displayText(value) : number.toLocaleString('zh-CN');
+  return value === undefined || value === null || value === '' ? '-' : value;
 }
 
 function textTokens(value) {
@@ -193,38 +192,30 @@ function getEligibleWarehouseNames(company) {
     .map((item) => item.name);
 }
 
-function LookupInput({ value, placeholder, onOpen, onDoubleClick }) {
-  const clickTimerRef = useRef(null);
-  const handleClick = () => {
-    if (!onDoubleClick) {
-      onOpen?.();
-      return;
-    }
-    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-    clickTimerRef.current = setTimeout(() => {
-      clickTimerRef.current = null;
-      onOpen?.();
-    }, 220);
-  };
-  const handleDoubleClick = (event) => {
-    if (!onDoubleClick) return;
-    event.preventDefault();
-    if (clickTimerRef.current) {
-      clearTimeout(clickTimerRef.current);
-      clickTimerRef.current = null;
-    }
-    onDoubleClick();
+function LookupInput({ value, placeholder, onOpen, onClear }) {
+  const handleOpen = (event) => {
+    if (event?.target?.closest?.('.ant-input-clear-icon')) return;
+    onOpen?.();
   };
 
   return (
     <Input
-      value={value}
+      value={value || ''}
       readOnly
+      allowClear={Boolean(onClear)}
       placeholder={placeholder}
       suffix={<Search size={14} className="text-[#1677ff]" />}
       style={{ cursor: 'pointer' }}
-      onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
+      onClick={handleOpen}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpen?.();
+        }
+      }}
+      onChange={(event) => {
+        if (!event.target.value) onClear?.();
+      }}
     />
   );
 }
@@ -236,10 +227,6 @@ function SectionTitle({ children }) {
       <span>{children}</span>
     </div>
   );
-}
-
-function QueryClearArea({ onClear, children }) {
-  return <div onDoubleClick={onClear}>{children}</div>;
 }
 
 function buildPrototypeBatchValidation(file) {
@@ -497,6 +484,7 @@ export default function ConsumableMaintenancePage() {
 
   const cancelEdit = () => {
     setCardMode('view');
+    setActiveTab('detail');
     setEditDraft(null);
     setLookupKey('');
   };
@@ -682,41 +670,35 @@ export default function ConsumableMaintenancePage() {
       value={lookupDisplay(field)}
       placeholder={placeholder}
       onOpen={() => setLookupKey(field)}
-      onDoubleClick={() => updateFilter(field, Array.isArray(draftFilters[field]) ? [] : '')}
+      onClear={() => updateFilter(field, Array.isArray(draftFilters[field]) ? [] : '')}
     />
   );
 
   const renderBasicQuery = () => (
     <>
       <QueryItem label="耗材标签号">
-        <Input value={draftFilters.tag} allowClear placeholder="支持模糊匹配" onChange={(event) => updateFilter('tag', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('tag', '')} />
+        <Input value={draftFilters.tag} allowClear placeholder="支持模糊匹配" onChange={(event) => updateFilter('tag', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
       <QueryItem label="公司">{renderLookup('companies', '请选择公司')}</QueryItem>
       <QueryItem label="部门">{renderLookup('department', '请选择部门')}</QueryItem>
       <QueryItem label="耗材责任人">{renderLookup('owners', '请选择责任人')}</QueryItem>
       <QueryItem label="主资产标签号">
-        <Input value={draftFilters.mainTag} allowClear placeholder="支持模糊匹配" onChange={(event) => updateFilter('mainTag', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('mainTag', '')} />
+        <Input value={draftFilters.mainTag} allowClear placeholder="支持模糊匹配" onChange={(event) => updateFilter('mainTag', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
       <QueryItem label="耗材说明">
-        <Input value={draftFilters.assetDesc} allowClear placeholder="支持模糊匹配" onChange={(event) => updateFilter('assetDesc', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('assetDesc', '')} />
+        <Input value={draftFilters.assetDesc} allowClear placeholder="支持模糊匹配" onChange={(event) => updateFilter('assetDesc', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
       <QueryItem label="耗材类别">
-        <QueryClearArea onClear={() => updateFilter('category', '')}>
-          <TreeSelect treeData={categoryTree} value={draftFilters.category || undefined} allowClear placeholder="请选择耗材类别" style={{ width: '100%' }} onChange={(value) => updateFilter('category', value || '')} />
-        </QueryClearArea>
+        <TreeSelect treeData={categoryTree} value={draftFilters.category || undefined} allowClear placeholder="请选择耗材类别" style={{ width: '100%' }} onChange={(value) => updateFilter('category', value || '')} />
       </QueryItem>
       <QueryItem label="耗材状态">
-        <QueryClearArea onClear={() => updateFilter('statuses', [])}>
-          <Select mode="multiple" value={draftFilters.statuses} allowClear placeholder="请选择" options={STATUS_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('statuses', value)} />
-        </QueryClearArea>
+        <Select mode="multiple" value={draftFilters.statuses} allowClear placeholder="请选择" options={STATUS_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('statuses', value)} />
       </QueryItem>
       <QueryItem label="板块">
-        <QueryClearArea onClear={() => updateFilter('plate', '')}>
-          <Select value={draftFilters.plate || undefined} allowClear placeholder="请选择" options={PLATE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('plate', value || '')} />
-        </QueryClearArea>
+        <Select value={draftFilters.plate || undefined} allowClear placeholder="请选择" options={PLATE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('plate', value || '')} />
       </QueryItem>
       <QueryItem label="PO单号">
-        <Input value={draftFilters.poNo} allowClear placeholder="支持模糊检索" onChange={(event) => updateFilter('poNo', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('poNo', '')} />
+        <Input value={draftFilters.poNo} allowClear placeholder="支持模糊检索" onChange={(event) => updateFilter('poNo', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
       <QueryItem label="仓库">{renderLookup('warehouses', '请选择仓库')}</QueryItem>
     </>
@@ -725,59 +707,45 @@ export default function ConsumableMaintenancePage() {
   const renderMoreQuery = () => (
     <>
       <QueryItem label="City">
-        <QueryClearArea onClear={() => handleCityFilterChange('')}>
-          <Select value={draftFilters.city || undefined} allowClear placeholder="请选择" options={CITY_OPTIONS.map((value) => ({ label: value, value }))} onChange={handleCityFilterChange} />
-        </QueryClearArea>
+        <Select value={draftFilters.city || undefined} allowClear placeholder="请选择" options={CITY_OPTIONS.map((value) => ({ label: value, value }))} onChange={handleCityFilterChange} />
       </QueryItem>
       <QueryItem label="Building">
-        <QueryClearArea onClear={() => handleBuildingFilterChange('')}>
-          <Select
-            value={draftFilters.building || undefined}
-            allowClear
-            placeholder={draftFilters.city ? '请选择' : '请先选择城市'}
-            options={(BUILDING_BY_CITY[draftFilters.city] || []).map((value) => ({ label: value, value }))}
-            onOpenChange={(open) => { if (open && !draftFilters.city) messageApi.warning('请先选择城市！'); }}
-            onChange={handleBuildingFilterChange}
-          />
-        </QueryClearArea>
+        <Select
+          value={draftFilters.building || undefined}
+          allowClear
+          placeholder={draftFilters.city ? '请选择' : '请先选择城市'}
+          options={(BUILDING_BY_CITY[draftFilters.city] || []).map((value) => ({ label: value, value }))}
+          onOpenChange={(open) => { if (open && !draftFilters.city) messageApi.warning('请先选择城市！'); }}
+          onChange={handleBuildingFilterChange}
+        />
       </QueryItem>
       <QueryItem label="Floor">
-        <QueryClearArea onClear={() => updateFilter('floor', '')}>
-          <Select
-            value={draftFilters.floor || undefined}
-            allowClear
-            placeholder="请选择全部启用 Floor"
-            options={ENABLED_FLOOR_OPTIONS.map((value) => ({ label: value, value }))}
-            onChange={(value) => updateFilter('floor', value || '')}
-          />
-        </QueryClearArea>
+        <Select
+          value={draftFilters.floor || undefined}
+          allowClear
+          placeholder="请选择全部启用 Floor"
+          options={ENABLED_FLOOR_OPTIONS.map((value) => ({ label: value, value }))}
+          onChange={(value) => updateFilter('floor', value || '')}
+        />
       </QueryItem>
       <QueryItem label="新增类型">
-        <QueryClearArea onClear={() => updateFilter('addType', '')}>
-          <Select value={draftFilters.addType || undefined} allowClear placeholder="请选择" options={ADD_TYPE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('addType', value || '')} />
-        </QueryClearArea>
+        <Select value={draftFilters.addType || undefined} allowClear placeholder="请选择" options={ADD_TYPE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('addType', value || '')} />
       </QueryItem>
       <QueryItem label="成本中心">{renderLookup('costCenter', '请选择成本中心')}</QueryItem>
       <QueryItem label="购买日期">
-        <QueryClearArea onClear={() => updateFilter('purchaseDate', [])}>
-          <RangePicker style={{ width: '100%' }} value={draftFilters.purchaseDate.length === 2 ? draftFilters.purchaseDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('purchaseDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
-        </QueryClearArea>
+        <RangePicker style={{ width: '100%' }} value={draftFilters.purchaseDate.length === 2 ? draftFilters.purchaseDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('purchaseDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
       </QueryItem>
       <QueryItem label="原值">
-        <QueryClearArea onClear={() => setDraftFilters((current) => ({ ...current, originalValueMin: null, originalValueMax: null }))}>
-          <Space.Compact block>
-            <InputNumber min={0} precision={2} placeholder="最小值" value={draftFilters.originalValueMin} onChange={(value) => updateFilter('originalValueMin', value)} style={{ width: '50%' }} />
-            <InputNumber min={0} precision={2} placeholder="最大值" value={draftFilters.originalValueMax} onChange={(value) => updateFilter('originalValueMax', value)} style={{ width: '50%' }} />
-          </Space.Compact>
-        </QueryClearArea>
+        <Space.Compact block>
+          <InputNumber min={0} precision={2} placeholder="最小值" value={draftFilters.originalValueMin} onChange={(value) => updateFilter('originalValueMin', value)} style={{ width: '50%' }} />
+          <InputNumber min={0} precision={2} placeholder="最大值" value={draftFilters.originalValueMax} onChange={(value) => updateFilter('originalValueMax', value)} style={{ width: '50%' }} />
+        </Space.Compact>
       </QueryItem>
       <QueryItem label="启用日期">
-        <QueryClearArea onClear={() => updateFilter('enabledDate', [])}>
-          <RangePicker style={{ width: '100%' }} value={draftFilters.enabledDate.length === 2 ? draftFilters.enabledDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('enabledDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
-        </QueryClearArea>
+        <RangePicker style={{ width: '100%' }} value={draftFilters.enabledDate.length === 2 ? draftFilters.enabledDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('enabledDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
       </QueryItem>
       <QueryItem label="PR单号">
-        <Input value={draftFilters.prNo} allowClear placeholder="支持模糊检索" onChange={(event) => updateFilter('prNo', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('prNo', '')} />
+        <Input value={draftFilters.prNo} allowClear placeholder="支持模糊检索" onChange={(event) => updateFilter('prNo', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
     </>
   );
@@ -856,16 +824,16 @@ export default function ConsumableMaintenancePage() {
         </DetailItem>
         <DetailItem label="数量">{count(source.quantity)}</DetailItem>
         <DetailItem label="耗材状态">
-          {editable('status', (
-            <Select
-              value={editDraft?.status || undefined}
-              style={{ width: '100%' }}
-              disabled={FORMAL_SCRAP_STATUSES.has(activeConsumable?.status)}
-              options={(FORMAL_SCRAP_STATUSES.has(activeConsumable?.status) ? [activeConsumable.status, ...EDITABLE_STATUS_OPTIONS] : EDITABLE_STATUS_OPTIONS)
-                .map((value) => ({ label: value, value, disabled: FORMAL_SCRAP_STATUSES.has(value) }))}
-              onChange={(value) => updateEdit('status', value)}
-            />
-          ))}
+          {cardMode === 'edit' && FORMAL_SCRAP_STATUSES.has(activeConsumable?.status)
+            ? displayText(source.status)
+            : editable('status', (
+              <Select
+                value={editDraft?.status || undefined}
+                style={{ width: '100%' }}
+                options={EDITABLE_STATUS_OPTIONS.map((value) => ({ label: value, value }))}
+                onChange={(value) => updateEdit('status', value)}
+              />
+            ))}
         </DetailItem>
         <DetailItem label="原值">{amount(source.originalValue)}</DetailItem>
         <DetailItem label="购买日期">{displayText(source.purchaseDate)}</DetailItem>
@@ -922,7 +890,7 @@ export default function ConsumableMaintenancePage() {
         <DetailItem label="主资产标签号">
           {cardMode === 'edit' ? (
             <Space.Compact block>
-              <LookupInput value={editDraft?.mainTag || ''} placeholder="请选择主资产" onOpen={openMainAssetLookup} onDoubleClick={clearMainAsset} />
+              <LookupInput value={editDraft?.mainTag || ''} placeholder="请选择主资产" onOpen={openMainAssetLookup} />
               <Button disabled={!editDraft?.mainTag} onClick={clearMainAsset}>清空</Button>
             </Space.Compact>
           ) : displayText(source.mainTag)}
@@ -1010,7 +978,7 @@ export default function ConsumableMaintenancePage() {
             <Button type="primary" icon={<Search size={14} />} onClick={handleQuery}>查询</Button>
             <Button onClick={handleReset}>重置</Button>
             <Button type="link" icon={moreOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />} onClick={() => setMoreOpen((current) => !current)}>
-              {moreOpen ? '收起' : '更多'}
+              {moreOpen ? '收起' : '更多条件'}
             </Button>
           </>
         )}
@@ -1107,7 +1075,7 @@ export default function ConsumableMaintenancePage() {
       />
 
       <Modal
-        title={`${cardMode === 'edit' ? '耗材详细信息' : '耗材卡片信息'}${source?.tag ? `：${source.tag}` : ''}`}
+        title={`耗材卡片信息${source?.tag ? `：${source.tag}` : ''}`}
         open={cardOpen}
         width={1080}
         style={{ maxWidth: 'calc(100vw - 48px)' }}
@@ -1139,8 +1107,17 @@ export default function ConsumableMaintenancePage() {
             type="warning"
             showIcon
             message="批量修改采用覆盖策略"
-            description="耗材标签号用于定位既有卡片；板块、耗材说明、数量为只读核对列，必须与系统当前值一致且不会写回。公司、City、Building、主资产标签号、责任人、耗材状态、仓库、启用日期按模板值覆盖，空白会覆盖为空；其中公司、责任人、City、Building为空时直接校验失败。Floor 从全部启用 Floor 中校验；仓库必须启用、属于当前公司，且仓库用途为 IU0001（耗材库）或 IU0003（资产高耗库）；启用日期有值时按 yyyy/MM/dd 读取。任一行校验失败时，本次文件全部不保存。"
+            description="任一行校验失败时，本次文件全部不保存。"
           />
+          <div className="text-sm text-gray-600">
+            <Typography.Text strong>批量修改规则：</Typography.Text>
+            <ul className="mb-0 mt-2 list-disc space-y-1 pl-5">
+              <li>耗材标签号用于定位既有卡片；板块、耗材说明、数量为只读核对列，必须与系统当前值一致且不会写回。</li>
+              <li>公司、City、Building、主资产标签号、责任人、耗材状态、仓库、启用日期按模板值覆盖；公司、责任人、City、Building 为空时校验失败。</li>
+              <li>Floor 从全部启用 Floor 中校验；仓库必须启用、属于当前公司，且仓库用途为 IU0001（耗材库）或 IU0003（资产高耗库）。</li>
+              <li>启用日期有值时按 yyyy/MM/dd 读取。</li>
+            </ul>
+          </div>
           <div>
             <Typography.Text strong>模板列：</Typography.Text>
             <Typography.Text>{BATCH_TEMPLATE_FIELDS.join('、')}</Typography.Text>
