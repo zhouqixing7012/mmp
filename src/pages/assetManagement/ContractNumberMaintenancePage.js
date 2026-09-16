@@ -353,10 +353,7 @@ export default function ContractNumberMaintenancePage() {
   };
 
   const cancelEdit = () => {
-    setCardMode('view');
-    setActiveTab('detail');
-    setEditDraft(null);
-    setLookupKey('');
+    closeCard();
   };
 
   const updateEdit = (field, value) => {
