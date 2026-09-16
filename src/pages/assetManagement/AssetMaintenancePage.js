@@ -169,9 +169,7 @@ function amount(value) {
 }
 
 function count(value) {
-  if (isEmptyValue(value)) return '-';
-  const number = Number(value);
-  return Number.isNaN(number) ? displayText(value) : number.toLocaleString('zh-CN');
+  return isEmptyValue(value) ? '-' : value;
 }
 
 function textTokens(value) {
@@ -238,15 +236,30 @@ function isPlaceholderSerial(value) {
   return normalizeSerial(value) === '缺省';
 }
 
-function LookupInput({ value, placeholder, onOpen }) {
+function LookupInput({ value, placeholder, onOpen, onClear }) {
+  const handleOpen = (event) => {
+    if (event?.target?.closest?.('.ant-input-clear-icon')) return;
+    onOpen?.();
+  };
+
   return (
     <Input
-      value={value}
+      value={value || ''}
       readOnly
+      allowClear={Boolean(onClear)}
       placeholder={placeholder}
       suffix={<Search size={14} className="text-[#1677ff]" />}
       style={{ cursor: 'pointer' }}
-      onClick={onOpen}
+      onClick={handleOpen}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpen?.();
+        }
+      }}
+      onChange={(event) => {
+        if (!event.target.value) onClear?.();
+      }}
     />
   );
 }
@@ -551,6 +564,7 @@ export default function AssetMaintenancePage() {
 
   const cancelEdit = () => {
     setAssetMode('view');
+    setActiveTab('detail');
     setEditDraft(null);
   };
 
@@ -682,6 +696,7 @@ export default function AssetMaintenancePage() {
       value={lookupDisplay(field)}
       placeholder={placeholder}
       onOpen={() => setLookupKey(field)}
+      onClear={() => updateFilter(field, [])}
     />
   );
 
@@ -1233,8 +1248,17 @@ export default function AssetMaintenancePage() {
             type="warning"
             showIcon
             message="批量修改采用覆盖式更新"
-            description="资产标签号、成本中心、City、Building、资产状态为必填；任一必填单元格为空时整批校验失败。成本中心按“编码.名称”填写并按编码识别；City、Building、Floor按名称填写。资产标签号、资产序列号按文本处理，避免科学计数法或前导零丢失。Floor、资产序列号、备注、资产标记、使用说明、资产用途为空时会将原字段覆盖为空；任一行校验失败时，本次文件全部不保存。"
+            description="任一行校验失败时，本次文件全部不保存。"
           />
+          <div className="text-sm text-gray-600">
+            <Typography.Text strong>批量修改规则：</Typography.Text>
+            <ul className="mb-0 mt-2 list-disc space-y-1 pl-5">
+              <li>资产标签号、成本中心、City、Building、资产状态为必填，任一必填单元格为空时整批校验失败。</li>
+              <li>成本中心按“编码.名称”填写并按编码识别；City、Building、Floor 按名称填写。</li>
+              <li>资产标签号、资产序列号按文本处理，避免科学计数法或前导零丢失。</li>
+              <li>Floor、资产序列号、备注、资产标记、使用说明、资产用途为空时会将原字段覆盖为空。</li>
+            </ul>
+          </div>
           <Button
             icon={<Download size={14} />}
             onClick={() => messageApi.success('已发起下载：资产批量修改模板.xlsx（原型）')}
