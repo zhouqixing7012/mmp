@@ -483,10 +483,7 @@ export default function ConsumableMaintenancePage() {
   };
 
   const cancelEdit = () => {
-    setCardMode('view');
-    setActiveTab('detail');
-    setEditDraft(null);
-    setLookupKey('');
+    closeCard();
   };
 
   const updateEdit = (field, value) => {
