@@ -1161,6 +1161,7 @@ export default function AssetMaintenancePage() {
         <div className="mb-3 flex justify-end">
           <Space>
             <Button icon={<FileSpreadsheet size={14} />} onClick={() => setBatchOpen(true)}>批量修改</Button>
+            <Button icon={<Download size={14} />} onClick={() => messageApi.success('已发起下载：资产批量修改模板.xlsx')}>模板下载</Button>
             <Button icon={<Download size={14} />} onClick={handleExport}>导出</Button>
           </Space>
         </div>
