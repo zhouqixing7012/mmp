@@ -1021,7 +1021,6 @@ export default function TagPrintingPage() {
     { title: '打印份数', dataIndex: 'copies', width: 100, align: 'right', render: displayText },
     { title: '打印时间', dataIndex: 'printedAt', width: 180, render: displayText },
     { title: '打印人', dataIndex: 'printer', width: 120, render: displayText },
-    { title: '标签批次', dataIndex: 'batch', width: 230, render: displayText },
     { title: '打印任务ID', dataIndex: 'printTaskId', width: 220, render: displayText },
     { title: '打印IP', dataIndex: 'printIp', width: 150, render: displayText },
     { title: '失败原因', dataIndex: 'failureReason', width: 180, render: displayText },
