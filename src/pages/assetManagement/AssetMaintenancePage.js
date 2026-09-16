@@ -563,9 +563,7 @@ export default function AssetMaintenancePage() {
   };
 
   const cancelEdit = () => {
-    setAssetMode('view');
-    setActiveTab('detail');
-    setEditDraft(null);
+    closeAsset();
   };
 
   const toggleSection = (key) => {
