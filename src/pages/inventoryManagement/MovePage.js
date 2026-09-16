@@ -706,7 +706,27 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
 
   const materialColumns = [
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
-    { title: '标签号', dataIndex: 'assetTag', width: 165, render: (value, row) => <Button type="link" className="px-0 select-text" onClick={() => setDetailAsset(row)}>{value}</Button> },
+    {
+      title: '标签号',
+      dataIndex: 'assetTag',
+      width: 165,
+      render: (value, row) => (
+        <Button
+          type="link"
+          className="px-0 select-text"
+          onClick={() => {
+            if (editable) {
+              setEditingLine(row);
+              setLineModalOpen(true);
+              return;
+            }
+            setDetailAsset(row);
+          }}
+        >
+          {value}
+        </Button>
+      ),
+    },
     { title: 'SN', dataIndex: 'sn', width: 150 },
     { title: '物资说明', dataIndex: 'materialDesc', width: 220 },
     { title: '物资总类', dataIndex: 'materialGroup', width: 130 },
