@@ -59,6 +59,35 @@ function flattenQueryChildren(children) {
   });
 }
 
+function mergePrintTimeRangeFields(fields) {
+  const merged = [];
+  for (let index = 0; index < fields.length; index += 1) {
+    const current = fields[index];
+    const next = fields[index + 1];
+    const isPrintTimePair = React.isValidElement(current)
+      && React.isValidElement(next)
+      && current.props?.label === '打印时间从'
+      && next.props?.label === '打印时间至';
+
+    if (!isPrintTimePair) {
+      merged.push(current);
+      continue;
+    }
+
+    merged.push(
+      <QueryItem key="merged-print-time-range" label="打印时间" labelWidth={current.props?.labelWidth}>
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="min-w-0 flex-1">{current.props.children}</div>
+          <span className="shrink-0 text-gray-400">至</span>
+          <div className="min-w-0 flex-1">{next.props.children}</div>
+        </div>
+      </QueryItem>,
+    );
+    index += 1;
+  }
+  return merged;
+}
+
 /**
  * 查询条件容器组件
  * fields: 查询字段（自动按 3 列栅格排列）
@@ -95,7 +124,7 @@ export default function QueryBar({
   onReset,
   fieldColProps,
 }) {
-  const fields = flattenQueryChildren(children);
+  const fields = mergePrintTimeRangeFields(flattenQueryChildren(children));
   const defaultButtons = (
     <>
       <Button type="primary" icon={<Search size={14} />} onClick={onQuery}>查询</Button>
@@ -148,7 +177,7 @@ export default function QueryBar({
         <div style={{ flex: 1, minWidth: 0 }}>
           <Row gutter={[16, 16]}>
             {fields.map((field, i) => (
-              <Col key={i} {...resolvedFieldColProps}>
+              <Col key={field.key || i} {...resolvedFieldColProps}>
                 <div className="qw">{field}</div>
               </Col>
             ))}
