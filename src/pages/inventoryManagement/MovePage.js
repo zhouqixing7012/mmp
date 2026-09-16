@@ -264,6 +264,11 @@ function createDocumentNo(documents) {
   return `TS-${dayjs().format('YYYYMMDD')}${String(count).padStart(4, '0')}`;
 }
 
+function formatMoney(value) {
+  if (value === undefined || value === null || value === '') return '-';
+  return Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function PageTitle({ children }) {
   return <Typography.Title level={3} className="mb-0">{children}</Typography.Title>;
 }
@@ -305,14 +310,15 @@ function MoveAssetDetailModal({ open, document, asset, onCancel }) {
             <DetailItem label="标签号"><Readonly>{snapshot.assetTag}</Readonly></DetailItem>
             <DetailItem label="SN"><Readonly>{snapshot.sn}</Readonly></DetailItem>
             <DetailItem label="物资总类"><Readonly>{snapshot.materialGroup}</Readonly></DetailItem>
-            <DetailItem label="原值"><Readonly>{Number(snapshot.originalValue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</Readonly></DetailItem>
-            <DetailItem label="净值"><Readonly>{Number(snapshot.netValue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</Readonly></DetailItem>
+            <DetailItem label="原值"><Readonly>{formatMoney(snapshot.originalValue)}</Readonly></DetailItem>
+            <DetailItem label="净值"><Readonly>{formatMoney(snapshot.netValue)}</Readonly></DetailItem>
             <DetailItem label="资产状态"><Readonly>{snapshot.assetStatus}</Readonly></DetailItem>
             <DetailItem label="板块"><Readonly>{snapshot.plate}</Readonly></DetailItem>
             <DetailItem label="使用公司"><Readonly>{snapshot.company}</Readonly></DetailItem>
             <DetailItem label="使用部门"><Readonly>{snapshot.department}</Readonly></DetailItem>
             <DetailItem label="成本中心"><Readonly>{snapshot.costCenter}</Readonly></DetailItem>
             <DetailItem label="业务线"><Readonly>{snapshot.businessLine}</Readonly></DetailItem>
+            <DetailItem label="项目"><Readonly>{snapshot.project}</Readonly></DetailItem>
             <DetailItem label="费用账户"><Readonly>{snapshot.expenseAccount}</Readonly></DetailItem>
             <DetailItem label="管理人"><Readonly>{snapshot.responsiblePerson}</Readonly></DetailItem>
             <DetailItem label="City"><Readonly>{snapshot.city}</Readonly></DetailItem>
@@ -331,7 +337,7 @@ function MoveAssetDetailModal({ open, document, asset, onCancel }) {
             <DetailItem label="接收仓管员"><Readonly>{asset.receiver}</Readonly></DetailItem>
             <DetailItem label="接收时间"><Readonly>{asset.receiveTime}</Readonly></DetailItem>
             <DetailItem label="移库状态"><StatusTag value={asset.moveStatus} /></DetailItem>
-            <DetailItem label="调出说明" span={3}><Readonly>{asset.moveDesc}</Readonly></DetailItem>
+            <DetailItem label="移库说明" span={3}><Readonly>{asset.moveDesc}</Readonly></DetailItem>
             <DetailItem label="接收说明" span={3}><Readonly>{asset.receiveDesc}</Readonly></DetailItem>
           </DetailGrid>
         </Card>
@@ -354,7 +360,16 @@ function MoveItemModal({ open, currentWarehouse, initialLine, existingTags, onCa
     && (!existingTags.has(item.assetTag) || item.assetTag === initialLine?.assetTag)
   )), [currentWarehouse, existingTags, initialLine?.assetTag]);
 
+  const selectorAssets = useMemo(() => selectableAssets.map((item) => ({
+    ...item,
+    brand: item.brand || String(item.materialDesc || '').split('.')[0] || '-',
+    originalValueDisplay: formatMoney(item.originalValue),
+  })), [selectableAssets]);
+
   const displayAsset = selectedAssets[0] || null;
+  const selectedAssetDisplay = displayAsset
+    ? [displayAsset.assetTag, displayAsset.sn, displayAsset.materialDesc].filter(Boolean).join(' / ')
+    : '';
 
   const submit = (keepOpen) => {
     if (!selectedAssets.length) return messageApi.warning('请选择需要移库的物资');
@@ -393,54 +408,58 @@ function MoveItemModal({ open, currentWarehouse, initialLine, existingTags, onCa
       >
         <Space direction="vertical" size={16} className="w-full">
           <Typography.Text>当前仓库：{currentWarehouse}</Typography.Text>
-          <Card size="small" title="选择物资" extra={!initialLine && selectedAssets.length > 0 ? <Typography.Text type="secondary">已选择 {selectedAssets.length} 条</Typography.Text> : null}>
+          <Card size="small" title="选择物资">
             <DetailGrid columns={3} labelWidth={96}>
-              <DetailItem label="标签号"><LookupInput value={displayAsset?.assetTag} placeholder="请选择标签号" onOpen={() => setSelectorOpen(true)} disabled={Boolean(initialLine)} /></DetailItem>
-              <DetailItem label="SN"><LookupInput value={displayAsset?.sn} placeholder="请选择SN" onOpen={() => setSelectorOpen(true)} disabled={Boolean(initialLine)} /></DetailItem>
-              <DetailItem label="物资说明"><LookupInput value={displayAsset?.materialDesc} placeholder="请选择物资说明" onOpen={() => setSelectorOpen(true)} disabled={Boolean(initialLine)} /></DetailItem>
+              <DetailItem label="移库物资" span={3}>
+                <LookupInput
+                  value={selectedAssetDisplay}
+                  placeholder="请选择移库物资"
+                  onOpen={() => setSelectorOpen(true)}
+                  disabled={Boolean(initialLine)}
+                />
+              </DetailItem>
             </DetailGrid>
           </Card>
 
-          {displayAsset && (
-            <Card size="small" title="物资信息">
-              <DetailGrid columns={3} labelWidth={100}>
-                <DetailItem label="标签号"><Readonly>{displayAsset.assetTag}</Readonly></DetailItem>
-                <DetailItem label="SN"><Readonly>{displayAsset.sn}</Readonly></DetailItem>
-                <DetailItem label="物资说明"><Readonly>{displayAsset.materialDesc}</Readonly></DetailItem>
-                <DetailItem label="可用数量"><Readonly>{displayAsset.availableQty}</Readonly></DetailItem>
-                <DetailItem label="物资总类"><Readonly>{displayAsset.materialGroup}</Readonly></DetailItem>
-                <DetailItem label="物资大类"><Readonly>{displayAsset.assetClass}</Readonly></DetailItem>
-                <DetailItem label="物资小类"><Readonly>{displayAsset.assetSubClass}</Readonly></DetailItem>
-                <DetailItem label="数量"><Readonly>{displayAsset.quantity}</Readonly></DetailItem>
-                <DetailItem label="仓库"><Readonly>{currentWarehouse}</Readonly></DetailItem>
-                <DetailItem label="申请批次"><Readonly>{displayAsset.applicationBatch}</Readonly></DetailItem>
-                <DetailItem label="配置"><Readonly>{displayAsset.config}</Readonly></DetailItem>
-                <DetailItem label="计量单位"><Readonly>{displayAsset.unit}</Readonly></DetailItem>
-                <DetailItem label="资产标记"><Readonly>{displayAsset.assetMark}</Readonly></DetailItem>
-                <DetailItem label="原值"><Readonly>{Number(displayAsset.originalValue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</Readonly></DetailItem>
-                <DetailItem label="净值"><Readonly>{Number(displayAsset.netValue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</Readonly></DetailItem>
-                <DetailItem label="资产状态"><Readonly>{displayAsset.assetStatus}</Readonly></DetailItem>
-                <DetailItem label="公司"><Readonly>{displayAsset.company}</Readonly></DetailItem>
-                <DetailItem label="板块"><Readonly>{displayAsset.plate}</Readonly></DetailItem>
-                <DetailItem label="部门"><Readonly>{displayAsset.department}</Readonly></DetailItem>
-                <DetailItem label="成本中心"><Readonly>{displayAsset.costCenter}</Readonly></DetailItem>
-                <DetailItem label="业务线"><Readonly>{displayAsset.businessLine}</Readonly></DetailItem>
-                <DetailItem label="费用账户"><Readonly>{displayAsset.expenseAccount}</Readonly></DetailItem>
-                <DetailItem label="责任人"><Readonly>{displayAsset.responsiblePerson}</Readonly></DetailItem>
-                <DetailItem label="City"><Readonly>{displayAsset.city}</Readonly></DetailItem>
-                <DetailItem label="Building"><Readonly>{displayAsset.building}</Readonly></DetailItem>
-                <DetailItem label="Floor"><Readonly>{displayAsset.floor}</Readonly></DetailItem>
-                <DetailItem label="Room"><Readonly>{displayAsset.room}</Readonly></DetailItem>
-                <DetailItem label="启用日期"><Readonly>{displayAsset.enabledDate}</Readonly></DetailItem>
-                <DetailItem label="用途"><Readonly>{displayAsset.usage}</Readonly></DetailItem>
-                <DetailItem label="备注" span={3}><Readonly>{displayAsset.remark}</Readonly></DetailItem>
-              </DetailGrid>
-            </Card>
-          )}
+          <Card size="small" title="物资信息">
+            <DetailGrid columns={3} labelWidth={100}>
+              <DetailItem label="标签号"><Readonly>{displayAsset?.assetTag}</Readonly></DetailItem>
+              <DetailItem label="SN号"><Readonly>{displayAsset?.sn}</Readonly></DetailItem>
+              <DetailItem label="资产说明"><Readonly>{displayAsset?.materialDesc}</Readonly></DetailItem>
+              <DetailItem label="可用数量"><Readonly>{displayAsset?.availableQty}</Readonly></DetailItem>
+              <DetailItem label="物资总类"><Readonly>{displayAsset?.materialGroup}</Readonly></DetailItem>
+              <DetailItem label="物资大类"><Readonly>{displayAsset?.assetClass}</Readonly></DetailItem>
+              <DetailItem label="物资小类"><Readonly>{displayAsset?.assetSubClass}</Readonly></DetailItem>
+              <DetailItem label="数量"><Readonly>{displayAsset?.quantity}</Readonly></DetailItem>
+              <DetailItem label="仓库"><Readonly>{currentWarehouse}</Readonly></DetailItem>
+              <DetailItem label="申请批次"><Readonly>{displayAsset?.applicationBatch}</Readonly></DetailItem>
+              <DetailItem label="配置"><Readonly>{displayAsset?.config}</Readonly></DetailItem>
+              <DetailItem label="计量单位"><Readonly>{displayAsset?.unit}</Readonly></DetailItem>
+              <DetailItem label="资产标记"><Readonly>{displayAsset?.assetMark}</Readonly></DetailItem>
+              <DetailItem label="原值"><Readonly>{formatMoney(displayAsset?.originalValue)}</Readonly></DetailItem>
+              <DetailItem label="净值"><Readonly>{formatMoney(displayAsset?.netValue)}</Readonly></DetailItem>
+              <DetailItem label="资产状态"><Readonly>{displayAsset?.assetStatus}</Readonly></DetailItem>
+              <DetailItem label="公司"><Readonly>{displayAsset?.company}</Readonly></DetailItem>
+              <DetailItem label="板块"><Readonly>{displayAsset?.plate}</Readonly></DetailItem>
+              <DetailItem label="部门"><Readonly>{displayAsset?.department}</Readonly></DetailItem>
+              <DetailItem label="成本中心"><Readonly>{displayAsset?.costCenter}</Readonly></DetailItem>
+              <DetailItem label="业务线"><Readonly>{displayAsset?.businessLine}</Readonly></DetailItem>
+              <DetailItem label="项目"><Readonly>{displayAsset?.project}</Readonly></DetailItem>
+              <DetailItem label="费用账户"><Readonly>{displayAsset?.expenseAccount}</Readonly></DetailItem>
+              <DetailItem label="责任人"><Readonly>{displayAsset?.responsiblePerson}</Readonly></DetailItem>
+              <DetailItem label="City"><Readonly>{displayAsset?.city}</Readonly></DetailItem>
+              <DetailItem label="Building"><Readonly>{displayAsset?.building}</Readonly></DetailItem>
+              <DetailItem label="Floor"><Readonly>{displayAsset?.floor}</Readonly></DetailItem>
+              <DetailItem label="Room"><Readonly>{displayAsset?.room}</Readonly></DetailItem>
+              <DetailItem label="启用日期"><Readonly>{displayAsset?.enabledDate}</Readonly></DetailItem>
+              <DetailItem label="用途"><Readonly>{displayAsset?.usage}</Readonly></DetailItem>
+              <DetailItem label="备注" span={3}><Readonly>{displayAsset?.remark}</Readonly></DetailItem>
+            </DetailGrid>
+          </Card>
 
           <Card size="small" title="移库信息">
             <DetailGrid columns={3} labelWidth={96}>
-              <DetailItem label="调出说明" span={3}><TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={moveDesc} onChange={(event) => setMoveDesc(event.target.value)} /></DetailItem>
+              <DetailItem label="移库说明" span={3}><TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={moveDesc} onChange={(event) => setMoveDesc(event.target.value)} /></DetailItem>
             </DetailGrid>
           </Card>
         </Space>
@@ -449,28 +468,33 @@ function MoveItemModal({ open, currentWarehouse, initialLine, existingTags, onCa
       <SelectModal
         open={selectorOpen}
         title="选择移库物资"
-        multiple={!initialLine}
-        dataSource={selectableAssets}
+        width="94vw"
+        dataSource={selectorAssets}
+        initialSelectedKeys={displayAsset ? [displayAsset.id] : []}
         columns={[
           { title: '标签号', dataIndex: 'assetTag' },
-          { title: 'SN', dataIndex: 'sn' },
-          { title: '物资说明', dataIndex: 'materialDesc' },
-          { title: '物资总类', dataIndex: 'materialGroup' },
           { title: '公司', dataIndex: 'company' },
           { title: '板块', dataIndex: 'plate' },
-          { title: '当前状态', dataIndex: 'assetStatus' },
+          { title: '资产大类', dataIndex: 'assetClass' },
+          { title: '资产小类', dataIndex: 'assetSubClass' },
+          { title: '资产说明', dataIndex: 'materialDesc' },
+          { title: '品牌', dataIndex: 'brand' },
+          { title: '数量', dataIndex: 'quantity' },
+          { title: '原值', dataIndex: 'originalValueDisplay' },
+          { title: '资产责任人', dataIndex: 'responsiblePerson' },
+          { title: '资产状态', dataIndex: 'assetStatus' },
+          { title: '成本中心', dataIndex: 'costCenter' },
+          { title: '启用日期', dataIndex: 'enabledDate' },
         ]}
         searchFields={[
           { label: '标签号', name: 'assetTag', dataIndex: 'assetTag' },
-          { label: 'SN', name: 'sn', dataIndex: 'sn' },
-          { label: '物资说明', name: 'materialDesc', dataIndex: 'materialDesc' },
-          { label: '物资总类', name: 'materialGroup', dataIndex: 'materialGroup' },
-          { label: '公司', name: 'company', dataIndex: 'company' },
+          { label: 'SN号', name: 'sn', dataIndex: 'sn' },
           { label: '板块', name: 'plate', dataIndex: 'plate' },
+          { label: '资产说明', name: 'materialDesc', dataIndex: 'materialDesc' },
         ]}
         onCancel={() => setSelectorOpen(false)}
-        onConfirm={(records) => {
-          setSelectedAssets(Array.isArray(records) ? records : [records]);
+        onConfirm={(record) => {
+          setSelectedAssets(record ? [record] : []);
           setSelectorOpen(false);
         }}
       />
@@ -693,23 +717,22 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
     { title: '启用日期', dataIndex: 'enabledDate', width: 130 },
     { title: '资产状态', dataIndex: 'assetStatus', width: 130 },
     { title: '移库状态', dataIndex: 'moveStatus', width: 130, render: (value) => <StatusTag value={value || '草稿'} /> },
-    { title: '调出说明', dataIndex: 'moveDesc', width: 180, render: (value) => value || '-' },
+    { title: '移库说明', dataIndex: 'moveDesc', width: 180, render: (value) => value || '-' },
     ...(editable ? [{ title: '操作', key: 'operation', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button> }] : []),
   ];
 
-  const extra = (
+  const toolbar = editable ? (
     <Space>
-      <Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>
-      {editable && <Button type="primary" icon={<Plus size={14} />} onClick={openAdd}>添加物资</Button>}
-      {editable && <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>}
-      {editable && <Button icon={<Download size={14} />} onClick={() => messageApi.success('移库导入模板已准备（原型演示）')}>模板下载</Button>}
-      {editable && <Button icon={<Upload size={14} />} onClick={() => {
+      <Button type="primary" icon={<Plus size={14} />} onClick={openAdd}>添加物资</Button>
+      <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>
+      <Button icon={<Download size={14} />} onClick={() => messageApi.success('移库导入模板已准备（原型演示）')}>模板下载</Button>
+      <Button icon={<Upload size={14} />} onClick={() => {
         if (!currentWarehouse) return messageApi.warning('请先选择当前仓库');
         setImportOpen(true);
         return undefined;
-      }}>Excel导入</Button>}
+      }}>Excel导入</Button>
     </Space>
-  );
+  ) : null;
 
   return (
     <div data-page-view-key={`move-editor-${status}`}>
@@ -743,14 +766,13 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
           </DetailGrid>
         </Card>
 
-        <Card size="small" title="移库物资" extra={extra}>
-          <div className="mb-3">
-            <QueryBar onQuery={() => setLineScan(lineScanDraft)} onReset={() => { setLineScanDraft(''); setLineScan(''); }}>
-              <QueryItem label="资产扫描">
-                <Input value={lineScanDraft} allowClear placeholder="扫码或手输标签号/SN" onChange={(event) => setLineScanDraft(event.target.value)} onPressEnter={() => setLineScan(lineScanDraft)} />
-              </QueryItem>
-            </QueryBar>
-          </div>
+        <Card size="small" title="移库物资" extra={<Typography.Text type="secondary">共 {visibleLines.length} 条</Typography.Text>}>
+          <QueryBar onQuery={() => setLineScan(lineScanDraft)} onReset={() => { setLineScanDraft(''); setLineScan(''); }}>
+            <QueryItem label="资产扫描">
+              <Input value={lineScanDraft} allowClear placeholder="扫码或手输标签号/SN" onChange={(event) => setLineScanDraft(event.target.value)} onPressEnter={() => setLineScan(lineScanDraft)} />
+            </QueryItem>
+          </QueryBar>
+          {toolbar && <div className="mb-3 flex justify-end">{toolbar}</div>}
           <Table
             rowKey="id"
             size="small"
