@@ -75,7 +75,7 @@ export function QueryItem({ label, children, labelWidth = 88 }) {
       data-prototype-label={prototypeLabel}
     >
       <span
-        className="shrink-0 text-right text-sm text-gray-600"
+        className="shrink-0 whitespace-nowrap text-right text-sm text-gray-600"
         style={{ width: labelWidth }}
       >
         {label}:
