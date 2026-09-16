@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -144,35 +144,30 @@ function compareValue(a, b, type) {
   return String(a ?? '').localeCompare(String(b ?? ''), 'zh-CN', { numeric: true });
 }
 
-function LookupInput({ value, placeholder, onOpen, onDoubleClick }) {
-  const clickTimerRef = useRef(null);
-  const handleClick = () => {
-    if (!onDoubleClick) {
-      onOpen?.();
-      return;
-    }
-    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-    clickTimerRef.current = setTimeout(() => {
-      clickTimerRef.current = null;
-      onOpen?.();
-    }, 220);
+function LookupInput({ value, placeholder, onOpen, onClear }) {
+  const handleOpen = (event) => {
+    if (event?.target?.closest?.('.ant-input-clear-icon')) return;
+    onOpen?.();
   };
-  const handleDoubleClick = (event) => {
-    if (!onDoubleClick) return;
-    event.preventDefault();
-    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-    clickTimerRef.current = null;
-    onDoubleClick();
-  };
+
   return (
     <Input
-      value={value}
+      value={value || ''}
       readOnly
+      allowClear={Boolean(onClear)}
       placeholder={placeholder}
       suffix={<Search size={14} className="text-[#1677ff]" />}
       style={{ cursor: 'pointer' }}
-      onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
+      onClick={handleOpen}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpen?.();
+        }
+      }}
+      onChange={(event) => {
+        if (!event.target.value) onClear?.();
+      }}
     />
   );
 }
@@ -184,10 +179,6 @@ function SectionTitle({ children }) {
       <span>{children}</span>
     </div>
   );
-}
-
-function QueryClearArea({ onClear, children }) {
-  return <div onDoubleClick={onClear}>{children}</div>;
 }
 
 function buildPrototypeBatchValidation(file) {
@@ -363,6 +354,7 @@ export default function ContractNumberMaintenancePage() {
 
   const cancelEdit = () => {
     setCardMode('view');
+    setActiveTab('detail');
     setEditDraft(null);
     setLookupKey('');
   };
@@ -500,39 +492,37 @@ export default function ContractNumberMaintenancePage() {
       }).join(', ')}
       placeholder={placeholder}
       onOpen={() => setLookupKey(field)}
-      onDoubleClick={() => updateFilter(field, [])}
+      onClear={() => updateFilter(field, [])}
     />
   );
 
   const multiSelect = (field, options, placeholder = '请选择') => (
-    <QueryClearArea onClear={() => updateFilter(field, [])}>
-      <Select
-        mode="multiple"
-        allowClear
-        value={draftFilters[field]}
-        style={{ width: '100%' }}
-        placeholder={placeholder}
-        options={options.map((value) => ({ label: value || '空', value }))}
-        onChange={(value) => updateFilter(field, value)}
-      />
-    </QueryClearArea>
+    <Select
+      mode="multiple"
+      allowClear
+      value={draftFilters[field]}
+      style={{ width: '100%' }}
+      placeholder={placeholder}
+      options={options.map((value) => ({ label: value || '空', value }))}
+      onChange={(value) => updateFilter(field, value)}
+    />
   );
 
   const renderBasicQuery = () => (
     <>
       <QueryItem label="标签号">
-        <Input value={draftFilters.tag} allowClear placeholder="支持模糊、多值" onChange={(event) => updateFilter('tag', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('tag', '')} />
+        <Input value={draftFilters.tag} allowClear placeholder="支持模糊、多值" onChange={(event) => updateFilter('tag', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
       <QueryItem label="合约号码">
-        <Input value={draftFilters.contractNumber} allowClear placeholder="支持模糊、多值" onChange={(event) => updateFilter('contractNumber', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('contractNumber', '')} />
+        <Input value={draftFilters.contractNumber} allowClear placeholder="支持模糊、多值" onChange={(event) => updateFilter('contractNumber', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
       <QueryItem label="使用公司">{multiSelect('useCompanies', uniqueValues(rows, 'useCompany'))}</QueryItem>
       <QueryItem label="资产小类">{multiSelect('minorCategories', MINOR_CATEGORY_OPTIONS)}</QueryItem>
       <QueryItem label="合约号码说明">
-        <Input value={draftFilters.contractDesc} allowClear placeholder="支持模糊" onChange={(event) => updateFilter('contractDesc', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('contractDesc', '')} />
+        <Input value={draftFilters.contractDesc} allowClear placeholder="支持模糊" onChange={(event) => updateFilter('contractDesc', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
       <QueryItem label="套餐内容">
-        <Input value={draftFilters.packageContent} allowClear placeholder="支持模糊" onChange={(event) => updateFilter('packageContent', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('packageContent', '')} />
+        <Input value={draftFilters.packageContent} allowClear placeholder="支持模糊" onChange={(event) => updateFilter('packageContent', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
       <QueryItem label="号码状态">{multiSelect('statuses', STATUS_OPTIONS)}</QueryItem>
       <QueryItem label="仓库">{multiSelect('warehouses', WAREHOUSE_OPTIONS)}</QueryItem>
@@ -543,45 +533,35 @@ export default function ContractNumberMaintenancePage() {
   const renderMoreQuery = () => (
     <>
       <QueryItem label="合约期限">
-        <QueryClearArea onClear={() => updateFilter('contractTerm', [])}>
-          <RangePicker
-            style={{ width: '100%' }}
-            value={draftFilters.contractTerm.length === 2 ? draftFilters.contractTerm.map((value) => dayjs(value)) : null}
-            onChange={(dates) => updateFilter('contractTerm', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])}
-          />
-        </QueryClearArea>
+        <RangePicker
+          style={{ width: '100%' }}
+          value={draftFilters.contractTerm.length === 2 ? draftFilters.contractTerm.map((value) => dayjs(value)) : null}
+          onChange={(dates) => updateFilter('contractTerm', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])}
+        />
       </QueryItem>
       <QueryItem label="金额">
-        <QueryClearArea onClear={() => setDraftFilters((current) => ({ ...current, amountMin: null, amountMax: null }))}>
-          <Space.Compact block>
-            <InputNumber min={0} precision={2} value={draftFilters.amountMin} placeholder="最小值" onChange={(value) => updateFilter('amountMin', value)} style={{ width: '50%' }} />
-            <InputNumber min={0} precision={2} value={draftFilters.amountMax} placeholder="最大值" onChange={(value) => updateFilter('amountMax', value)} style={{ width: '50%' }} />
-          </Space.Compact>
-        </QueryClearArea>
+        <Space.Compact block>
+          <InputNumber min={0} precision={2} value={draftFilters.amountMin} placeholder="最小值" onChange={(value) => updateFilter('amountMin', value)} style={{ width: '50%' }} />
+          <InputNumber min={0} precision={2} value={draftFilters.amountMax} placeholder="最大值" onChange={(value) => updateFilter('amountMax', value)} style={{ width: '50%' }} />
+        </Space.Compact>
       </QueryItem>
       <QueryItem label="部门">{multiSelect('departments', departmentOptions)}</QueryItem>
       <QueryItem label="员工职级">{multiSelect('jobLevels', uniqueValues(rows, 'jobLevel'))}</QueryItem>
       <QueryItem label="领用日期">
-        <QueryClearArea onClear={() => updateFilter('claimDate', [])}>
-          <RangePicker style={{ width: '100%' }} value={draftFilters.claimDate.length === 2 ? draftFilters.claimDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('claimDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
-        </QueryClearArea>
+        <RangePicker style={{ width: '100%' }} value={draftFilters.claimDate.length === 2 ? draftFilters.claimDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('claimDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
       </QueryItem>
       <QueryItem label="申请类型">{multiSelect('applicationTypes', APPLICATION_TYPE_OPTIONS)}</QueryItem>
       <QueryItem label="申请单号">
-        <Input value={draftFilters.applicationNo} allowClear placeholder="支持文本、多值" onChange={(event) => updateFilter('applicationNo', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('applicationNo', '')} />
+        <Input value={draftFilters.applicationNo} allowClear placeholder="支持文本、多值" onChange={(event) => updateFilter('applicationNo', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
       <QueryItem label="报废状态">
-        <QueryClearArea onClear={() => updateFilter('scrapStatus', '')}>
-          <Select allowClear value={draftFilters.scrapStatus || undefined} options={['已报废', '未报废'].map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('scrapStatus', value || '')} />
-        </QueryClearArea>
+        <Select allowClear value={draftFilters.scrapStatus || undefined} options={['已报废', '未报废'].map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('scrapStatus', value || '')} />
       </QueryItem>
       <QueryItem label="报废原因">
-        <Input value={draftFilters.scrapReason} allowClear placeholder="支持模糊、多值" onChange={(event) => updateFilter('scrapReason', event.target.value)} onPressEnter={handleQuery} onDoubleClick={() => updateFilter('scrapReason', '')} />
+        <Input value={draftFilters.scrapReason} allowClear placeholder="支持模糊、多值" onChange={(event) => updateFilter('scrapReason', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
       <QueryItem label="报废日期">
-        <QueryClearArea onClear={() => updateFilter('scrapDate', [])}>
-          <RangePicker style={{ width: '100%' }} value={draftFilters.scrapDate.length === 2 ? draftFilters.scrapDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('scrapDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
-        </QueryClearArea>
+        <RangePicker style={{ width: '100%' }} value={draftFilters.scrapDate.length === 2 ? draftFilters.scrapDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('scrapDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
       </QueryItem>
     </>
   );
@@ -629,6 +609,8 @@ export default function ContractNumberMaintenancePage() {
 
   const source = cardMode === 'edit' && editDraft ? editDraft : activeRow;
   const editable = (field, control) => (cardMode === 'edit' ? control : displayText(source?.[field]));
+  const isInUse = String(editDraft?.status || '').includes('在用');
+  const isScrapped = String(editDraft?.status || '').includes('报废');
 
   const detailTab = source ? (
     <DetailGrid columns={3} labelWidth={112}>
@@ -655,12 +637,11 @@ export default function ContractNumberMaintenancePage() {
       <DetailItem label="金额">{editable('amount', <InputNumber min={0} max={99999999.99} precision={2} style={{ width: '100%' }} value={editDraft?.amount} onChange={(value) => updateEdit('amount', value)} />)}</DetailItem>
       <DetailItem label="号码状态">{editable('status', <Select value={editDraft?.status || undefined} style={{ width: '100%' }} options={STATUS_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('status', value)} />)}</DetailItem>
       <DetailItem label="仓库">
-        {editable('warehouse', (
+        {cardMode === 'edit' && isInUse ? displayText('') : editable('warehouse', (
           <Select
             allowClear
-            disabled={String(editDraft?.status || '').includes('在用')}
             value={editDraft?.warehouse || undefined}
-            placeholder={String(editDraft?.status || '').includes('在用') ? '在用状态仓库必须为空' : '请选择仓库'}
+            placeholder="请选择仓库"
             style={{ width: '100%' }}
             options={WAREHOUSE_OPTIONS.map((value) => ({ label: value, value }))}
             onChange={(value) => updateEdit('warehouse', value || '')}
@@ -668,11 +649,17 @@ export default function ContractNumberMaintenancePage() {
         ))}
       </DetailItem>
       <DetailItem label="使用说明" span={3}>{editable('usageDescription', <TextArea value={editDraft?.usageDescription || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('usageDescription', event.target.value)} />)}</DetailItem>
-      <DetailItem label="报废原因" span={2}>{editable('scrapReason', <TextArea disabled={!String(editDraft?.status || '').includes('报废')} value={editDraft?.scrapReason || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('scrapReason', event.target.value)} />)}</DetailItem>
+      <DetailItem label="报废原因" span={2}>
+        {cardMode === 'edit' && !isScrapped
+          ? displayText('')
+          : editable('scrapReason', <TextArea value={editDraft?.scrapReason || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('scrapReason', event.target.value)} />)}
+      </DetailItem>
       <DetailItem label="报废日期">
-        {cardMode === 'edit' ? (
-          <DatePicker disabled={!String(editDraft?.status || '').includes('报废')} style={{ width: '100%' }} value={editDraft?.scrapDate ? dayjs(editDraft.scrapDate) : null} onChange={(date) => updateEdit('scrapDate', date ? date.format('YYYY-MM-DD') : '')} />
-        ) : displayText(source.scrapDate)}
+        {cardMode === 'edit'
+          ? (isScrapped
+            ? <DatePicker style={{ width: '100%' }} value={editDraft?.scrapDate ? dayjs(editDraft.scrapDate) : null} onChange={(date) => updateEdit('scrapDate', date ? date.format('YYYY-MM-DD') : '')} />
+            : displayText(''))
+          : displayText(source.scrapDate)}
       </DetailItem>
       <DetailItem label="责任人">{cardMode === 'edit' ? <LookupInput value={editDraft?.ownerId ? `${editDraft.ownerId}-${editDraft.ownerName}` : ''} placeholder="请选择责任人" onOpen={() => setLookupKey('editOwner')} /> : `${source.ownerId}-${source.ownerName}`}</DetailItem>
       <DetailItem label="部门">{displayText(source.department)}</DetailItem>
@@ -733,7 +720,7 @@ export default function ContractNumberMaintenancePage() {
           <>
             <Button type="primary" icon={<Search size={14} />} onClick={handleQuery}>查询</Button>
             <Button onClick={handleReset}>重置</Button>
-            <Button type="link" icon={moreOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />} onClick={() => setMoreOpen((current) => !current)}>{moreOpen ? '收起' : '更多'}</Button>
+            <Button type="link" icon={moreOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />} onClick={() => setMoreOpen((current) => !current)}>{moreOpen ? '收起' : '更多条件'}</Button>
           </>
         )}
       >
@@ -744,7 +731,7 @@ export default function ContractNumberMaintenancePage() {
       <Card size="small" title="合约号码列表" extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
         <div className="mb-3 flex justify-end">
           <Space wrap>
-            <Button icon={<FileSpreadsheet size={14} />} onClick={() => setBatchOpen(true)}>批量编辑</Button>
+            <Button icon={<FileSpreadsheet size={14} />} onClick={() => setBatchOpen(true)}>批量修改</Button>
             <Button icon={<Download size={14} />} onClick={handleTemplateDownload}>模板下载</Button>
             <Button icon={<Download size={14} />} onClick={handleExport}>导出</Button>
           </Space>
@@ -804,7 +791,7 @@ export default function ContractNumberMaintenancePage() {
       />
 
       <Modal
-        title={`${cardMode === 'edit' ? '合约机详细信息编辑页' : '合约号码信息'}${source?.tag ? `：${source.tag}` : ''}`}
+        title={`合约号码信息${source?.tag ? `：${source.tag}` : ''}`}
         open={cardOpen}
         width={1120}
         style={{ maxWidth: 'calc(100vw - 48px)' }}
@@ -820,7 +807,7 @@ export default function ContractNumberMaintenancePage() {
       </Modal>
 
       <Modal
-        title="合约号码批量编辑"
+        title="合约号码批量修改"
         open={batchOpen}
         width={760}
         okText={batchValidation?.status === 'passed' ? '保存' : '校验'}
@@ -835,9 +822,17 @@ export default function ContractNumberMaintenancePage() {
           <Alert
             type="warning"
             showIcon
-            message="批量编辑空白表示保留原值"
-            description="标签号必填并用于定位既有合约号码；其余模板字段空白表示不修改。全部行校验通过后才能保存，任一行失败时整份文件不保存。"
+            message="批量修改空白表示保留原值"
+            description="全部行校验通过后才能保存，任一行失败时整份文件不保存。"
           />
+          <div className="text-sm text-gray-600">
+            <Typography.Text strong>批量修改规则：</Typography.Text>
+            <ul className="mb-0 mt-2 list-disc space-y-1 pl-5">
+              <li>标签号必填并用于定位既有合约号码。</li>
+              <li>除标签号外，其余模板字段空白表示保留原值，不进行覆盖。</li>
+              <li>全部行校验通过后才能保存，任一行失败时整份文件不保存。</li>
+            </ul>
+          </div>
           <div>
             <Typography.Text strong>模板列：</Typography.Text>
             <Typography.Text>{BATCH_TEMPLATE_FIELDS.join('、')}</Typography.Text>
@@ -855,7 +850,7 @@ export default function ContractNumberMaintenancePage() {
           >
             <p className="ant-upload-drag-icon"><UploadCloud size={36} /></p>
             <p className="ant-upload-text">点击或拖拽 Excel 文件到此区域上传</p>
-            <p className="ant-upload-hint">仅支持固定合约号码批量编辑模板 .xlsx 文件；先校验全部行，通过后才能保存</p>
+            <p className="ant-upload-hint">仅支持固定合约号码批量修改模板 .xlsx 文件；先校验全部行，通过后才能保存</p>
           </Dragger>
           <Typography.Text type="secondary">原型不解析真实 Excel；文件名包含“校验失败”时可演示逐行错误，其余文件演示校验通过。正式实现按 PRD 的 11 列模板逐行校验。</Typography.Text>
           {batchValidation?.status === 'passed' ? <Alert type="success" showIcon message="文件校验通过" description="全部行校验通过，可点击“保存”完成原型流程。" /> : null}
