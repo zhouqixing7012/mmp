@@ -59,42 +59,13 @@ function flattenQueryChildren(children) {
   });
 }
 
-function mergePrintTimeRangeFields(fields) {
-  const merged = [];
-  for (let index = 0; index < fields.length; index += 1) {
-    const current = fields[index];
-    const next = fields[index + 1];
-    const isPrintTimePair = React.isValidElement(current)
-      && React.isValidElement(next)
-      && current.props?.label === '打印时间从'
-      && next.props?.label === '打印时间至';
-
-    if (!isPrintTimePair) {
-      merged.push(current);
-      continue;
-    }
-
-    merged.push(
-      <QueryItem key="merged-print-time-range" label="打印时间" labelWidth={current.props?.labelWidth}>
-        <div className="flex min-w-0 items-center gap-2">
-          <div className="min-w-0 flex-1">{current.props.children}</div>
-          <span className="shrink-0 text-gray-400">至</span>
-          <div className="min-w-0 flex-1">{next.props.children}</div>
-        </div>
-      </QueryItem>,
-    );
-    index += 1;
-  }
-  return merged;
-}
-
 /**
  * 查询条件容器组件
  * fields: 查询字段（自动按 3 列栅格排列）
  * buttons: 按钮区（查询/重置等，显示在最右侧）
  */
 
-export function QueryItem({ label, children, labelWidth = 96 }) {
+export function QueryItem({ label, children, labelWidth = 88 }) {
   const prototypeLabel = typeof label === 'string' ? label.replace(/[:：]\s*$/, '') : undefined;
 
   return (
@@ -119,12 +90,12 @@ export function QueryItem({ label, children, labelWidth = 96 }) {
 export default function QueryBar({
   children,
   buttons,
-  labelWidth = 96,
+  labelWidth = 88,
   onQuery,
   onReset,
   fieldColProps,
 }) {
-  const fields = mergePrintTimeRangeFields(flattenQueryChildren(children));
+  const fields = flattenQueryChildren(children);
   const defaultButtons = (
     <>
       <Button type="primary" icon={<Search size={14} />} onClick={onQuery}>查询</Button>
@@ -173,7 +144,7 @@ export default function QueryBar({
           min-width: 0 !important;
         }
       `}</style>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <Row gutter={[16, 16]}>
             {fields.map((field, i) => (
