@@ -19,6 +19,7 @@ import { Download, Printer, Search, Tags } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
+import './TagPrintingPage.css';
 
 const { RangePicker } = DatePicker;
 
@@ -282,17 +283,6 @@ function LookupInput({ value, placeholder, onOpen, onClear }) {
       onChange={(event) => {
         if (!event.target.value) onClear?.();
       }}
-    />
-  );
-}
-
-function DateFilter({ value, onChange }) {
-  return (
-    <DatePicker
-      value={value ? dayjs(value) : null}
-      format="YYYY-MM-DD"
-      placeholder="请选择日期"
-      onChange={(date) => onChange(date ? date.format('YYYY-MM-DD') : '')}
     />
   );
 }
@@ -984,7 +974,6 @@ export default function TagPrintingPage() {
 
   const batchColumns = [
     { title: '标签批次', dataIndex: 'batch', width: 230, render: displayText },
-    { title: '来源', dataIndex: 'source', width: 130, render: displayText },
     { title: '订单编号', dataIndex: 'orderNo', width: 190, render: displayText },
     { title: '生成标签数量', dataIndex: 'labelCount', width: 130, align: 'right' },
     { title: '是否已打印', dataIndex: 'printed', width: 120, align: 'center', render: (value) => <StatusTag value={value} type="yesNo" /> },
@@ -1007,7 +996,6 @@ export default function TagPrintingPage() {
   ];
 
   const labelColumns = [
-    { title: '标签批次', dataIndex: 'batch', width: 230, render: displayText },
     { title: '标签号', dataIndex: 'tag', width: 200, sorter: (a, b) => textCompare(a.tag, b.tag), render: displayText },
     { title: '打印次数', dataIndex: 'printCount', width: 120, align: 'right' },
     { title: '是否已打印', dataIndex: 'printed', width: 130, align: 'center', render: (value) => <StatusTag value={value} type="yesNo" /> },
@@ -1016,14 +1004,10 @@ export default function TagPrintingPage() {
 
   const historyColumns = [
     { title: '标签号', dataIndex: 'tag', width: 180, fixed: 'left', render: displayText },
-    { title: '打印状态', dataIndex: 'printStatus', width: 120, render: (value) => <StatusTag value={value} type="business" /> },
-    { title: '来源', dataIndex: 'source', width: 130, render: displayText },
     { title: '打印份数', dataIndex: 'copies', width: 100, align: 'right', render: displayText },
     { title: '打印时间', dataIndex: 'printedAt', width: 180, render: displayText },
     { title: '打印人', dataIndex: 'printer', width: 120, render: displayText },
-    { title: '打印任务ID', dataIndex: 'printTaskId', width: 220, render: displayText },
     { title: '打印IP', dataIndex: 'printIp', width: 150, render: displayText },
-    { title: '失败原因', dataIndex: 'failureReason', width: 180, render: displayText },
   ];
 
   if (previewMode && generateMode) {
@@ -1094,6 +1078,7 @@ export default function TagPrintingPage() {
             <Button type="primary" icon={<Tags size={14} />} onClick={() => setGenerateMode(true)}>生成标签</Button>
           </div>
           <Table
+            className="tag-batch-table"
             rowKey="id"
             size="small"
             bordered
@@ -1155,6 +1140,7 @@ export default function TagPrintingPage() {
             </div>
 
             <Table
+              className="tag-label-list-table"
               rowKey="id"
               size="small"
               bordered
@@ -1192,12 +1178,24 @@ export default function TagPrintingPage() {
             <QueryItem label="标签批次"><Input value={historyDraftFilters.batch} allowClear placeholder="请输入标签批次" onChange={(event) => updateHistoryFilter('batch', event.target.value)} /></QueryItem>
             <QueryItem label="标签号"><Input value={historyDraftFilters.tag} allowClear placeholder="请输入标签号" onChange={(event) => updateHistoryFilter('tag', event.target.value)} /></QueryItem>
             <QueryItem label="打印人"><Input value={historyDraftFilters.printer} allowClear placeholder="请输入打印人" onChange={(event) => updateHistoryFilter('printer', event.target.value)} /></QueryItem>
-            <QueryItem label="打印时间从"><DateFilter value={historyDraftFilters.printedFrom} onChange={(value) => updateHistoryFilter('printedFrom', value)} /></QueryItem>
-            <QueryItem label="打印时间至"><DateFilter value={historyDraftFilters.printedTo} onChange={(value) => updateHistoryFilter('printedTo', value)} /></QueryItem>
+            <QueryItem label="打印时间">
+              <RangePicker
+                className="w-full"
+                value={historyDraftFilters.printedFrom && historyDraftFilters.printedTo
+                  ? [dayjs(historyDraftFilters.printedFrom), dayjs(historyDraftFilters.printedTo)]
+                  : null}
+                format="YYYY-MM-DD"
+                onChange={(dates) => setHistoryDraftFilters((current) => ({
+                  ...current,
+                  printedFrom: dates?.[0] ? dates[0].format('YYYY-MM-DD') : '',
+                  printedTo: dates?.[1] ? dates[1].format('YYYY-MM-DD') : '',
+                }))}
+              />
+            </QueryItem>
           </QueryBar>
           <div className="mt-4 flex justify-end text-sm text-gray-500">共 {filteredHistoryRows.length} 条</div>
           <Table
-            className="mt-2"
+            className="mt-2 tag-print-history-table"
             rowKey="id"
             size="small"
             bordered
