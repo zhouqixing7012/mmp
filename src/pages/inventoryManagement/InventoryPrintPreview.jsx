@@ -69,6 +69,20 @@ const SAMPLE_DATA = {
       ['NOTEBOOK', '戴尔.Latitude E7280.i5-7200U/16G/512G SSD/12寸/三年质保', '114121701639', '1D839H2', '1', '借用领用', '专业用途', '2026.09.04', '2026.10.03', ''],
     ],
   },
+  employeeClaimInfo: {
+    title: '员工领用信息',
+    employee: '206984-何文',
+    department: '搜狐媒体.技术产品中心.企业信息化.ERP部.业务产品二组',
+    method: '刷卡',
+    time: '2026-08-07 10:26:38',
+  },
+  employeeReturnInfo: {
+    title: '员工领用信息',
+    employee: 'CW013157-胡艺凡',
+    department: '搜狐媒体.内容中心.四象工作室',
+    method: '扫码',
+    time: '2026-08-07 18:42:15',
+  },
 };
 
 const pageStyle = {
@@ -231,6 +245,37 @@ function BorrowSheet({ data }) {
   );
 }
 
+function EmployeeUsageInfoSheet({ data }) {
+  const fields = [
+    ['领用人（工号-姓名）', data.employee],
+    ['领用人部门（全称）', data.department],
+    ['领用方式', data.method],
+    ['领用时间', data.time],
+  ];
+  return (
+    <div style={pageStyle}>
+      <LogoTitle title={data.title || '员工领用信息'} />
+      <div style={{ marginTop: 36, border: '1px solid #333' }}>
+        {fields.map(([label, value], index) => (
+          <div
+            key={label}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '220px 1fr',
+              minHeight: 68,
+              borderBottom: index === fields.length - 1 ? 0 : '1px solid #333',
+              fontSize: 16,
+            }}
+          >
+            <div style={{ padding: '20px 18px', fontWeight: 700, background: '#fafafa', borderRight: '1px solid #333' }}>{label}</div>
+            <div style={{ padding: '20px 18px' }}>{value || '-'}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function replaceDocumentNo(data, docNo) {
   if (!docNo) return data;
   const meta = data.meta.map(([label, value]) => (/单号$|单号/.test(label) && !/PO|PR/.test(label) ? [label, docNo] : [label, value]));
@@ -262,6 +307,12 @@ function inferDocNo(text, activeSubMenu) {
   return patterns.map((pattern)=>String(text||'').match(pattern)?.[0]).find(Boolean) || '';
 }
 
+function isEmployeeGeneratedContext(text, activeSubMenu, businessType) {
+  if (activeSubMenu === '出库' && businessType === '领用出库') return /EUA-\d+/i.test(text);
+  if (activeSubMenu === '入库' && businessType === '退库入库') return /ERA-\d+/i.test(text);
+  return false;
+}
+
 function buildPreviewDocs(activeSubMenu, printAction, contexts) {
   const source = contexts.length ? contexts : [{ text: '', businessType: '' }];
   return source.map((context) => {
@@ -271,14 +322,24 @@ function buildPreviewDocs(activeSubMenu, printAction, contexts) {
     if (activeSubMenu === '资产接收' || activeSubMenu === '耗材接收') return { key: 'receipt', data: replaceDocumentNo(SAMPLE_DATA.receipt, docNo) };
     if (activeSubMenu === '入库') {
       const key = INBOUND_TYPE_TO_KEY[businessType] || 'inboundNew';
-      return { key, data: replaceDocumentNo(SAMPLE_DATA[key], docNo) };
+      const docs = [{ key, data: replaceDocumentNo(SAMPLE_DATA[key], docNo) }];
+      if (isEmployeeGeneratedContext(text, activeSubMenu, businessType)) {
+        docs.push({ key: 'employeeUsageInfo', data: SAMPLE_DATA.employeeReturnInfo });
+      }
+      return docs;
     }
     if (activeSubMenu === '出库') {
+      const docs = [];
       if (printAction === '领用打印') {
         const key = businessType === '借用出库' ? 'borrow' : 'claim';
-        return { key, data: replaceDocumentNo(SAMPLE_DATA[key], docNo) };
+        docs.push({ key, data: replaceDocumentNo(SAMPLE_DATA[key], docNo) });
+      } else {
+        docs.push({ key: 'outbound', data: replaceDocumentNo(SAMPLE_DATA.outbound, docNo) });
       }
-      return { key: 'outbound', data: replaceDocumentNo(SAMPLE_DATA.outbound, docNo) };
+      if (isEmployeeGeneratedContext(text, activeSubMenu, businessType)) {
+        docs.push({ key: 'employeeUsageInfo', data: SAMPLE_DATA.employeeClaimInfo });
+      }
+      return docs;
     }
     return [];
   }).flat();
@@ -293,6 +354,7 @@ function PrintSheet({ doc }) {
   if (doc.key === 'outbound') return <OutboundSheet data={doc.data}/>;
   if (doc.key === 'claim') return <ClaimSheet data={doc.data}/>;
   if (doc.key === 'borrow') return <BorrowSheet data={doc.data}/>;
+  if (doc.key === 'employeeUsageInfo') return <EmployeeUsageInfoSheet data={doc.data}/>;
   return null;
 }
 
@@ -346,7 +408,7 @@ export default function InventoryPrintPrototypeBoundary({ activeSubMenu, childre
         footer={(
           <Space>
             <Button onClick={() => setOpen(false)}>关闭</Button>
-            <Button type="primary" icon={<Printer size={14}/>} onClick={() => messageApi.success(`已提交 ${previewDocs.length || 1} 张单据打印（原型）`)}>打印</Button>
+            <Button type="primary" icon={<Printer size={14}/>} onClick={() => messageApi.success(`已提交 ${previewDocs.length || 1} 张单据打印`)}>打印</Button>
           </Space>
         )}
       >
