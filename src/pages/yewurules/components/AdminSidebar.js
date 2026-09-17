@@ -35,8 +35,11 @@ export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, 
     if (activeSubMenu !== targetMenu) {
       onSubMenuSelectRef.current?.(targetMenu);
     }
-    navigate(location.pathname, { replace: true, state: null });
-  }, [activeMenu, activeSubMenu, location.key, location.pathname, location.state, navigate]);
+    navigate(
+      { pathname: location.pathname, search: location.search },
+      { replace: true, state: null }
+    );
+  }, [activeMenu, activeSubMenu, location.key, location.pathname, location.search, location.state, navigate]);
 
   return (
     <div className="w-56 min-h-0 bg-[#001529] text-white flex flex-col shadow-xl z-20 relative">
