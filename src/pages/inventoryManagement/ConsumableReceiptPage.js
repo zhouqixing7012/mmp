@@ -232,8 +232,13 @@ export default function ConsumableReceiptPage() {
 
   const setPoFilter = (field, value) => setPoDraft((current) => ({ ...current, [field]: value || '' }));
   const setReceiptFilter = (field, value) => setReceiptDraft((current) => ({ ...current, [field]: value || '' }));
+  const hasReceiptForPo = (poNo) => receipts.some((receipt) => receipt.poNo === poNo);
+  const isPoItemLocked = (poNo, itemId) => receipts.some((receipt) => (
+    receipt.poNo === poNo && (receipt.lines || []).some((line) => line.sourceItemId === itemId)
+  ));
   const updateActivePoField = (field, value) => {
     if (!activePO) return;
+    if ((field === 'plate' || field === 'applicationBatch') && hasReceiptForPo(activePO.poNo)) return;
     setPoRows((list) => list.map((row) => (row.poNo === activePO.poNo ? { ...row, [field]: value } : row)));
     setActivePO((row) => ({ ...row, [field]: value }));
   };
@@ -327,6 +332,7 @@ export default function ConsumableReceiptPage() {
   };
 
   const saveItem = () => {
+    if (isPoItemLocked(activePO?.poNo, editItem?.id)) return messageApi.warning('该采购行已存在接收单，不可再编辑');
     const qty = Number(editDraft?.currentReceiveQty || 0);
     if (!Number.isInteger(qty) || qty <= 0) return messageApi.error('接收数量必须为大于 0 的整数');
     if (qty > remainingQty(editItem)) return messageApi.error('接收数量不能超过可接收数量！');
@@ -873,7 +879,7 @@ export default function ConsumableReceiptPage() {
     { title: '行号', width: 70, render: (_, __, index) => index + 1 },
     {
       title: '操作', width: 80, render: (_, row) => (
-        activePO?.receiptStatus !== '已入库' && remainingQty(row) > 0
+        activePO?.receiptStatus !== '已入库' && remainingQty(row) > 0 && !isPoItemLocked(activePO?.poNo, row.id)
           ? <Button type="link" className="px-0" onClick={() => { setEditItem(row); setEditDraft({ ...row }); }}>编辑</Button>
           : '-'
       ),
@@ -961,8 +967,9 @@ export default function ConsumableReceiptPage() {
   if (view === 'poDetail' && activePO) {
     const untaxed = activeItems.reduce((sum, item) => sum + lineMoney(item, item.purchaseQty).untaxedAmount, 0);
     const tax = activeItems.reduce((sum, item) => sum + lineMoney(item, item.purchaseQty).taxAmount, 0);
-    const hasReceipt = receipts.some((receipt) => receipt.poNo === activePO.poNo);
+    const hasReceipt = hasReceiptForPo(activePO.poNo);
     const isClosed = activePO.receiptStatus === '已入库';
+    const isReceiptLocked = hasReceipt || isClosed;
     return (
       <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-po-detail">
         {contextHolder}
@@ -988,10 +995,10 @@ export default function ConsumableReceiptPage() {
             <DetailItem label="采购员联系电话"><Readonly>{activePO.buyerPhone}</Readonly></DetailItem>
             <DetailItem label="推送日期"><Readonly>{activePO.pushDate}</Readonly></DetailItem>
             <DetailItem label="板块">
-              {isClosed ? <Readonly>{activePO.plate}</Readonly> : <SelectorInput value={activePO.plate} placeholder="请选择板块" onOpen={() => setSelectorType('detailPlate')} />}
+              {isReceiptLocked ? <Readonly>{activePO.plate}</Readonly> : <SelectorInput value={activePO.plate} placeholder="请选择板块" onOpen={() => setSelectorType('detailPlate')} />}
             </DetailItem>
             <DetailItem label="申请批次">
-              {isClosed ? <Readonly>{activePO.applicationBatch}</Readonly> : <Input value={activePO.applicationBatch || ''} onChange={(event) => updateActivePoField('applicationBatch', event.target.value)} />}
+              {isReceiptLocked ? <Readonly>{activePO.applicationBatch}</Readonly> : <Input value={activePO.applicationBatch || ''} onChange={(event) => updateActivePoField('applicationBatch', event.target.value)} />}
             </DetailItem>
           </DetailGrid>
         </Card>
