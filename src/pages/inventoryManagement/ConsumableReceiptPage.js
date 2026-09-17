@@ -1234,9 +1234,7 @@ export default function ConsumableReceiptPage() {
   if (view === 'maintenance' && activeReceipt) {
     const details = activeReceipt.details || [];
     const currentDetail = details.find((detail) => detail.id === scanInput.detailId);
-    const visibleDetails = scanInput.stage === 'sn' && scanInput.detailId
-      ? details.filter((detail) => detail.id === scanInput.detailId)
-      : details;
+    const visibleDetails = details;
     const isDraft = activeReceipt.status === '草稿';
     const allTagsGenerated = details.length > 0 && details.every((detail) => String(detail.assetTag || '').trim());
     const allSnMaintained = details.length > 0 && details.every((detail) => String(detail.sn || '').trim());
@@ -1245,18 +1243,27 @@ export default function ConsumableReceiptPage() {
         {contextHolder}
         <PageTitle />
         <ReceiptInfoCard receipt={activeReceipt} />
-        <QueryBar onQuery={handleScanInput} onReset={resetScanInput}>
-          <QueryItem label="扫描光标">
-            <Input
-              value={scanInput.value}
-              allowClear
-              disabled={!isDraft || !allTagsGenerated}
-              placeholder={!isDraft ? '接收已完成' : !allTagsGenerated ? '生成标签号后可使用扫描' : scanInput.stage === 'tag' ? '请扫描耗材标签号' : `已定位 ${currentDetail?.assetTag || ''}，请扫描SN号`}
-              onChange={(event) => setScanInput((current) => ({ ...current, value: event.target.value }))}
-              onPressEnter={handleScanInput}
-            />
-          </QueryItem>
-        </QueryBar>
+        <Card size="small">
+          <DetailGrid columns={4} labelWidth={96}>
+            <DetailItem label="扫描光标" span={4}>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={scanInput.value}
+                  allowClear
+                  disabled={!isDraft || !allTagsGenerated}
+                  placeholder={!isDraft ? '接收已完成' : !allTagsGenerated ? '生成标签号后可使用扫描' : scanInput.stage === 'tag' ? '请扫描耗材标签号' : `已定位 ${currentDetail?.assetTag || ''}，请扫描SN号`}
+                  onChange={(event) => setScanInput((current) => ({ ...current, value: event.target.value }))}
+                  onPressEnter={handleScanInput}
+                />
+                <Button onClick={resetScanInput}>重置</Button>
+              </div>
+            </DetailItem>
+            <DetailItem label="耗材标签号"><Typography.Text>{currentDetail?.assetTag || ''}</Typography.Text></DetailItem>
+            <DetailItem label="SN号"><Typography.Text>{currentDetail?.sn || ''}</Typography.Text></DetailItem>
+            <DetailItem label="耗材说明"><Typography.Text>{currentDetail?.consumableDesc || ''}</Typography.Text></DetailItem>
+            <DetailItem label="配置"><Typography.Text>{currentDetail?.config || ''}</Typography.Text></DetailItem>
+          </DetailGrid>
+        </Card>
         <Card
           size="small"
           title="接收明细"
