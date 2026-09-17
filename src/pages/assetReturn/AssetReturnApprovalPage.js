@@ -131,9 +131,9 @@ export default function AssetReturnApprovalPage() {
             <DetailItem label="资产状态"><StatusTag value={asset.status} type="business" /></DetailItem>
             <DetailItem label="部件数量">{componentCount}</DetailItem>
             <DetailItem label="启用日期">{formatDateText(asset.enabledDate)}</DetailItem>
-            <DetailItem label="城市">{asset.city || '-'}</DetailItem>
-            <DetailItem label="建筑">{asset.building || '-'}</DetailItem>
-            <DetailItem label="楼层">{asset.floor || '-'}</DetailItem>
+            <DetailItem label="City">{asset.city || '-'}</DetailItem>
+            <DetailItem label="Building">{asset.building || '-'}</DetailItem>
+            <DetailItem label="Floor">{asset.floor || '-'}</DetailItem>
             <DetailItem label="配置" span={3}>{asset.config || '-'}</DetailItem>
             <DetailItem label="备注" span={3}>{asset.note || '-'}</DetailItem>
           </DetailGrid>
