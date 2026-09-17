@@ -1299,7 +1299,7 @@ export default function AssetReceiptPage() {
     const detail = getPoDetail(receiptPO);
     const isDraft = activeReceipt.status === '草稿';
     const scanTargetAsset = maintenanceScanTargetId ? maintenanceRows.find((row) => row.id === maintenanceScanTargetId) || null : null;
-    const visibleMaintenanceRows = maintenanceFilterId ? maintenanceRows.filter((row) => row.id === maintenanceFilterId) : maintenanceRows;
+    const visibleMaintenanceRows = maintenanceRows;
     const scanPlaceholder = !isDraft
       ? '接收已完成'
       : !allMaintenanceTagsReady
@@ -1354,11 +1354,27 @@ export default function AssetReceiptPage() {
           </DetailGrid>
         </Card>
 
-        <QueryBar onQuery={handleMaintenanceScan} onReset={resetMaintenanceScan}>
-          <QueryItem label="扫描光标">
-            <Input value={maintenanceScan} allowClear disabled={!isDraft || !allMaintenanceTagsReady} placeholder={scanPlaceholder} onChange={(event) => setMaintenanceScan(event.target.value)} onPressEnter={handleMaintenanceScan} />
-          </QueryItem>
-        </QueryBar>
+        <Card size="small">
+          <DetailGrid columns={4} labelWidth={96}>
+            <DetailItem label="扫描光标" span={4}>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={maintenanceScan}
+                  allowClear
+                  disabled={!isDraft || !allMaintenanceTagsReady}
+                  placeholder={scanPlaceholder}
+                  onChange={(event) => setMaintenanceScan(event.target.value)}
+                  onPressEnter={handleMaintenanceScan}
+                />
+                <Button onClick={resetMaintenanceScan}>重置</Button>
+              </div>
+            </DetailItem>
+            <DetailItem label="资产标签号"><Typography.Text>{scanTargetAsset?.assetTag || ''}</Typography.Text></DetailItem>
+            <DetailItem label="SN号"><Typography.Text>{scanTargetAsset?.sn || ''}</Typography.Text></DetailItem>
+            <DetailItem label="物资说明"><Typography.Text>{scanTargetAsset?.materialDesc || ''}</Typography.Text></DetailItem>
+            <DetailItem label="配置"><Typography.Text>{scanTargetAsset?.config || ''}</Typography.Text></DetailItem>
+          </DetailGrid>
+        </Card>
 
         <Card size="small" title="接收资产明细" extra={(
           <Space>
