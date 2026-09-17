@@ -52,6 +52,15 @@ function formatAssetDescription(asset, detail) {
     : rawDescription;
 }
 
+function formatAssetCategory(asset, detail) {
+  if (detail?.materialId === 'MAT-BORROW-001') {
+    return 'NOTEBOOK.笔记本-技术笔记本';
+  }
+  const category = detail?.category || asset?.category || '';
+  const subCategory = detail?.subCategory || asset?.subCategory || '';
+  return [category, subCategory].filter(Boolean).join('.') || '-';
+}
+
 function hydrateDetails(application) {
   return (application?.details || []).map((item) => ({
     ...item,
@@ -106,7 +115,7 @@ export default function BorrowingIssuePage() {
       !item.issueCity || !item.issueBuilding || !item.issueFloor || !item.issuePurpose
     ));
     if (invalidLocation) {
-      messageApi.warning('请完善全部资产的city、building、floor和资产用途');
+      messageApi.warning('请完善全部资产的City、Building、Floor和资产用途');
       return false;
     }
     const invalidAsset = details.find((item) => (
@@ -287,7 +296,7 @@ export default function BorrowingIssuePage() {
                     <DetailItem label="资产说明">{formatAssetDescription(asset, detail)}</DetailItem>
                     <DetailItem label="配置" span={2}>{asset?.config || detail.config || '-'}</DetailItem>
                     <DetailItem label="备注" span={3}>{asset?.note || '-'}</DetailItem>
-                    <DetailItem label={<><span className="text-red-500">*</span> city</>}>
+                    <DetailItem label={<><span className="text-red-500">*</span> City</>}>
                       <Select
                         className="w-full"
                         value={detail.issueCity}
@@ -295,7 +304,7 @@ export default function BorrowingIssuePage() {
                         onChange={(value) => updateDetail(detail.id, { issueCity: value, issueBuilding: '', issueFloor: '' })}
                       />
                     </DetailItem>
-                    <DetailItem label={<><span className="text-red-500">*</span> building</>}>
+                    <DetailItem label={<><span className="text-red-500">*</span> Building</>}>
                       <Select
                         className="w-full"
                         value={detail.issueBuilding || undefined}
@@ -303,7 +312,7 @@ export default function BorrowingIssuePage() {
                         onChange={(value) => updateDetail(detail.id, { issueBuilding: value, issueFloor: '' })}
                       />
                     </DetailItem>
-                    <DetailItem label={<><span className="text-red-500">*</span> floor</>}>
+                    <DetailItem label={<><span className="text-red-500">*</span> Floor</>}>
                       <Select
                         className="w-full"
                         value={detail.issueFloor || undefined}
@@ -329,7 +338,7 @@ export default function BorrowingIssuePage() {
                     </DetailItem>
                     <DetailItem label="实际盘点人">{asset?.inventoryPerson || '-'}</DetailItem>
                     <DetailItem label="盘点状态" span={2}><StatusTag value={inventoryStatus} type="business" /></DetailItem>
-                    <DetailItem label="资产类别" span={3}>{[detail.category, detail.subCategory].filter(Boolean).join('.') || detail.assetDesc || '-'}</DetailItem>
+                    <DetailItem label="资产类别" span={3}>{formatAssetCategory(asset, detail)}</DetailItem>
                     <DetailItem label="借用开始日期">{formatDateText(detail.startDate)}</DetailItem>
                     <DetailItem label="借用归还日期">{formatDateText(detail.endDate)}</DetailItem>
                     <DetailItem label="借用原因">{detail.reason || '-'}</DetailItem>
