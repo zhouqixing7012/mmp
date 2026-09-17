@@ -48,7 +48,8 @@ const NOServiceView = () => {
 
 export default function App() {
   const location = useLocation();
-  const workspaceState = location.state?.workspace;
+  const workspaceQuery = new URLSearchParams(location.search).get('workspace');
+  const workspaceState = location.state?.workspace || workspaceQuery;
   const [activeMenu, setActiveMenu] = useState(workspaceState ? '个人工作台' : '库存管理');
   const [activeSubMenu, setActiveSubMenu] = useState(workspaceState || '资产接收');
   const [activeTab, setActiveTab] = useState(workspaceState ? workspaceState : '');
