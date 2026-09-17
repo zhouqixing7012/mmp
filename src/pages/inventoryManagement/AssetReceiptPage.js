@@ -1,1 +1,1 @@
-import React from 'react';
+RECOVERY_PENDING
