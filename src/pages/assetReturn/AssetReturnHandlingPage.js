@@ -169,9 +169,9 @@ export default function AssetReturnHandlingPage() {
             <DetailItem label="资产状态"><StatusTag value={asset.status} type="business" /></DetailItem>
             <DetailItem label="资产用途">{asset.purpose || '-'}</DetailItem>
             <DetailItem label="部件数量">{componentCount}</DetailItem>
-            <DetailItem label="city">{asset.city || '-'}</DetailItem>
-            <DetailItem label="building">{asset.building || '-'}</DetailItem>
-            <DetailItem label="floor">{asset.floor || '-'}</DetailItem>
+            <DetailItem label="City">{asset.city || '-'}</DetailItem>
+            <DetailItem label="Building">{asset.building || '-'}</DetailItem>
+            <DetailItem label="Floor">{asset.floor || '-'}</DetailItem>
             <DetailItem label="配置" span={3}>{asset.config || '-'}</DetailItem>
             <DetailItem label="备注" span={3}>{asset.note || '-'}</DetailItem>
             <DetailItem label="关联耗材" span={3}>
