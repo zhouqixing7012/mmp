@@ -33,7 +33,7 @@ export default function ContractNumberSelectModal({
     { title: '标签号', dataIndex: 'assetTag', width: 160 },
     { title: '合约号码', dataIndex: 'phoneNumber', width: 190 },
     { title: '套餐金额', dataIndex: 'packageName', width: 180 },
-    { title: '备注', dataIndex: 'remark', width: 220, render: (value) => value || '-' },
+    { title: '使用说明', dataIndex: 'remark', width: 220, render: (value) => value || '-' },
   ];
 
   return (
