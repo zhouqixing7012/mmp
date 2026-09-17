@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
-import { Button, Card, Input, Select, Space, Table, Tabs, Typography, message as antdMessage } from 'antd';
-import { RefreshCcw, ScanLine, Search, UserRound } from 'lucide-react';
+import React, { useState } from 'react';
+import { Button, Card, Input, Select, Space, Table, Typography, message as antdMessage } from 'antd';
+import { RefreshCcw, Search, UserRound } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 
 const EMPTY_FILTERS = {
@@ -24,8 +24,6 @@ function PageTitle({ children }) {
 export default function WarehouseWorkbenchPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
-  const assetTagRef = useRef(null);
-  const employeeCardRef = useRef(null);
 
   const updateFilter = (field, value) => {
     setDraftFilters((current) => ({ ...current, [field]: value || '' }));
@@ -48,21 +46,14 @@ export default function WarehouseWorkbenchPage() {
 
       <div className="flex justify-end">
         <Space wrap>
-          <Button icon={<ScanLine size={14} />} onClick={() => assetTagRef.current?.focus()}>扫码</Button>
-          <Button onClick={() => employeeCardRef.current?.focus()}>刷卡</Button>
           <Button icon={<UserRound size={14} />} onClick={() => messageApi.info('员工页面字段待确认')}>员工页面</Button>
           <Button icon={<RefreshCcw size={14} />} onClick={() => messageApi.info('员工页面已刷新')}>刷新员工页面</Button>
         </Space>
       </div>
 
-      <Card size="small">
-        <Tabs activeKey="asset-io" items={[{ key: 'asset-io', label: '资产出入库' }]} />
-      </Card>
-
       <QueryBar buttons={null}>
         <QueryItem label="资产标签号">
           <Input
-            ref={assetTagRef}
             value={draftFilters.assetTag}
             allowClear
             placeholder="扫描/输入资产标签号"
@@ -71,7 +62,6 @@ export default function WarehouseWorkbenchPage() {
         </QueryItem>
         <QueryItem label="员工卡号">
           <Input
-            ref={employeeCardRef}
             value={draftFilters.employeeCard}
             allowClear
             placeholder="刷卡/输入员工编号"
