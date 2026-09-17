@@ -108,6 +108,10 @@ export default function PersonalWorkspace() {
     canReplace: selectedAssets.length > 1 && selectedAssets.every((item) => getActions(item).canReplace),
   }), [selectedAssets]);
 
+  const openWorkspacePage = (workspace) => {
+    navigate(`/yewurules?workspace=${encodeURIComponent(workspace)}`, { state: { workspace } });
+  };
+
   const startAssetAction = (type, rows) => {
     const assetTags = rows.map((item) => item.id);
     if (type === 'return') {
@@ -228,7 +232,7 @@ export default function PersonalWorkspace() {
               size="large"
               icon={<Plus size={16} />}
               style={{ color: '#2563EB', borderColor: '#fff', fontWeight: 600 }}
-              onClick={() => navigate('/yewurules', { state: { workspace: '物资申请' } })}
+              onClick={() => openWorkspacePage('物资申请')}
             >
               物资申请
             </Button>
@@ -237,7 +241,7 @@ export default function PersonalWorkspace() {
               size="large"
               icon={<Handshake size={16} />}
               style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.36)', fontWeight: 600, background: 'rgba(255,255,255,0.06)' }}
-              onClick={() => navigate('/yewurules', { state: { workspace: '资产借用' } })}
+              onClick={() => openWorkspacePage('资产借用')}
             >
               资产借用
             </Button>
