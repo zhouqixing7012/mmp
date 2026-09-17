@@ -310,6 +310,10 @@ export default function AssetReceiptPage() {
   const [maintenanceAsset, setMaintenanceAsset] = useState(null);
   const [maintenanceScanTargetId, setMaintenanceScanTargetId] = useState(null);
   const [maintenanceFilterId, setMaintenanceFilterId] = useState(null);
+  const [poPage, setPoPage] = useState(1);
+  const [poPageSize, setPoPageSize] = useState(10);
+  const [receiptPage, setReceiptPage] = useState(1);
+  const [receiptPageSize, setReceiptPageSize] = useState(10);
 
   const maintenanceRows = maintenanceSession.rows;
   const hasBlankMaintenanceTags = maintenanceRows.some((row) => !String(row.assetTag || '').trim());
@@ -322,6 +326,10 @@ export default function AssetReceiptPage() {
   };
 
   const availableQty = (item) => Math.max(0, Number(item?.purchaseQty || 0) - Number(item?.receivedQty || 0) - Number(item?.draftQty || 0));
+
+  const isPoItemLocked = (poNo, itemId) => receiptRows.some((receipt) => (
+    receipt.poNo === poNo && getReceiptItems(receipt).some((item) => item.id === itemId)
+  ));
 
   const effectivePoRows = useMemo(() => PO_ROWS.map((row) => {
     const defaults = poReceiptDefaults[row.poNo] || {};
@@ -369,6 +377,7 @@ export default function AssetReceiptPage() {
 
   const updatePoReceiptDefault = (field, value) => {
     if (!activePO) return;
+    if (receiptRows.some((row) => row.poNo === activePO.poNo)) return;
     setPoReceiptDefaults((current) => ({
       ...current,
       [activePO.poNo]: { ...(current[activePO.poNo] || {}), [field]: value },
@@ -451,9 +460,10 @@ export default function AssetReceiptPage() {
 
   const openPoDetail = (row) => {
     const defaults = poReceiptDefaults[row.poNo] || {};
+    const existingReceipt = receiptRows.find((receipt) => receipt.poNo === row.poNo);
     setActivePO(row);
-    setDetailPlate(defaults.plate ?? row.plate ?? '');
-    setApplicationBatch(defaults.applicationBatch ?? '');
+    setDetailPlate(existingReceipt?.plate ?? defaults.plate ?? row.plate ?? '');
+    setApplicationBatch(existingReceipt?.applicationBatch ?? defaults.applicationBatch ?? '');
     setSelectedItemKeys([]);
     setEditItem(null);
     setEditDraft(null);
@@ -467,6 +477,7 @@ export default function AssetReceiptPage() {
     setReceiptDraftFilters(filters);
     setReceiptAppliedFilters(filters);
     setSelectedReceiptKeys([]);
+    setReceiptPage(1);
     setView('receiptList');
   };
 
@@ -480,6 +491,7 @@ export default function AssetReceiptPage() {
   const editAvailableQty = (item) => availableQty(item);
 
   const openItemEditor = (row) => {
+    if (isPoItemLocked(activePO?.poNo, row.id)) return messageApi.warning('该采购行已存在接收单，不可再编辑');
     const partQuantity = row.partQuantity === '-' ? 0 : Number(row.partQuantity || 0);
     setEditItem(row);
     setEditDraft({
@@ -489,6 +501,7 @@ export default function AssetReceiptPage() {
       partQuantity,
       partDescriptions: splitPartDescriptions(row.partDesc, Math.max(0, partQuantity - 1)),
     });
+    return undefined;
   };
 
   const openPartDescriptionEditor = () => {
@@ -502,6 +515,7 @@ export default function AssetReceiptPage() {
   };
 
   const savePoItem = () => {
+    if (isPoItemLocked(activePO?.poNo, editItem?.id)) return messageApi.warning('该采购行已存在接收单，不可再编辑');
     const qty = Number(editDraft?.currentReceiptQty || 0);
     const maxQty = editAvailableQty(editItem);
     if (!DIRECT_INBOUND_TYPES.has(activePO?.purchaseType)) {
@@ -521,7 +535,7 @@ export default function AssetReceiptPage() {
     setEditItem(null);
     setEditDraft(null);
     setPartDescriptionModalOpen(false);
-    messageApi.success('接收信息已保存，修改将用于该PO后续未完成接收数据');
+    messageApi.success('接收信息已保存');
     return undefined;
   };
 
@@ -1046,7 +1060,7 @@ export default function AssetReceiptPage() {
   }[selectorType];
 
   const poColumns = [
-    { title: '行号', dataIndex: 'id', width: 72, align: 'center' },
+    { title: '行号', width: 72, align: 'center', render: (_, __, index) => (poPage - 1) * poPageSize + index + 1 },
     { title: 'PO单号', dataIndex: 'poNo', width: 170, render: (value, row) => <Button type="link" className="px-0" onClick={() => openPoDetail(row)}>{value}</Button> },
     { title: '接收状态', dataIndex: 'receiptStatus', width: 120, render: (value) => <StatusTag value={value} /> },
     { title: 'PO单名称', dataIndex: 'poName', width: 220 },
@@ -1066,7 +1080,7 @@ export default function AssetReceiptPage() {
   ];
 
   const receiptColumns = [
-    { title: '行号', dataIndex: 'id', width: 72, align: 'center' },
+    { title: '行号', width: 72, align: 'center', render: (_, __, index) => (receiptPage - 1) * receiptPageSize + index + 1 },
     { title: '接收单号', dataIndex: 'receiptNo', width: 210, render: (value, row) => <Typography.Link onClick={() => openReceiptDetail(row)}>{value}</Typography.Link> },
     { title: '单据状态', dataIndex: 'status', width: 140, render: (value) => <StatusTag value={value} /> },
     { title: 'PO单号', dataIndex: 'poNo', width: 180 },
@@ -1077,7 +1091,7 @@ export default function AssetReceiptPage() {
 
   const itemColumns = [
     { title: '行号', dataIndex: 'id', width: 70, align: 'center' },
-    { title: '操作', key: 'operation', width: 80, fixed: 'left', render: (_, row) => row.editable && row.receiptStatus === '待接收' && availableQty(row) > 0 ? <Button type="link" className="px-0" onClick={() => openItemEditor(row)}>编辑</Button> : '-' },
+    { title: '操作', key: 'operation', width: 80, fixed: 'left', render: (_, row) => row.editable && row.receiptStatus === '待接收' && availableQty(row) > 0 && !isPoItemLocked(activePO?.poNo, row.id) ? <Button type="link" className="px-0" onClick={() => openItemEditor(row)}>编辑</Button> : '-' },
     { title: '接收状态', dataIndex: 'receiptStatus', width: 120, render: (value) => value ? <StatusTag value={value} /> : '-' },
     { title: '物资总类', dataIndex: 'materialGroup', width: 120 },
     { title: '资产大类', dataIndex: 'assetClass', width: 180 },
@@ -1160,14 +1174,24 @@ export default function AssetReceiptPage() {
             <DetailItem label="采购员联系电话"><Readonly>{detail.buyerPhone}</Readonly></DetailItem>
             <DetailItem label="推送日期"><Readonly>{currentPO.pushDate}</Readonly></DetailItem>
             <DetailItem label="板块">
-              <Select
-                value={detailPlate || undefined}
-                placeholder="请选择板块"
-                options={PLATE_OPTIONS}
-                onChange={(value) => { setDetailPlate(value); updatePoReceiptDefault('plate', value); }}
-              />
+              {hasReceipt ? (
+                <Readonly>{detailPlate}</Readonly>
+              ) : (
+                <Select
+                  value={detailPlate || undefined}
+                  placeholder="请选择板块"
+                  options={PLATE_OPTIONS}
+                  onChange={(value) => { setDetailPlate(value); updatePoReceiptDefault('plate', value); }}
+                />
+              )}
             </DetailItem>
-            <DetailItem label="申请批次"><Input value={applicationBatch} placeholder="选填，请输入申请批次" onChange={(event) => { const value = event.target.value; setApplicationBatch(value); updatePoReceiptDefault('applicationBatch', value); }} /></DetailItem>
+            <DetailItem label="申请批次">
+              {hasReceipt ? (
+                <Readonly>{applicationBatch}</Readonly>
+              ) : (
+                <Input value={applicationBatch} placeholder="选填，请输入申请批次" onChange={(event) => { const value = event.target.value; setApplicationBatch(value); updatePoReceiptDefault('applicationBatch', value); }} />
+              )}
+            </DetailItem>
           </DetailGrid>
         </Card>
         <Card size="small" title="PO物资明细" extra={(
@@ -1426,10 +1450,11 @@ export default function AssetReceiptPage() {
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
         <PageTitle>资产接收</PageTitle>
-        <QueryBar onQuery={() => { setReceiptAppliedFilters({ ...receiptDraftFilters }); setSelectedReceiptKeys([]); }} onReset={() => {
+        <QueryBar onQuery={() => { setReceiptAppliedFilters({ ...receiptDraftFilters }); setSelectedReceiptKeys([]); setReceiptPage(1); }} onReset={() => {
           setReceiptDraftFilters(EMPTY_RECEIPT_FILTERS);
           setReceiptAppliedFilters(EMPTY_RECEIPT_FILTERS);
           setSelectedReceiptKeys([]);
+          setReceiptPage(1);
         }}>
           <QueryItem label="接收单号"><Input value={receiptDraftFilters.receiptNo} allowClear placeholder="请输入接收单号" onChange={(event) => updateReceiptFilter('receiptNo', event.target.value)} /></QueryItem>
           <QueryItem label="PO单号"><Input value={receiptDraftFilters.poNo} allowClear placeholder="请输入PO单号" onChange={(event) => updateReceiptFilter('poNo', event.target.value)} /></QueryItem>
@@ -1460,7 +1485,12 @@ export default function AssetReceiptPage() {
               getCheckboxProps: (record) => ({ disabled: record.status !== '草稿' }),
             }}
             scroll={{ x: 'max-content' }}
-            pagination={{ pageSize: 10, showSizeChanger: true }}
+            pagination={{
+              current: receiptPage,
+              pageSize: receiptPageSize,
+              showSizeChanger: true,
+              onChange: (page, pageSize) => { setReceiptPage(page); setReceiptPageSize(pageSize); },
+            }}
           />
         </Card>
         <div className="flex justify-center gap-3"><Button onClick={() => setView('poList')}>返回</Button></div>
@@ -1473,7 +1503,7 @@ export default function AssetReceiptPage() {
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
       <PageTitle>资产接收</PageTitle>
-      <QueryBar onQuery={() => setPoAppliedFilters({ ...poDraftFilters })} onReset={() => { setPoDraftFilters(EMPTY_PO_FILTERS); setPoAppliedFilters(EMPTY_PO_FILTERS); }}>
+      <QueryBar onQuery={() => { setPoAppliedFilters({ ...poDraftFilters }); setPoPage(1); }} onReset={() => { setPoDraftFilters(EMPTY_PO_FILTERS); setPoAppliedFilters(EMPTY_PO_FILTERS); setPoPage(1); }}>
         <QueryItem label="公司"><SelectorInput value={poDraftFilters.company} placeholder="请选择公司" onOpen={() => setSelectorType('company')} /></QueryItem>
         <QueryItem label="板块"><Select value={poDraftFilters.plate || undefined} allowClear placeholder="请选择板块" options={PLATE_OPTIONS} onChange={(value) => updatePoFilter('plate', value)} /></QueryItem>
         <QueryItem label="PO单号"><Input value={poDraftFilters.poNo} allowClear placeholder="请输入PO单号" onChange={(event) => updatePoFilter('poNo', event.target.value)} /></QueryItem>
@@ -1482,7 +1512,20 @@ export default function AssetReceiptPage() {
         <QueryItem label="采购类型"><Select value={poDraftFilters.purchaseType || undefined} allowClear placeholder="全部" options={['电子设备', '服务器', '服务器备件', '网络设备', '网络设备备件'].map((value) => ({ label: value, value }))} onChange={(value) => updatePoFilter('purchaseType', value)} /></QueryItem>
       </QueryBar>
       <Card size="small" title="PO单列表" extra={<Typography.Text type="secondary">共 {filteredPoRows.length} 条</Typography.Text>}>
-        <Table rowKey="id" size="small" bordered columns={poColumns} dataSource={filteredPoRows} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true }} />
+        <Table
+          rowKey="id"
+          size="small"
+          bordered
+          columns={poColumns}
+          dataSource={filteredPoRows}
+          scroll={{ x: 'max-content' }}
+          pagination={{
+            current: poPage,
+            pageSize: poPageSize,
+            showSizeChanger: true,
+            onChange: (page, pageSize) => { setPoPage(page); setPoPageSize(pageSize); },
+          }}
+        />
       </Card>
       {selectorConfig && <SelectModal open title={selectorConfig.title} dataSource={selectorConfig.dataSource} columns={selectorConfig.columns || [{ title: '名称', dataIndex: 'name' }]} searchFields={selectorConfig.searchFields || [{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelectorType('')} onConfirm={selectorConfig.onConfirm} />}
     </Space>
