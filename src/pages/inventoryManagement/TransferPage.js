@@ -346,7 +346,6 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
             <DetailItem label="Floor"><Readonly>{asset?.floor}</Readonly></DetailItem>
             <DetailItem label="Room"><Readonly>{asset?.room}</Readonly></DetailItem>
             <DetailItem label="启用日期"><Readonly>{asset?.enabledDate}</Readonly></DetailItem>
-            <DetailItem label="印刷号"><Readonly>{asset?.printNo}</Readonly></DetailItem>
             <DetailItem label="用途"><Readonly>{asset?.usage}</Readonly></DetailItem>
             <DetailItem label="备注"><Readonly>{asset?.remark}</Readonly></DetailItem>
           </DetailGrid>
@@ -389,6 +388,259 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
       <SelectorModal config={selectorConfig} onClose={() => setSelectorType('')} />
     </Modal>
   );
+}
+
+function escapePrintHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function formatTransferPrintLocation(city, building, floor, room) {
+  return [city, building, floor, room].filter(Boolean).join('.');
+}
+
+function openTransferPrint(transferDocument) {
+  const printWindow = window.open('', '_blank', 'width=1280,height=900');
+  if (!printWindow) return false;
+
+  const lines = transferDocument.lines || [];
+  const totalQty = lines.reduce((sum, line) => sum + Number(line.transferQty || 0), 0);
+  const transferDateValue = lines.find((line) => line.transferDate)?.transferDate || transferDocument.createdDate || '';
+  const transferDate = transferDateValue && dayjs(transferDateValue).isValid()
+    ? dayjs(transferDateValue).format('YYYY.MM.DD')
+    : transferDateValue;
+  const companyName = String(transferDocument.company || '').replace(/^\d+\./, '');
+  const minRows = 10;
+  const blankCount = Math.max(0, minRows - lines.length);
+
+  const detailRows = lines.map((line, index) => {
+    const snapshot = line.transferSnapshot || {};
+    const assetCategory = [line.assetClass, line.assetSubClass].filter(Boolean).join('-') || line.materialGroup || '';
+    const outLocation = formatTransferPrintLocation(
+      snapshot.city ?? line.city,
+      snapshot.building ?? line.building,
+      snapshot.floor ?? line.floor,
+      snapshot.room ?? line.room,
+    );
+    const inLocation = formatTransferPrintLocation(line.city, line.building, line.floor, line.room);
+    const usageAndReason = [
+      line.usageDescription || '',
+      line.transferReason ? `备注：${line.transferReason}` : '',
+    ].filter(Boolean).join('<br/>');
+
+    return `
+      <tr>
+        <td class="center">${index + 1}</td>
+        <td>${escapePrintHtml(assetCategory)}</td>
+        <td>${escapePrintHtml(line.assetTag)}</td>
+        <td>${escapePrintHtml(line.materialDesc)}</td>
+        <td class="center">${escapePrintHtml(line.transferQty)}</td>
+        <td>${escapePrintHtml(snapshot.department || line.department || '')}</td>
+        <td>${escapePrintHtml(line.outPerson)}</td>
+        <td>${escapePrintHtml(outLocation)}</td>
+        <td>${escapePrintHtml(line.inDept)}</td>
+        <td>${escapePrintHtml(line.inPerson)}</td>
+        <td>${escapePrintHtml(inLocation)}</td>
+        <td>${usageAndReason}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const blankRows = Array.from({ length: blankCount }, () => (
+    '<tr class="blank-row">' + '<td></td>'.repeat(12) + '</tr>'
+  )).join('');
+
+  const html = `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>${escapePrintHtml(transferDocument.documentNo || '物资转移单')}</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    color: #111;
+    font-family: Arial, "Microsoft YaHei", sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .sheet {
+    width: 100%;
+    position: relative;
+    padding: 0 18px 8px 0;
+  }
+  .title-row {
+    display: grid;
+    grid-template-columns: 74px 1fr 74px;
+    align-items: end;
+    border-bottom: 1px solid #111;
+    padding-bottom: 4px;
+  }
+  .logo {
+    width: 46px;
+    height: 29px;
+    margin-left: 10px;
+    background: #ffd400;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    line-height: 1;
+    font-size: 7px;
+  }
+  .logo strong { font-size: 12px; margin-bottom: 1px; }
+  h1 {
+    margin: 0;
+    text-align: center;
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 700;
+  }
+  .meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 80px;
+    padding: 10px 28px 12px;
+    font-size: 10px;
+  }
+  .meta .company { grid-column: 1 / -1; }
+  .meta strong { display: inline-block; min-width: 64px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 8.5px;
+  }
+  th, td {
+    border: 1px solid #111;
+    padding: 4px 3px;
+    vertical-align: middle;
+    word-break: break-all;
+    line-height: 1.25;
+    height: 34px;
+  }
+  th {
+    font-weight: 700;
+    text-align: center;
+  }
+  .center { text-align: center; }
+  .blank-row td { height: 28px; }
+  .total-row td { height: 28px; }
+  .total-label { text-align: right; font-weight: 700; }
+  .side-label {
+    position: absolute;
+    right: 0;
+    top: 52%;
+    transform: translateY(-50%);
+    writing-mode: vertical-rl;
+    letter-spacing: 3px;
+    font-size: 10px;
+  }
+  .signature {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 120px;
+    border-top: 1px solid #111;
+    border-bottom: 1px solid #111;
+    padding: 10px 34px 9px;
+    margin-top: 0;
+    font-size: 9px;
+  }
+  @media screen {
+    body { background: #eee; padding: 20px; }
+    .sheet {
+      width: 1120px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 22px 34px 20px 22px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.12);
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="title-row">
+      <div class="logo"><strong>搜狐</strong><span>SOHU.COM</span></div>
+      <h1>物资转移单</h1>
+      <div></div>
+    </div>
+
+    <div class="meta">
+      <div><strong>转移单号：</strong>${escapePrintHtml(transferDocument.documentNo)}</div>
+      <div><strong>转移日期：</strong>${escapePrintHtml(transferDate)}</div>
+      <div class="company"><strong>公司：</strong>${escapePrintHtml(companyName)}</div>
+    </div>
+
+    <table>
+      <colgroup>
+        <col style="width:4%">
+        <col style="width:8%">
+        <col style="width:9%">
+        <col style="width:12%">
+        <col style="width:5%">
+        <col style="width:9%">
+        <col style="width:8%">
+        <col style="width:10%">
+        <col style="width:9%">
+        <col style="width:8%">
+        <col style="width:10%">
+        <col style="width:12%">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>序号</th>
+          <th>资产类别</th>
+          <th>资产标签号</th>
+          <th>资产说明</th>
+          <th>数量</th>
+          <th>移出部门</th>
+          <th>移出责任人</th>
+          <th>移出资产地点</th>
+          <th>移入部门</th>
+          <th>移入责任人</th>
+          <th>移入资产地点</th>
+          <th>使用说明<br/>含：变动原因</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${detailRows}
+        ${blankRows}
+        <tr class="total-row">
+          <td colspan="4" class="total-label">合计：</td>
+          <td class="center">${escapePrintHtml(totalQty)}</td>
+          <td colspan="7"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="signature">
+      <div>转移人（签字）/时间：</div>
+      <div>部门领导（签字）/时间：</div>
+    </div>
+    <div class="side-label">一联 转出方</div>
+  </div>
+<script>
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      window.focus();
+      window.print();
+    }, 150);
+  });
+</script>
+</body>
+</html>`;
+
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+  return true;
 }
 
 function exportTransferDetail(transferDocument) {
@@ -451,9 +703,6 @@ function TransferDetail({ document: transferDocument, onBack }) {
           <DetailItem label="财务公司"><Readonly>{transferDocument.company}</Readonly></DetailItem>
           <DetailItem label="制单人"><Readonly>{transferDocument.creator}</Readonly></DetailItem>
           <DetailItem label="制单日期"><Readonly>{transferDocument.createdDate}</Readonly></DetailItem>
-          <DetailItem label="完成人"><Readonly>{transferDocument.completedBy}</Readonly></DetailItem>
-          <DetailItem label="完成时间"><Readonly>{transferDocument.completedAt}</Readonly></DetailItem>
-          <DetailItem label="物资数量"><Readonly>{transferDocument.quantity}</Readonly></DetailItem>
           <DetailItem label="备注" span={3}><Readonly>{transferDocument.remark}</Readonly></DetailItem>
         </DetailGrid>
       </Card>
@@ -470,7 +719,7 @@ function TransferDetail({ document: transferDocument, onBack }) {
         />
       </Card>
       <div className="flex justify-center gap-3">
-        {transferDocument.status === '已完成' && <Button onClick={() => window.print()}>打印</Button>}
+        {transferDocument.status === '已完成' && <Button onClick={() => openTransferPrint(transferDocument)}>打印</Button>}
         <Button icon={<Download size={14} />} disabled={!(transferDocument.lines || []).length} onClick={() => exportTransferDetail(transferDocument)}>导出明细</Button>
         <Button onClick={onBack}>返回</Button>
       </div>
