@@ -1354,9 +1354,10 @@ export default function AssetReceiptPage() {
           </DetailGrid>
         </Card>
 
-        <Card size="small">
-          <DetailGrid columns={4} labelWidth={96}>
-            <DetailItem label="扫描光标" span={4}>
+        {isDraft && (
+          <Card size="small">
+            <DetailGrid columns={4} labelWidth={96}>
+              <DetailItem label="扫描光标" span={4}>
               <div className="flex items-center gap-2">
                 <Input
                   value={maintenanceScan}
@@ -1372,9 +1373,10 @@ export default function AssetReceiptPage() {
             <DetailItem label="资产标签号"><Typography.Text>{scanTargetAsset?.assetTag || ''}</Typography.Text></DetailItem>
             <DetailItem label="SN号"><Typography.Text>{scanTargetAsset?.sn || ''}</Typography.Text></DetailItem>
             <DetailItem label="物资说明"><Typography.Text>{scanTargetAsset?.materialDesc || ''}</Typography.Text></DetailItem>
-            <DetailItem label="配置"><Typography.Text>{scanTargetAsset?.config || ''}</Typography.Text></DetailItem>
-          </DetailGrid>
-        </Card>
+              <DetailItem label="配置"><Typography.Text>{scanTargetAsset?.config || ''}</Typography.Text></DetailItem>
+            </DetailGrid>
+          </Card>
+        )}
 
         <Card size="small" title="接收资产明细" extra={(
           <Space>
