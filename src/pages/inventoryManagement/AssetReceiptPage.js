@@ -881,10 +881,13 @@ export default function AssetReceiptPage() {
     const duplicateWithOther = realSns.find((sn) => otherSns.has(sn));
     if (duplicateWithOther) return messageApi.error(`接收确认失败：SN号 ${duplicateWithOther} 已存在`);
 
+    const missingAssetClassCount = session.rows.filter((row) => !String(row.assetClass || '').trim()).length;
+    if (missingAssetClassCount > 0) return messageApi.error('接收确认失败：存在未维护资产大类的接收明细，无法生成入库草稿单');
+
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
     const receiptPO = effectivePoRows.find((item) => item.poNo === activeReceipt.poNo) || activePO;
     const groupedRows = session.rows.reduce((result, row) => {
-      const key = row.assetClass || '未分类资产';
+      const key = row.assetClass;
       result[key] = result[key] || [];
       result[key].push(row);
       return result;
