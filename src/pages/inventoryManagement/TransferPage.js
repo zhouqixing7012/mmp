@@ -418,7 +418,7 @@ function TransferDetail({ document: transferDocument, onBack }) {
           <DetailItem label="转移单号"><Readonly>{transferDocument.documentNo}</Readonly></DetailItem>
           <DetailItem label="申请单号"><Readonly>{transferDocument.applicationNo}</Readonly></DetailItem>
           <DetailItem label="单据状态"><StatusTag value={transferDocument.status} /></DetailItem>
-          <DetailItem label="公司"><Readonly>{transferDocument.company}</Readonly></DetailItem>
+          <DetailItem label="财务公司"><Readonly>{transferDocument.company}</Readonly></DetailItem>
           <DetailItem label="制单人"><Readonly>{transferDocument.creator}</Readonly></DetailItem>
           <DetailItem label="制单日期"><Readonly>{transferDocument.createdDate}</Readonly></DetailItem>
           <DetailItem label="完成人"><Readonly>{transferDocument.completedBy}</Readonly></DetailItem>
