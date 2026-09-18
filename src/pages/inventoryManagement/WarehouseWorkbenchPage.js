@@ -36,7 +36,7 @@ function includesText(value, query) {
 
 function buildEmployeeWindowHtml(storageKey) {
   const safeStorageKey = JSON.stringify(storageKey);
-  return \`<!doctype html>
+  return `<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
@@ -116,7 +116,7 @@ function buildEmployeeWindowHtml(storageKey) {
 })();
 </script>
 </body>
-</html>\`;
+</html>`;
 }
 
 export default function WarehouseWorkbenchPage() {
@@ -151,7 +151,7 @@ export default function WarehouseWorkbenchPage() {
 
   const handleTask = (task) => {
     writeEmployeePageContext(task);
-    navigate(\`/yewurules?workspace=${encodeURIComponent(task.workspace)}\`, {
+    navigate(`/yewurules?workspace=${encodeURIComponent(task.workspace)}`, {
       state: {
         workspace: task.workspace,
         warehouseWorkbenchTask: {
@@ -356,7 +356,7 @@ export default function WarehouseWorkbenchPage() {
             current: page,
             pageSize,
             showSizeChanger: true,
-            showTotal: (total) => \`共 ${total} 条\`,
+            showTotal: (total) => `共 ${total} 条`,
             onChange: (nextPage, nextPageSize) => {
               setPage(nextPage);
               setPageSize(nextPageSize);
