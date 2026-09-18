@@ -17,6 +17,7 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
+import { CURRENT_EMPLOYEE } from '../../mock/employeeSelfServiceMock';
 
 const { TextArea } = Input;
 
@@ -89,11 +90,26 @@ const SOURCE_ASSETS = [
 
 const COMPANY_OPTIONS = ['101.新时代', '201.焦点互动', '112.北京新动力', '114.新媒体', '132.千钧'];
 const PURPOSE_OPTIONS = ['员工用机', '部门公用', '其他用途', '专业用途'];
-const ASSET_STATUS_OPTIONS = ['在用-使用中', '在库-待处理'];
+const CURRENT_LOGIN_USER = `${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`;
 const RECEIVER_OPTIONS = [
-  { id: 1, name: '114111-杨羊', department: '集团总部.员工服务中心.资产部' },
+  { id: 1, name: '114111-杨羊', department: '集团总部.员工服务中心.资产部', plate: '0.*', costCenter: '0.*' },
 ];
 const SIMPLE_ZERO_OPTION = [{ id: 1, name: '0.*' }];
+
+function isServerAsset(asset) {
+  const values = [asset?.materialGroup, asset?.assetClass, asset?.assetSubClass]
+    .map((value) => String(value || '').toUpperCase());
+  return values.some((value) => value.includes('SERVER') || value.includes('服务器'));
+}
+
+function hasSpecialNoInfo(asset) {
+  return Boolean(
+    asset?.isNoSpecial
+    || asset?.noLocation
+    || asset?.service
+    || asset?.subService
+  );
+}
 
 function includesText(value, query) {
   if (!query) return true;
@@ -146,23 +162,35 @@ function TransferItemModal({ open, currentCompany, initialLine, onCancel, onConf
   const [selectorType, setSelectorType] = useState('');
   const [form, setForm] = useState(() => ({
     inPerson: initialLine?.inPerson || '',
-    inPlate: initialLine?.inPlate || '0.*',
-    inDept: initialLine?.inDept || '0.*',
-    inCostCenter: initialLine?.inCostCenter || '0.*',
+    inPlate: initialLine?.inPlate || '',
+    inDept: initialLine?.inDept || '',
+    inCostCenter: initialLine?.inCostCenter || '',
     city: initialLine?.city || '',
     building: initialLine?.building || '',
     floor: initialLine?.floor || '',
     room: initialLine?.room || '',
     purpose: initialLine?.purpose || '',
-    assetStatus: initialLine?.targetAssetStatus || '在用-使用中',
     businessLine: initialLine?.targetBusinessLine || '0.*',
     project: initialLine?.targetProject || '0.*',
     transferReason: initialLine?.transferReason || '',
     transferDate: initialLine?.transferDate || dayjs().format('YYYY-MM-DD'),
     usageDescription: initialLine?.usageDescription || '',
+    newSn: initialLine?.newSn || '',
+    newNoLocation: initialLine?.newNoLocation || '',
+    newService: initialLine?.newService || '',
+    newSubService: initialLine?.newSubService || '',
   }));
   const update = (field, value) => setForm((current) => ({ ...current, [field]: value || '' }));
-  const chooseAsset = (record) => setAsset({ ...record });
+  const chooseAsset = (record) => {
+    const receiver = RECEIVER_OPTIONS.find((item) => item.name === form.inPerson);
+    setAsset({ ...record });
+    setForm((current) => ({
+      ...current,
+      inPlate: receiver?.plate || current.inPlate,
+      inDept: receiver?.department || current.inDept,
+      inCostCenter: isServerAsset(record) ? (record.costCenter || '') : (receiver?.costCenter || current.inCostCenter),
+    }));
+  };
   const selectorConfig = {
     asset: {
       title: '选择资产', dataSource: SOURCE_ASSETS,
@@ -170,7 +198,17 @@ function TransferItemModal({ open, currentCompany, initialLine, onCancel, onConf
       searchFields: [{ label: '资产标签号', name: 'assetTag', dataIndex: 'assetTag' }, { label: '物资说明', name: 'materialDesc', dataIndex: 'materialDesc' }],
       onConfirm: chooseAsset,
     },
-    receiver: { title: '选择转入人', dataSource: RECEIVER_OPTIONS, onConfirm: (record) => setForm((current) => ({ ...current, inPerson: record.name, inDept: record.department || current.inDept })) },
+    receiver: {
+      title: '选择转入人',
+      dataSource: RECEIVER_OPTIONS,
+      onConfirm: (record) => setForm((current) => ({
+        ...current,
+        inPerson: record.name,
+        inPlate: record.plate || '',
+        inDept: record.department || '',
+        inCostCenter: isServerAsset(asset) ? (asset?.costCenter || '') : (record.costCenter || ''),
+      })),
+    },
     city: { title: '选择 City', dataSource: [{ id: 1, name: '北京市' }], onConfirm: (record) => update('city', record.name) },
     building: { title: '选择 Building', dataSource: [{ id: 1, name: '搜狐媒体大厦' }], onConfirm: (record) => update('building', record.name) },
     businessLine: { title: '选择业务线', dataSource: SIMPLE_ZERO_OPTION, onConfirm: (record) => update('businessLine', record.name) },
@@ -179,10 +217,19 @@ function TransferItemModal({ open, currentCompany, initialLine, onCancel, onConf
 
   const submit = (keepOpen) => {
     if (!asset) return messageApi.warning('请先选择资产');
-    const required = [['转入人', form.inPerson], ['转入成本中心', form.inCostCenter], ['City', form.city], ['Building', form.building], ['Floor', form.floor], ['用途', form.purpose], ['资产状态', form.assetStatus]];
+    const required = [['转入人', form.inPerson], ['转入成本中心', form.inCostCenter], ['City', form.city], ['Building', form.building], ['Floor', form.floor], ['用途', form.purpose]];
     const missing = required.find(([, value]) => !value);
     if (missing) return messageApi.warning(`请填写${missing[0]}`);
-    onConfirm({ ...asset, ...form, transferQty: Number(asset.assetQty || asset.availableQty || 1), outPerson: asset.responsiblePerson || '', outCostCenter: asset.costCenter || '', targetAssetStatus: form.assetStatus, targetBusinessLine: form.businessLine, targetProject: form.project }, keepOpen);
+    onConfirm({
+      ...asset,
+      ...form,
+      transferQty: Number(asset.assetQty || asset.availableQty || 1),
+      outPerson: asset.responsiblePerson || '',
+      outCostCenter: asset.costCenter || '',
+      targetAssetStatus: asset.assetStatus || '',
+      targetBusinessLine: form.businessLine,
+      targetProject: form.project,
+    }, keepOpen);
     if (keepOpen) {
       setAsset(null);
       setForm((current) => ({ ...current, transferReason: '', usageDescription: '' }));
@@ -191,7 +238,7 @@ function TransferItemModal({ open, currentCompany, initialLine, onCancel, onConf
   };
 
   return (
-    <Modal open={open} title="添加转移物资" width={1180} onCancel={onCancel} destroyOnHidden footer={[
+    <Modal open={open} title="添加转移物资" width={960} onCancel={onCancel} destroyOnHidden footer={[
       <Button key="continue" type="primary" onClick={() => submit(true)}>添加并继续</Button>,
       <Button key="close" type="primary" onClick={() => submit(false)}>添加并关闭</Button>,
       <Button key="cancel" onClick={onCancel}>取消</Button>,
@@ -246,13 +293,13 @@ function TransferItemModal({ open, currentCompany, initialLine, onCancel, onConf
             <DetailItem label={<RequiredLabel>转入人</RequiredLabel>}><LookupInput value={form.inPerson} placeholder="请选择转入人" onOpen={() => setSelectorType('receiver')} /></DetailItem>
             <DetailItem label="转入板块"><Readonly>{form.inPlate}</Readonly></DetailItem>
             <DetailItem label="转入部门"><Readonly>{form.inDept}</Readonly></DetailItem>
-            <DetailItem label={<RequiredLabel>转入成本中心</RequiredLabel>}><Input value={form.inCostCenter} onChange={(event) => update('inCostCenter', event.target.value)} /></DetailItem>
+            <DetailItem label={<RequiredLabel>转入成本中心</RequiredLabel>}><Readonly>{form.inCostCenter}</Readonly></DetailItem>
             <DetailItem label={<RequiredLabel>City</RequiredLabel>}><LookupInput value={form.city} placeholder="请选择 City" onOpen={() => setSelectorType('city')} /></DetailItem>
             <DetailItem label={<RequiredLabel>Building</RequiredLabel>}><LookupInput value={form.building} placeholder="请选择 Building" onOpen={() => setSelectorType('building')} /></DetailItem>
             <DetailItem label={<RequiredLabel>Floor</RequiredLabel>}><Select className="w-full" value={form.floor || undefined} placeholder="请选择" options={['17层'].map((value) => ({ label: value, value }))} onChange={(value) => update('floor', value)} /></DetailItem>
             <DetailItem label="Room"><Input value={form.room} onChange={(event) => update('room', event.target.value)} /></DetailItem>
             <DetailItem label={<RequiredLabel>用途</RequiredLabel>}><Select className="w-full" value={form.purpose || undefined} placeholder="请选择" options={PURPOSE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => update('purpose', value)} /></DetailItem>
-            <DetailItem label={<RequiredLabel>资产状态</RequiredLabel>}><Select className="w-full" value={form.assetStatus || undefined} placeholder="请选择" options={ASSET_STATUS_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => update('assetStatus', value)} /></DetailItem>
+            <DetailItem label="资产状态"><Readonly>{asset?.assetStatus}</Readonly></DetailItem>
             <DetailItem label="业务线"><LookupInput value={form.businessLine} placeholder="请选择业务线" onOpen={() => setSelectorType('businessLine')} /></DetailItem>
             <DetailItem label="项目"><LookupInput value={form.project} placeholder="请选择项目" onOpen={() => setSelectorType('project')} /></DetailItem>
             <DetailItem label="转移原因" span={3}><Input value={form.transferReason} onChange={(event) => update('transferReason', event.target.value)} /></DetailItem>
@@ -260,16 +307,33 @@ function TransferItemModal({ open, currentCompany, initialLine, onCancel, onConf
             <DetailItem label="使用说明" span={4}><TextArea autoSize={{ minRows: 3, maxRows: 6 }} value={form.usageDescription} onChange={(event) => update('usageDescription', event.target.value)} /></DetailItem>
           </DetailGrid>
         </Card>
+
+        {hasSpecialNoInfo(asset) && (
+          <Card size="small" title="NO 资产变更信息">
+            <DetailGrid columns={4} labelWidth={108} minWidth={1040}>
+              <DetailItem label="原 SN 号"><Readonly>{asset?.sn}</Readonly></DetailItem>
+              <DetailItem label="新 SN 号"><Input value={form.newSn} onChange={(event) => update('newSn', event.target.value)} /></DetailItem>
+              <DetailItem label="原 NO 地点"><Readonly>{asset?.noLocation}</Readonly></DetailItem>
+              <DetailItem label="新 NO 地点"><Input value={form.newNoLocation} onChange={(event) => update('newNoLocation', event.target.value)} /></DetailItem>
+              <DetailItem label="原服务"><Readonly>{asset?.service}</Readonly></DetailItem>
+              <DetailItem label="新服务"><Input value={form.newService} onChange={(event) => update('newService', event.target.value)} /></DetailItem>
+              <DetailItem label="原子服务"><Readonly>{asset?.subService}</Readonly></DetailItem>
+              <DetailItem label="新子服务"><Input value={form.newSubService} onChange={(event) => update('newSubService', event.target.value)} /></DetailItem>
+            </DetailGrid>
+          </Card>
+        )}
       </Space>
       <SelectorModal config={selectorConfig} onClose={() => setSelectorType('')} />
     </Modal>
   );
 }
 
-function TransferEditor({ onBack, onSave }) {
+function TransferEditor({ onBack, onPersist }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [company, setCompany] = useState('101.新时代');
   const [remark, setRemark] = useState('');
+  const [documentId, setDocumentId] = useState(null);
+  const [documentNo, setDocumentNo] = useState('');
   const [companyModalOpen, setCompanyModalOpen] = useState(false);
   const [lineModalOpen, setLineModalOpen] = useState(false);
   const [editingLine, setEditingLine] = useState(null);
@@ -290,19 +354,58 @@ function TransferEditor({ onBack, onSave }) {
     { title: '转入建筑物', dataIndex: 'building', width: 180 },
     { title: '操作', key: 'operation', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button> },
   ];
+  const persistDraft = (nextLines = lines) => {
+    if (!company) {
+      messageApi.warning('请选择公司');
+      return null;
+    }
+    const saved = onPersist({
+      id: documentId,
+      documentNo,
+      company,
+      remark,
+      lines: nextLines,
+    });
+    if (saved) {
+      setDocumentId(saved.id);
+      setDocumentNo(saved.documentNo);
+    }
+    return saved;
+  };
+
+  const ensureHeaderSaved = () => {
+    if (documentNo) return true;
+    const saved = persistDraft(lines);
+    if (!saved) return false;
+    messageApi.success(`已自动保存转移单 ${saved.documentNo}`);
+    return true;
+  };
+
+  const openAddMaterial = () => {
+    if (!ensureHeaderSaved()) return;
+    setEditingLine(null);
+    setLineModalOpen(true);
+  };
+
   const saveLine = (line, keepOpen) => {
+    let nextLines;
     if (editingLine) {
-      setLines((current) => current.map((item) => item.id === editingLine.id ? { ...line, id: editingLine.id } : item));
+      nextLines = lines.map((item) => item.id === editingLine.id ? { ...line, id: editingLine.id } : item);
       setEditingLine(null);
       setLineModalOpen(false);
-      return;
+    } else {
+      nextLines = [...lines, { ...line, id: `${Date.now()}-${lines.length + 1}` }];
+      if (!keepOpen) setLineModalOpen(false);
     }
-    setLines((current) => [...current, { ...line, id: `${Date.now()}-${current.length + 1}` }]);
-    if (!keepOpen) setLineModalOpen(false);
+    setLines(nextLines);
+    persistDraft(nextLines);
   };
+
   const saveDraft = () => {
-    if (!company) return messageApi.warning('请选择公司');
-    onSave({ company, remark, lines });
+    const saved = persistDraft(lines);
+    if (!saved) return undefined;
+    messageApi.success(`转移单 ${saved.documentNo} 草稿已保存`);
+    onBack();
     return undefined;
   };
   return (
@@ -311,17 +414,17 @@ function TransferEditor({ onBack, onSave }) {
       <PageTitle>转移单</PageTitle>
       <Card size="small" title="转移单信息">
         <DetailGrid columns={3} labelWidth={96}>
-          <DetailItem label="转移单号"><Readonly>自动生成</Readonly></DetailItem>
+          <DetailItem label="转移单号"><Readonly>{documentNo || '自动生成'}</Readonly></DetailItem>
           <DetailItem label="单据类型"><Readonly>转移单</Readonly></DetailItem>
           <DetailItem label="单据状态"><StatusTag value="草稿" /></DetailItem>
-          <DetailItem label="公司"><LookupInput value={company} placeholder="请选择公司" onOpen={() => setCompanyModalOpen(true)} /></DetailItem>
-          <DetailItem label="制单人"><Readonly>admin-系统管理员</Readonly></DetailItem>
+          <DetailItem label="公司">{documentNo ? <Readonly>{company}</Readonly> : <LookupInput value={company} placeholder="请选择公司" onOpen={() => setCompanyModalOpen(true)} />}</DetailItem>
+          <DetailItem label="制单人"><Readonly>{CURRENT_LOGIN_USER}</Readonly></DetailItem>
           <DetailItem label="制单时间"><Readonly>{createdDate}</Readonly></DetailItem>
-          <DetailItem label="备注" span={3}><TextArea autoSize={{ minRows: 3, maxRows: 6 }} value={remark} onChange={(event) => setRemark(event.target.value)} /></DetailItem>
+          <DetailItem label="备注" span={3}>{lines.length > 0 ? <Readonly>{remark}</Readonly> : <TextArea autoSize={{ minRows: 3, maxRows: 6 }} value={remark} onChange={(event) => setRemark(event.target.value)} />}</DetailItem>
         </DetailGrid>
       </Card>
       <Card size="small" title="转移物资" extra={<Space>
-        <Button type="primary" icon={<Plus size={14} />} onClick={() => { setEditingLine(null); setLineModalOpen(true); }}>添加物资</Button>
+        <Button type="primary" icon={<Plus size={14} />} onClick={openAddMaterial}>添加物资</Button>
         <Button icon={<Upload size={14} />} onClick={() => messageApi.info('Excel 导入沿用转移模板，本轮仅按截图补齐页面字段')}>Excel导入</Button>
       </Space>}>
         <Table rowKey="id" size="small" bordered columns={columns} dataSource={lines} scroll={{ x: 'max-content' }} pagination={false} />
@@ -372,33 +475,64 @@ export default function TransferPage() {
   }[selectorType];
   const deleteRows = () => {
     if (!selectedRowKeys.length) return messageApi.warning('请先选择需要删除的转移单');
+    const selectedRows = rows.filter((row) => selectedRowKeys.includes(row.id));
+    const deletableRows = selectedRows.filter((row) => row.status === '草稿');
+    const retainedRows = selectedRows.filter((row) => row.status !== '草稿');
+
+    if (!deletableRows.length) {
+      messageApi.warning('已完成转移单不可删除');
+      return undefined;
+    }
+
     Modal.confirm({
-      title: '确认删除所选转移单？', content: `共选择 ${selectedRowKeys.length} 条。`, okText: '删除', cancelText: '取消', okButtonProps: { danger: true },
+      title: '确认删除所选草稿转移单？',
+      content: retainedRows.length
+        ? `本次将删除 ${deletableRows.length} 条草稿；${retainedRows.length} 条已完成单据将保留。`
+        : `本次将删除 ${deletableRows.length} 条草稿转移单。`,
+      okText: '删除',
+      cancelText: '取消',
+      okButtonProps: { danger: true },
       onOk: () => {
-        const selected = new Set(selectedRowKeys);
-        setRows((current) => current.filter((row) => !selected.has(row.id)));
+        const deletableIds = new Set(deletableRows.map((row) => row.id));
+        setRows((current) => current.filter((row) => !deletableIds.has(row.id)));
         setSelectedRowKeys([]);
-        messageApi.success('已删除所选转移单');
+        messageApi.success(retainedRows.length
+          ? `已删除 ${deletableRows.length} 条草稿，${retainedRows.length} 条已完成单据已保留`
+          : `已删除 ${deletableRows.length} 条草稿转移单`);
       },
     });
     return undefined;
   };
-  const saveDraft = ({ company, remark, lines }) => {
-    const id = Math.max(0, ...rows.map((row) => row.id)) + 1;
+  const persistDraft = ({ id: existingId, documentNo: existingDocumentNo, company, remark, lines }) => {
+    const id = existingId || (Math.max(0, ...rows.map((row) => Number(row.id) || 0)) + 1);
     const firstLine = lines[0] || {};
-    const created = {
+    const saved = {
       id,
-      documentNo: `AT-${dayjs().format('YYYYMMDD')}${String(id).padStart(4, '0')}`,
-      applicationNo: '', status: '草稿', company, createdDate: dayjs().format('YYYY-MM-DD'), creator: 'admin-系统管理员',
-      quantity: lines.reduce((sum, line) => sum + Number(line.transferQty || 0), 0), reason: firstLine.transferReason || '', outDept: firstLine.department || '',
-      outLocation: [firstLine.city, firstLine.building].filter(Boolean).join(' / '), plate: firstLine.inPlate || '', inDept: firstLine.inDept || '', inLocation: [firstLine.city, firstLine.building].filter(Boolean).join(' / '), remark, lines,
+      documentNo: existingDocumentNo || `AT-${dayjs().format('YYYYMMDD')}${String(id).padStart(4, '0')}`,
+      applicationNo: '',
+      status: '草稿',
+      company,
+      createdDate: dayjs().format('YYYY-MM-DD'),
+      creator: CURRENT_LOGIN_USER,
+      quantity: lines.reduce((sum, line) => sum + Number(line.transferQty || 0), 0),
+      reason: firstLine.transferReason || '',
+      outDept: firstLine.department || '',
+      outLocation: [firstLine.city, firstLine.building].filter(Boolean).join(' / '),
+      plate: firstLine.inPlate || '',
+      inDept: firstLine.inDept || '',
+      inLocation: [firstLine.city, firstLine.building].filter(Boolean).join(' / '),
+      remark,
+      lines,
     };
-    setRows((current) => [created, ...current]);
-    setView('list');
-    messageApi.success(`已生成转移单 ${created.documentNo}`);
+    setRows((current) => (
+      current.some((row) => row.id === id)
+        ? current.map((row) => row.id === id ? saved : row)
+        : [saved, ...current]
+    ));
+    return saved;
   };
   if (view === 'create') {
-    return <>{contextHolder}<TransferEditor onBack={() => setView('list')} onSave={saveDraft} /></>;
+    return <>{contextHolder}<TransferEditor onBack={() => setView('list')} onPersist={persistDraft} /></>;
   }
   const columns = [
     { title: '行号', dataIndex: 'id', width: 70, align: 'center' },
