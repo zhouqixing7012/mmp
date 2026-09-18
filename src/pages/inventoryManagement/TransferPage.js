@@ -431,6 +431,93 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
   );
 }
 
+function exportTransferDetail(transferDocument) {
+  const headers = ['行号', '资产标签号', 'SN号', '物资说明', '转移数量', '转出人', '转出成本中心', '转入人', '转入成本中心', 'City', 'Building', 'Floor', 'Room', '转移日期', '用途', '使用说明'];
+  const rows = (transferDocument.lines || []).map((line, index) => [
+    index + 1,
+    line.assetTag,
+    line.sn,
+    line.materialDesc,
+    line.transferQty,
+    line.outPerson,
+    line.outCostCenter,
+    line.inPerson,
+    line.inCostCenter,
+    line.city,
+    line.building,
+    line.floor,
+    line.room,
+    line.transferDate,
+    line.purpose,
+    line.usageDescription,
+  ]);
+  const escape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  const csv = [headers, ...rows].map((row) => row.map(escape).join(',')).join('\n');
+  const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = window.document.createElement('a');
+  link.href = url;
+  link.download = `${transferDocument.documentNo || '转移单'}-明细.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function TransferDetail({ document: transferDocument, onBack }) {
+  const columns = [
+    { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
+    { title: '资产标签号', dataIndex: 'assetTag', width: 160 },
+    { title: 'SN号', dataIndex: 'sn', width: 160, render: (value) => value || '-' },
+    { title: '物资说明', dataIndex: 'materialDesc', width: 260 },
+    { title: '转移数量', dataIndex: 'transferQty', width: 100, align: 'right' },
+    { title: '转出人', dataIndex: 'outPerson', width: 160, render: (value) => value || '-' },
+    { title: '转出成本中心', dataIndex: 'outCostCenter', width: 180, render: (value) => value || '-' },
+    { title: '转入人', dataIndex: 'inPerson', width: 160, render: (value) => value || '-' },
+    { title: '转入成本中心', dataIndex: 'inCostCenter', width: 180, render: (value) => value || '-' },
+    { title: 'City', dataIndex: 'city', width: 120, render: (value) => value || '-' },
+    { title: 'Building', dataIndex: 'building', width: 180, render: (value) => value || '-' },
+    { title: 'Floor', dataIndex: 'floor', width: 100, render: (value) => value || '-' },
+    { title: 'Room', dataIndex: 'room', width: 100, render: (value) => value || '-' },
+    { title: '转移日期', dataIndex: 'transferDate', width: 130, render: (value) => value || '-' },
+  ];
+
+  return (
+    <Space direction="vertical" size={16} className="w-full">
+      <PageTitle>转移单详情</PageTitle>
+      <Card size="small" title="转移单信息">
+        <DetailGrid columns={3} labelWidth={96}>
+          <DetailItem label="转移单号"><Readonly>{transferDocument.documentNo}</Readonly></DetailItem>
+          <DetailItem label="申请单号"><Readonly>{transferDocument.applicationNo}</Readonly></DetailItem>
+          <DetailItem label="单据状态"><StatusTag value={transferDocument.status} /></DetailItem>
+          <DetailItem label="公司"><Readonly>{transferDocument.company}</Readonly></DetailItem>
+          <DetailItem label="制单人"><Readonly>{transferDocument.creator}</Readonly></DetailItem>
+          <DetailItem label="制单日期"><Readonly>{transferDocument.createdDate}</Readonly></DetailItem>
+          <DetailItem label="完成人"><Readonly>{transferDocument.completedBy}</Readonly></DetailItem>
+          <DetailItem label="完成时间"><Readonly>{transferDocument.completedAt}</Readonly></DetailItem>
+          <DetailItem label="物资数量"><Readonly>{transferDocument.quantity}</Readonly></DetailItem>
+          <DetailItem label="备注" span={3}><Readonly>{transferDocument.remark}</Readonly></DetailItem>
+        </DetailGrid>
+      </Card>
+      <Card size="small" title="转移物资" extra={<Typography.Text type="secondary">共 {(transferDocument.lines || []).length} 条</Typography.Text>}>
+        <Table
+          rowKey={(record) => record.id || record.assetTag}
+          size="small"
+          bordered
+          columns={columns}
+          dataSource={transferDocument.lines || []}
+          scroll={{ x: 'max-content' }}
+          pagination={false}
+          locale={{ emptyText: '暂无转移物资明细' }}
+        />
+      </Card>
+      <div className="flex justify-center gap-3">
+        {transferDocument.status === '已完成' && <Button onClick={() => window.print()}>打印</Button>}
+        <Button icon={<Download size={14} />} disabled={!(transferDocument.lines || []).length} onClick={() => exportTransferDetail(transferDocument)}>导出明细</Button>
+        <Button onClick={onBack}>返回</Button>
+      </div>
+    </Space>
+  );
+}
+
 function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, onPersist, onComplete }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [company, setCompany] = useState(initialDocument?.company || CURRENT_LOGIN_COMPANY);
@@ -552,6 +639,70 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
     onBack();
     return undefined;
   };
+
+  const confirmTransfer = () => {
+    const saved = persistDraft(lines);
+    if (!saved) return undefined;
+    if (!lines.length) {
+      messageApi.warning('请先添加转移物资');
+      return undefined;
+    }
+
+    const duplicateTags = lines.filter((line, index) => lines.findIndex((item) => item.assetTag === line.assetTag) !== index);
+    if (duplicateTags.length) {
+      messageApi.warning('同一转移单内存在重复资产，请先调整');
+      return undefined;
+    }
+    if (lines.some((line) => !line.transferDate)) {
+      messageApi.warning('存在未维护转移日期的物资');
+      return undefined;
+    }
+
+    const firstLine = lines[0];
+    if (lines.some((line) => line.outPerson !== firstLine.outPerson || line.inPerson !== firstLine.inPerson)) {
+      messageApi.warning('同一转移单内多条资产的转出人及转入人必须保持一致');
+      return undefined;
+    }
+
+    const staleLine = lines.find((line) => {
+      const currentAsset = SOURCE_ASSETS.find((asset) => asset.assetTag === line.assetTag);
+      return currentAsset && currentAsset.locked === true;
+    });
+    if (staleLine) {
+      messageApi.warning(`资产 ${staleLine.assetTag} 当前已被其他业务锁定，无法转移确认`);
+      return undefined;
+    }
+
+    Modal.confirm({
+      title: '确认执行转移？',
+      content: `转移单 ${saved.documentNo} 共 ${lines.length} 条物资，确认后单据将更新为已完成，不能继续编辑。`,
+      okText: '转移确认',
+      cancelText: '取消',
+      onOk: () => {
+        onComplete({
+          ...saved,
+          lines: lines.map((line) => ({
+            ...line,
+            transferSnapshot: {
+              responsiblePerson: line.outPerson,
+              costCenter: line.outCostCenter,
+              company: line.company,
+              plate: line.plate,
+              department: line.department,
+              city: line.city,
+              building: line.building,
+              floor: line.floor,
+              room: line.room,
+              assetStatus: line.assetStatus,
+            },
+          })),
+        });
+        messageApi.success(`转移单 ${saved.documentNo} 已完成`);
+        onBack();
+      },
+    });
+    return undefined;
+  };
   return (
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
@@ -562,7 +713,7 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
           <DetailItem label="单据类型"><Readonly>转移单</Readonly></DetailItem>
           <DetailItem label="单据状态"><StatusTag value="草稿" /></DetailItem>
           <DetailItem label="公司">{documentNo ? <Readonly>{company}</Readonly> : <LookupInput value={company} placeholder="请选择公司" onOpen={() => setCompanyModalOpen(true)} />}</DetailItem>
-          <DetailItem label="制单人"><Readonly>{CURRENT_LOGIN_USER}</Readonly></DetailItem>
+          <DetailItem label="制单人"><Readonly>{initialDocument?.creator || CURRENT_LOGIN_USER}</Readonly></DetailItem>
           <DetailItem label="制单时间"><Readonly>{createdDate}</Readonly></DetailItem>
           <DetailItem label="备注" span={3}>{lines.length > 0 ? <Readonly>{remark}</Readonly> : <TextArea autoSize={{ minRows: 3, maxRows: 6 }} value={remark} onChange={(event) => setRemark(event.target.value)} />}</DetailItem>
         </DetailGrid>
@@ -576,6 +727,7 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
       </Card>
       <div className="flex justify-center gap-3">
         <Button type="primary" onClick={saveDraft}>保存草稿</Button>
+        {documentNo && lines.length > 0 && <Button type="primary" onClick={confirmTransfer}>转移确认</Button>}
         <Button onClick={onBack}>返回</Button>
       </div>
       <SelectModal open={companyModalOpen} title="选择公司" dataSource={COMPANY_OPTIONS.map((name, index) => ({ id: index + 1, name }))} columns={[{ title: '公司', dataIndex: 'name' }]} searchFields={[{ label: '公司', name: 'name', dataIndex: 'name' }]} onCancel={() => setCompanyModalOpen(false)} onConfirm={(record) => { setCompany(record.name); setCompanyModalOpen(false); }} />
@@ -592,6 +744,7 @@ export default function TransferPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [selectorType, setSelectorType] = useState('');
   const [view, setView] = useState('list');
+  const [activeDocumentId, setActiveDocumentId] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const creatorData = useMemo(() => toSelectData(rows.map((row) => row.creator)), [rows]);
@@ -602,6 +755,7 @@ export default function TransferPage() {
       .flatMap((row) => (row.lines || []).map((line) => line.assetTag))
       .filter(Boolean)
   ), [rows]);
+  const activeDocument = rows.find((row) => row.id === activeDocumentId) || null;
   const filteredRows = useMemo(() => rows.filter((row) => (
     includesText(row.documentNo, filters.documentNo)
     && includesText(row.reason, filters.reason)
@@ -658,15 +812,17 @@ export default function TransferPage() {
   };
   const persistDraft = ({ id: existingId, documentNo: existingDocumentNo, company, remark, lines }) => {
     const id = existingId || (Math.max(0, ...rows.map((row) => Number(row.id) || 0)) + 1);
+    const existing = rows.find((row) => row.id === id);
     const firstLine = lines[0] || {};
     const saved = {
+      ...existing,
       id,
-      documentNo: existingDocumentNo || `AT-${dayjs().format('YYYYMMDD')}${String(id).padStart(4, '0')}`,
-      applicationNo: '',
+      documentNo: existingDocumentNo || existing?.documentNo || `AT-${dayjs().format('YYYYMMDD')}${String(id).padStart(4, '0')}`,
+      applicationNo: existing?.applicationNo || '',
       status: '草稿',
       company,
-      createdDate: dayjs().format('YYYY-MM-DD'),
-      creator: CURRENT_LOGIN_USER,
+      createdDate: existing?.createdDate || dayjs().format('YYYY-MM-DD'),
+      creator: existing?.creator || CURRENT_LOGIN_USER,
       quantity: lines.reduce((sum, line) => sum + Number(line.transferQty || 0), 0),
       reason: firstLine.transferReason || '',
       outDept: firstLine.department || '',
@@ -684,19 +840,57 @@ export default function TransferPage() {
     ));
     return saved;
   };
+  const completeTransfer = (document) => {
+    const completed = {
+      ...document,
+      status: '已完成',
+      completedBy: CURRENT_LOGIN_USER,
+      completedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+    };
+    setRows((current) => current.map((row) => row.id === completed.id ? completed : row));
+    return completed;
+  };
+
+  const backToList = () => {
+    setActiveDocumentId(null);
+    setView('list');
+  };
+
   if (view === 'create') {
-    return <>{contextHolder}<TransferEditor lockedAssetTags={draftLockedAssetTags} onBack={() => setView('list')} onPersist={persistDraft} /></>;
+    return <>{contextHolder}<TransferEditor lockedAssetTags={draftLockedAssetTags} onBack={backToList} onPersist={persistDraft} onComplete={completeTransfer} /></>;
   }
+  if (view === 'edit' && activeDocument) {
+    return <>{contextHolder}<TransferEditor initialDocument={activeDocument} lockedAssetTags={draftLockedAssetTags} onBack={backToList} onPersist={persistDraft} onComplete={completeTransfer} /></>;
+  }
+  if (view === 'view' && activeDocument) {
+    return <>{contextHolder}<TransferDetail document={activeDocument} onBack={backToList} /></>;
+  }
+  const openDocument = (row) => {
+    setActiveDocumentId(row.id);
+    setView(row.status === '草稿' ? 'edit' : 'view');
+  };
   const columns = [
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => (page - 1) * pageSize + index + 1 },
-    { title: '转移单号', dataIndex: 'documentNo', width: 190, sorter: (a, b) => compareText(a.documentNo, b.documentNo) },
+    {
+      title: '转移单号',
+      dataIndex: 'documentNo',
+      width: 190,
+      sorter: (a, b) => compareText(a.documentNo, b.documentNo),
+      render: (value, row) => <Button type="link" className="px-0" onClick={() => openDocument(row)}>{value}</Button>,
+    },
     { title: '申请单号', dataIndex: 'applicationNo', width: 220, sorter: (a, b) => compareText(a.applicationNo, b.applicationNo), render: (value) => value || '-' },
     { title: '单据状态', dataIndex: 'status', width: 120, sorter: (a, b) => compareText(a.status, b.status), render: (value) => <StatusTag value={value} /> },
     { title: '公司', dataIndex: 'company', width: 180, sorter: (a, b) => compareText(a.company, b.company) },
     { title: '制单日期', dataIndex: 'createdDate', width: 130, sorter: (a, b) => compareText(a.createdDate, b.createdDate), defaultSortOrder: 'descend' },
     { title: '制单人', dataIndex: 'creator', width: 180, sorter: (a, b) => compareText(a.creator, b.creator) },
     { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right', sorter: (a, b) => Number(a.quantity || 0) - Number(b.quantity || 0) },
-    { title: '操作', key: 'operation', width: 90, fixed: 'right', render: () => <Button type="link" className="px-0" onClick={() => messageApi.info('转移单详情字段待确认')}>操作</Button> },
+    {
+      title: '操作',
+      key: 'operation',
+      width: 90,
+      fixed: 'right',
+      render: (_, row) => <Button type="link" className="px-0" onClick={() => openDocument(row)}>{row.status === '草稿' ? '编辑' : '查看'}</Button>,
+    },
   ];
   return (
     <Space direction="vertical" size={16} className="w-full">
@@ -727,7 +921,7 @@ export default function TransferPage() {
       <Card size="small" title="转移单列表" extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
         <div className="mb-3 flex justify-end">
           <Space>
-            <Button type="primary" icon={<Plus size={14} />} onClick={() => setView('create')}>创建</Button>
+            <Button type="primary" icon={<Plus size={14} />} onClick={() => { setActiveDocumentId(null); setView('create'); }}>创建</Button>
             <Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button>
           </Space>
         </div>
