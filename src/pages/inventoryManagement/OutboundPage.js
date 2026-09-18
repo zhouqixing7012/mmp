@@ -12,7 +12,7 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
-import { Download, Plus, Printer, Search, Trash2, Upload } from 'lucide-react';
+import { Download, FileText, Plus, Printer, Search, Trash2, Upload } from 'lucide-react';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
@@ -519,54 +519,113 @@ function OutboundMaterialDetailModal({ open, row, outboundType, onCancel }) {
   );
 }
 
-function ApprovalSection({ source, onApprove, onReject }) {
-  const [opinion, setOpinion] = useState('');
-  const currentStep = source.approvalSteps?.[source.currentApprovalIndex || 0];
-  const history = source.approvalHistory || [];
-  const [messageApi, contextHolder] = antdMessage.useMessage();
-  const reject = () => {
-    if (!opinion.trim()) return messageApi.warning('驳回意见不能为空');
-    onReject(opinion.trim());
-    setOpinion('');
-    return undefined;
-  };
+function displayWarehouseName(value) {
+  return String(value || '').replace(/^[^.\-]+[-.]/, '');
+}
+
+function formatApprovalLocation(line) {
+  const parts = [line?.city, line?.building, line?.floor || line?.room || '缺省'].filter(Boolean);
+  return parts.join('.');
+}
+
+function formatApprovalDate(value) {
+  if (!value) return '-';
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format('YYYY.MM.DD') : value;
+}
+
+function ManualOutboundApprovalView({ source, onApprove }) {
+  const lines = source?.lines || [];
+  const firstLine = lines[0] || {};
+  const totalQty = lines.reduce((sum, row) => sum + Number(row.quantity || 0), 0);
+  const totalAmount = lines.reduce((sum, row) => sum + Number(row.originalValue || 0), 0);
+
+  const approvalColumns = [
+    { title: '序号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
+    { title: '物资说明', dataIndex: 'materialDesc', width: 330 },
+    { title: '资产标签号', dataIndex: 'assetTag', width: 150 },
+    { title: 'SN号', dataIndex: 'sn', width: 170, render: (value) => value || '-' },
+    { title: '数量', dataIndex: 'quantity', width: 85, align: 'center', render: count },
+    {
+      title: '价值',
+      children: [
+        {
+          title: '单价',
+          width: 110,
+          align: 'right',
+          render: (_, row) => money(Number(row.originalValue || 0) / Math.max(1, Number(row.quantity || 1))),
+        },
+        { title: '原值', dataIndex: 'originalValue', width: 115, align: 'right', render: money },
+      ],
+    },
+    {
+      title: (
+        <div className="leading-tight">
+          <div>备注</div>
+          <Typography.Text type="secondary" className="text-xs">（业务线或新资产地点或启用日期）</Typography.Text>
+        </div>
+      ),
+      key: 'remark',
+      width: 220,
+      render: (_, row) => row.issueDate || row.businessLine || formatApprovalLocation(row) || '-',
+    },
+  ];
 
   return (
-    <>
-      {contextHolder}
-      <Card size="small" title="当前审批">
-        <DetailGrid columns={3} labelWidth={112}>
-          <EditorField label="审批路线"><Readonly>{source.approvalRoute}</Readonly></EditorField>
-          <EditorField label="当前节点"><Readonly>{currentStep?.name}</Readonly></EditorField>
-          <EditorField label="当前处理人"><Readonly>{currentStep?.approver}</Readonly></EditorField>
-          <EditorField label="发起人"><Readonly>{source.approvalInitiator}</Readonly></EditorField>
-          <EditorField label="发起时间"><Readonly>{source.approvalStartedAt}</Readonly></EditorField>
-          <EditorField label="审批状态"><StatusTag value="审批中" /></EditorField>
-          <EditorField label="审批意见" span={3}><TextArea value={opinion} onChange={(e) => setOpinion(e.target.value)} autoSize={{ minRows: 2, maxRows: 4 }} placeholder="驳回时必填；同意时可选填" /></EditorField>
-        </DetailGrid>
-      </Card>
-      <Card size="small" title="审批记录" extra={<Typography.Text type="secondary">共 {history.length} 条</Typography.Text>}>
-        <Table
-          rowKey={(_, index) => index}
-          size="small"
-          bordered
-          pagination={false}
-          dataSource={history}
-          columns={[
-            { title: '序号', width: 70, render: (_, __, index) => index + 1 },
-            { title: '节点', dataIndex: 'node', width: 220 },
-            { title: '处理人', dataIndex: 'handler', width: 160 },
-            { title: '操作', dataIndex: 'action', width: 100, render: (value) => <StatusTag value={value} /> },
-            { title: '操作时间', dataIndex: 'time', width: 170 },
-            { title: '审批意见', dataIndex: 'opinion', render: (value) => value || '-' },
-          ]}
-        />
-      </Card>
-      <div className="flex justify-center gap-3">
-        <Button type="primary" onClick={() => { onApprove(opinion.trim()); setOpinion(''); }}>同意</Button>
-        <Button danger onClick={reject}>驳回</Button>
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white" data-page-view-key="manual-outbound-approval">
+      <div className="bg-[#409eff] px-5 py-3 text-xl font-semibold text-white">物资出库申请</div>
+
+      <div className="px-8 pb-8 pt-4">
+        <div className="mb-8 flex justify-end">
+          <Typography.Text strong>出库单号：{source?.documentNo || '-'}</Typography.Text>
+        </div>
+
+        <section className="mb-8">
+          <div className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-3 text-lg font-semibold text-[#1597c8]">
+            <FileText size={22} />
+            <span>基本信息</span>
+          </div>
+          <DetailGrid columns={2} labelWidth={96}>
+            <EditorField label="制单人"><Readonly>{source?.creator}</Readonly></EditorField>
+            <EditorField label="制单时间"><Readonly>{formatApprovalDate(source?.createdDate)}</Readonly></EditorField>
+            <EditorField label="使用人"><Readonly>{firstLine.issuePerson || firstLine.person}</Readonly></EditorField>
+            <EditorField label="使用部门"><Readonly>{firstLine.department}</Readonly></EditorField>
+            <EditorField label="仓库名称"><Readonly>{displayWarehouseName(source?.warehouse)}</Readonly></EditorField>
+            <EditorField label="地点位置"><Readonly>{formatApprovalLocation(firstLine)}</Readonly></EditorField>
+            <EditorField label="PR单号"><Readonly>{firstLine.prNo || source?.prNo}</Readonly></EditorField>
+            <EditorField label="PO单号"><Readonly>{firstLine.poNo || source?.poNo}</Readonly></EditorField>
+            <EditorField label="资产大类"><Readonly>{firstLine.assetClass}</Readonly></EditorField>
+          </DetailGrid>
+        </section>
+
+        <section>
+          <div className="mb-4 flex items-end justify-between border-b border-slate-200 pb-3">
+            <div className="flex items-center gap-2 text-lg font-semibold text-[#1597c8]">
+              <FileText size={22} />
+              <span>出库资产信息</span>
+            </div>
+            <Space size={24}>
+              <Typography.Text>总数量：<Typography.Text strong className="text-[#1677ff]">{count(totalQty)}</Typography.Text></Typography.Text>
+              <Typography.Text>总金额：<Typography.Text strong className="text-[#1677ff]">{money(totalAmount)}</Typography.Text></Typography.Text>
+            </Space>
+          </div>
+
+          <Table
+            rowKey={(row) => row.id || row.assetTag}
+            size="small"
+            bordered
+            columns={approvalColumns}
+            dataSource={lines}
+            pagination={false}
+            scroll={{ x: 'max-content' }}
+          />
+        </section>
+
+        <div className="mt-10 flex justify-center border-t border-slate-200 pt-6">
+          <Button type="primary" size="large" className="min-w-32" onClick={() => onApprove('同意')}>同意</Button>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -747,6 +806,15 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
     return undefined;
   };
 
+  if (approvalPending && source?.sourceModule === '手工出库') {
+    return (
+      <>
+        {contextHolder}
+        <ManualOutboundApprovalView source={source} onApprove={onApprove} />
+      </>
+    );
+  }
+
   return (
     <Space direction="vertical" size={16} className="w-full" data-page-view-key={`outbound-${status}-${outboundType}`}>
       {contextHolder}
@@ -770,7 +838,6 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
         <Table rowKey="id" size="small" bordered columns={outboundType === '借用出库' ? borrowColumns : issueColumns} dataSource={lines} rowSelection={editable ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true } : undefined} scroll={{ x: 'max-content' }} pagination={false} />
       </Card>
 
-      {approvalPending && <ApprovalSection source={source} onApprove={onApprove} onReject={onReject} />}
       {!approvalPending && source?.approvalHistory?.length > 0 && status === '草稿' && <Card size="small" title="历史审批记录" extra={<Typography.Text type="secondary">共 {source.approvalHistory.length} 条</Typography.Text>}><Table rowKey={(_, index) => index} size="small" bordered pagination={false} dataSource={source.approvalHistory} columns={[{ title: '序号', width: 70, render: (_, __, index) => index + 1 }, { title: '节点', dataIndex: 'node', width: 220 }, { title: '处理人', dataIndex: 'handler', width: 160 }, { title: '操作', dataIndex: 'action', width: 100 }, { title: '操作时间', dataIndex: 'time', width: 170 }, { title: '审批意见', dataIndex: 'opinion' }]} /></Card>}
 
       {!approvalPending && <div className="flex justify-center gap-3">
