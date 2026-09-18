@@ -217,10 +217,6 @@ function LookupInput({ value, placeholder, onOpen }) {
   );
 }
 
-function DateFilter({ value, onChange, placeholder }) {
-  return <DatePicker className="w-full" value={value ? dayjs(value) : null} format="YYYY-MM-DD" placeholder={placeholder} onChange={(date) => onChange(date ? date.format('YYYY-MM-DD') : '')} />;
-}
-
 function SelectorModal({ config, onClose }) {
   if (!config) return null;
   return <SelectModal open title={config.title} dataSource={config.dataSource || []} columns={config.columns || [{ title: '名称', dataIndex: 'name' }]} searchFields={config.searchFields || [{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={onClose} onConfirm={(record) => { config.onConfirm(record); onClose(); }} />;
