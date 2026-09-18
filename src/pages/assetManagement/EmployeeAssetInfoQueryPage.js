@@ -45,6 +45,8 @@ const ASSET_ROWS = [
     applicantId: '',
     applicant: '-',
     documentNo: '-',
+    spPoPutinNum: '',
+    tagNumber: '112161100271-V',
     documentType: '-',
     businessType: '-',
     documentStatus: '-',
@@ -65,6 +67,8 @@ const ASSET_ROWS = [
     applicantId: '220784',
     applicant: '220784-周琦星',
     documentNo: 'TR-202609010001',
+    spPoPutinNum: 'TR-202609010001',
+    tagNumber: '114122102371',
     documentType: '资产转移',
     businessType: '员工转移',
     documentStatus: '已驳回',
@@ -85,6 +89,8 @@ const ASSET_ROWS = [
     applicantId: '220784',
     applicant: '220784-周琦星',
     documentNo: 'EUA-202609020001',
+    spPoPutinNum: 'EUA-202609020001',
+    tagNumber: '114122102399',
     documentType: '资产申请',
     businessType: '员工领用',
     documentStatus: '处理中',
@@ -115,6 +121,8 @@ const CONSUMABLE_ROWS = [
     costCenter: 'D3520.ERP部',
     warehouse: 'I1001.耗材集团总库（新媒体）',
     enabledDate: '2026-06-04',
+    spPoPutinNum: 'PI-202609120010',
+    tagNumber: 'QT-260123',
     materialType: '耗材',
   },
   {
@@ -136,6 +144,8 @@ const CONSUMABLE_ROWS = [
     costCenter: '产品技术部',
     warehouse: 'I1001.耗材集团总库（新媒体）',
     enabledDate: '2026-08-01',
+    spPoPutinNum: '',
+    tagNumber: 'QT-260188',
     materialType: '耗材',
   },
 ];
@@ -152,6 +162,8 @@ const CONTRACT_NUMBER_ROWS = [
     company: '114.新媒体',
     department: 'D3520.集团总部.ERP部.业务产品二组.运营产品组',
     claimDate: '2026-06-18',
+    spPoPutinNum: 'PI-202609100003',
+    tagNumber: 'N-0739',
     remark: '业务使用',
   },
   {
@@ -165,6 +177,8 @@ const CONTRACT_NUMBER_ROWS = [
     company: '114.新媒体',
     department: '产品技术部.研发一组',
     claimDate: '2026-01-05',
+    spPoPutinNum: '',
+    tagNumber: 'N-0741',
     remark: '移动测试号码',
   },
 ];
@@ -256,6 +270,22 @@ function amountText(value) {
 function employeeText(employee) {
   if (!employee?.id) return '';
   return `${employee.id}-${employee.name}`;
+}
+
+
+function compareSpPoPutinDescThenTagAsc(a, b) {
+  const aDocumentNo = String(a.spPoPutinNum || '').trim();
+  const bDocumentNo = String(b.spPoPutinNum || '').trim();
+
+  if (!aDocumentNo && bDocumentNo) return 1;
+  if (aDocumentNo && !bDocumentNo) return -1;
+
+  if (aDocumentNo && bDocumentNo) {
+    const documentCompare = bDocumentNo.localeCompare(aDocumentNo, 'zh-CN', { numeric: true });
+    if (documentCompare !== 0) return documentCompare;
+  }
+
+  return String(a.tagNumber || '').localeCompare(String(b.tagNumber || ''), 'zh-CN', { numeric: true });
 }
 
 function documentBelongsToEmployee(row, employeeId) {
@@ -448,6 +478,7 @@ export default function EmployeeAssetInfoQueryPage() {
         && row.materialType === '资产'
         && includesText(row.tag, filter.assetTag)
       ))
+      .sort(compareSpPoPutinDescThenTagAsc)
       .map((row, index) => ({ ...row, rowNo: index + 1 }));
   }, [appliedEmployee, appliedFilters.asset]);
 
@@ -460,6 +491,7 @@ export default function EmployeeAssetInfoQueryPage() {
         && row.materialType === '耗材'
         && includesText(row.tag, filter.assetTag)
       ))
+      .sort(compareSpPoPutinDescThenTagAsc)
       .map((row, index) => ({ ...row, rowNo: index + 1 }));
   }, [appliedEmployee, appliedFilters.consumable]);
 
@@ -472,6 +504,7 @@ export default function EmployeeAssetInfoQueryPage() {
         && row.status === '在用-使用中'
         && includesText(row.contractNumber, filter.contractNumber)
       ))
+      .sort(compareSpPoPutinDescThenTagAsc)
       .map((row, index) => ({ ...row, rowNo: index + 1 }));
   }, [appliedEmployee, appliedFilters.contract]);
 
@@ -484,7 +517,7 @@ export default function EmployeeAssetInfoQueryPage() {
         && (includesText(row.applicationNo, filter.documentNo) || includesText(row.coreDocument, filter.documentNo))
         && includesText(row.documentStatus, filter.documentStatus)
       ))
-      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+      .sort((a, b) => String(b.applyDate).localeCompare(String(a.applyDate)))
       .map((row, index) => ({ ...row, rowNo: index + 1 }));
   }, [appliedEmployee, appliedFilters.document]);
 
