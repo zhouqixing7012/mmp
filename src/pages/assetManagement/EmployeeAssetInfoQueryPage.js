@@ -189,56 +189,92 @@ const DOCUMENT_ROWS = [
     documentType: '新员工领用',
     businessType: '新员工相关',
     documentStatus: '已完成',
-    applicantId: '220784',
-    applicant: '220784-周琦星',
-    responsiblePersonId: '',
+    relationType: 'employeeApplication',
+    headerApplicantId: '220784',
     payPersonId: '',
-    inboundPersonIds: [],
-    outboundPersonIds: ['220784'],
+    applicant: '220784-周琦星',
     applyDate: '2025-05-31',
     createdAt: '2025-05-31 09:30:00',
     coreDocument: 'OS-202506040022',
     company: '114.新媒体',
     plate: '17.Corporate',
     department: 'D3520.集团总部.ERP部.业务产品二组.运营产品组',
+    detailAvailable: true,
+    isHistorical: true,
   },
   {
     id: 'document-2',
-    applicationNo: 'AR-202609120021',
-    documentType: '资产退库',
-    businessType: '退库',
+    applicationNo: 'CAA-202609150031',
+    documentType: '统一申请',
+    businessType: '统一申请相关',
     documentStatus: '处理中',
-    applicantId: '218356',
-    applicant: '218356-徐鑫',
-    responsiblePersonId: '220784',
-    payPersonId: '',
-    inboundPersonIds: ['220784'],
-    outboundPersonIds: [],
-    applyDate: '2026-09-12',
-    createdAt: '2026-09-12 14:20:00',
-    coreDocument: '-',
+    relationType: 'caaPurchaseApplication',
+    headerApplicantId: '',
+    payPersonId: '220784',
+    applicant: '-',
+    applyDate: '2026-09-15',
+    createdAt: '2026-09-15 11:10:00',
+    coreDocument: 'PO-202609150018',
     company: '114.新媒体',
     plate: '17.Corporate',
     department: 'D3520.集团总部.ERP部.业务产品二组.运营产品组',
+    detailAvailable: true,
+    isHistorical: false,
   },
   {
     id: 'document-3',
-    applicationNo: 'TR-202609010001',
+    applicationNo: '',
+    documentType: '独立入库',
+    businessType: '入库',
+    documentStatus: '已完成',
+    relationType: 'standaloneInbound',
+    returnPersonIds: ['220784'],
+    applicant: '-',
+    applyDate: '2026-09-12',
+    createdAt: '2026-09-12 14:20:00',
+    coreDocument: 'IN-202609120021',
+    company: '114.新媒体',
+    plate: '17.Corporate',
+    department: 'D3520.集团总部.ERP部.业务产品二组.运营产品组',
+    detailAvailable: true,
+    isHistorical: false,
+  },
+  {
+    id: 'document-4',
+    applicationNo: '',
+    documentType: '独立出库',
+    businessType: '出库',
+    documentStatus: '已完成',
+    relationType: 'standaloneOutbound',
+    detailResponsibleIds: ['220784'],
+    applicant: '-',
+    applyDate: '2026-09-10',
+    createdAt: '2026-09-10 16:05:00',
+    coreDocument: 'OS-202609100015',
+    company: '114.新媒体',
+    plate: '17.Corporate',
+    department: 'D3520.集团总部.ERP部.业务产品二组.运营产品组',
+    detailAvailable: true,
+    isHistorical: false,
+  },
+  {
+    id: 'document-5',
+    applicationNo: '',
     documentType: '资产转移',
-    businessType: '员工转移',
-    documentStatus: '已驳回',
-    applicantId: '218356',
-    applicant: '218356-徐鑫',
-    responsiblePersonId: '',
-    payPersonId: '220784',
-    inboundPersonIds: [],
-    outboundPersonIds: [],
+    businessType: '资产转移',
+    documentStatus: '已完成',
+    relationType: 'standaloneTransfer',
+    detailResponsibleIds: ['218356'],
+    detailApplicantIds: ['220784'],
+    applicant: '-',
     applyDate: '2026-09-01',
     createdAt: '2026-09-01 10:15:00',
     coreDocument: 'AT-202609010003',
     company: '114.新媒体',
     plate: '17.Corporate',
     department: 'D3520.集团总部.ERP部.业务产品二组.运营产品组',
+    detailAvailable: true,
+    isHistorical: false,
   },
 ];
 
@@ -289,13 +325,31 @@ function compareSpPoPutinDescThenTagAsc(a, b) {
 
 function documentBelongsToEmployee(row, employeeId) {
   if (!employeeId) return false;
-  return [
-    row.applicantId,
-    row.responsiblePersonId,
-    row.payPersonId,
-    ...(row.inboundPersonIds || []),
-    ...(row.outboundPersonIds || []),
-  ].some((value) => String(value || '') === String(employeeId));
+  const target = String(employeeId);
+
+  if (row.relationType === 'employeeApplication'
+    || row.relationType === 'caaInventoryApplication'
+    || row.relationType === 'caaPurchaseApplication') {
+    const headerEmployeeId = row.headerApplicantId || row.payPersonId;
+    return String(headerEmployeeId || '') === target;
+  }
+
+  if (row.relationType === 'standaloneInbound') {
+    return (row.returnPersonIds || []).some((value) => String(value || '') === target);
+  }
+
+  if (row.relationType === 'standaloneOutbound') {
+    return (row.detailResponsibleIds || []).some((value) => String(value || '') === target);
+  }
+
+  if (row.relationType === 'standaloneTransfer') {
+    return [
+      ...(row.detailResponsibleIds || []),
+      ...(row.detailApplicantIds || []),
+    ].some((value) => String(value || '') === target);
+  }
+
+  return false;
 }
 
 function LookupInput({ value, placeholder, onOpen, onClear }) {
@@ -548,11 +602,23 @@ export default function EmployeeAssetInfoQueryPage() {
   const openDocumentDetail = (documentNo) => {
     if (!documentNo || documentNo === '-') return;
     const record = DOCUMENT_ROWS.find((row) => row.applicationNo === documentNo || row.coreDocument === documentNo);
-    if (record) {
-      setDetail({ kind: 'document', record });
+
+    if (!record) {
+      messageApi.warning('暂无明细展示页面！请联系维护人员添加。');
       return;
     }
-    messageApi.info('当前原型暂无该单据详情数据');
+
+    if (record.isHistorical) {
+      messageApi.info('历史单据跳转至旧系统对应单据详情页');
+      return;
+    }
+
+    if (!record.detailAvailable) {
+      messageApi.warning('暂无明细展示页面！请联系维护人员添加。');
+      return;
+    }
+
+    setDetail({ kind: 'document', record });
   };
 
   const assetColumns = [
@@ -644,9 +710,9 @@ export default function EmployeeAssetInfoQueryPage() {
       dataIndex: 'applicationNo',
       width: 180,
       fixed: 'left',
-      render: (value, record) => (
-        <Button type="link" size="small" onClick={() => setDetail({ kind: 'document', record })}>{value}</Button>
-      ),
+      render: (value) => value
+        ? <Button type="link" size="small" onClick={() => openDocumentDetail(value)}>{value}</Button>
+        : '-',
     },
     { title: '单据类型', dataIndex: 'documentType', width: 130, render: displayText },
     { title: '业务类型', dataIndex: 'businessType', width: 130, render: displayText },
@@ -657,8 +723,8 @@ export default function EmployeeAssetInfoQueryPage() {
       title: '核心单据',
       dataIndex: 'coreDocument',
       width: 180,
-      render: (value, record) => value && value !== '-'
-        ? <Button type="link" size="small" onClick={() => setDetail({ kind: 'document', record })}>{value}</Button>
+      render: (value) => value && value !== '-'
+        ? <Button type="link" size="small" onClick={() => openDocumentDetail(value)}>{value}</Button>
         : '-',
     },
     { title: '公司', dataIndex: 'company', width: 130, render: displayText },
@@ -669,9 +735,12 @@ export default function EmployeeAssetInfoQueryPage() {
       key: 'operation',
       width: 100,
       fixed: 'right',
-      render: (_, record) => (
-        <Button type="link" size="small" onClick={() => setDetail({ kind: 'document', record })}>查看流程</Button>
-      ),
+      render: (_, record) => {
+        const detailNo = record.applicationNo || record.coreDocument;
+        return detailNo
+          ? <Button type="link" size="small" onClick={() => openDocumentDetail(detailNo)}>查看流程</Button>
+          : '-';
+      },
     },
   ];
 
