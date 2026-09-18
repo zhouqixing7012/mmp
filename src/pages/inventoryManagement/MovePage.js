@@ -557,7 +557,6 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
   const [receiveWarehouse, setReceiveWarehouse] = useState(source?.toWarehouse || '');
   const [remark, setRemark] = useState(source?.remark || '');
   const [lineScanDraft, setLineScanDraft] = useState('');
-  const [lineScan, setLineScan] = useState('');
   const [warehouseModalOpen, setWarehouseModalOpen] = useState(false);
   const [lineModalOpen, setLineModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -570,10 +569,7 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
   const createdDate = source?.createdDate || dayjs().format('YYYY-MM-DD');
   const existingTags = useMemo(() => new Set(lines.map((item) => item.assetTag)), [lines]);
 
-  const visibleLines = useMemo(
-    () => lines.filter((line) => !lineScan || includesText(line.assetTag, lineScan) || includesText(line.sn, lineScan)),
-    [lines, lineScan]
-  );
+  const visibleLines = lines;
 
   const receiveWarehouseOptions = useMemo(() => {
     const current = getWarehouse(currentWarehouse);
@@ -624,6 +620,59 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
     if (!keepOpen) setLineModalOpen(false);
     messageApi.success(keepOpen ? '物资已添加，可继续选择' : `已添加 ${rows.length} 条物资`);
     return true;
+  };
+
+  const addAssetByScan = () => {
+    const scanValue = String(lineScanDraft || '').trim();
+    if (!scanValue) return undefined;
+    if (!currentWarehouse) {
+      messageApi.warning('请先选择当前仓库');
+      return undefined;
+    }
+
+    const normalized = scanValue.toLowerCase();
+    const matched = ASSET_POOL.find((item) => (
+      String(item.assetTag || '').trim().toLowerCase() === normalized
+      || String(item.sn || '').trim().toLowerCase() === normalized
+    ));
+
+    if (!matched || matched.warehouse !== currentWarehouse) {
+      setLineScanDraft('');
+      messageApi.warning('资产不存在或不在当前库内！');
+      return undefined;
+    }
+    if (lines.some((item) => item.assetTag === matched.assetTag)) {
+      setLineScanDraft('');
+      messageApi.warning('该资产已添加，请扫描验证其他资产');
+      return undefined;
+    }
+    if (Number(matched.availableQty || 0) <= 0) {
+      setLineScanDraft('');
+      messageApi.warning('资产不在库');
+      return undefined;
+    }
+    if (matched.locked) {
+      setLineScanDraft('');
+      messageApi.warning('当前资产已被其他业务锁定，无法移库');
+      return undefined;
+    }
+    if (!SUPPORTED_MATERIAL_GROUPS.has(matched.materialGroup)) {
+      setLineScanDraft('');
+      messageApi.warning('当前物资类型暂不支持移库');
+      return undefined;
+    }
+
+    const saved = saveLines({
+      ...matched,
+      warehouse: currentWarehouse,
+      quantity: Number(matched.quantity || matched.assetQty || 1),
+      moveDesc: '',
+      moveStatus: '草稿',
+      verification: '未验证',
+      originalLockStatus: Boolean(matched.locked),
+    }, false);
+    if (saved !== false) setLineScanDraft('');
+    return undefined;
   };
 
   const deleteLines = () => {
@@ -787,11 +836,22 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
         </Card>
 
         <Card size="small" title="移库物资" extra={<Typography.Text type="secondary">共 {visibleLines.length} 条</Typography.Text>}>
-          <QueryBar onQuery={() => setLineScan(lineScanDraft)} onReset={() => { setLineScanDraft(''); setLineScan(''); }}>
-            <QueryItem label="资产扫描">
-              <Input value={lineScanDraft} allowClear placeholder="扫码或手输标签号/SN" onChange={(event) => setLineScanDraft(event.target.value)} onPressEnter={() => setLineScan(lineScanDraft)} />
-            </QueryItem>
-          </QueryBar>
+          {editable && (
+            <div className="mb-3 rounded-md bg-slate-50 p-3">
+              <div className="mb-2 flex items-center gap-2">
+                <Typography.Text className="shrink-0">资产扫描</Typography.Text>
+                <Input
+                  value={lineScanDraft}
+                  allowClear
+                  autoFocus
+                  placeholder="扫描或输入资产标签号/SN，回车直接添加"
+                  onChange={(event) => setLineScanDraft(event.target.value)}
+                  onPressEnter={addAssetByScan}
+                />
+              </div>
+              <Typography.Text type="secondary">仅允许添加当前仓库内的资产/低值耐用品；扫描成功后直接追加到下方移库物资明细。</Typography.Text>
+            </div>
+          )}
           {toolbar && <div className="mb-3 flex justify-end">{toolbar}</div>}
           <Table
             rowKey="id"
