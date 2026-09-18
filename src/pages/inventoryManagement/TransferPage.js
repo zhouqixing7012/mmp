@@ -195,6 +195,7 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
       inPlate: receiver?.plate || current.inPlate,
       inDept: receiver?.department || current.inDept,
       inCostCenter: isServerAsset(record) ? (record.costCenter || '') : (receiver?.costCenter || current.inCostCenter),
+      purpose: record.usage || '',
     }));
   };
   const selectorConfig = {
@@ -735,7 +736,6 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
   const [companyModalOpen, setCompanyModalOpen] = useState(false);
   const [lineModalOpen, setLineModalOpen] = useState(false);
   const [editingLine, setEditingLine] = useState(null);
-  const [selectedLineId, setSelectedLineId] = useState(null);
   const [lines, setLines] = useState(initialDocument?.lines || []);
   const createdDate = initialDocument?.createdDate || dayjs().format('YYYY-MM-DD');
   const availableAssets = SOURCE_ASSETS.filter((item) => (
@@ -756,38 +756,32 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
     { title: '转入成本中心', dataIndex: 'inCostCenter', width: 180 },
     { title: '转入城市', dataIndex: 'city', width: 130 },
     { title: '转入建筑物', dataIndex: 'building', width: 180 },
+    {
+      title: '操作',
+      key: 'operation',
+      width: 130,
+      fixed: 'right',
+      render: (_, row) => (
+        <Space size={8}>
+          <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button>
+          <Button type="link" danger className="px-0" onClick={() => {
+            Modal.confirm({
+              title: '确认删除该转移物资？',
+              content: `资产 ${row.assetTag} 将从当前草稿中移除并释放本次转移占用。`,
+              okText: '删除',
+              cancelText: '取消',
+              okButtonProps: { danger: true },
+              onOk: () => {
+                const nextLines = lines.filter((item) => item.id !== row.id);
+                setLines(nextLines);
+                persistDraft(nextLines);
+              },
+            });
+          }}>删除</Button>
+        </Space>
+      ),
+    },
   ];
-  const selectedLine = lines.find((item) => item.id === selectedLineId) || null;
-
-  const editSelectedLine = () => {
-    if (!selectedLine) {
-      messageApi.warning('请先选择一条转移物资明细');
-      return;
-    }
-    setEditingLine(selectedLine);
-    setLineModalOpen(true);
-  };
-
-  const deleteSelectedLine = () => {
-    if (!selectedLine) {
-      messageApi.warning('请先选择一条转移物资明细');
-      return;
-    }
-    Modal.confirm({
-      title: '确认删除该转移物资？',
-      content: `资产 ${selectedLine.assetTag} 将从当前草稿中移除并释放本次转移占用。`,
-      okText: '删除',
-      cancelText: '取消',
-      okButtonProps: { danger: true },
-      onOk: () => {
-        const nextLines = lines.filter((item) => item.id !== selectedLine.id);
-        setLines(nextLines);
-        setSelectedLineId(null);
-        persistDraft(nextLines);
-      },
-    });
-  };
-
   const persistDraft = (nextLines = lines) => {
     if (!company) {
       messageApi.warning('请选择财务公司');
@@ -817,7 +811,6 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
 
   const openAddMaterial = () => {
     if (!ensureHeaderSaved()) return;
-    setSelectedLineId(null);
     setEditingLine(null);
     setLineModalOpen(true);
   };
@@ -839,14 +832,12 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
     if (editingLine) {
       nextLines = lines.map((item) => item.id === editingLine.id ? { ...line, id: editingLine.id } : item);
       setEditingLine(null);
-      setSelectedLineId(null);
       setLineModalOpen(false);
     } else {
       nextLines = [...lines, { ...line, id: `${Date.now()}-${lines.length + 1}` }];
       if (!keepOpen) setLineModalOpen(false);
     }
     setLines(nextLines);
-    setSelectedLineId(null);
     persistDraft(nextLines);
   };
 
@@ -938,8 +929,6 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
       </Card>
       <Card size="small" title="转移物资" extra={<Space>
         <Button type="primary" icon={<Plus size={14} />} onClick={openAddMaterial}>添加物资</Button>
-        <Button disabled={!selectedLine} onClick={editSelectedLine}>编辑明细</Button>
-        <Button danger disabled={!selectedLine} onClick={deleteSelectedLine}>删除明细</Button>
         <Button icon={<Download size={14} />} onClick={() => messageApi.info('转移模板下载入口已保留；模板精确列定义需以旧系统 transfer 模板为准')}>模板下载</Button>
         <Button icon={<Upload size={14} />} onClick={() => messageApi.info('Excel 导入 uploadType=transfer；精确逐列校验、失败行回传及批量锁定规则需继续以旧系统上传处理链路为准')}>Excel导入</Button>
       </Space>}>
@@ -951,11 +940,6 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
           dataSource={lines}
           scroll={{ x: 'max-content' }}
           pagination={false}
-          rowClassName={(row) => row.id === selectedLineId ? 'ant-table-row-selected' : ''}
-          onRow={(row) => ({
-            onClick: () => setSelectedLineId((current) => current === row.id ? null : row.id),
-            style: { cursor: 'pointer' },
-          })}
         />
       </Card>
       <div className="flex justify-center gap-3">
