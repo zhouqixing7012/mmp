@@ -397,7 +397,7 @@ function MoveItemModal({ open, currentWarehouse, initialLine, existingTags, onCa
       <Modal
         open={open}
         title={initialLine ? '编辑移库物资' : '添加移库物资'}
-        width={1060}
+        width={960}
         onCancel={onCancel}
         destroyOnHidden
         footer={[
@@ -468,7 +468,7 @@ function MoveItemModal({ open, currentWarehouse, initialLine, existingTags, onCa
       <SelectModal
         open={selectorOpen}
         title="选择移库物资"
-        width="94vw"
+        width={960}
         dataSource={selectorAssets}
         initialSelectedKeys={displayAsset ? [displayAsset.id] : []}
         columns={[
@@ -849,7 +849,6 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
                   onPressEnter={addAssetByScan}
                 />
               </div>
-              <Typography.Text type="secondary">仅允许添加当前仓库内的资产/低值耐用品；扫描成功后直接追加到下方移库物资明细。</Typography.Text>
             </div>
           )}
           {toolbar && <div className="mb-3 flex justify-end">{toolbar}</div>}
