@@ -18,6 +18,8 @@ import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import { CURRENT_EMPLOYEE } from '../../mock/employeeSelfServiceMock';
+import { APPLICANT_CURRENT_ASSETS } from '../../mock/employeeSelfServiceWorkflowMock';
+import { DEFAULT_ASSET_MAINTENANCE_ROWS } from '../../mock/assetManagementMock';
 
 const { TextArea } = Input;
 
@@ -49,50 +51,113 @@ const INITIAL_ROWS = [
   { id: 10, documentNo: 'AT-202607240001', applicationNo: 'ETA-202607230002', status: '已完成', company: '114.新媒体', createdDate: '2026-07-24', creator: 'admin-系统管理员', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
 ];
 
-// 复用项目现有资产转移演示数据；截图没有提供的资产属性保持为空。
-const SOURCE_ASSETS = [
-  {
-    id: '1',
-    assetTag: '1141200545',
-    sn: '',
-    materialDesc: '笔记本.技术笔记本.惠普.820 G1技术型.i5-4200U/4G/500G/12.5"/3芯电池/包/鼠标',
-    availableQty: 1,
-    materialGroup: '',
-    assetClass: '',
-    assetSubClass: '',
-    assetQty: 1,
-    brand: '',
-    model: '',
-    config: '',
-    unit: '',
-    assetMark: '',
-    originalValue: '',
-    netValue: '',
-    assetStatus: '在用-使用中',
-    company: '',
-    plate: '',
-    department: '',
-    costCenter: '',
-    businessLine: '',
-    project: '',
-    expenseAccount: '',
-    responsiblePerson: '110933-史小曼',
-    city: '北京市',
-    building: '搜狐媒体大厦',
-    floor: '17层',
-    room: '',
-    enabledDate: '',
-    printNo: '',
-    usage: '',
-    remark: '',
-  },
-];
-
 const CURRENT_LOGIN_COMPANY = CURRENT_EMPLOYEE.company || '101.新时代';
-const COMPANY_OPTIONS = [...new Set([CURRENT_LOGIN_COMPANY, '101.新时代', '201.焦点互动', '112.北京新动力', '114.新媒体', '132.千钧'])];
-const PURPOSE_OPTIONS = ['员工用机', '部门公用', '其他用途', '专业用途'];
 const CURRENT_LOGIN_USER = `${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`;
+
+const SELF_SERVICE_TRANSFER_ASSETS = APPLICANT_CURRENT_ASSETS.map((item) => ({
+  id: `self-${item.id}`,
+  assetTag: item.assetTag,
+  sn: '',
+  materialDesc: item.assetDesc,
+  availableQty: 1,
+  materialGroup: '资产',
+  assetClass: '',
+  assetSubClass: '',
+  assetQty: 1,
+  brand: '',
+  model: '',
+  config: item.config || '',
+  unit: '台',
+  assetMark: '',
+  originalValue: '',
+  netValue: '',
+  assetStatus: item.assetStatus || '',
+  company: CURRENT_LOGIN_COMPANY,
+  plate: '',
+  department: CURRENT_EMPLOYEE.department || '',
+  costCenter: CURRENT_EMPLOYEE.costCenter || '',
+  businessLine: '',
+  project: '',
+  expenseAccount: '',
+  responsiblePerson: CURRENT_LOGIN_USER,
+  ownerId: CURRENT_EMPLOYEE.id,
+  ownerName: CURRENT_EMPLOYEE.name,
+  city: CURRENT_EMPLOYEE.officeArea?.split('-')?.[0] || '',
+  building: CURRENT_EMPLOYEE.officeArea?.split('-')?.[1] || '',
+  floor: '',
+  room: '',
+  enabledDate: '',
+  printNo: '',
+  usage: '',
+  remark: '',
+  locked: false,
+}));
+
+const MAINTENANCE_TRANSFER_ASSETS = DEFAULT_ASSET_MAINTENANCE_ROWS
+  .filter((item) => !String(item.status || '').includes('报废'))
+  .map((item) => ({
+    id: `maintenance-${item.id}`,
+    assetTag: item.tag,
+    sn: item.serialNumber || '',
+    materialDesc: item.assetDesc || '',
+    availableQty: Number(item.quantity || 1),
+    materialGroup: '资产',
+    assetClass: item.majorCategory || '',
+    assetSubClass: item.minorCategory || '',
+    assetQty: Number(item.quantity || 1),
+    brand: item.brand || '',
+    model: item.model || '',
+    config: item.config || '',
+    unit: item.unit || '台',
+    assetMark: item.assetMark || '',
+    originalValue: item.originalValue ?? '',
+    netValue: item.netValue ?? '',
+    assetStatus: item.status || '',
+    company: item.companyCode ? `${item.companyCode}.${item.company}` : (item.company || ''),
+    plate: item.plate || '',
+    department: item.department || '',
+    costCenter: item.costCenter || '',
+    businessLine: item.businessLine || '',
+    project: item.project || '',
+    expenseAccount: item.feeAccount || '',
+    responsiblePerson: [item.ownerId, item.ownerName].filter(Boolean).join('-'),
+    ownerId: item.ownerId || '',
+    ownerName: item.ownerName || '',
+    city: item.city || '',
+    building: item.building || '',
+    floor: item.floor || '',
+    room: '',
+    enabledDate: item.enabledDate || '',
+    printNo: '',
+    usage: item.purpose || '',
+    remark: item.remarks || '',
+    locked: false,
+    isNoSpecial: Boolean(item.noLocation || item.service),
+    noLocation: item.noLocation || '',
+    service: item.service || '',
+    subService: '',
+  }));
+
+const SOURCE_ASSETS = [...SELF_SERVICE_TRANSFER_ASSETS, ...MAINTENANCE_TRANSFER_ASSETS];
+const COMPANY_OPTIONS = [...new Set([
+  CURRENT_LOGIN_COMPANY,
+  ...SOURCE_ASSETS.map((item) => item.company),
+  '101.新时代',
+  '201.焦点互动',
+  '112.北京新动力',
+  '114.新媒体',
+  '132.千钧',
+].filter(Boolean))];
+const PURPOSE_OPTIONS = ['员工用机', '部门公用', '其他用途', '专业用途'];
 const RECEIVER_OPTIONS = [
+  {
+    id: 'current',
+    name: CURRENT_LOGIN_USER,
+    company: CURRENT_LOGIN_COMPANY,
+    department: CURRENT_EMPLOYEE.department || '',
+    plate: '',
+    costCenter: CURRENT_EMPLOYEE.costCenter || '',
+  },
   { id: 1, name: '114111-杨羊', company: '', department: '集团总部.员工服务中心.资产部', plate: '0.*', costCenter: '0.*' },
 ];
 const SIMPLE_ZERO_OPTION = [{ id: 1, name: '0.*' }];
@@ -161,7 +226,7 @@ function SelectorModal({ config, onClose }) {
   return <SelectModal open title={config.title} dataSource={config.dataSource || []} columns={config.columns || [{ title: '名称', dataIndex: 'name' }]} searchFields={config.searchFields || [{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={onClose} onConfirm={(record) => { config.onConfirm(record); onClose(); }} />;
 }
 
-function TransferItemModal({ open, currentCompany, initialLine, onCancel, onConfirm }) {
+function TransferItemModal({ open, currentCompany, availableAssets, initialLine, onCancel, onConfirm }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [asset, setAsset] = useState(initialLine ? { ...initialLine } : null);
   const [selectorType, setSelectorType] = useState('');
@@ -199,9 +264,22 @@ function TransferItemModal({ open, currentCompany, initialLine, onCancel, onConf
   };
   const selectorConfig = {
     asset: {
-      title: '选择资产', dataSource: SOURCE_ASSETS,
-      columns: [{ title: '资产标签号', dataIndex: 'assetTag' }, { title: '物资说明', dataIndex: 'materialDesc' }, { title: '资产状态', dataIndex: 'assetStatus' }],
-      searchFields: [{ label: '资产标签号', name: 'assetTag', dataIndex: 'assetTag' }, { label: '物资说明', name: 'materialDesc', dataIndex: 'materialDesc' }],
+      title: '选择资产',
+      dataSource: availableAssets || [],
+      columns: [
+        { title: '资产标签号', dataIndex: 'assetTag', width: 160 },
+        { title: 'SN号', dataIndex: 'sn', width: 160, render: (value) => value || '-' },
+        { title: '物资说明', dataIndex: 'materialDesc', width: 260 },
+        { title: '责任人', dataIndex: 'responsiblePerson', width: 160, render: (value) => value || '-' },
+        { title: '资产状态', dataIndex: 'assetStatus', width: 140 },
+      ],
+      searchFields: [
+        { label: '资产标签号', name: 'assetTag', dataIndex: 'assetTag' },
+        { label: 'SN号', name: 'sn', dataIndex: 'sn' },
+        { label: '资产名称', name: 'materialDesc', dataIndex: 'materialDesc' },
+        { label: '责任人编号', name: 'ownerId', dataIndex: 'ownerId' },
+        { label: '责任人姓名', name: 'ownerName', dataIndex: 'ownerName' },
+      ],
       onConfirm: chooseAsset,
     },
     receiver: {
@@ -353,17 +431,22 @@ function TransferItemModal({ open, currentCompany, initialLine, onCancel, onConf
   );
 }
 
-function TransferEditor({ onBack, onPersist }) {
+function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, onPersist, onComplete }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [company, setCompany] = useState(CURRENT_LOGIN_COMPANY);
-  const [remark, setRemark] = useState('');
-  const [documentId, setDocumentId] = useState(null);
-  const [documentNo, setDocumentNo] = useState('');
+  const [company, setCompany] = useState(initialDocument?.company || CURRENT_LOGIN_COMPANY);
+  const [remark, setRemark] = useState(initialDocument?.remark || '');
+  const [documentId, setDocumentId] = useState(initialDocument?.id || null);
+  const [documentNo, setDocumentNo] = useState(initialDocument?.documentNo || '');
   const [companyModalOpen, setCompanyModalOpen] = useState(false);
   const [lineModalOpen, setLineModalOpen] = useState(false);
   const [editingLine, setEditingLine] = useState(null);
-  const [lines, setLines] = useState([]);
-  const createdDate = dayjs().format('YYYY-MM-DD');
+  const [lines, setLines] = useState(initialDocument?.lines || []);
+  const createdDate = initialDocument?.createdDate || dayjs().format('YYYY-MM-DD');
+  const availableAssets = SOURCE_ASSETS.filter((item) => (
+    item.company === company
+    && item.locked !== true
+    && (!lockedAssetTags.has(item.assetTag) || lines.some((line) => line.assetTag === item.assetTag))
+  ));
   const columns = [
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
     { title: '资产标签号', dataIndex: 'assetTag', width: 160 },
@@ -377,7 +460,31 @@ function TransferEditor({ onBack, onPersist }) {
     { title: '转入成本中心', dataIndex: 'inCostCenter', width: 180 },
     { title: '转入城市', dataIndex: 'city', width: 130 },
     { title: '转入建筑物', dataIndex: 'building', width: 180 },
-    { title: '操作', key: 'operation', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button> },
+    {
+      title: '操作',
+      key: 'operation',
+      width: 130,
+      fixed: 'right',
+      render: (_, row) => (
+        <Space size={8}>
+          <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button>
+          <Button type="link" danger className="px-0" onClick={() => {
+            Modal.confirm({
+              title: '确认删除该转移物资？',
+              content: `资产 ${row.assetTag} 将从当前草稿中移除并释放本次转移占用。`,
+              okText: '删除',
+              cancelText: '取消',
+              okButtonProps: { danger: true },
+              onOk: () => {
+                const nextLines = lines.filter((item) => item.id !== row.id);
+                setLines(nextLines);
+                persistDraft(nextLines);
+              },
+            });
+          }}>删除</Button>
+        </Space>
+      ),
+    },
   ];
   const persistDraft = (nextLines = lines) => {
     if (!company) {
@@ -413,6 +520,12 @@ function TransferEditor({ onBack, onPersist }) {
   };
 
   const saveLine = (line, keepOpen) => {
+    const duplicate = lines.find((item) => item.id !== editingLine?.id && item.assetTag === line.assetTag);
+    if (duplicate) {
+      messageApi.warning('同一转移单内不能重复添加同一资产');
+      return;
+    }
+
     const peerLine = lines.find((item) => item.id !== editingLine?.id);
     if (peerLine && (peerLine.outPerson !== line.outPerson || peerLine.inPerson !== line.inPerson)) {
       messageApi.warning('同一转移单内多条资产的转出人及转入人必须保持一致');
@@ -466,7 +579,7 @@ function TransferEditor({ onBack, onPersist }) {
         <Button onClick={onBack}>返回</Button>
       </div>
       <SelectModal open={companyModalOpen} title="选择公司" dataSource={COMPANY_OPTIONS.map((name, index) => ({ id: index + 1, name }))} columns={[{ title: '公司', dataIndex: 'name' }]} searchFields={[{ label: '公司', name: 'name', dataIndex: 'name' }]} onCancel={() => setCompanyModalOpen(false)} onConfirm={(record) => { setCompany(record.name); setCompanyModalOpen(false); }} />
-      <TransferItemModal key={`${lineModalOpen}-${editingLine?.id || 'new'}-${company}`} open={lineModalOpen} currentCompany={company} initialLine={editingLine} onCancel={() => { setLineModalOpen(false); setEditingLine(null); }} onConfirm={saveLine} />
+      <TransferItemModal key={`${lineModalOpen}-${editingLine?.id || 'new'}-${company}`} open={lineModalOpen} currentCompany={company} availableAssets={availableAssets} initialLine={editingLine} onCancel={() => { setLineModalOpen(false); setEditingLine(null); }} onConfirm={saveLine} />
     </Space>
   );
 }
@@ -483,6 +596,12 @@ export default function TransferPage() {
   const [pageSize, setPageSize] = useState(10);
   const creatorData = useMemo(() => toSelectData(rows.map((row) => row.creator)), [rows]);
   const companyData = useMemo(() => toSelectData([...COMPANY_OPTIONS, ...rows.map((row) => row.company)]), [rows]);
+  const draftLockedAssetTags = useMemo(() => new Set(
+    rows
+      .filter((row) => row.status === '草稿')
+      .flatMap((row) => (row.lines || []).map((line) => line.assetTag))
+      .filter(Boolean)
+  ), [rows]);
   const filteredRows = useMemo(() => rows.filter((row) => (
     includesText(row.documentNo, filters.documentNo)
     && includesText(row.reason, filters.reason)
@@ -566,7 +685,7 @@ export default function TransferPage() {
     return saved;
   };
   if (view === 'create') {
-    return <>{contextHolder}<TransferEditor onBack={() => setView('list')} onPersist={persistDraft} /></>;
+    return <>{contextHolder}<TransferEditor lockedAssetTags={draftLockedAssetTags} onBack={() => setView('list')} onPersist={persistDraft} /></>;
   }
   const columns = [
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => (page - 1) * pageSize + index + 1 },
@@ -583,7 +702,15 @@ export default function TransferPage() {
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
       <PageTitle>转移</PageTitle>
-      <QueryBar onQuery={() => { setFilters({ ...draft }); setSelectedRowKeys([]); setPage(1); }} onReset={() => { setDraft(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setSelectedRowKeys([]); setPage(1); }}>
+      <QueryBar onQuery={() => {
+        if (draft.createdFrom && draft.createdTo && draft.createdTo < draft.createdFrom) {
+          messageApi.warning('制单日期结束日期不得早于开始日期');
+          return;
+        }
+        setFilters({ ...draft });
+        setSelectedRowKeys([]);
+        setPage(1);
+      }} onReset={() => { setDraft(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setSelectedRowKeys([]); setPage(1); }}>
         <QueryItem label="转移单号"><Input value={draft.documentNo} allowClear placeholder="请输入转移单号" onChange={(event) => update('documentNo', event.target.value)} /></QueryItem>
         <QueryItem label="转移原因"><Input value={draft.reason} allowClear placeholder="请输入转移原因" onChange={(event) => update('reason', event.target.value)} /></QueryItem>
         <QueryItem label="单据状态"><Select className="w-full" value={draft.status || undefined} allowClear placeholder="全部" options={['草稿', '已完成'].map((value) => ({ label: value, value }))} onChange={(value) => update('status', value)} /></QueryItem>
