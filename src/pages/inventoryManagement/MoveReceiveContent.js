@@ -236,26 +236,6 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
     messageApi.success('手动验证成功');
   };
 
-  const cancelVerification = (asset) => {
-    Modal.confirm({
-      title: '确认取消验证？',
-      content: `资产 ${asset.assetTag} 将恢复为“未验证”。`,
-      okText: '确认取消',
-      cancelText: '返回',
-      onOk: () => {
-        const nextLines = lines.map((line) => line.id === asset.id ? {
-          ...line,
-          verification: '未验证',
-          verificationMethod: '',
-          verificationTime: '',
-          verificationDesc: '',
-        } : line);
-        syncLines(nextLines);
-        setSelectedKeys((current) => current.filter((key) => key !== asset.id));
-      },
-    });
-  };
-
   const receive = () => {
     if (!selectedKeys.length) return messageApi.warning('请先选择需要处理的物资');
     const selected = lines.filter((line) => selectedKeys.includes(line.id));
@@ -392,10 +372,8 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
         if (asset.moveStatus !== '待接收') return '-';
         return (
           <Space size={8}>
-            {asset.verification === '未验证' ? (
+            {asset.verification === '未验证' && (
               <Button type="link" className="px-0" onClick={() => setVerificationAsset(asset)}>手动验证</Button>
-            ) : (
-              <Button type="link" className="px-0" onClick={() => cancelVerification(asset)}>取消验证</Button>
             )}
             <Button type="link" danger className="px-0" onClick={() => setRejectAsset(asset)}>移库驳回</Button>
           </Space>
