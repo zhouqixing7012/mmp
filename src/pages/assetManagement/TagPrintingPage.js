@@ -1059,7 +1059,7 @@ export default function TagPrintingPage() {
             <Select value={batchDraftFilters.printed || undefined} allowClear placeholder="全部" options={[{ label: '是', value: '是' }, { label: '否', value: '否' }]} onChange={(value) => updateBatchFilter('printed', value)} />
           </QueryItem>
           <QueryItem label="创建人">
-            <Select value={batchDraftFilters.creator || undefined} allowClear placeholder="请选择" options={uniqueValues(batchRows, 'creator').map((value) => ({ label: value, value }))} onChange={(value) => updateBatchFilter('creator', value)} />
+            <Select value={batchDraftFilters.creator || undefined} allowClear placeholder="请选择" options={uniqueValues(batchRows.filter((row) => row.source === '预打印'), 'creator').map((value) => ({ label: value, value }))} onChange={(value) => updateBatchFilter('creator', value)} />
           </QueryItem>
           <QueryItem label="订单编号"><Input value={batchDraftFilters.orderNo} allowClear placeholder="请输入订单编号" onChange={(event) => updateBatchFilter('orderNo', event.target.value)} /></QueryItem>
           <QueryItem label="资产标签号"><Input value={batchDraftFilters.assetTag} allowClear placeholder="请输入资产标签号" onChange={(event) => updateBatchFilter('assetTag', event.target.value)} /></QueryItem>
