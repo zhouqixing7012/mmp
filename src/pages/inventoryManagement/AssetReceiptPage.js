@@ -883,63 +883,77 @@ export default function AssetReceiptPage() {
 
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
     const receiptPO = effectivePoRows.find((item) => item.poNo === activeReceipt.poNo) || activePO;
-    const inboundOrderNo = `PI-${dayjs().format('YYYYMMDD')}${String(activeReceipt.id).padStart(4, '0')}`;
-    const inboundRow = {
-      id: Number(dayjs().format('YYMMDDHHmmss')),
-      documentNo: inboundOrderNo,
-      applicationNo: '',
-      applicationBatch: activeReceipt.applicationBatch || '',
-      status: '草稿',
-      inboundType: '采购接收',
-      warehouse: buildInboundWarehouse(receiptPO),
-      createdDate: dayjs().format('YYYY-MM-DD'),
-      creator: CURRENT_USER,
-      quantity: session.rows.length,
-      cardClaim: '否',
-      poNo: activeReceipt.poNo,
-      prNo: session.rows[0]?.prLineNo || '',
-      assetTag: session.rows[0]?.assetTag || '',
-      receiptNo: activeReceipt.receiptNo,
-      lines: session.rows.map((row, index) => ({
-        id: `${activeReceipt.receiptNo}-${index + 1}`,
-        company: receiptPO?.company,
-        plate: activeReceipt.plate || receiptPO?.plate,
-        department: getReceiptItems(activeReceipt).find((item) => item.id === row.sourceLineId)?.department || '',
-        supplier: activeReceipt.supplier,
-        assetTag: row.assetTag,
-        sn: row.sn,
-        poNo: activeReceipt.poNo,
-        receiptNo: activeReceipt.receiptNo,
+    const groupedRows = session.rows.reduce((result, row) => {
+      const key = row.assetClass || '未分类资产';
+      result[key] = result[key] || [];
+      result[key].push(row);
+      return result;
+    }, {});
+    const inboundGroups = Object.entries(groupedRows);
+    const inboundRows = inboundGroups.map(([assetClass, rows], groupIndex) => {
+      const inboundOrderNo = `PI-${dayjs().format('YYYYMMDD')}${String(activeReceipt.id).padStart(4, '0')}${inboundGroups.length > 1 ? `-${String(groupIndex + 1).padStart(2, '0')}` : ''}`;
+      return {
+        id: Number(`${dayjs().format('YYMMDDHHmm')}${String(groupIndex + 1).padStart(2, '0')}`),
+        documentNo: inboundOrderNo,
+        applicationNo: '',
         applicationBatch: activeReceipt.applicationBatch || '',
-        materialGroup: row.materialGroup,
-        assetClass: row.assetClass,
-        assetSubClass: receiptPO?.purchaseType || '电子设备',
-        materialDesc: row.materialDesc,
-        config: row.config,
-        partQuantity: row.partQuantity === '-' ? 0 : row.partQuantity,
-        partDesc: row.partDesc || '-',
-        parts: row.parts || [],
-        prLine: row.prLineNo,
-        quantity: 1,
-        originalValue: numericValue(row.untaxedUnitPrice),
-        tax: numericValue(row.tax),
-        billable: '是',
-      })),
-    };
+        status: '草稿',
+        inboundType: '采购接收',
+        warehouse: buildInboundWarehouse(receiptPO),
+        createdDate: dayjs().format('YYYY-MM-DD'),
+        creator: CURRENT_USER,
+        quantity: rows.length,
+        cardClaim: '否',
+        poNo: activeReceipt.poNo,
+        prNo: rows[0]?.prLineNo || '',
+        assetTag: rows[0]?.assetTag || '',
+        receiptNo: activeReceipt.receiptNo,
+        assetClass,
+        lines: rows.map((row, index) => ({
+          id: `${activeReceipt.receiptNo}-${groupIndex + 1}-${index + 1}`,
+          company: receiptPO?.company,
+          plate: activeReceipt.plate || receiptPO?.plate,
+          department: getReceiptItems(activeReceipt).find((item) => item.id === row.sourceLineId)?.department || '',
+          supplier: activeReceipt.supplier,
+          assetTag: row.assetTag,
+          sn: row.sn,
+          poNo: activeReceipt.poNo,
+          receiptNo: activeReceipt.receiptNo,
+          applicationBatch: activeReceipt.applicationBatch || '',
+          materialGroup: row.materialGroup,
+          assetClass: row.assetClass,
+          assetSubClass: receiptPO?.purchaseType || '电子设备',
+          materialDesc: row.materialDesc,
+          config: row.config,
+          partQuantity: row.partQuantity === '-' ? 0 : row.partQuantity,
+          partDesc: row.partDesc || '-',
+          parts: row.parts || [],
+          prLine: row.prLineNo,
+          quantity: 1,
+          originalValue: numericValue(row.untaxedUnitPrice),
+          tax: numericValue(row.tax),
+          billable: '是',
+        })),
+      };
+    });
 
-    if (!persistGeneratedInbounds([inboundRow])) return undefined;
+    if (!persistGeneratedInbounds(inboundRows)) return undefined;
+    const inboundOrderNos = inboundRows.map((row) => row.documentNo);
 
     const completedReceipt = {
       ...activeReceipt,
       status: '已完成',
       receiver: CURRENT_USER,
       receiptAt: now,
-      inboundOrderNo,
+      inboundOrderNo: inboundOrderNos[0] || '',
+      inboundOrderNos,
     };
     setReceiptRows((current) => current.map((row) => row.id === activeReceipt.id ? completedReceipt : row));
     setActiveReceipt(completedReceipt);
     completeReceiptOnPo(activeReceipt);
-    messageApi.success(`接收确认成功，已生成草稿入库单 ${inboundOrderNo}`);
+    messageApi.success(inboundOrderNos.length > 1
+      ? `接收确认成功，已按资产大类拆分生成 ${inboundOrderNos.length} 张草稿入库单：${inboundOrderNos.join('、')}`
+      : `接收确认成功，已生成草稿入库单 ${inboundOrderNos[0]}`);
     return undefined;
   };
 
