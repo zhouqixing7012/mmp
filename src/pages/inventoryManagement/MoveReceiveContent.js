@@ -182,14 +182,24 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
 
   const handleScan = () => {
     const value = scanAsset.trim();
-    if (!value) return;
-    const asset = lines.find((item) => item.assetTag === value || item.sn === value);
-    if (!asset) return messageApi.warning('当前移库单中未找到该资产');
-    if (asset.moveStatus !== '待接收') return messageApi.warning('当前资产已处理，不能重复验证');
-    if (asset.verification === '已验证') {
-      setSelectedKeys([asset.id]);
-      return messageApi.info('当前资产已验证');
+    if (!value) return undefined;
+
+    const asset = lines.find((item) => String(item.assetTag || '').trim() === value);
+    setScanAsset('');
+
+    if (!asset) {
+      messageApi.warning('该资产不在接收单中，请扫描接收其他资产');
+      return undefined;
     }
+    if (asset.verification === '已验证') {
+      messageApi.info('该资产已扫描，请扫描接收其他资产');
+      return undefined;
+    }
+    if (asset.moveStatus !== '待接收') {
+      messageApi.warning('当前资产已处理，不能重复验证');
+      return undefined;
+    }
+
     const nextLines = lines.map((line) => line.id === asset.id ? {
       ...line,
       verification: '已验证',
@@ -198,8 +208,8 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
       verificationDesc: '扫码验证通过',
     } : line);
     syncLines(nextLines);
-    setSelectedKeys([asset.id]);
-    messageApi.success('扫码验证成功');
+    setSelectedKeys((current) => [...new Set([...current, asset.id])]);
+    messageApi.success('资产验证成功');
     return undefined;
   };
 
@@ -419,13 +429,21 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
         </Card>
 
         <Card size="small" title="接收物资" extra={<Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>}>
-          <div className="mb-3">
-            <QueryBar onQuery={handleScan} onReset={() => { setScanAsset(''); setSelectedKeys([]); }}>
-              <QueryItem label="资产扫描">
-                <Input value={scanAsset} allowClear placeholder="扫码或手输标签号/SN进行验证" onChange={(event) => setScanAsset(event.target.value)} onPressEnter={handleScan} />
-              </QueryItem>
-            </QueryBar>
-          </div>
+          {waiting && (
+            <div className="mb-3 rounded-md bg-slate-50 p-3">
+              <div className="flex items-center gap-2">
+                <Typography.Text className="shrink-0">资产扫描</Typography.Text>
+                <Input
+                  value={scanAsset}
+                  allowClear
+                  autoFocus
+                  placeholder="扫描或输入资产标签号，回车自动验证"
+                  onChange={(event) => setScanAsset(event.target.value)}
+                  onPressEnter={handleScan}
+                />
+              </div>
+            </div>
+          )}
           <Table
             rowKey="id"
             size="small"
