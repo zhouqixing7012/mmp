@@ -12,7 +12,7 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
-import { Plus, Search, Trash2, Upload } from 'lucide-react';
+import { Download, Plus, Search, Trash2, Upload } from 'lucide-react';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
@@ -88,11 +88,12 @@ const SOURCE_ASSETS = [
   },
 ];
 
-const COMPANY_OPTIONS = ['101.新时代', '201.焦点互动', '112.北京新动力', '114.新媒体', '132.千钧'];
+const CURRENT_LOGIN_COMPANY = CURRENT_EMPLOYEE.company || '101.新时代';
+const COMPANY_OPTIONS = [...new Set([CURRENT_LOGIN_COMPANY, '101.新时代', '201.焦点互动', '112.北京新动力', '114.新媒体', '132.千钧'])];
 const PURPOSE_OPTIONS = ['员工用机', '部门公用', '其他用途', '专业用途'];
 const CURRENT_LOGIN_USER = `${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`;
 const RECEIVER_OPTIONS = [
-  { id: 1, name: '114111-杨羊', department: '集团总部.员工服务中心.资产部', plate: '0.*', costCenter: '0.*' },
+  { id: 1, name: '114111-杨羊', company: '', department: '集团总部.员工服务中心.资产部', plate: '0.*', costCenter: '0.*' },
 ];
 const SIMPLE_ZERO_OPTION = [{ id: 1, name: '0.*' }];
 
@@ -109,6 +110,10 @@ function hasSpecialNoInfo(asset) {
     || asset?.service
     || asset?.subService
   );
+}
+
+function compareText(left, right) {
+  return String(left || '').localeCompare(String(right || ''), 'zh-CN', { numeric: true });
 }
 
 function includesText(value, query) {
@@ -162,6 +167,7 @@ function TransferItemModal({ open, currentCompany, initialLine, onCancel, onConf
   const [selectorType, setSelectorType] = useState('');
   const [form, setForm] = useState(() => ({
     inPerson: initialLine?.inPerson || '',
+    inCompany: initialLine?.inCompany || '',
     inPlate: initialLine?.inPlate || '',
     inDept: initialLine?.inDept || '',
     inCostCenter: initialLine?.inCostCenter || '',
@@ -204,6 +210,7 @@ function TransferItemModal({ open, currentCompany, initialLine, onCancel, onConf
       onConfirm: (record) => setForm((current) => ({
         ...current,
         inPerson: record.name,
+        inCompany: record.company || '',
         inPlate: record.plate || '',
         inDept: record.department || '',
         inCostCenter: isServerAsset(asset) ? (asset?.costCenter || '') : (record.costCenter || ''),
@@ -217,23 +224,41 @@ function TransferItemModal({ open, currentCompany, initialLine, onCancel, onConf
 
   const submit = (keepOpen) => {
     if (!asset) return messageApi.warning('请先选择资产');
-    const required = [['转入人', form.inPerson], ['转入成本中心', form.inCostCenter], ['City', form.city], ['Building', form.building], ['Floor', form.floor], ['用途', form.purpose]];
+    const required = [['转入人', form.inPerson], ['转入成本中心', form.inCostCenter], ['City', form.city], ['Building', form.building], ['Floor', form.floor], ['用途', form.purpose], ['转移日期', form.transferDate]];
     const missing = required.find(([, value]) => !value);
     if (missing) return messageApi.warning(`请填写${missing[0]}`);
-    onConfirm({
-      ...asset,
-      ...form,
-      transferQty: Number(asset.assetQty || asset.availableQty || 1),
-      outPerson: asset.responsiblePerson || '',
-      outCostCenter: asset.costCenter || '',
-      targetAssetStatus: asset.assetStatus || '',
-      targetBusinessLine: form.businessLine,
-      targetProject: form.project,
-    }, keepOpen);
-    if (keepOpen) {
-      setAsset(null);
-      setForm((current) => ({ ...current, transferReason: '', usageDescription: '' }));
+
+    const commit = () => {
+      onConfirm({
+        ...asset,
+        ...form,
+        transferQty: Number(asset.assetQty || asset.availableQty || 1),
+        outPerson: asset.responsiblePerson || '',
+        outCostCenter: asset.costCenter || '',
+        targetAssetStatus: asset.assetStatus || '',
+        targetBusinessLine: form.businessLine,
+        targetProject: form.project,
+      }, keepOpen);
+      if (keepOpen) {
+        setAsset(null);
+        setForm((current) => ({ ...current, transferReason: '', usageDescription: '' }));
+      }
+    };
+
+    const companyMismatch = asset.company && form.inCompany && asset.company !== form.inCompany;
+    const plateMismatch = asset.plate && form.inPlate && asset.plate !== form.inPlate;
+    if (companyMismatch || plateMismatch) {
+      Modal.confirm({
+        title: '确认保存转移明细？',
+        content: '待转移物资公司或板块同转入人信息不一致，是否确认？',
+        okText: '确认',
+        cancelText: '取消',
+        onOk: commit,
+      });
+      return undefined;
     }
+
+    commit();
     return undefined;
   };
 
@@ -303,7 +328,7 @@ function TransferItemModal({ open, currentCompany, initialLine, onCancel, onConf
             <DetailItem label="业务线"><LookupInput value={form.businessLine} placeholder="请选择业务线" onOpen={() => setSelectorType('businessLine')} /></DetailItem>
             <DetailItem label="项目"><LookupInput value={form.project} placeholder="请选择项目" onOpen={() => setSelectorType('project')} /></DetailItem>
             <DetailItem label="转移原因" span={3}><Input value={form.transferReason} onChange={(event) => update('transferReason', event.target.value)} /></DetailItem>
-            <DetailItem label="转移日期"><DatePicker className="w-full" value={form.transferDate ? dayjs(form.transferDate) : null} format="YYYY-MM-DD" onChange={(date) => update('transferDate', date ? date.format('YYYY-MM-DD') : '')} /></DetailItem>
+            <DetailItem label={<RequiredLabel>转移日期</RequiredLabel>}><DatePicker className="w-full" value={form.transferDate ? dayjs(form.transferDate) : null} format="YYYY-MM-DD" onChange={(date) => update('transferDate', date ? date.format('YYYY-MM-DD') : '')} /></DetailItem>
             <DetailItem label="使用说明" span={4}><TextArea autoSize={{ minRows: 3, maxRows: 6 }} value={form.usageDescription} onChange={(event) => update('usageDescription', event.target.value)} /></DetailItem>
           </DetailGrid>
         </Card>
@@ -330,7 +355,7 @@ function TransferItemModal({ open, currentCompany, initialLine, onCancel, onConf
 
 function TransferEditor({ onBack, onPersist }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [company, setCompany] = useState('101.新时代');
+  const [company, setCompany] = useState(CURRENT_LOGIN_COMPANY);
   const [remark, setRemark] = useState('');
   const [documentId, setDocumentId] = useState(null);
   const [documentNo, setDocumentNo] = useState('');
@@ -388,6 +413,12 @@ function TransferEditor({ onBack, onPersist }) {
   };
 
   const saveLine = (line, keepOpen) => {
+    const peerLine = lines.find((item) => item.id !== editingLine?.id);
+    if (peerLine && (peerLine.outPerson !== line.outPerson || peerLine.inPerson !== line.inPerson)) {
+      messageApi.warning('同一转移单内多条资产的转出人及转入人必须保持一致');
+      return;
+    }
+
     let nextLines;
     if (editingLine) {
       nextLines = lines.map((item) => item.id === editingLine.id ? { ...line, id: editingLine.id } : item);
@@ -425,7 +456,8 @@ function TransferEditor({ onBack, onPersist }) {
       </Card>
       <Card size="small" title="转移物资" extra={<Space>
         <Button type="primary" icon={<Plus size={14} />} onClick={openAddMaterial}>添加物资</Button>
-        <Button icon={<Upload size={14} />} onClick={() => messageApi.info('Excel 导入沿用转移模板，本轮仅按截图补齐页面字段')}>Excel导入</Button>
+        <Button icon={<Download size={14} />} onClick={() => messageApi.info('转移模板下载入口已保留；模板精确列定义需以旧系统 transfer 模板为准')}>模板下载</Button>
+        <Button icon={<Upload size={14} />} onClick={() => messageApi.info('Excel 导入 uploadType=transfer；精确逐列校验、失败行回传及批量锁定规则需继续以旧系统上传处理链路为准')}>Excel导入</Button>
       </Space>}>
         <Table rowKey="id" size="small" bordered columns={columns} dataSource={lines} scroll={{ x: 'max-content' }} pagination={false} />
       </Card>
@@ -447,6 +479,8 @@ export default function TransferPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [selectorType, setSelectorType] = useState('');
   const [view, setView] = useState('list');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const creatorData = useMemo(() => toSelectData(rows.map((row) => row.creator)), [rows]);
   const companyData = useMemo(() => toSelectData([...COMPANY_OPTIONS, ...rows.map((row) => row.company)]), [rows]);
   const filteredRows = useMemo(() => rows.filter((row) => (
@@ -535,21 +569,21 @@ export default function TransferPage() {
     return <>{contextHolder}<TransferEditor onBack={() => setView('list')} onPersist={persistDraft} /></>;
   }
   const columns = [
-    { title: '行号', dataIndex: 'id', width: 70, align: 'center' },
-    { title: '转移单号', dataIndex: 'documentNo', width: 190 },
-    { title: '申请单号', dataIndex: 'applicationNo', width: 220, render: (value) => value || '-' },
-    { title: '单据状态', dataIndex: 'status', width: 120, render: (value) => <StatusTag value={value} /> },
-    { title: '公司', dataIndex: 'company', width: 180 },
-    { title: '制单日期', dataIndex: 'createdDate', width: 130 },
-    { title: '制单人', dataIndex: 'creator', width: 180 },
-    { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right' },
+    { title: '行号', width: 70, align: 'center', render: (_, __, index) => (page - 1) * pageSize + index + 1 },
+    { title: '转移单号', dataIndex: 'documentNo', width: 190, sorter: (a, b) => compareText(a.documentNo, b.documentNo) },
+    { title: '申请单号', dataIndex: 'applicationNo', width: 220, sorter: (a, b) => compareText(a.applicationNo, b.applicationNo), render: (value) => value || '-' },
+    { title: '单据状态', dataIndex: 'status', width: 120, sorter: (a, b) => compareText(a.status, b.status), render: (value) => <StatusTag value={value} /> },
+    { title: '公司', dataIndex: 'company', width: 180, sorter: (a, b) => compareText(a.company, b.company) },
+    { title: '制单日期', dataIndex: 'createdDate', width: 130, sorter: (a, b) => compareText(a.createdDate, b.createdDate), defaultSortOrder: 'descend' },
+    { title: '制单人', dataIndex: 'creator', width: 180, sorter: (a, b) => compareText(a.creator, b.creator) },
+    { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right', sorter: (a, b) => Number(a.quantity || 0) - Number(b.quantity || 0) },
     { title: '操作', key: 'operation', width: 90, fixed: 'right', render: () => <Button type="link" className="px-0" onClick={() => messageApi.info('转移单详情字段待确认')}>操作</Button> },
   ];
   return (
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
       <PageTitle>转移</PageTitle>
-      <QueryBar onQuery={() => { setFilters({ ...draft }); setSelectedRowKeys([]); }} onReset={() => { setDraft(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setSelectedRowKeys([]); }}>
+      <QueryBar onQuery={() => { setFilters({ ...draft }); setSelectedRowKeys([]); setPage(1); }} onReset={() => { setDraft(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setSelectedRowKeys([]); setPage(1); }}>
         <QueryItem label="转移单号"><Input value={draft.documentNo} allowClear placeholder="请输入转移单号" onChange={(event) => update('documentNo', event.target.value)} /></QueryItem>
         <QueryItem label="转移原因"><Input value={draft.reason} allowClear placeholder="请输入转移原因" onChange={(event) => update('reason', event.target.value)} /></QueryItem>
         <QueryItem label="单据状态"><Select className="w-full" value={draft.status || undefined} allowClear placeholder="全部" options={['草稿', '已完成'].map((value) => ({ label: value, value }))} onChange={(value) => update('status', value)} /></QueryItem>
@@ -570,7 +604,7 @@ export default function TransferPage() {
             <Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button>
           </Space>
         </div>
-        <Table rowKey="id" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys, fixed: true, columnTitle: '选择', columnWidth: 64 }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true }} />
+        <Table rowKey="id" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys, fixed: true, columnTitle: '选择', columnWidth: 64 }} scroll={{ x: 'max-content' }} pagination={{ current: page, pageSize, showSizeChanger: true, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); } }} />
       </Card>
       <SelectorModal config={selectorConfig} onClose={() => setSelectorType('')} />
     </Space>
