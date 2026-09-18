@@ -1243,9 +1243,10 @@ export default function ConsumableReceiptPage() {
         {contextHolder}
         <PageTitle />
         <ReceiptInfoCard receipt={activeReceipt} />
-        <Card size="small">
-          <DetailGrid columns={4} labelWidth={96}>
-            <DetailItem label="扫描光标" span={4}>
+        {isDraft && (
+          <Card size="small">
+            <DetailGrid columns={4} labelWidth={96}>
+              <DetailItem label="扫描光标" span={4}>
               <div className="flex items-center gap-2">
                 <Input
                   value={scanInput.value}
@@ -1261,9 +1262,10 @@ export default function ConsumableReceiptPage() {
             <DetailItem label="耗材标签号"><Typography.Text>{currentDetail?.assetTag || ''}</Typography.Text></DetailItem>
             <DetailItem label="SN号"><Typography.Text>{currentDetail?.sn || ''}</Typography.Text></DetailItem>
             <DetailItem label="耗材说明"><Typography.Text>{currentDetail?.consumableDesc || ''}</Typography.Text></DetailItem>
-            <DetailItem label="配置"><Typography.Text>{currentDetail?.config || ''}</Typography.Text></DetailItem>
-          </DetailGrid>
-        </Card>
+              <DetailItem label="配置"><Typography.Text>{currentDetail?.config || ''}</Typography.Text></DetailItem>
+            </DetailGrid>
+          </Card>
+        )}
         <Card
           size="small"
           title="接收明细"
