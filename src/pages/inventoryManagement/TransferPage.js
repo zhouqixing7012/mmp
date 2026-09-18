@@ -18,8 +18,7 @@ import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import { CURRENT_EMPLOYEE } from '../../mock/employeeSelfServiceMock';
-import { APPLICANT_CURRENT_ASSETS } from '../../mock/employeeSelfServiceWorkflowMock';
-import { DEFAULT_ASSET_MAINTENANCE_ROWS } from '../../mock/assetManagementMock';
+import { INVENTORY_ASSET_POOL } from '../../mock/inventoryAssetPool';
 
 const { TextArea } = Input;
 
@@ -51,101 +50,29 @@ const INITIAL_ROWS = [
   { id: 10, documentNo: 'AT-202607240001', applicationNo: 'ETA-202607230002', status: '已完成', company: '114.新媒体', createdDate: '2026-07-24', creator: 'admin-系统管理员', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
 ];
 
-const CURRENT_LOGIN_COMPANY = CURRENT_EMPLOYEE.company || '101.新时代';
+const DEFAULT_FINANCIAL_COMPANY = '114.新媒体';
+const CURRENT_EMPLOYEE_COMPANY = CURRENT_EMPLOYEE.company || '';
 const CURRENT_LOGIN_USER = `${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`;
 
-const SELF_SERVICE_TRANSFER_ASSETS = APPLICANT_CURRENT_ASSETS.map((item) => ({
-  id: `self-${item.id}`,
-  assetTag: item.assetTag,
-  sn: '',
-  materialDesc: item.assetDesc,
-  availableQty: 1,
-  materialGroup: '资产',
-  assetClass: '',
-  assetSubClass: '',
-  assetQty: 1,
-  brand: '',
-  model: '',
-  config: item.config || '',
-  unit: '台',
-  assetMark: '',
-  originalValue: '',
-  netValue: '',
-  assetStatus: item.assetStatus || '',
-  company: CURRENT_LOGIN_COMPANY,
-  plate: '',
-  department: CURRENT_EMPLOYEE.department || '',
-  costCenter: CURRENT_EMPLOYEE.costCenter || '',
-  businessLine: '',
-  project: '',
-  expenseAccount: '',
-  responsiblePerson: CURRENT_LOGIN_USER,
-  ownerId: CURRENT_EMPLOYEE.id,
-  ownerName: CURRENT_EMPLOYEE.name,
-  city: CURRENT_EMPLOYEE.officeArea?.split('-')?.[0] || '',
-  building: CURRENT_EMPLOYEE.officeArea?.split('-')?.[1] || '',
-  floor: '',
-  room: '',
-  enabledDate: '',
-  printNo: '',
-  usage: '',
-  remark: '',
-  locked: false,
-}));
+const SOURCE_ASSETS = INVENTORY_ASSET_POOL
+  .filter((item) => item.materialGroup === '1.资产')
+  .map((item) => {
+    const [ownerId = '', ...ownerNameParts] = String(item.responsiblePerson || '').split('-');
+    return {
+      ...item,
+      assetQty: Number(item.quantity || item.availableQty || 1),
+      brand: item.brand || String(item.materialDesc || '').split('.')[0] || '',
+      model: item.model || '',
+      ownerId,
+      ownerName: ownerNameParts.join('-'),
+    };
+  });
 
-const MAINTENANCE_TRANSFER_ASSETS = DEFAULT_ASSET_MAINTENANCE_ROWS
-  .filter((item) => !String(item.status || '').includes('报废'))
-  .map((item) => ({
-    id: `maintenance-${item.id}`,
-    assetTag: item.tag,
-    sn: item.serialNumber || '',
-    materialDesc: item.assetDesc || '',
-    availableQty: Number(item.quantity || 1),
-    materialGroup: '资产',
-    assetClass: item.majorCategory || '',
-    assetSubClass: item.minorCategory || '',
-    assetQty: Number(item.quantity || 1),
-    brand: item.brand || '',
-    model: item.model || '',
-    config: item.config || '',
-    unit: item.unit || '台',
-    assetMark: item.assetMark || '',
-    originalValue: item.originalValue ?? '',
-    netValue: item.netValue ?? '',
-    assetStatus: item.status || '',
-    company: item.companyCode ? `${item.companyCode}.${item.company}` : (item.company || ''),
-    plate: item.plate || '',
-    department: item.department || '',
-    costCenter: item.costCenter || '',
-    businessLine: item.businessLine || '',
-    project: item.project || '',
-    expenseAccount: item.feeAccount || '',
-    responsiblePerson: [item.ownerId, item.ownerName].filter(Boolean).join('-'),
-    ownerId: item.ownerId || '',
-    ownerName: item.ownerName || '',
-    city: item.city || '',
-    building: item.building || '',
-    floor: item.floor || '',
-    room: '',
-    enabledDate: item.enabledDate || '',
-    printNo: '',
-    usage: item.purpose || '',
-    remark: item.remarks || '',
-    locked: false,
-    isNoSpecial: Boolean(item.noLocation || item.service),
-    noLocation: item.noLocation || '',
-    service: item.service || '',
-    subService: '',
-  }));
-
-const SOURCE_ASSETS = [...SELF_SERVICE_TRANSFER_ASSETS, ...MAINTENANCE_TRANSFER_ASSETS];
 const COMPANY_OPTIONS = [...new Set([
-  CURRENT_LOGIN_COMPANY,
+  DEFAULT_FINANCIAL_COMPANY,
   ...SOURCE_ASSETS.map((item) => item.company),
-  '101.新时代',
-  '201.焦点互动',
+  '117.焦点互动',
   '112.北京新动力',
-  '114.新媒体',
   '132.千钧',
 ].filter(Boolean))];
 const PURPOSE_OPTIONS = ['员工用机', '部门公用', '其他用途', '专业用途'];
@@ -153,7 +80,7 @@ const RECEIVER_OPTIONS = [
   {
     id: 'current',
     name: CURRENT_LOGIN_USER,
-    company: CURRENT_LOGIN_COMPANY,
+    company: CURRENT_EMPLOYEE_COMPANY,
     department: CURRENT_EMPLOYEE.department || '',
     plate: '',
     costCenter: CURRENT_EMPLOYEE.costCenter || '',
@@ -219,7 +146,7 @@ function LookupInput({ value, placeholder, onOpen }) {
 
 function SelectorModal({ config, onClose }) {
   if (!config) return null;
-  return <SelectModal open title={config.title} dataSource={config.dataSource || []} columns={config.columns || [{ title: '名称', dataIndex: 'name' }]} searchFields={config.searchFields || [{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={onClose} onConfirm={(record) => { config.onConfirm(record); onClose(); }} />;
+  return <SelectModal open title={config.title} width={config.width || 700} dataSource={config.dataSource || []} columns={config.columns || [{ title: '名称', dataIndex: 'name' }]} searchFields={config.searchFields || [{ label: '名称', name: 'name', dataIndex: 'name' }]} onCancel={onClose} onConfirm={(record) => { config.onConfirm(record); onClose(); }} />;
 }
 
 function TransferItemModal({ open, currentCompany, availableAssets, initialLine, onCancel, onConfirm }) {
@@ -260,21 +187,29 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
   };
   const selectorConfig = {
     asset: {
-      title: '选择资产',
+      title: '选择转移资产',
+      width: 960,
       dataSource: availableAssets || [],
       columns: [
-        { title: '资产标签号', dataIndex: 'assetTag', width: 160 },
-        { title: 'SN号', dataIndex: 'sn', width: 160, render: (value) => value || '-' },
-        { title: '物资说明', dataIndex: 'materialDesc', width: 260 },
-        { title: '责任人', dataIndex: 'responsiblePerson', width: 160, render: (value) => value || '-' },
-        { title: '资产状态', dataIndex: 'assetStatus', width: 140 },
+        { title: '标签号', dataIndex: 'assetTag', width: 150 },
+        { title: '公司', dataIndex: 'company', width: 130 },
+        { title: '板块', dataIndex: 'plate', width: 120, render: (value) => value || '-' },
+        { title: '资产大类', dataIndex: 'assetClass', width: 130, render: (value) => value || '-' },
+        { title: '资产小类', dataIndex: 'assetSubClass', width: 150, render: (value) => value || '-' },
+        { title: '资产说明', dataIndex: 'materialDesc', width: 220 },
+        { title: '品牌', dataIndex: 'brand', width: 100, render: (value) => value || '-' },
+        { title: '数量', dataIndex: 'quantity', width: 90, align: 'right' },
+        { title: '原值', dataIndex: 'originalValue', width: 110, align: 'right', render: (value) => value === 0 ? 0 : (value || '-') },
+        { title: '资产责任人', dataIndex: 'responsiblePerson', width: 150, render: (value) => value || '-' },
+        { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value) => value || '-' },
+        { title: '成本中心', dataIndex: 'costCenter', width: 150, render: (value) => value || '-' },
+        { title: '启用日期', dataIndex: 'enabledDate', width: 120, render: (value) => value || '-' },
       ],
       searchFields: [
-        { label: '资产标签号', name: 'assetTag', dataIndex: 'assetTag' },
+        { label: '标签号', name: 'assetTag', dataIndex: 'assetTag' },
         { label: 'SN号', name: 'sn', dataIndex: 'sn' },
-        { label: '资产名称', name: 'materialDesc', dataIndex: 'materialDesc' },
-        { label: '责任人编号', name: 'ownerId', dataIndex: 'ownerId' },
-        { label: '责任人姓名', name: 'ownerName', dataIndex: 'ownerName' },
+        { label: '板块', name: 'plate', dataIndex: 'plate' },
+        { label: '资产说明', name: 'materialDesc', dataIndex: 'materialDesc' },
       ],
       onConfirm: chooseAsset,
     },
@@ -337,22 +272,21 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
   };
 
   return (
-    <Modal open={open} title="添加转移物资" width={960} onCancel={onCancel} destroyOnHidden footer={[
+    <Modal open={open} title="添加转移物资" width={1000} rootClassName="mmp-transfer-item-modal" onCancel={onCancel} destroyOnHidden footer={[
       <Button key="continue" type="primary" onClick={() => submit(true)}>添加并继续</Button>,
       <Button key="close" type="primary" onClick={() => submit(false)}>添加并关闭</Button>,
       <Button key="cancel" onClick={onCancel}>取消</Button>,
     ]}>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <Typography.Text>当前公司：{currentCompany || '-'}</Typography.Text>
-        <Card size="small" title="选择物资">
-          <DetailGrid columns={2} labelWidth={96}>
-            <DetailItem label="资产标签号"><LookupInput value={asset?.assetTag || ''} placeholder="请选择资产标签号" onOpen={() => setSelectorType('asset')} /></DetailItem>
-            <DetailItem label="SN号"><LookupInput value={asset?.sn || ''} placeholder="请选择SN号" onOpen={() => setSelectorType('asset')} /></DetailItem>
+        <Typography.Text>当前财务公司：{currentCompany || '-'}</Typography.Text>
+        <Card size="small" title="选择转移资产">
+          <DetailGrid columns={1} labelWidth={96}>
+            <DetailItem label="转移资产"><LookupInput value={asset?.assetTag || ''} placeholder="请选择转移资产" onOpen={() => setSelectorType('asset')} /></DetailItem>
           </DetailGrid>
         </Card>
         <Card size="small" title="物资信息">
-          <DetailGrid columns={4} labelWidth={96} minWidth={1040}>
+          <DetailGrid columns={4} labelWidth={96}>
             <DetailItem label="资产标签号"><Readonly>{asset?.assetTag}</Readonly></DetailItem>
             <DetailItem label="SN号"><Readonly>{asset?.sn}</Readonly></DetailItem>
             <DetailItem label="物资说明"><Readonly>{asset?.materialDesc}</Readonly></DetailItem>
@@ -388,7 +322,7 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
           </DetailGrid>
         </Card>
         <Card size="small" title="转移单信息">
-          <DetailGrid columns={4} labelWidth={108} minWidth={1040}>
+          <DetailGrid columns={4} labelWidth={108}>
             <DetailItem label={<RequiredLabel>转入人</RequiredLabel>}><LookupInput value={form.inPerson} placeholder="请选择转入人" onOpen={() => setSelectorType('receiver')} /></DetailItem>
             <DetailItem label="转入板块"><Readonly>{form.inPlate}</Readonly></DetailItem>
             <DetailItem label="转入部门"><Readonly>{form.inDept}</Readonly></DetailItem>
@@ -409,7 +343,7 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
 
         {hasSpecialNoInfo(asset) && (
           <Card size="small" title="NO 资产变更信息">
-            <DetailGrid columns={4} labelWidth={108} minWidth={1040}>
+            <DetailGrid columns={4} labelWidth={108}>
               <DetailItem label="原 SN 号"><Readonly>{asset?.sn}</Readonly></DetailItem>
               <DetailItem label="新 SN 号"><Input value={form.newSn} onChange={(event) => update('newSn', event.target.value)} /></DetailItem>
               <DetailItem label="原 NO 地点"><Readonly>{asset?.noLocation}</Readonly></DetailItem>
@@ -516,7 +450,7 @@ function TransferDetail({ document: transferDocument, onBack }) {
 
 function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, onPersist, onComplete }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [company, setCompany] = useState(initialDocument?.company || CURRENT_LOGIN_COMPANY);
+  const [company, setCompany] = useState(initialDocument?.company || DEFAULT_FINANCIAL_COMPANY);
   const [remark, setRemark] = useState(initialDocument?.remark || '');
   const [documentId, setDocumentId] = useState(initialDocument?.id || null);
   const [documentNo, setDocumentNo] = useState(initialDocument?.documentNo || '');
@@ -543,31 +477,6 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
     { title: '转入成本中心', dataIndex: 'inCostCenter', width: 180 },
     { title: '转入城市', dataIndex: 'city', width: 130 },
     { title: '转入建筑物', dataIndex: 'building', width: 180 },
-    {
-      title: '操作',
-      key: 'operation',
-      width: 130,
-      fixed: 'right',
-      render: (_, row) => (
-        <Space size={8}>
-          <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button>
-          <Button type="link" danger className="px-0" onClick={() => {
-            Modal.confirm({
-              title: '确认删除该转移物资？',
-              content: `资产 ${row.assetTag} 将从当前草稿中移除并释放本次转移占用。`,
-              okText: '删除',
-              cancelText: '取消',
-              okButtonProps: { danger: true },
-              onOk: () => {
-                const nextLines = lines.filter((item) => item.id !== row.id);
-                setLines(nextLines);
-                persistDraft(nextLines);
-              },
-            });
-          }}>删除</Button>
-        </Space>
-      ),
-    },
   ];
   const persistDraft = (nextLines = lines) => {
     if (!company) {
@@ -708,7 +617,7 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
           <DetailItem label="转移单号"><Readonly>{documentNo || '自动生成'}</Readonly></DetailItem>
           <DetailItem label="单据类型"><Readonly>转移单</Readonly></DetailItem>
           <DetailItem label="单据状态"><StatusTag value="草稿" /></DetailItem>
-          <DetailItem label="公司">{documentNo ? <Readonly>{company}</Readonly> : <LookupInput value={company} placeholder="请选择公司" onOpen={() => setCompanyModalOpen(true)} />}</DetailItem>
+          <DetailItem label="财务公司">{lines.length > 0 ? <Readonly>{company}</Readonly> : <LookupInput value={company} placeholder="请选择财务公司" onOpen={() => setCompanyModalOpen(true)} />}</DetailItem>
           <DetailItem label="制单人"><Readonly>{initialDocument?.creator || CURRENT_LOGIN_USER}</Readonly></DetailItem>
           <DetailItem label="制单时间"><Readonly>{createdDate}</Readonly></DetailItem>
           <DetailItem label="备注" span={3}>{lines.length > 0 ? <Readonly>{remark}</Readonly> : <TextArea autoSize={{ minRows: 3, maxRows: 6 }} value={remark} onChange={(event) => setRemark(event.target.value)} />}</DetailItem>
@@ -726,7 +635,7 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
         {documentNo && lines.length > 0 && <Button type="primary" onClick={confirmTransfer}>转移确认</Button>}
         <Button onClick={onBack}>返回</Button>
       </div>
-      <SelectModal open={companyModalOpen} title="选择公司" dataSource={COMPANY_OPTIONS.map((name, index) => ({ id: index + 1, name }))} columns={[{ title: '公司', dataIndex: 'name' }]} searchFields={[{ label: '公司', name: 'name', dataIndex: 'name' }]} onCancel={() => setCompanyModalOpen(false)} onConfirm={(record) => { setCompany(record.name); setCompanyModalOpen(false); }} />
+      <SelectModal open={companyModalOpen} title="选择财务公司" dataSource={COMPANY_OPTIONS.map((name, index) => ({ id: index + 1, name }))} columns={[{ title: '财务公司', dataIndex: 'name' }]} searchFields={[{ label: '财务公司', name: 'name', dataIndex: 'name' }]} onCancel={() => setCompanyModalOpen(false)} onConfirm={(record) => { setCompany(record.name); setCompanyModalOpen(false); }} />
       <TransferItemModal key={`${lineModalOpen}-${editingLine?.id || 'new'}-${company}`} open={lineModalOpen} currentCompany={company} availableAssets={availableAssets} initialLine={editingLine} onCancel={() => { setLineModalOpen(false); setEditingLine(null); }} onConfirm={saveLine} />
     </Space>
   );
