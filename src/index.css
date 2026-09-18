@@ -9,6 +9,17 @@
   --mmp-motion-slow: 220ms;
   --mmp-motion-ease-out: cubic-bezier(0.2, 0, 0, 1);
   --mmp-motion-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --mmp-modal-max-width: 960px;
+}
+
+/* 业务弹窗统一限制最大宽度，超宽内容在内容区内部横向滚动，不继续撑大 Modal。 */
+.ant-modal {
+  max-width: min(var(--mmp-modal-max-width), calc(100vw - 32px)) !important;
+}
+
+.ant-modal .ant-modal-body {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 /* B 端动效只表达状态变化，不做明显弹跳或长距离位移。 */
