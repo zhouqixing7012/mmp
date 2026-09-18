@@ -806,15 +806,6 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
     return undefined;
   };
 
-  if (approvalPending && source?.sourceModule === '手工出库') {
-    return (
-      <>
-        {contextHolder}
-        <ManualOutboundApprovalView source={source} onApprove={onApprove} />
-      </>
-    );
-  }
-
   return (
     <Space direction="vertical" size={16} className="w-full" data-page-view-key={`outbound-${status}-${outboundType}`}>
       {contextHolder}
@@ -866,6 +857,65 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
         <Button key="ok" type="primary" onClick={importSample}>模拟校验通过</Button>,
       ]}><Typography.Paragraph>模板字段会校验当前仓库、资产标签号、资产状态、业务锁定和必填领用字段。请选择演示结果。</Typography.Paragraph></Modal>
     </Space>
+  );
+}
+
+export function ManualOutboundApprovalDemoPage() {
+  const [messageApi, contextHolder] = antdMessage.useMessage();
+  const demoSource = {
+    documentNo: 'OS-202603180004',
+    creator: '刘建',
+    createdDate: '2026-03-18',
+    warehouse: 'I0001-资产集团机房库(新媒体)',
+    prNo: 'PR2601080004',
+    poNo: 'PO2601130002',
+    sourceModule: '手工出库',
+    lines: [
+      {
+        id: 'approval-demo-1',
+        materialDesc: '武汉光迅,OEO-C-Mod-64S-02-1310模块,客户侧模块, SFP+ PIN 10km模块, 3年维保',
+        assetTag: 'SP-02970',
+        sn: 'AC2023DA1D0375',
+        quantity: 1,
+        originalValue: 146.02,
+        issuePerson: '114877-张大治',
+        department: '集团总部.网络运营部.基础平台部.网络组',
+        city: '北京市',
+        building: '腾讯云亦庄',
+        floor: '缺省',
+        prNo: 'PR2601080004',
+        poNo: 'PO2601130002',
+        assetClass: 'NET EQUIPMENT',
+        issueDate: '2026-03-18',
+      },
+      {
+        id: 'approval-demo-2',
+        materialDesc: '武汉光迅,OEO-M64S-16-C310-R-C模块,线路侧模块, 波长C310, 3年维保',
+        assetTag: 'SP-02972',
+        sn: 'FK2328PP7F0802',
+        quantity: 1,
+        originalValue: 3097.34,
+        issuePerson: '114877-张大治',
+        department: '集团总部.网络运营部.基础平台部.网络组',
+        city: '北京市',
+        building: '腾讯云亦庄',
+        floor: '缺省',
+        prNo: 'PR2601080004',
+        poNo: 'PO2601130002',
+        assetClass: 'NET EQUIPMENT',
+        issueDate: '2026-03-18',
+      },
+    ],
+  };
+
+  return (
+    <>
+      {contextHolder}
+      <ManualOutboundApprovalView
+        source={demoSource}
+        onApprove={() => messageApi.success('审批已同意（原型）')}
+      />
+    </>
   );
 }
 
