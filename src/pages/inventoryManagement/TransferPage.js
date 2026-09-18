@@ -51,7 +51,6 @@ const INITIAL_ROWS = [
 ];
 
 const DEFAULT_FINANCIAL_COMPANY = '114.新媒体';
-const CURRENT_EMPLOYEE_COMPANY = CURRENT_EMPLOYEE.company || '';
 const CURRENT_LOGIN_USER = `${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`;
 
 const SOURCE_ASSETS = INVENTORY_ASSET_POOL
@@ -428,8 +427,8 @@ function openTransferPrint(transferDocument) {
     );
     const inLocation = formatTransferPrintLocation(line.city, line.building, line.floor, line.room);
     const usageAndReason = [
-      line.usageDescription || '',
-      line.transferReason ? `备注：${line.transferReason}` : '',
+      line.usageDescription ? escapePrintHtml(line.usageDescription) : '',
+      line.transferReason ? `备注：${escapePrintHtml(line.transferReason)}` : '',
     ].filter(Boolean).join('<br/>');
 
     return `
