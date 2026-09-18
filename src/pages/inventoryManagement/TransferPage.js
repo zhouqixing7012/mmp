@@ -477,10 +477,35 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
     { title: '转入成本中心', dataIndex: 'inCostCenter', width: 180 },
     { title: '转入城市', dataIndex: 'city', width: 130 },
     { title: '转入建筑物', dataIndex: 'building', width: 180 },
+    {
+      title: '操作',
+      key: 'operation',
+      width: 130,
+      fixed: 'right',
+      render: (_, row) => (
+        <Space size={8}>
+          <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button>
+          <Button type="link" danger className="px-0" onClick={() => {
+            Modal.confirm({
+              title: '确认删除该转移物资？',
+              content: `资产 ${row.assetTag} 将从当前草稿中移除并释放本次转移占用。`,
+              okText: '删除',
+              cancelText: '取消',
+              okButtonProps: { danger: true },
+              onOk: () => {
+                const nextLines = lines.filter((item) => item.id !== row.id);
+                setLines(nextLines);
+                persistDraft(nextLines);
+              },
+            });
+          }}>删除</Button>
+        </Space>
+      ),
+    },
   ];
   const persistDraft = (nextLines = lines) => {
     if (!company) {
-      messageApi.warning('请选择公司');
+      messageApi.warning('请选择财务公司');
       return null;
     }
     const saved = onPersist({
@@ -789,13 +814,6 @@ export default function TransferPage() {
     { title: '制单日期', dataIndex: 'createdDate', width: 130, sorter: (a, b) => compareText(a.createdDate, b.createdDate), defaultSortOrder: 'descend' },
     { title: '制单人', dataIndex: 'creator', width: 180, sorter: (a, b) => compareText(a.creator, b.creator) },
     { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right', sorter: (a, b) => Number(a.quantity || 0) - Number(b.quantity || 0) },
-    {
-      title: '操作',
-      key: 'operation',
-      width: 90,
-      fixed: 'right',
-      render: (_, row) => <Button type="link" className="px-0" onClick={() => openDocument(row)}>{row.status === '草稿' ? '编辑' : '查看'}</Button>,
-    },
   ];
   return (
     <Space direction="vertical" size={16} className="w-full">
