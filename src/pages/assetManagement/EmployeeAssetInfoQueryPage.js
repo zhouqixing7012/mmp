@@ -23,7 +23,6 @@ const EMPLOYEE_OPTIONS = [
   { id: '200620', name: '王英', department: '集团.资产管理部.员工服务中心' },
 ];
 
-const DEFAULT_EMPLOYEE = EMPLOYEE_OPTIONS[0];
 
 const EMPTY_TAB_FILTERS = {
   asset: { assetTag: '' },
@@ -417,8 +416,8 @@ function RecordDetailModal({ detail, onClose }) {
 export default function EmployeeAssetInfoQueryPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [activeTab, setActiveTab] = useState('asset');
-  const [draftEmployee, setDraftEmployee] = useState(DEFAULT_EMPLOYEE);
-  const [appliedEmployee, setAppliedEmployee] = useState(DEFAULT_EMPLOYEE);
+  const [draftEmployee, setDraftEmployee] = useState(null);
+  const [appliedEmployee, setAppliedEmployee] = useState(null);
   const [draftFilters, setDraftFilters] = useState(() => copy(EMPTY_TAB_FILTERS));
   const [appliedFilters, setAppliedFilters] = useState(() => copy(EMPTY_TAB_FILTERS));
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
@@ -439,7 +438,21 @@ export default function EmployeeAssetInfoQueryPage() {
       messageApi.warning('请选择员工信息');
       return;
     }
+
+    const employeeChanged = Boolean(appliedEmployee?.id && appliedEmployee.id !== draftEmployee.id);
     setAppliedEmployee(draftEmployee);
+
+    if (employeeChanged) {
+      const nextDraftFilters = copy(EMPTY_TAB_FILTERS);
+      nextDraftFilters[activeTab] = { ...draftFilters[activeTab] };
+      setDraftFilters(nextDraftFilters);
+
+      const nextAppliedFilters = copy(EMPTY_TAB_FILTERS);
+      nextAppliedFilters[activeTab] = { ...draftFilters[activeTab] };
+      setAppliedFilters(nextAppliedFilters);
+      return;
+    }
+
     setAppliedFilters((current) => ({
       ...current,
       [activeTab]: { ...draftFilters[activeTab] },
@@ -449,23 +462,34 @@ export default function EmployeeAssetInfoQueryPage() {
   const resetQuery = () => {
     setDraftEmployee(null);
     setAppliedEmployee(null);
-    setDraftFilters((current) => ({
-      ...current,
-      [activeTab]: copy(EMPTY_TAB_FILTERS[activeTab]),
-    }));
-    setAppliedFilters((current) => ({
-      ...current,
-      [activeTab]: copy(EMPTY_TAB_FILTERS[activeTab]),
-    }));
+    setDraftFilters(copy(EMPTY_TAB_FILTERS));
+    setAppliedFilters(copy(EMPTY_TAB_FILTERS));
+  };
+
+  const handleEmployeeConfirm = (record) => {
+    const isDifferentFromApplied = Boolean(appliedEmployee?.id && appliedEmployee.id !== record.id);
+    setDraftEmployee(record);
+
+    if (isDifferentFromApplied) {
+      const nextDraftFilters = copy(EMPTY_TAB_FILTERS);
+      nextDraftFilters[activeTab] = { ...draftFilters[activeTab] };
+      setDraftFilters(nextDraftFilters);
+      setAppliedFilters(copy(EMPTY_TAB_FILTERS));
+      setAppliedEmployee(null);
+    }
+
+    setEmployeeModalOpen(false);
+  };
+
+  const clearEmployee = () => {
+    setDraftEmployee(null);
+    setAppliedEmployee(null);
+    setDraftFilters(copy(EMPTY_TAB_FILTERS));
+    setAppliedFilters(copy(EMPTY_TAB_FILTERS));
   };
 
   const handleTabChange = (key) => {
     setActiveTab(key);
-    if (!appliedEmployee?.id) return;
-    setAppliedFilters((current) => ({
-      ...current,
-      [key]: { ...draftFilters[key] },
-    }));
   };
 
   const filteredAssetRows = useMemo(() => {
@@ -691,21 +715,38 @@ export default function EmployeeAssetInfoQueryPage() {
       <div className="flex flex-col gap-4">
         <Typography.Title level={4} className="mb-0">员工资产信息查询</Typography.Title>
 
+        <Tabs
+          activeKey={activeTab}
+          onChange={handleTabChange}
+          items={Object.entries(tabConfig).map(([key, item]) => ({ key, label: item.label }))}
+        />
+
         <QueryBar onQuery={runQuery} onReset={resetQuery}>
           <QueryItem label="员工信息">
             <LookupInput
               value={employeeText(draftEmployee)}
               placeholder="请选择员工"
               onOpen={() => setEmployeeModalOpen(true)}
-              onClear={() => setDraftEmployee(null)}
+              onClear={clearEmployee}
             />
           </QueryItem>
 
-          {(activeTab === 'asset' || activeTab === 'consumable') && (
+          {activeTab === 'asset' && (
             <QueryItem label="资产标签号">
               <Input
                 value={currentFilter.assetTag}
-                placeholder={activeTab === 'asset' ? '请输入资产标签号' : '请输入耗材标签号'}
+                placeholder="请输入资产标签号"
+                allowClear
+                onChange={(event) => updateFilter('assetTag', event.target.value)}
+              />
+            </QueryItem>
+          )}
+
+          {activeTab === 'consumable' && (
+            <QueryItem label="耗材标签号">
+              <Input
+                value={currentFilter.assetTag}
+                placeholder="请输入耗材标签号"
                 allowClear
                 onChange={(event) => updateFilter('assetTag', event.target.value)}
               />
@@ -750,13 +791,7 @@ export default function EmployeeAssetInfoQueryPage() {
           )}
         </QueryBar>
 
-        <Card size="small" bodyStyle={{ paddingTop: 0 }}>
-          <Tabs
-            activeKey={activeTab}
-            onChange={handleTabChange}
-            items={Object.entries(tabConfig).map(([key, item]) => ({ key, label: item.label }))}
-          />
-
+        <Card size="small">
           <div className="mb-3 flex items-center justify-between">
             <Typography.Text strong>{current.title}</Typography.Text>
             <Typography.Text type="secondary">共 {current.rows.length} 条</Typography.Text>
@@ -793,10 +828,7 @@ export default function EmployeeAssetInfoQueryPage() {
           { label: '部门', name: 'department', dataIndex: 'department', placeholder: '请输入部门' },
         ]}
         onCancel={() => setEmployeeModalOpen(false)}
-        onConfirm={(record) => {
-          setDraftEmployee(record);
-          setEmployeeModalOpen(false);
-        }}
+        onConfirm={handleEmployeeConfirm}
       />
 
       <RecordDetailModal detail={detail} onClose={() => setDetail(null)} />
