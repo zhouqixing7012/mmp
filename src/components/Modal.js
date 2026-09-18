@@ -60,7 +60,10 @@ const Modal = ({ isOpen, onClose, title, children, footer, width = 'max-w-[520px
       className={`fixed inset-0 bg-[rgba(0,0,0,0.45)] z-[1000] flex items-center justify-center p-4 mmp-motion-overlay ${isVisible ? 'is-visible' : ''}`}
       data-prototype-overlay="modal"
     >
-      <div className={`bg-white rounded-lg shadow-[0_6px_16px_0_rgba(0,0,0,0.08)] w-full ${width} overflow-hidden mmp-motion-dialog ${isVisible ? 'is-visible' : ''}`}>
+      <div
+        className={`bg-white rounded-lg shadow-[0_6px_16px_0_rgba(0,0,0,0.08)] w-full ${width} overflow-hidden mmp-motion-dialog ${isVisible ? 'is-visible' : ''}`}
+        style={{ maxWidth: 'min(var(--mmp-modal-max-width), calc(100vw - 32px))' }}
+      >
         <div className="px-6 py-4 border-b border-border flex justify-between items-center">
           <h3 className="text-[16px] font-semibold text-text-primary">{title}</h3>
           <X
@@ -69,7 +72,7 @@ const Modal = ({ isOpen, onClose, title, children, footer, width = 'max-w-[520px
             onClick={onClose}
           />
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-6 overflow-x-auto">{children}</div>
         {footer !== undefined ? footer : defaultFooter}
       </div>
     </div>
