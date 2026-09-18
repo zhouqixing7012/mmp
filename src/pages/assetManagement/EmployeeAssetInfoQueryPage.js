@@ -631,7 +631,7 @@ export default function EmployeeAssetInfoQueryPage() {
         <Button type="link" size="small" onClick={() => setDetail({ kind: 'asset', record })}>{value}</Button>
       ),
     },
-    { title: '耗材说明', dataIndex: 'description', width: 220, render: displayText },
+    { title: '资产说明', dataIndex: 'description', width: 220, render: displayText },
     { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
     { title: '资产责任人', width: 170, render: (_, record) => `${record.ownerId}-${record.ownerName}` },
     { title: '单据申请人', dataIndex: 'applicant', width: 150, render: displayText },
