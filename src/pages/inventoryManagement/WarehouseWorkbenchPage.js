@@ -123,8 +123,16 @@ export default function WarehouseWorkbenchPage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
-  const [results, setResults] = useState([]);
-  const [hasQueried, setHasQueried] = useState(false);
+  const [results, setResults] = useState(() => (
+    WAREHOUSE_WORKBENCH_TASKS
+      .filter((task) => (
+        task.assignedTo === CURRENT_WAREHOUSE_OPERATOR
+        && task.status === '待处理'
+        && task.documentType !== '员工离职'
+      ))
+      .sort((a, b) => String(b.applicationTime).localeCompare(String(a.applicationTime)))
+  ));
+  const [hasQueried, setHasQueried] = useState(true);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -362,7 +370,7 @@ export default function WarehouseWorkbenchPage() {
               setPageSize(nextPageSize);
             },
           }}
-          locale={{ emptyText: hasQueried ? '暂无待处理单据' : '请查询待处理单据' }}
+          locale={{ emptyText: '暂无待处理单据' }}
         />
       </Card>
     </Space>
