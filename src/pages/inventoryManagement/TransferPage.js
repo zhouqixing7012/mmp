@@ -915,8 +915,23 @@ export default function TransferPage() {
         <QueryItem label="转入部门"><LookupInput value={draft.inDept} placeholder="请选择转入部门" onOpen={() => setSelectorType('inDept')} /></QueryItem>
         <QueryItem label="转入地点"><LookupInput value={draft.inLocation} placeholder="请选择转入地点" onOpen={() => setSelectorType('inLocation')} /></QueryItem>
         <QueryItem label="制单人"><LookupInput value={draft.creator} placeholder="请选择制单人" onOpen={() => setSelectorType('creator')} /></QueryItem>
-        <QueryItem label="制单日期从"><DateFilter value={draft.createdFrom} placeholder="开始日期" onChange={(value) => update('createdFrom', value)} /></QueryItem>
-        <QueryItem label="制单日期至"><DateFilter value={draft.createdTo} placeholder="结束日期" onChange={(value) => update('createdTo', value)} /></QueryItem>
+        <QueryItem label="制单日期">
+          <DatePicker.RangePicker
+            className="w-full"
+            value={[
+              draft.createdFrom ? dayjs(draft.createdFrom) : null,
+              draft.createdTo ? dayjs(draft.createdTo) : null,
+            ]}
+            format="YYYY-MM-DD"
+            onChange={(dates) => {
+              setDraft((current) => ({
+                ...current,
+                createdFrom: dates?.[0] ? dates[0].format('YYYY-MM-DD') : '',
+                createdTo: dates?.[1] ? dates[1].format('YYYY-MM-DD') : '',
+              }));
+            }}
+          />
+        </QueryItem>
       </QueryBar>
       <Card size="small" title="转移单列表" extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
         <div className="mb-3 flex justify-end">
