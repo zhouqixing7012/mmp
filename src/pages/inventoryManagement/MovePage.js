@@ -19,6 +19,7 @@ import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import MoveReceiveContent from './MoveReceiveContent';
+import { INVENTORY_ASSET_POOL } from '../../mock/inventoryAssetPool';
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
@@ -42,43 +43,7 @@ const OUTBOUND_WAREHOUSE_NAMES = [
   'I0022.资产集团前台库（焦点互动）',
 ];
 
-const ASSET_POOL = [
-  {
-    id: 'asset-laptop-1', assetTag: 'AST-2409010068', sn: 'SN-T14-0068', materialDesc: '联想.ThinkPad T14', materialGroup: '1.资产',
-    assetClass: '10.电脑', assetSubClass: '笔记本电脑', quantity: 1, availableQty: 1, applicationBatch: '2026Q3', config: 'i7 / 32G / 1T SSD', unit: '台',
-    assetMark: '主资产', originalValue: 8200, netValue: 6800, assetStatus: '在库-新增', company: '114.新媒体', plate: '集团', department: 'ERP部',
-    costCenter: 'ERP部', businessLine: '0.*', expenseAccount: '固定资产', responsiblePerson: '206984-何文', city: '010.北京市', building: '129753.搜狐媒体大厦',
-    floor: '15F', room: '1508', enabledDate: '2026-09-10', usage: '办公', remark: '-', warehouse: 'I0001.资产集团总库（新媒体）', locked: false,
-  },
-  {
-    id: 'asset-monitor-1', assetTag: 'AST-2409010072', sn: 'SN-U2723-0072', materialDesc: '戴尔.U2723QE显示器', materialGroup: '1.资产',
-    assetClass: '11.办公设备', assetSubClass: '显示器', quantity: 1, availableQty: 1, applicationBatch: '2026Q3', config: '27英寸 / 4K', unit: '台',
-    assetMark: '主资产', originalValue: 3200, netValue: 2600, assetStatus: '在库-再利用', company: '114.新媒体', plate: '集团', department: 'ES部',
-    costCenter: 'ES部', businessLine: '媒体', expenseAccount: '固定资产', responsiblePerson: '114111-杨芊', city: '010.北京市', building: '129753.搜狐媒体大厦',
-    floor: 'B2', room: '', enabledDate: '2025-08-01', usage: '办公', remark: '可再次领用', warehouse: 'I0001.资产集团总库（新媒体）', locked: false,
-  },
-  {
-    id: 'durable-keyboard-1', assetTag: 'CON-26070018', sn: 'MXK-0018', materialDesc: '罗技.MX Keys键盘', materialGroup: '2.低值耐用品',
-    assetClass: '30.办公耗材设备', assetSubClass: '键盘', quantity: 1, availableQty: 1, applicationBatch: '2026Q3', config: '无线键盘', unit: '个',
-    assetMark: '普通', originalValue: 699, netValue: 620, assetStatus: '在库-新增', company: '114.新媒体', plate: '集团', department: 'ERP部',
-    costCenter: 'ERP部', businessLine: '研发', expenseAccount: '低值耐用品', responsiblePerson: '206984-何文', city: '010.北京市', building: '129753.搜狐媒体大厦',
-    floor: 'B2', room: '', enabledDate: '2026-07-20', usage: '办公', remark: '-', warehouse: 'I0001.资产集团总库（新媒体）', locked: false,
-  },
-  {
-    id: 'asset-locked-1', assetTag: 'AST-LOCK-0001', sn: 'LOCK-SN-01', materialDesc: '联想.X1 Carbon', materialGroup: '1.资产',
-    assetClass: '10.电脑', assetSubClass: '笔记本电脑', quantity: 1, availableQty: 1, applicationBatch: '2026Q3', config: '演示', unit: '台',
-    assetMark: '主资产', originalValue: 9000, netValue: 8500, assetStatus: '在库-新增', company: '114.新媒体', plate: '集团', department: 'ERP部',
-    costCenter: 'ERP部', businessLine: '研发', expenseAccount: '固定资产', responsiblePerson: '206984-何文', city: '010.北京市', building: '129753.搜狐媒体大厦',
-    floor: 'B2', room: '', enabledDate: '2026-08-01', usage: '办公', remark: '已被其他业务锁定', warehouse: 'I0001.资产集团总库（新媒体）', locked: true,
-  },
-  {
-    id: 'asset-frontdesk-1', assetTag: 'AST-2409010091', sn: 'SN-MINI-0091', materialDesc: '苹果.Mac mini', materialGroup: '1.资产',
-    assetClass: '10.电脑', assetSubClass: '台式机', quantity: 1, availableQty: 1, applicationBatch: '2026Q3', config: 'M4 / 24G / 512G', unit: '台',
-    assetMark: '主资产', originalValue: 7600, netValue: 7100, assetStatus: '在库-待处理', company: '114.新媒体', plate: '集团', department: 'ES部',
-    costCenter: 'ES部', businessLine: '媒体', expenseAccount: '固定资产', responsiblePerson: '114111-杨芊', city: '010.北京市', building: '129753.搜狐媒体大厦',
-    floor: '1F', room: '', enabledDate: '2026-08-20', usage: '办公', remark: '-', warehouse: 'I0013.资产集团前台库（新媒体）', locked: false,
-  },
-];
+const ASSET_POOL = INVENTORY_ASSET_POOL;
 
 function cloneLine(asset, extras = {}) {
   return {
