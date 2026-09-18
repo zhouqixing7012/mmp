@@ -37,7 +37,7 @@ const ASSET_ROWS = [
     id: 'asset-1',
     tag: '112161100271-V',
     description: '戴尔.E2417H显示器',
-    assetStatus: '在用-使用中',
+    assetStatus: '在用-借用中',
     statusCode: '3',
     materialType: '资产',
     ownerId: '220784',
@@ -469,7 +469,7 @@ export default function EmployeeAssetInfoQueryPage() {
     return CONTRACT_NUMBER_ROWS
       .filter((row) => (
         String(row.ownerId) === String(employeeId || '')
-        && row.active
+        && row.status === '在用-使用中'
         && includesText(row.contractNumber, filter.contractNumber)
       ))
       .map((row, index) => ({ ...row, rowNo: index + 1 }));
