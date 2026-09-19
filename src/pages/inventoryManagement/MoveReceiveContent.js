@@ -58,7 +58,7 @@ function ReceiveAssetDetailModal({ open, document, asset, onCancel }) {
   if (!document || !asset) return null;
   const snapshot = asset.snapshot || asset;
   return (
-    <Modal open={open} title="移库物资信息" width={980} footer={null} onCancel={onCancel} destroyOnHidden>
+    <Modal open={open} title="移库物资信息" width={960} footer={null} onCancel={onCancel} destroyOnHidden>
       <Space direction="vertical" size={16} className="w-full">
         <Card size="small" title="移库单信息">
           <DetailGrid columns={3} labelWidth={110}>
