@@ -172,9 +172,23 @@ function count(value) {
 }
 
 function LookupInput({ value, placeholder = '请选择', onClick, disabled = false }) {
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick?.();
+    }
+  };
+
   if (disabled) return <Readonly>{value}</Readonly>;
   return (
-    <div className="cursor-pointer" onClick={onClick}>
+    <div
+      className="cursor-pointer"
+      role="button"
+      tabIndex={0}
+      aria-label={placeholder}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+    >
       <Input value={value} readOnly placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} />} />
     </div>
   );
