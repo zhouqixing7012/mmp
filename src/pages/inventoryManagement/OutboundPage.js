@@ -1006,7 +1006,7 @@ export default function OutboundPage() {
             <Button icon={<Download size={14} />} onClick={() => messageApi.success(`已导出当前查询结果 ${filteredRows.length} 条（原型）`)}>导出</Button>
           </Space>
         )}
-      >>
+      >
 
         <Table
           rowKey="id"
