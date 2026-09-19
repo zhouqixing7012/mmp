@@ -23,7 +23,7 @@ export default function OutboundApprovalHistoryPage({ outbound, onBack }) {
 
   return (
     <Space direction="vertical" size={16} className="w-full" data-page-view-key="outbound-approval-history">
-      <Typography.Title level={4} className="!mb-0">出库审批记录</Typography.Title>
+      <Typography.Title level={3} className="!mb-0">出库审批记录</Typography.Title>
 
       <Card size="small" title="出库单信息">
         <DetailGrid columns={3} labelWidth={112}>
