@@ -429,25 +429,24 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, existingLines, 
         dataSource={selectorAssets}
         initialSelectedKeys={asset ? [asset.id] : []}
         columns={[
-          { title: '标签号', dataIndex: 'assetTag' },
-          { title: 'SN号', dataIndex: 'sn' },
-          { title: '公司', dataIndex: 'company' },
-          { title: '板块', dataIndex: 'plate' },
-          { title: '资产大类', dataIndex: 'assetClass' },
-          { title: '资产小类', dataIndex: 'assetSubClass' },
-          { title: '资产说明', dataIndex: 'materialDesc' },
-          { title: '品牌', dataIndex: 'brand' },
-          { title: '数量', dataIndex: 'quantity' },
-          { title: '原值', dataIndex: 'originalValueDisplay' },
-          { title: '资产责任人', dataIndex: 'responsiblePerson' },
-          { title: '资产状态', dataIndex: 'assetStatus' },
-          { title: '成本中心', dataIndex: 'costCenter' },
+          { title: '资产标签号', dataIndex: 'assetTag', width: 160 },
+          { title: 'SN号', dataIndex: 'sn', width: 150 },
+          { title: '资产说明', dataIndex: 'materialDesc', width: 200 },
+          { title: '公司', dataIndex: 'company', width: 130 },
+          { title: '板块', dataIndex: 'plate', width: 100 },
+          { title: '资产大类', dataIndex: 'assetClass', width: 120 },
+          { title: '资产小类', dataIndex: 'assetSubClass', width: 130 },
+          { title: '当前状态', dataIndex: 'assetStatus', width: 130 },
+          { title: '当前仓库', dataIndex: 'warehouse', width: 230 },
+          { title: '当前责任人', dataIndex: 'responsiblePerson', width: 140 },
         ]}
         searchFields={[
-          { label: '标签号', name: 'assetTag', dataIndex: 'assetTag' },
+          { label: '资产标签号', name: 'assetTag', dataIndex: 'assetTag' },
           { label: 'SN号', name: 'sn', dataIndex: 'sn' },
-          { label: '板块', name: 'plate', dataIndex: 'plate' },
           { label: '资产说明', name: 'materialDesc', dataIndex: 'materialDesc' },
+          { label: '资产大类', name: 'assetClass', dataIndex: 'assetClass' },
+          { label: '资产小类', name: 'assetSubClass', dataIndex: 'assetSubClass' },
+          { label: '责任人', name: 'responsiblePerson', dataIndex: 'responsiblePerson' },
         ]}
         onCancel={() => setSelectorOpen(false)}
         onConfirm={(record) => {
