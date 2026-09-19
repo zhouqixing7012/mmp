@@ -579,7 +579,7 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
     { title: '数量', dataIndex: 'quantity', width: 90, render: count },
     { title: '领用人', dataIndex: 'issuePerson', width: 140 },
     { title: '领用日期', dataIndex: 'issueDate', width: 120 },
-    { title: '耗材状态', dataIndex: 'outboundStatus', width: 130 },
+    { title: '耗材状态', dataIndex: 'outboundStatus', width: 130, render: (value) => <StatusTag value={value || '-'} /> },
   ] : materialKind === 'durable' ? [
     { title: '行号', width: 64, render: (_, __, index) => index + 1 },
     { title: '耗材标签号', dataIndex: 'assetTag', width: 160, render: tagLink },
@@ -590,7 +590,7 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
     { title: '数量', dataIndex: 'quantity', width: 90, render: count },
     { title: '领用人', dataIndex: 'issuePerson', width: 140 },
     { title: '领用日期', dataIndex: 'issueDate', width: 120 },
-    { title: '耗材状态', dataIndex: 'outboundStatus', width: 130 },
+    { title: '耗材状态', dataIndex: 'outboundStatus', width: 130, render: (value) => <StatusTag value={value || '-'} /> },
   ] : [
     { title: '行号', width: 64, render: (_, __, index) => index + 1 },
     { title: '资产标签号', dataIndex: 'assetTag', width: 160, render: tagLink },
@@ -601,7 +601,7 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
     { title: '领用人', dataIndex: 'issuePerson', width: 140 },
     { title: '领用日期', dataIndex: 'issueDate', width: 120 },
     { title: '资产标记', dataIndex: 'assetMark', width: 100 },
-    { title: '资产状态', dataIndex: 'outboundStatus', width: 130 },
+    { title: '资产状态', dataIndex: 'outboundStatus', width: 130, render: (value) => <StatusTag value={value || '-'} /> },
     ...(editable ? [{ title: '操作', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button> }] : []),
   ];
 
@@ -616,7 +616,7 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
     { title: '借用人', dataIndex: 'borrowPerson', width: 140 },
     { title: '借用原因', dataIndex: 'borrowReason', width: 180 },
     { title: '资产标记', dataIndex: 'assetMark', width: 100 },
-    { title: '资产状态', dataIndex: 'outboundStatus', width: 130 },
+    { title: '资产状态', dataIndex: 'outboundStatus', width: 130, render: (value) => <StatusTag value={value || '-'} /> },
   ];
 
   const payload = () => ({
@@ -740,14 +740,14 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
         </DetailGrid>
       </Card>
 
-      <Card size="small" title="出库物资" extra={<Space><Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>{editable && <Button type="primary" icon={<Plus size={14} />} onClick={() => { setEditingLine(null); setLineModalOpen(true); }}>添加物资</Button>}{editable && lines.length > 0 && <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>}{editable && <Button icon={<Download size={14} />} onClick={() => messageApi.success('手工领用出库模板已生成（原型）')}>模板下载</Button>}{editable && <Button icon={<Upload size={14} />} onClick={() => setImportOpen(true)}>Excel导入</Button>}</Space>}>
+      <Card size="small" title="出库物资" extra={<Space><Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>{editable && <Button type="primary" icon={<Plus size={14} />} onClick={() => { setEditingLine(null); setLineModalOpen(true); }}>添加物资</Button>}{editable && lines.length > 0 && <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>}{editable && <Button icon={<Download size={14} />} onClick={() => messageApi.success('手工领用出库模板已生成')}>模板下载</Button>}{editable && <Button icon={<Upload size={14} />} onClick={() => setImportOpen(true)}>Excel导入</Button>}</Space>}>
         <Table rowKey="id" size="small" bordered columns={outboundType === '借用出库' ? borrowColumns : issueColumns} dataSource={lines} rowSelection={editable ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true } : undefined} scroll={{ x: 'max-content' }} pagination={false} />
       </Card>
 
       {!approvalPending && <div className="flex justify-center gap-3">
         {editable && <Button onClick={() => onSave(payload())}>保存草稿</Button>}
         {editable && <Button type="primary" onClick={startApproval}>执行出库</Button>}
-        {!editable && <Button type="primary" icon={<Printer size={14} />} onClick={() => messageApi.success('出库单打印预览已打开（原型）')}>打印</Button>}
+        {!editable && <Button type="primary" icon={<Printer size={14} />} onClick={() => messageApi.success('出库单打印预览已打开')}>打印</Button>}
         <Button onClick={onBack}>返回</Button>
       </div>}
       {approvalPending && <div className="flex justify-center"><Button onClick={onBack}>返回</Button></div>}
@@ -763,10 +763,10 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
         onConfirm={saveLine}
       />}
       <OutboundMaterialDetailModal open={Boolean(materialDetail)} row={materialDetail} outboundType={outboundType} onCancel={() => setMaterialDetail(null)} />
-      <Modal open={importOpen} title="Excel导入校验（原型）" onCancel={() => setImportOpen(false)} footer={[
+      <Modal open={importOpen} title="Excel导入校验" onCancel={() => setImportOpen(false)} footer={[
         <Button key="cancel" onClick={() => setImportOpen(false)}>取消</Button>,
         <Button key="error" onClick={() => Modal.error({ title: 'Excel导入校验失败', content: '第2行｜资产标签号｜资产不属于当前仓库；第4行｜资产状态｜当前资产不可出库。' })}>查看错误示例</Button>,
-        <Button key="ok" type="primary" onClick={importSample}>模拟校验通过</Button>,
+        <Button key="ok" type="primary" onClick={importSample}>确认导入</Button>,
       ]}><Typography.Paragraph>模板字段会校验当前仓库、资产标签号、资产状态、业务锁定和必填领用字段。请选择演示结果。</Typography.Paragraph></Modal>
     </Space>
   );
@@ -880,7 +880,7 @@ export default function OutboundPage() {
       outboundDate: dayjs().format('YYYY-MM-DD'),
       approvalHistory: history,
       purchaseNoticeStatus: hasPurchaseSource(activeRow.lines) ? '失败' : undefined,
-      inventoryResult: '已更新资产/库存及事务（原型）',
+      inventoryResult: '已更新资产/库存及事务',
     } : { ...activeRow, currentApprovalIndex: index + 1, approvalHistory: history };
     setRows((current) => current.map((row) => row.id === activeRow.id ? updated : row));
     setActiveRow(updated);
@@ -973,7 +973,7 @@ export default function OutboundPage() {
     if (!selectedKeys.length) return messageApi.warning(`请先选择需要${type}的出库单`);
     const selectedRows = rows.filter((row) => selectedKeys.includes(row.id));
     if (selectedRows.some((row) => row.status !== '已完成')) return messageApi.warning('仅已完成出库单允许打印');
-    messageApi.success(`${type}预览已打开，共 ${selectedRows.length} 张；领用出库和借用出库均支持领用打印（原型）`);
+    messageApi.success(`${type}预览已打开，共 ${selectedRows.length} 张；领用出库和借用出库均支持领用打印`);
     return undefined;
   };
 
@@ -1003,7 +1003,7 @@ export default function OutboundPage() {
             <Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button>
             <Button icon={<Printer size={14} />} onClick={() => printRows('出库打印')}>出库打印</Button>
             <Button icon={<Printer size={14} />} onClick={() => printRows('领用打印')}>领用打印</Button>
-            <Button icon={<Download size={14} />} onClick={() => messageApi.success(`已导出当前查询结果 ${filteredRows.length} 条（原型）`)}>导出</Button>
+            <Button icon={<Download size={14} />} onClick={() => messageApi.success(`已导出当前查询结果 ${filteredRows.length} 条`)}>导出</Button>
           </Space>
         )}
       >
