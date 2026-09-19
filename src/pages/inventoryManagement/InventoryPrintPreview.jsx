@@ -77,7 +77,8 @@ const SAMPLE_DATA = {
     time: '2026-08-07 10:26:38',
   },
   employeeReturnInfo: {
-    title: '员工领用信息',
+    title: '员工退库确认信息',
+    type: 'return',
     employee: 'CW013157-胡艺凡',
     department: '搜狐媒体.内容中心.四象工作室',
     method: '扫码',
@@ -246,12 +247,19 @@ function BorrowSheet({ data }) {
 }
 
 function EmployeeUsageInfoSheet({ data }) {
-  const fields = [
-    ['领用人（工号-姓名）', data.employee],
-    ['领用人部门（全称）', data.department],
-    ['领用方式', data.method],
-    ['领用时间', data.time],
-  ];
+  const fields = data.type === 'return'
+    ? [
+        ['退库人（工号-姓名）', data.employee],
+        ['退库人部门（全称）', data.department],
+        ['退库确认方式', data.method],
+        ['退库确认时间', data.time],
+      ]
+    : [
+        ['领用人（工号-姓名）', data.employee],
+        ['领用人部门（全称）', data.department],
+        ['领用方式', data.method],
+        ['领用时间', data.time],
+      ];
   return (
     <div style={pageStyle}>
       <LogoTitle title={data.title || '员工领用信息'} />

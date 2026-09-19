@@ -39,16 +39,16 @@ const EMPTY_FILTERS = {
 };
 
 const INITIAL_ROWS = [
-  { id: 1, documentNo: 'AT-202608070001', applicationNo: 'ETA-202608070001', status: '已完成', company: '201.焦点互动', createdDate: '2026-08-07', creator: 'admin-系统管理员', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
-  { id: 2, documentNo: 'AT-202608060002', applicationNo: 'ETA-202608060022', status: '已完成', company: '112.北京新动力', createdDate: '2026-08-06', creator: 'admin-系统管理员', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
-  { id: 3, documentNo: 'AT-202608060001', applicationNo: 'ETA-202608060021', status: '已完成', company: '112.北京新动力', createdDate: '2026-08-06', creator: 'admin-系统管理员', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
-  { id: 4, documentNo: 'AT-202608040001', applicationNo: 'ETA-202608030001', status: '已完成', company: '112.北京新动力', createdDate: '2026-08-04', creator: 'admin-系统管理员', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
-  { id: 5, documentNo: 'AT-202607300021', applicationNo: 'ETA-202607290001', status: '已完成', company: '114.新媒体', createdDate: '2026-07-30', creator: 'admin-系统管理员', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
-  { id: 6, documentNo: 'AT-202607300001', applicationNo: 'ETA-202607280003', status: '已完成', company: '114.新媒体', createdDate: '2026-07-30', creator: 'admin-系统管理员', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
-  { id: 7, documentNo: 'AT-202607290001', applicationNo: 'ETA-202607280002', status: '已完成', company: '114.新媒体', createdDate: '2026-07-29', creator: 'admin-系统管理员', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
-  { id: 8, documentNo: 'AT-202607280001', applicationNo: 'ETA-202607280001', status: '已完成', company: '132.千钧', createdDate: '2026-07-28', creator: 'admin-系统管理员', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
-  { id: 9, documentNo: 'AT-202607240002', applicationNo: 'ETA-202607240021', status: '已完成', company: '112.北京新动力', createdDate: '2026-07-24', creator: 'admin-系统管理员', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
-  { id: 10, documentNo: 'AT-202607240001', applicationNo: 'ETA-202607230002', status: '已完成', company: '114.新媒体', createdDate: '2026-07-24', creator: 'admin-系统管理员', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
+  { id: 1, documentNo: 'AT-202608070001', applicationNo: 'ETA-202608070001', status: '已完成', company: '201.焦点互动', createdDate: '2026-08-07', creator: '206984-何文', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
+  { id: 2, documentNo: 'AT-202608060002', applicationNo: 'ETA-202608060022', status: '已完成', company: '112.北京新动力', createdDate: '2026-08-06', creator: '213852-孙志强', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
+  { id: 3, documentNo: 'AT-202608060001', applicationNo: 'ETA-202608060021', status: '已完成', company: '112.北京新动力', createdDate: '2026-08-06', creator: '114111-杨芊', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
+  { id: 4, documentNo: 'AT-202608040001', applicationNo: 'ETA-202608030001', status: '已完成', company: '112.北京新动力', createdDate: '2026-08-04', creator: '206984-何文', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
+  { id: 5, documentNo: 'AT-202607300021', applicationNo: 'ETA-202607290001', status: '已完成', company: '114.新媒体', createdDate: '2026-07-30', creator: '114111-杨芊', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
+  { id: 6, documentNo: 'AT-202607300001', applicationNo: 'ETA-202607280003', status: '已完成', company: '114.新媒体', createdDate: '2026-07-30', creator: '206984-何文', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
+  { id: 7, documentNo: 'AT-202607290001', applicationNo: 'ETA-202607280002', status: '已完成', company: '114.新媒体', createdDate: '2026-07-29', creator: '213852-孙志强', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
+  { id: 8, documentNo: 'AT-202607280001', applicationNo: 'ETA-202607280001', status: '已完成', company: '132.千钧', createdDate: '2026-07-28', creator: '206984-何文', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
+  { id: 9, documentNo: 'AT-202607240002', applicationNo: 'ETA-202607240021', status: '已完成', company: '112.北京新动力', createdDate: '2026-07-24', creator: '114111-杨芊', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
+  { id: 10, documentNo: 'AT-202607240001', applicationNo: 'ETA-202607230002', status: '已完成', company: '114.新媒体', createdDate: '2026-07-24', creator: '206984-何文', quantity: 1, reason: '', outDept: '', outLocation: '', plate: '', inDept: '', inLocation: '', lines: [] },
 ];
 
 const DEFAULT_FINANCIAL_COMPANY = '114.新媒体';
@@ -950,15 +950,11 @@ function exportTransferDetail(transferDocument) {
     line.purpose,
     line.usageDescription,
   ]);
-  const escape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
-  const csv = [headers, ...rows].map((row) => row.map(escape).join(',')).join('\n');
-  const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = window.document.createElement('a');
-  link.href = url;
-  link.download = `${transferDocument.documentNo || '转移单'}-明细.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  worksheet['!cols'] = headers.map((header) => ({ wch: Math.max(12, header.length * 2 + 2) }));
+  XLSX.utils.book_append_sheet(workbook, worksheet, '转移明细');
+  XLSX.writeFile(workbook, `${transferDocument.documentNo || '转移单'}-明细.xlsx`);
 }
 
 function TransferDetail({ document: transferDocument, onBack }) {
