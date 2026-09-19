@@ -131,7 +131,7 @@ function money(value) {
 }
 
 function count(value) {
-  return Number(value || 0).toLocaleString('zh-CN');
+  return Number(value || 0);
 }
 
 function buildUsageDescription(department) {
@@ -213,8 +213,22 @@ function Readonly({ children }) {
 }
 
 function LookupInput({ value, placeholder = '请选择', onClick }) {
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick?.();
+    }
+  };
+
   return (
-    <div className="cursor-pointer" onClick={onClick}>
+    <div
+      className="cursor-pointer"
+      role="button"
+      tabIndex={0}
+      aria-label={placeholder}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+    >
       <Input value={value} readOnly placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} className="text-[#1677ff]" />} />
     </div>
   );
@@ -306,9 +320,9 @@ function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
               <EditorField label="原资产标签号"><Input value={form.originalAssetTag} onChange={(e) => set('originalAssetTag', e.target.value)} /></EditorField>
               <EditorField label="公司"><Readonly>{form.company}</Readonly></EditorField>
               <EditorField label="成本中心" required><Input value={form.costCenter} onChange={(e) => set('costCenter', e.target.value)} /></EditorField>
-              <EditorField label="业务线"><LookupInput value={form.businessLine} onClick={() => {}} /></EditorField>
-              <EditorField label="项目"><LookupInput value={form.project} onClick={() => {}} /></EditorField>
-              <EditorField label="板块" required><LookupInput value={form.plate} onClick={() => {}} /></EditorField>
+              <EditorField label="业务线"><Input value={form.businessLine} onChange={(e) => set('businessLine', e.target.value)} /></EditorField>
+              <EditorField label="项目"><Input value={form.project} onChange={(e) => set('project', e.target.value)} /></EditorField>
+              <EditorField label="板块" required><Input value={form.plate} onChange={(e) => set('plate', e.target.value)} /></EditorField>
               <EditorField label="费用账户"><Readonly>{form.expenseAccount}</Readonly></EditorField>
               {isInfra && <EditorField label="服务"><Input value={form.service} onChange={(e) => set('service', e.target.value)} /></EditorField>}
               {isInfra && <EditorField label="NO位置"><Input value={form.noLocation} onChange={(e) => set('noLocation', e.target.value)} /></EditorField>}
@@ -317,11 +331,11 @@ function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
               <EditorField label="PR单号"><Input value={form.prNo} onChange={(e) => set('prNo', e.target.value)} /></EditorField>
               <EditorField label="申请单号"><Input value={form.applicationNo} onChange={(e) => set('applicationNo', e.target.value)} /></EditorField>
               <EditorField label="PO单号"><Input value={form.poNo} onChange={(e) => set('poNo', e.target.value)} /></EditorField>
-              <EditorField label="申请人"><LookupInput value={form.applicant} onClick={() => {}} /></EditorField>
+              <EditorField label="申请人"><Input value={form.applicant} onChange={(e) => set('applicant', e.target.value)} /></EditorField>
               <EditorField label="部件数量"><InputNumber className="w-full" min={0} precision={0} value={form.partQuantity} onChange={(v) => set('partQuantity', v || 0)} /></EditorField>
               <EditorField label="部件说明"><Input value={form.partDesc} onChange={(e) => set('partDesc', e.target.value)} /></EditorField>
-              <EditorField label="主资产标签号"><LookupInput value={form.mainAssetTag} onClick={() => {}} /></EditorField>
-              <EditorField label="供应商"><LookupInput value={form.supplier} onClick={() => {}} /></EditorField>
+              <EditorField label="主资产标签号"><Input value={form.mainAssetTag} onChange={(e) => set('mainAssetTag', e.target.value)} /></EditorField>
+              <EditorField label="供应商"><Input value={form.supplier} onChange={(e) => set('supplier', e.target.value)} /></EditorField>
               <EditorField label="使用说明" span={3}><Input value={form.usageDesc} onChange={(e) => set('usageDesc', e.target.value)} /></EditorField>
               <EditorField label="备注" span={3}><TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={form.remark} onChange={(e) => set('remark', e.target.value)} /></EditorField>
             </DetailGrid>
@@ -643,9 +657,9 @@ function InboundEditor({ source, pendingRows, onBack, onSave, onExecute, onRetry
   if (showBillable) commonColumns.push({ title: '是否计费', dataIndex: 'billable', width: 110, render: (value, row) => isConsumableLine(row, source) ? (editable ? <Select className="w-full" value={value || '否'} options={['是', '否'].map((v) => ({ label: v, value: v }))} onChange={(next) => setLines((current) => current.map((item) => item.id === row.id ? { ...item, billable: next } : item))} /> : (value || '否')) : '-' });
 
   const columns = inboundType === '借用归还' ? [
-    { title: '行号', width: 64, render: (_, __, index) => index + 1 }, { title: '资产标签号', dataIndex: 'assetTag', width: 160, render: tagLink }, { title: 'SN序列号', dataIndex: 'sn', width: 150 }, { title: '物资总类', dataIndex: 'materialGroup', width: 110 }, { title: '物资说明', dataIndex: 'materialDesc', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 80, render: count }, { title: '借用原因', dataIndex: 'borrowReason', width: 180 }, { title: '借用日期', dataIndex: 'borrowDate', width: 120 }, { title: '资产标记', dataIndex: 'assetMark', width: 100 }, { title: '借用人', dataIndex: 'borrower', width: 130, render: (v) => v || '206984-何文' }, { title: '资产状态', dataIndex: 'inboundStatus', width: 130 },
+    { title: '行号', width: 64, render: (_, __, index) => index + 1 }, { title: '资产标签号', dataIndex: 'assetTag', width: 160, render: tagLink }, { title: 'SN序列号', dataIndex: 'sn', width: 150 }, { title: '物资总类', dataIndex: 'materialGroup', width: 110 }, { title: '物资说明', dataIndex: 'materialDesc', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 80, render: count }, { title: '借用原因', dataIndex: 'borrowReason', width: 180 }, { title: '借用日期', dataIndex: 'borrowDate', width: 120 }, { title: '资产标记', dataIndex: 'assetMark', width: 100 }, { title: '借用人', dataIndex: 'borrower', width: 130, render: (v) => v || '206984-何文' }, { title: '资产状态', dataIndex: 'inboundStatus', width: 130, render: (value) => <StatusTag value={value || '-'} /> },
   ] : inboundType === '退库入库' ? [
-    { title: '行号', width: 64, render: (_, __, index) => index + 1 }, { title: '资产标签号', dataIndex: 'assetTag', width: 160, render: tagLink }, { title: 'SN序列号', dataIndex: 'sn', width: 150 }, { title: '物资总类', dataIndex: 'materialGroup', width: 110 }, { title: '物资说明', dataIndex: 'materialDesc', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 80, render: count }, { title: '退库类型', dataIndex: 'returnType', width: 110 }, { title: '资产标记', dataIndex: 'assetMark', width: 100 }, { title: '退库人', width: 130, render: () => '206984-何文' }, { title: '资产状态', dataIndex: 'inboundStatus', width: 130 },
+    { title: '行号', width: 64, render: (_, __, index) => index + 1 }, { title: '资产标签号', dataIndex: 'assetTag', width: 160, render: tagLink }, { title: 'SN序列号', dataIndex: 'sn', width: 150 }, { title: '物资总类', dataIndex: 'materialGroup', width: 110 }, { title: '物资说明', dataIndex: 'materialDesc', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 80, render: count }, { title: '退库类型', dataIndex: 'returnType', width: 110 }, { title: '资产标记', dataIndex: 'assetMark', width: 100 }, { title: '退库人', width: 130, render: () => '206984-何文' }, { title: '资产状态', dataIndex: 'inboundStatus', width: 130, render: (value) => <StatusTag value={value || '-'} /> },
   ] : commonColumns;
 
   const payload = () => ({ inboundType, warehouse, remark, quantity: lines.reduce((sum, row) => sum + Number(row.quantity || 0), 0), lines });
@@ -741,7 +755,7 @@ function InboundEditor({ source, pendingRows, onBack, onSave, onExecute, onRetry
         </DetailGrid>
       </Card>
 
-      <Card size="small" title="入库物资" extra={<Space><Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>{editable && !autoGeneratedPurchase && <Button type="primary" icon={<Plus size={14} />} onClick={() => setLineModal(inboundType === '采购接收' ? 'purchase' : 'asset')}>{inboundType === '采购接收' ? '待入库物资' : '添加物资'}</Button>}{editable && lines.length > 0 && <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>}{editable && inboundType === '新增入库' && <><Button icon={<Download size={14} />} onClick={() => messageApi.success('新增入库模板已生成（原型）')}>模板下载</Button><Button icon={<Upload size={14} />} onClick={importSample}>Excel导入</Button><Button icon={<Download size={14} />} onClick={() => messageApi.success(`已导出当前 ${lines.length} 条入库物资（原型）`)}>导出</Button></>}</Space>}>
+      <Card size="small" title="入库物资" extra={<Space><Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>{editable && !autoGeneratedPurchase && <Button type="primary" icon={<Plus size={14} />} onClick={() => setLineModal(inboundType === '采购接收' ? 'purchase' : 'asset')}>{inboundType === '采购接收' ? '待入库物资' : '添加物资'}</Button>}{editable && lines.length > 0 && <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>}{editable && inboundType === '新增入库' && <><Button icon={<Download size={14} />} onClick={() => messageApi.success('新增入库模板已生成')}>模板下载</Button><Button icon={<Upload size={14} />} onClick={importSample}>Excel导入</Button><Button icon={<Download size={14} />} onClick={() => messageApi.success(`已导出当前 ${lines.length} 条入库物资`)}>导出</Button></>}</Space>}>
         <Table rowKey="id" size="small" bordered columns={columns} dataSource={lines} rowSelection={editable ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true } : undefined} scroll={{ x: 'max-content' }} pagination={false} />
       </Card>
 
@@ -874,7 +888,7 @@ export default function InboundPage() {
     { title: '制单人', dataIndex: 'creator', width: 150 },
     { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right', render: count },
     { title: '是否刷卡领用', dataIndex: 'cardClaim', width: 130, render: (value) => <StatusTag value={value} /> },
-    { title: '操作', width: 90, fixed: 'right', render: (_, row) => row.status === '草稿' ? <Button type="link" className="px-0" onClick={() => openEditor(row)}>编辑</Button> : <Button type="link" className="px-0" onClick={() => messageApi.success(`已打开 ${row.documentNo} 打印预览（原型）`)}>打印</Button> },
+    { title: '操作', width: 90, fixed: 'right', render: (_, row) => row.status === '草稿' ? <Button type="link" className="px-0" onClick={() => openEditor(row)}>编辑</Button> : <Button type="link" className="px-0" onClick={() => messageApi.success(`已打开 ${row.documentNo} 打印预览`)}>打印</Button> },
   ];
 
   const deleteRows = () => {
@@ -889,7 +903,7 @@ export default function InboundPage() {
     if (!selectedKeys.length) return messageApi.warning('请先选择需要打印的入库单');
     const selectedRows = rows.filter((row) => selectedKeys.includes(row.id));
     if (selectedRows.some((row) => row.status !== '已完成')) return messageApi.warning('仅已完成入库单允许打印');
-    messageApi.success(`已打开 ${selectedRows.length} 张入库单批量打印预览（原型）`);
+    messageApi.success(`已打开 ${selectedRows.length} 张入库单批量打印预览`);
     return undefined;
   };
 
@@ -919,6 +933,7 @@ export default function InboundPage() {
           </Space>
         )}
       >
+
         <Table rowKey="id" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true }} scroll={{ x: 'max-content' }} pagination={{ current: page, pageSize, showSizeChanger: true, onChange: (nextPage, nextSize) => { setPage(nextPage); if (nextSize !== pageSize) { setPageSize(nextSize); setPage(1); } } }} />
       </Card>
     </Space>
