@@ -1147,6 +1147,11 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
       messageApi.warning('存在未维护转移日期的物资');
       return undefined;
     }
+    const incompleteReceiver = lines.find((line) => !line.inPerson || !line.inCostCenter);
+    if (incompleteReceiver) {
+      messageApi.warning(`资产 ${incompleteReceiver.assetTag || incompleteReceiver.sn} 的转入人或转入成本中心未维护`);
+      return undefined;
+    }
 
     const firstLine = lines[0];
     if (lines.some((line) => line.outPerson !== firstLine.outPerson || line.inPerson !== firstLine.inPerson)) {
