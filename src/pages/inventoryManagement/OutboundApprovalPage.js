@@ -45,13 +45,13 @@ export default function OutboundApprovalPage({ outbound, onApprove, onReject, on
     { title: '数量', dataIndex: 'quantity', width: 85, align: 'center', render: (value) => value || '-' },
     { title: '领用人', dataIndex: 'issuePerson', width: 150, render: (value) => value || '-' },
     { title: '领用日期', dataIndex: 'issueDate', width: 130, render: (value) => value || '-' },
-    { title: '资产状态', dataIndex: 'outboundStatus', width: 130, render: (value) => value || '-' },
+    { title: '资产状态', dataIndex: 'outboundStatus', width: 130, render: (value) => <StatusTag value={value || '-'} /> },
   ];
 
   return (
     <Space direction="vertical" size={16} className="w-full" data-page-view-key="outbound-approval">
       {contextHolder}
-      <Typography.Title level={4} className="!mb-0">物资出库审批</Typography.Title>
+      <Typography.Title level={3} className="!mb-0">物资出库审批</Typography.Title>
 
       <Card size="small" title="出库单信息">
         <DetailGrid columns={3} labelWidth={112}>
