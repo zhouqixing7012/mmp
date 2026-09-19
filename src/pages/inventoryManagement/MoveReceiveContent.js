@@ -129,7 +129,7 @@ function VerificationModal({ open, asset, onCancel, onConfirm }) {
           showCount
           value={desc}
           onChange={(event) => setDesc(event.target.value)}
-          autoSize={{ minRows: 3, maxRows: 5 }}
+          autoSize={{ minRows: 3 }}
           placeholder="请输入验证说明"
         />
       </Space>
