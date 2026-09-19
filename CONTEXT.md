@@ -2,12 +2,17 @@
 
 - `main` 持续校准库存管理原型，历史 ERP 截图和已整理的历史逻辑文档只提取字段与业务规则，视觉统一按 `docs/UI_DESIGN_GUIDELINES.md` V2.1。
 - B 端统一动效已进一步收口：公共弹窗、后台菜单/Tab、侧边栏、顶部下拉、React Router 路由、按钮进入详情/编辑/创建页、查询/重置结果刷新、可点击操作块和表格结果反馈均已形成公共能力，不要求业务页面各自维护动画参数。
+- 弹窗 UI 正在统一收口：普通 Modal 使用统一 12px 圆角、S4 阴影、遮罩和 24px 内容间距；选择弹窗统一基于 Ant Design Modal，QueryBar 按自身实际宽度自动 1 / 2 / 3 列，Table 按列宽自然决定横向滚动。
 - 新页面动效规则已固化到 `AGENTS.md` 和 `docs/UI_MOTION_GUIDELINES.md`，后续生成页面默认按统一动效规范检查。
 - 当前库存重点已推进到 **库存管理 → 出库 / 移库** 的正式库存处理链路，并继续承接资产接收、耗材接收及员工申领/借用/耗材领用的上下游结果。
 - Mock 数据开始统一引用真实基础数据：`src/mock/reference/materialCatalog.js` 提供物料参考记录，`src/mock/reference/warehouseCatalog.js` 收录全部启用仓库；后续物料、仓库及关联属性禁止脱离真实记录自行拼接。
 
 ## 本次完成
 
+- 已统一 Ant Design Modal 的遮罩、12px 圆角、S4 阴影、Header / Body / Footer 间距及 Footer 背景。
+- `SelectModal` 已改为直接基于 Ant Design Modal，不再维护独立弹窗底层；多选 Footer 左侧展示已选数量，右侧固定【取消】【确定】。
+- `QueryBar` 已从浏览器断点改为组件自身宽度判断：<504px 1列、504～767px 2列、≥768px 3列；窄宽度按钮下置，三列宽度按钮放右侧。
+- 高频选择/查询/详情弹窗已清理 1120 / 1180 / 1200 / 1280 / 92vw 等旧宽度写法并收口至 960px；Modal 内表格优先使用 `x: max-content`，按列合理最小宽度自然决定是否滚动。
 - 出库单号始终进入纯详情页；详情页不再展示审批状态、审批记录或采购专员通知内容。
 - 草稿点击“执行出库”进入独立审批处理页；列表点击“单据状态”进入只读审批记录页。
 - 审批处理页采用 Card + DetailGrid + Table，业务字段只读，审批意见仅用于同意/驳回。
@@ -17,8 +22,8 @@
 # 上次停留位置
 
 - 全局动效 Token 保持 100 / 140 / 180 / 220ms 四档，统一缓动，并支持 `prefers-reduced-motion`。
-- `src/components/Modal.js` 和 `src/components/SelectModal.jsx` 已增加淡入 + 轻微上移/缩放的进入动画，以及约 140ms 的真实退出动画；关闭后再卸载 DOM。
-- 业务弹窗宽度已统一增加 **960px 最大上限**（同时不超过视口减32px）；Ant Design Modal、自定义 Modal、SelectModal 均遵守该上限，内容超宽时在弹窗内容区 / Table 内横向滚动。SelectModal 已统一为三列 QueryBar、Ant Design Table、右对齐 Footer。
+- 普通业务弹窗与 `SelectModal` 统一以 Ant Design Modal 为底层；`SelectModal` 已移除独立 Portal / 手写进退场实现，弹窗视觉和动效统一走公共出口。
+- 业务弹窗宽度统一为 400 / 560 / 700～720 / 960px 档位，普通最大 960px（同时不超过视口减32px）；四列表单仅明确场景允许 1000px。选择弹窗 QueryBar 按自身宽度自动 1 / 2 / 3 列，Table 通过列 width + `x: max-content` 自然决定横向滚动。
 - 新增 `src/components/PageMotionBoundary.jsx` 作为整页动效统一出口：初次进入播放 `mmp-page-motion`；同 URL 内部视图切换使用“语义标题变化 + 页面出口第一层主要业务区块替换”双判定，覆盖 list/detail/editor/create/返回等整块视图变化。
 - `PageMotionBoundary` 的结构判定只认 Card / Table / Form / Descriptions 等主要业务区块；表格行更新、输入值变化、局部提示/按钮显隐不会触发整页动画。
 - `PageMotionBoundary` 已排除 Ant Design Modal / Drawer / Popover / Dropdown，以及项目自定义 `mmp-motion-overlay` / `[role="dialog"]` 内部标题和结构，避免打开浮层时误触发整页页面动效。
