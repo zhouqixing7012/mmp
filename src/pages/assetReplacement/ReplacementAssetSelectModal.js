@@ -55,7 +55,7 @@ export default function ReplacementAssetSelectModal({ open, oldAsset, warehouse,
     <Modal
       title="选择资产"
       open={open}
-      width={1280}
+      width={960}
       okText="确定"
       cancelText="取消"
       okButtonProps={{ disabled: !selectedKey }}
@@ -85,7 +85,7 @@ export default function ReplacementAssetSelectModal({ open, oldAsset, warehouse,
         rowSelection={{ type: 'radio', selectedRowKeys: selectedKey ? [selectedKey] : [], onChange: (keys) => setSelectedKey(keys[0]) }}
         onRow={(record) => ({ onClick: () => setSelectedKey(record.id) })}
         pagination={{ pageSize: 6, showTotal: (total) => `共 ${total} 条` }}
-        scroll={{ x: 1900, y: 380 }}
+        scroll={{ x: 'max-content', y: 380 }}
         size="small"
         bordered
       />
