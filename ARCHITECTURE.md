@@ -23,7 +23,8 @@
 | `src/App.js` | 应用路由入口；普通路由统一通过 `PageMotionBoundary` 处理路由和同 URL 内语义视图切换，并挂载原型标注层。 |
 | `src/index.css` | 全局样式以及统一 B 端动效 Token、弹窗/页面/菜单/路由/查询结果/表格反馈样式。 |
 | `src/components/` | QueryBar、DetailGrid、SelectModal、StatusTag、PageMotionBoundary、PageViewMotion 等公共组件。 |
-| `src/components/QueryBar.jsx` | 查询条件公共容器；除统一布局外，自动识别“查询 / 重置”动作，并给同一作用域内后续首个 Table/List（或 `data-mmp-query-result`）触发短结果刷新反馈。 |
+| `src/components/SelectModal.jsx` | 通用列表选择弹窗；基于 Ant Design Modal，统一查询区、Table 单选/多选、`max-content` 横向滚动和 Footer。 |
+| `src/components/QueryBar.jsx` | 查询条件公共容器；按自身实际可用宽度自动切换 1 / 2 / 3 列，并自动识别“查询 / 重置”动作，给同一作用域内后续首个 Table/List（或 `data-mmp-query-result`）触发短结果刷新反馈。 |
 | `src/components/PageMotionBoundary.jsx` | 页面动效统一出口：初次进入播放页面动效；根据页面标题/主要 Card 标题变化，或页面出口第一层 Card/Table/Form/Descriptions 等主要业务区块替换，自动识别同 URL 内列表/详情/编辑/创建切换；支持 `data-page-view-key` 显式视图标识，并通过 `data-mmp-page-motion-boundary` 为查询等局部交互提供稳定页面作用域。 |
 | `src/components/PageViewMotion.jsx` | 自动边界仍无法区分时的显式兜底容器。 |
 | `src/hooks/` | 可复用交互 Hook；当前包含表格新增/修改后的短暂行高亮。 |
@@ -163,7 +164,7 @@ localStorage
 ### 统一动效
 
 - 动效参数集中在 `src/index.css`，统一使用 100 / 140 / 180 / 220ms 四档时长，业务页面不得自定义另一套时长和缓动。
-- `src/components/Modal.js` 与 `src/components/SelectModal.jsx` 通过延迟卸载完成进入/退出动画，关闭时先播放约 140ms 退出再移除 DOM。
+- 普通业务弹窗与 `SelectModal` 统一使用 Ant Design Modal 底层；遮罩、圆角、S4 阴影及 Header / Body / Footer 间距由 `src/index.css` 统一控制，不再为 SelectModal 维护独立弹窗动画底层。
 - `src/components/PageMotionBoundary.jsx` 是整页动效统一出口：初次进入播放 `mmp-page-motion`；页面标题/主要 Card 标题变化会触发重新进入，标题相同时也会识别页面出口第一层包含 Card/Table/Form/Descriptions 的主要业务区块替换。表格行、输入值和局部提示/按钮变化不触发整页动画。
 - `PageMotionBoundary` 明确排除 Modal/Drawer/Popover/Dropdown 及自定义 overlay 内部标题和结构，避免打开浮层时误触发整页动画。
 - `/yewurules` 由 `AdminContent` 按 `activeMenu / activeSubMenu / activeTab` 组成的页面 scope 重新挂载 `PageMotionBoundary`，同时覆盖菜单级切换和菜单内部本地 view 切换。
