@@ -28,6 +28,8 @@ export default function SelectModal({
   rowKey = 'id',
   multiple = false,
   width = 700,
+  // 默认仅按列宽决定横向滚动；需要限制弹窗内表格高度时由业务显式传入 y。
+  scroll,
 }) {
   const buildInitialSearchValues = () => {
     const init = {};
@@ -188,7 +190,7 @@ export default function SelectModal({
           columns={columns}
           dataSource={filteredData}
           rowSelection={rowSelection}
-          scroll={{ x: 'max-content', y: 360 }}
+          scroll={{ x: 'max-content', ...(scroll || {}) }}
           pagination={{
             defaultPageSize: 10,
             showSizeChanger: true,
