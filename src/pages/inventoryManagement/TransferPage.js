@@ -613,8 +613,8 @@ function TransferImportModal({ open, company, sourceAssets, existingLines, onCan
 
   const importRows = () => {
     if (!validLines.length || errorRows.length) return;
-    onImported(validLines);
-    reset();
+    const accepted = onImported(validLines);
+    if (accepted) reset();
   };
 
   return (
@@ -1099,7 +1099,9 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
     if (saved) {
       setImportOpen(false);
       messageApi.success(`已导入 ${importedLines.length} 条转移明细，资产已暂时锁定`);
+      return true;
     }
+    return false;
   };
 
   const saveLine = (line, keepOpen) => {
