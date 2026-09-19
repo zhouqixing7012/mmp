@@ -21,3 +21,6 @@
 - 全量测试执行结果：42 个测试套件通过、4 个失败，6 个测试失败；失败来自既有合约号码时间断言、标注面板既有断言/临时 Ant Design 依赖版本差异，以及临时 React Router 依赖版本差异，移动端原型测试仍为 5/5。
 - `DISABLE_ESLINT_PLUGIN=true npm run build` 已通过，`git diff --check` 已通过，package-lock 未被修改。
 - 已完成最终代码复核并提交：`dce05c4 feat: add asset inventory mobile prototype`；当前分支工作区干净，未推送远端。
+- 重新接入远端最新提交后发现 `OutboundApprovalHistoryPage.js` 第 55 行的 Card JSX 缺少闭合 `>`，导致构建在下一行 Table 报语法错误；已先用回归测试复现，再补齐闭合符号。
+- 出库审批记录页回归测试和移动端原型测试共 6/6 通过，`DISABLE_ESLINT_PLUGIN=true npm run build` 通过，`git diff --check` 通过。
+- 当前进入修复提交和推送阶段。

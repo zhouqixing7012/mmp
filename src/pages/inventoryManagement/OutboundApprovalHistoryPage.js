@@ -52,7 +52,7 @@ export default function OutboundApprovalHistoryPage({ outbound, onBack }) {
         />
       </Card>
 
-      <Card size="small" title="出库物资" extra={<Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>}
+      <Card size="small" title="出库物资" extra={<Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>}>
         <Table
           rowKey={(record, index) => record.id || record.assetTag || `line-${index}`}
           size="small"
