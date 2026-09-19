@@ -197,7 +197,7 @@ export default function FrontDeskAssetClaim() {
         </Space>
       </Form>
 
-      <Modal title="选择资产" open={assetOpen} width={1180} footer={null} onCancel={() => setAssetOpen(false)}>
+      <Modal title="选择资产" open={assetOpen} width={960} footer={null} onCancel={() => setAssetOpen(false)}>
         <QueryBar
           onQuery={() => setAppliedQuery(query)}
           onReset={() => {
