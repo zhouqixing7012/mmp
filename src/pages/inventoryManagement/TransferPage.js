@@ -467,7 +467,7 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
   };
 
   return (
-    <Modal open={open} title="添加转移物资" width={960} rootClassName="mmp-transfer-item-modal" onCancel={onCancel} destroyOnHidden footer={[
+    <Modal open={open && !selectorType} title="添加转移物资" width={960} rootClassName="mmp-transfer-item-modal" onCancel={onCancel} destroyOnHidden footer={[
       <Button key="continue" type="primary" onClick={() => submit(true)}>添加并继续</Button>,
       <Button key="close" type="primary" onClick={() => submit(false)}>添加并关闭</Button>,
       <Button key="cancel" onClick={onCancel}>取消</Button>,
