@@ -76,20 +76,32 @@ export default function OutboundApprovalPage({ outbound, onApprove, onReject, on
         />
       </Card>
 
-      <Card size="small" title="当前审批">
+      <Card size="small" title="审批信息">
         <DetailGrid columns={3} labelWidth={112}>
           <DetailItem label="审批路线">{source.approvalRoute || '-'}</DetailItem>
           <DetailItem label="当前节点">{currentStep?.name || (source.status === '已完成' ? '审批完成' : '-')}</DetailItem>
           <DetailItem label="当前处理人">{currentStep?.approver || '-'}</DetailItem>
           <DetailItem label="发起人">{source.approvalInitiator || source.creator || '-'}</DetailItem>
           <DetailItem label="发起时间">{source.approvalStartedAt || '-'}</DetailItem>
-          <DetailItem label="审批意见" span={3}>
-            {canOperate
-              ? <TextArea value={opinion} onChange={(event) => setOpinion(event.target.value)} autoSize={{ minRows: 2, maxRows: 4 }} placeholder="驳回时必填；同意时可选填" />
-              : history[history.length - 1]?.opinion || '-'}
-          </DetailItem>
+          <DetailItem label="审批状态"><StatusTag value={source.status || '-'} /></DetailItem>
         </DetailGrid>
       </Card>
+
+      {canOperate && (
+        <Card size="small" title="审批操作">
+          <TextArea
+            rows={3}
+            value={opinion}
+            placeholder="驳回时必填；同意时可选填"
+            onChange={(event) => setOpinion(event.target.value)}
+          />
+          <div className="mt-4 flex justify-center gap-3">
+            <Button type="primary" onClick={approve}>同意</Button>
+            <Button danger onClick={reject}>驳回</Button>
+            <Button onClick={onBack}>返回</Button>
+          </div>
+        </Card>
+      )}
 
       {history.length > 0 && (
         <Card size="small" title="历史审批记录" extra={<Typography.Text type="secondary">共 {history.length} 条</Typography.Text>}>
