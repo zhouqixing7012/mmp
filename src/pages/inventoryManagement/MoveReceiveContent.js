@@ -354,7 +354,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
     { title: '板块', dataIndex: 'plate', width: 110 },
     { title: '资产标记', dataIndex: 'assetMark', width: 120, render: (value) => value || '-' },
     { title: '启用日期', dataIndex: 'enabledDate', width: 120, render: (value, asset) => value || asset.snapshot?.enabledDate || '-' },
-    { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value, asset) => value || asset.snapshot?.assetStatus || '-' },
+    { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value, asset) => <StatusTag value={value || asset.snapshot?.assetStatus || '-'} /> },
     { title: '验证说明', dataIndex: 'verificationDesc', width: 180, render: (value) => value || '-' },
     {
       title: '资产验证',
