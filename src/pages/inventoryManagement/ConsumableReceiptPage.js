@@ -1259,7 +1259,7 @@ export default function ConsumableReceiptPage() {
         <ReceiptInfoCard receipt={activeReceipt} />
         {isDraft && (
           <Card size="small">
-            <DetailGrid columns={4} labelWidth={96}>
+            <DetailGrid columns={3} labelWidth={96}>
               <DetailItem label="扫描光标" span={4}>
               <div className="flex items-center gap-2">
                 <Input
