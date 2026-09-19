@@ -17,6 +17,7 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import OutboundApprovalPage from './OutboundApprovalPage';
+import OutboundApprovalHistoryPage from './OutboundApprovalHistoryPage';
 import StatusTag from '../../components/StatusTag';
 
 const { TextArea } = Input;
@@ -520,7 +521,7 @@ function OutboundMaterialDetailModal({ open, row, outboundType, onCancel }) {
   );
 }
 
-function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, onReject, onRetryNotice }) {
+function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, onReject }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const outboundType = source?.outboundType || '领用出库';
   const [warehouse, setWarehouse] = useState(source?.warehouse || WAREHOUSES[0]);
@@ -711,7 +712,6 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
           <EditorField label="制单时间"><Readonly>{createdDate}</Readonly></EditorField>
           <EditorField label="是否刷卡领用">{editable ? <Select className="w-full" value={cardClaim} options={['是', '否'].map((v) => ({ label: v, value: v }))} onChange={setCardClaim} /> : <Readonly>{cardClaim}</Readonly>}</EditorField>
           <EditorField label="当前仓库">{editable ? <Select className="w-full" value={warehouse} options={WAREHOUSES.filter((v) => !v.includes('耗材库')).map((v) => ({ label: v, value: v }))} onChange={changeWarehouse} /> : <Readonly>{warehouse}</Readonly>}</EditorField>
-          {source?.purchaseNoticeStatus && <EditorField label="采购专员通知状态"><StatusTag value={source.purchaseNoticeStatus} /></EditorField>}
           <EditorField label="备注" span={3}>{editable ? <TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={remark} onChange={(e) => setRemark(e.target.value)} /> : <Readonly>{remark}</Readonly>}</EditorField>
         </DetailGrid>
       </Card>
@@ -726,7 +726,6 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
         {editable && <Button onClick={() => onSave(payload())}>保存草稿</Button>}
         {editable && <Button type="primary" onClick={startApproval}>执行出库</Button>}
         {!editable && <Button type="primary" icon={<Printer size={14} />} onClick={() => messageApi.success('出库单打印预览已打开（原型）')}>打印</Button>}
-        {!editable && source?.purchaseNoticeStatus === '失败' && <Button onClick={onRetryNotice}>重新发送采购通知</Button>}
         <Button onClick={onBack}>返回</Button>
       </div>}
       {approvalPending && <div className="flex justify-center"><Button onClick={onBack}>返回</Button></div>}
@@ -782,9 +781,9 @@ export default function OutboundPage() {
     setView('editor');
   };
 
-  const openApproval = (row) => {
+  const openApprovalHistory = (row) => {
     setActiveRow(row);
-    setView('approval');
+    setView('approvalHistory');
   };
 
   const buildRow = (payload, status) => {
@@ -883,13 +882,14 @@ export default function OutboundPage() {
     messageApi.warning('审批已驳回，出库单恢复为草稿，可修改后重新提交');
   };
 
-  const retryNotice = () => {
-    if (!activeRow || activeRow.purchaseNoticeStatus !== '失败') return;
-    const updated = { ...activeRow, purchaseNoticeStatus: '成功' };
-    setRows((current) => current.map((row) => row.id === activeRow.id ? updated : row));
-    setActiveRow(updated);
-    messageApi.success('采购专员服务号通知发送成功');
-  };
+  if (view === 'approvalHistory') {
+    return (
+      <OutboundApprovalHistoryPage
+        outbound={activeRow}
+        onBack={() => { setView('list'); setActiveRow(null); }}
+      />
+    );
+  }
 
   if (view === 'approval') {
     return (
@@ -903,7 +903,7 @@ export default function OutboundPage() {
   }
 
   if (view === 'editor') {
-    return <OutboundEditor source={activeRow} onBack={() => { setView('list'); setActiveRow(null); }} onSave={saveDraft} onStartApproval={startApproval} onApprove={approveCurrent} onReject={rejectCurrent} onRetryNotice={retryNotice} />;
+    return <OutboundEditor source={activeRow} onBack={() => { setView('list'); setActiveRow(null); }} onSave={saveDraft} onStartApproval={startApproval} onApprove={approveCurrent} onReject={rejectCurrent} />;
   }
 
   const columns = [
@@ -915,7 +915,7 @@ export default function OutboundPage() {
       dataIndex: 'status',
       width: 120,
       render: (value, row) => (
-        <Button type="link" className="px-0" onClick={() => openApproval(row)}>
+        <Button type="link" className="px-0" onClick={() => openApprovalHistory(row)}>
           <StatusTag value={value} />
         </Button>
       ),
