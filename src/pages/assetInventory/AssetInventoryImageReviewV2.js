@@ -330,7 +330,7 @@ function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose }) {
   return (
     <Modal
       open={open}
-      width={1160}
+      width={960}
       footer={null}
       title={(
         <div className="flex items-center gap-3">
@@ -593,7 +593,7 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
         columns={columns}
         dataSource={filteredRows}
         rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, getCheckboxProps: (record) => ({ disabled: record.reviewStatus !== '待审核' }) }}
-        scroll={{ x: 1300 }}
+        scroll={{ x: 'max-content' }}
         pagination={{ pageSize: 5, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
       />
     </Card>
