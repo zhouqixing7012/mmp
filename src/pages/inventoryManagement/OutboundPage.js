@@ -436,7 +436,7 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, existingLines, 
           { title: '板块', dataIndex: 'plate', width: 100 },
           { title: '资产大类', dataIndex: 'assetClass', width: 120 },
           { title: '资产小类', dataIndex: 'assetSubClass', width: 130 },
-          { title: '当前状态', dataIndex: 'assetStatus', width: 130 },
+          { title: '当前状态', dataIndex: 'assetStatus', width: 130, render: (value) => <StatusTag value={value || '-'} /> },
           { title: '当前仓库', dataIndex: 'warehouse', width: 230 },
           { title: '当前责任人', dataIndex: 'responsiblePerson', width: 140 },
         ]}
