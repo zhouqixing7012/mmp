@@ -12,10 +12,11 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
-import { Download, FileText, Plus, Printer, Search, Trash2, Upload } from 'lucide-react';
+import { Download, Plus, Printer, Search, Trash2, Upload } from 'lucide-react';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
+import OutboundApprovalPage from './OutboundApprovalPage';
 import StatusTag from '../../components/StatusTag';
 
 const { TextArea } = Input;
@@ -519,176 +520,6 @@ function OutboundMaterialDetailModal({ open, row, outboundType, onCancel }) {
   );
 }
 
-function displayWarehouseName(value) {
-  return String(value || '').replace(/^[^.\-]+[-.]/, '');
-}
-
-function formatApprovalLocation(line) {
-  const parts = [line?.city, line?.building, line?.floor || line?.room || '缺省'].filter(Boolean);
-  return parts.join('.');
-}
-
-function formatApprovalDate(value) {
-  if (!value) return '-';
-  const parsed = dayjs(value);
-  return parsed.isValid() ? parsed.format('YYYY.MM.DD') : value;
-}
-
-function ManualOutboundApprovalView({ source, onApprove, onReject, onBack }) {
-  const lines = source?.lines || [];
-  const firstLine = lines[0] || {};
-  const totalQty = lines.reduce((sum, row) => sum + Number(row.quantity || 0), 0);
-  const totalAmount = lines.reduce((sum, row) => sum + Number(row.originalValue || 0), 0);
-  const [opinion, setOpinion] = useState('');
-  const [messageApi, contextHolder] = antdMessage.useMessage();
-  const currentStep = source?.approvalSteps?.[source.currentApprovalIndex || 0];
-  const history = source?.approvalHistory || [];
-  const canOperate = source?.status === '审批中' && typeof onApprove === 'function';
-
-  const approvalColumns = [
-    { title: '序号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
-    { title: '审批节点', dataIndex: 'node', width: 220 },
-    { title: '申请人/审批人', dataIndex: 'handler', width: 180 },
-    { title: '审批状态', dataIndex: 'action', width: 120, align: 'center', render: (value) => <StatusTag value={value} type="business" /> },
-    { title: '审批时间', dataIndex: 'time', width: 180 },
-    { title: '审批意见', dataIndex: 'opinion', render: (value) => value || '-' },
-  ];
-
-  const approve = () => {
-    onApprove(opinion.trim() || '同意');
-    setOpinion('');
-  };
-
-  const reject = () => {
-    if (!opinion.trim()) {
-      messageApi.warning('驳回意见不能为空');
-      return;
-    }
-    onReject?.(opinion.trim());
-    setOpinion('');
-  };
-
-  return (
-    <>
-      {contextHolder}
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white" data-page-view-key="manual-outbound-approval">
-        <div className="bg-[#145CFF] px-5 py-3 text-xl font-semibold text-white">物资出库审批</div>
-        <div className="px-8 pb-8 pt-4">
-          <div className="mb-6 flex justify-end">
-            <Typography.Text strong>出库单号：{source?.documentNo || '-'}</Typography.Text>
-          </div>
-
-          <section className="mb-8">
-            <div className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-3 text-lg font-semibold text-[#145CFF]">
-              <FileText size={22} />
-              <span>基本信息</span>
-            </div>
-            <DetailGrid columns={2} labelWidth={96}>
-              <EditorField label="制单人"><Readonly>{source?.creator}</Readonly></EditorField>
-              <EditorField label="制单时间"><Readonly>{formatApprovalDate(source?.createdDate)}</Readonly></EditorField>
-              <EditorField label="使用人"><Readonly>{firstLine.issuePerson || firstLine.person}</Readonly></EditorField>
-              <EditorField label="使用部门"><Readonly>{firstLine.department}</Readonly></EditorField>
-              <EditorField label="仓库名称"><Readonly>{displayWarehouseName(source?.warehouse)}</Readonly></EditorField>
-              <EditorField label="地点位置"><Readonly>{formatApprovalLocation(firstLine)}</Readonly></EditorField>
-              <EditorField label="PR单号"><Readonly>{firstLine.prNo || source?.prNo}</Readonly></EditorField>
-              <EditorField label="PO单号"><Readonly>{firstLine.poNo || source?.poNo}</Readonly></EditorField>
-              <EditorField label="资产大类"><Readonly>{firstLine.assetClass}</Readonly></EditorField>
-            </DetailGrid>
-          </section>
-
-          <section className="mb-8">
-            <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-3">
-              <div className="flex items-center gap-2 text-lg font-semibold text-[#145CFF]">
-                <FileText size={22} />
-                <span>审批信息</span>
-              </div>
-              <StatusTag value={source?.status || '待审批'} type="business" />
-            </div>
-            <DetailGrid columns={3} labelWidth={96}>
-              <EditorField label="审批路线"><Readonly>{source?.approvalRoute || '-'}</Readonly></EditorField>
-              <EditorField label="当前节点"><Readonly>{currentStep?.name || (source?.status === '已完成' ? '审批完成' : '-')}</Readonly></EditorField>
-              <EditorField label="当前处理人"><Readonly>{currentStep?.approver || '-'}</Readonly></EditorField>
-              <EditorField label="发起人"><Readonly>{source?.approvalInitiator || source?.creator || '-'}</Readonly></EditorField>
-              <EditorField label="发起时间"><Readonly>{source?.approvalStartedAt || '-'}</Readonly></EditorField>
-              <EditorField label="审批意见" span={3}>
-                {canOperate
-                  ? <TextArea value={opinion} onChange={(event) => setOpinion(event.target.value)} autoSize={{ minRows: 2, maxRows: 4 }} placeholder="驳回时必填；同意时可选填" />
-                  : <Readonly>{history[history.length - 1]?.opinion || '-'}</Readonly>}
-              </EditorField>
-            </DetailGrid>
-          </section>
-
-          <section>
-            <div className="mb-4 flex items-end justify-between border-b border-slate-200 pb-3">
-              <div className="flex items-center gap-2 text-lg font-semibold text-[#145CFF]">
-                <FileText size={22} />
-                <span>出库资产信息</span>
-              </div>
-              <Space size={24}>
-                <Typography.Text>总数量：<Typography.Text strong className="text-[#145CFF]">{count(totalQty)}</Typography.Text></Typography.Text>
-                <Typography.Text>总金额：<Typography.Text strong className="text-[#145CFF]">{money(totalAmount)}</Typography.Text></Typography.Text>
-              </Space>
-            </div>
-            <Table
-              rowKey={(row) => row.id || row.assetTag}
-              size="small"
-              bordered
-              columns={[
-                { title: '序号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
-                { title: '物资说明', dataIndex: 'materialDesc', width: 330 },
-                { title: '资产标签号', dataIndex: 'assetTag', width: 150 },
-                { title: 'SN号', dataIndex: 'sn', width: 170, render: (value) => value || '-' },
-                { title: '数量', dataIndex: 'quantity', width: 85, align: 'center', render: count },
-                {
-                  title: '价值',
-                  children: [
-                    {
-                      title: '单价',
-                      width: 110,
-                      align: 'right',
-                      render: (_, row) => money(Number(row.originalValue || 0) / Math.max(1, Number(row.quantity || 1))),
-                    },
-                    { title: '原值', dataIndex: 'originalValue', width: 115, align: 'right', render: money },
-                  ],
-                },
-                {
-                  title: (
-                    <div className="leading-tight">
-                      <div>备注</div>
-                      <Typography.Text type="secondary" className="text-xs">（业务线或新资产地点或启用日期）</Typography.Text>
-                    </div>
-                  ),
-                  key: 'remark',
-                  width: 220,
-                  render: (_, row) => row.issueDate || row.businessLine || formatApprovalLocation(row) || '-',
-                },
-              ]}
-              dataSource={lines}
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-            />
-          </section>
-
-          {history.length > 0 && (
-            <section className="mt-8">
-              <div className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-3 text-lg font-semibold text-[#145CFF]">
-                <FileText size={22} />
-                <span>审批记录</span>
-              </div>
-              <Table rowKey={(_, index) => index} size="small" bordered pagination={false} dataSource={history} columns={approvalColumns} />
-            </section>
-          )}
-
-          <div className="mt-10 flex justify-center gap-3 border-t border-slate-200 pt-6">
-            {canOperate && <Button type="primary" size="large" className="min-w-32" onClick={approve}>同意</Button>}
-            {canOperate && <Button danger size="large" className="min-w-32" onClick={reject}>驳回</Button>}
-            {onBack && <Button size="large" onClick={onBack}>返回</Button>}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
 function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, onReject, onRetryNotice }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const outboundType = source?.outboundType || '领用出库';
@@ -977,7 +808,7 @@ export function ManualOutboundApprovalDemoPage() {
   return (
     <>
       {contextHolder}
-      <ManualOutboundApprovalView
+      <OutboundApprovalPage
         source={demoSource}
         onApprove={() => messageApi.success('审批已同意（原型）')}
         onReject={(opinion) => messageApi.warning(`已驳回（原型）：${opinion}`)}
@@ -1128,7 +959,7 @@ export default function OutboundPage() {
 
   if (view === 'approval') {
     return (
-      <ManualOutboundApprovalView
+      <OutboundApprovalPage
         source={activeRow}
         onApprove={approveCurrent}
         onReject={rejectCurrent}
