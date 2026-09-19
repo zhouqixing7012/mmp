@@ -481,7 +481,9 @@ Dialog 是在当前页面打开的浮层，用于承载相关操作。
 
 标准：
 
-- 内边距：24px
+- 水平内边距：20px
+- Header / Footer 垂直内边距：12px
+- Body 垂直内边距：16px
 - Border：Gray-4
 - 圆角：12px
 - 阴影：S4
