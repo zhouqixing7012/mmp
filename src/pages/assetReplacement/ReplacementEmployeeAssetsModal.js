@@ -31,7 +31,7 @@ export default function ReplacementEmployeeAssetsModal({ open, applicant, onCanc
   ];
 
   return (
-    <Modal title="员工名下资产明细" open={open} width={1200} footer={null} onCancel={onCancel} destroyOnHidden>
+    <Modal title="员工名下资产明细" open={open} width={960} footer={null} onCancel={onCancel} destroyOnHidden>
       <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
         {applicant?.name || '申请人'}同学，名下共有资产 <b>{assets.length}</b> 条，其中借用资产 <b>0</b> 条。
       </div>
