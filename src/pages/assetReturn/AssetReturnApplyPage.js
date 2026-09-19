@@ -151,7 +151,7 @@ export default function AssetReturnApplyPage() {
           <QueryItem label="资产用途"><Select value={query.purpose || undefined} allowClear options={[...new Set(assets.map((item) => item.purpose))].map((value) => ({ label: value, value }))} onChange={(value) => setQuery({ ...query, purpose: value || '' })} /></QueryItem>
           <QueryItem label="是否锁定"><Select value={query.locked || undefined} allowClear options={['是', '否'].map((value) => ({ label: value, value }))} onChange={(value) => setQuery({ ...query, locked: value || '' })} /></QueryItem>
         </QueryBar>
-        <Table rowKey="id" columns={assetColumns.filter((column) => column.title !== '操作')} dataSource={selectableAssets} rowSelection={{ selectedRowKeys: modalSelected, onChange: setModalSelected, getCheckboxProps: (record) => ({ disabled: !getAssetReturnEligibility(record).allowed }) }} pagination={{ pageSize: 5 }} size="small" bordered scroll={{ x: 1200 }} />
+        <Table rowKey="id" columns={assetColumns.filter((column) => column.title !== '操作')} dataSource={selectableAssets} rowSelection={{ selectedRowKeys: modalSelected, onChange: setModalSelected, getCheckboxProps: (record) => ({ disabled: !getAssetReturnEligibility(record).allowed }) }} pagination={{ pageSize: 5 }} size="small" bordered scroll={{ x: 'max-content' }} />
       </Modal>
     </div>
   );
