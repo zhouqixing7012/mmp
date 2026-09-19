@@ -1035,7 +1035,7 @@ export default function ConsumableReceiptPage() {
         </div>
 
         <Modal
-          open={Boolean(editItem && editDraft)}
+          open={Boolean(editItem && editDraft && !Array.isArray(partNamesDraft) && !selectorType)}
           title="编辑接收信息"
           width={720}
           okText="保存"
@@ -1097,7 +1097,7 @@ export default function ConsumableReceiptPage() {
         </Modal>
 
         <Modal
-          open={Array.isArray(partNamesDraft)}
+          open={Array.isArray(partNamesDraft) && !selectorType}
           title="维护部件说明"
           width={620}
           okText="确定"
