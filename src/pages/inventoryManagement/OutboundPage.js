@@ -779,9 +779,9 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
       <OutboundMaterialDetailModal open={Boolean(materialDetail)} row={materialDetail} outboundType={outboundType} onCancel={() => setMaterialDetail(null)} />
       <Modal open={importOpen} title="Excel导入校验" onCancel={() => setImportOpen(false)} footer={[
         <Button key="cancel" onClick={() => setImportOpen(false)}>取消</Button>,
-        <Button key="error" onClick={() => Modal.error({ title: 'Excel导入校验失败', content: '第2行｜资产标签号｜资产不属于当前仓库；第4行｜资产状态｜当前资产不可出库。' })}>查看错误示例</Button>,
+        <Button key="error" onClick={() => Modal.error({ title: 'Excel导入校验失败', content: '第2行｜资产标签号｜资产不属于当前仓库；第4行｜资产状态｜当前资产不可出库。' })}>查看错误结果</Button>,
         <Button key="ok" type="primary" onClick={importSample}>确认导入</Button>,
-      ]}><Typography.Paragraph>模板字段会校验当前仓库、资产标签号、资产状态、业务锁定和必填领用字段。请选择演示结果。</Typography.Paragraph></Modal>
+      ]}><Typography.Paragraph>模板字段会校验当前仓库、资产标签号、资产状态、业务锁定和必填领用字段。</Typography.Paragraph></Modal>
     </Space>
   );
 }
