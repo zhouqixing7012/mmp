@@ -42,7 +42,7 @@ const EMPTY_RECEIPT_FILTERS = {
 
 const round2 = (value) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
 const money = (value) => Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const count = (value) => Number(value || 0).toLocaleString('zh-CN');
+const count = (value) => Number(value || 0);
 const includesText = (value, query) => !query || String(value || '').toLowerCase().includes(String(query).trim().toLowerCase());
 const remainingQty = (item) => Math.max(0, Number(item.purchaseQty || 0) - Number(item.receivedQty || 0) - Number(item.draftQty || 0));
 const selectorData = (values) => [...new Set(values.filter(Boolean))].map((name, index) => ({ id: index + 1, name }));
