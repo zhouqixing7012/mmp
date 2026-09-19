@@ -137,7 +137,7 @@ export default function AssetReturnApplyPage() {
         </div>
       </Space>
 
-      <Modal title="选择退库资产" open={modalOpen} width={1200} okText="确定" cancelText="取消" onCancel={() => setModalOpen(false)} onOk={() => {
+      <Modal title="选择退库资产" open={modalOpen} width={960} okText="确定" cancelText="取消" onCancel={() => setModalOpen(false)} onOk={() => {
         const invalid = modalSelected.map((id) => assets.find((item) => item.id === id)).find((item) => !getAssetReturnEligibility(item).allowed);
         if (invalid) { messageApi.error(`资产（资产标签号：${invalid.assetTag}）${getAssetReturnEligibility(invalid).reason}`); return; }
         setSelectedIds((ids) => [...new Set([...ids, ...modalSelected])]);
