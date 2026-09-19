@@ -758,7 +758,7 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
     { title: 'SN', dataIndex: 'sn', width: 150 },
     { title: '物资说明', dataIndex: 'materialDesc', width: 220 },
     { title: '物资总类', dataIndex: 'materialGroup', width: 130 },
-    { title: '数量', dataIndex: 'quantity', width: 90, align: 'right', render: (value) => Number(value || 0).toLocaleString('zh-CN') },
+    { title: '数量', dataIndex: 'quantity', width: 90, align: 'right', render: (value) => Number(value || 0) },
     { title: '公司', dataIndex: 'company', width: 160 },
     { title: '板块', dataIndex: 'plate', width: 120 },
     { title: '资产标记', dataIndex: 'assetMark', width: 120 },
@@ -1040,7 +1040,7 @@ export default function MovePage() {
     { title: '移入仓库', dataIndex: 'toWarehouse', width: 320 },
     { title: '制单日期', dataIndex: 'createdDate', width: 130 },
     { title: '制单人', dataIndex: 'creator', width: 170 },
-    { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right', render: (value) => Number(value || 0).toLocaleString('zh-CN') },
+    { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right', render: (value) => Number(value || 0) },
   ];
 
   return (
