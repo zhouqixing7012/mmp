@@ -141,8 +141,14 @@ function createTransferImportWorkbook(rows = [TRANSFER_IMPORT_HEADERS]) {
   const workbook = XLSX.utils.book_new();
   const templateSheet = XLSX.utils.aoa_to_sheet(rows);
   const helperRows = [
-    ['用途', '楼层', 'Building'],
-    ...PURPOSE_OPTIONS.map((purpose, index) => [purpose, TRANSFER_IMPORT_FLOORS[index] || '', TRANSFER_IMPORT_BUILDINGS.北京市[0]]),
+    ['', '', '用途', '', 'Building / Floor'],
+    ...Array.from({ length: 46 }, (_, index) => {
+      const row = ['', '', PURPOSE_OPTIONS[index] || '', '', ''];
+      if (index < 3) row[4] = `B${index + 1}`;
+      else if (index < 45) row[4] = TRANSFER_IMPORT_FLOORS[index - 3];
+      else row[4] = '缺省';
+      return row;
+    }),
   ];
   XLSX.utils.book_append_sheet(workbook, templateSheet, '资产转移导入模板');
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(helperRows), 'Sheet3');
