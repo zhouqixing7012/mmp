@@ -27,3 +27,4 @@
 - 复现默认 `npm run build` 时确认之前的 `defaultMeta` 来自临时无锁安装造成的 Ajv 8/ESLint 8 不匹配；按锁文件干净安装又发现 `cfb@1.2.2` 在 npm 官方源校验失败。
 - 已在 `package.json` 增加 `cfb: 1.2.1` 的 override，并用 npm 10 同步 `package-lock.json`；干净安装成功，默认 `npm run build` 通过，仅保留项目原有 ESLint 警告。
 - 移动端原型和出库审批记录页关键测试共 6/6 通过，`git diff --check` 通过。
+- 已读取 GitHub 远端分支状态：`626a2d6` 的 Vercel 状态为 `Deployment was blocked`；更早提交已返回 `Deployment rate limited — retry in 24 hours`。该失败发生在 Vercel 部署前，不能通过继续修改 React 代码解除，需要等待额度恢复或在 Vercel 项目侧处理。
