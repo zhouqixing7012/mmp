@@ -133,7 +133,7 @@ npm run build
 npm run deploy
 ```
 
-GitHub 与 Vercel 已关联；分支提交后由 Vercel 生成对应部署。
+GitHub Pages 已配置为官方 GitHub Actions 工作流；向 `feature/asset-inventory` 推送后会自动构建并发布预览，预览地址为 `https://zhouqixing7012.github.io/mmp/`。Vercel 仍保留原有连接，但不作为本分支预览的唯一入口。
 
 ## 测试
 
@@ -204,3 +204,4 @@ npm test
 - 2026-09-12 查询/重置交互继续复用 QueryBar：公共组件自动识别“查询 / 重置”，只给对应结果 Table/List 做约 140ms 淡入 + 2px 轻位移，不重播整页动画、不制造假 Loading、未新增运行时依赖。
 - 2026-09-19 资产盘点移动端原型继续复用 React、Ant Design 和 Lucide，不新增运行时依赖；本轮只增加菜单入口、独立原型组件、样式和组件测试，后端、真实扫码和真实相机不在本轮实现。
 - 2026-09-19 为保证干净安装和默认构建稳定，锁定 `cfb` 到 `1.2.1`；`cfb@1.2.2` 的 npm 官方 tarball 校验异常，导致安装阶段失败。
+- 2026-09-19 Vercel Hobby 构建额度受限后，改用 GitHub Pages 官方 Actions 工作流提供分支预览；仓库已按用户确认改为公开，Pages 站点使用 `build_type=workflow`，不新增运行时依赖。

@@ -1,0 +1,57 @@
+name: Publish asset inventory preview
+
+on:
+  push:
+    branches:
+      - feature/asset-inventory
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 准备 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: 构建网页
+        env:
+          # 项目已有历史 ESLint 警告，预览构建不把警告升级为错误。
+          CI: false
+        run: npm run build
+
+      - name: 准备 Pages
+        uses: actions/configure-pages@v5
+
+      - name: 上传 Pages 文件
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 发布到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
