@@ -51,7 +51,7 @@ export default function AssetReturnEmployeeAssetsModal({ open, applicant, onCanc
   };
 
   return (
-    <Modal title="员工名下资产明细" open={open} width={1120} footer={null} onCancel={onCancel} destroyOnHidden>
+    <Modal title="员工名下资产明细" open={open} width={960} footer={null} onCancel={onCancel} destroyOnHidden>
       <Typography.Paragraph strong>
         {applicant?.name || '申请人'} 同学，名下共有资产 {assets.length} 条，其中借用资产 {borrowedCount} 条。
       </Typography.Paragraph>
