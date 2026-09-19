@@ -99,7 +99,7 @@ export default function AssetMatchModal({
     <Modal
       title="选择资产"
       open={open}
-      width="92vw"
+      width={960}
       footer={null}
       onCancel={onCancel}
       destroyOnHidden
