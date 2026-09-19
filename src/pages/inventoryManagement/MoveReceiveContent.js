@@ -374,7 +374,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
       title: '资产验证',
       dataIndex: 'verification',
       width: 110,
-      render: (value) => value === '未验证' ? <Typography.Text type="danger">未验证</Typography.Text> : <StatusTag value="已验证" />,
+      render: (value) => <StatusTag value={value || '-'} type="business" />,
     },
     { title: '移库状态', dataIndex: 'moveStatus', width: 110, render: (value) => <StatusTag value={value} /> },
     {
@@ -447,7 +447,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
               onChange: setSelectedKeys,
               fixed: true,
               columnTitle: '选择',
-              getCheckboxProps: (record) => ({ disabled: record.moveStatus !== '待接收' }),
+              getCheckboxProps: (record) => ({ disabled: record.moveStatus !== '待接收' || record.verification !== '已验证' }),
             } : undefined}
             scroll={{ x: 'max-content' }}
             pagination={false}
