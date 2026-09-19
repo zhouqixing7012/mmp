@@ -113,19 +113,15 @@ import PageViewMotion from '../components/PageViewMotion';
 
 ### 4.1 优先级
 
-1. 优先使用 Ant Design `Modal`，沿用其原生动效。
-2. 通用选择场景必须使用 `SelectModal`。
-3. 只有项目现有自定义场景才使用 `src/components/Modal.js`。
+1. 普通业务弹窗统一使用 Ant Design `Modal`，沿用同一套全局视觉和原生进退场。
+2. 通用选择场景必须使用 `SelectModal`；`SelectModal` 本身也基于 Ant Design `Modal`，不再维护独立弹窗底层。
+3. 只有确实无法迁移的历史自定义场景才保留 `src/components/Modal.js`，新增业务不得继续扩展第二套弹窗实现。
 
-`SelectModal` 和自定义 `Modal` 已统一：
+统一要求：
 
-- 遮罩淡入/淡出
-- 主体 `translateY(8px) + scale(0.98) → 正常位置`
-- 进入约 180ms
-- 退出约 140ms
-- 关闭动画结束后再卸载 DOM
-
-新增弹窗禁止重新写一套 `if (!open) return null` + 瞬间插入 DOM 的自定义实现。
+- 遮罩、圆角、S4 阴影、Header / Body / Footer 间距由公共样式控制。
+- 业务页面不得自行定义另一套 Modal 进入/退出时长或缓动。
+- 新增弹窗禁止重新写一套 `if (!open) return null` + 瞬间插入 DOM 的自定义实现。
 
 ## 5. 侧边栏与下拉
 
