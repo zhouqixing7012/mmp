@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Check, ChevronRight, LayoutGrid, Trash2 } from 'lucide-react';
+import { Check, ChevronRight, Trash2 } from 'lucide-react';
 import { Button, Checkbox, Empty, Input, Modal, Space, Tabs, Tag, Tooltip, Typography } from 'antd';
 import { ASSET_LIBRARY } from '../../mock/assetApplicationMock';
 
@@ -105,23 +105,18 @@ export default function AssetStoreModal({ open, onCancel, onAdd }) {
 
   return (
     <Modal
-      title={(
-        <Space>
-          <LayoutGrid size={18} className="text-blue-600" />
-          <span>添加物资</span>
-        </Space>
-      )}
+      title="添加物资"
       open={open}
-      width={1180}
+      width={960}
       onCancel={closeModal}
       footer={(
         <div className="flex w-full items-center justify-between px-2">
           <div className="min-w-[140px] text-left">
             <Typography.Text>已选择 <b className="text-blue-600">{selectedMaterials.length}</b> 项</Typography.Text>
           </div>
-          <Space size={12}>
+          <Space size={8}>
+            <Button onClick={closeModal}>取消</Button>
             <Button type="primary" disabled={selectedMaterials.length === 0} onClick={confirmSelection}>确定添加</Button>
-            <Button onClick={closeModal}>返回</Button>
           </Space>
         </div>
       )}
