@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, Input, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import { FileText } from 'lucide-react';
-import DetailGrid from '../../components/DetailGrid';
+import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 
 const { TextArea } = Input;
@@ -112,15 +112,15 @@ export default function OutboundApprovalPage({ outbound, onApprove, onReject, on
               <span>基本信息</span>
             </div>
             <DetailGrid columns={2} labelWidth={96}>
-              <div><span>制单人：</span>{source.creator || '-'}</div>
-              <div><span>制单时间：</span>{formatApprovalDate(source.createdDate)}</div>
-              <div><span>使用人：</span>{firstLine.issuePerson || firstLine.person || '-'}</div>
-              <div><span>使用部门：</span>{firstLine.department || '-'}</div>
-              <div><span>仓库名称：</span>{displayWarehouseName(source.warehouse)}</div>
-              <div><span>地点位置：</span>{formatApprovalLocation(firstLine)}</div>
-              <div><span>PR单号：</span>{firstLine.prNo || source.prNo || '-'}</div>
-              <div><span>PO单号：</span>{firstLine.poNo || source.poNo || '-'}</div>
-              <div><span>资产大类：</span>{firstLine.assetClass || '-'}</div>
+              <DetailItem label="制单人">{source.creator || '-'}</DetailItem>
+              <DetailItem label="制单时间">{formatApprovalDate(source.createdDate)}</DetailItem>
+              <DetailItem label="使用人">{firstLine.issuePerson || firstLine.person || '-'}</DetailItem>
+              <DetailItem label="使用部门">{firstLine.department || '-'}</DetailItem>
+              <DetailItem label="仓库名称">{displayWarehouseName(source.warehouse)}</DetailItem>
+              <DetailItem label="地点位置">{formatApprovalLocation(firstLine)}</DetailItem>
+              <DetailItem label="PR单号">{firstLine.prNo || source.prNo || '-'}</DetailItem>
+              <DetailItem label="PO单号">{firstLine.poNo || source.poNo || '-'}</DetailItem>
+              <DetailItem label="资产大类">{firstLine.assetClass || '-'}</DetailItem>
             </DetailGrid>
           </section>
 
@@ -133,17 +133,16 @@ export default function OutboundApprovalPage({ outbound, onApprove, onReject, on
               <StatusTag value={source.status || '待审批'} type="business" />
             </div>
             <DetailGrid columns={3} labelWidth={96}>
-              <div><span>审批路线：</span>{source.approvalRoute || '-'}</div>
-              <div><span>当前节点：</span>{currentStep?.name || (source.status === '已完成' ? '审批完成' : '-')}</div>
-              <div><span>当前处理人：</span>{currentStep?.approver || '-'}</div>
-              <div><span>发起人：</span>{source.approvalInitiator || source.creator || '-'}</div>
-              <div><span>发起时间：</span>{source.approvalStartedAt || '-'}</div>
-              <div className="col-span-3">
-                <span>审批意见：</span>
+              <DetailItem label="审批路线">{source.approvalRoute || '-'}</DetailItem>
+              <DetailItem label="当前节点">{currentStep?.name || (source.status === '已完成' ? '审批完成' : '-')}</DetailItem>
+              <DetailItem label="当前处理人">{currentStep?.approver || '-'}</DetailItem>
+              <DetailItem label="发起人">{source.approvalInitiator || source.creator || '-'}</DetailItem>
+              <DetailItem label="发起时间">{source.approvalStartedAt || '-'}</DetailItem>
+              <DetailItem label="审批意见" span={3}>
                 {canOperate
                   ? <TextArea value={opinion} onChange={(event) => setOpinion(event.target.value)} autoSize={{ minRows: 2, maxRows: 4 }} placeholder="驳回时必填；同意时可选填" />
-                  : <span>{history[history.length - 1]?.opinion || '-'}</span>}
-              </div>
+                  : history[history.length - 1]?.opinion || '-'}
+              </DetailItem>
             </DetailGrid>
           </section>
 
