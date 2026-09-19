@@ -1,29 +1,18 @@
-﻿import React, { useMemo, useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
-import { Button, Input, Table } from 'antd';
+﻿import React, { useEffect, useMemo, useState } from 'react';
+import { Button, Input, Modal, Space, Table, Typography } from 'antd';
 import QueryBar, { QueryItem } from './QueryBar';
 
 const DEFAULT_SEARCH_VALUES = {};
 const DEFAULT_SELECTED_KEYS = [];
-const EXIT_DURATION = 140;
 
 /**
  * 通用选择弹窗组件
  *
- * Props:
- *   open        - boolean, 弹窗是否打开
- *   onCancel    - () => void, 关闭回调
- *   onSelect    - (record) => void, 选中回调
- *   onConfirm   - (record|records) => void, 确认回调
- *   title       - string, 弹窗标题
- *   searchFields - Array<{ name, label, dataIndex, placeholder }>, 搜索字段配置
- *   columns     - Ant Design Table columns
- *   dataSource  - Array, 数据源
- *   initialSearchValues - object, 可选初始搜索值
- *   initialSelectedKeys - Array<string|number>, 可选已选行
- *   rowKey      - string, 行标识字段，默认 id
- *   width       - number|string, 期望宽度，默认 700px；公共最大宽度 960px
+ * 统一规则：
+ * - 查询区由 QueryBar 按实际可用宽度自动切换 1 / 2 / 3 列；
+ * - Table 按列定义的合理 width 自然决定是否产生横向滚动，不按列数判断；
+ * - 默认宽度 700px，数据密集场景可传 960px，但不得超过公共上限；
+ * - Footer 右侧固定为“取消 → 确定”，多选时左侧展示已选数量。
  */
 export default function SelectModal({
   open,
@@ -52,8 +41,6 @@ export default function SelectModal({
   const [appliedSearch, setAppliedSearch] = useState(buildInitialSearchValues);
   const [selectedKey, setSelectedKey] = useState(null);
   const [selectedKeys, setSelectedKeys] = useState([]);
-  const [shouldRender, setShouldRender] = useState(open);
-  const [isVisible, setIsVisible] = useState(false);
 
   const normalizedData = useMemo(() => {
     const seenKeys = new Set();
@@ -87,26 +74,6 @@ export default function SelectModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  useEffect(() => {
-    let frameId;
-    let exitTimer;
-
-    if (open) {
-      setShouldRender(true);
-      frameId = window.requestAnimationFrame(() => setIsVisible(true));
-    } else {
-      setIsVisible(false);
-      if (shouldRender) {
-        exitTimer = window.setTimeout(() => setShouldRender(false), EXIT_DURATION);
-      }
-    }
-
-    return () => {
-      if (frameId) window.cancelAnimationFrame(frameId);
-      if (exitTimer) window.clearTimeout(exitTimer);
-    };
-  }, [open, shouldRender]);
-
   const resetState = () => {
     const init = buildInitialSearchValues();
     const normalizedSelectedKeys = initialSelectedKeys.map((value) => String(value));
@@ -126,12 +93,16 @@ export default function SelectModal({
     setAppliedSearch(init);
   };
 
+  const handleCancel = () => {
+    onCancel();
+    resetState();
+  };
+
   const handleConfirm = () => {
     if (multiple) {
       const selected = normalizedData.filter((item) => selectedKeys.includes(String(item[rowKey])));
       (onConfirm || onSelect)?.(selected);
-      onCancel();
-      resetState();
+      handleCancel();
       return;
     }
 
@@ -139,13 +110,7 @@ export default function SelectModal({
     const selected = normalizedData.find((item) => String(item[rowKey]) === String(selectedKey));
     if (!selected) return;
     (onConfirm || onSelect)?.(selected);
-    onCancel();
-    resetState();
-  };
-
-  const handleCancel = () => {
-    onCancel();
-    resetState();
+    handleCancel();
   };
 
   const tableRowKey = (record) => String(record?.[rowKey] ?? '');
@@ -162,93 +127,89 @@ export default function SelectModal({
         onChange: (keys) => setSelectedKey(keys[0] ? String(keys[0]) : null),
       };
 
-  if (!shouldRender || typeof document === 'undefined') return null;
+  const selectedCount = multiple ? selectedKeys.length : (selectedKey ? 1 : 0);
 
-  return createPortal(
-    <div
-      className={`fixed inset-0 bg-black/40 z-[1200] flex items-center justify-center p-4 mmp-motion-overlay ${isVisible ? 'is-visible' : ''}`}
-      data-prototype-overlay="select-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
+  return (
+    <Modal
+      open={open}
+      title={title}
+      width={width}
+      onCancel={handleCancel}
+      destroyOnHidden
+      rootClassName="mmp-select-modal"
+      modalRender={(node) => (
+        <div
+          data-prototype-overlay="select-modal"
+          data-prototype-bindable="selection-modal"
+          data-prototype-label={title}
+        >
+          {node}
+        </div>
+      )}
+      footer={(
+        <div className="flex w-full items-center justify-between">
+          <Typography.Text type="secondary">
+            {multiple ? <>已选择 <b>{selectedCount}</b> 项</> : null}
+          </Typography.Text>
+          <Space size={8}>
+            <Button onClick={handleCancel}>取消</Button>
+            <Button
+              type="primary"
+              disabled={selectedCount === 0}
+              onClick={handleConfirm}
+            >
+              确定
+            </Button>
+          </Space>
+        </div>
+      )}
     >
-      <div
-        className={`bg-white rounded-xl shadow-xl flex flex-col overflow-hidden mmp-motion-dialog ${isVisible ? 'is-visible' : ''}`}
-        style={{
-          width,
-          maxWidth: 'min(var(--mmp-modal-max-width), calc(100vw - 32px))',
-          maxHeight: '88vh',
-        }}
-        data-prototype-bindable="selection-modal"
-        data-prototype-label={title}
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#f0f0f0]">
-          <span className="text-base font-semibold text-gray-900" data-prototype-display-anchor="title">{title}</span>
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="h-6 w-6 inline-flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors"
-            aria-label="关闭"
-          >
-            <X size={16} />
-          </button>
-        </div>
+      {searchFields.length > 0 && (
+        <QueryBar onQuery={handleQuery} onReset={handleReset}>
+          {searchFields.map((field) => (
+            <QueryItem key={field.name} label={field.label}>
+              <Input
+                value={searchDraft[field.name] || ''}
+                allowClear
+                placeholder={field.placeholder || `请输入${field.label}`}
+                onChange={(event) => setSearchDraft((previous) => ({ ...previous, [field.name]: event.target.value }))}
+                onPressEnter={handleQuery}
+              />
+            </QueryItem>
+          ))}
+        </QueryBar>
+      )}
 
-        <div className="p-6 min-w-0 overflow-y-auto">
-          {searchFields.length > 0 && (
-            <QueryBar onQuery={handleQuery} onReset={handleReset}>
-              {searchFields.map((field) => (
-                <QueryItem key={field.name} label={field.label}>
-                  <Input
-                    value={searchDraft[field.name] || ''}
-                    allowClear
-                    placeholder={field.placeholder || `请输入${field.label}`}
-                    onChange={(event) => setSearchDraft((previous) => ({ ...previous, [field.name]: event.target.value }))}
-                    onPressEnter={handleQuery}
-                  />
-                </QueryItem>
-              ))}
-            </QueryBar>
-          )}
-
-          <div data-prototype-bindable="selection-table" data-prototype-label={`${title}列表`}>
-            <Table
-              rowKey={tableRowKey}
-              size="small"
-              bordered
-              columns={columns}
-              dataSource={filteredData}
-              rowSelection={rowSelection}
-              scroll={{ x: 'max-content', y: 360 }}
-              pagination={{
-                defaultPageSize: 10,
-                showSizeChanger: true,
-                showTotal: (total) => `共 ${total} 条`,
-              }}
-              onRow={(record) => ({
-                onClick: () => {
-                  const key = tableRowKey(record);
-                  if (multiple) {
-                    setSelectedKeys((previous) => (
-                      previous.includes(key)
-                        ? previous.filter((item) => item !== key)
-                        : [...previous, key]
-                    ));
-                    return;
-                  }
-                  setSelectedKey(key);
-                },
-              })}
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#f0f0f0] bg-[#fafafa]">
-          <Button onClick={handleCancel}>取消</Button>
-          <Button type="primary" disabled={multiple ? selectedKeys.length === 0 : !selectedKey} onClick={handleConfirm}>确定</Button>
-        </div>
+      <div data-prototype-bindable="selection-table" data-prototype-label={`${title}列表`}>
+        <Table
+          rowKey={tableRowKey}
+          size="small"
+          bordered
+          columns={columns}
+          dataSource={filteredData}
+          rowSelection={rowSelection}
+          scroll={{ x: 'max-content', y: 360 }}
+          pagination={{
+            defaultPageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `共 ${total} 条`,
+          }}
+          onRow={(record) => ({
+            onClick: () => {
+              const key = tableRowKey(record);
+              if (multiple) {
+                setSelectedKeys((previous) => (
+                  previous.includes(key)
+                    ? previous.filter((item) => item !== key)
+                    : [...previous, key]
+                ));
+                return;
+              }
+              setSelectedKey(key);
+            },
+          })}
+        />
       </div>
-    </div>,
-    document.body,
+    </Modal>
   );
 }
