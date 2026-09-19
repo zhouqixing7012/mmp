@@ -12,14 +12,56 @@
   --mmp-modal-max-width: 960px;
 }
 
-/* 业务弹窗统一限制最大宽度，超宽内容在内容区内部横向滚动，不继续撑大 Modal。 */
+/* 业务弹窗统一视觉。业务页面只决定内容和语义，不自行定义圆角、阴影、遮罩和基础间距。 */
 .ant-modal {
   max-width: min(var(--mmp-modal-max-width), calc(100vw - 32px)) !important;
 }
 
+.ant-modal-root .ant-modal-mask {
+  background: rgba(0, 0, 0, 0.45) !important;
+}
+
+.ant-modal .ant-modal-content {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow:
+    0 1px 8px rgba(0, 0, 0, 0.05),
+    0 7px 14px 2px rgba(0, 0, 0, 0.07),
+    0 8px 16px 4px rgba(0, 0, 0, 0.08);
+}
+
+.ant-modal .ant-modal-header {
+  margin: 0;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e2e6f0;
+}
+
+.ant-modal .ant-modal-title {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+}
+
+.ant-modal .ant-modal-close {
+  top: 15px;
+  inset-inline-end: 20px;
+  width: 24px;
+  height: 24px;
+}
+
 .ant-modal .ant-modal-body {
   max-width: 100%;
+  padding: 24px;
   overflow-x: auto;
+}
+
+.ant-modal .ant-modal-footer {
+  margin: 0;
+  padding: 16px 24px;
+  border-top: 1px solid #e2e6f0;
+  background: #fafafa;
+  text-align: right;
 }
 
 /* 四列表单型弹窗允许适度放宽到 1000px，但表单本体不通过横向滚动承载。 */
@@ -29,6 +71,74 @@
 
 .mmp-transfer-item-modal .ant-modal-body {
   overflow-x: hidden;
+}
+
+/* QueryBar 按自身真实可用宽度切换 1 / 2 / 3 列，不再跟随浏览器断点。 */
+.mmp-query-bar {
+  container-type: inline-size;
+  container-name: mmp-query;
+}
+
+.mmp-query-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.mmp-query-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px 24px;
+  min-width: 0;
+}
+
+.mmp-query-field,
+.mmp-query-item {
+  min-width: 0;
+}
+
+.mmp-query-field .mmp-query-item > span:first-child {
+  width: var(--mmp-query-label-width, 88px) !important;
+  min-width: var(--mmp-query-label-width, 88px) !important;
+}
+
+.mmp-query-field .ant-input,
+.mmp-query-field .ant-input-affix-wrapper,
+.mmp-query-field .ant-input-number,
+.mmp-query-field .ant-picker,
+.mmp-query-field .ant-select,
+.mmp-query-field .ant-cascader-picker {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.mmp-query-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@container mmp-query (min-width: 504px) {
+  .mmp-query-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container mmp-query (min-width: 768px) {
+  .mmp-query-layout {
+    grid-template-columns: minmax(0, 1fr) 90px;
+    gap: 24px;
+  }
+
+  .mmp-query-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mmp-query-actions {
+    flex-direction: column;
+    justify-content: center;
+  }
 }
 
 /* B 端动效只表达状态变化，不做明显弹跳或长距离位移。 */
