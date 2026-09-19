@@ -180,6 +180,9 @@ npm test
 - `docs/PRD-库存管理-入库.md`：入库四类编辑页与弹窗字段口径。
 - `docs/PRD-库存管理-出库.md`：领用出库、借用出库编辑页与弹窗字段口径。
 - `docs/PRD-库存管理-转移.md`：转移单创建页、物资列表和添加转移物资弹窗字段口径。
+- `docs/asset-inventory/资产盘点-新版PRD.md`：资产盘点 PC 端与移动端目标业务规则。
+- `docs/asset-inventory/资产盘点-三方比对.md`：原始 PRD、当前原型和新版 PRD 的差异及处理结论。
+- `docs/asset-inventory/资产盘点-待决策清单.md`：需要业务确认的资产盘点口径。
 - `docs/原型标注生成规范.md`：PRD 标注和 Coverage 统一规范。
 - `lessons.md`：已确认的产品和实现经验。
 
