@@ -1314,7 +1314,7 @@ export default function ConsumableReceiptPage() {
         <Modal
           open={Boolean(detailEditor && detailDraft)}
           title={isDraft ? '编辑接收明细' : '查看接收明细'}
-          width={900}
+          width={720}
           onCancel={() => { setDetailEditor(null); setDetailDraft(null); }}
           footer={isDraft ? [
             <Button key="cancel" onClick={() => { setDetailEditor(null); setDetailDraft(null); }}>取消</Button>,
