@@ -64,9 +64,9 @@
   text-align: right;
 }
 
-/* 四列表单型弹窗允许适度放宽到 1000px，但表单本体不通过横向滚动承载。 */
+/* 转移物资弹窗使用标准 960px 宽度，表单本体不通过横向滚动承载。 */
 .mmp-transfer-item-modal .ant-modal {
-  max-width: min(1000px, calc(100vw - 32px)) !important;
+  max-width: min(960px, calc(100vw - 32px)) !important;
 }
 
 .mmp-transfer-item-modal .ant-modal-body {
