@@ -267,7 +267,7 @@ function ReceiptLineMaintenanceModal({ open, asset, readOnly, onCancel, onSave }
     <Modal
       open={open}
       title="明细信息维护"
-      width={820}
+      width={720}
       okText="保存"
       cancelText="取消"
       onCancel={onCancel}
