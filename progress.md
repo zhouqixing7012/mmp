@@ -28,4 +28,5 @@
 - 已在 `package.json` 增加 `cfb: 1.2.1` 的 override，并用 npm 10 同步 `package-lock.json`；干净安装成功，默认 `npm run build` 通过，仅保留项目原有 ESLint 警告。
 - 移动端原型和出库审批记录页关键测试共 6/6 通过，`git diff --check` 通过。
 - 已读取 GitHub 远端分支状态：`626a2d6` 的 Vercel 状态为 `Deployment was blocked`；更早提交已返回 `Deployment rate limited — retry in 24 hours`。该失败发生在 Vercel 部署前，不能通过继续修改 React 代码解除，需要等待额度恢复或在 Vercel 项目侧处理。
-- 用户确认公开仓库后，已创建 GitHub Pages 站点并准备官方 Actions 工作流，从 `feature/asset-inventory` 自动构建预览；等待推送并核对 Actions 与站点状态。
+- 用户确认公开仓库后，已创建 GitHub Pages 站点并配置官方 Actions 工作流，从 `feature/asset-inventory` 自动构建预览；Actions 构建/发布通过，站点已可访问。
+- GitHub Pages 官方站点返回 HTTP 200，预览地址为 `https://zhouqixing7012.github.io/mmp/`。
