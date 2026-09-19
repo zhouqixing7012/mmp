@@ -879,6 +879,7 @@ export default function OutboundPage() {
     };
     setRows((current) => current.map((row) => row.id === activeRow.id ? updated : row));
     setActiveRow(updated);
+    setView('editor');
     messageApi.warning('审批已驳回，出库单恢复为草稿，可修改后重新提交');
   };
 
