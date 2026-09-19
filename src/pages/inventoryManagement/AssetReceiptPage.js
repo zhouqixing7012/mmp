@@ -1242,7 +1242,7 @@ export default function AssetReceiptPage() {
           <Button onClick={() => setView('poList')}>返回</Button>
         </div>
         <Modal
-          open={Boolean(editItem && editDraft)}
+          open={Boolean(editItem && editDraft && !partDescriptionModalOpen && !selectorType)}
           title="编辑接收信息"
           width={720}
           okText="保存"
@@ -1289,7 +1289,7 @@ export default function AssetReceiptPage() {
           )}
         </Modal>
         <Modal
-          open={partDescriptionModalOpen}
+          open={partDescriptionModalOpen && !selectorType}
           title="维护部件说明"
           width={640}
           okText="确定"
