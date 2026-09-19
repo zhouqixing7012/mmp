@@ -1,6 +1,6 @@
 # 出库物资弹窗与库存管理 PRD 走查 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 完成出库物资信息弹窗字段布局调整，并形成库存管理全模块 PRD 偏好与原型一致性走查报告。
 
@@ -16,7 +16,7 @@
 - Modify: `src/pages/inventoryManagement/inventoryManagementRequirements.test.js`
 - Test: `src/pages/inventoryManagement/inventoryManagementRequirements.test.js`
 
-- [ ] **Step 1: 写入旧结构下必然失败的布局断言**
+- [x] **Step 1: 写入旧结构下必然失败的布局断言**
 
 ```javascript
 test('出库物资新增编辑和只读详情使用相同字段布局', () => {
@@ -28,7 +28,7 @@ test('出库物资新增编辑和只读详情使用相同字段布局', () => {
 });
 ```
 
-- [ ] **Step 2: 运行定向测试并确认失败原因正确**
+- [x] **Step 2: 运行定向测试并确认失败原因正确**
 
 Run: `CI=true npm test -- --runInBand src/pages/inventoryManagement/inventoryManagementRequirements.test.js`
 
@@ -41,7 +41,7 @@ Expected: 新增测试失败，失败点为旧代码仍使用 `span={3}`，且�
 - Modify: `src/pages/inventoryManagement/OutboundPage.js:506-536`
 - Test: `src/pages/inventoryManagement/inventoryManagementRequirements.test.js`
 
-- [ ] **Step 1: 修改新增/编辑弹窗字段顺序与备注跨度**
+- [x] **Step 1: 修改新增/编辑弹窗字段顺序与备注跨度**
 
 将普通资产“物资信息”金额区改为以下 JSX 顺序：
 
@@ -59,7 +59,7 @@ Expected: 新增测试失败，失败点为旧代码仍使用 `span={3}`，且�
 <EditorField label="备注" span={2}><Readonly>{asset?.remark}</Readonly></EditorField>
 ```
 
-- [ ] **Step 2: 修改只读详情弹窗字段顺序与备注跨度**
+- [x] **Step 2: 修改只读详情弹窗字段顺序与备注跨度**
 
 将普通资产“物资信息”金额区改为以下 JSX 顺序：
 
@@ -77,13 +77,13 @@ Expected: 新增测试失败，失败点为旧代码仍使用 `span={3}`，且�
 <EditorField label="备注" span={2}><Readonly>{row.remark}</Readonly></EditorField>
 ```
 
-- [ ] **Step 3: 运行定向测试并确认通过**
+- [x] **Step 3: 运行定向测试并确认通过**
 
 Run: `CI=true npm test -- --runInBand src/pages/inventoryManagement/inventoryManagementRequirements.test.js`
 
 Expected: 4 tests passed, 0 failed。
 
-- [ ] **Step 4: 提交 UI 与测试**
+- [x] **Step 4: 提交 UI 与测试**
 
 ```bash
 git add src/pages/inventoryManagement/OutboundPage.js src/pages/inventoryManagement/inventoryManagementRequirements.test.js
@@ -97,7 +97,7 @@ git commit -m "调整出库物资信息弹窗布局"
 - Modify: `CONTEXT.md`
 - Modify: `lessons.md`
 
-- [ ] **Step 1: 调整 PRD 字段顺序与备注占列规则**
+- [x] **Step 1: 调整 PRD 字段顺序与备注占列规则**
 
 将物资信息字段表相关部分改为：
 
@@ -113,7 +113,7 @@ git commit -m "调整出库物资信息弹窗布局"
 | 备注 | 资产台账，只读，占两列 |
 ```
 
-- [ ] **Step 2: 记录当前进度和可复用规则**
+- [x] **Step 2: 记录当前进度和可复用规则**
 
 在 `CONTEXT.md` 记录本次原型与 PRD同步完成状态；在 `lessons.md` 记录“同一业务弹窗存在维护态和只读态时，字段顺序与 span 必须同步调整”的规则。
 
@@ -133,11 +133,11 @@ git commit -m "调整出库物资信息弹窗布局"
 - Read: `docs/三方比对-库存管理-转移.md`
 - Read: `src/pages/inventoryManagement/`
 
-- [ ] **Step 1: 按统一检查维度逐份核对**
+- [x] **Step 1: 按统一检查维度逐份核对**
 
 每份 PRD 必须检查：页面目标、适用角色、前置条件、状态、字段、按钮、交互、校验、异常、权限、空状态、成功结果、下游影响、待确认项，以及是否混入技术实现、历史叙事、原型说明或研发任务。
 
-- [ ] **Step 2: 与当前原型逐项比对**
+- [x] **Step 2: 与当前原型逐项比对**
 
 每个差异统一记录为：
 
@@ -148,11 +148,11 @@ git commit -m "调整出库物资信息弹窗布局"
 
 “判断”仅使用：`已确认一致`、`PRD需改`、`原型需改`、`需要用户确认`、`无法从原型确认`。
 
-- [ ] **Step 3: 按用户偏好检查表达方式**
+- [x] **Step 3: 按用户偏好检查表达方式**
 
 重点标记以下问题：技术名词进入正文、用“当前原型/本次改造/后续研发”代替业务规则、负向排除项过多、同一规则重复出现、字段只列名称不写来源和交互、异常与权限缺失、把推断写成已确认事实。
 
-- [ ] **Step 4: 输出需要用户判断的收口清单**
+- [x] **Step 4: 输出需要用户判断的收口清单**
 
 报告末尾固定分成三组：
 
@@ -171,25 +171,25 @@ git commit -m "调整出库物资信息弹窗布局"
 - Verify: `docs/PRD-库存管理-出库.md`
 - Verify: `docs/三方比对-库存管理-全模块PRD走查.md`
 
-- [ ] **Step 1: 运行源码结构检查**
+- [x] **Step 1: 运行源码结构检查**
 
 Run: `git diff --check`
 
 Expected: exit 0，无空白错误。
 
-- [ ] **Step 2: 运行库存管理定向测试**
+- [x] **Step 2: 运行库存管理定向测试**
 
 Run: `CI=true npm test -- --runInBand src/pages/inventoryManagement/inventoryManagementRequirements.test.js src/pages/inventoryManagement/OutboundApprovalHistoryPage.test.jsx`
 
 Expected: 2 suites passed，5 tests passed，0 failed。
 
-- [ ] **Step 3: 运行正式构建**
+- [x] **Step 3: 运行正式构建**
 
 Run: `npm run build`
 
 Expected: exit 0；允许仓库现有 ESLint warning，不允许新增 error。
 
-- [ ] **Step 4: 提交文档并推送功能分支**
+- [x] **Step 4: 提交文档并推送功能分支**
 
 ```bash
 git add docs/PRD-库存管理-出库.md docs/三方比对-库存管理-全模块PRD走查.md CONTEXT.md lessons.md
@@ -197,7 +197,7 @@ git commit -m "docs: 完成库存管理 PRD 全模块走查"
 git push origin feature/asset-inventory
 ```
 
-- [ ] **Step 5: 核对远端发布**
+- [x] **Step 5: 核对远端发布**
 
 Run: `gh run list --repo zhouqixing7012/mmp --branch feature/asset-inventory --limit 3`
 
