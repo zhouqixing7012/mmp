@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -12,6 +12,7 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
+import * as XLSX from 'xlsx';
 import { Download, Plus, Search, Trash2, Upload } from 'lucide-react';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
@@ -100,6 +101,163 @@ const RECEIVER_OPTIONS = [...new Map(
     })
 ).values()];
 const SIMPLE_ZERO_OPTION = [{ id: 1, name: '0.*' }];
+
+const TRANSFER_IMPORT_HEADERS = [
+  '错误提示',
+  '资产标签号*',
+  'SN号',
+  '转入人(员工编号)*',
+  '成本中心',
+  'City*',
+  'Building*',
+  'Floor*',
+  'Room',
+  '转移日期(YYYY-MM-DD)',
+  '转移原因',
+  '用途*',
+  '业务线',
+  '项目',
+  '转移说明',
+];
+
+const TRANSFER_IMPORT_CITIES = ['北京市'];
+const TRANSFER_IMPORT_BUILDINGS = { 北京市: ['搜狐媒体大厦'] };
+const TRANSFER_IMPORT_FLOORS = Array.from({ length: 43 }, (_, index) => `${index + 1}层`).concat('缺省');
+const TRANSFER_IMPORT_BUSINESS_LINES = ['0.*'];
+const TRANSFER_IMPORT_PROJECTS = ['0.*'];
+
+function normalizeImportDate(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return dayjs('1899-12-30').add(value, 'day').format('YYYY-MM-DD');
+  }
+  return String(value || '').trim();
+}
+
+function normalizeImportCell(value) {
+  return value === null || value === undefined ? '' : String(value).trim();
+}
+
+function createTransferImportWorkbook(rows = [TRANSFER_IMPORT_HEADERS]) {
+  const workbook = XLSX.utils.book_new();
+  const templateSheet = XLSX.utils.aoa_to_sheet(rows);
+  const helperRows = [
+    ['用途', '楼层', 'Building'],
+    ...PURPOSE_OPTIONS.map((purpose, index) => [purpose, TRANSFER_IMPORT_FLOORS[index] || '', TRANSFER_IMPORT_BUILDINGS.北京市[0]]),
+  ];
+  XLSX.utils.book_append_sheet(workbook, templateSheet, '资产转移导入模板');
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(helperRows), 'Sheet3');
+  return workbook;
+}
+
+function downloadTransferImportTemplate() {
+  const workbook = createTransferImportWorkbook();
+  const output = XLSX.write(workbook, { bookType: 'xls', type: 'array' });
+  const url = URL.createObjectURL(new Blob([output], { type: 'application/vnd.ms-excel' }));
+  const link = window.document.createElement('a');
+  link.href = url;
+  link.download = '资产转移导入模板.xls';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadTransferImportErrors(rows) {
+  const workbook = createTransferImportWorkbook([
+    TRANSFER_IMPORT_HEADERS,
+    ...rows.map((row) => [row.error, ...row.values.slice(1)]),
+  ]);
+  const output = XLSX.write(workbook, { bookType: 'xls', type: 'array' });
+  const url = URL.createObjectURL(new Blob([output], { type: 'application/vnd.ms-excel' }));
+  const link = window.document.createElement('a');
+  link.href = url;
+  link.download = '资产转移导入错误结果.xls';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function validateTransferImportRows(matrix, { company, sourceAssets, existingLines }) {
+  const dataRows = matrix.slice(1).filter((row) => row.some((cell) => normalizeImportCell(cell)));
+  const usedKeys = new Set((existingLines || []).map((line) => line.assetTag || line.sn).filter(Boolean));
+  const errors = [];
+  const validLines = [];
+
+  dataRows.forEach((row, index) => {
+    const values = Array.from({ length: TRANSFER_IMPORT_HEADERS.length }, (_, columnIndex) => normalizeImportCell(row[columnIndex]));
+    const [, assetTag, sn, receiverNo, costCenter, city, building, floor, room, transferDateValue, transferReason, purposeValue, businessLine, project, usageDescription] = values;
+    const rowErrors = [];
+    const asset = assetTag
+      ? sourceAssets.find((item) => item.assetTag === assetTag)
+      : sn
+        ? sourceAssets.find((item) => item.sn === sn)
+        : null;
+    if (!assetTag && !sn) rowErrors.push('资产标签号和SN号至少填写一个');
+    if (!asset) rowErrors.push('未找到对应资产');
+    if (asset && company && asset.company !== company) rowErrors.push('资产所属公司与转移单公司不一致');
+    if (asset?.locked === true) rowErrors.push('资产已被其他业务占用');
+    const receiver = receiverNo
+      ? RECEIVER_OPTIONS.find((item) => item.employeeNo === receiverNo || item.name === receiverNo)
+      : null;
+    if (receiverNo && !receiver) rowErrors.push('转入人不存在或已失效');
+    if (!city) rowErrors.push('City必填');
+    else if (!TRANSFER_IMPORT_CITIES.includes(city)) rowErrors.push('City不是系统有效城市');
+    if (!building) rowErrors.push('Building必填');
+    else if (!TRANSFER_IMPORT_BUILDINGS[city]?.includes(building)) rowErrors.push('Building不属于所选City');
+    if (!floor) rowErrors.push('Floor必填');
+    else if (!TRANSFER_IMPORT_FLOORS.includes(floor)) rowErrors.push('Floor不是系统有效楼层');
+    const transferDate = normalizeImportDate(transferDateValue) || dayjs().format('YYYY-MM-DD');
+    if (transferDateValue && !/^\\d{4}-\\d{2}-\\d{2}$/.test(transferDate)) rowErrors.push('转移日期必须为yyyy-MM-dd');
+    if (transferDate && !dayjs(transferDate, 'YYYY-MM-DD', true).isValid()) rowErrors.push('转移日期不是有效日期');
+    const purpose = purposeValue || asset?.usage || '';
+    if (purposeValue && !PURPOSE_OPTIONS.includes(purposeValue)) rowErrors.push('用途不是系统有效用途');
+    if (businessLine && !TRANSFER_IMPORT_BUSINESS_LINES.includes(businessLine)) rowErrors.push('业务线不存在');
+    if (project && !TRANSFER_IMPORT_PROJECTS.includes(project)) rowErrors.push('项目不存在');
+    const identity = assetTag || sn;
+    if (identity && usedKeys.has(identity)) rowErrors.push('资产已在当前转移单明细中');
+    if (identity) usedKeys.add(identity);
+
+    if (rowErrors.length) {
+      errors.push({ rowNo: index + 2, values, error: rowErrors.join('；') });
+      return;
+    }
+
+    validLines.push({
+      ...asset,
+      inPerson: receiver?.name || receiverNo || '',
+      inCompany: receiver?.company || '',
+      inPlate: receiver?.plate || '',
+      inDept: receiver?.department || '',
+      inCostCenter: isServerAsset(asset) ? (asset.costCenter || '') : (receiver?.costCenter || ''),
+      city,
+      building,
+      floor,
+      room,
+      purpose,
+      businessLine,
+      targetBusinessLine: businessLine,
+      project,
+      targetProject: project,
+      transferDate,
+      transferReason,
+      usageDescription,
+      transferQty: Number(asset.assetQty || asset.availableQty || 1),
+      outPerson: asset.responsiblePerson || '',
+      outCostCenter: asset.costCenter || '',
+      targetAssetStatus: asset.assetStatus || '',
+      uploadSource: 'Excel导入',
+    });
+  });
+
+  return { validLines, errors };
+}
+
+async function readTransferImportFile(file) {
+  const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: false });
+  const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+  const matrix = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+  if (!matrix.length || matrix[0].slice(0, TRANSFER_IMPORT_HEADERS.length).join('|') !== TRANSFER_IMPORT_HEADERS.join('|')) {
+    throw new Error('模板表头不匹配，请先下载当前转移模板');
+  }
+  return matrix;
+}
 
 function isServerAsset(asset) {
   const values = [asset?.materialGroup, asset?.assetClass, asset?.assetSubClass]
@@ -386,6 +544,112 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
         )}
       </Space>
       <SelectorModal config={selectorConfig} onClose={() => setSelectorType('')} />
+    </Modal>
+  );
+}
+
+function TransferImportModal({ open, company, sourceAssets, existingLines, onCancel, onImported }) {
+  const [messageApi, contextHolder] = antdMessage.useMessage();
+  const fileInputRef = useRef(null);
+  const [fileName, setFileName] = useState('');
+  const [previewRows, setPreviewRows] = useState([]);
+  const [errorRows, setErrorRows] = useState([]);
+  const [validLines, setValidLines] = useState([]);
+  const [reading, setReading] = useState(false);
+
+  const reset = () => {
+    setFileName('');
+    setPreviewRows([]);
+    setErrorRows([]);
+    setValidLines([]);
+  };
+
+  const handleCancel = () => {
+    reset();
+    onCancel();
+  };
+
+  const handleFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setReading(true);
+    setFileName(file.name);
+    try {
+      const matrix = await readTransferImportFile(file);
+      const result = validateTransferImportRows(matrix, { company, sourceAssets, existingLines });
+      const rows = matrix.slice(1).filter((row) => row.some((cell) => normalizeImportCell(cell))).map((row, index) => ({
+        key: index + 2,
+        rowNo: index + 2,
+        assetTag: normalizeImportCell(row[1]),
+        sn: normalizeImportCell(row[2]),
+        receiverNo: normalizeImportCell(row[3]),
+        city: normalizeImportCell(row[5]),
+        building: normalizeImportCell(row[6]),
+        floor: normalizeImportCell(row[7]),
+        error: result.errors.find((item) => item.rowNo === index + 2)?.error || '',
+      }));
+      setPreviewRows(rows);
+      setErrorRows(result.errors);
+      setValidLines(result.validLines);
+      if (result.errors.length) messageApi.warning(`发现 ${result.errors.length} 行错误，整批不会保存`);
+      else messageApi.success(`已通过 ${result.validLines.length} 行校验，可导入并暂时锁定资产`);
+    } catch (error) {
+      setPreviewRows([]);
+      setErrorRows([]);
+      setValidLines([]);
+      messageApi.error(error.message || 'Excel读取失败');
+    } finally {
+      setReading(false);
+    }
+  };
+
+  const importRows = () => {
+    if (!validLines.length || errorRows.length) return;
+    onImported(validLines);
+    reset();
+  };
+
+  return (
+    <Modal
+      open={open}
+      title="Excel导入转移物资"
+      width={960}
+      onCancel={handleCancel}
+      destroyOnHidden
+      footer={[
+        <Button key="template" icon={<Download size={14} />} onClick={downloadTransferImportTemplate}>下载模板</Button>,
+        <Button key="choose" icon={<Upload size={14} />} onClick={() => fileInputRef.current?.click()} loading={reading}>选择Excel</Button>,
+        <Button key="errors" disabled={!errorRows.length} onClick={() => downloadTransferImportErrors(errorRows)}>下载错误结果</Button>,
+        <Button key="cancel" onClick={handleCancel}>取消</Button>,
+        <Button key="import" type="primary" disabled={!validLines.length || errorRows.length > 0} onClick={importRows}>导入并暂时锁定</Button>,
+      ]}
+    >
+      {contextHolder}
+      <input ref={fileInputRef} type="file" accept=".xls,.xlsx" className="hidden" onChange={handleFile} />
+      <Space direction="vertical" size={12} className="w-full">
+        <Typography.Text type="secondary">模板第一张表使用固定15列；资产标签号有值时优先按标签号匹配，标签号为空时按SN号匹配。任意一行错误，整批不保存。</Typography.Text>
+        {fileName && <Typography.Text>当前文件：{fileName}</Typography.Text>}
+        <Table
+          size="small"
+          bordered
+          pagination={false}
+          rowKey="key"
+          locale={{ emptyText: '请选择 Excel 文件' }}
+          dataSource={previewRows}
+          columns={[
+            { title: '行号', dataIndex: 'rowNo', width: 70 },
+            { title: '资产标签号', dataIndex: 'assetTag', width: 150 },
+            { title: 'SN号', dataIndex: 'sn', width: 150 },
+            { title: '转入人', dataIndex: 'receiverNo', width: 150, render: (value) => value || '-' },
+            { title: 'City', dataIndex: 'city', width: 100 },
+            { title: 'Building', dataIndex: 'building', width: 150 },
+            { title: 'Floor', dataIndex: 'floor', width: 90 },
+            { title: '错误提示', dataIndex: 'error', width: 300, render: (value) => value ? <Typography.Text type="danger">{value}</Typography.Text> : <Typography.Text type="success">通过</Typography.Text> },
+          ]}
+          scroll={{ x: 'max-content' }}
+        />
+      </Space>
     </Modal>
   );
 }
@@ -736,6 +1000,7 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
   const [companyModalOpen, setCompanyModalOpen] = useState(false);
   const [lineModalOpen, setLineModalOpen] = useState(false);
   const [editingLine, setEditingLine] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [lines, setLines] = useState(initialDocument?.lines || []);
   const createdDate = initialDocument?.createdDate || dayjs().format('YYYY-MM-DD');
   const availableAssets = SOURCE_ASSETS.filter((item) => (
@@ -813,6 +1078,21 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
     if (!ensureHeaderSaved()) return;
     setEditingLine(null);
     setLineModalOpen(true);
+  };
+
+  const openImport = () => {
+    if (!ensureHeaderSaved()) return;
+    setImportOpen(true);
+  };
+
+  const importLines = (importedLines) => {
+    const nextLines = [...lines, ...importedLines.map((line, index) => ({ ...line, id: `excel-${Date.now()}-${lines.length + index + 1}` }))];
+    setLines(nextLines);
+    const saved = persistDraft(nextLines);
+    if (saved) {
+      setImportOpen(false);
+      messageApi.success(`已导入 ${importedLines.length} 条转移明细，资产已暂时锁定`);
+    }
   };
 
   const saveLine = (line, keepOpen) => {
@@ -929,8 +1209,8 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
       </Card>
       <Card size="small" title="转移物资" extra={<Space>
         <Button type="primary" icon={<Plus size={14} />} onClick={openAddMaterial}>添加物资</Button>
-        <Button icon={<Download size={14} />} onClick={() => messageApi.info('转移模板下载入口已保留；模板精确列定义需以旧系统 transfer 模板为准')}>模板下载</Button>
-        <Button icon={<Upload size={14} />} onClick={() => messageApi.info('Excel 导入 uploadType=transfer；精确逐列校验、失败行回传及批量锁定规则需继续以旧系统上传处理链路为准')}>Excel导入</Button>
+        <Button icon={<Download size={14} />} onClick={downloadTransferImportTemplate}>模板下载</Button>
+        <Button icon={<Upload size={14} />} onClick={openImport}>Excel导入</Button>
       </Space>}>
         <Table
           rowKey="id"
@@ -949,6 +1229,7 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
       </div>
       <SelectModal open={companyModalOpen} title="选择财务公司" dataSource={COMPANY_OPTIONS.map((name, index) => ({ id: index + 1, name }))} columns={[{ title: '财务公司', dataIndex: 'name' }]} searchFields={[{ label: '财务公司', name: 'name', dataIndex: 'name' }]} onCancel={() => setCompanyModalOpen(false)} onConfirm={(record) => { setCompany(record.name); setCompanyModalOpen(false); }} />
       <TransferItemModal key={`${lineModalOpen}-${editingLine?.id || 'new'}-${company}`} open={lineModalOpen} currentCompany={company} availableAssets={availableAssets} initialLine={editingLine} onCancel={() => { setLineModalOpen(false); setEditingLine(null); }} onConfirm={saveLine} />
+      <TransferImportModal open={importOpen} company={company} sourceAssets={SOURCE_ASSETS} existingLines={lines} onCancel={() => setImportOpen(false)} onImported={importLines} />
     </Space>
   );
 }
