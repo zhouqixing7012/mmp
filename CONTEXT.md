@@ -9,6 +9,8 @@
 
 ## 本次完成
 
+- 2026-09-19 已开始落实库存管理 UI 走查：公共 QueryBar 去除重复底部间距，SelectModal 默认取消固定纵向滚动；库存列表工具栏、审批操作区、状态标签、选择输入键盘交互、选择弹窗互斥显示、接收维护三列布局、转移 Excel 弹窗 Footer、数量展示和移库接收勾选规则已统一，业务规则未改。
+
 - 根据实际观感再次收紧弹窗密度：Header / Footer 从 16×24px 调整为 12×20px，Body 从 24px 调整为 16×20px，关闭按钮位置同步内收。
 - 已统一 Ant Design Modal 的遮罩、12px 圆角、S4 阴影、Header / Body / Footer 间距及 Footer 背景。
 - `SelectModal` 已改为直接基于 Ant Design Modal，不再维护独立弹窗底层；多选 Footer 左侧展示已选数量，右侧固定【取消】【确定】。
