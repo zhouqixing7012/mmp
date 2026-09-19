@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Button, Card, Input, Result, Select, Space, Table, Typography, message as antdMessage } from 'antd';
-import { RefreshCcw, Search, UserRound } from 'lucide-react';
+import { RefreshCcw, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import {
@@ -290,7 +290,7 @@ export default function WarehouseWorkbenchPage() {
         </Space>
       </div>
 
-      <QueryBar buttons={null}>
+      <QueryBar>
         <QueryItem label="资产标签号">
           <Input
             value={draftFilters.assetTag}
@@ -344,9 +344,6 @@ export default function WarehouseWorkbenchPage() {
         </QueryItem>
       </QueryBar>
 
-      <div className="-mt-3 flex justify-center">
-        <Button type="primary" icon={<Search size={14} />} onClick={() => runQuery()}>查询</Button>
-      </div>
 
       <Card
         size="small"
