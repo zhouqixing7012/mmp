@@ -360,7 +360,7 @@ function MoveItemModal({ open, currentWarehouse, initialLine, existingTags, onCa
     <>
       {contextHolder}
       <Modal
-        open={open}
+        open={open && !selectorOpen}
         title={initialLine ? '编辑移库物资' : '添加移库物资'}
         width={960}
         onCancel={onCancel}
