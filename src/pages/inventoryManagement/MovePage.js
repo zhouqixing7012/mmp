@@ -749,7 +749,7 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
     { title: '板块', dataIndex: 'plate', width: 120 },
     { title: '资产标记', dataIndex: 'assetMark', width: 120 },
     { title: '启用日期', dataIndex: 'enabledDate', width: 130 },
-    { title: '资产状态', dataIndex: 'assetStatus', width: 130 },
+    { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value) => <StatusTag value={value || '-'} /> },
     { title: '移库状态', dataIndex: 'moveStatus', width: 130, render: (value) => <StatusTag value={value || '草稿'} /> },
     { title: '移库说明', dataIndex: 'moveDesc', width: 180, render: (value) => value || '-' },
     ...(editable ? [{ title: '操作', key: 'operation', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button> }] : []),
