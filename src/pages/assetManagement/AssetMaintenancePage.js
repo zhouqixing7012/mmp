@@ -1216,7 +1216,7 @@ export default function AssetMaintenancePage() {
       <Modal
         title={`资产卡片信息${source?.tag ? `：${source.tag}` : ''}`}
         open={assetOpen}
-        width={1100}
+        width={960}
         style={{ maxWidth: 'calc(100vw - 48px)' }}
         styles={{ body: { maxHeight: '68vh', overflowY: 'auto' } }}
         footer={assetMode === 'edit' ? [
