@@ -993,16 +993,20 @@ export default function OutboundPage() {
         <QueryItem label="资产责任人"><Input value={draft.responsiblePerson} allowClear placeholder="请输入资产责任人" onChange={(e) => update('responsiblePerson', e.target.value)} /></QueryItem>
       </QueryBar>
 
-      <Card size="small" title="出库单列表" extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
-        <div className="mb-3 flex justify-end">
+      <Card
+        size="small"
+        title="出库单列表"
+        extra={(
           <Space>
+            <Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>
             <Button type="primary" icon={<Plus size={14} />} onClick={() => openEditor()}>创建</Button>
             <Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button>
             <Button icon={<Printer size={14} />} onClick={() => printRows('出库打印')}>出库打印</Button>
             <Button icon={<Printer size={14} />} onClick={() => printRows('领用打印')}>领用打印</Button>
             <Button icon={<Download size={14} />} onClick={() => messageApi.success(`已导出当前查询结果 ${filteredRows.length} 条（原型）`)}>导出</Button>
           </Space>
-        </div>
+        )}
+      >
         <Table
           rowKey="id"
           size="small"
