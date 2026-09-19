@@ -706,7 +706,6 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
         <DetailGrid columns={3} labelWidth={112}>
           <EditorField label="出库单号"><Readonly>{documentNo}</Readonly></EditorField>
           <EditorField label="单据类型"><Readonly>出库工单</Readonly></EditorField>
-          {!approvalPending && <EditorField label="单据状态"><StatusTag value={status} /></EditorField>}
           <EditorField label="出库类型"><Readonly>{outboundType}</Readonly></EditorField>
           <EditorField label="制单人"><Readonly>{creator}</Readonly></EditorField>
           <EditorField label="制单时间"><Readonly>{createdDate}</Readonly></EditorField>
@@ -719,8 +718,6 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
       <Card size="small" title="出库物资" extra={<Space><Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>{editable && <Button type="primary" icon={<Plus size={14} />} onClick={() => { setEditingLine(null); setLineModalOpen(true); }}>添加物资</Button>}{editable && lines.length > 0 && <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>}{editable && <Button icon={<Download size={14} />} onClick={() => messageApi.success('手工领用出库模板已生成（原型）')}>模板下载</Button>}{editable && <Button icon={<Upload size={14} />} onClick={() => setImportOpen(true)}>Excel导入</Button>}</Space>}>
         <Table rowKey="id" size="small" bordered columns={outboundType === '借用出库' ? borrowColumns : issueColumns} dataSource={lines} rowSelection={editable ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true } : undefined} scroll={{ x: 'max-content' }} pagination={false} />
       </Card>
-
-      {!approvalPending && source?.approvalHistory?.length > 0 && status === '草稿' && <Card size="small" title="历史审批记录" extra={<Typography.Text type="secondary">共 {source.approvalHistory.length} 条</Typography.Text>}><Table rowKey={(_, index) => index} size="small" bordered pagination={false} dataSource={source.approvalHistory} columns={[{ title: '序号', width: 70, render: (_, __, index) => index + 1 }, { title: '节点', dataIndex: 'node', width: 220 }, { title: '处理人', dataIndex: 'handler', width: 160 }, { title: '操作', dataIndex: 'action', width: 100 }, { title: '操作时间', dataIndex: 'time', width: 170 }, { title: '审批意见', dataIndex: 'opinion' }]} /></Card>}
 
       {!approvalPending && <div className="flex justify-center gap-3">
         {editable && <Button onClick={() => onSave(payload())}>保存草稿</Button>}
