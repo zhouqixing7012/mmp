@@ -53,6 +53,11 @@
 .ant-modal .ant-modal-body {
   max-width: 100%;
   padding: 16px 20px;
+  overflow: visible;
+}
+
+/* 普通业务弹窗不因内容轻微溢出显示纵向滚动条；需要滚动的表格由表格容器自行承载。 */
+.ant-modal .ant-table-wrapper {
   overflow-x: auto;
 }
 
