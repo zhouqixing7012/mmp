@@ -122,7 +122,6 @@ export default function QueryBar({
     <Card
       size="small"
       className="mmp-query-bar"
-      style={{ marginBottom: 16 }}
       onClickCapture={handleActionClickCapture}
     >
       <div className="mmp-query-layout">
