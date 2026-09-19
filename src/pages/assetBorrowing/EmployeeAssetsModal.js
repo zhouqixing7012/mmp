@@ -41,7 +41,7 @@ export default function EmployeeAssetsModal({ open, onCancel, applicant = CURREN
   };
 
   return (
-    <Modal title="员工名下资产明细" open={open} width={1120} footer={null} onCancel={onCancel}>
+    <Modal title="员工名下资产明细" open={open} width={960} footer={null} onCancel={onCancel}>
       <Typography.Paragraph strong>
         {applicant.name} 同学，名下共有资产 {BORROWER_EXISTING_ASSETS.length} 条，其中借用资产 {borrowedCount} 条。
       </Typography.Paragraph>
