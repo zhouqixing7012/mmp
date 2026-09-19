@@ -4,7 +4,7 @@
 
 - 2026-09-19：在 `feature/asset-inventory` 接入资产盘点移动端原型，入口为“资产盘点 → 移动端原型”；两份需求 DOCX 已原样归档到 `docs/source/`，当前正在做全量测试、构建和提交收口。
 - 2026-09-19：修复远端已有 `OutboundApprovalHistoryPage.js` 的 Card JSX 闭合符号错误，新增页面结构回归测试；当前修复测试和构建均已通过，待推送。
-- 2026-09-19：修复默认构建依赖问题：`cfb@1.2.2` npm tarball 校验异常，且临时无锁安装会让 ESLint 使用错误的 Ajv 主版本；已 override 到 `cfb@1.2.1` 并同步锁文件，npm 10 干净安装和默认构建均通过，待提交推送。
+- 2026-09-19：修复默认构建依赖问题：`cfb@1.2.2` npm tarball 校验异常，且 main 锁文件缺少 Tailwind 所需的 `yaml@2.9.1`；已将 `cfb` 固定到 `1.2.1`、补齐 `yaml` 锁定条目并推送到 GitHub，npm 10 干净安装和构建均通过。
 - 2026-09-19：以 GitHub 远端为准复核后确认，最新提交 `626a2d6` 的 Vercel 检查不是代码构建错误，而是项目部署额度被限制；此前提交已明确返回 `Deployment rate limited — retry in 24 hours`，后续提交均返回 `Deployment was blocked`。当前代码无需继续改，等待 Vercel 额度恢复或在 Vercel 项目侧解除限制。
 - 2026-09-19：用户确认将 `zhouqixing7012/mmp` 改为公开仓库；GitHub Pages 已改为官方 Actions 双分支预览，`main` 发布到 `https://zhouqixing7012.github.io/mmp/`，`feature/asset-inventory` 发布到 `https://zhouqixing7012.github.io/mmp/feature-asset-inventory/`，并为 React Router 增加对应路径基准。
 - `main` 持续校准库存管理原型，历史 ERP 截图和已整理的历史逻辑文档只提取字段与业务规则，视觉统一按 `docs/UI_DESIGN_GUIDELINES.md` V2.1。
@@ -17,7 +17,7 @@
 ## 本次完成
 
 - 2026-09-19 UI 整改静态复核：10 项关键规则检查全部通过，12 个改动文件的 Card/Modal 结构检查全部通过；GitHub 远端最新提交的 Vercel 状态为 `Deployment was blocked`，根因是项目部署额度限制，未能完成线上构建验证。
-- 2026-09-19 GitHub Pages 双分支预览已配置；main 和功能分支构建均通过，分别使用根路径和独立子路径。
+- 2026-09-19 GitHub Pages 双分支预览已配置；Actions 运行 12 构建与发布均通过，两个公开地址均返回 HTTP 200，分别使用根路径和独立子路径。
 
 - 2026-09-19 已开始落实库存管理 UI 走查：公共 QueryBar 去除重复底部间距，SelectModal 默认取消固定纵向滚动；库存列表工具栏、审批操作区、状态标签、选择输入键盘交互、选择弹窗互斥显示、接收维护三列布局、转移 Excel 弹窗 Footer、数量展示和移库接收勾选规则已统一，业务规则未改。
 
@@ -37,8 +37,8 @@
 
 - 新版资产盘点主 PRD 已重写并推送到 `docs/asset-inventory/`；三方比对和待决策清单继续独立保存，后续等待用户确认具体口径。
 
-- 移动端原型已完成工作台、资产详情、普通扫码、快速扫描、照片拍摄模拟和报失确认；组件测试通过 5/5，构建已在 `DISABLE_ESLINT_PLUGIN=true` 下通过，最终提交为 `dce05c4`。全量测试仍有 4 个既有测试套件失败，未涉及本次新增原型；当前保留分支待后续集成。
-- 出库审批记录页 JSX 已修复，回归测试与移动端原型测试共 6/6 通过，构建已恢复通过；待提交修复并推送到 GitHub。
+- 移动端原型已完成工作台、资产详情、普通扫码、快速扫描、照片拍摄模拟和报失确认；当前功能分支定向测试 7/7 通过，构建已在 GitHub Actions 通过。
+- 出库审批记录页 JSX 已修复，回归测试与移动端原型测试已通过，修复已推送到 GitHub。
 - 当前依赖构建修复已完成，main 定向测试 2/2 通过、功能分支定向测试 7/7 通过，两个路径下的 `npm run build` 均通过；GitHub Pages 已作为双分支预览入口。
 - 全局动效 Token 保持 100 / 140 / 180 / 220ms 四档，统一缓动，并支持 `prefers-reduced-motion`。
 - 普通业务弹窗与 `SelectModal` 统一以 Ant Design Modal 为底层；`SelectModal` 已移除独立 Portal / 手写进退场实现，弹窗视觉和动效统一走公共出口。
