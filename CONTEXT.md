@@ -1,5 +1,6 @@
 # 当前正在做什么
 
+- 2026-09-19：在 `feature/asset-inventory` 接入资产盘点移动端原型，入口为“资产盘点 → 移动端原型”；两份需求 DOCX 已原样归档到 `docs/source/`，当前正在做全量测试、构建和提交收口。
 - `main` 持续校准库存管理原型，历史 ERP 截图和已整理的历史逻辑文档只提取字段与业务规则，视觉统一按 `docs/UI_DESIGN_GUIDELINES.md` V2.1。
 - B 端统一动效已进一步收口：公共弹窗、后台菜单/Tab、侧边栏、顶部下拉、React Router 路由、按钮进入详情/编辑/创建页、查询/重置结果刷新、可点击操作块和表格结果反馈均已形成公共能力，不要求业务页面各自维护动画参数。
 - 弹窗 UI 正在统一收口：普通 Modal 使用统一 12px 圆角、S4 阴影和遮罩；间距进一步收紧为 Header / Footer `12px 20px`、Body `16px 20px`；选择弹窗统一基于 Ant Design Modal，QueryBar 按自身实际宽度自动 1 / 2 / 3 列，Table 按列宽自然决定横向滚动。
@@ -27,6 +28,7 @@
 
 # 上次停留位置
 
+- 移动端原型已完成工作台、资产详情、普通扫码、快速扫描、照片拍摄模拟和报失确认；组件测试当前通过 5/5，构建已在 `DISABLE_ESLINT_PLUGIN=true` 下通过，待完成全量测试和最终提交。
 - 全局动效 Token 保持 100 / 140 / 180 / 220ms 四档，统一缓动，并支持 `prefers-reduced-motion`。
 - 普通业务弹窗与 `SelectModal` 统一以 Ant Design Modal 为底层；`SelectModal` 已移除独立 Portal / 手写进退场实现，弹窗视觉和动效统一走公共出口。
 - 业务弹窗宽度统一为 400 / 560 / 700～720 / 960px 档位，普通最大 960px（同时不超过视口减32px）；四列表单仅明确场景允许 1000px。选择弹窗 QueryBar 按自身宽度自动 1 / 2 / 3 列，Table 通过列 width + `x: max-content` 自然决定横向滚动。

@@ -6,7 +6,7 @@
 
 ## 当前阶段
 
-执行阶段：准备实现。
+执行阶段：测试、构建和提交收口。
 
 ## 阶段
 
@@ -14,9 +14,9 @@
 - [x] 移动端原型设计确认
 - [x] 编写实现计划
 - [x] 归档 DOCX
-- [ ] 接入菜单和页面
-- [ ] 实现移动端交互
-- [ ] 测试、构建和 Review
+- [x] 接入菜单和页面
+- [x] 实现移动端交互
+- [x] 测试、构建和 Review
 - [ ] 更新项目记录并提交
 
 ## 关键决定
@@ -31,7 +31,21 @@
 | 错误 | 次数 | 处理 |
 |---|---:|---|
 | 初始工作区不是 Git 仓库 | 1 | 从 GitHub `feature/asset-inventory` 分支检出到当前工作区 `repo/` |
+| npm 默认缓存包含 root-owned 文件 | 1 | 改用 `/private/tmp/asset-inventory-npm-cache`，不修改用户目录权限 |
+| npm 临时缓存中的 `cfb` tarball 完整性校验失败 | 2 | 两个独立缓存均复现，改用镜像源；不修改锁文件 |
+| 临时依赖缺少 `@rc-component/pagination` | 1 | 按 Ant Design 的实际加载错误补装到本地验证环境，不写入 package-lock |
+| 临时依赖树中的 `ajv` 与 `ajv-keywords` 主版本不匹配 | 1 | 当前安装为 ajv 6 + ajv-keywords 5，补齐 ajv 8 进行构建验证 |
+| 旧版 `fork-ts-checker-webpack-plugin` 复用了根目录 ajv 8 | 1 | 给插件补回独立 ajv 6，保持临时验证环境的双版本依赖关系 |
+| macOS 路径大小写导致 `./assetManagement` 解析到旧文件 | 1 | 将引用改为明确的 `./assetManagement/index`，不改变业务逻辑 |
+| 临时依赖树导致 ESLint 插件报 `defaultMeta` | 1 | 使用 CRA 的 `DISABLE_ESLINT_PLUGIN=true` 继续验证打包编译，不改项目脚本 |
+| Jest 27 无法解析 Ant Design 的 pagination locale 子路径 | 1 | 仅在新增测试文件中做虚拟 mock，不修改生产配置 |
+| 组件测试首轮有 3 个测试选择器/入口错误 | 1 | 修正测试选择器和普通扫码入口，并补上扫码成功后回到资产详情的选中状态 |
+| 全量测试受既有测试和临时依赖版本影响 | 1 | 组件测试 5/5 通过；全量结果为 42 个测试套件通过、4 个失败，失败未涉及本次新增原型；不修改无关业务代码 |
 
 ## 阶段记录
 
 - DOCX 已复制到 `docs/source/`，四份源文件和归档文件的 SHA-256 已逐一核对一致。
+- 移动端原型已接入“资产盘点 → 移动端原型”菜单，覆盖工作台、详情、普通扫码、快速扫描、照片模拟和报失流程。
+- 原型组件测试已通过 5/5；下一步执行完整测试、构建、差异检查和提交。
+- 全量测试结果为 42 个测试套件通过、4 个失败（6 个测试失败）；失败来自既有合约号码时间断言、标注面板既有断言/临时 Ant Design 依赖版本差异，以及临时 React Router 依赖版本差异。
+- `DISABLE_ESLINT_PLUGIN=true npm run build` 已通过，`git diff --check` 已通过，package-lock 未被修改。
