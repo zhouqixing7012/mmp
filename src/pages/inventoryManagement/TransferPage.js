@@ -379,7 +379,7 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
         { title: '数量', dataIndex: 'quantity', width: 90, align: 'right' },
         { title: '原值', dataIndex: 'originalValue', width: 110, align: 'right', render: (value) => value === 0 ? 0 : (value || '-') },
         { title: '资产责任人', dataIndex: 'responsiblePerson', width: 150, render: (value) => value || '-' },
-        { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value) => value || '-' },
+        { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value) => <StatusTag value={value || '-'} /> },
         { title: '成本中心', dataIndex: 'costCenter', width: 150, render: (value) => value || '-' },
         { title: '启用日期', dataIndex: 'enabledDate', width: 120, render: (value) => value || '-' },
       ],
@@ -1282,15 +1282,9 @@ export default function TransferPage() {
     && inDateRange(row.createdDate, filters.createdFrom, filters.createdTo)
   )), [rows, filters]);
   const update = (field, value) => setDraft((current) => ({ ...current, [field]: value || '' }));
-  const emptyLookup = (title, field) => ({ title, dataSource: [], onConfirm: (record) => update(field, record.name) });
   const selectorConfig = {
     company: { title: '选择公司', dataSource: companyData, onConfirm: (record) => update('company', record.name) },
     creator: { title: '选择制单人', dataSource: creatorData, onConfirm: (record) => update('creator', record.name) },
-    outDept: emptyLookup('选择转出部门', 'outDept'),
-    outLocation: emptyLookup('选择转出地点', 'outLocation'),
-    plate: emptyLookup('选择板块', 'plate'),
-    inDept: emptyLookup('选择转入部门', 'inDept'),
-    inLocation: emptyLookup('选择转入地点', 'inLocation'),
   }[selectorType];
   const deleteRows = () => {
     if (!selectedRowKeys.length) return messageApi.warning('请先选择需要删除的转移单');
@@ -1414,11 +1408,11 @@ export default function TransferPage() {
         <QueryItem label="转移原因"><Input value={draft.reason} allowClear placeholder="请输入转移原因" onChange={(event) => update('reason', event.target.value)} /></QueryItem>
         <QueryItem label="单据状态"><Select className="w-full" value={draft.status || undefined} allowClear placeholder="全部" options={['草稿', '已完成'].map((value) => ({ label: value, value }))} onChange={(value) => update('status', value)} /></QueryItem>
         <QueryItem label="公司"><LookupInput value={draft.company} placeholder="请选择公司" onOpen={() => setSelectorType('company')} /></QueryItem>
-        <QueryItem label="转出部门"><LookupInput value={draft.outDept} placeholder="请选择转出部门" onOpen={() => setSelectorType('outDept')} /></QueryItem>
-        <QueryItem label="转出地点"><LookupInput value={draft.outLocation} placeholder="请选择转出地点" onOpen={() => setSelectorType('outLocation')} /></QueryItem>
-        <QueryItem label="板块"><LookupInput value={draft.plate} placeholder="请选择板块" onOpen={() => setSelectorType('plate')} /></QueryItem>
-        <QueryItem label="转入部门"><LookupInput value={draft.inDept} placeholder="请选择转入部门" onOpen={() => setSelectorType('inDept')} /></QueryItem>
-        <QueryItem label="转入地点"><LookupInput value={draft.inLocation} placeholder="请选择转入地点" onOpen={() => setSelectorType('inLocation')} /></QueryItem>
+        <QueryItem label="转出部门"><Input value={draft.outDept} allowClear placeholder="请输入转出部门" onChange={(event) => update('outDept', event.target.value)} /></QueryItem>
+        <QueryItem label="转出地点"><Input value={draft.outLocation} allowClear placeholder="请输入转出地点" onChange={(event) => update('outLocation', event.target.value)} /></QueryItem>
+        <QueryItem label="板块"><Input value={draft.plate} allowClear placeholder="请输入板块" onChange={(event) => update('plate', event.target.value)} /></QueryItem>
+        <QueryItem label="转入部门"><Input value={draft.inDept} allowClear placeholder="请输入转入部门" onChange={(event) => update('inDept', event.target.value)} /></QueryItem>
+        <QueryItem label="转入地点"><Input value={draft.inLocation} allowClear placeholder="请输入转入地点" onChange={(event) => update('inLocation', event.target.value)} /></QueryItem>
         <QueryItem label="制单人"><LookupInput value={draft.creator} placeholder="请选择制单人" onOpen={() => setSelectorType('creator')} /></QueryItem>
         <QueryItem label="制单日期">
           <DatePicker.RangePicker
