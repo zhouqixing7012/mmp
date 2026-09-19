@@ -302,7 +302,7 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
   };
 
   return (
-    <Modal open={open} title="添加转移物资" width={1000} rootClassName="mmp-transfer-item-modal" onCancel={onCancel} destroyOnHidden footer={[
+    <Modal open={open} title="添加转移物资" width={960} rootClassName="mmp-transfer-item-modal" onCancel={onCancel} destroyOnHidden footer={[
       <Button key="continue" type="primary" onClick={() => submit(true)}>添加并继续</Button>,
       <Button key="close" type="primary" onClick={() => submit(false)}>添加并关闭</Button>,
       <Button key="cancel" onClick={onCancel}>取消</Button>,
@@ -316,7 +316,7 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
           </DetailGrid>
         </Card>
         <Card size="small" title="物资信息">
-          <DetailGrid columns={4} labelWidth={96}>
+          <DetailGrid columns={3} labelWidth={96}>
             <DetailItem label="资产标签号"><Readonly>{asset?.assetTag}</Readonly></DetailItem>
             <DetailItem label="SN号"><Readonly>{asset?.sn}</Readonly></DetailItem>
             <DetailItem label="物资说明"><Readonly>{asset?.materialDesc}</Readonly></DetailItem>
@@ -351,7 +351,7 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
           </DetailGrid>
         </Card>
         <Card size="small" title="转移单信息">
-          <DetailGrid columns={4} labelWidth={108}>
+          <DetailGrid columns={3} labelWidth={108}>
             <DetailItem label={<RequiredLabel>转入人</RequiredLabel>}><LookupInput value={form.inPerson} placeholder="请选择转入人" onOpen={() => setSelectorType('receiver')} /></DetailItem>
             <DetailItem label="转入板块"><Readonly>{form.inPlate}</Readonly></DetailItem>
             <DetailItem label="转入部门"><Readonly>{form.inDept}</Readonly></DetailItem>
@@ -366,13 +366,13 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
             <DetailItem label="项目"><LookupInput value={form.project} placeholder="请选择项目" onOpen={() => setSelectorType('project')} /></DetailItem>
             <DetailItem label="转移原因" span={3}><Input value={form.transferReason} onChange={(event) => update('transferReason', event.target.value)} /></DetailItem>
             <DetailItem label={<RequiredLabel>转移日期</RequiredLabel>}><DatePicker className="w-full" value={form.transferDate ? dayjs(form.transferDate) : null} format="YYYY-MM-DD" onChange={(date) => update('transferDate', date ? date.format('YYYY-MM-DD') : '')} /></DetailItem>
-            <DetailItem label="使用说明" span={4}><TextArea autoSize={{ minRows: 3, maxRows: 6 }} value={form.usageDescription} onChange={(event) => update('usageDescription', event.target.value)} /></DetailItem>
+            <DetailItem label="使用说明" span={3}><TextArea autoSize={{ minRows: 3, maxRows: 6 }} value={form.usageDescription} onChange={(event) => update('usageDescription', event.target.value)} /></DetailItem>
           </DetailGrid>
         </Card>
 
         {hasSpecialNoInfo(asset) && (
           <Card size="small" title="NO 资产变更信息">
-            <DetailGrid columns={4} labelWidth={108}>
+            <DetailGrid columns={3} labelWidth={108}>
               <DetailItem label="原 SN 号"><Readonly>{asset?.sn}</Readonly></DetailItem>
               <DetailItem label="新 SN 号"><Input value={form.newSn} onChange={(event) => update('newSn', event.target.value)} /></DetailItem>
               <DetailItem label="原 NO 地点"><Readonly>{asset?.noLocation}</Readonly></DetailItem>
