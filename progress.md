@@ -24,3 +24,6 @@
 - 重新接入远端最新提交后发现 `OutboundApprovalHistoryPage.js` 第 55 行的 Card JSX 缺少闭合 `>`，导致构建在下一行 Table 报语法错误；已先用回归测试复现，再补齐闭合符号。
 - 出库审批记录页回归测试和移动端原型测试共 6/6 通过，`DISABLE_ESLINT_PLUGIN=true npm run build` 通过，`git diff --check` 通过。
 - 当前进入修复提交和推送阶段。
+- 复现默认 `npm run build` 时确认之前的 `defaultMeta` 来自临时无锁安装造成的 Ajv 8/ESLint 8 不匹配；按锁文件干净安装又发现 `cfb@1.2.2` 在 npm 官方源校验失败。
+- 已在 `package.json` 增加 `cfb: 1.2.1` 的 override，并用 npm 10 同步 `package-lock.json`；干净安装成功，默认 `npm run build` 通过，仅保留项目原有 ESLint 警告。
+- 移动端原型和出库审批记录页关键测试共 6/6 通过，`git diff --check` 通过。

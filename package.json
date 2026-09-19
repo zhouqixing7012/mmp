@@ -26,6 +26,9 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
   },
+  "overrides": {
+    "cfb": "1.2.1"
+  },
   "eslintConfig": {
     "extends": [
       "react-app",
