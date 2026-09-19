@@ -401,7 +401,7 @@ export default function InventoryPrintPrototypeBoundary({ activeSubMenu, childre
       <Modal
         open={open}
         title={previewTitle}
-        width={1260}
+        width={960}
         style={{ top: 18 }}
         bodyStyle={{ maxHeight: 'calc(100vh - 150px)', overflow: 'auto', background: '#f3f4f6', padding: 18 }}
         onCancel={() => setOpen(false)}
