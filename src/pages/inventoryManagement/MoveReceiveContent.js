@@ -38,8 +38,22 @@ function Readonly({ children }) {
 }
 
 function LookupInput({ value, placeholder, onOpen }) {
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onOpen?.();
+    }
+  };
+
   return (
-    <div className="cursor-pointer" onClick={onOpen}>
+    <div
+      className="cursor-pointer"
+      role="button"
+      tabIndex={0}
+      aria-label={placeholder}
+      onClick={onOpen}
+      onKeyDown={handleKeyDown}
+    >
       <Input value={value} readOnly placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} />} />
     </div>
   );
@@ -354,13 +368,13 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
     { title: '板块', dataIndex: 'plate', width: 110 },
     { title: '资产标记', dataIndex: 'assetMark', width: 120, render: (value) => value || '-' },
     { title: '启用日期', dataIndex: 'enabledDate', width: 120, render: (value, asset) => value || asset.snapshot?.enabledDate || '-' },
-    { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value, asset) => value || asset.snapshot?.assetStatus || '-' },
+    { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value, asset) => <StatusTag value={value || asset.snapshot?.assetStatus || '-'} /> },
     { title: '验证说明', dataIndex: 'verificationDesc', width: 180, render: (value) => value || '-' },
     {
       title: '资产验证',
       dataIndex: 'verification',
       width: 110,
-      render: (value) => value === '未验证' ? <Typography.Text type="danger">未验证</Typography.Text> : <StatusTag value="已验证" />,
+      render: (value) => <StatusTag value={value || '-'} type="business" />,
     },
     { title: '移库状态', dataIndex: 'moveStatus', width: 110, render: (value) => <StatusTag value={value} /> },
     {
@@ -433,7 +447,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
               onChange: setSelectedKeys,
               fixed: true,
               columnTitle: '选择',
-              getCheckboxProps: (record) => ({ disabled: record.moveStatus !== '待接收' }),
+              getCheckboxProps: (record) => ({ disabled: record.moveStatus !== '待接收' || record.verification !== '已验证' }),
             } : undefined}
             scroll={{ x: 'max-content' }}
             pagination={false}
