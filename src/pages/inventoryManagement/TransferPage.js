@@ -205,7 +205,8 @@ function validateTransferImportRows(matrix, { company, sourceAssets, existingLin
     else if (!TRANSFER_IMPORT_FLOORS.includes(floor)) rowErrors.push('Floor不是系统有效楼层');
     const transferDate = normalizeImportDate(transferDateValue) || dayjs().format('YYYY-MM-DD');
     if (transferDateValue && !/^\\d{4}-\\d{2}-\\d{2}$/.test(transferDate)) rowErrors.push('转移日期必须为yyyy-MM-dd');
-    if (transferDate && !dayjs(transferDate, 'YYYY-MM-DD', true).isValid()) rowErrors.push('转移日期不是有效日期');
+    const validTransferDate = /^\\d{4}-\\d{2}-\\d{2}$/.test(transferDate) && dayjs(transferDate).format('YYYY-MM-DD') === transferDate;
+    if (!validTransferDate) rowErrors.push('转移日期不是有效日期');
     const purpose = purposeValue || asset?.usage || '';
     if (purposeValue && !PURPOSE_OPTIONS.includes(purposeValue)) rowErrors.push('用途不是系统有效用途');
     if (businessLine && !TRANSFER_IMPORT_BUSINESS_LINES.includes(businessLine)) rowErrors.push('业务线不存在');
