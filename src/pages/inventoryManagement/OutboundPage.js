@@ -222,43 +222,10 @@ function hasPurchaseSource(lines) {
   return (lines || []).some((line) => Boolean(line.purchaseSource));
 }
 
-function AssetSelectView({ open, warehouse, onBack, onConfirm }) {
-  const dataSource = ASSET_POOL.filter((asset) => asset.warehouse === warehouse && AVAILABLE_ASSET_STATUSES.has(asset.assetStatus) && !asset.locked);
-  return (
-    <SelectModal
-      open={open}
-      title="选择出库资产"
-      dataSource={dataSource}
-      columns={[
-        { title: '资产标签号', dataIndex: 'assetTag', width: 160 },
-        { title: 'SN号', dataIndex: 'sn', width: 150 },
-        { title: '资产说明', dataIndex: 'materialDesc', width: 200 },
-        { title: '公司', dataIndex: 'company', width: 130 },
-        { title: '板块', dataIndex: 'plate', width: 100 },
-        { title: '资产大类', dataIndex: 'assetClass', width: 120 },
-        { title: '资产小类', dataIndex: 'assetSubClass', width: 130 },
-        { title: '当前状态', dataIndex: 'assetStatus', width: 130 },
-        { title: '当前仓库', dataIndex: 'warehouse', width: 230 },
-        { title: '当前责任人', dataIndex: 'responsiblePerson', width: 140 },
-      ]}
-      searchFields={[
-        { label: '资产标签号', name: 'assetTag', dataIndex: 'assetTag' },
-        { label: 'SN号', name: 'sn', dataIndex: 'sn' },
-        { label: '资产说明', name: 'materialDesc', dataIndex: 'materialDesc' },
-        { label: '资产大类', name: 'assetClass', dataIndex: 'assetClass' },
-        { label: '资产小类', name: 'assetSubClass', dataIndex: 'assetSubClass' },
-        { label: '责任人', name: 'responsiblePerson', dataIndex: 'responsiblePerson' },
-      ]}
-      onCancel={onBack}
-      onConfirm={(record) => { onConfirm(record); onBack(); }}
-    />
-  );
-}
-
 function OutboundItemModal({ open, mode, warehouse, initialLine, existingLines, onCancel, onConfirm }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const isBorrow = mode === '借用出库';
-  const [selectAssetOpen, setSelectAssetOpen] = useState(false);
+  const [selectorOpen, setSelectorOpen] = useState(false);
   const [asset, setAsset] = useState(initialLine ? { ...initialLine } : null);
   const initialPerson = initialLine?.person || initialLine?.issuePerson || initialLine?.borrowPerson || CURRENT_USER;
   const employee = EMPLOYEES.find((item) => item.value === initialPerson) || EMPLOYEES[0];
@@ -302,8 +269,32 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, existingLines, 
   const buildingOptions = Object.keys(LOCATION_OPTIONS[form.city] || {});
   const floorOptions = (LOCATION_OPTIONS[form.city]?.[form.building] || []);
 
+  const existingTags = useMemo(() => new Set(
+    (existingLines || [])
+      .filter((line) => line.id !== initialLine?.id)
+      .map((line) => line.assetTag)
+      .filter(Boolean),
+  ), [existingLines, initialLine?.id]);
+
+  const selectableAssets = useMemo(() => ASSET_POOL.filter((item) => (
+    item.warehouse === warehouse
+    && AVAILABLE_ASSET_STATUSES.has(item.assetStatus)
+    && !item.locked
+    && (!existingTags.has(item.assetTag) || item.assetTag === initialLine?.assetTag)
+  )), [warehouse, existingTags, initialLine?.assetTag]);
+
+  const selectorAssets = useMemo(() => selectableAssets.map((item) => ({
+    ...item,
+    brand: item.brand || String(item.materialDesc || '').split('.')[0] || '-',
+    originalValueDisplay: money(item.originalValue),
+  })), [selectableAssets]);
+
+  const selectedAssetDisplay = asset
+    ? [asset.assetTag, asset.sn, asset.materialDesc].filter(Boolean).join(' / ')
+    : '';
+
   const validate = () => {
-    if (!asset?.assetTag) return '请选择出库资产';
+    if (!asset?.assetTag) return '请选择出库物资';
     if (!form.person) return `${isBorrow ? '借用人' : '领用人'}不能为空`;
     if (!form.outboundStatus) return '资产状态不能为空';
     if (!form.costCenter) return '成本中心不能为空';
@@ -315,7 +306,7 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, existingLines, 
     if (isBorrow && !form.reason.trim()) return '借用原因不能为空';
     if (isBorrow && !form.expectedReturnDate) return '预计归还日期不能为空';
     if (isBorrow && form.expectedReturnDate < form.outboundDate) return '预计归还日期不得早于借用日期';
-    const first = existingLines?.[0];
+    const first = existingLines?.find((line) => line.id !== initialLine?.id);
     if (first && !sameApprovalChain(first, asset)) return '所选资产与当前出库单审批路线不一致，请拆分出库单处理。';
     return '';
   };
@@ -343,17 +334,13 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, existingLines, 
     return undefined;
   };
 
-  if (selectAssetOpen) {
-    return <AssetSelectView open={open} warehouse={warehouse} onBack={() => setSelectAssetOpen(false)} onConfirm={setAsset} />;
-  }
-
   return (
     <>
       {contextHolder}
       <Modal
         open={open}
         title={isBorrow ? '添加借用出库物资' : '添加领用出库物资'}
-        width={1180}
+        width={960}
         onCancel={onCancel}
         destroyOnHidden
         footer={[
@@ -366,9 +353,14 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, existingLines, 
           <Typography.Text>当前仓库：{warehouse}</Typography.Text>
           <Card size="small" title="选择物资">
             <DetailGrid columns={3} labelWidth={96}>
-              <EditorField label="资产标签号" required><LookupInput value={asset?.assetTag} onClick={() => setSelectAssetOpen(true)} /></EditorField>
-              <EditorField label="SN号"><LookupInput value={asset?.sn} onClick={() => setSelectAssetOpen(true)} /></EditorField>
-              <EditorField label="审批路线"><Readonly>{asset ? approvalRouteForLine(asset) : '-'}</Readonly></EditorField>
+              <EditorField label="出库物资" required span={3}>
+                <LookupInput
+                  value={selectedAssetDisplay}
+                  placeholder="请选择出库物资"
+                  onClick={() => setSelectorOpen(true)}
+                  disabled={Boolean(initialLine)}
+                />
+              </EditorField>
             </DetailGrid>
           </Card>
 
@@ -429,6 +421,40 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, existingLines, 
           </Card>
         </Space>
       </Modal>
+
+      <SelectModal
+        open={selectorOpen}
+        title="选择出库物资"
+        width={960}
+        dataSource={selectorAssets}
+        initialSelectedKeys={asset ? [asset.id] : []}
+        columns={[
+          { title: '标签号', dataIndex: 'assetTag' },
+          { title: 'SN号', dataIndex: 'sn' },
+          { title: '公司', dataIndex: 'company' },
+          { title: '板块', dataIndex: 'plate' },
+          { title: '资产大类', dataIndex: 'assetClass' },
+          { title: '资产小类', dataIndex: 'assetSubClass' },
+          { title: '资产说明', dataIndex: 'materialDesc' },
+          { title: '品牌', dataIndex: 'brand' },
+          { title: '数量', dataIndex: 'quantity' },
+          { title: '原值', dataIndex: 'originalValueDisplay' },
+          { title: '资产责任人', dataIndex: 'responsiblePerson' },
+          { title: '资产状态', dataIndex: 'assetStatus' },
+          { title: '成本中心', dataIndex: 'costCenter' },
+        ]}
+        searchFields={[
+          { label: '标签号', name: 'assetTag', dataIndex: 'assetTag' },
+          { label: 'SN号', name: 'sn', dataIndex: 'sn' },
+          { label: '板块', name: 'plate', dataIndex: 'plate' },
+          { label: '资产说明', name: 'materialDesc', dataIndex: 'materialDesc' },
+        ]}
+        onCancel={() => setSelectorOpen(false)}
+        onConfirm={(record) => {
+          setAsset(record || null);
+          setSelectorOpen(false);
+        }}
+      />
     </>
   );
 }
