@@ -95,7 +95,7 @@ export default function AssetReturnEmployeeAssetsModal({ open, applicant, onCanc
         columns={columns}
         dataSource={filteredAssets}
         pagination={{ pageSize: 5, showTotal: (total) => `共 ${total} 条` }}
-        scroll={{ x: 1300, y: 380 }}
+        scroll={{ x: 'max-content', y: 380 }}
         size="small"
         bordered
       />
