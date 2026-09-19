@@ -142,10 +142,10 @@ function createTransferImportWorkbook(rows = [TRANSFER_IMPORT_HEADERS]) {
   const templateSheet = XLSX.utils.aoa_to_sheet(rows);
   const helperRows = [
     ['', '', '用途', '', 'Building / Floor'],
-    ...Array.from({ length: 46 }, (_, index) => {
+    ...Array.from({ length: 47 }, (_, index) => {
       const row = ['', '', PURPOSE_OPTIONS[index] || '', '', ''];
       if (index < 3) row[4] = `B${index + 1}`;
-      else if (index < 45) row[4] = TRANSFER_IMPORT_FLOORS[index - 3];
+      else if (index < 46) row[4] = TRANSFER_IMPORT_FLOORS[index - 3];
       else row[4] = '缺省';
       return row;
     }),
