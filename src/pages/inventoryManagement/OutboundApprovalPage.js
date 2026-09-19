@@ -116,11 +116,11 @@ export default function OutboundApprovalPage({ outbound, onApprove, onReject, on
         </Card>
       )}
 
-      <div className="flex justify-center gap-3">
-        {canOperate && <Button type="primary" onClick={approve}>同意</Button>}
-        {canOperate && <Button danger onClick={reject}>驳回</Button>}
-        <Button onClick={onBack}>返回</Button>
-      </div>
+      {!canOperate && (
+        <div className="flex justify-center">
+          <Button onClick={onBack}>返回</Button>
+        </div>
+      )}
     </Space>
   );
 }
