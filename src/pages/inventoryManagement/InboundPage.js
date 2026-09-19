@@ -272,7 +272,7 @@ function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
   return (
     <>
       {contextHolder}
-      <Modal open={open} title="添加新增入库物资" width={960} onCancel={onCancel} footer={[
+      <Modal open={open && !selector} title="添加新增入库物资" width={960} onCancel={onCancel} footer={[
         <Button key="cancel" onClick={onCancel}>取消</Button>,
         <Button key="continue" onClick={() => submit(false)}>添加并继续</Button>,
         <Button key="close" type="primary" onClick={() => submit(true)}>添加并关闭</Button>,
@@ -367,7 +367,7 @@ function AssetInboundItemModal({ open, mode, warehouse, onCancel, onConfirm }) {
   return (
     <>
       {contextHolder}
-      <Modal open={open} title={isBorrow ? '添加借用归还物资' : '添加退库入库物资'} width={960} onCancel={onCancel} footer={[
+      <Modal open={open && !selector} title={isBorrow ? '添加借用归还物资' : '添加退库入库物资'} width={960} onCancel={onCancel} footer={[
         <Button key="cancel" onClick={onCancel}>取消</Button>,
         <Button key="continue" onClick={() => submit(false)}>添加并继续</Button>,
         <Button key="close" type="primary" onClick={() => submit(true)}>添加并关闭</Button>,
