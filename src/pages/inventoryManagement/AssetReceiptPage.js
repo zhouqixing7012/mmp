@@ -216,8 +216,22 @@ function isRealSn(value) {
 }
 
 function SelectorInput({ value, placeholder, onOpen }) {
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onOpen?.();
+    }
+  };
+
   return (
-    <div className="cursor-pointer" onClick={onOpen}>
+    <div
+      className="cursor-pointer"
+      role="button"
+      tabIndex={0}
+      aria-label={placeholder}
+      onClick={onOpen}
+      onKeyDown={handleKeyDown}
+    >
       <Input value={value} readOnly allowClear={false} placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} className="text-[#1677ff]" />} />
     </div>
   );
