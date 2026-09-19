@@ -48,7 +48,7 @@ export default function ReplacementEmployeeAssetsModal({ open, applicant, onCanc
         <QueryItem label="资产说明"><Input allowClear value={query.assetDesc} onChange={(event) => setQuery({ ...query, assetDesc: event.target.value })} /></QueryItem>
         <QueryItem label="是否锁定"><Select allowClear value={query.locked || undefined} options={['是', '否'].map((value) => ({ label: value, value }))} onChange={(value) => setQuery({ ...query, locked: value || '' })} /></QueryItem>
       </QueryBar>
-      <Table rowKey="id" columns={columns} dataSource={filteredAssets} scroll={{ x: 1450, y: 380 }} pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }} />
+      <Table rowKey="id" columns={columns} dataSource={filteredAssets} scroll={{ x: 'max-content', y: 380 }} pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }} />
     </Modal>
   );
 }
