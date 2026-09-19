@@ -786,7 +786,7 @@ export default function ContractNumberMaintenancePage() {
       <Modal
         title={`合约号码信息${source?.tag ? `：${source.tag}` : ''}`}
         open={cardOpen}
-        width={1120}
+        width={960}
         style={{ maxWidth: 'calc(100vw - 48px)' }}
         styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}
         footer={cardMode === 'edit' ? [
