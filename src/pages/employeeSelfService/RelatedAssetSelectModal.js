@@ -80,7 +80,7 @@ export default function RelatedAssetSelectModal({ open, value, onCancel, onConfi
         columns={columns}
         dataSource={dataSource}
         pagination={false}
-        scroll={{ x: 930 }}
+        scroll={{ x: 'max-content' }}
         onRow={(record) => ({
           onClick: () => setSelectedId(record.id),
           className: selectedId === record.id ? 'bg-blue-50 cursor-pointer' : 'cursor-pointer',
