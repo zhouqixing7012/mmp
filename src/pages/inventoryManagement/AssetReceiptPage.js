@@ -1107,7 +1107,7 @@ export default function AssetReceiptPage() {
   ];
 
   const itemColumns = [
-    { title: '行号', dataIndex: 'id', width: 70, align: 'center' },
+    { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
     { title: '操作', key: 'operation', width: 80, fixed: 'left', render: (_, row) => row.editable && row.receiptStatus === '待接收' && availableQty(row) > 0 && !isPoItemLocked(activePO?.poNo, row.id) ? <Button type="link" className="px-0" onClick={() => openItemEditor(row)}>编辑</Button> : '-' },
     { title: '接收状态', dataIndex: 'receiptStatus', width: 120, render: (value) => value ? <StatusTag value={value} /> : '-' },
     { title: '物资总类', dataIndex: 'materialGroup', width: 120 },
@@ -1137,7 +1137,7 @@ export default function AssetReceiptPage() {
   ];
 
   const receiptDetailColumns = [
-    { title: '行号', dataIndex: 'id', width: 70, align: 'center' },
+    { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
     { title: '物料说明', dataIndex: 'materialDesc', width: 240 },
     { title: '配置', dataIndex: 'config', width: 220 },
     { title: '部件数量', dataIndex: 'partQuantity', width: 110 },
