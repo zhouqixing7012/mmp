@@ -1134,7 +1134,6 @@ export default function AssetMaintenancePage() {
       <QueryBar
         onQuery={handleQuery}
         onReset={handleReset}
-        fieldColProps={{ span: 8 }}
         buttons={(
           <>
             <Button type="primary" icon={<Search size={14} />} onClick={handleQuery}>查询</Button>
