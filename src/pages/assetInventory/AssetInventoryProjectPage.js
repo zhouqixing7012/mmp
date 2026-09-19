@@ -955,7 +955,7 @@ function CreateProjectView({ initialProject, onBack, onGenerated }) {
       <Modal
         open={assetPreviewOpen}
         title="盘点范围资产清单"
-        width={1200}
+        width={960}
         footer={<Button type="primary" onClick={() => setAssetPreviewOpen(false)}>返回</Button>}
         onCancel={() => setAssetPreviewOpen(false)}
       >
@@ -1160,7 +1160,7 @@ function CustomPlanModal({ open, onCancel, onConfirm }) {
       <Modal
         open={open}
         title="自定义创建盘点计划"
-        width={820}
+        width={960}
         okText="生成计划"
         cancelText="取消"
         onCancel={onCancel}
@@ -2029,7 +2029,7 @@ function ProgressView({ project, onBack }) {
       <Modal
         open={Boolean(assetModal)}
         title={assetModal === 'uncounted' ? '未盘资产' : '盘点全量资产'}
-        width={1280}
+        width={960}
         footer={<Space><Button icon={<Download size={14} />}>导出</Button><Button type="primary" onClick={() => setAssetModal(null)}>返回</Button></Space>}
         onCancel={() => setAssetModal(null)}
       >
