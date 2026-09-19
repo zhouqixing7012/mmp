@@ -1,8 +1,9 @@
-name: Publish asset inventory preview
+name: Publish main and feature previews
 
 on:
   push:
     branches:
+      - main
       - feature/asset-inventory
   workflow_dispatch:
 
@@ -19,23 +20,60 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 检出代码
+      - name: 检出 main
         uses: actions/checkout@v4
+        with:
+          ref: main
+          path: source-main
+
+      - name: 检出功能分支
+        uses: actions/checkout@v4
+        with:
+          ref: feature/asset-inventory
+          path: source-feature
 
       - name: 准备 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: |
+            source-main/package-lock.json
+            source-feature/package-lock.json
 
-      - name: 安装依赖
-        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: 安装 main 依赖
+        run: npm ci --prefix source-main --ignore-scripts --no-audit --no-fund
 
-      - name: 构建网页
+      - name: 构建 main 页面
         env:
           # 项目已有历史 ESLint 警告，预览构建不把警告升级为错误。
           CI: false
+          PUBLIC_URL: /mmp/
         run: npm run build
+        working-directory: source-main
+
+      - name: 组装 main 页面
+        run: |
+          mkdir -p pages
+          cp -R source-main/build/. pages/
+          cp pages/index.html pages/404.html
+
+      - name: 安装功能分支依赖
+        run: npm ci --prefix source-feature --ignore-scripts --no-audit --no-fund
+
+      - name: 构建功能分支页面
+        env:
+          # 项目已有历史 ESLint 警告，预览构建不把警告升级为错误。
+          CI: false
+          PUBLIC_URL: /mmp/feature-asset-inventory/
+        run: npm run build
+        working-directory: source-feature
+
+      - name: 组装功能分支页面
+        run: |
+          mkdir -p pages/feature-asset-inventory
+          cp -R source-feature/build/. pages/feature-asset-inventory/
+          cp pages/feature-asset-inventory/index.html pages/feature-asset-inventory/404.html
 
       - name: 准备 Pages
         uses: actions/configure-pages@v5
@@ -43,7 +81,7 @@ jobs:
       - name: 上传 Pages 文件
         uses: actions/upload-pages-artifact@v3
         with:
-          path: build
+          path: pages
 
   deploy:
     needs: build

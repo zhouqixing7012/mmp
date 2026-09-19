@@ -7,6 +7,11 @@ import PageMotionBoundary from './components/PageMotionBoundary';
 import routes from './config/routes';
 import PrototypeAnnotationLayer from './prototype-annotations/PrototypeAnnotationLayer';
 
+export function getRouterBasename(publicUrl = process.env.PUBLIC_URL) {
+  if (!publicUrl || publicUrl === '.') return undefined;
+  return publicUrl.replace(/\/+$/, '');
+}
+
 function AppRoutes() {
   const location = useLocation();
   const isAdminWorkspace = location.pathname === '/yewurules';
@@ -24,9 +29,11 @@ function AppRoutes() {
 }
 
 export default function App() {
+  const routerBasename = getRouterBasename();
+
   return (
     <ConfigProvider locale={zhCN}>
-      <BrowserRouter>
+      <BrowserRouter basename={routerBasename}>
         <Navbar />
         <AppRoutes />
         <PrototypeAnnotationLayer />
