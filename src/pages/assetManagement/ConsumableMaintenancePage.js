@@ -943,7 +943,7 @@ export default function ConsumableMaintenancePage() {
     { key: 'detail', label: '详细信息', children: detailTab },
     {
       key: 'history',
-      label: '资产操作历史',
+      label: '耗材操作历史',
       children: (
         <Table
           rowKey="id"
