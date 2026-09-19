@@ -314,8 +314,22 @@ function RequiredLabel({ children }) {
 }
 
 function LookupInput({ value, placeholder, onOpen }) {
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onOpen?.();
+    }
+  };
+
   return (
-    <div className="cursor-pointer" onClick={onOpen}>
+    <div
+      className="cursor-pointer"
+      role="button"
+      tabIndex={0}
+      aria-label={placeholder}
+      onClick={onOpen}
+      onKeyDown={handleKeyDown}
+    >
       <Input value={value} readOnly placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} />} />
     </div>
   );
@@ -379,7 +393,7 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
         { title: '数量', dataIndex: 'quantity', width: 90, align: 'right' },
         { title: '原值', dataIndex: 'originalValue', width: 110, align: 'right', render: (value) => value === 0 ? 0 : (value || '-') },
         { title: '资产责任人', dataIndex: 'responsiblePerson', width: 150, render: (value) => value || '-' },
-        { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value) => value || '-' },
+        { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value) => <StatusTag value={value || '-'} /> },
         { title: '成本中心', dataIndex: 'costCenter', width: 150, render: (value) => value || '-' },
         { title: '启用日期', dataIndex: 'enabledDate', width: 120, render: (value) => value || '-' },
       ],
@@ -468,9 +482,9 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
 
   return (
     <Modal open={open && !selectorType} title="添加转移物资" width={960} rootClassName="mmp-transfer-item-modal" onCancel={onCancel} destroyOnHidden footer={[
-      <Button key="continue" type="primary" onClick={() => submit(true)}>添加并继续</Button>,
-      <Button key="close" type="primary" onClick={() => submit(false)}>添加并关闭</Button>,
       <Button key="cancel" onClick={onCancel}>取消</Button>,
+      <Button key="continue" onClick={() => submit(true)}>添加并继续</Button>,
+      <Button key="close" type="primary" onClick={() => submit(false)}>添加并关闭</Button>,
     ]}>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
@@ -625,9 +639,6 @@ function TransferImportModal({ open, company, sourceAssets, existingLines, onCan
       onCancel={handleCancel}
       destroyOnHidden
       footer={[
-        <Button key="template" icon={<Download size={14} />} onClick={downloadTransferImportTemplate}>下载模板</Button>,
-        <Button key="choose" icon={<Upload size={14} />} onClick={() => fileInputRef.current?.click()} loading={reading}>选择Excel</Button>,
-        <Button key="errors" disabled={!errorRows.length} onClick={() => downloadTransferImportErrors(errorRows)}>下载错误结果</Button>,
         <Button key="cancel" onClick={handleCancel}>取消</Button>,
         <Button key="import" type="primary" disabled={!validLines.length || errorRows.length > 0} onClick={importRows}>导入并暂时锁定</Button>,
       ]}
@@ -635,6 +646,11 @@ function TransferImportModal({ open, company, sourceAssets, existingLines, onCan
       {contextHolder}
       <input ref={fileInputRef} type="file" accept=".xls,.xlsx" className="hidden" onChange={handleFile} />
       <Space direction="vertical" size={12} className="w-full">
+        <Space wrap>
+          <Button icon={<Download size={14} />} onClick={downloadTransferImportTemplate}>下载模板</Button>
+          <Button icon={<Upload size={14} />} onClick={() => fileInputRef.current?.click()} loading={reading}>选择 Excel</Button>
+          <Button disabled={!errorRows.length} onClick={() => downloadTransferImportErrors(errorRows)}>下载错误结果</Button>
+        </Space>
         <Typography.Text type="secondary">模板第一张表使用固定15列；资产标签号有值时优先按标签号匹配，标签号为空时按SN号匹配。任意一行错误，整批不保存。</Typography.Text>
         {fileName && <Typography.Text>当前文件：{fileName}</Typography.Text>}
         <Table
@@ -1282,15 +1298,9 @@ export default function TransferPage() {
     && inDateRange(row.createdDate, filters.createdFrom, filters.createdTo)
   )), [rows, filters]);
   const update = (field, value) => setDraft((current) => ({ ...current, [field]: value || '' }));
-  const emptyLookup = (title, field) => ({ title, dataSource: [], onConfirm: (record) => update(field, record.name) });
   const selectorConfig = {
     company: { title: '选择公司', dataSource: companyData, onConfirm: (record) => update('company', record.name) },
     creator: { title: '选择制单人', dataSource: creatorData, onConfirm: (record) => update('creator', record.name) },
-    outDept: emptyLookup('选择转出部门', 'outDept'),
-    outLocation: emptyLookup('选择转出地点', 'outLocation'),
-    plate: emptyLookup('选择板块', 'plate'),
-    inDept: emptyLookup('选择转入部门', 'inDept'),
-    inLocation: emptyLookup('选择转入地点', 'inLocation'),
   }[selectorType];
   const deleteRows = () => {
     if (!selectedRowKeys.length) return messageApi.warning('请先选择需要删除的转移单');
@@ -1414,11 +1424,11 @@ export default function TransferPage() {
         <QueryItem label="转移原因"><Input value={draft.reason} allowClear placeholder="请输入转移原因" onChange={(event) => update('reason', event.target.value)} /></QueryItem>
         <QueryItem label="单据状态"><Select className="w-full" value={draft.status || undefined} allowClear placeholder="全部" options={['草稿', '已完成'].map((value) => ({ label: value, value }))} onChange={(value) => update('status', value)} /></QueryItem>
         <QueryItem label="公司"><LookupInput value={draft.company} placeholder="请选择公司" onOpen={() => setSelectorType('company')} /></QueryItem>
-        <QueryItem label="转出部门"><LookupInput value={draft.outDept} placeholder="请选择转出部门" onOpen={() => setSelectorType('outDept')} /></QueryItem>
-        <QueryItem label="转出地点"><LookupInput value={draft.outLocation} placeholder="请选择转出地点" onOpen={() => setSelectorType('outLocation')} /></QueryItem>
-        <QueryItem label="板块"><LookupInput value={draft.plate} placeholder="请选择板块" onOpen={() => setSelectorType('plate')} /></QueryItem>
-        <QueryItem label="转入部门"><LookupInput value={draft.inDept} placeholder="请选择转入部门" onOpen={() => setSelectorType('inDept')} /></QueryItem>
-        <QueryItem label="转入地点"><LookupInput value={draft.inLocation} placeholder="请选择转入地点" onOpen={() => setSelectorType('inLocation')} /></QueryItem>
+        <QueryItem label="转出部门"><Input value={draft.outDept} allowClear placeholder="请输入转出部门" onChange={(event) => update('outDept', event.target.value)} /></QueryItem>
+        <QueryItem label="转出地点"><Input value={draft.outLocation} allowClear placeholder="请输入转出地点" onChange={(event) => update('outLocation', event.target.value)} /></QueryItem>
+        <QueryItem label="板块"><Input value={draft.plate} allowClear placeholder="请输入板块" onChange={(event) => update('plate', event.target.value)} /></QueryItem>
+        <QueryItem label="转入部门"><Input value={draft.inDept} allowClear placeholder="请输入转入部门" onChange={(event) => update('inDept', event.target.value)} /></QueryItem>
+        <QueryItem label="转入地点"><Input value={draft.inLocation} allowClear placeholder="请输入转入地点" onChange={(event) => update('inLocation', event.target.value)} /></QueryItem>
         <QueryItem label="制单人"><LookupInput value={draft.creator} placeholder="请选择制单人" onOpen={() => setSelectorType('creator')} /></QueryItem>
         <QueryItem label="制单日期">
           <DatePicker.RangePicker
@@ -1449,6 +1459,7 @@ export default function TransferPage() {
           </Space>
         )}
       >
+
         <Table rowKey="id" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys, fixed: true, columnTitle: '选择', columnWidth: 64 }} scroll={{ x: 'max-content' }} pagination={{ current: page, pageSize, showSizeChanger: true, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); } }} />
       </Card>
       <SelectorModal config={selectorConfig} onClose={() => setSelectorType('')} />
