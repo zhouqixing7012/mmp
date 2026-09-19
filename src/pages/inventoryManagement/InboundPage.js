@@ -272,7 +272,7 @@ function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
   return (
     <>
       {contextHolder}
-      <Modal open={open} title="添加新增入库物资" width={1180} onCancel={onCancel} footer={[
+      <Modal open={open} title="添加新增入库物资" width={960} onCancel={onCancel} footer={[
         <Button key="cancel" onClick={onCancel}>取消</Button>,
         <Button key="continue" onClick={() => submit(false)}>添加并继续</Button>,
         <Button key="close" type="primary" onClick={() => submit(true)}>添加并关闭</Button>,
@@ -280,7 +280,7 @@ function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
         <Space direction="vertical" size={16} className="w-full">
           <Typography.Text>当前仓库：{warehouse}</Typography.Text>
           <Card size="small" title="物资信息">
-            <DetailGrid columns={3} labelWidth={96} minWidth={980}>
+            <DetailGrid columns={3} labelWidth={96} >
               <EditorField label="物资说明" required><LookupInput value={form.materialDesc} onClick={() => setSelector('material')} /></EditorField>
               <EditorField label="物资总类"><Readonly>{form.materialGroup}</Readonly></EditorField>
               <EditorField label="物资大类"><Readonly>{form.assetClass}</Readonly></EditorField>
@@ -367,7 +367,7 @@ function AssetInboundItemModal({ open, mode, warehouse, onCancel, onConfirm }) {
   return (
     <>
       {contextHolder}
-      <Modal open={open} title={isBorrow ? '添加借用归还物资' : '添加退库入库物资'} width={1180} onCancel={onCancel} footer={[
+      <Modal open={open} title={isBorrow ? '添加借用归还物资' : '添加退库入库物资'} width={960} onCancel={onCancel} footer={[
         <Button key="cancel" onClick={onCancel}>取消</Button>,
         <Button key="continue" onClick={() => submit(false)}>添加并继续</Button>,
         <Button key="close" type="primary" onClick={() => submit(true)}>添加并关闭</Button>,
@@ -382,7 +382,7 @@ function AssetInboundItemModal({ open, mode, warehouse, onCancel, onConfirm }) {
             </DetailGrid>
           </Card>
           <Card size="small" title="物资信息">
-            <DetailGrid columns={3} labelWidth={96} minWidth={980}>
+            <DetailGrid columns={3} labelWidth={96} >
               <EditorField label="资产标签号"><Readonly>{asset.assetTag}</Readonly></EditorField>
               <EditorField label="SN号"><Readonly>{asset.sn}</Readonly></EditorField>
               <EditorField label="物资说明"><Readonly>{asset.materialDesc}</Readonly></EditorField>
@@ -476,7 +476,7 @@ function PurchasePendingModal({ open, rows, currentLines, onCancel, onConfirm })
   useEffect(() => { if (!open) setSelected([]); }, [open]);
 
   return (
-    <Modal open={open} title="选择待入库物资" width={1280} okText="确认" cancelText="取消" onCancel={onCancel} onOk={() => onConfirm(selectedRows)}>
+    <Modal open={open} title="选择待入库物资" width={960} okText="确认" cancelText="取消" onCancel={onCancel} onOk={() => onConfirm(selectedRows)}>
       <Space direction="vertical" size={16} className="w-full">
         <QueryBar onQuery={() => setFilters({ ...draft })} onReset={() => { setDraft(empty); setFilters(empty); }}>
           <QueryItem label="公司"><Input value={draft.company} onChange={(e) => update('company', e.target.value)} /></QueryItem>
@@ -529,11 +529,11 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, editabl
     return (
       <>
         {contextHolder}
-        <Modal open={open} title="入库物资信息" width={1180} onCancel={onCancel} footer={canSaveWarranty ? [<Button key="cancel" onClick={onCancel}>取消</Button>, <Button key="save" type="primary" onClick={saveWarranty}>保存</Button>] : null}>
+        <Modal open={open} title="入库物资信息" width={960} onCancel={onCancel} footer={canSaveWarranty ? [<Button key="cancel" onClick={onCancel}>取消</Button>, <Button key="save" type="primary" onClick={saveWarranty}>保存</Button>] : null}>
           <Space direction="vertical" size={16} className="w-full">
             <Typography.Text>当前仓库：{warehouse}</Typography.Text>
             <Card size="small" title="物资信息">
-              <DetailGrid columns={3} labelWidth={112} minWidth={980}>
+              <DetailGrid columns={3} labelWidth={112} >
                 <EditorField label="物资说明"><Readonly>{detail.materialDesc}</Readonly></EditorField>
                 <EditorField label="物资总类"><Readonly>{detail.materialGroup}</Readonly></EditorField>
                 <EditorField label="物资大类"><Readonly>{detail.assetClass}</Readonly></EditorField>
@@ -595,12 +595,12 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, editabl
 
   if (inboundType === '新增入库') {
     const infra = INFRA_ASSET_TYPES.has(detail.assetSubClass);
-    return <Modal open={open} title="入库物资信息" width={1180} onCancel={onCancel} footer={null}><Space direction="vertical" size={16} className="w-full"><Typography.Text>当前仓库：{warehouse}</Typography.Text><Card size="small" title="物资信息"><DetailGrid columns={3} labelWidth={112} minWidth={980}>
+    return <Modal open={open} title="入库物资信息" width={960} onCancel={onCancel} footer={null}><Space direction="vertical" size={16} className="w-full"><Typography.Text>当前仓库：{warehouse}</Typography.Text><Card size="small" title="物资信息"><DetailGrid columns={3} labelWidth={112} >
       <EditorField label="物资说明"><Readonly>{detail.materialDesc}</Readonly></EditorField><EditorField label="物资总类"><Readonly>{detail.materialGroup}</Readonly></EditorField><EditorField label="物资大类"><Readonly>{detail.assetClass}</Readonly></EditorField><EditorField label="物资小类"><Readonly>{detail.assetSubClass}</Readonly></EditorField><EditorField label="品牌"><Readonly>{detail.brand}</Readonly></EditorField><EditorField label="规格型号"><Readonly>{detail.model}</Readonly></EditorField><EditorField label="配置"><Readonly>{detail.config}</Readonly></EditorField><EditorField label="计量单位"><Readonly>{detail.unit}</Readonly></EditorField><EditorField label="申请批次"><Readonly>{detail.applicationBatch}</Readonly></EditorField><EditorField label="入库数量"><Readonly>{detail.quantity}</Readonly></EditorField><EditorField label="原值"><Readonly>{money(detail.originalValue)}</Readonly></EditorField><EditorField label="税金"><Readonly>{money(detail.tax)}</Readonly></EditorField><EditorField label="合计"><Readonly>{money(Number(detail.originalValue || 0) + Number(detail.tax || 0))}</Readonly></EditorField><EditorField label="资产标签号"><Readonly>{detail.assetTag}</Readonly></EditorField><EditorField label="SN号"><Readonly>{detail.sn}</Readonly></EditorField><EditorField label="资产状态"><Readonly>{detail.assetStatus}</Readonly></EditorField><EditorField label="City"><Readonly>{detail.city}</Readonly></EditorField><EditorField label="Building"><Readonly>{detail.building}</Readonly></EditorField><EditorField label="Floor"><Readonly>{detail.floor}</Readonly></EditorField><EditorField label="责任人"><Readonly>{detail.responsiblePerson}</Readonly></EditorField><EditorField label="所在部门"><Readonly>{detail.department}</Readonly></EditorField><EditorField label="新增类型"><Readonly>{detail.addType}</Readonly></EditorField><EditorField label="原资产标签号"><Readonly>{detail.originalAssetTag}</Readonly></EditorField><EditorField label="公司"><Readonly>{detail.company}</Readonly></EditorField><EditorField label="成本中心"><Readonly>{detail.costCenter}</Readonly></EditorField><EditorField label="业务线"><Readonly>{detail.businessLine}</Readonly></EditorField><EditorField label="项目"><Readonly>{detail.project}</Readonly></EditorField><EditorField label="板块"><Readonly>{detail.plate}</Readonly></EditorField><EditorField label="费用账户"><Readonly>{detail.expenseAccount}</Readonly></EditorField>{infra && <EditorField label="服务"><Readonly>{detail.service}</Readonly></EditorField>}{infra && <EditorField label="NO位置"><Readonly>{detail.noLocation}</Readonly></EditorField>}<EditorField label="购买日期"><Readonly>{detail.purchaseDate}</Readonly></EditorField><EditorField label="启用日期"><Readonly>{detail.enableDate}</Readonly></EditorField><EditorField label="PR单号"><Readonly>{detail.prNo}</Readonly></EditorField><EditorField label="申请单号"><Readonly>{detail.applicationNo}</Readonly></EditorField><EditorField label="PO单号"><Readonly>{detail.poNo}</Readonly></EditorField><EditorField label="申请人"><Readonly>{detail.applicant}</Readonly></EditorField><EditorField label="部件数量"><Readonly>{detail.partQuantity}</Readonly></EditorField><EditorField label="部件说明"><Readonly>{detail.partDesc}</Readonly></EditorField><EditorField label="主资产标签号"><Readonly>{detail.mainAssetTag}</Readonly></EditorField><EditorField label="供应商"><Readonly>{detail.supplier}</Readonly></EditorField><EditorField label="使用说明" span={3}><Readonly>{detail.usageDesc}</Readonly></EditorField><EditorField label="备注" span={3}><Readonly>{detail.remark}</Readonly></EditorField>
     </DetailGrid></Card></Space></Modal>;
   }
 
-  return <Modal open={open} title="入库物资信息" width={1180} onCancel={onCancel} footer={null}><Space direction="vertical" size={16} className="w-full"><Typography.Text>当前仓库：{warehouse}</Typography.Text><Card size="small" title="物资信息"><DetailGrid columns={3} labelWidth={112} minWidth={980}>
+  return <Modal open={open} title="入库物资信息" width={960} onCancel={onCancel} footer={null}><Space direction="vertical" size={16} className="w-full"><Typography.Text>当前仓库：{warehouse}</Typography.Text><Card size="small" title="物资信息"><DetailGrid columns={3} labelWidth={112} >
     <EditorField label="资产标签号"><Readonly>{detail.assetTag}</Readonly></EditorField><EditorField label="SN号"><Readonly>{detail.sn}</Readonly></EditorField><EditorField label="物资说明"><Readonly>{detail.materialDesc}</Readonly></EditorField><EditorField label="启用日期"><Readonly>{detail.enabledDate}</Readonly></EditorField><EditorField label="物资总类"><Readonly>{detail.materialGroup}</Readonly></EditorField><EditorField label="物资大类"><Readonly>{detail.assetClass}</Readonly></EditorField><EditorField label="物资小类"><Readonly>{detail.assetSubClass}</Readonly></EditorField><EditorField label="主资产标签号"><Readonly>{detail.mainAssetTag}</Readonly></EditorField><EditorField label="品牌"><Readonly>{detail.brand}</Readonly></EditorField><EditorField label="规格型号"><Readonly>{detail.model}</Readonly></EditorField><EditorField label="配置"><Readonly>{detail.config}</Readonly></EditorField><EditorField label="计量单位"><Readonly>{detail.unit}</Readonly></EditorField><EditorField label={isBorrow ? '借用人' : '退库人'}><Readonly>{isBorrow ? detail.borrower : '206984-何文'}</Readonly></EditorField><EditorField label={isBorrow ? '借用数量' : '资产数量'}><Readonly>{isBorrow ? detail.borrowQty : detail.quantity}</Readonly></EditorField><EditorField label="资产状态"><Readonly>{isBorrow ? detail.assetStatus : '在用-使用中'}</Readonly></EditorField><EditorField label="公司"><Readonly>{detail.company}</Readonly></EditorField><EditorField label="板块"><Readonly>{detail.plate}</Readonly></EditorField><EditorField label="业务线"><Readonly>{detail.businessLine}</Readonly></EditorField><EditorField label="成本中心"><Readonly>{detail.costCenter}</Readonly></EditorField><EditorField label="City"><Readonly>{detail.city}</Readonly></EditorField><EditorField label="Building"><Readonly>{detail.building}</Readonly></EditorField><EditorField label="Floor"><Readonly>{detail.floor}</Readonly></EditorField><EditorField label="Room"><Readonly>{detail.room}</Readonly></EditorField><EditorField label="费用账户"><Readonly>{detail.expenseAccount}</Readonly></EditorField><EditorField label="用途"><Readonly>{detail.usage}</Readonly></EditorField><EditorField label="部件数量"><Readonly>{detail.partQuantity}</Readonly></EditorField><EditorField label="部件说明"><Readonly>{detail.partDesc}</Readonly></EditorField>{isBorrow && <EditorField label="借用开始日期"><Readonly>{detail.borrowDate}</Readonly></EditorField>}{isBorrow && <EditorField label="借用申请单号"><Readonly>{detail.borrowApplicationNo}</Readonly></EditorField>}{isBorrow && <EditorField label="借用原因"><Readonly>{detail.borrowReason}</Readonly></EditorField>}<EditorField label="备注" span={3}><Readonly>{detail.remark}</Readonly></EditorField>
   </DetailGrid></Card><Card size="small" title={isBorrow ? '借用归还入库' : '一般退库入库'}><DetailGrid columns={3} labelWidth={112}>
     <EditorField label="责任人"><Readonly>{detail.responsiblePerson}</Readonly></EditorField><EditorField label="资产标记"><Readonly>{detail.assetMark}</Readonly></EditorField><EditorField label={isBorrow ? '归还数量' : '退库数量'}><Readonly>{detail.returnQty || detail.quantity}</Readonly></EditorField><EditorField label="资产状态"><Readonly>{detail.inboundStatus}</Readonly></EditorField><EditorField label={isBorrow ? '归还日期' : '退库日期'}><Readonly>{detail.returnDate}</Readonly></EditorField><EditorField label="鉴定单号"><Readonly>{detail.appraisalNo}</Readonly></EditorField>{!isBorrow && <EditorField label="退库原因"><Readonly>{detail.returnReason}</Readonly></EditorField>}<EditorField label="鉴定人"><Readonly>{detail.appraiser}</Readonly></EditorField><EditorField label="鉴定日期"><Readonly>{detail.appraisalDate}</Readonly></EditorField><EditorField label="使用说明" span={3}><Readonly>{detail.usageDesc}</Readonly></EditorField>
