@@ -55,7 +55,7 @@ export default function RelatedAssetSelectModal({ open, value, onCancel, onConfi
     <Modal
       title="选择关联主资产"
       open={open}
-      width={980}
+      width={960}
       okText="确定"
       cancelText="取消"
       okButtonProps={{ disabled: !selectedId }}
