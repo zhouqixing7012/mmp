@@ -15,7 +15,7 @@ export default function ReplacementDetailModal({ open, application, onCancel }) 
     <Modal
       title="资产更换详情及流程记录"
       open={open}
-      width={1180}
+      width={960}
       footer={null}
       onCancel={onCancel}
       destroyOnHidden
