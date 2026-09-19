@@ -75,7 +75,7 @@
 - 普通弹窗优先使用 400 / 560 / 700～720px；数据密集型弹窗默认仍受 960px 上限约束。
 - **四列表单型 Modal 允许例外最大 1000px**：只用于承载四列 DetailGrid，必须通过栅格/标签宽度/span 适配，表单本体不加横向滚动；通过业务专用 class 明确声明，不修改所有 Modal 的默认上限。
 - 表格型、列表选择型弹窗字段过宽时在 Table 内使用横向滚动；禁止继续把 Modal 撑到 1120 / 1200 / `94vw` 等超宽尺寸。
-- 通用选择弹窗 `SelectModal` 固定使用三列 `QueryBar + QueryItem`、Ant Design Table 和右对齐 Footer；业务页面不得自行复制旧版两列手写查询区或原生 table。
+- 通用选择弹窗 `SelectModal` 使用 `QueryBar + QueryItem`、Ant Design Table 和右对齐 Footer；QueryBar 按自身实际可用宽度自动采用 1 / 2 / 3 列（<504px=1列，504～767px=2列，≥768px=3列），业务页面不得自行指定查询列数。Table 横向滚动按各列合理最小宽度之和是否超过可用宽度决定，统一优先使用 `scroll={{ x: 'max-content' }}`，禁止按列数判断是否滚动。
 
 **交互模式**：
 - 点击输入框的任何位置都会弹出选择弹窗
