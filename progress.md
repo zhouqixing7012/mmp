@@ -20,4 +20,4 @@
 - 测试首轮暴露普通扫码成功后返回详情缺少选中资产的问题，已在提交扫码结果时保留资产选中状态，组件测试复跑通过 5/5。
 - 全量测试执行结果：42 个测试套件通过、4 个失败，6 个测试失败；失败来自既有合约号码时间断言、标注面板既有断言/临时 Ant Design 依赖版本差异，以及临时 React Router 依赖版本差异，移动端原型测试仍为 5/5。
 - `DISABLE_ESLINT_PLUGIN=true npm run build` 已通过，`git diff --check` 已通过，package-lock 未被修改。
-- 当前进入最终代码复核和提交阶段。
+- 已完成最终代码复核并提交：`dce05c4 feat: add asset inventory mobile prototype`；当前分支工作区干净，未推送远端。
