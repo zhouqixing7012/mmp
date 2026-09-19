@@ -907,8 +907,18 @@ export default function InboundPage() {
         <QueryItem label="制单人"><Input value={draft.creator} allowClear placeholder="请输入制单人" onChange={(e) => update('creator', e.target.value)} /></QueryItem>
         <QueryItem label="制单日期"><RangePicker className="w-full" value={[draft.createdFrom ? dayjs(draft.createdFrom) : null, draft.createdTo ? dayjs(draft.createdTo) : null]} onChange={(dates) => { update('createdFrom', dates?.[0]?.format('YYYY-MM-DD') || ''); update('createdTo', dates?.[1]?.format('YYYY-MM-DD') || ''); }} /></QueryItem>
       </QueryBar>
-      <Card size="small" title="入库单列表" extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
-        <div className="mb-3 flex justify-end"><Space><Button type="primary" icon={<Plus size={14} />} onClick={() => openEditor()}>创建</Button><Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button><Button icon={<Printer size={14} />} onClick={batchPrint}>批量打印</Button></Space></div>
+      <Card
+        size="small"
+        title="入库单列表"
+        extra={(
+          <Space>
+            <Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>
+            <Button type="primary" icon={<Plus size={14} />} onClick={() => openEditor()}>创建</Button>
+            <Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button>
+            <Button icon={<Printer size={14} />} onClick={batchPrint}>批量打印</Button>
+          </Space>
+        )}
+      >
         <Table rowKey="id" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true }} scroll={{ x: 'max-content' }} pagination={{ current: page, pageSize, showSizeChanger: true, onChange: (nextPage, nextSize) => { setPage(nextPage); if (nextSize !== pageSize) { setPageSize(nextSize); setPage(1); } } }} />
       </Card>
     </Space>
