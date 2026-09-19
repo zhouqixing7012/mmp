@@ -365,7 +365,7 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, existingLines, 
           </Card>
 
           <Card size="small" title="物资信息">
-            <DetailGrid columns={3} labelWidth={96} minWidth={980}>
+            <DetailGrid columns={3} labelWidth={96} >
               <EditorField label="资产标签号"><Readonly>{asset?.assetTag}</Readonly></EditorField>
               <EditorField label="SN号"><Readonly>{asset?.sn}</Readonly></EditorField>
               <EditorField label="物资说明"><Readonly>{asset?.materialDesc}</Readonly></EditorField>
@@ -396,7 +396,7 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, existingLines, 
           </Card>
 
           <Card size="small" title={isBorrow ? '借用出库' : '领用出库'}>
-            <DetailGrid columns={3} labelWidth={96} minWidth={980}>
+            <DetailGrid columns={3} labelWidth={96} >
               <EditorField label={isBorrow ? '借用人' : '领用人'} required>
                 <Select className="w-full" value={form.person} options={EMPLOYEES.map(({ value, label }) => ({ value, label }))} onChange={chooseEmployee} />
               </EditorField>
@@ -465,7 +465,7 @@ function OutboundMaterialDetailModal({ open, row, outboundType, onCancel }) {
   const isBorrow = outboundType === '借用出库';
   if (durable || consumable) {
     return (
-      <Modal open={open} title="出库物资信息" width={980} onCancel={onCancel} footer={null}>
+      <Modal open={open} title="出库物资信息" width={960} onCancel={onCancel} footer={null}>
         <Card size="small" title="耗材信息">
           <DetailGrid columns={3} labelWidth={112} minWidth={820}>
             <EditorField label={durable ? '耗材标签号' : '标签号'}><Readonly>{row.assetTag}</Readonly></EditorField>
@@ -487,10 +487,10 @@ function OutboundMaterialDetailModal({ open, row, outboundType, onCancel }) {
   }
 
   return (
-    <Modal open={open} title="出库物资信息" width={1180} onCancel={onCancel} footer={null}>
+    <Modal open={open} title="出库物资信息" width={960} onCancel={onCancel} footer={null}>
       <Space direction="vertical" size={16} className="w-full">
         <Card size="small" title="物资信息">
-          <DetailGrid columns={3} labelWidth={112} minWidth={980}>
+          <DetailGrid columns={3} labelWidth={112} >
             <EditorField label="资产标签号"><Readonly>{row.assetTag}</Readonly></EditorField>
             <EditorField label="SN号"><Readonly>{row.sn}</Readonly></EditorField>
             <EditorField label="物资说明"><Readonly>{row.materialDesc}</Readonly></EditorField>
