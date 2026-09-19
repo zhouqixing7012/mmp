@@ -2,13 +2,14 @@
 
 - `main` 持续校准库存管理原型，历史 ERP 截图和已整理的历史逻辑文档只提取字段与业务规则，视觉统一按 `docs/UI_DESIGN_GUIDELINES.md` V2.1。
 - B 端统一动效已进一步收口：公共弹窗、后台菜单/Tab、侧边栏、顶部下拉、React Router 路由、按钮进入详情/编辑/创建页、查询/重置结果刷新、可点击操作块和表格结果反馈均已形成公共能力，不要求业务页面各自维护动画参数。
-- 弹窗 UI 正在统一收口：普通 Modal 使用统一 12px 圆角、S4 阴影、遮罩和 24px 内容间距；选择弹窗统一基于 Ant Design Modal，QueryBar 按自身实际宽度自动 1 / 2 / 3 列，Table 按列宽自然决定横向滚动。
+- 弹窗 UI 正在统一收口：普通 Modal 使用统一 12px 圆角、S4 阴影和遮罩；间距进一步收紧为 Header / Footer `12px 20px`、Body `16px 20px`；选择弹窗统一基于 Ant Design Modal，QueryBar 按自身实际宽度自动 1 / 2 / 3 列，Table 按列宽自然决定横向滚动。
 - 新页面动效规则已固化到 `AGENTS.md` 和 `docs/UI_MOTION_GUIDELINES.md`，后续生成页面默认按统一动效规范检查。
 - 当前库存重点已推进到 **库存管理 → 出库 / 移库** 的正式库存处理链路，并继续承接资产接收、耗材接收及员工申领/借用/耗材领用的上下游结果。
 - Mock 数据开始统一引用真实基础数据：`src/mock/reference/materialCatalog.js` 提供物料参考记录，`src/mock/reference/warehouseCatalog.js` 收录全部启用仓库；后续物料、仓库及关联属性禁止脱离真实记录自行拼接。
 
 ## 本次完成
 
+- 根据实际观感再次收紧弹窗密度：Header / Footer 从 16×24px 调整为 12×20px，Body 从 24px 调整为 16×20px，关闭按钮位置同步内收。
 - 已统一 Ant Design Modal 的遮罩、12px 圆角、S4 阴影、Header / Body / Footer 间距及 Footer 背景。
 - `SelectModal` 已改为直接基于 Ant Design Modal，不再维护独立弹窗底层；多选 Footer 左侧展示已选数量，右侧固定【取消】【确定】。
 - `QueryBar` 已从浏览器断点改为组件自身宽度判断：<504px 1列、504～767px 2列、≥768px 3列；窄宽度按钮下置，三列宽度按钮放右侧。
