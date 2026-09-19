@@ -383,7 +383,7 @@ export default function NewEmployeeAssetClaimPage() {
           columns={candidateColumns}
           dataSource={assetClaimSelectableAssets}
           pagination={false}
-          scroll={{ x: 1016 }}
+          scroll={{ x: 'max-content' }}
           rowSelection={{
             type: 'radio',
             columnWidth: 56,
