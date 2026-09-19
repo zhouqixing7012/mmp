@@ -5,7 +5,7 @@ import { Button, Input, Table } from 'antd';
 import { UserManagementView, OrgManagementView } from './xitongrules';
 import DictManagementView from './dictmanagement';
 import RoleManagementView from './rolemgt';
-import { AssetManagementContent } from './assetManagement';
+import { AssetManagementContent } from './assetManagement/index';
 import { InventoryManagementContent } from './inventoryManagement';
 import { AssetInventoryContent } from './assetInventory';
 import AdminSidebar from './yewurules/components/AdminSidebar';
