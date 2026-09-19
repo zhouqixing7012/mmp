@@ -247,9 +247,23 @@ function RequiredLabel({ children }) {
 }
 
 function LookupInput({ value, placeholder, onOpen, disabled = false }) {
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onOpen?.();
+    }
+  };
+
   if (disabled) return <Readonly>{value}</Readonly>;
   return (
-    <div className="cursor-pointer" onClick={onOpen}>
+    <div
+      className="cursor-pointer"
+      role="button"
+      tabIndex={0}
+      aria-label={placeholder}
+      onClick={onOpen}
+      onKeyDown={handleKeyDown}
+    >
       <Input value={value} readOnly placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} />} />
     </div>
   );
@@ -360,7 +374,7 @@ function MoveItemModal({ open, currentWarehouse, initialLine, existingTags, onCa
     <>
       {contextHolder}
       <Modal
-        open={open}
+        open={open && !selectorOpen}
         title={initialLine ? '编辑移库物资' : '添加移库物资'}
         width={960}
         onCancel={onCancel}
@@ -437,19 +451,19 @@ function MoveItemModal({ open, currentWarehouse, initialLine, existingTags, onCa
         dataSource={selectorAssets}
         initialSelectedKeys={displayAsset ? [displayAsset.id] : []}
         columns={[
-          { title: '标签号', dataIndex: 'assetTag' },
-          { title: '公司', dataIndex: 'company' },
-          { title: '板块', dataIndex: 'plate' },
-          { title: '资产大类', dataIndex: 'assetClass' },
-          { title: '资产小类', dataIndex: 'assetSubClass' },
-          { title: '资产说明', dataIndex: 'materialDesc' },
-          { title: '品牌', dataIndex: 'brand' },
-          { title: '数量', dataIndex: 'quantity' },
-          { title: '原值', dataIndex: 'originalValueDisplay' },
-          { title: '资产责任人', dataIndex: 'responsiblePerson' },
-          { title: '资产状态', dataIndex: 'assetStatus' },
-          { title: '成本中心', dataIndex: 'costCenter' },
-          { title: '启用日期', dataIndex: 'enabledDate' },
+          { title: '标签号', dataIndex: 'assetTag', width: 160 },
+          { title: '公司', dataIndex: 'company', width: 180 },
+          { title: '板块', dataIndex: 'plate', width: 100 },
+          { title: '资产大类', dataIndex: 'assetClass', width: 130 },
+          { title: '资产小类', dataIndex: 'assetSubClass', width: 130 },
+          { title: '资产说明', dataIndex: 'materialDesc', width: 240 },
+          { title: '品牌', dataIndex: 'brand', width: 120 },
+          { title: '数量', dataIndex: 'quantity', width: 90 },
+          { title: '原值', dataIndex: 'originalValueDisplay', width: 140 },
+          { title: '资产责任人', dataIndex: 'responsiblePerson', width: 150 },
+          { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value) => <StatusTag value={value || '-'} /> },
+          { title: '成本中心', dataIndex: 'costCenter', width: 150 },
+          { title: '启用日期', dataIndex: 'enabledDate', width: 120 },
         ]}
         searchFields={[
           { label: '标签号', name: 'assetTag', dataIndex: 'assetTag' },
@@ -487,11 +501,11 @@ function MoveImportModal({ open, currentWarehouse, existingTags, onCancel, onSuc
       <Space direction="vertical" size={16} className="w-full">
         <Typography.Text>仅支持 .xls / .xlsx。标签号与SN至少填写一项；任一行校验失败时，本次导入整体不保存。</Typography.Text>
         <Space>
-          <Button type="primary" onClick={importValid}>模拟选择有效文件</Button>
+          <Button type="primary" onClick={importValid}>上传有效文件</Button>
           <Button onClick={() => setErrors([
             { row: 2, field: '标签号', reason: '当前资产已被其他业务锁定，无法移库' },
             { row: 3, field: '标签号/SN', reason: '标签号、SN至少填写一项' },
-          ])}>模拟校验失败</Button>
+          ])}>校验失败</Button>
         </Space>
         {errors.length > 0 && (
           <>
@@ -744,12 +758,12 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
     { title: 'SN', dataIndex: 'sn', width: 150 },
     { title: '物资说明', dataIndex: 'materialDesc', width: 220 },
     { title: '物资总类', dataIndex: 'materialGroup', width: 130 },
-    { title: '数量', dataIndex: 'quantity', width: 90, align: 'right', render: (value) => Number(value || 0).toLocaleString('zh-CN') },
+    { title: '数量', dataIndex: 'quantity', width: 90, align: 'right', render: (value) => Number(value || 0) },
     { title: '公司', dataIndex: 'company', width: 160 },
     { title: '板块', dataIndex: 'plate', width: 120 },
     { title: '资产标记', dataIndex: 'assetMark', width: 120 },
     { title: '启用日期', dataIndex: 'enabledDate', width: 130 },
-    { title: '资产状态', dataIndex: 'assetStatus', width: 130 },
+    { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value) => <StatusTag value={value || '-'} /> },
     { title: '移库状态', dataIndex: 'moveStatus', width: 130, render: (value) => <StatusTag value={value || '草稿'} /> },
     { title: '移库说明', dataIndex: 'moveDesc', width: 180, render: (value) => value || '-' },
     ...(editable ? [{ title: '操作', key: 'operation', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button> }] : []),
@@ -759,7 +773,7 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
     <Space>
       <Button type="primary" icon={<Plus size={14} />} onClick={openAdd}>添加物资</Button>
       <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>
-      <Button icon={<Download size={14} />} onClick={() => messageApi.success('移库导入模板已准备（原型演示）')}>模板下载</Button>
+      <Button icon={<Download size={14} />} onClick={() => messageApi.success('移库导入模板已准备')}>模板下载</Button>
       <Button icon={<Upload size={14} />} onClick={() => {
         if (!currentWarehouse) return messageApi.warning('请先选择当前仓库');
         setImportOpen(true);
@@ -832,8 +846,8 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
         <div className="flex justify-center gap-3">
           {editable && <Button onClick={saveDraft}>保存草稿</Button>}
           {editable && <Button type="primary" onClick={submitMove}>移库提交</Button>}
-          {!editable && ['已完成', '已驳回'].includes(status) && <Button onClick={() => messageApi.info('移库单打印已生成（原型演示）')}>打印</Button>}
-          {!editable && ['已完成', '已驳回'].includes(status) && <Button onClick={() => messageApi.success('移库明细已导出（原型演示）')}>导出</Button>}
+          {!editable && ['已完成', '已驳回'].includes(status) && <Button onClick={() => messageApi.info('移库单打印已生成')}>打印</Button>}
+          {!editable && ['已完成', '已驳回'].includes(status) && <Button onClick={() => messageApi.success('移库明细已导出')}>导出</Button>}
           <Button onClick={onBack}>返回</Button>
         </div>
 
@@ -1026,7 +1040,7 @@ export default function MovePage() {
     { title: '移入仓库', dataIndex: 'toWarehouse', width: 320 },
     { title: '制单日期', dataIndex: 'createdDate', width: 130 },
     { title: '制单人', dataIndex: 'creator', width: 170 },
-    { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right', render: (value) => Number(value || 0).toLocaleString('zh-CN') },
+    { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right', render: (value) => Number(value || 0) },
   ];
 
   return (
@@ -1075,7 +1089,7 @@ export default function MovePage() {
           <Card
             size="small"
             title="移库单列表"
-            extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button type="primary" icon={<Plus size={14} />} onClick={() => openEditor()}>创建</Button><Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button><Button icon={<Download size={14} />} onClick={() => messageApi.success('当前查询结果已导出（原型演示）')}>导出</Button></Space>}
+            extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button type="primary" icon={<Plus size={14} />} onClick={() => openEditor()}>创建</Button><Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button><Button icon={<Download size={14} />} onClick={() => messageApi.success('当前查询结果已导出')}>导出</Button></Space>}
           >
             <Table
               rowKey="id"

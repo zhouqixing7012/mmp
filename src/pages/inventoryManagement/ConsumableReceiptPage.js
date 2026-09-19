@@ -42,7 +42,7 @@ const EMPTY_RECEIPT_FILTERS = {
 
 const round2 = (value) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
 const money = (value) => Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const count = (value) => Number(value || 0).toLocaleString('zh-CN');
+const count = (value) => Number(value || 0);
 const includesText = (value, query) => !query || String(value || '').toLowerCase().includes(String(query).trim().toLowerCase());
 const remainingQty = (item) => Math.max(0, Number(item.purchaseQty || 0) - Number(item.receivedQty || 0) - Number(item.draftQty || 0));
 const selectorData = (values) => [...new Set(values.filter(Boolean))].map((name, index) => ({ id: index + 1, name }));
@@ -79,8 +79,22 @@ const lineMoney = (item, quantity) => {
 };
 
 function SelectorInput({ value, placeholder, onOpen }) {
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onOpen?.();
+    }
+  };
+
   return (
-    <div className="cursor-pointer" onClick={onOpen}>
+    <div
+      className="cursor-pointer"
+      role="button"
+      tabIndex={0}
+      aria-label={placeholder}
+      onClick={onOpen}
+      onKeyDown={handleKeyDown}
+    >
       <Input value={value} readOnly placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} className="text-[#1677ff]" />} />
     </div>
   );
@@ -1035,7 +1049,7 @@ export default function ConsumableReceiptPage() {
         </div>
 
         <Modal
-          open={Boolean(editItem && editDraft)}
+          open={Boolean(editItem && editDraft && !Array.isArray(partNamesDraft) && !selectorType)}
           title="编辑接收信息"
           width={720}
           okText="保存"
@@ -1097,7 +1111,7 @@ export default function ConsumableReceiptPage() {
         </Modal>
 
         <Modal
-          open={Array.isArray(partNamesDraft)}
+          open={Array.isArray(partNamesDraft) && !selectorType}
           title="维护部件说明"
           width={620}
           okText="确定"
@@ -1245,7 +1259,7 @@ export default function ConsumableReceiptPage() {
         <ReceiptInfoCard receipt={activeReceipt} />
         {isDraft && (
           <Card size="small">
-            <DetailGrid columns={4} labelWidth={96}>
+            <DetailGrid columns={3} labelWidth={96}>
               <DetailItem label="扫描光标" span={4}>
               <div className="flex items-center gap-2">
                 <Input
@@ -1300,7 +1314,7 @@ export default function ConsumableReceiptPage() {
         <Modal
           open={Boolean(detailEditor && detailDraft)}
           title={isDraft ? '编辑接收明细' : '查看接收明细'}
-          width={900}
+          width={720}
           onCancel={() => { setDetailEditor(null); setDetailDraft(null); }}
           footer={isDraft ? [
             <Button key="cancel" onClick={() => { setDetailEditor(null); setDetailDraft(null); }}>取消</Button>,

@@ -199,6 +199,13 @@ export default function WarehouseWorkbenchPage() {
     }
   };
 
+  const resetQuery = () => {
+    setDraftFilters(EMPTY_FILTERS);
+    setResults(availableTasks);
+    setHasQueried(true);
+    setPage(1);
+  };
+
   const handleAssetEnter = () => {
     if (!draftFilters.assetTag.trim()) {
       messageApi.warning('请扫描/输入资产标签号！');
@@ -290,7 +297,7 @@ export default function WarehouseWorkbenchPage() {
         </Space>
       </div>
 
-      <QueryBar>
+      <QueryBar onQuery={() => runQuery()} onReset={resetQuery}>
         <QueryItem label="资产标签号">
           <Input
             value={draftFilters.assetTag}

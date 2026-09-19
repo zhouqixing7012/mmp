@@ -216,8 +216,22 @@ function isRealSn(value) {
 }
 
 function SelectorInput({ value, placeholder, onOpen }) {
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onOpen?.();
+    }
+  };
+
   return (
-    <div className="cursor-pointer" onClick={onOpen}>
+    <div
+      className="cursor-pointer"
+      role="button"
+      tabIndex={0}
+      aria-label={placeholder}
+      onClick={onOpen}
+      onKeyDown={handleKeyDown}
+    >
       <Input value={value} readOnly allowClear={false} placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} className="text-[#1677ff]" />} />
     </div>
   );
@@ -253,7 +267,7 @@ function ReceiptLineMaintenanceModal({ open, asset, readOnly, onCancel, onSave }
     <Modal
       open={open}
       title="明细信息维护"
-      width={820}
+      width={720}
       okText="保存"
       cancelText="取消"
       onCancel={onCancel}
@@ -1242,7 +1256,7 @@ export default function AssetReceiptPage() {
           <Button onClick={() => setView('poList')}>返回</Button>
         </div>
         <Modal
-          open={Boolean(editItem && editDraft)}
+          open={Boolean(editItem && editDraft && !partDescriptionModalOpen && !selectorType)}
           title="编辑接收信息"
           width={720}
           okText="保存"
@@ -1289,7 +1303,7 @@ export default function AssetReceiptPage() {
           )}
         </Modal>
         <Modal
-          open={partDescriptionModalOpen}
+          open={partDescriptionModalOpen && !selectorType}
           title="维护部件说明"
           width={640}
           okText="确定"
@@ -1373,7 +1387,7 @@ export default function AssetReceiptPage() {
 
         {isDraft && (
           <Card size="small">
-            <DetailGrid columns={4} labelWidth={96}>
+            <DetailGrid columns={3} labelWidth={96}>
               <DetailItem label="扫描光标" span={4}>
               <div className="flex items-center gap-2">
                 <Input
