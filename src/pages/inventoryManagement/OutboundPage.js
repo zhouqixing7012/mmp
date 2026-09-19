@@ -809,7 +809,7 @@ export function ManualOutboundApprovalDemoPage() {
     <>
       {contextHolder}
       <OutboundApprovalPage
-        source={demoSource}
+        outbound={demoSource}
         onApprove={() => messageApi.success('审批已同意（原型）')}
         onReject={(opinion) => messageApi.warning(`已驳回（原型）：${opinion}`)}
         onBack={() => messageApi.info('返回出库列表（原型）')}
@@ -960,7 +960,7 @@ export default function OutboundPage() {
   if (view === 'approval') {
     return (
       <OutboundApprovalPage
-        source={activeRow}
+        outbound={activeRow}
         onApprove={approveCurrent}
         onReject={rejectCurrent}
         onBack={() => { setView('list'); setActiveRow(null); }}
