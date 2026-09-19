@@ -1438,13 +1438,17 @@ export default function TransferPage() {
           />
         </QueryItem>
       </QueryBar>
-      <Card size="small" title="转移单列表" extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
-        <div className="mb-3 flex justify-end">
+      <Card
+        size="small"
+        title="转移单列表"
+        extra={(
           <Space>
+            <Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>
             <Button type="primary" icon={<Plus size={14} />} onClick={() => { setActiveDocumentId(null); setView('create'); }}>创建</Button>
             <Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button>
           </Space>
-        </div>
+        )}
+      >
         <Table rowKey="id" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys, fixed: true, columnTitle: '选择', columnWidth: 64 }} scroll={{ x: 'max-content' }} pagination={{ current: page, pageSize, showSizeChanger: true, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); } }} />
       </Card>
       <SelectorModal config={selectorConfig} onClose={() => setSelectorType('')} />
