@@ -269,6 +269,8 @@ function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
 
   const submit = (shouldClose) => {
     if (!form.materialDesc) return messageApi.warning('请选择物资说明');
+    if (!form.assetTag) return messageApi.warning('请维护资产标签号');
+    if (!form.sn) return messageApi.warning('请维护SN号');
     if (!Number.isInteger(Number(form.quantity)) || Number(form.quantity) <= 0) return messageApi.warning('入库数量必须为大于 0 的整数');
     if (form.originalValue === '' || form.originalValue === null || Number(form.originalValue) < 0) return messageApi.warning('请维护有效原值');
     if (!form.building) return messageApi.warning('请维护 Building');
@@ -308,8 +310,8 @@ function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
               <EditorField label="原值" required><InputNumber className="w-full" min={0} precision={2} value={form.originalValue} onChange={(v) => set('originalValue', v ?? 0)} /></EditorField>
               <EditorField label="税金"><InputNumber className="w-full" min={0} precision={2} value={form.tax} onChange={(v) => set('tax', v ?? 0)} /></EditorField>
               <EditorField label="合计"><Readonly>{money(Number(form.originalValue || 0) + Number(form.tax || 0))}</Readonly></EditorField>
-              <EditorField label="资产标签号"><Input value={form.assetTag} onChange={(e) => set('assetTag', e.target.value)} /></EditorField>
-              <EditorField label="SN号"><Input value={form.sn} onChange={(e) => set('sn', e.target.value)} /></EditorField>
+              <EditorField label="资产标签号" required><Input value={form.assetTag} onChange={(e) => set('assetTag', e.target.value)} /></EditorField>
+              <EditorField label="SN号" required><Input value={form.sn} onChange={(e) => set('sn', e.target.value)} /></EditorField>
               <EditorField label="资产状态"><Readonly>在库-新增</Readonly></EditorField>
               <EditorField label="City"><Readonly>{form.city}</Readonly></EditorField>
               <EditorField label="Building" required><Input value={form.building} onChange={(e) => set('building', e.target.value)} /></EditorField>
@@ -369,6 +371,7 @@ function AssetInboundItemModal({ open, mode, warehouse, onCancel, onConfirm }) {
     setAsset((current) => ({ ...current, appraiser: record.name }));
     setSelector('');
   };
+  const selectedAssetDisplay = [asset.assetTag, asset.sn, asset.materialDesc].filter(Boolean).join(' / ');
   const submit = (shouldClose) => {
     if (!asset.assetTag) return messageApi.warning('请选择资产');
     if (!asset.responsiblePerson) return messageApi.warning('请选择责任人');
@@ -390,9 +393,7 @@ function AssetInboundItemModal({ open, mode, warehouse, onCancel, onConfirm }) {
           <Typography.Text>当前仓库：{warehouse}</Typography.Text>
           <Card size="small" title="选择物资">
             <DetailGrid columns={3} labelWidth={96}>
-              <EditorField label="资产标签号"><LookupInput value={asset.assetTag} onClick={() => setSelector('asset')} /></EditorField>
-              <EditorField label="SN号"><LookupInput value={asset.sn} onClick={() => setSelector('asset')} /></EditorField>
-              <EditorField label="物资说明" required><LookupInput value={asset.materialDesc} onClick={() => setSelector('asset')} /></EditorField>
+              <EditorField label="入库物资" required span={3}><LookupInput value={selectedAssetDisplay} placeholder={isBorrow ? '请选择借用归还物资' : '请选择退库入库物资'} onClick={() => setSelector('asset')} /></EditorField>
             </DetailGrid>
           </Card>
           <Card size="small" title="物资信息">
@@ -446,7 +447,34 @@ function AssetInboundItemModal({ open, mode, warehouse, onCancel, onConfirm }) {
           </Card>
         </Space>
       </Modal>
-      {selector === 'asset' && <SelectModal open title={isBorrow ? '选择待归还资产' : '选择待退库资产'} dataSource={RETURN_ASSET_OPTIONS} columns={[{ title: '资产标签号', dataIndex: 'assetTag' }, { title: 'SN号', dataIndex: 'sn' }, { title: '物资说明', dataIndex: 'materialDesc' }, { title: '责任人', dataIndex: 'responsiblePerson' }]} searchFields={[{ label: '资产标签号', name: 'assetTag', dataIndex: 'assetTag' }, { label: 'SN号', name: 'sn', dataIndex: 'sn' }, { label: '物资说明', name: 'materialDesc', dataIndex: 'materialDesc' }]} onCancel={() => setSelector('')} onConfirm={applyAsset} />}
+      {selector === 'asset' && <SelectModal
+        open
+        title={isBorrow ? '选择借用归还物资' : '选择退库入库物资'}
+        width={960}
+        dataSource={RETURN_ASSET_OPTIONS}
+        columns={[
+          { title: '标签号', dataIndex: 'assetTag', width: 160 },
+          { title: 'SN号', dataIndex: 'sn', width: 160 },
+          { title: '公司', dataIndex: 'company', width: 120 },
+          { title: '板块', dataIndex: 'plate', width: 100 },
+          { title: '资产大类', dataIndex: 'assetClass', width: 130 },
+          { title: '资产小类', dataIndex: 'assetSubClass', width: 130 },
+          { title: '资产说明', dataIndex: 'materialDesc', width: 220 },
+          { title: '品牌', dataIndex: 'brand', width: 100 },
+          { title: '资产责任人', dataIndex: 'responsiblePerson', width: 150 },
+          { title: '资产状态', dataIndex: 'assetStatus', width: 120 },
+          { title: '成本中心', dataIndex: 'costCenter', width: 120 },
+          { title: '启用日期', dataIndex: 'enabledDate', width: 120 },
+        ]}
+        searchFields={[
+          { label: '标签号', name: 'assetTag', dataIndex: 'assetTag' },
+          { label: 'SN号', name: 'sn', dataIndex: 'sn' },
+          { label: '板块', name: 'plate', dataIndex: 'plate' },
+          { label: '资产说明', name: 'materialDesc', dataIndex: 'materialDesc' },
+        ]}
+        onCancel={() => setSelector('')}
+        onConfirm={applyAsset}
+      />}
       {selector === 'responsible' && <SelectModal open title="选择责任人" dataSource={RESPONSIBLE_OPTIONS} columns={[{ title: '责任人', dataIndex: 'name' }, { title: '所在部门', dataIndex: 'department' }, { title: '成本中心', dataIndex: 'costCenter' }]} searchFields={[{ label: '责任人', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelector('')} onConfirm={applyResponsible} />}
       {selector === 'appraiser' && <SelectModal open title="选择鉴定人" dataSource={RESPONSIBLE_OPTIONS} columns={[{ title: '鉴定人', dataIndex: 'name' }, { title: '所在部门', dataIndex: 'department' }]} searchFields={[{ label: '鉴定人', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelector('')} onConfirm={applyAppraiser} />}
     </>

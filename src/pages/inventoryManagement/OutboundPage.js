@@ -791,6 +791,7 @@ export default function OutboundPage() {
   const [rows, setRows] = useState(INITIAL_ROWS);
   const [view, setView] = useState('list');
   const [activeRow, setActiveRow] = useState(null);
+  const [approvalHistoryRow, setApprovalHistoryRow] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const emptyFilters = { documentNo: '', outboundType: '', status: '', poNo: '', applicationNo: '', tag: '', creator: '', createdFrom: '', createdTo: '', responsiblePerson: '' };
@@ -818,8 +819,7 @@ export default function OutboundPage() {
   };
 
   const openApprovalHistory = (row) => {
-    setActiveRow(row);
-    setView('approvalHistory');
+    setApprovalHistoryRow(row);
   };
 
   const buildRow = (payload, status) => {
@@ -917,15 +917,6 @@ export default function OutboundPage() {
     setView('editor');
     messageApi.warning('审批已驳回，出库单恢复为草稿，可修改后重新提交');
   };
-
-  if (view === 'approvalHistory') {
-    return (
-      <OutboundApprovalHistoryPage
-        outbound={activeRow}
-        onBack={() => { setView('list'); setActiveRow(null); }}
-      />
-    );
-  }
 
   if (view === 'approval') {
     return (
@@ -1033,6 +1024,19 @@ export default function OutboundPage() {
           pagination={{ current: page, pageSize, showSizeChanger: true, onChange: (nextPage, nextSize) => { if (nextSize !== pageSize) { setPageSize(nextSize); setPage(1); } else setPage(nextPage); } }}
         />
       </Card>
+      <Modal
+        open={Boolean(approvalHistoryRow)}
+        title="审批记录"
+        width={1100}
+        footer={null}
+        destroyOnHidden
+        onCancel={() => setApprovalHistoryRow(null)}
+      >
+        <OutboundApprovalHistoryPage
+          outbound={approvalHistoryRow}
+          onBack={() => setApprovalHistoryRow(null)}
+        />
+      </Modal>
     </Space>
   );
 }
