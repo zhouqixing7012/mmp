@@ -146,7 +146,7 @@ export default function AssetMatchModal({
         bordered
         columns={columns}
         dataSource={filteredAssets}
-        scroll={{ x: 1900, y: 380 }}
+        scroll={{ x: 'max-content', y: 380 }}
         pagination={{ pageSize: 10, showSizeChanger: false, showTotal: (total) => `共 ${total} 条` }}
         onRow={(record) => ({
           onClick: () => setSelectedKey(record.id),
