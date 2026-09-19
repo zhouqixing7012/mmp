@@ -19,7 +19,6 @@ import ContractNumberAllocationPage from '../../contractNumber/ContractNumberAll
 import ContractNumberSupervisorApprovalPage from '../../contractNumber/ContractNumberSupervisorApprovalPage';
 import ContractNumberWarehousePage from '../../contractNumber/ContractNumberWarehousePage';
 import ContractNumberReceiptConfirmPage from '../../contractNumber/ContractNumberReceiptConfirmPage';
-import { ManualOutboundApprovalDemoPage } from '../../inventoryManagement/OutboundPage';
 import { ConsumableMisApprovalPage } from '../../consumableWorkflow/refinedPages';
 import ConsumableLeaderApprovalPage from '../../consumableWorkflow/ConsumableLeaderApprovalPage';
 import ConsumableSummaryApprovalPage from '../../consumableWorkflow/ConsumableSummaryApprovalPage';
@@ -72,7 +71,6 @@ export const WORKSPACE_MENU_ITEMS = [
   { key: '合约号码配给主管审批', label: '合约号码配给主管审批', Page: ContractNumberSupervisorApprovalPage },
   { key: '合约号码库管员待办', label: '合约号码库管员待办', Page: ContractNumberWarehousePage },
   { key: '员工合约号码领取确认', label: '员工合约号码领取确认', Page: ContractNumberReceiptConfirmPage },
-  { key: '物资出库审批', label: '物资出库审批', Page: ManualOutboundApprovalDemoPage },
   { key: '物资申请', label: '物资申请', Page: EmployeeAssetApplyPage },
   { key: '业务审批', label: '业务审批', Page: EmployeeAssetApprovalPage },
   { key: '资产配给', label: '资产配给', Page: EmployeeAssetAllocationPage },
