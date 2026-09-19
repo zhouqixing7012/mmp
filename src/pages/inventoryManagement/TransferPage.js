@@ -639,9 +639,6 @@ function TransferImportModal({ open, company, sourceAssets, existingLines, onCan
       onCancel={handleCancel}
       destroyOnHidden
       footer={[
-        <Button key="template" icon={<Download size={14} />} onClick={downloadTransferImportTemplate}>下载模板</Button>,
-        <Button key="choose" icon={<Upload size={14} />} onClick={() => fileInputRef.current?.click()} loading={reading}>选择Excel</Button>,
-        <Button key="errors" disabled={!errorRows.length} onClick={() => downloadTransferImportErrors(errorRows)}>下载错误结果</Button>,
         <Button key="cancel" onClick={handleCancel}>取消</Button>,
         <Button key="import" type="primary" disabled={!validLines.length || errorRows.length > 0} onClick={importRows}>导入并暂时锁定</Button>,
       ]}
@@ -649,6 +646,11 @@ function TransferImportModal({ open, company, sourceAssets, existingLines, onCan
       {contextHolder}
       <input ref={fileInputRef} type="file" accept=".xls,.xlsx" className="hidden" onChange={handleFile} />
       <Space direction="vertical" size={12} className="w-full">
+        <Space wrap>
+          <Button icon={<Download size={14} />} onClick={downloadTransferImportTemplate}>下载模板</Button>
+          <Button icon={<Upload size={14} />} onClick={() => fileInputRef.current?.click()} loading={reading}>选择 Excel</Button>
+          <Button disabled={!errorRows.length} onClick={() => downloadTransferImportErrors(errorRows)}>下载错误结果</Button>
+        </Space>
         <Typography.Text type="secondary">模板第一张表使用固定15列；资产标签号有值时优先按标签号匹配，标签号为空时按SN号匹配。任意一行错误，整批不保存。</Typography.Text>
         {fileName && <Typography.Text>当前文件：{fileName}</Typography.Text>}
         <Table
