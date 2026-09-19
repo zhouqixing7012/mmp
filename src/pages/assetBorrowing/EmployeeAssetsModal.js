@@ -51,7 +51,7 @@ export default function EmployeeAssetsModal({ open, onCancel, applicant = CURREN
         <QueryItem label="资产说明"><Input value={query.assetDesc} onChange={(event) => setQuery((current) => ({ ...current, assetDesc: event.target.value }))} /></QueryItem>
         <QueryItem label="是否锁定"><Select allowClear value={query.locked || undefined} placeholder="全部" options={[{ label: '是', value: '是' }, { label: '否', value: '否' }]} onChange={(value) => setQuery((current) => ({ ...current, locked: value || '' }))} /></QueryItem>
       </QueryBar>
-      <Table rowKey="id" columns={columns} dataSource={filteredAssets} pagination={{ pageSize: 5, showTotal: (total) => `共 ${total} 条` }} scroll={{ x: 1300 }} size="small" />
+      <Table rowKey="id" columns={columns} dataSource={filteredAssets} pagination={{ pageSize: 5, showTotal: (total) => `共 ${total} 条` }} scroll={{ x: 'max-content' }} size="small" />
     </Modal>
   );
 }
