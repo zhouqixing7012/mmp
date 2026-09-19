@@ -95,11 +95,6 @@ export default function OutboundApprovalPage({ outbound, onApprove, onReject, on
             placeholder="驳回时必填；同意时可选填"
             onChange={(event) => setOpinion(event.target.value)}
           />
-          <div className="mt-4 flex justify-center gap-3">
-            <Button type="primary" onClick={approve}>同意</Button>
-            <Button danger onClick={reject}>驳回</Button>
-            <Button onClick={onBack}>返回</Button>
-          </div>
         </Card>
       )}
 
@@ -112,15 +107,20 @@ export default function OutboundApprovalPage({ outbound, onApprove, onReject, on
             pagination={false}
             size="small"
             bordered
+            scroll={{ x: 'max-content' }}
           />
         </Card>
       )}
 
-      {!canOperate && (
-        <div className="flex justify-center">
-          <Button onClick={onBack}>返回</Button>
-        </div>
-      )}
+      <div className="flex justify-center gap-3">
+        {canOperate ? (
+          <>
+            <Button type="primary" onClick={approve}>同意</Button>
+            <Button danger onClick={reject}>驳回</Button>
+          </>
+        ) : null}
+        <Button onClick={onBack}>返回</Button>
+      </div>
     </Space>
   );
 }
