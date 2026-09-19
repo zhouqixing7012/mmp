@@ -1448,7 +1448,7 @@ export default function TransferPage() {
             <Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button>
           </Space>
         )}
-      >>
+      >
 
         <Table rowKey="id" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys, fixed: true, columnTitle: '选择', columnWidth: 64 }} scroll={{ x: 'max-content' }} pagination={{ current: page, pageSize, showSizeChanger: true, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); } }} />
       </Card>
