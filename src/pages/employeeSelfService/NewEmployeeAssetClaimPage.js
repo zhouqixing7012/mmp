@@ -343,7 +343,7 @@ export default function NewEmployeeAssetClaimPage() {
       <Modal
         title="选择资产"
         open={assetModalOpen}
-        width={980}
+        width={960}
         okText="确定"
         cancelText="取消"
         onCancel={() => {
