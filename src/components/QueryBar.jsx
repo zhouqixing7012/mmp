@@ -1,5 +1,5 @@
 ﻿import React from 'react';
-import { Button, Card, Row, Col } from 'antd';
+import { Button, Card } from 'antd';
 import { Search, RefreshCcw } from 'lucide-react';
 
 const QUERY_ACTION_LABELS = new Set(['查询', '重置']);
@@ -61,16 +61,20 @@ function flattenQueryChildren(children) {
 
 /**
  * 查询条件容器组件
- * fields: 查询字段（自动按 3 列栅格排列）
- * buttons: 按钮区（查询/重置等，显示在最右侧）
+ *
+ * 布局由 QueryBar 自己根据实际可用宽度决定：
+ * < 504px：1 列
+ * 504px ～ 767px：2 列
+ * >= 768px：3 列
+ *
+ * 业务页面只提供查询字段，不再自行指定列数。
  */
-
 export function QueryItem({ label, children, labelWidth = 88 }) {
   const prototypeLabel = typeof label === 'string' ? label.replace(/[:：]\s*$/, '') : undefined;
 
   return (
     <div
-      className="flex items-center gap-2 min-w-0"
+      className="mmp-query-item flex items-center gap-2 min-w-0"
       data-prototype-bindable="query-condition"
       data-prototype-label={prototypeLabel}
     >
@@ -93,7 +97,6 @@ export default function QueryBar({
   labelWidth = 88,
   onQuery,
   onReset,
-  fieldColProps,
 }) {
   const fields = flattenQueryChildren(children);
   const defaultButtons = (
@@ -103,7 +106,6 @@ export default function QueryBar({
     </>
   );
   const finalButtons = buttons !== undefined ? buttons : defaultButtons;
-  const resolvedFieldColProps = fieldColProps || { xs: 24, sm: 12, md: 8, lg: 8, xl: 8, xxl: 8 };
 
   const handleActionClickCapture = (event) => {
     if (!(event.target instanceof Element)) return;
@@ -123,42 +125,16 @@ export default function QueryBar({
       style={{ marginBottom: 16 }}
       onClickCapture={handleActionClickCapture}
     >
-      <style>{`
-        .qw > div > span:first-child {
-          width: ${labelWidth}px !important;
-          min-width: ${labelWidth}px !important;
-          text-align: right !important;
-          flex-shrink: 0 !important;
-        }
-        .qw > div > :nth-child(2) {
-          width: 100% !important;
-          min-width: 0 !important;
-        }
-        .qw .ant-input,
-        .qw .ant-input-affix-wrapper,
-        .qw .ant-input-number,
-        .qw .ant-picker,
-        .qw .ant-select,
-        .qw .ant-cascader-picker {
-          width: 100% !important;
-          min-width: 0 !important;
-        }
-      `}</style>
-      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Row gutter={[16, 16]}>
-            {fields.map((field, i) => (
-              <Col key={field.key || i} {...resolvedFieldColProps}>
-                <div className="qw">{field}</div>
-              </Col>
-            ))}
-          </Row>
+      <div className="mmp-query-layout">
+        <div className="mmp-query-fields">
+          {fields.map((field, index) => (
+            <div key={field.key || index} className="mmp-query-field" style={{ '--mmp-query-label-width': `${labelWidth}px` }}>
+              {field}
+            </div>
+          ))}
         </div>
         {finalButtons && (
-          <div
-            data-mmp-query-actions
-            style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 80, width: 90, justifyContent: 'center' }}
-          >
+          <div data-mmp-query-actions className="mmp-query-actions">
             {finalButtons}
           </div>
         )}
