@@ -42,7 +42,7 @@ jobs:
             source-feature/package-lock.json
 
       - name: 安装 main 依赖
-        run: npm ci --prefix source-main --ignore-scripts --no-audit --no-fund
+        run: npm cache clean --force && npm ci --prefix source-main --ignore-scripts --no-audit --no-fund
 
       - name: 构建 main 页面
         env:
@@ -59,7 +59,7 @@ jobs:
           cp pages/index.html pages/404.html
 
       - name: 安装功能分支依赖
-        run: npm ci --prefix source-feature --ignore-scripts --no-audit --no-fund
+        run: npm cache clean --force && npm ci --prefix source-feature --ignore-scripts --no-audit --no-fund
 
       - name: 构建功能分支页面
         env:
