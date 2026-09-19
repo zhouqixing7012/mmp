@@ -338,7 +338,7 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, existingLines, 
     <>
       {contextHolder}
       <Modal
-        open={open}
+        open={open && !selectorOpen}
         title={isBorrow ? '添加借用出库物资' : '添加领用出库物资'}
         width={960}
         onCancel={onCancel}
