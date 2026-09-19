@@ -33,7 +33,7 @@
 
 .ant-modal .ant-modal-header {
   margin: 0;
-  padding: 16px 24px;
+  padding: 12px 20px;
   border-bottom: 1px solid #e2e6f0;
 }
 
@@ -44,21 +44,21 @@
 }
 
 .ant-modal .ant-modal-close {
-  top: 15px;
-  inset-inline-end: 20px;
+  top: 11px;
+  inset-inline-end: 16px;
   width: 24px;
   height: 24px;
 }
 
 .ant-modal .ant-modal-body {
   max-width: 100%;
-  padding: 24px;
+  padding: 16px 20px;
   overflow-x: auto;
 }
 
 .ant-modal .ant-modal-footer {
   margin: 0;
-  padding: 16px 24px;
+  padding: 12px 20px;
   border-top: 1px solid #e2e6f0;
   background: #fafafa;
   text-align: right;
