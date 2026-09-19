@@ -319,7 +319,7 @@ export default function EmployeeAssetAllocationPage() {
         </Card>
       </Space>
 
-      <Modal title="员工名下资产明细" open={applicantAssetsOpen} width={1180} footer={null} onCancel={() => setApplicantAssetsOpen(false)}>
+      <Modal title="员工名下资产明细" open={applicantAssetsOpen} width={960} footer={null} onCancel={() => setApplicantAssetsOpen(false)}>
         <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
           {selectedOrder.applicant.name}同学，名下共有资产 <b>{applicantAssetRows.length}</b> 条，其中借用资产 <b>{borrowedAssetCount}</b> 条。
         </div>
@@ -335,10 +335,10 @@ export default function EmployeeAssetAllocationPage() {
           <QueryItem label="资产说明"><Input allowClear value={applicantQuery.assetDesc} onChange={(event) => setApplicantQuery({ ...applicantQuery, assetDesc: event.target.value })} /></QueryItem>
           <QueryItem label="是否锁定"><Select allowClear value={applicantQuery.locked || undefined} options={[{ label: '是', value: '是' }, { label: '否', value: '否' }]} onChange={(value) => setApplicantQuery({ ...applicantQuery, locked: value || '' })} /></QueryItem>
         </QueryBar>
-        <Table rowKey="id" size="small" bordered columns={applicantAssetColumns} dataSource={filteredApplicantAssets} scroll={{ x: 1400, y: 400 }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
+        <Table rowKey="id" size="small" bordered columns={applicantAssetColumns} dataSource={filteredApplicantAssets} scroll={{ x: 'max-content', y: 400 }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
       </Modal>
 
-      <Modal title="库存领用匹配资产" open={matchModalOpen} width={860} footer={null} onCancel={() => setMatchModalOpen(false)}>
+      <Modal title="库存领用匹配资产" open={matchModalOpen} width={960} footer={null} onCancel={() => setMatchModalOpen(false)}>
         <Table
           rowKey="id"
           size="small"
@@ -357,7 +357,7 @@ export default function EmployeeAssetAllocationPage() {
         </div>
       </Modal>
 
-      <Modal title="选择资产" open={assetListOpen} width={1280} footer={null} onCancel={() => setAssetListOpen(false)}>
+      <Modal title="选择资产" open={assetListOpen} width={960} footer={null} onCancel={() => setAssetListOpen(false)}>
         <QueryBar
           onQuery={() => setAppliedMatchQuery(matchQuery)}
           onReset={() => {
@@ -376,7 +376,7 @@ export default function EmployeeAssetAllocationPage() {
           bordered
           columns={assetColumns}
           dataSource={filteredAssets}
-          scroll={{ x: 1850, y: 380 }}
+          scroll={{ x: 'max-content', y: 380 }}
           pagination={{ pageSize: 10, showTotal: (total) => `共${total}项` }}
           onRow={(record) => ({ onClick: () => setMatchedAsset(record), className: matchedAsset?.id === record.id ? 'bg-blue-50 cursor-pointer' : 'cursor-pointer' })}
         />
