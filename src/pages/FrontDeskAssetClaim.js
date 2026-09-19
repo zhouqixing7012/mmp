@@ -217,7 +217,7 @@ export default function FrontDeskAssetClaim() {
           columns={assetColumns}
           dataSource={filteredAssets}
           pagination={{ pageSize: 10, showTotal: (total) => `共${total}项` }}
-          scroll={{ x: 1200, y: 380 }}
+          scroll={{ x: 'max-content', y: 380 }}
           onRow={(record) => ({
             onClick: () => setSelectedAsset(record),
             className: selectedAsset.id === record.id ? 'bg-blue-50 cursor-pointer' : 'cursor-pointer',
