@@ -398,14 +398,14 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, existingLines, 
               <EditorField label="板块"><Readonly>{asset?.plate}</Readonly></EditorField>
               <EditorField label="成本中心"><Readonly>{asset?.costCenter}</Readonly></EditorField>
               <EditorField label="费用账户"><Readonly>{asset?.expenseAccount}</Readonly></EditorField>
-              <EditorField label="主资产标签号"><Readonly>{asset?.mainAssetTag}</Readonly></EditorField>
+              <EditorField label="总价"><Readonly>{asset ? money(Number(asset.originalValue || 0) + Number(asset.tax || 0)) : '-'}</Readonly></EditorField>
               <EditorField label="原值"><Readonly>{asset ? money(asset.originalValue) : '-'}</Readonly></EditorField>
               <EditorField label="税金"><Readonly>{asset ? money(asset.tax) : '-'}</Readonly></EditorField>
-              <EditorField label="总价"><Readonly>{asset ? money(Number(asset.originalValue || 0) + Number(asset.tax || 0)) : '-'}</Readonly></EditorField>
+              <EditorField label="主资产标签号"><Readonly>{asset?.mainAssetTag}</Readonly></EditorField>
               <EditorField label="部件数量"><Readonly>{asset?.partQuantity}</Readonly></EditorField>
               <EditorField label="部件说明"><Readonly>{asset?.partDesc}</Readonly></EditorField>
               <EditorField label="资产标记"><Readonly>{asset?.assetMark}</Readonly></EditorField>
-              <EditorField label="备注" span={3}><Readonly>{asset?.remark}</Readonly></EditorField>
+              <EditorField label="备注" span={2}><Readonly>{asset?.remark}</Readonly></EditorField>
             </DetailGrid>
           </Card>
 
@@ -523,16 +523,16 @@ function OutboundMaterialDetailModal({ open, row, outboundType, onCancel }) {
             <EditorField label="板块"><Readonly>{row.plate}</Readonly></EditorField>
             <EditorField label="成本中心"><Readonly>{row.costCenter}</Readonly></EditorField>
             <EditorField label="费用账户"><Readonly>{row.expenseAccount}</Readonly></EditorField>
-            <EditorField label="主资产标签号"><Readonly>{row.mainAssetTag}</Readonly></EditorField>
+            <EditorField label="总价"><Readonly>{money(Number(row.originalValue || 0) + Number(row.tax || 0))}</Readonly></EditorField>
             <EditorField label="原值"><Readonly>{money(row.originalValue)}</Readonly></EditorField>
             <EditorField label="税金"><Readonly>{money(row.tax)}</Readonly></EditorField>
-            <EditorField label="总价"><Readonly>{money(Number(row.originalValue || 0) + Number(row.tax || 0))}</Readonly></EditorField>
+            <EditorField label="主资产标签号"><Readonly>{row.mainAssetTag}</Readonly></EditorField>
             <EditorField label="部件数量"><Readonly>{row.partQuantity}</Readonly></EditorField>
             <EditorField label="部件说明"><Readonly>{row.partDesc}</Readonly></EditorField>
             <EditorField label="资产标记"><Readonly>{row.assetMark}</Readonly></EditorField>
             {isInfraAsset(row) && <EditorField label="NO位置"><Readonly>{row.noLocation}</Readonly></EditorField>}
             {isInfraAsset(row) && <EditorField label="服务"><Readonly>{row.service}</Readonly></EditorField>}
-            <EditorField label="备注" span={3}><Readonly>{row.remark}</Readonly></EditorField>
+            <EditorField label="备注" span={2}><Readonly>{row.remark}</Readonly></EditorField>
           </DetailGrid>
         </Card>
         <Card size="small" title={isBorrow ? '借用出库' : '领用出库'}>
