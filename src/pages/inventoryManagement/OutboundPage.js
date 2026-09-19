@@ -874,7 +874,7 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
         <DetailGrid columns={3} labelWidth={112}>
           <EditorField label="出库单号"><Readonly>{documentNo}</Readonly></EditorField>
           <EditorField label="单据类型"><Readonly>出库工单</Readonly></EditorField>
-          <EditorField label="单据状态"><StatusTag value={status} /></EditorField>
+          {!approvalPending && <EditorField label="单据状态"><StatusTag value={status} /></EditorField>}
           <EditorField label="出库类型"><Readonly>{outboundType}</Readonly></EditorField>
           <EditorField label="制单人"><Readonly>{creator}</Readonly></EditorField>
           <EditorField label="制单时间"><Readonly>{createdDate}</Readonly></EditorField>
@@ -930,6 +930,12 @@ export function ManualOutboundApprovalDemoPage() {
     prNo: 'PR2601080004',
     poNo: 'PO2601130002',
     sourceModule: '手工出库',
+    status: '审批中',
+    approvalRoute: '直属主管审批',
+    approvalSteps: [{ name: '直属主管审批', approver: '100001-系统管理员' }],
+    currentApprovalIndex: 0,
+    approvalInitiator: '刘建',
+    approvalStartedAt: '2026-03-18 10:00:00',
     lines: [
       {
         id: 'approval-demo-1',
@@ -974,6 +980,8 @@ export function ManualOutboundApprovalDemoPage() {
       <ManualOutboundApprovalView
         source={demoSource}
         onApprove={() => messageApi.success('审批已同意（原型）')}
+        onReject={(opinion) => messageApi.warning(`已驳回（原型）：${opinion}`)}
+        onBack={() => messageApi.info('返回出库列表（原型）')}
       />
     </>
   );
@@ -1008,6 +1016,11 @@ export default function OutboundPage() {
   const openEditor = (row = null) => {
     setActiveRow(row);
     setView('editor');
+  };
+
+  const openApproval = (row) => {
+    setActiveRow(row);
+    setView('approval');
   };
 
   const buildRow = (payload, status) => {
@@ -1066,6 +1079,7 @@ export default function OutboundPage() {
     };
     setRows((current) => activeRow ? current.map((row) => row.id === activeRow.id ? updated : row) : [updated, ...current]);
     setActiveRow(updated);
+    setView('approval');
     messageApi.success(`审批已发起，当前节点：${steps[0].name}`);
   };
 
@@ -1112,6 +1126,17 @@ export default function OutboundPage() {
     messageApi.success('采购专员服务号通知发送成功');
   };
 
+  if (view === 'approval') {
+    return (
+      <ManualOutboundApprovalView
+        source={activeRow}
+        onApprove={approveCurrent}
+        onReject={rejectCurrent}
+        onBack={() => { setView('list'); setActiveRow(null); }}
+      />
+    );
+  }
+
   if (view === 'editor') {
     return <OutboundEditor source={activeRow} onBack={() => { setView('list'); setActiveRow(null); }} onSave={saveDraft} onStartApproval={startApproval} onApprove={approveCurrent} onReject={rejectCurrent} onRetryNotice={retryNotice} />;
   }
@@ -1120,7 +1145,16 @@ export default function OutboundPage() {
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => (page - 1) * pageSize + index + 1 },
     { title: '出库单号', dataIndex: 'documentNo', width: 190, render: (value, row) => <Button type="link" className="px-0 select-text" onClick={() => openEditor(row)}>{value}</Button> },
     { title: '申请单号', dataIndex: 'applicationNo', width: 210, render: (value) => value || '-' },
-    { title: '单据状态', dataIndex: 'status', width: 120, render: (value) => <StatusTag value={value} /> },
+    {
+      title: '单据状态',
+      dataIndex: 'status',
+      width: 120,
+      render: (value, row) => (
+        <Button type="link" className="px-0" onClick={() => openApproval(row)}>
+          <StatusTag value={value} />
+        </Button>
+      ),
+    },
     { title: '出库类型', dataIndex: 'outboundType', width: 130 },
     { title: '出库仓库', dataIndex: 'warehouse', width: 280 },
     { title: '出库时间', dataIndex: 'outboundDate', width: 130, render: (value) => value || '-' },
