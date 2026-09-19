@@ -168,7 +168,7 @@ function money(value) {
 }
 
 function count(value) {
-  return Number(value || 0).toLocaleString('zh-CN');
+  return Number(value || 0);
 }
 
 function LookupInput({ value, placeholder = '请选择', onClick, disabled = false }) {
