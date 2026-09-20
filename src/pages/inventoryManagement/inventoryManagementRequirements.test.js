@@ -267,3 +267,17 @@ test('出库单状态点击只展示审批记录不展示单据信息或物资',
   expect(outboundSource).toContain('width={960}');
   expect(outboundSource).toContain('<OutboundApprovalHistoryPage outbound={approvalHistoryRow} />');
 });
+
+
+test('转移资产选择弹窗与父弹窗同级且字段对齐入库出库资产选择', () => {
+  const start = transferSource.indexOf("function TransferItemModal");
+  const end = transferSource.indexOf("function TransferImportModal", start);
+  const source = transferSource.slice(start, end);
+  expect(source).toContain("<Modal open={open && !selectorType}");
+  expect(source).toContain("</Modal>\n      <SelectorModal config={selectorConfig}");
+  expect(source).not.toContain("<SelectorModal config={selectorConfig} onClose={() => setSelectorType('')} />\n    </Modal>");
+  ["label: '标签号'", "label: 'SN号'", "label: '板块'", "label: '资产说明'"].forEach((value) => expect(source).toContain(value));
+  ['标签号', 'SN号', '公司', '板块', '资产大类', '资产小类', '资产说明', '品牌', '数量', '原值', '资产责任人', '资产状态', '成本中心', '启用日期'].forEach((title) => {
+    expect(source).toContain(`title: '${title}'`);
+  });
+});
