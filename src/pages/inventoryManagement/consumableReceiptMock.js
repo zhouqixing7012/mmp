@@ -83,15 +83,13 @@ export const INITIAL_PO_ITEMS = {
   PO2609010001: [
     {
       id: 1, receiptStatus: '待接收', materialGroup: '低值耐用品', assetClass: '办公设备', materialCode: '114009001000101',
-      materialDesc: '显示器.Dell.P2425H', poDesc: '24英寸办公显示器', config: '24英寸 / 1920×1080 / HDMI+DP',
-      isPart: false, partQuantity: 0, partDesc: '', currentReceiveQty: 8, purchaseQty: 8, untaxedUnitPrice: 1061.95, taxRate: 0.13,
+      materialDesc: '显示器.Dell.P2425H', poDesc: '24英寸办公显示器', config: '24英寸 / 1920×1080 / HDMI+DP', currentReceiveQty: 8, purchaseQty: 8, untaxedUnitPrice: 1061.95, taxRate: 0.13,
       receivedQty: 0, draftQty: 0, promisedArrivalDate: '2026-09-08', prLine: 'PR260820001/10', saLine: 'SA260821001/10',
       applicationNo: 'REQ260820001', department: 'ERP部.业务产品二组', businessLine: 'ERP', applicant: '115203.张璐',
     },
     {
       id: 2, receiptStatus: '待接收', materialGroup: '低值耐用品', assetClass: '办公设备', materialCode: '114009001000102',
-      materialDesc: '扩展坞.Dell.WD19S', poDesc: '办公扩展坞', config: 'USB-C / 130W', isPart: true, partQuantity: 2,
-      partDesc: '130W电源适配器', currentReceiveQty: 5, purchaseQty: 5, untaxedUnitPrice: 707.96, taxRate: 0.13,
+      materialDesc: '扩展坞.Dell.WD19S', poDesc: '办公扩展坞', config: 'USB-C / 130W', currentReceiveQty: 5, purchaseQty: 5, untaxedUnitPrice: 707.96, taxRate: 0.13,
       receivedQty: 0, draftQty: 0, promisedArrivalDate: '2026-09-08', prLine: 'PR260820001/20', saLine: 'SA260821001/20',
       applicationNo: 'REQ260820001', department: 'ERP部.业务产品二组', businessLine: 'ERP', applicant: '115203.张璐',
     },
@@ -99,15 +97,13 @@ export const INITIAL_PO_ITEMS = {
   PO2609020002: [
     {
       id: 1, receiptStatus: '待接收', materialGroup: '耗材', assetClass: '办公耗材', materialCode: '114010002000201',
-      materialDesc: '网线.六类.2米', poDesc: '六类成品网线 2 米', config: 'CAT6 / 2m / 蓝色', isPart: false, partQuantity: 0,
-      partDesc: '', currentReceiveQty: 100, purchaseQty: 100, untaxedUnitPrice: 12.39, taxRate: 0.13, receivedQty: 0, draftQty: 0,
+      materialDesc: '网线.六类.2米', poDesc: '六类成品网线 2 米', config: 'CAT6 / 2m / 蓝色', currentReceiveQty: 100, purchaseQty: 100, untaxedUnitPrice: 12.39, taxRate: 0.13, receivedQty: 0, draftQty: 0,
       promisedArrivalDate: '2026-09-09', prLine: 'PR260825002/10', saLine: 'SA260826002/10', applicationNo: 'REQ260825002',
       department: 'IT支持部', businessLine: 'IT', applicant: '114880.赵敏',
     },
     {
       id: 2, receiptStatus: '待接收', materialGroup: '耗材', assetClass: '办公耗材', materialCode: '114010002000202',
-      materialDesc: '鼠标垫.标准款', poDesc: '办公鼠标垫', config: '黑色 / 300×250mm', isPart: false, partQuantity: 0,
-      partDesc: '', currentReceiveQty: 40, purchaseQty: 40, untaxedUnitPrice: 17.70, taxRate: 0.13, receivedQty: 0, draftQty: 0,
+      materialDesc: '鼠标垫.标准款', poDesc: '办公鼠标垫', config: '黑色 / 300×250mm', currentReceiveQty: 40, purchaseQty: 40, untaxedUnitPrice: 17.70, taxRate: 0.13, receivedQty: 0, draftQty: 0,
       promisedArrivalDate: '2026-09-09', prLine: 'PR260825002/20', saLine: 'SA260826002/20', applicationNo: '',
       department: 'IT支持部', businessLine: 'IT', applicant: '',
     },
@@ -115,8 +111,7 @@ export const INITIAL_PO_ITEMS = {
   PO2608200004: [
     {
       id: 1, receiptStatus: '已入库', materialGroup: '耗材', assetClass: '办公耗材', materialCode: '116010002000301',
-      materialDesc: '白板笔.黑色', poDesc: '会议室白板笔', config: '黑色 / 10支装', isPart: false, partQuantity: 0,
-      partDesc: '', currentReceiveQty: 0, purchaseQty: 50, untaxedUnitPrice: 26.55, taxRate: 0.13, receivedQty: 50, draftQty: 0,
+      materialDesc: '白板笔.黑色', poDesc: '会议室白板笔', config: '黑色 / 10支装', currentReceiveQty: 0, purchaseQty: 50, untaxedUnitPrice: 26.55, taxRate: 0.13, receivedQty: 50, draftQty: 0,
       promisedArrivalDate: '2026-08-25', prLine: 'PR260805004/10', saLine: 'SA260806004/10', applicationNo: 'REQ260805004',
       department: '行政部', businessLine: '视频', applicant: '116090.刘佳',
     },
@@ -149,7 +144,7 @@ export const INITIAL_RECEIPTS = [
     details: [],
     lines: [{
       id: 1, sourceItemId: 1, materialGroup: '耗材', assetClass: '办公耗材', materialCode: '116010002000301', materialDesc: '白板笔.黑色',
-      config: '黑色 / 10支装', partQuantity: 0, partDesc: '', actualReceiveQty: 50, purchaseQty: 50, untaxedUnitPrice: 26.55,
+      config: '黑色 / 10支装', actualReceiveQty: 50, purchaseQty: 50, untaxedUnitPrice: 26.55,
       untaxedAmount: 1327.50, taxAmount: 172.50, taxedUnitPrice: 30.00, taxedAmount: 1500.00, taxRate: 0.13,
       promisedArrivalDate: '2026-08-25', prLine: 'PR260805004/10', saLine: 'SA260806004/10', applicationNo: 'REQ260805004',
       department: '行政部', businessLine: '视频', applicant: '116090.刘佳',
