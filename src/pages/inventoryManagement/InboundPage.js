@@ -859,7 +859,7 @@ function PurchasePendingModal({ open, rows, currentLines, warehouse, onCancel, o
     && includesText(row.poNo, filters.poNo)
     && includesText(row.receiptNo, filters.receiptNo)
     && includesText(row.assetTag, filters.tag)
-    && includesText(row.assetTag, filters.scan)), [rows, currentKeys, filters]);
+    && includesText(row.assetTag, filters.scan)), [rows, currentKeys, filters, warehouseCompany]);
   const columns = [
     { title: '行号', width: 64, render: (_, __, index) => index + 1 },
     { title: '公司', dataIndex: 'company', width: 120 },
@@ -1019,10 +1019,13 @@ function InboundLineEditModal({ open, row, inboundType, onCancel, onSave }) {
   if (!open || !draft) return null;
 
   const update = (field, value) => setDraft((current) => ({ ...current, [field]: value }));
+  const isPurchase = inboundType === '采购接收';
+  const isNew = inboundType === '新增入库';
+  const isBorrow = inboundType === '借用归还';
   const save = () => {
     if (Number(draft.quantity || 0) <= 0) return;
-    if (inboundType === '新增入库' && (!draft.assetTag || !draft.sn)) return;
-    const parts = inboundType === '新增入库'
+    if (isNew && (!draft.assetTag || !draft.sn)) return;
+    const parts = isNew
       ? buildInboundPartRows(draft.assetTag, draft.partQuantity, draft.parts || [])
       : draft.parts;
     onSave({
@@ -1030,9 +1033,6 @@ function InboundLineEditModal({ open, row, inboundType, onCancel, onSave }) {
       ...(parts ? { parts, partDesc: serializeInboundParts(parts) } : {}),
     });
   };
-  const isPurchase = inboundType === '采购接收';
-  const isNew = inboundType === '新增入库';
-  const isBorrow = inboundType === '借用归还';
   const infra = isInfraLine(draft);
   const consumable = isConsumableLine(draft);
 
@@ -1040,7 +1040,7 @@ function InboundLineEditModal({ open, row, inboundType, onCancel, onSave }) {
     <Modal open title="编辑入库物资" width={720} okText="保存" cancelText="取消" onOk={save} onCancel={onCancel}>
       <DetailGrid columns={2} labelWidth={104}>
         <EditorField label="物资说明"><Readonly>{draft.materialDesc}</Readonly></EditorField>
-        <EditorField label="入库数量" required><InputNumber className="w-full" min={1} precision={0} value={draft.quantity} onChange={(value) => update('quantity', value || 1)} /></EditorField>
+        <EditorField label="入库数量" required>{isNew ? <InputNumber className="w-full" min={1} precision={0} value={draft.quantity} onChange={(value) => update('quantity', value || 1)} /> : <Readonly>{draft.quantity}</Readonly>}</EditorField>
 
         {isNew && <EditorField label="资产标签号" required><Input value={draft.assetTag} onChange={(event) => update('assetTag', event.target.value)} /></EditorField>}
         {isNew && <EditorField label="SN号" required><Input value={draft.sn} onChange={(event) => update('sn', event.target.value)} /></EditorField>}

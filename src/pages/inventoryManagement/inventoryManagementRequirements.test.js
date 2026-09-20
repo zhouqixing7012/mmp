@@ -196,3 +196,10 @@ test('新增退库借用归还均保留Excel导入入口且不伪造模板数据
   expect(inboundSource).toContain('模板字段待确认后再执行解析和导入校验');
   expect(inboundSource).not.toContain("AST-IMP-");
 });
+
+
+test('采购退库借用归还行编辑不允许修改来源数量', () => {
+  expect(inboundSource).toContain("isNew ? <InputNumber");
+  expect(inboundSource).toContain(": <Readonly>{draft.quantity}</Readonly>");
+  expect(inboundSource).toContain("[rows, currentKeys, filters, warehouseCompany]");
+});
