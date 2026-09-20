@@ -357,7 +357,7 @@ const INBOUND_IMPORT_EMPLOYEES = Array.from(new Map([
     .filter((item) => item.responsiblePerson || item.borrower)
     .map((item) => {
       const name = item.responsiblePerson || item.borrower;
-      const [employeeNo = '', ...nameParts] = String(name).split('-');
+      const [employeeNo = ''] = String(name).split('-');
       return [employeeNo, {
         id: employeeNo,
         employeeNo,
@@ -369,7 +369,7 @@ const INBOUND_IMPORT_EMPLOYEES = Array.from(new Map([
       }];
     }),
   ...RESPONSIBLE_OPTIONS.map((item) => {
-    const [employeeNo = '', ...nameParts] = String(item.name).split('-');
+    const [employeeNo = ''] = String(item.name).split('-');
     return [employeeNo, {
       ...item,
       employeeNo,
