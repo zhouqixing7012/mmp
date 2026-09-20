@@ -10,6 +10,7 @@ const transferSource = fs.readFileSync(path.join(__dirname, 'TransferPage.js'), 
 const moveReceiveSource = fs.readFileSync(path.join(__dirname, 'MoveReceiveContent.js'), 'utf8');
 const assetReceiptSource = fs.readFileSync(path.join(__dirname, 'AssetReceiptPage.js'), 'utf8');
 const consumableReceiptSource = fs.readFileSync(path.join(__dirname, 'ConsumableReceiptPage.js'), 'utf8');
+const consumableReceiptMockSource = fs.readFileSync(path.join(__dirname, 'consumableReceiptMock.js'), 'utf8');
 
 test('新增入库的资产标签号和 SN 号必须填写', () => {
   expect(inboundSource).toContain('<EditorField label="资产标签号" required>');
@@ -280,4 +281,58 @@ test('转移资产选择弹窗与父弹窗同级且字段对齐入库出库资�
   ['标签号', 'SN号', '公司', '板块', '资产大类', '资产小类', '资产说明', '品牌', '数量', '原值', '资产责任人', '资产状态', '成本中心', '启用日期'].forEach((title) => {
     expect(source).toContain(`title: '${title}'`);
   });
+});
+
+
+test('耗材接收链路不再包含部件字段且PO页面不展示申请批次', () => {
+  ['partQuantity', 'partDesc', 'isPart', '部件数量', '部件说明', '是否部件', '部件信息'].forEach((value) => {
+    expect(consumableReceiptSource).not.toContain(value);
+  });
+  ['partQuantity', 'partDesc', 'isPart'].forEach((value) => {
+    expect(consumableReceiptMockSource).not.toContain(value);
+  });
+
+  const poDetailStart = consumableReceiptSource.indexOf("if (view === 'poDetail' && activePO)");
+  const receiptListStart = consumableReceiptSource.indexOf("if (view === 'receiptList')", poDetailStart);
+  const poDetailSource = consumableReceiptSource.slice(poDetailStart, receiptListStart);
+  expect(poDetailSource).not.toContain('label="申请批次"');
+
+  const receiptCardStart = consumableReceiptSource.indexOf('function ReceiptInfoCard');
+  const receiptCardEnd = consumableReceiptSource.indexOf('function readStorageRows', receiptCardStart);
+  expect(consumableReceiptSource.slice(receiptCardStart, receiptCardEnd)).toContain('label="申请批次"');
+});
+
+test('资产和耗材PO行被接收单引用后仍可编辑接收数量但其他字段只读', () => {
+  expect(assetReceiptSource).toContain("const editingPoItemLocked = Boolean(editItem && isPoItemLocked(currentPO.poNo, editItem.id))");
+  expect(assetReceiptSource).toContain("? { currentReceiptQty: qty }");
+  expect(assetReceiptSource).toContain("editingPoItemLocked ? <div className=\"mt-1\"><Readonly>{editDraft.config}</Readonly></div>");
+  expect(assetReceiptSource).not.toContain("&& !isPoItemLocked(activePO?.poNo, row.id)");
+
+  expect(consumableReceiptSource).toContain("const editingPoItemLocked = Boolean(editItem && isPoItemLocked(activePO.poNo, editItem.id))");
+  expect(consumableReceiptSource).toContain("locked ? { ...item, currentReceiveQty: qty }");
+  expect(consumableReceiptSource).toContain("editingPoItemLocked\n                  ? <div className=\"mt-1\"><Readonly>{editDraft.config}</Readonly></div>");
+  expect(consumableReceiptSource).not.toContain("remainingQty(row) > 0 && !isPoItemLocked");
+  expect(consumableReceiptSource).toContain("if (qty > remainingQty(editItem)) return messageApi.error('接收数量不能超过可接收数量！')");
+});
+
+test('电子设备和低值耐用品维护操作常显不可用时置灰', () => {
+  expect(assetReceiptSource).toContain("disabled={!isDraft || !selectedMaintenanceKeys.length}");
+  expect(assetReceiptSource).toContain("disabled={!isDraft || !maintenanceRows.length || !hasBlankMaintenanceTags}");
+  expect(assetReceiptSource).toContain("disabled={!isDraft || !maintenanceRows.length || !hasBlankMaintenanceSn}");
+  expect(assetReceiptSource).toContain("disabled={!maintenanceRows.length || !allMaintenanceTagsReady}");
+
+  expect(consumableReceiptSource).toContain("disabled={!isDraft || !selectedDetails.length}");
+  expect(consumableReceiptSource).toContain("disabled={!isDraft || !details.length || allTagsGenerated}");
+  expect(consumableReceiptSource).toContain("disabled={!isDraft || !details.length || allSnMaintained}");
+  expect(consumableReceiptSource).toContain("disabled={!details.length || !allTagsGenerated}");
+});
+
+test('入库单当前仓库位于入库单信息Card右上角', () => {
+  const start = inboundSource.indexOf('title="入库单信息"');
+  const end = inboundSource.indexOf('title="入库物资"', start);
+  const source = inboundSource.slice(start, end);
+  expect(source).toContain('extra={(');
+  expect(source).toContain('当前仓库</Typography.Text>');
+  expect(source).toContain('style={{ width: 240 }}');
+  expect(source).not.toContain('<EditorField label="当前仓库">');
 });
