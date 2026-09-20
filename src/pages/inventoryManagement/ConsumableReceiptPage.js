@@ -108,28 +108,31 @@ function Readonly({ children }) {
   return <Typography.Text>{children === 0 ? 0 : (children || '-')}</Typography.Text>;
 }
 
-function ReceiptInfoCard({ receipt }) {
+function ReceiptInfoCard({ receipt, showCreationInfo = false }) {
   return (
     <Card size="small" title="接收单信息">
       <DetailGrid columns={3} labelWidth={112}>
-        <DetailItem label="接收单号"><Readonly>{receipt.receiptNo}</Readonly></DetailItem>
-        <DetailItem label="接收人"><Readonly>{receipt.receiver}</Readonly></DetailItem>
-        <DetailItem label="接收时间"><Readonly>{receipt.receiptAt}</Readonly></DetailItem>
+        <DetailItem label="采购接收单号"><Readonly>{receipt.receiptNo}</Readonly></DetailItem>
         <DetailItem label="PO单号"><Readonly>{receipt.poNo}</Readonly></DetailItem>
+        <DetailItem label="PO说明"><Readonly>{receipt.poName}</Readonly></DetailItem>
         <DetailItem label="供应商"><Readonly>{receipt.supplier}</Readonly></DetailItem>
+        <DetailItem label="联系人"><Readonly>{receipt.contact}</Readonly></DetailItem>
         <DetailItem label="供应商联系电话"><Readonly>{receipt.supplierPhone}</Readonly></DetailItem>
-        <DetailItem label="PO单说明"><Readonly>{receipt.poName}</Readonly></DetailItem>
         <DetailItem label="采购单位"><Readonly>{receipt.procurementUnit}</Readonly></DetailItem>
-        <DetailItem label="采购员联系电话"><Readonly>{receipt.buyerPhone}</Readonly></DetailItem>
-        <DetailItem label="板块"><Readonly>{receipt.plate}</Readonly></DetailItem>
-        <DetailItem label="部门"><Readonly>{receipt.department || receipt.lines?.[0]?.department}</Readonly></DetailItem>
         <DetailItem label="采购员"><Readonly>{receipt.buyer}</Readonly></DetailItem>
+        <DetailItem label="采购员联系电话"><Readonly>{receipt.buyerPhone}</Readonly></DetailItem>
         <DetailItem label="合同主体"><Readonly>{receipt.contractSubject}</Readonly></DetailItem>
-        <DetailItem label="订单日期"><Readonly>{receipt.orderDate}</Readonly></DetailItem>
+        <DetailItem label="板块"><Readonly>{receipt.plate}</Readonly></DetailItem>
+        <DetailItem label="接收人"><Readonly>{receipt.receiver}</Readonly></DetailItem>
         <DetailItem label="接收单状态"><StatusTag value={receipt.status} /></DetailItem>
+        <DetailItem label="接收时间"><Readonly>{receipt.receiptAt}</Readonly></DetailItem>
         <DetailItem label="申请批次"><Readonly>{receipt.applicationBatch}</Readonly></DetailItem>
-        <DetailItem label="制单人"><Readonly>{receipt.creator}</Readonly></DetailItem>
-        <DetailItem label="制单时间"><Readonly>{receipt.createdAt}</Readonly></DetailItem>
+        {showCreationInfo && (
+          <>
+            <DetailItem label="制单人"><Readonly>{receipt.creator}</Readonly></DetailItem>
+            <DetailItem label="制单时间"><Readonly>{receipt.createdAt}</Readonly></DetailItem>
+          </>
+        )}
       </DetailGrid>
     </Card>
   );
@@ -997,7 +1000,6 @@ export default function ConsumableReceiptPage() {
             <DetailItem label="PO单说明"><Readonly>{activePO.poName}</Readonly></DetailItem>
             <DetailItem label="采购单位"><Readonly>{activePO.procurementUnit}</Readonly></DetailItem>
             <DetailItem label="合同主体"><Readonly>{activePO.contractSubject}</Readonly></DetailItem>
-            <DetailItem label="采购单位联系电话"><Readonly>{activePO.procurementUnitPhone}</Readonly></DetailItem>
             {activePO.purchaseType === '低值耐用品' && (
               <>
                 <DetailItem label="不含税合计"><Readonly>{money(untaxed)}</Readonly></DetailItem>
@@ -1256,7 +1258,7 @@ export default function ConsumableReceiptPage() {
       <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-maintenance">
         {contextHolder}
         <PageTitle />
-        <ReceiptInfoCard receipt={activeReceipt} />
+        <ReceiptInfoCard receipt={activeReceipt} showCreationInfo />
         {isDraft && (
           <Card size="small">
             <DetailGrid columns={3} labelWidth={96}>

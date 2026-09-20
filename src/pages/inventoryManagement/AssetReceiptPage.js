@@ -1152,7 +1152,7 @@ export default function AssetReceiptPage() {
 
   const receiptDetailColumns = [
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
-    { title: '物料说明', dataIndex: 'materialDesc', width: 240 },
+    { title: '资产说明', dataIndex: 'materialDesc', width: 240 },
     { title: '配置', dataIndex: 'config', width: 220 },
     { title: '部件数量', dataIndex: 'partQuantity', width: 110 },
     { title: '部件说明', dataIndex: 'partDesc', width: 180 },
@@ -1344,7 +1344,7 @@ export default function AssetReceiptPage() {
       { title: 'SN号', dataIndex: 'sn', width: 130, render: (value) => value || '-' },
       { title: '物资总类', dataIndex: 'materialGroup', width: 110 },
       { title: '资产大类', dataIndex: 'assetClass', width: 180 },
-      { title: '物资说明', dataIndex: 'materialDesc', width: 220 },
+      { title: '资产说明', dataIndex: 'materialDesc', width: 220 },
       { title: '配置', dataIndex: 'config', width: 120 },
       { title: '部件数量', dataIndex: 'partQuantity', width: 110 },
       { title: '部件说明', dataIndex: 'partDesc', width: 160 },
@@ -1382,6 +1382,8 @@ export default function AssetReceiptPage() {
             <DetailItem label="订单日期"><Readonly>{detail.orderDate || receiptPO?.pushDate}</Readonly></DetailItem>
             <DetailItem label="接收单状态"><StatusTag value={activeReceipt.status} /></DetailItem>
             <DetailItem label="申请批次"><Readonly>{activeReceipt.applicationBatch}</Readonly></DetailItem>
+            <DetailItem label="制单人"><Readonly>{activeReceipt.creator}</Readonly></DetailItem>
+            <DetailItem label="制单时间"><Readonly>{activeReceipt.createdAt}</Readonly></DetailItem>
           </DetailGrid>
         </Card>
 
@@ -1403,7 +1405,7 @@ export default function AssetReceiptPage() {
             </DetailItem>
             <DetailItem label="资产标签号"><Typography.Text>{scanTargetAsset?.assetTag || ''}</Typography.Text></DetailItem>
             <DetailItem label="SN号"><Typography.Text>{scanTargetAsset?.sn || ''}</Typography.Text></DetailItem>
-            <DetailItem label="物资说明"><Typography.Text>{scanTargetAsset?.materialDesc || ''}</Typography.Text></DetailItem>
+            <DetailItem label="资产说明"><Typography.Text>{scanTargetAsset?.materialDesc || ''}</Typography.Text></DetailItem>
               <DetailItem label="配置"><Typography.Text>{scanTargetAsset?.config || ''}</Typography.Text></DetailItem>
             </DetailGrid>
           </Card>

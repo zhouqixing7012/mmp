@@ -6,6 +6,8 @@ const outboundSource = fs.readFileSync(path.join(__dirname, 'OutboundPage.js'), 
 const printSource = fs.readFileSync(path.join(__dirname, 'InventoryPrintPreview.jsx'), 'utf8');
 const transferSource = fs.readFileSync(path.join(__dirname, 'TransferPage.js'), 'utf8');
 const moveReceiveSource = fs.readFileSync(path.join(__dirname, 'MoveReceiveContent.js'), 'utf8');
+const assetReceiptSource = fs.readFileSync(path.join(__dirname, 'AssetReceiptPage.js'), 'utf8');
+const consumableReceiptSource = fs.readFileSync(path.join(__dirname, 'ConsumableReceiptPage.js'), 'utf8');
 
 test('新增入库的资产标签号和 SN 号必须填写', () => {
   expect(inboundSource).toContain('<EditorField label="资产标签号" required>');
@@ -56,4 +58,51 @@ test('转移明细导出统一使用 xlsx', () => {
 
 test('移库接收流程结束后同步结束通知和催办状态', () => {
   expect(moveReceiveSource).toContain("{ notificationStatus: '已结束', reminderStatus: '已结束' }");
+});
+
+
+test('资产接收维护页和详情页保留制单信息且说明字段统一为资产说明', () => {
+  const maintenanceStart = assetReceiptSource.indexOf('const maintenanceColumns = [');
+  const receiptDetailStart = assetReceiptSource.indexOf("if (view === 'receiptDetail' && activeReceipt)");
+  const maintenanceSource = assetReceiptSource.slice(maintenanceStart, receiptDetailStart);
+  const receiptDetailSource = assetReceiptSource.slice(receiptDetailStart);
+
+  expect(maintenanceSource).toContain('<DetailItem label="制单人"><Readonly>{activeReceipt.creator}</Readonly></DetailItem>');
+  expect(maintenanceSource).toContain('<DetailItem label="制单时间"><Readonly>{activeReceipt.createdAt}</Readonly></DetailItem>');
+  expect(receiptDetailSource).toContain('<DetailItem label="制单人"><Readonly>{activeReceipt.creator}</Readonly></DetailItem>');
+  expect(receiptDetailSource).toContain('<DetailItem label="制单时间"><Readonly>{activeReceipt.createdAt}</Readonly></DetailItem>');
+  expect(assetReceiptSource).toContain("{ title: '资产说明', dataIndex: 'materialDesc', width: 240 }");
+  expect(assetReceiptSource).toContain("{ title: '资产说明', dataIndex: 'materialDesc', width: 220 }");
+  expect(assetReceiptSource).toContain('<DetailItem label="资产说明"><Typography.Text>{scanTargetAsset?.materialDesc || \'\'}</Typography.Text></DetailItem>');
+  expect(assetReceiptSource).not.toContain("{ title: '物料说明', dataIndex: 'materialDesc'");
+  expect(assetReceiptSource).not.toContain("{ title: '物资说明', dataIndex: 'materialDesc'");
+  expect(assetReceiptSource).not.toContain('label="物资说明"');
+});
+
+test('耗材接收详情按固定15字段展示且低值耐用品维护页追加制单信息', () => {
+  const cardStart = consumableReceiptSource.indexOf('function ReceiptInfoCard');
+  const cardEnd = consumableReceiptSource.indexOf('function readStorageRows');
+  const cardSource = consumableReceiptSource.slice(cardStart, cardEnd);
+  const labels = [
+    '采购接收单号', 'PO单号', 'PO说明', '供应商', '联系人', '供应商联系电话',
+    '采购单位', '采购员', '采购员联系电话', '合同主体', '板块', '接收人',
+    '接收单状态', '接收时间', '申请批次',
+  ];
+  let cursor = -1;
+  labels.forEach((label) => {
+    const next = cardSource.indexOf(`label="${label}"`);
+    expect(next).toBeGreaterThan(cursor);
+    cursor = next;
+  });
+
+  expect(cardSource).toContain('{showCreationInfo && (');
+  expect(cardSource.indexOf('label="制单人"')).toBeGreaterThan(cardSource.indexOf('label="申请批次"'));
+  expect(consumableReceiptSource.match(/<ReceiptInfoCard receipt=\{activeReceipt\} \/>/g) || []).toHaveLength(1);
+  expect(consumableReceiptSource.match(/<ReceiptInfoCard receipt=\{activeReceipt\} showCreationInfo \/>/g) || []).toHaveLength(1);
+
+  const poDetailStart = consumableReceiptSource.indexOf("if (view === 'poDetail' && activePO)");
+  const receiptListStart = consumableReceiptSource.indexOf("if (view === 'receiptList')");
+  const poDetailSource = consumableReceiptSource.slice(poDetailStart, receiptListStart);
+  expect(poDetailSource.match(/label="采购员联系电话"/g) || []).toHaveLength(1);
+  expect(poDetailSource).not.toContain('label="采购单位联系电话"');
 });
