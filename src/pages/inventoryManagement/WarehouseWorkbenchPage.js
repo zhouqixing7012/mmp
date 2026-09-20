@@ -5,12 +5,16 @@ import { useNavigate } from 'react-router-dom';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import {
   CURRENT_WAREHOUSE_OPERATOR,
-  WAREHOUSE_EMPLOYEE_PAGE_STORAGE_KEY,
   WAREHOUSE_WORKBENCH_DOCUMENT_TYPES,
   WAREHOUSE_WORKBENCH_TASKS,
   WAREHOUSE_WORKBENCH_USERS,
   buildWarehouseEmployeePageContext,
 } from '../../mock/warehouseWorkbenchMock';
+import {
+  WAREHOUSE_EMPLOYEE_PAGE_STORAGE_KEY,
+  clearWarehouseEmployeePageContext,
+  writeWarehouseEmployeePageContext,
+} from '../../services/warehouseWorkbenchEmployeePageService';
 
 const EMPTY_FILTERS = {
   assetTag: '',
@@ -82,6 +86,9 @@ function buildEmployeeWindowHtml(storageKey) {
     var employee=data.employee||{};
     var doc=data.document||{};
     var materials=Array.isArray(data.materials)?data.materials:[];
+    var confirmation=data.confirmation||{};
+    var confirmationText=confirmation.text||data.responsibility||'';
+    var confirmationTitle=confirmation.title||'保管职责';
     var rows=materials.map(function(item,index){
       var isConsumable=String(item.materialGroup||'').indexOf('耗材')>=0 || String(item.materialGroup||'').indexOf('低值')>=0;
       return '<tr>'
@@ -106,7 +113,7 @@ function buildEmployeeWindowHtml(storageKey) {
       +'<div class="card"><table><thead><tr><th>行号</th><th>物资小类</th><th>标签号/物料编码</th><th>数量</th><th>单位</th><th>说明</th></tr></thead><tbody>'
       +(rows||'<tr><td colspan="6" class="empty">暂无物资明细</td></tr>')
       +'</tbody></table></div>'
-      +(data.responsibility?'<div class="card"><div class="label">保管职责</div><div class="responsibility">'+esc(data.responsibility)+'</div></div>':'')
+      +(confirmationText?'<div class="card"><div class="label">'+esc(confirmationTitle)+'</div><div class="responsibility">'+esc(confirmationText)+'</div></div>':'')
       +'<div class="hint">页面每 3 秒自动刷新</div>'
       +'</div>';
   }
@@ -151,10 +158,7 @@ export default function WarehouseWorkbenchPage() {
   ), []);
 
   const writeEmployeePageContext = (task) => {
-    window.localStorage.setItem(
-      WAREHOUSE_EMPLOYEE_PAGE_STORAGE_KEY,
-      JSON.stringify(buildWarehouseEmployeePageContext(task)),
-    );
+    writeWarehouseEmployeePageContext(buildWarehouseEmployeePageContext(task));
   };
 
   const handleTask = (task) => {
@@ -193,10 +197,6 @@ export default function WarehouseWorkbenchPage() {
     setHasQueried(true);
     setResults(filtered);
     setPage(1);
-
-    if (filtered.length === 1) {
-      handleTask(filtered[0]);
-    }
   };
 
   const resetQuery = () => {
@@ -234,7 +234,7 @@ export default function WarehouseWorkbenchPage() {
   };
 
   const refreshEmployeePage = () => {
-    window.localStorage.removeItem(WAREHOUSE_EMPLOYEE_PAGE_STORAGE_KEY);
+    clearWarehouseEmployeePageContext();
     messageApi.success('已刷新');
   };
 
@@ -262,13 +262,6 @@ export default function WarehouseWorkbenchPage() {
       defaultSortOrder: 'descend',
       sorter: (a, b) => String(a.applicationTime).localeCompare(String(b.applicationTime)),
       render: (value) => String(value || '').slice(0, 10),
-    },
-    {
-      title: '操作',
-      key: 'operation',
-      width: 100,
-      fixed: 'right',
-      render: (_, row) => <Button type="link" className="px-0" onClick={() => handleTask(row)}>处理</Button>,
     },
   ];
 
