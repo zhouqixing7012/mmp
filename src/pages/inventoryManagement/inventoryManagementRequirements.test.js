@@ -344,7 +344,10 @@ test('耗材接收生成的低值耐用品进入入库后继续剔除部件字�
   const durableSeed = inboundSource.slice(seedStart, seedEnd);
   expect(durableSeed).not.toContain('partQuantity');
   expect(durableSeed).not.toContain('partDesc');
-  expect(inboundSource).toContain('const { partQuantity, partDesc, parts, isPart, ...withoutParts } = normalized;');
+  expect(inboundSource).toContain('delete withoutParts.partQuantity;');
+  expect(inboundSource).toContain('delete withoutParts.partDesc;');
+  expect(inboundSource).toContain('delete withoutParts.parts;');
+  expect(inboundSource).toContain('delete withoutParts.isPart;');
   expect(inboundSource).toContain("{!consumable && <EditorField label=\"部件数量\">");
   expect(inboundSource).toContain("{!consumable && <EditorField label=\"部件说明\">");
 });
