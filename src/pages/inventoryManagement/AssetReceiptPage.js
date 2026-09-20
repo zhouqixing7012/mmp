@@ -341,10 +341,6 @@ export default function AssetReceiptPage() {
 
   const availableQty = (item) => Math.max(0, Number(item?.purchaseQty || 0) - Number(item?.receivedQty || 0) - Number(item?.draftQty || 0));
 
-  const isPoItemLocked = (poNo, itemId) => receiptRows.some((receipt) => (
-    receipt.poNo === poNo && getReceiptItems(receipt).some((item) => item.id === itemId)
-  ));
-
   const getDraftReceiptItemReference = (poNo, itemId) => {
     for (let index = receiptRows.length - 1; index >= 0; index -= 1) {
       const receipt = receiptRows[index];
@@ -548,7 +544,7 @@ export default function AssetReceiptPage() {
   };
 
   const openPartDescriptionEditor = () => {
-    if (isPoItemLocked(activePO?.poNo, editItem?.id)) return;
+    if (getDraftReceiptItemReference(activePO?.poNo, editItem?.id)) return;
     const quantity = Number(editDraft?.partQuantity || 0);
     if (!editDraft?.isPart || !Number.isInteger(quantity) || quantity < 2 || quantity > 100) {
       messageApi.warning('请填写部件数量！');
@@ -559,8 +555,8 @@ export default function AssetReceiptPage() {
   };
 
   const savePoItem = () => {
-    const locked = isPoItemLocked(activePO?.poNo, editItem?.id);
     const draftReference = getDraftReceiptItemReference(activePO?.poNo, editItem?.id);
+    const locked = Boolean(draftReference);
     const qty = Number(editDraft?.currentReceiptQty || 0);
     const maxQty = editAvailableQty(editItem);
     if (!DIRECT_INBOUND_TYPES.has(activePO?.purchaseType)) {
@@ -1177,12 +1173,11 @@ export default function AssetReceiptPage() {
 
   const itemColumns = [
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
-    { title: '操作', key: 'operation', width: 80, fixed: 'left', render: (_, row) => {
-      const draftReference = getDraftReceiptItemReference(activePO?.poNo, row.id);
-      return row.receiptStatus === '待接收' && (availableQty(row) > 0 || draftReference)
+    { title: '操作', key: 'operation', width: 80, fixed: 'left', render: (_, row) => (
+      row.receiptStatus === '待接收' && availableQty(row) > 0
         ? <Button type="link" className="px-0" onClick={() => openItemEditor(row)}>编辑</Button>
-        : '-';
-    } },
+        : '-'
+    ) },
     { title: '接收状态', dataIndex: 'receiptStatus', width: 120, render: (value) => value ? <StatusTag value={value} /> : '-' },
     { title: '物资总类', dataIndex: 'materialGroup', width: 120 },
     { title: '资产大类', dataIndex: 'assetClass', width: 180 },
@@ -1240,7 +1235,7 @@ export default function AssetReceiptPage() {
     const canDirectConfirm = DIRECT_INBOUND_TYPES.has(currentPO.purchaseType);
     const hasReceipt = receiptRows.some((row) => row.poNo === currentPO.poNo);
     const isDirectInbound = DIRECT_INBOUND_TYPES.has(currentPO.purchaseType);
-    const editingPoItemLocked = Boolean(editItem && isPoItemLocked(currentPO.poNo, editItem.id));
+    const editingPoItemLocked = Boolean(editItem && getDraftReceiptItemReference(currentPO.poNo, editItem.id));
 
     return (
       <Space direction="vertical" size={16} className="w-full">
