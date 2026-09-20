@@ -323,19 +323,21 @@ test('耗材接收链路不再包含部件字段且PO页面不展示申请批次
   expect(consumableReceiptMockSource).not.toContain('applicationBatch');
 });
 
-test('资产和耗材PO引用草稿占满数量后仍显示编辑并同步调整草稿占用', () => {
+test('资产和耗材PO行仅有剩余可接收数量时展示编辑且草稿引用锁定基础字段', () => {
   expect(assetReceiptSource).toContain('const getDraftReceiptItemReference = (poNo, itemId)');
-  expect(assetReceiptSource).toContain('(availableQty(row) > 0 || draftReference)');
+  expect(assetReceiptSource).toContain("row.receiptStatus === '待接收' && availableQty(row) > 0");
+  expect(assetReceiptSource).not.toContain('(availableQty(row) > 0 || draftReference)');
+  expect(assetReceiptSource).toContain('const locked = Boolean(draftReference)');
   expect(assetReceiptSource).toContain('const delta = qty - previousQty');
-  expect(assetReceiptSource).toContain('draftQty: nextDraft');
   expect(assetReceiptSource).toContain('reconcileMaintenanceForReceipt(nextReceipt)');
   expect(assetReceiptSource).toContain("editingPoItemLocked ? <div className=\"mt-1\"><Readonly>{editDraft.config}</Readonly></div>");
 
   expect(consumableReceiptSource).toContain('const getDraftReceiptLineReference = (poNo, itemId)');
-  expect(consumableReceiptSource).toContain("(remainingQty(row) > 0 || getDraftReceiptLineReference(activePO?.poNo, row.id))");
+  expect(consumableReceiptSource).toContain("activePO?.receiptStatus !== '已入库' && remainingQty(row) > 0");
+  expect(consumableReceiptSource).not.toContain("(remainingQty(row) > 0 || getDraftReceiptLineReference(activePO?.poNo, row.id))");
+  expect(consumableReceiptSource).toContain('const locked = Boolean(draftReference)');
   expect(consumableReceiptSource).toContain('const delta = qty - previousDraftQty');
   expect(consumableReceiptSource).toContain('actualReceiveQty: qty');
-  expect(consumableReceiptSource).toContain('draftQty: nextDraft');
   expect(consumableReceiptSource).toContain("editingPoItemLocked\n                  ? <div className=\"mt-1\"><Readonly>{editDraft.config}</Readonly></div>");
 });
 
@@ -374,4 +376,16 @@ test('耗材接收生成的低值耐用品进入入库后继续剔除部件字�
   expect(inboundSource).toContain('delete withoutParts.isPart;');
   expect(inboundSource).toContain("{!consumable && <EditorField label=\"部件数量\">");
   expect(inboundSource).toContain("{!consumable && <EditorField label=\"部件说明\">");
+});
+
+
+test('耗材板块按使用部门自动带出且人工调整后不再被自动覆盖', () => {
+  expect(consumableReceiptSource).toContain('const resolveDepartmentAccounting = (department, fallbackPlate = \'\')');
+  expect(consumableReceiptSource).toContain('mockDeptCostCenterMappingData');
+  expect(consumableReceiptSource).toContain('mockCostCenterPlateMappingData');
+  expect(consumableReceiptSource).toContain("const usageDepartment = sourceItems.find((item) => item.department)?.department || ''");
+  expect(consumableReceiptSource).toContain('const accounting = resolveDepartmentAccounting(usageDepartment, row.plate)');
+  expect(consumableReceiptSource).toContain('row.plateManuallyAdjusted');
+  expect(consumableReceiptSource).toContain('{ plate: value, plateManuallyAdjusted: true }');
+  expect(consumableReceiptSource).toContain("costCenter: activePO.costCenter || ''");
 });
