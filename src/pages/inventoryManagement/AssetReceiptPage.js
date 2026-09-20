@@ -505,7 +505,6 @@ export default function AssetReceiptPage() {
   const editAvailableQty = (item) => availableQty(item);
 
   const openItemEditor = (row) => {
-    if (isPoItemLocked(activePO?.poNo, row.id)) return messageApi.warning('该采购行已存在接收单，不可再编辑');
     const partQuantity = row.partQuantity === '-' ? 0 : Number(row.partQuantity || 0);
     setEditItem(row);
     setEditDraft({
@@ -519,6 +518,7 @@ export default function AssetReceiptPage() {
   };
 
   const openPartDescriptionEditor = () => {
+    if (isPoItemLocked(activePO?.poNo, editItem?.id)) return;
     const quantity = Number(editDraft?.partQuantity || 0);
     if (!editDraft?.isPart || !Number.isInteger(quantity) || quantity < 2 || quantity > 100) {
       messageApi.warning('请填写部件数量！');
@@ -529,22 +529,25 @@ export default function AssetReceiptPage() {
   };
 
   const savePoItem = () => {
-    if (isPoItemLocked(activePO?.poNo, editItem?.id)) return messageApi.warning('该采购行已存在接收单，不可再编辑');
+    const locked = isPoItemLocked(activePO?.poNo, editItem?.id);
     const qty = Number(editDraft?.currentReceiptQty || 0);
     const maxQty = editAvailableQty(editItem);
     if (!DIRECT_INBOUND_TYPES.has(activePO?.purchaseType)) {
       if (!Number.isInteger(qty) || qty <= 0) return messageApi.error('接收数量必须为大于 0 的整数');
       if (qty > maxQty) return messageApi.error(`接收数量不能超过可接收数量（当前可接收数量为 ${maxQty}）`);
     }
-    if (editDraft.isPart && (!Number.isInteger(Number(editDraft.partQuantity)) || Number(editDraft.partQuantity) < 2 || Number(editDraft.partQuantity) > 100)) {
+    if (!locked && editDraft.isPart && (!Number.isInteger(Number(editDraft.partQuantity)) || Number(editDraft.partQuantity) < 2 || Number(editDraft.partQuantity) > 100)) {
       return messageApi.error('请输入 2～100 之间的整数！');
     }
     setPoItemValues(activePO.poNo, {
-      [editItem.id]: {
-        ...editDraft,
-        partQuantity: editDraft.isPart ? Number(editDraft.partQuantity) : '-',
-        partDesc: editDraft.isPart ? (editDraft.partDescriptions || []).join('@') : '-',
-      },
+      [editItem.id]: locked
+        ? { currentReceiptQty: qty }
+        : {
+          ...editDraft,
+          currentReceiptQty: qty,
+          partQuantity: editDraft.isPart ? Number(editDraft.partQuantity) : '-',
+          partDesc: editDraft.isPart ? (editDraft.partDescriptions || []).join('@') : '-',
+        },
     });
     setEditItem(null);
     setEditDraft(null);
@@ -1122,7 +1125,7 @@ export default function AssetReceiptPage() {
 
   const itemColumns = [
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
-    { title: '操作', key: 'operation', width: 80, fixed: 'left', render: (_, row) => row.editable && row.receiptStatus === '待接收' && availableQty(row) > 0 && !isPoItemLocked(activePO?.poNo, row.id) ? <Button type="link" className="px-0" onClick={() => openItemEditor(row)}>编辑</Button> : '-' },
+    { title: '操作', key: 'operation', width: 80, fixed: 'left', render: (_, row) => row.editable && row.receiptStatus === '待接收' && availableQty(row) > 0 ? <Button type="link" className="px-0" onClick={() => openItemEditor(row)}>编辑</Button> : '-' },
     { title: '接收状态', dataIndex: 'receiptStatus', width: 120, render: (value) => value ? <StatusTag value={value} /> : '-' },
     { title: '物资总类', dataIndex: 'materialGroup', width: 120 },
     { title: '资产大类', dataIndex: 'assetClass', width: 180 },
@@ -1180,6 +1183,7 @@ export default function AssetReceiptPage() {
     const canDirectConfirm = DIRECT_INBOUND_TYPES.has(currentPO.purchaseType);
     const hasReceipt = receiptRows.some((row) => row.poNo === currentPO.poNo);
     const isDirectInbound = DIRECT_INBOUND_TYPES.has(currentPO.purchaseType);
+    const editingPoItemLocked = Boolean(editItem && isPoItemLocked(currentPO.poNo, editItem.id));
 
     return (
       <Space direction="vertical" size={16} className="w-full">
@@ -1265,13 +1269,23 @@ export default function AssetReceiptPage() {
         >
           {editDraft && (
             <Space direction="vertical" size={12} className="w-full">
-              <div onClick={() => setSelectorType('material')} className="cursor-pointer">
+              <div
+                onClick={editingPoItemLocked ? undefined : () => setSelectorType('material')}
+                className={editingPoItemLocked ? '' : 'cursor-pointer'}
+              >
                 <Typography.Text>物料</Typography.Text>
-                <Input className="mt-1 pointer-events-none" readOnly value={`${editDraft.materialCode} / ${editDraft.materialDesc}`} suffix={<Search size={14} className="text-[#1677ff]" />} />
+                <Input
+                  className={`mt-1 ${editingPoItemLocked ? '' : 'pointer-events-none'}`}
+                  readOnly
+                  value={`${editDraft.materialCode} / ${editDraft.materialDesc}`}
+                  suffix={editingPoItemLocked ? null : <Search size={14} className="text-[#1677ff]" />}
+                />
               </div>
               <div>
                 <Typography.Text>配置</Typography.Text>
-                <Input className="mt-1" value={editDraft.config} onChange={(event) => setEditDraft((item) => ({ ...item, config: event.target.value }))} />
+                {editingPoItemLocked
+                  ? <div className="mt-1"><Readonly>{editDraft.config}</Readonly></div>
+                  : <Input className="mt-1" value={editDraft.config} onChange={(event) => setEditDraft((item) => ({ ...item, config: event.target.value }))} />}
               </div>
               <div>
                 <Typography.Text>接收数量</Typography.Text>
@@ -1286,18 +1300,24 @@ export default function AssetReceiptPage() {
               </div>
               <div>
                 <Typography.Text>是否部件</Typography.Text>
-                <Select className="mt-1 w-full" value={editDraft.isPart ? 'Y' : 'N'} options={[{ label: '是', value: 'Y' }, { label: '否', value: 'N' }]} onChange={(value) => setEditDraft((item) => value === 'Y' ? { ...item, isPart: true } : { ...item, isPart: false, partQuantity: 0, partDescriptions: [] })} />
+                {editingPoItemLocked
+                  ? <div className="mt-1"><Readonly>{editDraft.isPart ? '是' : '否'}</Readonly></div>
+                  : <Select className="mt-1 w-full" value={editDraft.isPart ? 'Y' : 'N'} options={[{ label: '是', value: 'Y' }, { label: '否', value: 'N' }]} onChange={(value) => setEditDraft((item) => value === 'Y' ? { ...item, isPart: true } : { ...item, isPart: false, partQuantity: 0, partDescriptions: [] })} />}
               </div>
               <div>
                 <Typography.Text>部件数量</Typography.Text>
-                <InputNumber className="mt-1 w-full" disabled={!editDraft.isPart} min={2} max={100} precision={0} value={editDraft.partQuantity || undefined} onChange={(value) => setEditDraft((item) => ({ ...item, partQuantity: value || 0, partDescriptions: splitPartDescriptions((item.partDescriptions || []).join('@'), Math.max(0, Number(value || 0) - 1)) }))} />
+                {editingPoItemLocked
+                  ? <div className="mt-1"><Readonly>{editDraft.partQuantity || '-'}</Readonly></div>
+                  : <InputNumber className="mt-1 w-full" disabled={!editDraft.isPart} min={2} max={100} precision={0} value={editDraft.partQuantity || undefined} onChange={(value) => setEditDraft((item) => ({ ...item, partQuantity: value || 0, partDescriptions: splitPartDescriptions((item.partDescriptions || []).join('@'), Math.max(0, Number(value || 0) - 1)) }))} />}
               </div>
               <div>
                 <Typography.Text>部件说明</Typography.Text>
-                <div className="mt-1 flex gap-2">
-                  <Input readOnly value={(editDraft.partDescriptions || []).join(' / ')} placeholder="请维护部件说明" />
-                  <Button disabled={!editDraft.isPart} onClick={openPartDescriptionEditor}>维护</Button>
-                </div>
+                {editingPoItemLocked
+                  ? <div className="mt-1"><Readonly>{(editDraft.partDescriptions || []).join(' / ')}</Readonly></div>
+                  : <div className="mt-1 flex gap-2">
+                    <Input readOnly value={(editDraft.partDescriptions || []).join(' / ')} placeholder="请维护部件说明" />
+                    <Button disabled={!editDraft.isPart} onClick={openPartDescriptionEditor}>维护</Button>
+                  </div>}
               </div>
             </Space>
           )}
@@ -1412,10 +1432,10 @@ export default function AssetReceiptPage() {
         <Card size="small" title="接收资产明细" extra={(
           <Space>
             <Typography.Text type="secondary">共 {visibleMaintenanceRows.length} 条</Typography.Text>
-            {isDraft && <Button danger onClick={deleteMaintenanceRows}>删除行</Button>}
-            {isDraft && hasBlankMaintenanceTags && <Button onClick={generateMaintenanceTags}>生成标签号</Button>}
-            {isDraft && hasBlankMaintenanceSn && <Button onClick={applyDefaultMaintenanceSn}>维护SN号</Button>}
-            {allMaintenanceTagsReady && <Button onClick={() => messageApi.success('已发起全部标签号打印（原型）')}>打印标签号</Button>}
+            <Button danger disabled={!isDraft || !selectedMaintenanceKeys.length} onClick={deleteMaintenanceRows}>删除行</Button>
+            <Button disabled={!isDraft || !maintenanceRows.length || !hasBlankMaintenanceTags} onClick={generateMaintenanceTags}>生成标签号</Button>
+            <Button disabled={!isDraft || !maintenanceRows.length || !hasBlankMaintenanceSn} onClick={applyDefaultMaintenanceSn}>维护SN号</Button>
+            <Button disabled={!maintenanceRows.length || !allMaintenanceTagsReady} onClick={() => messageApi.success('已发起全部标签号打印（原型）')}>打印标签号</Button>
           </Space>
         )}>
           <Table rowKey="id" size="small" bordered columns={maintenanceColumns} dataSource={visibleMaintenanceRows} rowSelection={isDraft ? { selectedRowKeys: selectedMaintenanceKeys, onChange: setSelectedMaintenanceKeys, fixed: true, columnTitle: '选择', columnWidth: 64 } : undefined} scroll={{ x: 'max-content' }} pagination={false} />
