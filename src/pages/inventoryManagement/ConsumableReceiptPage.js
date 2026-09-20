@@ -108,7 +108,7 @@ function Readonly({ children }) {
   return <Typography.Text>{children === 0 ? 0 : (children || '-')}</Typography.Text>;
 }
 
-function ReceiptInfoCard({ receipt, showCreationInfo = false }) {
+function ReceiptInfoCard({ receipt }) {
   return (
     <Card size="small" title="接收单信息">
       <DetailGrid columns={3} labelWidth={112}>
@@ -127,12 +127,6 @@ function ReceiptInfoCard({ receipt, showCreationInfo = false }) {
         <DetailItem label="接收单状态"><StatusTag value={receipt.status} /></DetailItem>
         <DetailItem label="接收时间"><Readonly>{receipt.receiptAt}</Readonly></DetailItem>
         <DetailItem label="申请批次"><Readonly>{receipt.applicationBatch}</Readonly></DetailItem>
-        {showCreationInfo && (
-          <>
-            <DetailItem label="制单人"><Readonly>{receipt.creator}</Readonly></DetailItem>
-            <DetailItem label="制单时间"><Readonly>{receipt.createdAt}</Readonly></DetailItem>
-          </>
-        )}
       </DetailGrid>
     </Card>
   );
@@ -1258,7 +1252,7 @@ export default function ConsumableReceiptPage() {
       <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-maintenance">
         {contextHolder}
         <PageTitle />
-        <ReceiptInfoCard receipt={activeReceipt} showCreationInfo />
+        <ReceiptInfoCard receipt={activeReceipt} />
         {isDraft && (
           <Card size="small">
             <DetailGrid columns={3} labelWidth={96}>
