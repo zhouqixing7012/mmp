@@ -33,6 +33,12 @@ import {
   mockMisc,
 } from '../../mock/businessRulesMock';
 import { DEFAULT_ASSET_MAINTENANCE_ROWS } from '../../mock/assetManagementMock';
+import {
+  downloadInboundImportErrors,
+  downloadInboundImportTemplate,
+  readInboundImportFile,
+  validateInboundImportRows,
+} from './inboundImport';
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
@@ -53,8 +59,8 @@ const WAREHOUSE_CONTEXT = {
 };
 
 const NEW_MATERIAL_OPTIONS = [
-  { id: 1, materialDesc: '联想.ThinkPad T14', materialGroup: '1.资产', assetClass: '10.电脑', assetSubClass: '笔记本电脑', brand: '联想', model: 'ThinkPad T14', config: 'i7 / 32G / 1T SSD', unit: '台', expenseAccount: '固定资产' },
-  { id: 2, materialDesc: 'Dell.R740', materialGroup: '1.资产', assetClass: '14.SERVER', assetSubClass: '服务器', brand: 'Dell', model: 'R740', config: 'Silver4210*2 / 128G / 600G*8', unit: '台', expenseAccount: '固定资产' },
+  { id: 1, materialCode: '113004066005000', materialDesc: '联想.ThinkPad T14', materialGroup: '1.资产', assetClass: '10.电脑', assetSubClass: '笔记本电脑', brand: '联想', model: 'ThinkPad T14', config: 'i7 / 32G / 1T SSD', unit: '台', expenseAccount: '固定资产' },
+  { id: 2, materialCode: '114008042010000', materialDesc: 'Dell.R740', materialGroup: '1.资产', assetClass: '14.SERVER', assetSubClass: '服务器', brand: 'Dell', model: 'R740', config: 'Silver4210*2 / 128G / 600G*8', unit: '台', expenseAccount: '固定资产' },
 ];
 
 const RESPONSIBLE_OPTIONS = [
@@ -341,6 +347,64 @@ const SUPPLIER_OPTIONS = Array.from(new Set([
   ...PURCHASE_PENDING_SEED.map((row) => row.supplier).filter(Boolean),
   '北京一新科技有限责任公司',
 ])).map((name, index) => ({ id: `supplier-${index + 1}`, name }));
+
+const INBOUND_IMPORT_ASSET_POOL = Array.from(new Map(
+  [...RETURN_ASSET_OPTIONS, ...BORROW_RETURN_ASSET_OPTIONS].map((item) => [item.assetTag || item.sn, item])
+).values());
+
+const INBOUND_IMPORT_EMPLOYEES = Array.from(new Map([
+  ...INBOUND_IMPORT_ASSET_POOL
+    .filter((item) => item.responsiblePerson || item.borrower)
+    .map((item) => {
+      const name = item.responsiblePerson || item.borrower;
+      const [employeeNo = '', ...nameParts] = String(name).split('-');
+      return [employeeNo, {
+        id: employeeNo,
+        employeeNo,
+        name,
+        company: item.company || '',
+        plate: item.plate || '',
+        department: item.department || '',
+        costCenter: item.costCenter || '',
+      }];
+    }),
+  ...RESPONSIBLE_OPTIONS.map((item) => {
+    const [employeeNo = '', ...nameParts] = String(item.name).split('-');
+    return [employeeNo, {
+      ...item,
+      employeeNo,
+      name: item.name,
+      company: '114.新媒体',
+      plate: '集团',
+      department: item.department || '',
+      costCenter: item.costCenter || '',
+    }];
+  }),
+  ...APPLICANT_OPTIONS.map((item) => [item.employeeNo, {
+    ...item,
+    name: `${item.employeeNo}-${item.name}`,
+    company: '',
+    plate: '',
+    costCenter: '',
+  }]),
+  ...VIRTUAL_RESPONSIBLE_OPTIONS.map((item) => [item.code, {
+    id: item.code,
+    employeeNo: item.code,
+    code: item.code,
+    name: item.desc,
+    company: item.company || '',
+    plate: '',
+    department: VIRTUAL_RESPONSIBLE_DEPARTMENT,
+    costCenter: '',
+  }]),
+]).values());
+
+const INBOUND_IMPORT_APPRAISERS = INBOUND_IMPORT_EMPLOYEES.filter((item) => !String(item.employeeNo || '').startsWith('SOHU'));
+const INBOUND_IMPORT_SERVICE_MAP = {
+  '生产服务器': ['核心业务', '基础设施'],
+  '基础运维平台': ['服务器运维', '网络运维'],
+  '办公设备': ['办公支持'],
+};
 
 const ASSET_LOOKUP_COLUMNS = [
   { title: '标签号', dataIndex: 'assetTag', width: 160 },
@@ -1187,8 +1251,45 @@ function InboundEditor({ source, pendingRows, onBack, onSave, onExecute, onRetry
     return undefined;
   };
 
-  const handleExcelBeforeUpload = (file) => {
-    messageApi.info(`已选择 ${file.name}；模板字段待确认后再执行解析和导入校验`);
+  const handleExcelBeforeUpload = async (file) => {
+    if (!supportsExcelImport) return AntUpload.LIST_IGNORE;
+    if (!warehouse) {
+      messageApi.warning('请先选择当前仓库');
+      return AntUpload.LIST_IGNORE;
+    }
+    try {
+      const matrix = await readInboundImportFile(file, inboundType);
+      const result = validateInboundImportRows(matrix, {
+        inboundType,
+        warehouseContext: WAREHOUSE_CONTEXT[warehouse] || {},
+        existingLines: lines,
+        assetPool: INBOUND_IMPORT_ASSET_POOL,
+        employees: INBOUND_IMPORT_EMPLOYEES,
+        appraisers: INBOUND_IMPORT_APPRAISERS,
+        virtualAdmins: mockVirtualAdmins,
+        materials: NEW_MATERIAL_OPTIONS,
+        plates: mockPlates,
+        businessLines: mockLines,
+        projects: mockProjects,
+        suppliers: SUPPLIER_OPTIONS,
+        addTypes: NEW_INBOUND_ADD_TYPE_OPTIONS,
+        serviceMap: INBOUND_IMPORT_SERVICE_MAP,
+      });
+      if (result.errors.length) {
+        downloadInboundImportErrors(inboundType, matrix, result.errors);
+        messageApi.error(`导入失败：共 ${result.errors.length} 行数据存在错误，已生成错误结果文件，本批数据未保存`);
+        return AntUpload.LIST_IGNORE;
+      }
+      if (!result.validLines.length) {
+        messageApi.warning('模板中没有可导入的数据');
+        return AntUpload.LIST_IGNORE;
+      }
+      setLines((current) => [...current, ...result.validLines]);
+      setSelectedKeys([]);
+      messageApi.success(`导入成功，共 ${result.validLines.length} 条；当前仅生成入库单草稿明细，执行入库后才更新资产或库存`);
+    } catch (error) {
+      messageApi.error(error?.message || 'Excel导入失败，请检查模板后重试');
+    }
     return AntUpload.LIST_IGNORE;
   };
 
@@ -1241,7 +1342,7 @@ function InboundEditor({ source, pendingRows, onBack, onSave, onExecute, onRetry
         </DetailGrid>
       </Card>
 
-      <Card size="small" title="入库物资" extra={<Space><Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>{editable && !autoGeneratedPurchase && <Button type="primary" icon={<Plus size={14} />} onClick={openAddLine}>{inboundType === '采购接收' ? '待入库物资' : '添加物资'}</Button>}{editable && lines.length > 0 && <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>}{editable && supportsExcelImport && <AntUpload accept=".xlsx,.xls" showUploadList={false} beforeUpload={handleExcelBeforeUpload}><Button icon={<UploadIcon size={14} />}>Excel导入</Button></AntUpload>}{editable && inboundType === '新增入库' && <Button icon={<Download size={14} />} onClick={() => messageApi.success(`已导出当前 ${lines.length} 条入库物资`)}>导出</Button>}</Space>}>
+      <Card size="small" title="入库物资" extra={<Space><Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>{editable && !autoGeneratedPurchase && <Button type="primary" icon={<Plus size={14} />} onClick={openAddLine}>{inboundType === '采购接收' ? '待入库物资' : '添加物资'}</Button>}{editable && lines.length > 0 && <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>}{editable && supportsExcelImport && <Button icon={<Download size={14} />} onClick={() => downloadInboundImportTemplate(inboundType)}>下载模板</Button>}{editable && supportsExcelImport && <AntUpload accept=".xls,.xlsx" showUploadList={false} beforeUpload={handleExcelBeforeUpload}><Button icon={<UploadIcon size={14} />}>Excel导入</Button></AntUpload>}{editable && inboundType === '新增入库' && <Button icon={<Download size={14} />} onClick={() => messageApi.success(`已导出当前 ${lines.length} 条入库物资`)}>导出</Button>}</Space>}>
         <Table rowKey="id" size="small" bordered columns={columns} dataSource={lines} rowSelection={editable ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true } : undefined} scroll={{ x: 'max-content' }} pagination={false} />
       </Card>
 
