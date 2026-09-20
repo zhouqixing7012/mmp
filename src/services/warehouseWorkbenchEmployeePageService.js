@@ -31,7 +31,8 @@ export function writeWarehouseEmployeePageContext(context) {
 }
 
 export function patchWarehouseEmployeePageContext(patch) {
-  const current = readWarehouseEmployeePageContext() || {};
+  const current = readWarehouseEmployeePageContext();
+  if (!current) return;
   const next = typeof patch === 'function' ? patch(current) : { ...current, ...patch };
   writeWarehouseEmployeePageContext(next);
 }
