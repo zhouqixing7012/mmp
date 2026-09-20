@@ -1382,8 +1382,6 @@ export default function AssetReceiptPage() {
             <DetailItem label="订单日期"><Readonly>{detail.orderDate || receiptPO?.pushDate}</Readonly></DetailItem>
             <DetailItem label="接收单状态"><StatusTag value={activeReceipt.status} /></DetailItem>
             <DetailItem label="申请批次"><Readonly>{activeReceipt.applicationBatch}</Readonly></DetailItem>
-            <DetailItem label="制单人"><Readonly>{activeReceipt.creator}</Readonly></DetailItem>
-            <DetailItem label="制单时间"><Readonly>{activeReceipt.createdAt}</Readonly></DetailItem>
           </DetailGrid>
         </Card>
 
@@ -1465,8 +1463,6 @@ export default function AssetReceiptPage() {
             <DetailItem label="采购员联系电话"><Readonly>{detail.buyerPhone}</Readonly></DetailItem>
             <DetailItem label="合同主体"><Readonly>{detail.contractSubject}</Readonly></DetailItem>
             <DetailItem label="板块"><Readonly>{activeReceipt.plate || receiptPO?.plate}</Readonly></DetailItem>
-            <DetailItem label="制单人"><Readonly>{activeReceipt.creator}</Readonly></DetailItem>
-            <DetailItem label="制单时间"><Readonly>{activeReceipt.createdAt}</Readonly></DetailItem>
             <DetailItem label="接收人"><Readonly>{activeReceipt.receiver}</Readonly></DetailItem>
             <DetailItem label="接收时间"><Readonly>{activeReceipt.receiptAt}</Readonly></DetailItem>
             <DetailItem label="接收单状态"><StatusTag value={activeReceipt.status} /></DetailItem>
