@@ -27,6 +27,10 @@ import {
   MATERIAL_OPTIONS,
   WAREHOUSE_BY_COMPANY,
 } from './consumableReceiptMock';
+import {
+  mockDeptCostCenterMappingData,
+  mockCostCenterPlateMappingData,
+} from '../../mock/businessRulesMock';
 
 const { RangePicker } = DatePicker;
 const { TextArea } = Input;
@@ -47,6 +51,26 @@ const includesText = (value, query) => !query || String(value || '').toLowerCase
 const remainingQty = (item) => Math.max(0, Number(item.purchaseQty || 0) - Number(item.receivedQty || 0) - Number(item.draftQty || 0));
 const selectorData = (values) => [...new Set(values.filter(Boolean))].map((name, index) => ({ id: index + 1, name }));
 const docNo = (prefix, seq) => `${prefix}-${dayjs().format('YYYYMMDD')}${String(seq).padStart(4, '0')}`;
+const resolveDepartmentAccounting = (department, fallbackPlate = '') => {
+  const normalizedDepartment = String(department || '').trim();
+  const deptMapping = mockDeptCostCenterMappingData.find((row) => (
+    row.enabled
+    && normalizedDepartment
+    && (row.hrDeptDesc === normalizedDepartment
+      || normalizedDepartment.endsWith(row.hrDeptDesc)
+      || row.hrDeptDesc.endsWith(normalizedDepartment))
+  ));
+  const costCenterCode = deptMapping?.costCenter || '';
+  const plateMapping = mockCostCenterPlateMappingData.find((row) => (
+    row.enabled && costCenterCode && row.costCenter === costCenterCode
+  ));
+  return {
+    department: normalizedDepartment,
+    costCenter: deptMapping ? `${deptMapping.costCenter}.${deptMapping.costCenterDesc}` : '',
+    plate: plateMapping ? `${plateMapping.plate}.${plateMapping.plateDesc}` : fallbackPlate,
+  };
+};
+
 const lineMoney = (item, quantity) => {
   const qty = Number(quantity || 0);
   const untaxedUnit = round2(item.untaxedUnitPrice);
@@ -225,10 +249,6 @@ export default function ConsumableReceiptPage() {
   const setPoFilter = (field, value) => setPoDraft((current) => ({ ...current, [field]: value || '' }));
   const setReceiptFilter = (field, value) => setReceiptDraft((current) => ({ ...current, [field]: value || '' }));
   const hasReceiptForPo = (poNo) => receipts.some((receipt) => receipt.poNo === poNo);
-  const isPoItemLocked = (poNo, itemId) => receipts.some((receipt) => (
-    receipt.poNo === poNo && (receipt.lines || []).some((line) => line.sourceItemId === itemId)
-  ));
-
   const getDraftReceiptLineReference = (poNo, itemId) => {
     for (let index = receipts.length - 1; index >= 0; index -= 1) {
       const receipt = receipts[index];
@@ -241,8 +261,11 @@ export default function ConsumableReceiptPage() {
   const updateActivePoField = (field, value) => {
     if (!activePO) return;
     if (field === 'plate' && hasReceiptForPo(activePO.poNo)) return;
-    setPoRows((list) => list.map((row) => (row.poNo === activePO.poNo ? { ...row, [field]: value } : row)));
-    setActivePO((row) => ({ ...row, [field]: value }));
+    const updates = field === 'plate'
+      ? { plate: value, plateManuallyAdjusted: true }
+      : { [field]: value };
+    setPoRows((list) => list.map((row) => (row.poNo === activePO.poNo ? { ...row, ...updates } : row)));
+    setActivePO((row) => ({ ...row, ...updates }));
   };
 
   const selectorConfig = {
@@ -312,7 +335,14 @@ export default function ConsumableReceiptPage() {
   };
 
   const openPo = (row) => {
-    setActivePO(row);
+    const sourceItems = poItems[row.poNo] || [];
+    const usageDepartment = sourceItems.find((item) => item.department)?.department || '';
+    const accounting = resolveDepartmentAccounting(usageDepartment, row.plate);
+    const nextRow = row.plateManuallyAdjusted
+      ? { ...row, usageDepartment, costCenter: row.costCenter || accounting.costCenter }
+      : { ...row, usageDepartment, costCenter: accounting.costCenter, plate: accounting.plate || row.plate };
+    setPoRows((list) => list.map((item) => (item.poNo === row.poNo ? nextRow : item)));
+    setActivePO(nextRow);
     setSelectedPoItems([]);
     setView('poDetail');
   };
@@ -343,8 +373,8 @@ export default function ConsumableReceiptPage() {
   };
 
   const saveItem = () => {
-    const locked = isPoItemLocked(activePO?.poNo, editItem?.id);
     const draftReference = getDraftReceiptLineReference(activePO?.poNo, editItem?.id);
+    const locked = Boolean(draftReference);
     const qty = Number(editDraft?.currentReceiveQty || 0);
     const previousDraftQty = Number(draftReference?.line?.actualReceiveQty || 0);
     const maxQty = remainingQty(editItem) + previousDraftQty;
@@ -421,6 +451,7 @@ export default function ConsumableReceiptPage() {
         saLine: item.saLine,
         applicationNo: item.applicationNo,
         department: item.department,
+        costCenter: activePO.costCenter || '',
         businessLine: item.businessLine,
         applicant: item.applicant,
       };
@@ -891,7 +922,7 @@ export default function ConsumableReceiptPage() {
     { title: '行号', width: 70, render: (_, __, index) => index + 1 },
     {
       title: '操作', width: 80, render: (_, row) => (
-        activePO?.receiptStatus !== '已入库' && (remainingQty(row) > 0 || getDraftReceiptLineReference(activePO?.poNo, row.id))
+        activePO?.receiptStatus !== '已入库' && remainingQty(row) > 0
           ? <Button type="link" className="px-0" onClick={() => openItemEditor(row)}>编辑</Button>
           : '-'
       ),
@@ -976,7 +1007,7 @@ export default function ConsumableReceiptPage() {
     const hasReceipt = hasReceiptForPo(activePO.poNo);
     const isClosed = activePO.receiptStatus === '已入库';
     const isReceiptLocked = hasReceipt || isClosed;
-    const editingPoItemLocked = Boolean(editItem && isPoItemLocked(activePO.poNo, editItem.id));
+    const editingPoItemLocked = Boolean(editItem && getDraftReceiptLineReference(activePO.poNo, editItem.id));
     return (
       <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-po-detail">
         {contextHolder}
