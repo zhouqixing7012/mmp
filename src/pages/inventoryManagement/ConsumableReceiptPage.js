@@ -109,7 +109,6 @@ function ReceiptInfoCard({ receipt }) {
         <DetailItem label="接收人"><Readonly>{receipt.receiver}</Readonly></DetailItem>
         <DetailItem label="接收单状态"><StatusTag value={receipt.status} /></DetailItem>
         <DetailItem label="接收时间"><Readonly>{receipt.receiptAt}</Readonly></DetailItem>
-        <DetailItem label="申请批次"><Readonly>{receipt.applicationBatch}</Readonly></DetailItem>
       </DetailGrid>
     </Card>
   );
@@ -229,6 +228,16 @@ export default function ConsumableReceiptPage() {
   const isPoItemLocked = (poNo, itemId) => receipts.some((receipt) => (
     receipt.poNo === poNo && (receipt.lines || []).some((line) => line.sourceItemId === itemId)
   ));
+
+  const getDraftReceiptLineReference = (poNo, itemId) => {
+    for (let index = receipts.length - 1; index >= 0; index -= 1) {
+      const receipt = receipts[index];
+      if (receipt.poNo !== poNo || receipt.status !== '草稿') continue;
+      const line = (receipt.lines || []).find((candidate) => candidate.sourceItemId === itemId);
+      if (line) return { receipt, line };
+    }
+    return null;
+  };
   const updateActivePoField = (field, value) => {
     if (!activePO) return;
     if (field === 'plate' && hasReceiptForPo(activePO.poNo)) return;
@@ -324,19 +333,60 @@ export default function ConsumableReceiptPage() {
     setView('receiptDetail');
   };
 
+  const openItemEditor = (row) => {
+    const draftReference = getDraftReceiptLineReference(activePO?.poNo, row.id);
+    setEditItem(row);
+    setEditDraft({
+      ...row,
+      currentReceiveQty: Number(draftReference?.line?.actualReceiveQty || row.currentReceiveQty || 1),
+    });
+  };
+
   const saveItem = () => {
     const locked = isPoItemLocked(activePO?.poNo, editItem?.id);
+    const draftReference = getDraftReceiptLineReference(activePO?.poNo, editItem?.id);
     const qty = Number(editDraft?.currentReceiveQty || 0);
+    const previousDraftQty = Number(draftReference?.line?.actualReceiveQty || 0);
+    const maxQty = remainingQty(editItem) + previousDraftQty;
     if (!Number.isInteger(qty) || qty <= 0) return messageApi.error('接收数量必须为大于 0 的整数');
-    if (qty > remainingQty(editItem)) return messageApi.error('接收数量不能超过可接收数量！');
-    setPoItems((current) => ({
-      ...current,
-      [activePO.poNo]: current[activePO.poNo].map((item) => (
-        item.id === editItem.id
-          ? (locked ? { ...item, currentReceiveQty: qty } : { ...item, ...editDraft, currentReceiveQty: qty })
-          : item
-      )),
-    }));
+    if (qty > maxQty) return messageApi.error(`接收数量不能超过可接收数量（当前可调整上限为 ${maxQty}）`);
+
+    if (draftReference) {
+      const delta = qty - previousDraftQty;
+      const nextLines = (draftReference.receipt.lines || []).map((line) => {
+        if (line.sourceItemId !== editItem.id) return line;
+        const calc = lineMoney(line, qty);
+        return {
+          ...line,
+          actualReceiveQty: qty,
+          untaxedAmount: calc.untaxedAmount,
+          taxAmount: calc.taxAmount,
+          taxedUnitPrice: calc.taxedUnit,
+          taxedAmount: calc.taxedAmount,
+        };
+      });
+      const nextReceiptBase = { ...draftReference.receipt, lines: nextLines };
+      const nextReceipt = { ...nextReceiptBase, details: buildDetailsForReceipt(nextReceiptBase) };
+      setReceipts((list) => list.map((receipt) => receipt.receiptNo === nextReceipt.receiptNo ? nextReceipt : receipt));
+      setPoItems((current) => ({
+        ...current,
+        [activePO.poNo]: current[activePO.poNo].map((item) => {
+          if (item.id !== editItem.id) return item;
+          const nextDraft = Math.max(0, Number(item.draftQty || 0) + delta);
+          const next = { ...item, draftQty: nextDraft };
+          return { ...next, currentReceiveQty: remainingQty(next) };
+        }),
+      }));
+    } else {
+      setPoItems((current) => ({
+        ...current,
+        [activePO.poNo]: current[activePO.poNo].map((item) => (
+          item.id === editItem.id
+            ? (locked ? { ...item, currentReceiveQty: qty } : { ...item, ...editDraft, currentReceiveQty: qty })
+            : item
+        )),
+      }));
+    }
     setEditItem(null);
     setEditDraft(null);
     messageApi.success('接收信息已保存');
@@ -396,7 +446,6 @@ export default function ConsumableReceiptPage() {
       receiver: '',
       receiptAt: '',
       orderDate: activePO.orderDate || activePO.pushDate,
-      applicationBatch: activePO.applicationBatch || '',
       purchaseType: activePO.purchaseType,
       lines,
       details: [],
@@ -410,15 +459,18 @@ export default function ConsumableReceiptPage() {
     return undefined;
   };
 
-  const buildDetailsForReceipt = (receipt) => {
+  function buildDetailsForReceipt(receipt) {
     const existing = receipt.details || [];
-    const generated = [];
+    const result = [];
     receipt.lines.forEach((line) => {
-      const existingForLine = existing.filter((detail) => detail.lineId === line.id);
-      const missing = Math.max(0, Number(line.actualReceiveQty || 0) - existingForLine.length);
+      const targetCount = Math.max(0, Number(line.actualReceiveQty || 0));
+      const existingForLine = existing.filter((detail) => detail.lineId === line.id).slice(0, targetCount);
+      result.push(...existingForLine);
+      const missing = Math.max(0, targetCount - existingForLine.length);
       Array.from({ length: missing }, (_, index) => index + 1).forEach((sequence) => {
-        const id = `${line.id}-${existingForLine.length + sequence}`;
-        generated.push({
+        const itemIndex = existingForLine.length + sequence;
+        const id = `${line.id}-${itemIndex}`;
+        result.push({
           id,
           lineId: line.id,
           assetTag: '',
@@ -439,8 +491,8 @@ export default function ConsumableReceiptPage() {
         });
       });
     });
-    return [...existing, ...generated];
-  };
+    return result;
+  }
 
   const resetScanInput = () => {
     setScanInput({ value: '', stage: 'tag', detailId: null });
@@ -720,7 +772,6 @@ export default function ConsumableReceiptPage() {
         poNo: receipt.poNo,
         prNo: detail.prLine,
         receiptNo: receipt.receiptNo,
-        applicationBatch: receipt.applicationBatch,
         plate: receipt.plate,
       }))
       : receipt.lines.map((line, index) => ({
@@ -737,7 +788,6 @@ export default function ConsumableReceiptPage() {
         poNo: receipt.poNo,
         prNo: line.prLine,
         receiptNo: receipt.receiptNo,
-        applicationBatch: receipt.applicationBatch,
         plate: receipt.plate,
       }));
     return {
@@ -841,8 +891,8 @@ export default function ConsumableReceiptPage() {
     { title: '行号', width: 70, render: (_, __, index) => index + 1 },
     {
       title: '操作', width: 80, render: (_, row) => (
-        activePO?.receiptStatus !== '已入库' && remainingQty(row) > 0
-          ? <Button type="link" className="px-0" onClick={() => { setEditItem(row); setEditDraft({ ...row }); }}>编辑</Button>
+        activePO?.receiptStatus !== '已入库' && (remainingQty(row) > 0 || getDraftReceiptLineReference(activePO?.poNo, row.id))
+          ? <Button type="link" className="px-0" onClick={() => openItemEditor(row)}>编辑</Button>
           : '-'
       ),
     },
@@ -1017,7 +1067,7 @@ export default function ConsumableReceiptPage() {
               </div>
               <div>
                 <Typography.Text>接收数量</Typography.Text>
-                <InputNumber className="mt-1 w-full" min={1} max={remainingQty(editItem)} precision={0} value={editDraft.currentReceiveQty} onChange={(value) => setEditDraft((item) => ({ ...item, currentReceiveQty: value }))} />
+                <InputNumber className="mt-1 w-full" min={1} max={remainingQty(editItem) + Number(getDraftReceiptLineReference(activePO?.poNo, editItem?.id)?.line?.actualReceiveQty || 0)} precision={0} value={editDraft.currentReceiveQty} onChange={(value) => setEditDraft((item) => ({ ...item, currentReceiveQty: value }))} />
               </div>
             </Space>
           )}
