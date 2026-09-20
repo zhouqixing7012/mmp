@@ -383,7 +383,8 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
       width: 960,
       dataSource: availableAssets || [],
       columns: [
-        { title: '标签号', dataIndex: 'assetTag', width: 150 },
+        { title: '标签号', dataIndex: 'assetTag', width: 160 },
+        { title: 'SN号', dataIndex: 'sn', width: 150, render: (value) => value || '-' },
         { title: '公司', dataIndex: 'company', width: 130 },
         { title: '板块', dataIndex: 'plate', width: 120, render: (value) => value || '-' },
         { title: '资产大类', dataIndex: 'assetClass', width: 130, render: (value) => value || '-' },
@@ -481,7 +482,8 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
   };
 
   return (
-    <Modal open={open && !selectorType} title="添加转移物资" width={960} rootClassName="mmp-transfer-item-modal" onCancel={onCancel} destroyOnHidden footer={[
+    <>
+      <Modal open={open && !selectorType} title="添加转移物资" width={960} rootClassName="mmp-transfer-item-modal" onCancel={onCancel} destroyOnHidden footer={[
       <Button key="cancel" onClick={onCancel}>取消</Button>,
       <Button key="continue" onClick={() => submit(true)}>添加并继续</Button>,
       <Button key="close" type="primary" onClick={() => submit(false)}>添加并关闭</Button>,
@@ -564,8 +566,9 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
           </Card>
         )}
       </Space>
+      </Modal>
       <SelectorModal config={selectorConfig} onClose={() => setSelectorType('')} />
-    </Modal>
+    </>
   );
 }
 
