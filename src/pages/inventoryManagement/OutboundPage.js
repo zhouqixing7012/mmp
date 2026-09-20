@@ -1001,10 +1001,6 @@ export default function OutboundPage() {
     return undefined;
   };
 
-  const exportRows = () => {
-    messageApi.success(`已导出当前查询结果 ${filteredRows.length} 条`);
-  };
-
   const printRows = (type) => {
     if (!selectedKeys.length) return messageApi.warning(`请先选择需要${type}的出库单`);
     const selectedRows = rows.filter((row) => selectedKeys.includes(row.id));
@@ -1039,7 +1035,6 @@ export default function OutboundPage() {
             <Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button>
             <Button icon={<Printer size={14} />} onClick={() => printRows('出库打印')}>出库打印</Button>
             <Button icon={<Printer size={14} />} onClick={() => printRows('领用打印')}>领用打印</Button>
-            <Button icon={<Download size={14} />} onClick={exportRows}>导出</Button>
           </Space>
         )}
       >
