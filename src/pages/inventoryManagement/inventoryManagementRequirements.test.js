@@ -336,3 +336,15 @@ test('入库单当前仓库位于入库单信息Card右上角', () => {
   expect(source).toContain('style={{ width: 240 }}');
   expect(source).not.toContain('<EditorField label="当前仓库">');
 });
+
+
+test('耗材接收生成的低值耐用品进入入库后继续剔除部件字段', () => {
+  const seedStart = inboundSource.indexOf("id: 'pending-durable-1'");
+  const seedEnd = inboundSource.indexOf("];", seedStart);
+  const durableSeed = inboundSource.slice(seedStart, seedEnd);
+  expect(durableSeed).not.toContain('partQuantity');
+  expect(durableSeed).not.toContain('partDesc');
+  expect(inboundSource).toContain('const { partQuantity, partDesc, parts, isPart, ...withoutParts } = normalized;');
+  expect(inboundSource).toContain("{!consumable && <EditorField label=\"部件数量\">");
+  expect(inboundSource).toContain("{!consumable && <EditorField label=\"部件说明\">");
+});
