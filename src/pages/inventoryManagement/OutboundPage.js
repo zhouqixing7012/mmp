@@ -1058,15 +1058,12 @@ export default function OutboundPage() {
       <Modal
         open={Boolean(approvalHistoryRow)}
         title="审批记录"
-        width={1100}
+        width={960}
         footer={null}
         destroyOnHidden
         onCancel={() => setApprovalHistoryRow(null)}
       >
-        <OutboundApprovalHistoryPage
-          outbound={approvalHistoryRow}
-          onBack={() => setApprovalHistoryRow(null)}
-        />
+        <OutboundApprovalHistoryPage outbound={approvalHistoryRow} />
       </Modal>
     </Space>
   );
