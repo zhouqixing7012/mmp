@@ -136,7 +136,6 @@ export const INITIAL_RECEIPTS = [
     receiver: '115102-王英',
     receiptAt: '2026-08-21 15:32:09',
     orderDate: '2026-08-20',
-    applicationBatch: 'BAT-20260820-04',
     purchaseType: '耗材',
     details: [],
     lines: [{
