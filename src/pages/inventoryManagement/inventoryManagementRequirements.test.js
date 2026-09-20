@@ -3,6 +3,8 @@ import path from 'path';
 
 const inboundSource = fs.readFileSync(path.join(__dirname, 'InboundPage.js'), 'utf8');
 const outboundSource = fs.readFileSync(path.join(__dirname, 'OutboundPage.js'), 'utf8');
+const outboundApprovalSource = fs.readFileSync(path.join(__dirname, 'OutboundApprovalPage.js'), 'utf8');
+const outboundApprovalHistorySource = fs.readFileSync(path.join(__dirname, 'OutboundApprovalHistoryPage.js'), 'utf8');
 const printSource = fs.readFileSync(path.join(__dirname, 'InventoryPrintPreview.jsx'), 'utf8');
 const transferSource = fs.readFileSync(path.join(__dirname, 'TransferPage.js'), 'utf8');
 const moveReceiveSource = fs.readFileSync(path.join(__dirname, 'MoveReceiveContent.js'), 'utf8');
@@ -235,4 +237,33 @@ test('领用人使用员工选择弹窗且用途使用正式枚举', () => {
   expect(outboundSource).toContain("{ label: '姓名', name: 'name', dataIndex: 'name' }");
   expect(outboundSource).toContain("{ label: '部门', name: 'department', dataIndex: 'department' }");
   expect(outboundSource).toContain('options={OUTBOUND_PURPOSE_OPTIONS.map');
+});
+
+
+test('出库审批页按物资出库申请字段展示且不再混入旧审批信息卡片', () => {
+  expect(outboundApprovalSource).toContain('物资出库申请');
+  expect(outboundApprovalSource).toContain('title="基本信息"');
+  ['制单人', '制单时间', '使用人', '使用部门', '仓库名称', '地点位置', 'PR单号', 'PO单号', '资产大类'].forEach((label) => {
+    expect(outboundApprovalSource).toContain(`label="${label}"`);
+  });
+  expect(outboundApprovalSource).toContain('title="出库资产信息"');
+  ['物资说明', '资产标签号', 'SN号', '数量', '单价', '原值', '备注'].forEach((title) => {
+    expect(outboundApprovalSource).toContain(`title: '${title}'`);
+  });
+  expect(outboundApprovalSource).toContain("title: '价值'");
+  expect(outboundApprovalSource).toContain('总数量');
+  expect(outboundApprovalSource).toContain('总金额');
+  expect(outboundApprovalSource).not.toContain('title="出库单信息"');
+  expect(outboundApprovalSource).not.toContain('title="审批信息"');
+  expect(outboundApprovalSource).not.toContain('title="历史审批记录"');
+});
+
+test('出库单状态点击只展示审批记录不展示单据信息或物资', () => {
+  expect(outboundApprovalHistorySource).toContain('locale={{ emptyText: \'暂无审批记录\' }}');
+  expect(outboundApprovalHistorySource).not.toContain('出库单信息');
+  expect(outboundApprovalHistorySource).not.toContain('出库物资');
+  expect(outboundApprovalHistorySource).not.toContain('审批操作');
+  expect(outboundSource).toContain('title="审批记录"');
+  expect(outboundSource).toContain('width={960}');
+  expect(outboundSource).toContain('<OutboundApprovalHistoryPage outbound={approvalHistoryRow} />');
 });
