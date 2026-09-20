@@ -177,7 +177,7 @@ const INITIAL_ROWS = [
 const PURCHASE_PENDING_SEED = [
   { id: 'pending-asset-1', pendingKey: 'pending-asset-1', company: '114.新媒体', plate: '集团', department: 'ERP部.业务产品二组', supplier: '北京汉信成科技发展有限公司', assetTag: 'AST-260902010', sn: 'SN-T14-028', poNo: 'PO2603270001', receiptNo: 'REC-202604090010', materialGroup: '1.资产', assetClass: '10.电脑', assetSubClass: '笔记本电脑', materialDesc: '联想.ThinkPad T14', config: 'i7 / 32G / 1T', partQuantity: 0, partDesc: '-', prLine: 'PR2603180007 / 2', quantity: 1, originalValue: 8200, tax: 1066 },
   { id: 'pending-infra-1', pendingKey: 'pending-infra-1', company: '114.新媒体', plate: '集团', department: 'ERP部.基础架构组', supplier: '北京一新科技有限责任公司', assetTag: 'AST-260902011', sn: 'SN-R740-011', poNo: 'PO2606030009', receiptNo: 'REC-202606110009', materialGroup: '1.资产', assetClass: '14.SERVER', assetSubClass: '服务器', materialDesc: 'Dell.R740', config: 'Silver4210*2 / 128G / 600G*8', partQuantity: 0, partDesc: '-', prLine: 'PR2605270012 / 3', quantity: 1, originalValue: 49800.77, tax: 6474.10, service: '生产服务器', noLocation: 'NO-C', warrantyStart: '', warrantyEnd: '' },
-  { id: 'pending-durable-1', pendingKey: 'pending-durable-1', company: '114.新媒体', plate: '集团', department: 'ERP部.业务产品二组', supplier: '北京办公设备有限公司', assetTag: 'CM-260902001', sn: 'SN-MOUSE-001', poNo: 'PO2607200006', receiptNo: 'REC-CM-202607220006', materialGroup: '低值耐用品', assetClass: '电脑外设/配件', assetSubClass: '鼠标', materialDesc: '罗技.MX Master', config: '无线', partQuantity: 0, partDesc: '-', prLine: 'PR2607100004 / 1', quantity: 1, originalValue: 499, tax: 64.87, purchaseType: '低值耐用品', sourceModule: '耗材接收', billable: '否' },
+  { id: 'pending-durable-1', pendingKey: 'pending-durable-1', company: '114.新媒体', plate: '集团', department: 'ERP部.业务产品二组', supplier: '北京办公设备有限公司', assetTag: 'CM-260902001', sn: 'SN-MOUSE-001', poNo: 'PO2607200006', receiptNo: 'REC-CM-202607220006', materialGroup: '低值耐用品', assetClass: '电脑外设/配件', assetSubClass: '鼠标', materialDesc: '罗技.MX Master', config: '无线', prLine: 'PR2607100004 / 1', quantity: 1, originalValue: 499, tax: 64.87, purchaseType: '低值耐用品', sourceModule: '耗材接收', billable: '否' },
 ];
 
 function includesText(value, query) {
@@ -203,7 +203,10 @@ function buildUsageDescription(department) {
 }
 
 function normalizePurchaseLine(line) {
-  return { ...line, usageDesc: line?.usageDesc || buildUsageDescription(line?.department) };
+  const normalized = { ...line, usageDesc: line?.usageDesc || buildUsageDescription(line?.department) };
+  if (!isConsumableLine(normalized)) return normalized;
+  const { partQuantity, partDesc, parts, isPart, ...withoutParts } = normalized;
+  return withoutParts;
 }
 
 function readGeneratedInboundRows() {
@@ -913,8 +916,6 @@ function PurchasePendingModal({ open, rows, currentLines, warehouse, editRow, on
     { title: '物资小类', dataIndex: 'assetSubClass', width: 130, render: (v) => v || '-' },
     { title: '物料说明', dataIndex: 'materialDesc', width: 180 },
     { title: '配置', dataIndex: 'config', width: 220 },
-    { title: '部件数量', dataIndex: 'partQuantity', width: 100, render: (v) => v || '-' },
-    { title: '部件说明', dataIndex: 'partDesc', width: 120, render: (v) => v || '-' },
     { title: 'PR单/行', dataIndex: 'prLine', width: 150, render: (v) => v || '-' },
   ];
   const selectedRows = data.filter((row) => selected.includes(row.id));
@@ -1017,8 +1018,8 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, editabl
                 <EditorField label="申请单号"><Readonly>{detail.applicationNo}</Readonly></EditorField>
                 <EditorField label="PO单号"><Readonly>{detail.poNo}</Readonly></EditorField>
                 <EditorField label="申请人"><Readonly>{detail.applicant}</Readonly></EditorField>
-                <EditorField label="部件数量"><Readonly>{detail.partQuantity}</Readonly></EditorField>
-                <EditorField label="部件说明"><Readonly>{detail.partDesc}</Readonly></EditorField>
+                {!consumable && <EditorField label="部件数量"><Readonly>{detail.partQuantity}</Readonly></EditorField>}
+                {!consumable && <EditorField label="部件说明"><Readonly>{detail.partDesc}</Readonly></EditorField>}
                 <EditorField label="主资产标签号"><Readonly>{detail.mainAssetTag}</Readonly></EditorField>
                 <EditorField label="供应商"><Readonly>{detail.supplier}</Readonly></EditorField>
                 <EditorField label="使用说明" span={3}><Readonly>{detail.usageDesc || buildUsageDescription(detail.department)}</Readonly></EditorField>
