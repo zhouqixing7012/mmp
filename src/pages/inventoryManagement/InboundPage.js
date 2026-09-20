@@ -205,7 +205,11 @@ function buildUsageDescription(department) {
 function normalizePurchaseLine(line) {
   const normalized = { ...line, usageDesc: line?.usageDesc || buildUsageDescription(line?.department) };
   if (!isConsumableLine(normalized)) return normalized;
-  const { partQuantity, partDesc, parts, isPart, ...withoutParts } = normalized;
+  const withoutParts = { ...normalized };
+  delete withoutParts.partQuantity;
+  delete withoutParts.partDesc;
+  delete withoutParts.parts;
+  delete withoutParts.isPart;
   return withoutParts;
 }
 
