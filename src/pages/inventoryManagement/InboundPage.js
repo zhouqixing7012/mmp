@@ -21,6 +21,7 @@ import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import {
   mockVirtualAdmins,
+  mockVirtualWarehouseManagerData,
   mockCompanies,
   mockCostCenters,
   mockPlates,
@@ -302,19 +303,21 @@ function EditorField({ label, required = false, children, span = 1 }) {
 
 const NEW_INBOUND_ADD_TYPE_OPTIONS = ['报废新增', '采购新增', '历史新增', '收购新增', '赠与新增', '再利用新增', '转移新增'];
 
-const VIRTUAL_RESPONSIBLE_COMPANY = {
-  SOHU52: mockCompanies.find((item) => item.code === '122'),
+const VIRTUAL_RESPONSIBLE_COMPANY_FALLBACK = {
   SOHU53: mockCompanies.find((item) => item.code === '114'),
   SOHU54: mockCompanies.find((item) => item.code === '115'),
 };
 
 const VIRTUAL_RESPONSIBLE_OPTIONS = mockVirtualAdmins.map((item) => {
-  const company = VIRTUAL_RESPONSIBLE_COMPANY[item.code];
+  const mapped = mockVirtualWarehouseManagerData.find((row) => row.enabled && row.virtualAdmin === item.desc);
+  const fallbackCompany = VIRTUAL_RESPONSIBLE_COMPANY_FALLBACK[item.code];
   const employeeName = String(item.desc || '').replace(`${item.code}-`, '');
   return {
     ...item,
     employee: `${item.code}.${employeeName}`,
-    company: company ? `${company.code}.${company.desc}` : '',
+    company: mapped?.company
+      ? String(mapped.company).replace('_', '.')
+      : (fallbackCompany ? `${fallbackCompany.code}.${fallbackCompany.desc}` : ''),
   };
 });
 
