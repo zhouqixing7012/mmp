@@ -18,6 +18,18 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
+import {
+  mockVirtualAdmins,
+  mockDepartments,
+  mockCostCenters,
+  mockPlates,
+  mockSubjects,
+  mockSubSubjects,
+  mockLines,
+  mockProjects,
+  mockTrans,
+  mockMisc,
+} from '../../mock/businessRulesMock';
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
@@ -242,12 +254,149 @@ function EditorField({ label, required = false, children, span = 1 }) {
   return <DetailItem label={<FieldLabel label={label} required={required} />} span={span}>{children}</DetailItem>;
 }
 
+const NEW_INBOUND_ADD_TYPE_OPTIONS = ['报废新增', '采购新增', '历史新增', '收购新增', '赠与新增', '再利用新增', '转移新增'];
+
+const VIRTUAL_RESPONSIBLE_PROFILE = {
+  SOHU52: { department: `${mockDepartments[0].code}.${mockDepartments[0].desc}`, costCenter: mockCostCenters[1].desc, plate: mockPlates[0].desc },
+  SOHU53: { department: `${mockDepartments[3].code}.${mockDepartments[3].desc}`, costCenter: mockCostCenters[1].desc, plate: mockPlates[1].desc },
+  SOHU54: { department: `${mockDepartments[3].code}.${mockDepartments[3].desc}`, costCenter: mockCostCenters[0].desc, plate: mockPlates[0].desc },
+};
+
+const VIRTUAL_RESPONSIBLE_OPTIONS = mockVirtualAdmins.map((item) => ({
+  ...item,
+  name: item.desc,
+  ...(VIRTUAL_RESPONSIBLE_PROFILE[item.code] || {}),
+  businessLine: mockLines[0].desc,
+  project: mockProjects[0].desc,
+}));
+
+const APPLICANT_OPTIONS = [
+  { id: 'applicant-1', employeeNo: '114111', name: '杨芊', department: 'ERP部.业务产品二组' },
+  { id: 'applicant-2', employeeNo: '206984', name: '何文', department: 'ERP部.业务产品二组' },
+  { id: 'applicant-3', employeeNo: '115203', name: '张璐', department: 'ERP部.业务产品二组' },
+];
+
+const SUPPLIER_OPTIONS = Array.from(new Set([
+  ...INITIAL_ROWS.flatMap((row) => (row.lines || []).map((line) => line.supplier).filter(Boolean)),
+  ...PURCHASE_PENDING_SEED.map((row) => row.supplier).filter(Boolean),
+  '北京一新科技有限责任公司',
+])).map((name, index) => ({ id: `supplier-${index + 1}`, name }));
+
+const ASSET_LOOKUP_COLUMNS = [
+  { title: '标签号', dataIndex: 'assetTag', width: 160 },
+  { title: 'SN号', dataIndex: 'sn', width: 160 },
+  { title: '公司', dataIndex: 'company', width: 120 },
+  { title: '板块', dataIndex: 'plate', width: 100 },
+  { title: '资产大类', dataIndex: 'assetClass', width: 130 },
+  { title: '资产小类', dataIndex: 'assetSubClass', width: 130 },
+  { title: '资产说明', dataIndex: 'materialDesc', width: 220 },
+  { title: '资产责任人', dataIndex: 'responsiblePerson', width: 150 },
+  { title: '资产状态', dataIndex: 'assetStatus', width: 120 },
+];
+
+const ASSET_LOOKUP_SEARCH_FIELDS = [
+  { label: '标签号', name: 'assetTag', dataIndex: 'assetTag' },
+  { label: 'SN号', name: 'sn', dataIndex: 'sn' },
+  { label: '板块', name: 'plate', dataIndex: 'plate' },
+  { label: '资产说明', name: 'materialDesc', dataIndex: 'materialDesc' },
+];
+
+function extractAccountCode(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  return text.split(/[._]/)[0];
+}
+
+function composeExpenseAccount(form) {
+  const segments = [
+    extractAccountCode(form.company),
+    extractAccountCode(form.plate),
+    extractAccountCode(form.costCenter),
+    extractAccountCode(form.expenseSubject),
+    extractAccountCode(form.expenseSubSubject),
+    extractAccountCode(form.businessLine),
+    extractAccountCode(form.project),
+    extractAccountCode(form.tradingCompany),
+    extractAccountCode(form.spareSegment),
+  ];
+  return segments.every(Boolean) ? segments.join('.') : '';
+}
+
+function buildEnableDateFromPurchaseDate(value) {
+  if (!value) return '';
+  const date = dayjs(value);
+  if (!date.isValid()) return '';
+  return date.date() <= 25
+    ? date.format('YYYY-MM-DD')
+    : date.add(1, 'month').startOf('month').format('YYYY-MM-DD');
+}
+
+function buildInboundPartRows(assetTag, quantity, current = []) {
+  return Array.from({ length: Math.max(0, Number(quantity || 0)) }, (_, index) => ({
+    id: current[index]?.id || `part-${index + 1}`,
+    partName: current[index]?.partName || `部件${index + 1}`,
+    partTag: assetTag ? `${assetTag}-${index + 1}` : '',
+    partSn: current[index]?.partSn || '缺省',
+  }));
+}
+
+function serializeInboundParts(parts) {
+  return (parts || []).map((part) => `${part.partName}#${part.partTag}#${part.partSn || '缺省'}`).join('@');
+}
+
 function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const warehouseContext = WAREHOUSE_CONTEXT[warehouse] || { city: '', building: '', company: '' };
   const [selector, setSelector] = useState('');
+  const [partModalOpen, setPartModalOpen] = useState(false);
+  const [parts, setParts] = useState([]);
+  const [partDraft, setPartDraft] = useState([]);
+  const initialPurchaseDate = '2026-09-10';
   const [form, setForm] = useState({
-    materialDesc: '联想.ThinkPad T14', materialGroup: '1.资产', assetClass: '10.电脑', assetSubClass: '笔记本电脑', brand: '联想', model: 'ThinkPad T14', config: 'i7 / 32G / 1T SSD', unit: '台', applicationBatch: '2026Q3', quantity: 1, originalValue: 8200, tax: 1066, assetTag: '', sn: '', city: warehouseContext.city, building: warehouseContext.building, floor: '15F', responsiblePerson: '114111-杨芊', department: 'ERP部.业务产品二组', addType: '采购新增', originalAssetTag: '', company: warehouseContext.company, costCenter: 'ERP部', businessLine: '0.*', project: '0.*', plate: '集团', expenseAccount: '固定资产', purchaseDate: '2026-09-10', enableDate: '2026-09-10', prNo: 'PR2603180007', applicationNo: '', poNo: '', applicant: '206984-何文', partQuantity: 0, partDesc: '', mainAssetTag: '', supplier: '北京一新科技有限责任公司', service: '', noLocation: '', usageDesc: '', remark: '',
+    materialDesc: '联想.ThinkPad T14',
+    materialGroup: '1.资产',
+    assetClass: '10.电脑',
+    assetSubClass: '笔记本电脑',
+    brand: '联想',
+    model: 'ThinkPad T14',
+    config: 'i7 / 32G / 1T SSD',
+    unit: '台',
+    applicationBatch: '2026Q3',
+    quantity: 1,
+    originalValue: 8200,
+    tax: 1066,
+    assetTag: '',
+    sn: '',
+    city: warehouseContext.city,
+    building: warehouseContext.building,
+    floor: '15F',
+    responsiblePerson: '',
+    department: '',
+    addType: '采购新增',
+    originalAssetTag: '',
+    company: warehouseContext.company,
+    costCenter: '',
+    businessLine: mockLines[0].desc,
+    project: mockProjects[0].desc,
+    plate: '',
+    expenseSubject: mockSubjects[0].desc,
+    expenseSubSubject: mockSubSubjects[0].desc,
+    tradingCompany: mockTrans[0].desc,
+    spareSegment: mockMisc[0].desc,
+    purchaseDate: initialPurchaseDate,
+    enableDate: buildEnableDateFromPurchaseDate(initialPurchaseDate),
+    prNo: 'PR2603180007',
+    applicationNo: '',
+    poNo: '',
+    applicant: '',
+    partQuantity: 0,
+    partDesc: '',
+    mainAssetTag: '',
+    supplier: '',
+    service: '',
+    noLocation: '',
+    usageDesc: '',
+    remark: '',
   });
   const set = (field, value) => setForm((current) => ({ ...current, [field]: value }));
 
@@ -257,14 +406,80 @@ function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
     setForm((current) => ({ ...current, city: context.city, building: context.building, company: context.company }));
   }, [open, warehouse]);
 
+  const expenseAccount = composeExpenseAccount(form);
+
   const applyMaterial = (record) => {
-    setForm((current) => ({ ...current, ...record, service: INFRA_ASSET_TYPES.has(record.assetSubClass) ? current.service : '', noLocation: INFRA_ASSET_TYPES.has(record.assetSubClass) ? current.noLocation : '' }));
+    setForm((current) => ({ ...current, ...record }));
     setSelector('');
   };
 
   const applyResponsible = (record) => {
-    setForm((current) => ({ ...current, responsiblePerson: record.name, department: record.department, costCenter: record.costCenter }));
+    setForm((current) => ({
+      ...current,
+      responsiblePerson: record.name,
+      department: record.department || '',
+      costCenter: record.costCenter || '',
+      plate: record.plate || '',
+      businessLine: record.businessLine || current.businessLine,
+      project: record.project || current.project,
+    }));
     setSelector('');
+  };
+
+  const applyApplicant = (record) => {
+    set('applicant', `${record.employeeNo}-${record.name}`);
+    setSelector('');
+  };
+
+  const handleAddTypeChange = (value) => {
+    setForm((current) => ({
+      ...current,
+      addType: value,
+      originalAssetTag: value === '报废新增' ? current.originalAssetTag : '',
+    }));
+  };
+
+  const handleAssetTagChange = (value) => {
+    const nextParts = buildInboundPartRows(value, form.partQuantity, parts);
+    setParts(nextParts);
+    setForm((current) => ({ ...current, assetTag: value, partDesc: serializeInboundParts(nextParts) }));
+  };
+
+  const handlePartQuantityChange = (value) => {
+    const quantity = Math.max(0, Number(value || 0));
+    const nextParts = buildInboundPartRows(form.assetTag, quantity, parts);
+    setParts(nextParts);
+    setForm((current) => ({ ...current, partQuantity: quantity, partDesc: quantity > 0 ? serializeInboundParts(nextParts) : '' }));
+  };
+
+  const openPartEditor = () => {
+    if (Number(form.partQuantity || 0) <= 0) return messageApi.warning('部件数量大于 0 后才可维护部件说明');
+    if (!String(form.assetTag || '').trim()) return messageApi.warning('请先维护资产标签号');
+    setPartDraft(buildInboundPartRows(form.assetTag, form.partQuantity, parts));
+    setPartModalOpen(true);
+    return undefined;
+  };
+
+  const saveParts = () => {
+    if (partDraft.some((part) => !String(part.partName || '').trim())) return messageApi.warning('请维护部件名称');
+    const normalized = partDraft.map((part) => ({
+      ...part,
+      partName: String(part.partName || '').trim(),
+      partSn: String(part.partSn || '').trim() || '缺省',
+    }));
+    setParts(normalized);
+    set('partDesc', serializeInboundParts(normalized));
+    setPartModalOpen(false);
+    return undefined;
+  };
+
+  const handlePurchaseDateChange = (date) => {
+    const purchaseDate = date?.format('YYYY-MM-DD') || '';
+    setForm((current) => ({
+      ...current,
+      purchaseDate,
+      enableDate: buildEnableDateFromPurchaseDate(purchaseDate),
+    }));
   };
 
   const submit = (shouldClose) => {
@@ -277,18 +492,31 @@ function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
     if (!form.floor) return messageApi.warning('请选择 Floor');
     if (!form.responsiblePerson) return messageApi.warning('请选择责任人');
     if (!form.addType) return messageApi.warning('请选择新增类型');
+    if (form.addType === '报废新增' && !form.originalAssetTag) return messageApi.warning('报废新增必须选择原资产标签号');
     if (!form.costCenter) return messageApi.warning('请维护成本中心');
     if (!form.plate) return messageApi.warning('请选择板块');
+    if (!expenseAccount) return messageApi.warning('费用账户组成信息不完整');
     if (!form.purchaseDate || !form.enableDate) return messageApi.warning('请维护购买日期和启用日期');
-    onConfirm({ ...form, total: Number(form.originalValue || 0) + Number(form.tax || 0) }, shouldClose);
+    if (Number(form.partQuantity || 0) > 0) {
+      if (!form.assetTag) return messageApi.warning('维护部件说明前请先维护资产标签号');
+      if (parts.length !== Number(form.partQuantity) || parts.some((part) => !String(part.partName || '').trim())) return messageApi.warning('请完整维护部件说明');
+    }
+    onConfirm({
+      ...form,
+      expenseAccount,
+      parts,
+      partDesc: serializeInboundParts(parts),
+      total: Number(form.originalValue || 0) + Number(form.tax || 0),
+    }, shouldClose);
     return undefined;
   };
 
-  const isInfra = INFRA_ASSET_TYPES.has(form.assetSubClass);
+  const partSummary = Number(form.partQuantity || 0) > 0 && parts.length ? `已维护 ${parts.length} 个部件` : '';
+
   return (
     <>
       {contextHolder}
-      <Modal open={open && !selector} title="添加新增入库物资" width={960} onCancel={onCancel} footer={[
+      <Modal open={open && !selector && !partModalOpen} title="添加新增入库物资" width={960} onCancel={onCancel} footer={[
         <Button key="cancel" onClick={onCancel}>取消</Button>,
         <Button key="continue" onClick={() => submit(false)}>添加并继续</Button>,
         <Button key="close" type="primary" onClick={() => submit(true)}>添加并关闭</Button>,
@@ -296,7 +524,7 @@ function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
         <Space direction="vertical" size={16} className="w-full">
           <Typography.Text>当前仓库：{warehouse}</Typography.Text>
           <Card size="small" title="物资信息">
-            <DetailGrid columns={3} labelWidth={96} >
+            <DetailGrid columns={3} labelWidth={96}>
               <EditorField label="物资说明" required><LookupInput value={form.materialDesc} onClick={() => setSelector('material')} /></EditorField>
               <EditorField label="物资总类"><Readonly>{form.materialGroup}</Readonly></EditorField>
               <EditorField label="物资大类"><Readonly>{form.assetClass}</Readonly></EditorField>
@@ -310,42 +538,116 @@ function NewInboundItemModal({ open, warehouse, onCancel, onConfirm }) {
               <EditorField label="原值" required><InputNumber className="w-full" min={0} precision={2} value={form.originalValue} onChange={(v) => set('originalValue', v ?? 0)} /></EditorField>
               <EditorField label="税金"><InputNumber className="w-full" min={0} precision={2} value={form.tax} onChange={(v) => set('tax', v ?? 0)} /></EditorField>
               <EditorField label="合计"><Readonly>{money(Number(form.originalValue || 0) + Number(form.tax || 0))}</Readonly></EditorField>
-              <EditorField label="资产标签号" required><Input value={form.assetTag} onChange={(e) => set('assetTag', e.target.value)} /></EditorField>
+              <EditorField label="资产标签号" required><Input value={form.assetTag} onChange={(e) => handleAssetTagChange(e.target.value)} /></EditorField>
               <EditorField label="SN号" required><Input value={form.sn} onChange={(e) => set('sn', e.target.value)} /></EditorField>
               <EditorField label="资产状态"><Readonly>在库-新增</Readonly></EditorField>
               <EditorField label="City"><Readonly>{form.city}</Readonly></EditorField>
               <EditorField label="Building" required><Input value={form.building} onChange={(e) => set('building', e.target.value)} /></EditorField>
               <EditorField label="Floor" required><Select className="w-full" value={form.floor} options={['15F', '16F', '17F'].map((v) => ({ label: v, value: v }))} onChange={(v) => set('floor', v)} /></EditorField>
-              <EditorField label="责任人" required><LookupInput value={form.responsiblePerson} onClick={() => setSelector('responsible')} /></EditorField>
-              <EditorField label="所在部门"><Input value={form.department} onChange={(e) => set('department', e.target.value)} /></EditorField>
-              <EditorField label="新增类型" required><Select className="w-full" value={form.addType} options={['采购新增', '盘盈新增', '其他新增'].map((v) => ({ label: v, value: v }))} onChange={(v) => set('addType', v)} /></EditorField>
-              <EditorField label="原资产标签号"><Input value={form.originalAssetTag} onChange={(e) => set('originalAssetTag', e.target.value)} /></EditorField>
+              <EditorField label="责任人" required><LookupInput value={form.responsiblePerson} placeholder="请选择虚拟库管员" onClick={() => setSelector('responsible')} /></EditorField>
+              <EditorField label="所在部门"><Readonly>{form.department}</Readonly></EditorField>
+              <EditorField label="新增类型" required><Select className="w-full" value={form.addType} options={NEW_INBOUND_ADD_TYPE_OPTIONS.map((v) => ({ label: v, value: v }))} onChange={handleAddTypeChange} /></EditorField>
+              <EditorField label="原资产标签号">
+                {form.addType === '报废新增'
+                  ? <LookupInput value={form.originalAssetTag} placeholder="请选择原资产" onClick={() => setSelector('originalAsset')} />
+                  : <Readonly>{form.originalAssetTag}</Readonly>}
+              </EditorField>
               <EditorField label="公司"><Readonly>{form.company}</Readonly></EditorField>
-              <EditorField label="成本中心" required><Input value={form.costCenter} onChange={(e) => set('costCenter', e.target.value)} /></EditorField>
-              <EditorField label="业务线"><Input value={form.businessLine} onChange={(e) => set('businessLine', e.target.value)} /></EditorField>
-              <EditorField label="项目"><Input value={form.project} onChange={(e) => set('project', e.target.value)} /></EditorField>
-              <EditorField label="板块" required><Input value={form.plate} onChange={(e) => set('plate', e.target.value)} /></EditorField>
-              <EditorField label="费用账户"><Readonly>{form.expenseAccount}</Readonly></EditorField>
-              {isInfra && <EditorField label="服务"><Input value={form.service} onChange={(e) => set('service', e.target.value)} /></EditorField>}
-              {isInfra && <EditorField label="NO位置"><Input value={form.noLocation} onChange={(e) => set('noLocation', e.target.value)} /></EditorField>}
-              <EditorField label="购买日期" required><DatePicker className="w-full" value={form.purchaseDate ? dayjs(form.purchaseDate) : null} onChange={(d) => set('purchaseDate', d?.format('YYYY-MM-DD') || '')} /></EditorField>
+              <EditorField label="成本中心" required><Select className="w-full" value={form.costCenter || undefined} placeholder="请选择" options={mockCostCenters.map((item) => ({ label: item.desc, value: item.desc }))} onChange={(v) => set('costCenter', v)} /></EditorField>
+              <EditorField label="业务线"><Select className="w-full" value={form.businessLine || undefined} options={mockLines.map((item) => ({ label: item.desc, value: item.desc }))} onChange={(v) => set('businessLine', v)} /></EditorField>
+              <EditorField label="项目"><Select className="w-full" value={form.project || undefined} options={mockProjects.map((item) => ({ label: item.desc, value: item.desc }))} onChange={(v) => set('project', v)} /></EditorField>
+              <EditorField label="板块" required><Select className="w-full" value={form.plate || undefined} placeholder="请选择" options={mockPlates.map((item) => ({ label: item.desc, value: item.desc }))} onChange={(v) => set('plate', v)} /></EditorField>
+              <EditorField label="费用账户"><Readonly>{expenseAccount}</Readonly></EditorField>
+              <EditorField label="购买日期" required><DatePicker className="w-full" value={form.purchaseDate ? dayjs(form.purchaseDate) : null} onChange={handlePurchaseDateChange} /></EditorField>
               <EditorField label="启用日期" required><DatePicker className="w-full" value={form.enableDate ? dayjs(form.enableDate) : null} onChange={(d) => set('enableDate', d?.format('YYYY-MM-DD') || '')} /></EditorField>
               <EditorField label="PR单号"><Input value={form.prNo} onChange={(e) => set('prNo', e.target.value)} /></EditorField>
               <EditorField label="申请单号"><Input value={form.applicationNo} onChange={(e) => set('applicationNo', e.target.value)} /></EditorField>
               <EditorField label="PO单号"><Input value={form.poNo} onChange={(e) => set('poNo', e.target.value)} /></EditorField>
-              <EditorField label="申请人"><Input value={form.applicant} onChange={(e) => set('applicant', e.target.value)} /></EditorField>
-              <EditorField label="部件数量"><InputNumber className="w-full" min={0} precision={0} value={form.partQuantity} onChange={(v) => set('partQuantity', v || 0)} /></EditorField>
-              <EditorField label="部件说明"><Input value={form.partDesc} onChange={(e) => set('partDesc', e.target.value)} /></EditorField>
-              <EditorField label="主资产标签号"><Input value={form.mainAssetTag} onChange={(e) => set('mainAssetTag', e.target.value)} /></EditorField>
-              <EditorField label="供应商"><Input value={form.supplier} onChange={(e) => set('supplier', e.target.value)} /></EditorField>
+              <EditorField label="申请人"><LookupInput value={form.applicant} placeholder="请选择申请人" onClick={() => setSelector('applicant')} /></EditorField>
+              <EditorField label="部件数量"><InputNumber className="w-full" min={0} precision={0} value={form.partQuantity} onChange={handlePartQuantityChange} /></EditorField>
+              <EditorField label="部件说明">
+                <Space.Compact className="w-full">
+                  <Input readOnly value={partSummary} placeholder="部件数量大于0且有资产标签号后维护" />
+                  <Button disabled={Number(form.partQuantity || 0) <= 0 || !String(form.assetTag || '').trim()} onClick={openPartEditor}>维护</Button>
+                </Space.Compact>
+              </EditorField>
+              <EditorField label="主资产标签号"><LookupInput value={form.mainAssetTag} placeholder="请选择主资产" onClick={() => setSelector('mainAsset')} /></EditorField>
+              <EditorField label="供应商"><LookupInput value={form.supplier} placeholder="请选择供应商" onClick={() => setSelector('supplier')} /></EditorField>
+              <EditorField label="服务"><Input value={form.service} onChange={(e) => set('service', e.target.value)} /></EditorField>
+              <EditorField label="NO位置"><Input value={form.noLocation} onChange={(e) => set('noLocation', e.target.value)} /></EditorField>
               <EditorField label="使用说明" span={3}><Input value={form.usageDesc} onChange={(e) => set('usageDesc', e.target.value)} /></EditorField>
               <EditorField label="备注" span={3}><TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={form.remark} onChange={(e) => set('remark', e.target.value)} /></EditorField>
             </DetailGrid>
           </Card>
         </Space>
       </Modal>
+
+      <Modal open={open && partModalOpen} title="维护部件说明" width={720} okText="确定" cancelText="取消" onOk={saveParts} onCancel={() => setPartModalOpen(false)}>
+        <Table
+          rowKey="id"
+          size="small"
+          bordered
+          pagination={false}
+          scroll={{ x: 'max-content' }}
+          dataSource={partDraft}
+          columns={[
+            { title: '部件名称', dataIndex: 'partName', width: 220, render: (value, row) => <Input value={value} onChange={(event) => setPartDraft((current) => current.map((item) => item.id === row.id ? { ...item, partName: event.target.value } : item))} /> },
+            { title: '部件标签号', dataIndex: 'partTag', width: 220, render: (value) => <Readonly>{value}</Readonly> },
+            { title: 'SN号', dataIndex: 'partSn', width: 220, render: (value, row) => <Input value={value} placeholder="可填写缺省" onChange={(event) => setPartDraft((current) => current.map((item) => item.id === row.id ? { ...item, partSn: event.target.value } : item))} /> },
+          ]}
+        />
+      </Modal>
+
       {selector === 'material' && <SelectModal open title="选择物资说明" dataSource={NEW_MATERIAL_OPTIONS} columns={[{ title: '物资说明', dataIndex: 'materialDesc' }, { title: '物资大类', dataIndex: 'assetClass' }, { title: '物资小类', dataIndex: 'assetSubClass' }]} searchFields={[{ label: '物资说明', name: 'materialDesc', dataIndex: 'materialDesc' }]} onCancel={() => setSelector('')} onConfirm={applyMaterial} />}
-      {selector === 'responsible' && <SelectModal open title="选择责任人" dataSource={RESPONSIBLE_OPTIONS} columns={[{ title: '责任人', dataIndex: 'name' }, { title: '所在部门', dataIndex: 'department' }, { title: '成本中心', dataIndex: 'costCenter' }]} searchFields={[{ label: '责任人', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelector('')} onConfirm={applyResponsible} />}
+      {selector === 'responsible' && <SelectModal
+        open
+        title="选择虚拟库管员"
+        dataSource={VIRTUAL_RESPONSIBLE_OPTIONS}
+        columns={[
+          { title: '编码', dataIndex: 'code', width: 120 },
+          { title: '虚拟库管员', dataIndex: 'name', width: 220 },
+          { title: '所在部门', dataIndex: 'department', width: 220 },
+          { title: '成本中心', dataIndex: 'costCenter', width: 200 },
+        ]}
+        searchFields={[
+          { label: '编码', name: 'code', dataIndex: 'code' },
+          { label: '虚拟库管员', name: 'name', dataIndex: 'name' },
+        ]}
+        onCancel={() => setSelector('')}
+        onConfirm={applyResponsible}
+      />}
+      {(selector === 'originalAsset' || selector === 'mainAsset') && <SelectModal
+        open
+        title={selector === 'originalAsset' ? '选择原资产' : '选择主资产'}
+        width={960}
+        dataSource={RETURN_ASSET_OPTIONS}
+        columns={ASSET_LOOKUP_COLUMNS}
+        searchFields={ASSET_LOOKUP_SEARCH_FIELDS}
+        onCancel={() => setSelector('')}
+        onConfirm={(record) => {
+          if (selector === 'originalAsset') set('originalAssetTag', record.assetTag);
+          else set('mainAssetTag', record.assetTag);
+          setSelector('');
+        }}
+      />}
+      {selector === 'applicant' && <SelectModal
+        open
+        title="选择申请人"
+        dataSource={APPLICANT_OPTIONS}
+        columns={[
+          { title: '工号', dataIndex: 'employeeNo', width: 140 },
+          { title: '姓名', dataIndex: 'name', width: 140 },
+          { title: '部门', dataIndex: 'department', width: 260 },
+        ]}
+        searchFields={[
+          { label: '工号', name: 'employeeNo', dataIndex: 'employeeNo' },
+          { label: '姓名', name: 'name', dataIndex: 'name' },
+          { label: '部门', name: 'department', dataIndex: 'department' },
+        ]}
+        onCancel={() => setSelector('')}
+        onConfirm={applyApplicant}
+      />}
+      {selector === 'supplier' && <SelectModal open title="选择供应商" dataSource={SUPPLIER_OPTIONS} columns={[{ title: '供应商', dataIndex: 'name' }]} searchFields={[{ label: '供应商', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelector('')} onConfirm={(record) => { set('supplier', record.name); setSelector(''); }} />}
     </>
   );
 }

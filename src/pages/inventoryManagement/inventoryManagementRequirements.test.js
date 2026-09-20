@@ -106,3 +106,54 @@ test('耗材接收详情按固定15字段展示且低值耐用品维护页追加
   expect(poDetailSource.match(/label="采购员联系电话"/g) || []).toHaveLength(1);
   expect(poDetailSource).not.toContain('label="采购单位联系电话"');
 });
+
+
+test('新增入库责任人仅选虚拟库管员且所在部门只读带出', () => {
+  expect(inboundSource).toContain("const VIRTUAL_RESPONSIBLE_OPTIONS = mockVirtualAdmins.map");
+  expect(inboundSource).toContain('title="选择虚拟库管员"');
+  expect(inboundSource).toContain('<EditorField label="所在部门"><Readonly>{form.department}</Readonly></EditorField>');
+  expect(inboundSource).toContain('department: record.department ||');
+});
+
+test('新增入库报废新增才允许选择原资产且资产选择条件统一', () => {
+  expect(inboundSource).toContain("form.addType === '报废新增'");
+  expect(inboundSource).toContain("setSelector('originalAsset')");
+  expect(inboundSource).toContain("{ label: '标签号', name: 'assetTag', dataIndex: 'assetTag' }");
+  expect(inboundSource).toContain("{ label: 'SN号', name: 'sn', dataIndex: 'sn' }");
+  expect(inboundSource).toContain("{ label: '板块', name: 'plate', dataIndex: 'plate' }");
+  expect(inboundSource).toContain("{ label: '资产说明', name: 'materialDesc', dataIndex: 'materialDesc' }");
+});
+
+test('新增入库费用账户使用九段编码组成', () => {
+  const start = inboundSource.indexOf('function composeExpenseAccount(form)');
+  const end = inboundSource.indexOf('function buildEnableDateFromPurchaseDate');
+  const source = inboundSource.slice(start, end);
+  ['form.company', 'form.plate', 'form.costCenter', 'form.expenseSubject', 'form.expenseSubSubject', 'form.businessLine', 'form.project', 'form.tradingCompany', 'form.spareSegment'].forEach((segment) => {
+    expect(source).toContain(segment);
+  });
+  expect(source).toContain("segments.join('.')");
+  expect(inboundSource).toContain('<EditorField label="费用账户"><Readonly>{expenseAccount}</Readonly></EditorField>');
+});
+
+test('新增入库购买日期自动计算启用日期且允许单独调整', () => {
+  expect(inboundSource).toContain('date.date() <= 25');
+  expect(inboundSource).toContain("date.add(1, 'month').startOf('month').format('YYYY-MM-DD')");
+  expect(inboundSource).toContain('enableDate: buildEnableDateFromPurchaseDate(purchaseDate)');
+  expect(inboundSource).toContain("onChange={(d) => set('enableDate', d?.format('YYYY-MM-DD') || '')}");
+});
+
+test('新增入库申请人部件主资产供应商均按选择规则维护', () => {
+  expect(inboundSource).toContain('title="选择申请人"');
+  expect(inboundSource).toContain("{ title: '工号', dataIndex: 'employeeNo'");
+  expect(inboundSource).toContain("{ label: '部门', name: 'department', dataIndex: 'department' }");
+  expect(inboundSource).toContain('title="维护部件说明"');
+  expect(inboundSource).toContain("partSn: current[index]?.partSn || '缺省'");
+  expect(inboundSource).toContain("setSelector('mainAsset')");
+  expect(inboundSource).toContain("setSelector('supplier')");
+  const supplierIndex = inboundSource.indexOf('<EditorField label="供应商"><LookupInput');
+  const serviceIndex = inboundSource.indexOf('<EditorField label="服务"><Input', supplierIndex);
+  const noLocationIndex = inboundSource.indexOf('<EditorField label="NO位置"><Input', serviceIndex);
+  expect(supplierIndex).toBeGreaterThan(-1);
+  expect(serviceIndex).toBeGreaterThan(supplierIndex);
+  expect(noLocationIndex).toBeGreaterThan(serviceIndex);
+});
