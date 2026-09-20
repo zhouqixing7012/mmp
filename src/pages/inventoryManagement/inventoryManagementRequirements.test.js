@@ -105,17 +105,20 @@ test('耗材和低值耐用品接收信息固定15字段且维护页不展示制
 
 
 test('新增入库责任人弹窗固定员工和公司两列且部门固定虚拟组织', () => {
+  const start = inboundSource.indexOf("selector === 'responsible'");
+  const end = inboundSource.indexOf("selector === 'originalAsset'", start);
+  const source = inboundSource.slice(start, end);
   expect(inboundSource).toContain("const VIRTUAL_RESPONSIBLE_DEPARTMENT = 'SOHU0001.虚拟组织'");
-  expect(inboundSource).toContain('title="选择责任人"');
-  expect(inboundSource).toContain("{ title: '员工', dataIndex: 'employee'");
-  expect(inboundSource).toContain("{ title: '公司', dataIndex: 'company'");
-  expect(inboundSource).not.toContain("{ title: '所在部门', dataIndex: 'department'");
+  expect(source).toContain('title="选择责任人"');
+  expect(source).toContain("{ title: '员工', dataIndex: 'employee'");
+  expect(source).toContain("{ title: '公司', dataIndex: 'company'");
+  expect(source).not.toContain("{ title: '所在部门', dataIndex: 'department'");
   expect(inboundSource).toContain('department: VIRTUAL_RESPONSIBLE_DEPARTMENT');
   expect(inboundSource).toContain('<EditorField label="所在部门"><Readonly>{form.department}</Readonly></EditorField>');
 });
 
 
-test('新增入库报废新增才允许选择原资产且资产选择条件统一'test('新增入库报废新增才允许选择原资产且资产选择条件统一', () => {
+test('新增入库报废新增才允许选择原资产且资产选择条件统一', () => {
   expect(inboundSource).toContain("form.addType === '报废新增'");
   expect(inboundSource).toContain("setSelector('originalAsset')");
   expect(inboundSource).toContain("{ label: '标签号', name: 'assetTag', dataIndex: 'assetTag' }");
@@ -169,7 +172,7 @@ test('入库草稿操作列编辑复用原有选择和添加弹窗并回显当�
 });
 
 
-test('手工采购接收先选仓库并按仓库公司过滤待入库物资'test('手工采购接收先选仓库并按仓库公司过滤待入库物资', () => {
+test('手工采购接收先选仓库并按仓库公司过滤待入库物资', () => {
   expect(inboundSource).toContain('const warehouseCompany = WAREHOUSE_CONTEXT[warehouse]?.company ||');
   expect(inboundSource).toContain('row.company === warehouseCompany');
   expect(inboundSource).toContain("messageApi.warning('请先选择当前仓库')");
