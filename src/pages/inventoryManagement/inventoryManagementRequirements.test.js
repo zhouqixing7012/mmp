@@ -11,6 +11,7 @@ const moveReceiveSource = fs.readFileSync(path.join(__dirname, 'MoveReceiveConte
 const assetReceiptSource = fs.readFileSync(path.join(__dirname, 'AssetReceiptPage.js'), 'utf8');
 const consumableReceiptSource = fs.readFileSync(path.join(__dirname, 'ConsumableReceiptPage.js'), 'utf8');
 const consumableReceiptMockSource = fs.readFileSync(path.join(__dirname, 'consumableReceiptMock.js'), 'utf8');
+const inboundImportSource = fs.readFileSync(path.join(__dirname, 'inboundImport.js'), 'utf8');
 
 test('新增入库的资产标签号和 SN 号必须填写', () => {
   expect(inboundSource).toContain('<EditorField label="资产标签号" required>');
@@ -80,14 +81,14 @@ test('资产接收维护页和详情页不展示制单信息且说明字段统�
   expect(assetReceiptSource).toContain('<DetailItem label="资产说明"><Typography.Text>{scanTargetAsset?.materialDesc || \'\'}</Typography.Text></DetailItem>');
 });
 
-test('耗材和低值耐用品接收信息固定15字段且维护页不展示制单信息', () => {
+test('耗材和低值耐用品接收信息固定14字段且不展示申请批次和制单信息', () => {
   const cardStart = consumableReceiptSource.indexOf('function ReceiptInfoCard');
   const cardEnd = consumableReceiptSource.indexOf('function readStorageRows');
   const cardSource = consumableReceiptSource.slice(cardStart, cardEnd);
   const labels = [
     '采购接收单号', 'PO单号', 'PO说明', '供应商', '联系人', '供应商联系电话',
     '采购单位', '采购员', '采购员联系电话', '合同主体', '板块', '接收人',
-    '接收单状态', '接收时间', '申请批次',
+    '接收单状态', '接收时间',
   ];
   let cursor = -1;
   labels.forEach((label) => {
@@ -95,6 +96,7 @@ test('耗材和低值耐用品接收信息固定15字段且维护页不展示制
     expect(next).toBeGreaterThan(cursor);
     cursor = next;
   });
+  expect(cardSource).not.toContain('label="申请批次"');
   expect(cardSource).not.toContain('label="制单人"');
   expect(cardSource).not.toContain('label="制单时间"');
   expect(consumableReceiptSource.match(/<ReceiptInfoCard receipt=\{activeReceipt\} \/>/g) || []).toHaveLength(2);
@@ -198,11 +200,28 @@ test('借用归还候选固定为在用借用中并复用资产维护真实枚�
   expect(inboundSource).not.toContain("usage: '办公'");
 });
 
-test('新增退库借用归还均保留Excel导入入口且不伪造模板数据', () => {
+test('新增退库借用归还按类型下载xls模板并执行原子批量导入', () => {
   expect(inboundSource).toContain("const supportsExcelImport = ['新增入库', '退库入库', '借用归还'].includes(inboundType)");
+  expect(inboundSource).toContain('downloadInboundImportTemplate(inboundType)');
   expect(inboundSource).toContain('beforeUpload={handleExcelBeforeUpload}');
-  expect(inboundSource).toContain('模板字段待确认后再执行解析和导入校验');
-  expect(inboundSource).not.toContain("AST-IMP-");
+  expect(inboundSource).toContain('readInboundImportFile(file, inboundType)');
+  expect(inboundSource).toContain('validateInboundImportRows(matrix');
+  expect(inboundSource).toContain('downloadInboundImportErrors(inboundType, matrix, result.errors)');
+  expect(inboundSource).toContain('本批数据未保存');
+  expect(inboundSource).toContain('执行入库后才更新资产或库存');
+
+  expect(inboundImportSource).toContain("'借用归还数据导入模板.xls'");
+  expect(inboundImportSource).toContain("'退库入库数据导入模板.xls'");
+  expect(inboundImportSource).toContain("'新增入库数据导入模板.xls'");
+  expect(inboundImportSource).toContain("'错误提示', '资产标签号*', 'SN号', '责任人(员工编号)*'");
+  expect(inboundImportSource).toContain("'错误提示', '资产标签号*', 'SN号', '退库数量', '责任人(员工编号)*'");
+  expect(inboundImportSource).toContain("'错误提示', '资产标签号*', '物资编码*'");
+  expect(inboundImportSource).toContain("bookType: 'xls'");
+  expect(inboundImportSource).toContain("asset.assetStatus !== '在用-借用中'");
+  expect(inboundImportSource).toContain("asset.assetStatus !== '在用-使用中'");
+  expect(inboundImportSource).toContain("rowErrors.push('资产标签号已存在或在当前导入中重复')");
+  expect(inboundImportSource).toContain("rowErrors.push('税金不能小于0')");
+  expect(inboundImportSource).toContain("assetStatus: '在库-新增'");
 });
 
 
@@ -300,22 +319,24 @@ test('耗材接收链路不再包含部件字段且PO页面不展示申请批次
   const poDetailSource = consumableReceiptSource.slice(poDetailStart, receiptListStart);
   expect(poDetailSource).not.toContain('label="申请批次"');
 
-  const receiptCardStart = consumableReceiptSource.indexOf('function ReceiptInfoCard');
-  const receiptCardEnd = consumableReceiptSource.indexOf('function readStorageRows', receiptCardStart);
-  expect(consumableReceiptSource.slice(receiptCardStart, receiptCardEnd)).toContain('label="申请批次"');
+  expect(consumableReceiptSource).not.toContain('applicationBatch');
+  expect(consumableReceiptMockSource).not.toContain('applicationBatch');
 });
 
-test('资产和耗材PO行被接收单引用后仍可编辑接收数量但其他字段只读', () => {
-  expect(assetReceiptSource).toContain("const editingPoItemLocked = Boolean(editItem && isPoItemLocked(currentPO.poNo, editItem.id))");
-  expect(assetReceiptSource).toContain("? { currentReceiptQty: qty }");
+test('资产和耗材PO引用草稿占满数量后仍显示编辑并同步调整草稿占用', () => {
+  expect(assetReceiptSource).toContain('const getDraftReceiptItemReference = (poNo, itemId)');
+  expect(assetReceiptSource).toContain('(availableQty(row) > 0 || draftReference)');
+  expect(assetReceiptSource).toContain('const delta = qty - previousQty');
+  expect(assetReceiptSource).toContain('draftQty: nextDraft');
+  expect(assetReceiptSource).toContain('reconcileMaintenanceForReceipt(nextReceipt)');
   expect(assetReceiptSource).toContain("editingPoItemLocked ? <div className=\"mt-1\"><Readonly>{editDraft.config}</Readonly></div>");
-  expect(assetReceiptSource).not.toContain("&& !isPoItemLocked(activePO?.poNo, row.id)");
 
-  expect(consumableReceiptSource).toContain("const editingPoItemLocked = Boolean(editItem && isPoItemLocked(activePO.poNo, editItem.id))");
-  expect(consumableReceiptSource).toContain("locked ? { ...item, currentReceiveQty: qty }");
+  expect(consumableReceiptSource).toContain('const getDraftReceiptLineReference = (poNo, itemId)');
+  expect(consumableReceiptSource).toContain("(remainingQty(row) > 0 || getDraftReceiptLineReference(activePO?.poNo, row.id))");
+  expect(consumableReceiptSource).toContain('const delta = qty - previousDraftQty');
+  expect(consumableReceiptSource).toContain('actualReceiveQty: qty');
+  expect(consumableReceiptSource).toContain('draftQty: nextDraft');
   expect(consumableReceiptSource).toContain("editingPoItemLocked\n                  ? <div className=\"mt-1\"><Readonly>{editDraft.config}</Readonly></div>");
-  expect(consumableReceiptSource).not.toContain("remainingQty(row) > 0 && !isPoItemLocked");
-  expect(consumableReceiptSource).toContain("if (qty > remainingQty(editItem)) return messageApi.error('接收数量不能超过可接收数量！')");
 });
 
 test('电子设备和低值耐用品维护操作常显不可用时置灰', () => {
