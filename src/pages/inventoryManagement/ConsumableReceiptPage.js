@@ -47,23 +47,6 @@ const includesText = (value, query) => !query || String(value || '').toLowerCase
 const remainingQty = (item) => Math.max(0, Number(item.purchaseQty || 0) - Number(item.receivedQty || 0) - Number(item.draftQty || 0));
 const selectorData = (values) => [...new Set(values.filter(Boolean))].map((name, index) => ({ id: index + 1, name }));
 const docNo = (prefix, seq) => `${prefix}-${dayjs().format('YYYYMMDD')}${String(seq).padStart(4, '0')}`;
-const formatPartDesc = (value) => String(value || '').split('@').filter(Boolean).join(' / ') || '-';
-const splitPartNames = (value, countValue) => {
-  const source = String(value || '').split('@').filter(Boolean);
-  const size = Math.max(0, Number(countValue || 0));
-  return Array.from({ length: size }, (_, index) => source[index] || `部件${index + 1}`);
-};
-const buildPartRows = (line, assetTag = '') => {
-  const childCount = Math.max(0, Number(line.partQuantity || 0) - 1);
-  const names = splitPartNames(line.partDesc, childCount);
-  return names.map((name, index) => ({
-    id: `${line.id}-part-${index + 1}`,
-    partName: name,
-    partTag: assetTag ? `${assetTag}-${index + 1}` : '',
-    partSn: '',
-  }));
-};
-const serializeParts = (parts) => (parts || []).map((part) => `${part.partName || ''}#${part.partTag || ''}#${part.partSn || ''}`).join('@');
 const lineMoney = (item, quantity) => {
   const qty = Number(quantity || 0);
   const untaxedUnit = round2(item.untaxedUnitPrice);
@@ -199,7 +182,6 @@ export default function ConsumableReceiptPage() {
   const [selectorType, setSelectorType] = useState('');
   const [editItem, setEditItem] = useState(null);
   const [editDraft, setEditDraft] = useState(null);
-  const [partNamesDraft, setPartNamesDraft] = useState(null);
   const [scanInput, setScanInput] = useState({ value: '', stage: 'tag', detailId: null });
   const [detailEditor, setDetailEditor] = useState(null);
   const [detailDraft, setDetailDraft] = useState(null);
@@ -343,34 +325,22 @@ export default function ConsumableReceiptPage() {
   };
 
   const saveItem = () => {
-    if (isPoItemLocked(activePO?.poNo, editItem?.id)) return messageApi.warning('该采购行已存在接收单，不可再编辑');
+    const locked = isPoItemLocked(activePO?.poNo, editItem?.id);
     const qty = Number(editDraft?.currentReceiveQty || 0);
     if (!Number.isInteger(qty) || qty <= 0) return messageApi.error('接收数量必须为大于 0 的整数');
     if (qty > remainingQty(editItem)) return messageApi.error('接收数量不能超过可接收数量！');
-    if (editDraft.isPart) {
-      const partQuantity = Number(editDraft.partQuantity || 0);
-      if (!Number.isInteger(partQuantity) || partQuantity < 2 || partQuantity > 100) return messageApi.error('请输入 2～100 之间的整数！');
-    }
     setPoItems((current) => ({
       ...current,
-      [activePO.poNo]: current[activePO.poNo].map((item) => (item.id === editItem.id ? { ...item, ...editDraft } : item)),
+      [activePO.poNo]: current[activePO.poNo].map((item) => (
+        item.id === editItem.id
+          ? (locked ? { ...item, currentReceiveQty: qty } : { ...item, ...editDraft, currentReceiveQty: qty })
+          : item
+      )),
     }));
     setEditItem(null);
     setEditDraft(null);
+    messageApi.success('接收信息已保存');
     return undefined;
-  };
-
-  const openPartMaintenance = () => {
-    const partQuantity = Number(editDraft?.partQuantity || 0);
-    if (!Number.isInteger(partQuantity) || partQuantity < 2 || partQuantity > 100) return messageApi.warning('请填写部件数量！');
-    setPartNamesDraft(splitPartNames(editDraft.partDesc, partQuantity - 1));
-    return undefined;
-  };
-
-  const savePartNames = () => {
-    const names = (partNamesDraft || []).map((name, index) => String(name || '').trim() || `部件${index + 1}`);
-    setEditDraft((current) => ({ ...current, partDesc: names.join('@') }));
-    setPartNamesDraft(null);
   };
 
   const createReceipt = () => {
@@ -388,8 +358,6 @@ export default function ConsumableReceiptPage() {
         materialCode: item.materialCode,
         materialDesc: item.materialDesc,
         config: item.config,
-        partQuantity: item.isPart ? item.partQuantity : 0,
-        partDesc: item.isPart ? item.partDesc : '',
         actualReceiveQty: item.currentReceiveQty,
         purchaseQty: item.purchaseQty,
         untaxedUnitPrice: calc.untaxedUnit,
@@ -460,9 +428,6 @@ export default function ConsumableReceiptPage() {
           consumableClass: line.assetClass,
           consumableDesc: line.materialDesc,
           config: line.config,
-          partQuantity: line.partQuantity || 0,
-          partDesc: line.partDesc || '',
-          parts: buildPartRows(line),
           quantity: 1,
           untaxedUnitPrice: line.untaxedUnitPrice,
           taxAmount: round2(line.taxAmount / Math.max(1, line.actualReceiveQty)),
@@ -533,9 +498,6 @@ export default function ConsumableReceiptPage() {
         if (receipt.receiptNo === excludeReceiptNo && excludeDetailId === null) return;
         if (receipt.receiptNo === excludeReceiptNo && detail.id === excludeDetailId) return;
         if (detail.sn && detail.sn !== '缺省') values.add(detail.sn);
-        (detail.parts || []).forEach((part) => {
-          if (part.partSn && part.partSn !== '缺省') values.add(part.partSn);
-        });
       });
     });
     return values;
@@ -569,11 +531,7 @@ export default function ConsumableReceiptPage() {
           details: receipt.details.map((detail) => {
             if (detail.assetTag) return detail;
             const assetTag = `${receipt.procurementUnit}-${receipt.plate || 'NA'}-${detail.materialCode}-${String(seq++).padStart(6, '0')}`;
-            return {
-              ...detail,
-              assetTag,
-              parts: (detail.parts || []).map((part, index) => ({ ...part, partTag: `${assetTag}-${index + 1}` })),
-            };
+            return { ...detail, assetTag };
           }),
         }
         : receipt
@@ -710,13 +668,13 @@ export default function ConsumableReceiptPage() {
 
   const openDetailEditor = (detail) => {
     setDetailEditor(detail);
-    setDetailDraft({ ...detail, parts: (detail.parts || []).map((part) => ({ ...part })) });
+    setDetailDraft({ ...detail });
   };
 
   const saveDetailEditor = () => {
     if (!detailDraft) return;
     const otherValues = collectOtherRealSns(activeReceiptNo, detailDraft.id);
-    const currentValues = [detailDraft.sn, ...(detailDraft.parts || []).map((part) => part.partSn)]
+    const currentValues = [detailDraft.sn]
       .map((value) => String(value || '').trim())
       .filter((value) => value && value !== '缺省');
     const seen = new Set();
@@ -740,9 +698,6 @@ export default function ConsumableReceiptPage() {
     const current = [];
     (receipt.details || []).forEach((detail) => {
       if (detail.sn && detail.sn !== '缺省') current.push(detail.sn);
-      (detail.parts || []).forEach((part) => {
-        if (part.partSn && part.partSn !== '缺省') current.push(part.partSn);
-      });
     });
     const seen = new Set();
     return current.find((value) => otherValues.has(value) || (seen.has(value) ? true : (seen.add(value), false))) || '';
@@ -767,8 +722,6 @@ export default function ConsumableReceiptPage() {
         receiptNo: receipt.receiptNo,
         applicationBatch: receipt.applicationBatch,
         plate: receipt.plate,
-        partQuantity: detail.partQuantity || 0,
-        partDesc: serializeParts(detail.parts),
       }))
       : receipt.lines.map((line, index) => ({
         id: `${receipt.receiptNo}-${index + 1}`,
@@ -786,8 +739,6 @@ export default function ConsumableReceiptPage() {
         receiptNo: receipt.receiptNo,
         applicationBatch: receipt.applicationBatch,
         plate: receipt.plate,
-        partQuantity: 0,
-        partDesc: '',
       }));
     return {
       id: `consumable-${receipt.id}-${Date.now()}`,
@@ -890,7 +841,7 @@ export default function ConsumableReceiptPage() {
     { title: '行号', width: 70, render: (_, __, index) => index + 1 },
     {
       title: '操作', width: 80, render: (_, row) => (
-        activePO?.receiptStatus !== '已入库' && remainingQty(row) > 0 && !isPoItemLocked(activePO?.poNo, row.id)
+        activePO?.receiptStatus !== '已入库' && remainingQty(row) > 0
           ? <Button type="link" className="px-0" onClick={() => { setEditItem(row); setEditDraft({ ...row }); }}>编辑</Button>
           : '-'
       ),
@@ -902,8 +853,6 @@ export default function ConsumableReceiptPage() {
     { title: '耗材说明', dataIndex: 'materialDesc', width: 190 },
     { title: 'PO单说明', dataIndex: 'poDesc', width: 180 },
     { title: '配置', dataIndex: 'config', width: 230 },
-    { title: '部件数量', dataIndex: 'partQuantity', width: 100, render: (value) => value || '-' },
-    { title: '部件说明', dataIndex: 'partDesc', width: 180, render: formatPartDesc },
     { title: '本次接收数量', dataIndex: 'currentReceiveQty', width: 120, render: count },
     { title: '采购数量', dataIndex: 'purchaseQty', width: 100, render: count },
     { title: '已接收数量', dataIndex: 'receivedQty', width: 110, render: count },
@@ -936,8 +885,6 @@ export default function ConsumableReceiptPage() {
     { title: '行号', width: 60, render: (_, __, index) => index + 1 },
     { title: '耗材说明', dataIndex: 'materialDesc', width: 190 },
     { title: '配置', dataIndex: 'config', width: 220 },
-    { title: '部件数量', dataIndex: 'partQuantity', width: 100, render: (value) => value || '-' },
-    { title: '部件说明', dataIndex: 'partDesc', width: 180, render: formatPartDesc },
     { title: '本次接收数量', dataIndex: 'actualReceiveQty', width: 120, render: count },
     { title: '采购数量', dataIndex: 'purchaseQty', width: 100, render: count },
     { title: '不含税单价', dataIndex: 'untaxedUnitPrice', width: 110, render: money },
@@ -962,8 +909,6 @@ export default function ConsumableReceiptPage() {
     { title: '耗材大类', dataIndex: 'consumableClass', width: 110 },
     { title: '耗材说明', dataIndex: 'consumableDesc', width: 190 },
     { title: '配置', dataIndex: 'config', width: 220 },
-    { title: '部件数量', dataIndex: 'partQuantity', width: 100, render: (value) => value || '-' },
-    { title: '部件说明', dataIndex: 'partDesc', width: 180, render: formatPartDesc },
     { title: '耗材数量', dataIndex: 'quantity', width: 100, render: count },
     { title: '不含税单价', dataIndex: 'untaxedUnitPrice', width: 110, render: money },
     { title: '税金', dataIndex: 'taxAmount', width: 100, render: money },
@@ -981,6 +926,7 @@ export default function ConsumableReceiptPage() {
     const hasReceipt = hasReceiptForPo(activePO.poNo);
     const isClosed = activePO.receiptStatus === '已入库';
     const isReceiptLocked = hasReceipt || isClosed;
+    const editingPoItemLocked = Boolean(editItem && isPoItemLocked(activePO.poNo, editItem.id));
     return (
       <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-po-detail">
         {contextHolder}
@@ -1006,9 +952,6 @@ export default function ConsumableReceiptPage() {
             <DetailItem label="推送日期"><Readonly>{activePO.pushDate}</Readonly></DetailItem>
             <DetailItem label="板块">
               {isReceiptLocked ? <Readonly>{activePO.plate}</Readonly> : <SelectorInput value={activePO.plate} placeholder="请选择板块" onOpen={() => setSelectorType('detailPlate')} />}
-            </DetailItem>
-            <DetailItem label="申请批次">
-              {isReceiptLocked ? <Readonly>{activePO.applicationBatch}</Readonly> : <Input value={activePO.applicationBatch || ''} onChange={(event) => updateActivePoField('applicationBatch', event.target.value)} />}
             </DetailItem>
           </DetailGrid>
         </Card>
@@ -1045,83 +988,39 @@ export default function ConsumableReceiptPage() {
         </div>
 
         <Modal
-          open={Boolean(editItem && editDraft && !Array.isArray(partNamesDraft) && !selectorType)}
+          open={Boolean(editItem && editDraft && !selectorType)}
           title="编辑接收信息"
           width={720}
           okText="保存"
           onOk={saveItem}
-          onCancel={() => { setEditItem(null); setEditDraft(null); setPartNamesDraft(null); }}
+          onCancel={() => { setEditItem(null); setEditDraft(null); }}
         >
           {editDraft && (
             <Space direction="vertical" size={12} className="w-full">
-              <div onClick={() => setSelectorType('material')} className="cursor-pointer">
+              <div
+                onClick={editingPoItemLocked ? undefined : () => setSelectorType('material')}
+                className={editingPoItemLocked ? '' : 'cursor-pointer'}
+              >
                 <Typography.Text>物料</Typography.Text>
-                <Input className="mt-1 pointer-events-none" readOnly value={`${editDraft.materialCode} / ${editDraft.materialDesc}`} suffix={<Search size={14} className="text-[#1677ff]" />} />
+                <Input
+                  className={`mt-1 ${editingPoItemLocked ? '' : 'pointer-events-none'}`}
+                  readOnly
+                  value={`${editDraft.materialCode} / ${editDraft.materialDesc}`}
+                  suffix={editingPoItemLocked ? null : <Search size={14} className="text-[#1677ff]" />}
+                />
               </div>
               <div>
                 <Typography.Text>配置</Typography.Text>
-                <Input className="mt-1" value={editDraft.config} onChange={(event) => setEditDraft((item) => ({ ...item, config: event.target.value }))} />
+                {editingPoItemLocked
+                  ? <div className="mt-1"><Readonly>{editDraft.config}</Readonly></div>
+                  : <Input className="mt-1" value={editDraft.config} onChange={(event) => setEditDraft((item) => ({ ...item, config: event.target.value }))} />}
               </div>
               <div>
                 <Typography.Text>接收数量</Typography.Text>
                 <InputNumber className="mt-1 w-full" min={1} max={remainingQty(editItem)} precision={0} value={editDraft.currentReceiveQty} onChange={(value) => setEditDraft((item) => ({ ...item, currentReceiveQty: value }))} />
               </div>
-              {activePO.purchaseType === '低值耐用品' && (
-                <>
-                  <div>
-                    <Typography.Text>是否部件</Typography.Text>
-                    <Select
-                      className="mt-1 w-full"
-                      value={editDraft.isPart ? 'Y' : 'N'}
-                      options={[{ label: '是', value: 'Y' }, { label: '否', value: 'N' }]}
-                      onChange={(value) => setEditDraft((item) => value === 'Y' ? { ...item, isPart: true } : { ...item, isPart: false, partQuantity: 0, partDesc: '' })}
-                    />
-                  </div>
-                  <div>
-                    <Typography.Text>部件数量</Typography.Text>
-                    <InputNumber
-                      className="mt-1 w-full"
-                      disabled={!editDraft.isPart}
-                      min={2}
-                      max={100}
-                      precision={0}
-                      value={editDraft.partQuantity || undefined}
-                      onChange={(value) => {
-                        const nextCount = Number(value || 0);
-                        const names = nextCount >= 2 ? splitPartNames(editDraft.partDesc, nextCount - 1) : [];
-                        setEditDraft((item) => ({ ...item, partQuantity: nextCount, partDesc: names.join('@') }));
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <Typography.Text>部件说明</Typography.Text>
-                    <Space.Compact className="mt-1 w-full">
-                      <Input readOnly disabled={!editDraft.isPart} value={editDraft.isPart ? formatPartDesc(editDraft.partDesc) : ''} />
-                      <Button disabled={!editDraft.isPart} onClick={openPartMaintenance}>维护</Button>
-                    </Space.Compact>
-                  </div>
-                </>
-              )}
             </Space>
           )}
-        </Modal>
-
-        <Modal
-          open={Array.isArray(partNamesDraft) && !selectorType}
-          title="维护部件说明"
-          width={620}
-          okText="确定"
-          onOk={savePartNames}
-          onCancel={() => setPartNamesDraft(null)}
-        >
-          <Space direction="vertical" size={10} className="w-full">
-            {(partNamesDraft || []).map((name, index) => (
-              <div key={index} className="flex items-center gap-3">
-                <Typography.Text className="w-24 shrink-0">子部件 {index + 1}</Typography.Text>
-                <Input value={name} onChange={(event) => setPartNamesDraft((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} />
-              </div>
-            ))}
-          </Space>
         </Modal>
 
         {selectorConfig && (
@@ -1282,10 +1181,10 @@ export default function ConsumableReceiptPage() {
           extra={(
             <Space>
               <Typography.Text type="secondary">共 {visibleDetails.length} 条</Typography.Text>
-              {isDraft && <Button danger icon={<Trash2 size={14} />} onClick={deleteDetails}>删除行</Button>}
-              {isDraft && !allTagsGenerated && <Button onClick={generateTags}>生成标签号</Button>}
-              {isDraft && !allSnMaintained && <Button onClick={fillDefaultSn}>维护SN号</Button>}
-              {allTagsGenerated && <Button icon={<Printer size={14} />} onClick={printLabels}>打印标签号</Button>}
+              <Button danger icon={<Trash2 size={14} />} disabled={!isDraft || !selectedDetails.length} onClick={deleteDetails}>删除行</Button>
+              <Button disabled={!isDraft || !details.length || allTagsGenerated} onClick={generateTags}>生成标签号</Button>
+              <Button disabled={!isDraft || !details.length || allSnMaintained} onClick={fillDefaultSn}>维护SN号</Button>
+              <Button icon={<Printer size={14} />} disabled={!details.length || !allTagsGenerated} onClick={printLabels}>打印标签号</Button>
             </Space>
           )}
         >
@@ -1327,32 +1226,7 @@ export default function ConsumableReceiptPage() {
                   <DetailItem label="备注">{isDraft ? <TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={detailDraft.remark} onChange={(event) => setDetailDraft((current) => ({ ...current, remark: event.target.value }))} /> : <Readonly>{detailDraft.remark}</Readonly>}</DetailItem>
                 </DetailGrid>
               </Card>
-              <Card size="small" title="部件信息">
-                {(detailDraft.parts || []).length ? (
-                  <Table
-                    rowKey="id"
-                    size="small"
-                    bordered
-                    pagination={false}
-                    dataSource={detailDraft.parts}
-                    columns={[
-                      {
-                        title: '部件名称', dataIndex: 'partName', width: 220,
-                        render: (value, row, index) => isDraft
-                          ? <Input value={value} onChange={(event) => setDetailDraft((current) => ({ ...current, parts: current.parts.map((part, partIndex) => partIndex === index ? { ...part, partName: event.target.value } : part) }))} />
-                          : value,
-                      },
-                      { title: '部件标签号', dataIndex: 'partTag', width: 260, render: (value) => value || '-' },
-                      {
-                        title: '部件SN', dataIndex: 'partSn', width: 220,
-                        render: (value, row, index) => isDraft
-                          ? <Input value={value} onChange={(event) => setDetailDraft((current) => ({ ...current, parts: current.parts.map((part, partIndex) => partIndex === index ? { ...part, partSn: event.target.value } : part) }))} />
-                          : (value || '-'),
-                      },
-                    ]}
-                  />
-                ) : <Typography.Text type="secondary">暂无部件信息</Typography.Text>}
-              </Card>
+
             </Space>
           )}
         </Modal>
