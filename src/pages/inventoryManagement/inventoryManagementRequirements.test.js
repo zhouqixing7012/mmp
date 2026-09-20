@@ -61,25 +61,23 @@ test('移库接收流程结束后同步结束通知和催办状态', () => {
 });
 
 
-test('资产接收维护页和详情页保留制单信息且说明字段统一为资产说明', () => {
-  const maintenanceStart = assetReceiptSource.indexOf('const maintenanceColumns = [');
+test('资产接收维护页和详情页不展示制单信息且说明字段统一为资产说明', () => {
+  const maintenanceStart = assetReceiptSource.indexOf("if (view === 'maintenance' && activeReceipt)");
   const receiptDetailStart = assetReceiptSource.indexOf("if (view === 'receiptDetail' && activeReceipt)");
+  const receiptListStart = assetReceiptSource.indexOf("if (view === 'receiptList')");
   const maintenanceSource = assetReceiptSource.slice(maintenanceStart, receiptDetailStart);
-  const receiptDetailSource = assetReceiptSource.slice(receiptDetailStart);
+  const receiptDetailSource = assetReceiptSource.slice(receiptDetailStart, receiptListStart);
 
-  expect(maintenanceSource).toContain('<DetailItem label="制单人"><Readonly>{activeReceipt.creator}</Readonly></DetailItem>');
-  expect(maintenanceSource).toContain('<DetailItem label="制单时间"><Readonly>{activeReceipt.createdAt}</Readonly></DetailItem>');
-  expect(receiptDetailSource).toContain('<DetailItem label="制单人"><Readonly>{activeReceipt.creator}</Readonly></DetailItem>');
-  expect(receiptDetailSource).toContain('<DetailItem label="制单时间"><Readonly>{activeReceipt.createdAt}</Readonly></DetailItem>');
+  expect(maintenanceSource).not.toContain('label="制单人"');
+  expect(maintenanceSource).not.toContain('label="制单时间"');
+  expect(receiptDetailSource).not.toContain('label="制单人"');
+  expect(receiptDetailSource).not.toContain('label="制单时间"');
   expect(assetReceiptSource).toContain("{ title: '资产说明', dataIndex: 'materialDesc', width: 240 }");
   expect(assetReceiptSource).toContain("{ title: '资产说明', dataIndex: 'materialDesc', width: 220 }");
   expect(assetReceiptSource).toContain('<DetailItem label="资产说明"><Typography.Text>{scanTargetAsset?.materialDesc || \'\'}</Typography.Text></DetailItem>');
-  expect(assetReceiptSource).not.toContain("{ title: '物料说明', dataIndex: 'materialDesc'");
-  expect(assetReceiptSource).not.toContain("{ title: '物资说明', dataIndex: 'materialDesc'");
-  expect(assetReceiptSource).not.toContain('label="物资说明"');
 });
 
-test('耗材接收详情按固定15字段展示且低值耐用品维护页追加制单信息', () => {
+test('耗材和低值耐用品接收信息固定15字段且维护页不展示制单信息', () => {
   const cardStart = consumableReceiptSource.indexOf('function ReceiptInfoCard');
   const cardEnd = consumableReceiptSource.indexOf('function readStorageRows');
   const cardSource = consumableReceiptSource.slice(cardStart, cardEnd);
@@ -94,11 +92,9 @@ test('耗材接收详情按固定15字段展示且低值耐用品维护页追加
     expect(next).toBeGreaterThan(cursor);
     cursor = next;
   });
-
-  expect(cardSource).toContain('{showCreationInfo && (');
-  expect(cardSource.indexOf('label="制单人"')).toBeGreaterThan(cardSource.indexOf('label="申请批次"'));
-  expect(consumableReceiptSource.match(/<ReceiptInfoCard receipt=\{activeReceipt\} \/>/g) || []).toHaveLength(1);
-  expect(consumableReceiptSource.match(/<ReceiptInfoCard receipt=\{activeReceipt\} showCreationInfo \/>/g) || []).toHaveLength(1);
+  expect(cardSource).not.toContain('label="制单人"');
+  expect(cardSource).not.toContain('label="制单时间"');
+  expect(consumableReceiptSource.match(/<ReceiptInfoCard receipt=\{activeReceipt\} \/>/g) || []).toHaveLength(2);
 
   const poDetailStart = consumableReceiptSource.indexOf("if (view === 'poDetail' && activePO)");
   const receiptListStart = consumableReceiptSource.indexOf("if (view === 'receiptList')");
@@ -108,14 +104,18 @@ test('耗材接收详情按固定15字段展示且低值耐用品维护页追加
 });
 
 
-test('新增入库责任人仅选虚拟库管员且所在部门只读带出', () => {
-  expect(inboundSource).toContain("const VIRTUAL_RESPONSIBLE_OPTIONS = mockVirtualAdmins.map");
-  expect(inboundSource).toContain('title="选择虚拟库管员"');
+test('新增入库责任人弹窗固定员工和公司两列且部门固定虚拟组织', () => {
+  expect(inboundSource).toContain("const VIRTUAL_RESPONSIBLE_DEPARTMENT = 'SOHU0001.虚拟组织'");
+  expect(inboundSource).toContain('title="选择责任人"');
+  expect(inboundSource).toContain("{ title: '员工', dataIndex: 'employee'");
+  expect(inboundSource).toContain("{ title: '公司', dataIndex: 'company'");
+  expect(inboundSource).not.toContain("{ title: '所在部门', dataIndex: 'department'");
+  expect(inboundSource).toContain('department: VIRTUAL_RESPONSIBLE_DEPARTMENT');
   expect(inboundSource).toContain('<EditorField label="所在部门"><Readonly>{form.department}</Readonly></EditorField>');
-  expect(inboundSource).toContain('department: record.department ||');
 });
 
-test('新增入库报废新增才允许选择原资产且资产选择条件统一', () => {
+
+test('新增入库报废新增才允许选择原资产且资产选择条件统一'test('新增入库报废新增才允许选择原资产且资产选择条件统一', () => {
   expect(inboundSource).toContain("form.addType === '报废新增'");
   expect(inboundSource).toContain("setSelector('originalAsset')");
   expect(inboundSource).toContain("{ label: '标签号', name: 'assetTag', dataIndex: 'assetTag' }");
@@ -159,15 +159,17 @@ test('新增入库申请人部件主资产供应商均按选择规则维护', ()
 });
 
 
-test('入库草稿四种类型的物资明细最后固定操作列并可编辑', () => {
-  expect(inboundSource).toContain("title: '操作'");
-  expect(inboundSource).toContain("fixed: 'right'");
-  expect(inboundSource).toContain("onClick={() => setEditingLine(row)}>编辑</Button>");
-  expect(inboundSource).toContain('function InboundLineEditModal');
-  expect(inboundSource).toContain('<InboundLineEditModal open={Boolean(editingLine)}');
+test('入库草稿操作列编辑复用原有选择和添加弹窗并回显当前行', () => {
+  expect(inboundSource).toContain("onClick={() => openEditLine(row)}>编辑</Button>");
+  expect(inboundSource).not.toContain('function InboundLineEditModal');
+  expect(inboundSource).toContain("initialLine={inboundType === '新增入库' ? editingLine : null}");
+  expect(inboundSource).toContain('initialLine={editingLine}');
+  expect(inboundSource).toContain("editRow={inboundType === '采购接收' ? editingLine : null}");
+  expect(inboundSource).toContain("title={initialLine ? '编辑新增入库物资' : '添加新增入库物资'}");
 });
 
-test('手工采购接收先选仓库并按仓库公司过滤待入库物资', () => {
+
+test('手工采购接收先选仓库并按仓库公司过滤待入库物资'test('手工采购接收先选仓库并按仓库公司过滤待入库物资', () => {
   expect(inboundSource).toContain('const warehouseCompany = WAREHOUSE_CONTEXT[warehouse]?.company ||');
   expect(inboundSource).toContain('row.company === warehouseCompany');
   expect(inboundSource).toContain("messageApi.warning('请先选择当前仓库')");
@@ -198,8 +200,36 @@ test('新增退库借用归还均保留Excel导入入口且不伪造模板数据
 });
 
 
-test('采购退库借用归还行编辑不允许修改来源数量', () => {
-  expect(inboundSource).toContain("isNew ? <InputNumber");
-  expect(inboundSource).toContain(": <Readonly>{draft.quantity}</Readonly>");
-  expect(inboundSource).toContain("[rows, currentKeys, filters, warehouseCompany]");
+
+
+test('新增入库部件说明只保留维护入口不显示维护数量摘要', () => {
+  expect(inboundSource).not.toContain('partSummary');
+  expect(inboundSource).not.toContain('已维护 ${parts.length} 个部件');
+  expect(inboundSource).toContain('<EditorField label="部件说明">\n                <Button disabled=');
+});
+
+test('手工出库是否刷卡领用固定为否且列表保留导出按钮', () => {
+  expect(outboundSource).toContain("const cardClaim = source?.autoGenerated ? (source?.cardClaim || '否') : '否'");
+  expect(outboundSource).toContain('<EditorField label="是否刷卡领用"><Readonly>{cardClaim}</Readonly></EditorField>');
+  expect(outboundSource).toContain('<Button icon={<Download size={14} />} onClick={exportRows}>导出</Button>');
+});
+
+test('出库物资选择弹窗查询条件和结果列按统一资产选择规则展示', () => {
+  const start = outboundSource.indexOf('title="选择出库物资"');
+  const end = outboundSource.indexOf("title={isBorrow ? '选择借用人' : '选择领用人'}", start);
+  const source = outboundSource.slice(start, end);
+  ["label: '标签号'", "label: 'SN号'", "label: '板块'", "label: '资产说明'"].forEach((value) => expect(source).toContain(value));
+  ['标签号', 'SN号', '公司', '板块', '资产大类', '资产小类', '资产说明', '品牌', '数量', '原值', '资产责任人', '资产状态', '成本中心', '启用日期'].forEach((title) => expect(source).toContain(`title: '${title}'`));
+  expect(source).not.toContain("label: '资产大类'");
+  expect(source).not.toContain("label: '资产小类'");
+  expect(source).not.toContain("label: '责任人'");
+});
+
+test('领用人使用员工选择弹窗且用途使用正式枚举', () => {
+  expect(outboundSource).toContain("const OUTBOUND_PURPOSE_OPTIONS = ['员工用机', '部门公用', '其他用途', '专业用途']");
+  expect(outboundSource).toContain("placeholder={isBorrow ? '请选择借用人' : '请选择领用人'}");
+  expect(outboundSource).toContain("{ label: '工号', name: 'employeeNo', dataIndex: 'employeeNo' }");
+  expect(outboundSource).toContain("{ label: '姓名', name: 'name', dataIndex: 'name' }");
+  expect(outboundSource).toContain("{ label: '部门', name: 'department', dataIndex: 'department' }");
+  expect(outboundSource).toContain('options={OUTBOUND_PURPOSE_OPTIONS.map');
 });
