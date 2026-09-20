@@ -35,7 +35,6 @@ export const INITIAL_PO_ROWS = [
     orderDate: '2026-09-01',
     pushDate: '2026-09-01',
     purchaseType: '低值耐用品',
-    applicationBatch: 'BAT-20260901-01',
   },
   {
     id: 2,
@@ -55,7 +54,6 @@ export const INITIAL_PO_ROWS = [
     orderDate: '2026-09-02',
     pushDate: '2026-09-02',
     purchaseType: '耗材',
-    applicationBatch: 'BAT-20260902-02',
   },
   {
     id: 3,
@@ -75,7 +73,6 @@ export const INITIAL_PO_ROWS = [
     orderDate: '2026-08-20',
     pushDate: '2026-08-20',
     purchaseType: '耗材',
-    applicationBatch: 'BAT-20260820-04',
   },
 ];
 
