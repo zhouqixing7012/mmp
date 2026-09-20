@@ -157,3 +157,42 @@ test('新增入库申请人部件主资产供应商均按选择规则维护', ()
   expect(serviceIndex).toBeGreaterThan(supplierIndex);
   expect(noLocationIndex).toBeGreaterThan(serviceIndex);
 });
+
+
+test('入库草稿四种类型的物资明细最后固定操作列并可编辑', () => {
+  expect(inboundSource).toContain("title: '操作'");
+  expect(inboundSource).toContain("fixed: 'right'");
+  expect(inboundSource).toContain("onClick={() => setEditingLine(row)}>编辑</Button>");
+  expect(inboundSource).toContain('function InboundLineEditModal');
+  expect(inboundSource).toContain('<InboundLineEditModal open={Boolean(editingLine)}');
+});
+
+test('手工采购接收先选仓库并按仓库公司过滤待入库物资', () => {
+  expect(inboundSource).toContain('const warehouseCompany = WAREHOUSE_CONTEXT[warehouse]?.company ||');
+  expect(inboundSource).toContain('row.company === warehouseCompany');
+  expect(inboundSource).toContain("messageApi.warning('请先选择当前仓库')");
+  expect(inboundSource).toContain('warehouse={warehouse} onCancel');
+  expect(inboundSource).not.toContain("待选择物资后自动匹配");
+});
+
+test('待入库物资已选择区域使用紧凑宽度', () => {
+  expect(inboundSource).toContain('className="w-[220px] shrink-0"');
+  expect(inboundSource).not.toContain('className="w-[280px] shrink-0"');
+});
+
+test('借用归还候选固定为在用借用中并复用资产维护真实枚举', () => {
+  expect(inboundSource).toContain("DEFAULT_ASSET_MAINTENANCE_ROWS");
+  expect(inboundSource).toContain(".filter((row) => row.status === '在用-借用中')");
+  expect(inboundSource).toContain("const INBOUND_PURPOSE_OPTIONS = ['部门公用', '员工用机', '其他用途', '专业用途']");
+  expect(inboundSource).toContain("const INBOUND_ASSET_MARK_OPTIONS = ['硬件老化', '组件缺失', '设备故障', '物理损伤']");
+  expect(inboundSource).toContain("dataSource={candidateAssets}");
+  expect(inboundSource).not.toContain("assetStatus: '借出'");
+  expect(inboundSource).not.toContain("usage: '办公'");
+});
+
+test('新增退库借用归还均保留Excel导入入口且不伪造模板数据', () => {
+  expect(inboundSource).toContain("const supportsExcelImport = ['新增入库', '退库入库', '借用归还'].includes(inboundType)");
+  expect(inboundSource).toContain('beforeUpload={handleExcelBeforeUpload}');
+  expect(inboundSource).toContain('模板字段待确认后再执行解析和导入校验');
+  expect(inboundSource).not.toContain("AST-IMP-");
+});
