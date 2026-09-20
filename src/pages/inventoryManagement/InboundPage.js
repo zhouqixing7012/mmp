@@ -879,11 +879,15 @@ function PurchasePendingModal({ open, rows, currentLines, warehouse, editRow, on
   const [draft, setDraft] = useState(empty);
   const [filters, setFilters] = useState(empty);
   const editKey = editRow ? purchaseLineKey(editRow) : '';
-  const editCandidate = editRow ? (rows.find((row) => purchaseLineKey(row) === editKey) || editRow) : null;
+  const candidateRows = useMemo(() => {
+    if (!editRow || rows.some((row) => purchaseLineKey(row) === editKey)) return rows;
+    return [editRow, ...rows];
+  }, [rows, editRow, editKey]);
+  const editCandidate = editRow ? (candidateRows.find((row) => purchaseLineKey(row) === editKey) || editRow) : null;
   const [selected, setSelected] = useState([]);
   const currentKeys = useMemo(() => new Set((currentLines || []).filter((row) => purchaseLineKey(row) !== editKey).map((row) => purchaseLineKey(row))), [currentLines, editKey]);
   const update = (field, value) => setDraft((current) => ({ ...current, [field]: value || '' }));
-  const data = useMemo(() => rows.filter((row) => warehouseCompany
+  const data = useMemo(() => candidateRows.filter((row) => warehouseCompany
     && row.company === warehouseCompany
     && !currentKeys.has(purchaseLineKey(row))
     && includesText(row.plate, filters.plate)
@@ -893,7 +897,7 @@ function PurchasePendingModal({ open, rows, currentLines, warehouse, editRow, on
     && includesText(row.poNo, filters.poNo)
     && includesText(row.receiptNo, filters.receiptNo)
     && includesText(row.assetTag, filters.tag)
-    && includesText(row.assetTag, filters.scan)), [rows, currentKeys, filters, warehouseCompany]);
+    && includesText(row.assetTag, filters.scan)), [candidateRows, currentKeys, filters, warehouseCompany]);
   const columns = [
     { title: '行号', width: 64, render: (_, __, index) => index + 1 },
     { title: '公司', dataIndex: 'company', width: 120 },
