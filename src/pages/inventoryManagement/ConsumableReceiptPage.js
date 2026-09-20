@@ -231,7 +231,7 @@ export default function ConsumableReceiptPage() {
   ));
   const updateActivePoField = (field, value) => {
     if (!activePO) return;
-    if ((field === 'plate' || field === 'applicationBatch') && hasReceiptForPo(activePO.poNo)) return;
+    if (field === 'plate' && hasReceiptForPo(activePO.poNo)) return;
     setPoRows((list) => list.map((row) => (row.poNo === activePO.poNo ? { ...row, [field]: value } : row)));
     setActivePO((row) => ({ ...row, [field]: value }));
   };
