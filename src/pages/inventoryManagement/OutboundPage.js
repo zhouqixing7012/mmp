@@ -494,7 +494,8 @@ function OutboundItemModal({ open, mode, warehouse, initialLine, existingLines, 
           chooseEmployee(record);
           setPersonSelectorOpen(false);
         }}
-      />    </>
+      />
+    </>
   );
 }
 
