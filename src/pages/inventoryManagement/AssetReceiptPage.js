@@ -345,6 +345,16 @@ export default function AssetReceiptPage() {
     receipt.poNo === poNo && getReceiptItems(receipt).some((item) => item.id === itemId)
   ));
 
+  const getDraftReceiptItemReference = (poNo, itemId) => {
+    for (let index = receiptRows.length - 1; index >= 0; index -= 1) {
+      const receipt = receiptRows[index];
+      if (receipt.poNo !== poNo || receipt.status !== '草稿') continue;
+      const item = getReceiptItems(receipt).find((candidate) => candidate.id === itemId);
+      if (item) return { receipt, item };
+    }
+    return null;
+  };
+
   const effectivePoRows = useMemo(() => PO_ROWS.map((row) => {
     const defaults = poReceiptDefaults[row.poNo] || {};
     if (row.receiptStatus === '已入库') return { ...row, plate: defaults.plate ?? row.plate };
@@ -405,6 +415,21 @@ export default function AssetReceiptPage() {
       setMaintenanceStore((store) => ({ ...store, [activeReceipt.receiptNo]: next }));
       return next;
     });
+  };
+
+  const reconcileMaintenanceForReceipt = (receipt) => {
+    const saved = maintenanceStore[receipt.receiptNo];
+    if (!saved) return;
+    const rebuilt = buildMaintenanceSession(receipt);
+    const existingById = new Map((saved.rows || []).map((row) => [row.id, row]));
+    const rows = rebuilt.rows.map((row) => existingById.has(row.id) ? { ...row, ...existingById.get(row.id) } : row);
+    const next = {
+      rows,
+      tagsGenerated: rows.length > 0 && rows.every((row) => String(row.assetTag || '').trim()),
+      defaultSnApplied: rows.length > 0 && rows.every((row) => normalizeSn(row.sn)),
+    };
+    setMaintenanceStore((store) => ({ ...store, [receipt.receiptNo]: next }));
+    if (activeReceipt?.receiptNo === receipt.receiptNo) setMaintenanceSession(next);
   };
 
   const setPoItemValues = (poNo, updatesById) => {
@@ -502,14 +527,19 @@ export default function AssetReceiptPage() {
     setView('receiptDetail');
   };
 
-  const editAvailableQty = (item) => availableQty(item);
+  const editAvailableQty = (item) => {
+    const draftReference = getDraftReceiptItemReference(activePO?.poNo, item?.id);
+    return availableQty(item) + Number(draftReference?.item?.currentReceiptQty || 0);
+  };
 
   const openItemEditor = (row) => {
     const partQuantity = row.partQuantity === '-' ? 0 : Number(row.partQuantity || 0);
+    const draftReference = getDraftReceiptItemReference(activePO?.poNo, row.id);
+    const editableQty = Number(draftReference?.item?.currentReceiptQty || row.currentReceiptQty || 0);
     setEditItem(row);
     setEditDraft({
       ...row,
-      currentReceiptQty: Math.min(Math.max(1, Number(row.currentReceiptQty || 1)), Math.max(1, availableQty(row))),
+      currentReceiptQty: Math.max(1, editableQty || 1),
       isPart: row.isPart ?? (row.partQuantity !== '-' && partQuantity > 0),
       partQuantity,
       partDescriptions: splitPartDescriptions(row.partDesc, Math.max(0, partQuantity - 1)),
@@ -530,25 +560,47 @@ export default function AssetReceiptPage() {
 
   const savePoItem = () => {
     const locked = isPoItemLocked(activePO?.poNo, editItem?.id);
+    const draftReference = getDraftReceiptItemReference(activePO?.poNo, editItem?.id);
     const qty = Number(editDraft?.currentReceiptQty || 0);
     const maxQty = editAvailableQty(editItem);
     if (!DIRECT_INBOUND_TYPES.has(activePO?.purchaseType)) {
       if (!Number.isInteger(qty) || qty <= 0) return messageApi.error('接收数量必须为大于 0 的整数');
-      if (qty > maxQty) return messageApi.error(`接收数量不能超过可接收数量（当前可接收数量为 ${maxQty}）`);
+      if (qty > maxQty) return messageApi.error(`接收数量不能超过可接收数量（当前可调整上限为 ${maxQty}）`);
     }
     if (!locked && editDraft.isPart && (!Number.isInteger(Number(editDraft.partQuantity)) || Number(editDraft.partQuantity) < 2 || Number(editDraft.partQuantity) > 100)) {
       return messageApi.error('请输入 2～100 之间的整数！');
     }
-    setPoItemValues(activePO.poNo, {
-      [editItem.id]: locked
-        ? { currentReceiptQty: qty }
-        : {
-          ...editDraft,
-          currentReceiptQty: qty,
-          partQuantity: editDraft.isPart ? Number(editDraft.partQuantity) : '-',
-          partDesc: editDraft.isPart ? (editDraft.partDescriptions || []).join('@') : '-',
+
+    if (draftReference) {
+      const previousQty = Number(draftReference.item.currentReceiptQty || 0);
+      const delta = qty - previousQty;
+      const nextItems = getReceiptItems(draftReference.receipt).map((item) => (
+        item.id === editItem.id ? { ...item, currentReceiptQty: qty } : item
+      ));
+      const nextReceipt = { ...draftReference.receipt, itemIds: nextItems.map((item) => item.id), items: nextItems };
+      setReceiptRows((current) => current.map((receipt) => receipt.id === nextReceipt.id ? nextReceipt : receipt));
+      if (activeReceipt?.id === nextReceipt.id) setActiveReceipt(nextReceipt);
+      setPoItemValues(activePO.poNo, {
+        [editItem.id]: (previous) => {
+          const nextDraft = Math.max(0, Number(previous.draftQty || 0) + delta);
+          const remaining = Math.max(0, Number(previous.purchaseQty || 0) - Number(previous.receivedQty || 0) - nextDraft);
+          return { ...previous, draftQty: nextDraft, currentReceiptQty: remaining, editable: remaining > 0 };
         },
-    });
+      });
+      reconcileMaintenanceForReceipt(nextReceipt);
+    } else {
+      setPoItemValues(activePO.poNo, {
+        [editItem.id]: locked
+          ? { currentReceiptQty: qty }
+          : {
+            ...editDraft,
+            currentReceiptQty: qty,
+            partQuantity: editDraft.isPart ? Number(editDraft.partQuantity) : '-',
+            partDesc: editDraft.isPart ? (editDraft.partDescriptions || []).join('@') : '-',
+          },
+      });
+    }
+
     setEditItem(null);
     setEditDraft(null);
     setPartDescriptionModalOpen(false);
@@ -1125,7 +1177,12 @@ export default function AssetReceiptPage() {
 
   const itemColumns = [
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
-    { title: '操作', key: 'operation', width: 80, fixed: 'left', render: (_, row) => row.editable && row.receiptStatus === '待接收' && availableQty(row) > 0 ? <Button type="link" className="px-0" onClick={() => openItemEditor(row)}>编辑</Button> : '-' },
+    { title: '操作', key: 'operation', width: 80, fixed: 'left', render: (_, row) => {
+      const draftReference = getDraftReceiptItemReference(activePO?.poNo, row.id);
+      return row.receiptStatus === '待接收' && (availableQty(row) > 0 || draftReference)
+        ? <Button type="link" className="px-0" onClick={() => openItemEditor(row)}>编辑</Button>
+        : '-';
+    } },
     { title: '接收状态', dataIndex: 'receiptStatus', width: 120, render: (value) => value ? <StatusTag value={value} /> : '-' },
     { title: '物资总类', dataIndex: 'materialGroup', width: 120 },
     { title: '资产大类', dataIndex: 'assetClass', width: 180 },
