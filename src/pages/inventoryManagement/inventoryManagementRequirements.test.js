@@ -291,6 +291,9 @@ test('耗材接收链路不再包含部件字段且PO页面不展示申请批次
   ['partQuantity', 'partDesc', 'isPart'].forEach((value) => {
     expect(consumableReceiptMockSource).not.toContain(value);
   });
+  const poMockStart = consumableReceiptMockSource.indexOf('export const INITIAL_PO_ROWS = [');
+  const poMockEnd = consumableReceiptMockSource.indexOf('export const INITIAL_PO_ITEMS', poMockStart);
+  expect(consumableReceiptMockSource.slice(poMockStart, poMockEnd)).not.toContain('applicationBatch');
 
   const poDetailStart = consumableReceiptSource.indexOf("if (view === 'poDetail' && activePO)");
   const receiptListStart = consumableReceiptSource.indexOf("if (view === 'receiptList')", poDetailStart);
