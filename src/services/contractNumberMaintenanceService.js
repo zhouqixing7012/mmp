@@ -62,19 +62,12 @@ function assertAccess(operator) {
 function normalizeRow(row) {
   const defaultRow = DEFAULT_ROW_MAP.get(String(row.id)) || {};
   const merged = { ...defaultRow, ...row };
-  const {
-    secondaryCard,
-    maintenanceRecord,
-    remarks,
-    claimDescription,
-    ...cleanRow
-  } = merged;
   return {
-    ...cleanRow,
+    ...merged,
     assetMajorCode: '34',
     minorCategory: '合约号码',
-    transactionHistory: Array.isArray(cleanRow.transactionHistory)
-      ? cleanRow.transactionHistory
+    transactionHistory: Array.isArray(merged.transactionHistory)
+      ? merged.transactionHistory
       : (defaultRow.transactionHistory || []),
   };
 }
