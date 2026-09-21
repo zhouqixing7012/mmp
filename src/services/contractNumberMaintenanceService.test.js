@@ -1,8 +1,11 @@
 import {
+  CONTRACT_NUMBER_BATCH_FIELDS,
   CONTRACT_NUMBER_EDIT_FIELDS,
+  batchUpdateContractNumberMaintenanceRows,
   getContractNumberMaintenanceRows,
   hasContractNumberMaintenanceAccess,
   updateContractNumberMaintenanceRow,
+  validateContractNumberBatchRows,
 } from './contractNumberMaintenanceService';
 import { CONTRACT_NUMBER_MAINTENANCE_STORAGE_KEY } from '../mock/contractNumberMaintenanceMock';
 
@@ -16,6 +19,15 @@ function editablePatch(row, overrides = {}) {
     [field]: row[field] ?? '',
   }), {});
   return { ...patch, ...overrides };
+}
+
+function batchLine(row, overrides = {}) {
+  const line = { rowNo: 2 };
+  CONTRACT_NUMBER_BATCH_FIELDS.forEach(({ header }) => {
+    line[header] = '';
+  });
+  line['标签号'] = row.tag;
+  return { ...line, ...overrides };
 }
 
 describe('合约号码维护保存边界', () => {
@@ -291,5 +303,73 @@ describe('合约号码维护保存边界', () => {
       editablePatch(getRow()),
       '999999-其他人',
     )).toThrow('无合约号码维护权限');
+  });
+
+  test('批量模板固定为标签号加单条编辑白名单共15列', () => {
+    expect(CONTRACT_NUMBER_BATCH_FIELDS).toHaveLength(15);
+    expect(CONTRACT_NUMBER_BATCH_FIELDS.map((field) => field.header)).toEqual([
+      '标签号', '使用公司', '责任人工号', '身份证号码', '合约号码',
+      '合约开始日期', '合约结束日期', '金额', '号码状态', '仓库',
+      '使用说明', '报废原因', '报废日期', '领用日期', '领用原因',
+    ]);
+  });
+
+  test('批量空白字段保留原值，身份证按上传值独立修改', () => {
+    const row = getRow('contract-number-2');
+    const batchRows = [batchLine(row, {
+      '身份证号码': '110101200001019999',
+    })];
+    const validation = validateContractNumberBatchRows(batchRows);
+    expect(validation.status).toBe('passed');
+
+    const result = batchUpdateContractNumberMaintenanceRows(batchRows, undefined, validation.versions);
+    expect(result.status).toBe('passed');
+    const saved = result.rows.find((item) => item.id === row.id);
+    expect(saved.idCard).toBe('110101200001019999');
+    expect(saved.contractNumber).toBe(row.contractNumber);
+    expect(saved.useCompany).toBe(row.useCompany);
+  });
+
+  test('批量合约号码按整批最终结果判断唯一性，允许同批换号', () => {
+    const first = getRow('contract-number-2');
+    const second = getRow('contract-number-3');
+    const batchRows = [
+      batchLine(first, { rowNo: 2, '合约号码': second.contractNumber }),
+      batchLine(second, { rowNo: 3, '合约号码': first.contractNumber }),
+    ];
+    const validation = validateContractNumberBatchRows(batchRows);
+    expect(validation.status).toBe('passed');
+
+    const result = batchUpdateContractNumberMaintenanceRows(batchRows, undefined, validation.versions);
+    expect(result.status).toBe('passed');
+    expect(result.rows.find((item) => item.id === first.id).contractNumber).toBe(second.contractNumber);
+    expect(result.rows.find((item) => item.id === second.id).contractNumber).toBe(first.contractNumber);
+  });
+
+  test('批量任一行失败时整批不保存', () => {
+    const first = getRow('contract-number-2');
+    const second = getRow('contract-number-3');
+    const batchRows = [
+      batchLine(first, { rowNo: 2, '使用说明': '本行原本可成功' }),
+      batchLine(second, { rowNo: 3, '号码状态': '不存在状态' }),
+    ];
+    const validation = validateContractNumberBatchRows(batchRows);
+    expect(validation.status).toBe('failed');
+
+    const result = batchUpdateContractNumberMaintenanceRows(batchRows);
+    expect(result.status).toBe('failed');
+    expect(getRow(first.id).usageDescription).toBe(first.usageDescription);
+  });
+
+  test('批量校验后号码被修改时保存必须重新校验版本', () => {
+    const row = getRow('contract-number-2');
+    const batchRows = [batchLine(row, { '使用说明': '批量待保存值' })];
+    const validation = validateContractNumberBatchRows(batchRows);
+    expect(validation.status).toBe('passed');
+
+    updateContractNumberMaintenanceRow(row.id, editablePatch(row, { usageDescription: '并发修改值' }));
+    const result = batchUpdateContractNumberMaintenanceRows(batchRows, undefined, validation.versions);
+    expect(result.status).toBe('failed');
+    expect(result.errors[0].reason).toBe('号码信息已发生变化，请重新校验');
   });
 });
