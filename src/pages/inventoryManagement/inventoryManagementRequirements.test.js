@@ -12,6 +12,8 @@ const assetReceiptSource = fs.readFileSync(path.join(__dirname, 'AssetReceiptPag
 const consumableReceiptSource = fs.readFileSync(path.join(__dirname, 'ConsumableReceiptPage.js'), 'utf8');
 const consumableReceiptMockSource = fs.readFileSync(path.join(__dirname, 'consumableReceiptMock.js'), 'utf8');
 const inboundImportSource = fs.readFileSync(path.join(__dirname, 'inboundImport.js'), 'utf8');
+const warehouseWorkbenchSource = fs.readFileSync(path.join(__dirname, 'WarehouseWorkbenchPage.js'), 'utf8');
+const warehouseWorkbenchMockSource = fs.readFileSync(path.join(__dirname, '../../mock/warehouseWorkbenchMock.js'), 'utf8');
 
 test('新增入库的资产标签号和 SN 号必须填写', () => {
   expect(inboundSource).toContain('<EditorField label="资产标签号" required>');
@@ -389,4 +391,27 @@ test('耗材板块按使用部门自动带出且人工调整后不再被自动�
   expect(consumableReceiptSource).toContain('row.plateManuallyAdjusted');
   expect(consumableReceiptSource).toContain('{ plate: value, plateManuallyAdjusted: true }');
   expect(consumableReceiptSource).toContain("costCenter: activePO.costCenter || ''");
+});
+
+
+test('库管员工作台单条查询结果不自动跳转且申请单编号为唯一办理入口', () => {
+  expect(warehouseWorkbenchSource).not.toContain('if (filtered.length === 1)');
+  expect(warehouseWorkbenchSource).toContain("title: '申请单编号'");
+  expect(warehouseWorkbenchSource).toContain('onClick={() => handleTask(row)}');
+  expect(warehouseWorkbenchSource).not.toContain("title: '操作'");
+  expect(warehouseWorkbenchSource).not.toContain('>处理</Button>');
+});
+
+test('库管员工作台刷新员工页面保持当前办理信息并强制刷新展示', () => {
+  expect(warehouseWorkbenchSource).toContain('const currentContext = readWarehouseEmployeePageContext();');
+  expect(warehouseWorkbenchSource).toContain('writeWarehouseEmployeePageContext(currentContext);');
+  expect(warehouseWorkbenchSource).not.toContain('clearWarehouseEmployeePageContext();');
+  expect(warehouseWorkbenchSource).toContain("messageApi.success('已刷新')");
+});
+
+test('库管员工作台员工页面按业务场景展示保管职责或退回说明', () => {
+  expect(warehouseWorkbenchMockSource).toContain("task?.documentType === '员工借用'");
+  expect(warehouseWorkbenchMockSource).toContain("title: '保管职责', text: BORROW_CUSTODY_TEXT");
+  expect(warehouseWorkbenchMockSource).toContain("task?.documentType === '员工退库'");
+  expect(warehouseWorkbenchMockSource).toContain("title: '退回确认说明'");
 });
