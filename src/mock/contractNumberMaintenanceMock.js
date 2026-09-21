@@ -7,7 +7,7 @@ function history(id, operationDate, overrides = {}) {
     id,
     operationType: '合约号码维护修改',
     operationDate,
-    operator: CURRENT_CONTRACT_NUMBER_OPERATOR,
+    operator: '115102-王英',
     documentNo: '',
     applicationNo: '',
     tag: '',
