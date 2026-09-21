@@ -79,6 +79,9 @@ function row(data) {
     transactionHistory: [],
   };
   const merged = { ...base, ...data };
+  if (!Object.prototype.hasOwnProperty.call(data, 'claimReason')) {
+    merged.claimReason = merged.applicationType || '业务申请';
+  }
   if (!merged.transactionHistory.length) {
     merged.transactionHistory = [
       history(`${merged.id}-hist-1`, '2026-01-05 10:00:00', {
