@@ -233,11 +233,21 @@ function isValidDate(value) {
     && parsed.getUTCDate() === day;
 }
 
+function calculateEnabledDateFromPurchaseDate(purchaseDate) {
+  const text = String(purchaseDate || '').trim();
+  if (!isValidDate(text)) return '';
+  const [year, month, day] = text.split('-').map(Number);
+  if (day < 26) return text;
+
+  const nextMonth = new Date(Date.UTC(year, month, 1));
+  const nextYear = nextMonth.getUTCFullYear();
+  const nextMonthNumber = String(nextMonth.getUTCMonth() + 1).padStart(2, '0');
+  return `${nextYear}-${nextMonthNumber}-01`;
+}
+
 function resolveSingleEditEnabledDate(row, requestedValue) {
   if (requestedValue) return requestedValue;
-  // 正式系统留空时调用既有“按购买日期计算启用日期”规则。
-  // 原型没有该算法来源，不能编造公式；这里保留当前可见结果，仅表达“留空不会直接落空值”。
-  return row.enabledDate || '';
+  return calculateEnabledDateFromPurchaseDate(row.purchaseDate);
 }
 
 function getEligibleConsumableWarehouseNames(company) {
