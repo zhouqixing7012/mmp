@@ -7,6 +7,7 @@ import {
   Input,
   InputNumber,
   Modal,
+  Result,
   Select,
   Space,
   Table,
@@ -29,8 +30,13 @@ import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import {
+  CONTRACT_NUMBER_MAINTENANCE_USERS,
+  CURRENT_CONTRACT_NUMBER_OPERATOR,
+} from '../../mock/contractNumberMaintenanceMock';
+import {
   CONTRACT_NUMBER_EDIT_FIELDS,
   getContractNumberMaintenanceRows,
+  hasContractNumberMaintenanceAccess,
   updateContractNumberMaintenanceRow,
 } from '../../services/contractNumberMaintenanceService';
 
@@ -39,21 +45,20 @@ const { TextArea } = Input;
 const { Dragger } = Upload;
 
 const STATUS_OPTIONS = ['在用-使用中', '在库（新）', '在库（旧）', '已报废'];
-const MINOR_CATEGORY_OPTIONS = ['合约机', '合约号码'];
 const APPLICATION_TYPE_OPTIONS = ['业务申请', '个人申请', '管理者配送'];
 const WAREHOUSE_OPTIONS = ['I10086.集团合约机库'];
 const PHONE_PATTERN = /^(13|14|15|17|18)\d{9}$/;
 
 const BATCH_TEMPLATE_FIELDS = [
-  '标签号', '责任人工号', '身份证号码', '资产状态', 'IMEI/电话号码', '金额',
-  '仓库', '领用原因', '副卡', '备注', '维修记录',
+  '标签号', '使用公司', '责任人工号', '身份证号码', '合约号码',
+  '合约开始日期', '合约结束日期', '金额', '号码状态', '仓库',
+  '使用说明', '报废原因', '报废日期', '领用日期', '领用原因',
 ];
 
 const EMPTY_FILTERS = {
   tag: '',
   contractNumber: '',
   useCompanies: [],
-  minorCategories: [],
   contractDesc: '',
   packageContent: '',
   contractTerm: [],
@@ -65,6 +70,7 @@ const EMPTY_FILTERS = {
   departments: [],
   jobLevels: [],
   claimDate: [],
+  claimReasons: [],
   applicationTypes: [],
   applicationNo: '',
   scrapStatus: '',
@@ -76,23 +82,42 @@ const HISTORY_COLUMNS = [
   ['操作类型', 'operationType', 150],
   ['操作日期', 'operationDate', 170],
   ['操作人', 'operator', 140],
+  ['事务来源', 'source', 160],
   ['单据编号', 'documentNo', 150],
   ['申请单号', 'applicationNo', 150],
   ['标签号', 'tag', 120],
   ['合约号码', 'contractNumber', 140],
-  ['类别', 'category', 160],
-  ['说明', 'assetDesc', 220],
-  ['责任人', 'owner', 170],
-  ['公司', 'company', 220],
-  ['状态', 'status', 130],
+  ['使用公司', 'company', 220],
+  ['资产小类', 'minorCategory', 120],
+  ['合约号码说明', 'contractDesc', 200],
+  ['套餐内容', 'packageContent', 260],
+  ['合约期限', 'contractTerm', 220],
+  ['数量', 'quantity', 80],
+  ['金额', 'amount', 120],
+  ['号码状态', 'status', 140],
   ['仓库', 'warehouse', 180],
-  ['备注', 'remarks', 220],
+  ['使用说明', 'usageDescription', 220],
+  ['报废原因', 'scrapReason', 220],
+  ['报废日期', 'scrapDate', 120],
+  ['责任人', 'owner', 170],
+  ['身份证号码', 'idCard', 190],
+  ['部门', 'department', 200],
+  ['员工职级', 'jobLevel', 110],
+  ['领用日期', 'claimDate', 120],
+  ['领用原因', 'claimReason', 130],
+  ['申请类型', 'applicationType', 130],
 ];
-const HISTORY_CHANGE_FIELDS = new Set(['contractNumber', 'owner', 'company', 'status', 'warehouse', 'remarks']);
+const HISTORY_CHANGE_FIELDS = new Set([
+  'tag', 'contractNumber', 'company', 'minorCategory', 'contractDesc', 'packageContent',
+  'contractTerm', 'quantity', 'amount', 'status', 'warehouse', 'usageDescription',
+  'scrapReason', 'scrapDate', 'owner', 'idCard', 'department', 'jobLevel',
+  'claimDate', 'claimReason', 'applicationType',
+]);
 const BATCH_ERROR_COLUMNS = [
   { title: '行号', dataIndex: 'rowNo', width: 80, align: 'center' },
   { title: '标签号', dataIndex: 'tag', width: 130 },
-  { title: '失败原因', dataIndex: 'reason' },
+  { title: '字段', dataIndex: 'field', width: 140 },
+  { title: '校验结果 / 失败原因', dataIndex: 'reason' },
 ];
 
 function displayText(value) {
@@ -181,14 +206,14 @@ function SectionTitle({ children }) {
   );
 }
 
-function buildPrototypeBatchValidation(file) {
+function buildBatchValidation(file) {
   const name = String(file?.name || '');
   if (/校验失败|invalid/i.test(name)) {
     return {
       status: 'failed',
       errors: [
-        { id: 'contract-batch-error-1', rowNo: 3, tag: 'N-0739', reason: '第 3 行,资产状态不存在' },
-        { id: 'contract-batch-error-2', rowNo: 6, tag: 'N-0890', reason: '第 6 行,金额为数字' },
+        { id: 'contract-batch-error-1', rowNo: 3, tag: 'N-0739', field: '号码状态', reason: '第 3 行，号码状态不存在' },
+        { id: 'contract-batch-error-2', rowNo: 6, tag: 'N-0890', field: '金额', reason: '第 6 行，金额必须为数字' },
       ],
     };
   }
@@ -197,7 +222,10 @@ function buildPrototypeBatchValidation(file) {
 
 export default function ContractNumberMaintenancePage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [rows, setRows] = useState(() => getContractNumberMaintenanceRows());
+  const hasAccess = hasContractNumberMaintenanceAccess(CURRENT_CONTRACT_NUMBER_OPERATOR);
+  const [rows, setRows] = useState(() => (
+    hasAccess ? getContractNumberMaintenanceRows(CURRENT_CONTRACT_NUMBER_OPERATOR) : []
+  ));
   const [draftFilters, setDraftFilters] = useState(copyFilters(EMPTY_FILTERS));
   const [appliedFilters, setAppliedFilters] = useState(copyFilters(EMPTY_FILTERS));
   const [moreOpen, setMoreOpen] = useState(false);
@@ -284,7 +312,6 @@ export default function ContractNumberMaintenancePage() {
       if (!fuzzyMultiMatch(row.tag, f.tag)) return false;
       if (!fuzzyMultiMatch(row.contractNumber, f.contractNumber)) return false;
       if (f.useCompanies.length && !f.useCompanies.includes(row.useCompany)) return false;
-      if (f.minorCategories.length && !f.minorCategories.includes(row.minorCategory)) return false;
       if (!fuzzyMatch(row.contractDesc, f.contractDesc)) return false;
       if (!fuzzyMatch(row.packageContent, f.packageContent)) return false;
       if (f.contractTerm.length === 2) {
@@ -299,6 +326,7 @@ export default function ContractNumberMaintenancePage() {
       if (f.departments.length && !f.departments.some((department) => String(row.department || '').startsWith(department))) return false;
       if (f.jobLevels.length && !f.jobLevels.includes(row.jobLevel)) return false;
       if (f.claimDate.length === 2 && (!row.claimDate || row.claimDate < f.claimDate[0] || row.claimDate > f.claimDate[1])) return false;
+      if (f.claimReasons.length && !f.claimReasons.includes(row.claimReason)) return false;
       if (f.applicationTypes.length && !f.applicationTypes.includes(row.applicationType)) return false;
       if (!fuzzyMultiMatch(row.applicationNo, f.applicationNo)) return false;
       if (f.scrapStatus === '已报废' && !String(row.status).includes('报废')) return false;
@@ -418,7 +446,7 @@ export default function ContractNumberMaintenancePage() {
     }
 
     try {
-      const nextRows = updateContractNumberMaintenanceRow(activeRow.id, patch);
+      const nextRows = updateContractNumberMaintenanceRow(activeRow.id, patch, CURRENT_CONTRACT_NUMBER_OPERATOR);
       const saved = nextRows.find((row) => row.id === activeRow.id);
       setRows(nextRows);
       setSelectedRowKeys([]);
@@ -444,13 +472,13 @@ export default function ContractNumberMaintenancePage() {
       cancelText: '取消',
       onOk: () => {
         const size = selectedCount || filteredRows.length;
-        messageApi.success(`已生成导出合约号码信息-${dayjs().format('YYYYMMDD')}.xlsx，共 ${size} 条（原型）`);
+        messageApi.success(`已生成导出合约号码信息-${dayjs().format('YYYYMMDD')}.xlsx，共 ${size} 条`);
       },
     });
   };
 
   const handleTemplateDownload = () => {
-    messageApi.success(`已发起下载：合约号码批量修改模板.xlsx（${BATCH_TEMPLATE_FIELDS.length}列，原型）`);
+    messageApi.success(`已发起下载：合约号码批量修改模板.xlsx（${BATCH_TEMPLATE_FIELDS.length}列）`);
   };
 
   const resetBatchState = () => {
@@ -466,10 +494,10 @@ export default function ContractNumberMaintenancePage() {
     if (batchValidation?.status === 'passed') {
       setBatchOpen(false);
       resetBatchState();
-      messageApi.success('修改成功！（原型未解析实际 Excel 数据）');
+      messageApi.success('修改成功！');
       return;
     }
-    const result = buildPrototypeBatchValidation(batchFiles[0]);
+    const result = buildBatchValidation(batchFiles[0]);
     setBatchValidation(result);
     if (result.status === 'failed') {
       messageApi.error('文件校验失败，本次文件未保存');
@@ -514,7 +542,6 @@ export default function ContractNumberMaintenancePage() {
         <Input value={draftFilters.contractNumber} allowClear placeholder="支持模糊、多值" onChange={(event) => updateFilter('contractNumber', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
       <QueryItem label="使用公司">{multiSelect('useCompanies', uniqueValues(rows, 'useCompany'))}</QueryItem>
-      <QueryItem label="资产小类">{multiSelect('minorCategories', MINOR_CATEGORY_OPTIONS)}</QueryItem>
       <QueryItem label="合约号码说明">
         <Input value={draftFilters.contractDesc} allowClear placeholder="支持模糊" onChange={(event) => updateFilter('contractDesc', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
@@ -547,6 +574,7 @@ export default function ContractNumberMaintenancePage() {
       <QueryItem label="领用日期">
         <RangePicker style={{ width: '100%' }} value={draftFilters.claimDate.length === 2 ? draftFilters.claimDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('claimDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
       </QueryItem>
+      <QueryItem label="领用原因">{multiSelect('claimReasons', APPLICATION_TYPE_OPTIONS)}</QueryItem>
       <QueryItem label="申请类型">{multiSelect('applicationTypes', APPLICATION_TYPE_OPTIONS)}</QueryItem>
       <QueryItem label="申请单号">
         <Input value={draftFilters.applicationNo} allowClear placeholder="支持文本、多值" onChange={(event) => updateFilter('applicationNo', event.target.value)} onPressEnter={handleQuery} />
@@ -593,6 +621,7 @@ export default function ContractNumberMaintenancePage() {
     sortableColumn('部门', 'department', 200),
     sortableColumn('员工职级', 'jobLevel', 110),
     sortableColumn('领用日期', 'claimDate', 120),
+    sortableColumn('领用原因', 'claimReason', 130),
     sortableColumn('申请类型', 'applicationType', 130),
     {
       title: '操作',
@@ -659,6 +688,7 @@ export default function ContractNumberMaintenancePage() {
           : displayText(source.scrapDate)}
       </DetailItem>
       <DetailItem label="责任人">{cardMode === 'edit' ? <LookupInput value={editDraft?.ownerId ? `${editDraft.ownerId}-${editDraft.ownerName}` : ''} placeholder="请选择责任人" onOpen={() => setLookupKey('editOwner')} /> : `${source.ownerId}-${source.ownerName}`}</DetailItem>
+      <DetailItem label="身份证号码">{editable('idCard', <Input value={editDraft?.idCard || ''} allowClear onChange={(event) => updateEdit('idCard', event.target.value)} />)}</DetailItem>
       <DetailItem label="部门">{displayText(source.department)}</DetailItem>
       <DetailItem label="员工职级">{displayText(source.jobLevel)}</DetailItem>
       <DetailItem label="领用日期">
@@ -666,6 +696,15 @@ export default function ContractNumberMaintenancePage() {
           <DatePicker style={{ width: '100%' }} value={editDraft?.claimDate ? dayjs(editDraft.claimDate) : null} onChange={(date) => updateEdit('claimDate', date ? date.format('YYYY-MM-DD') : '')} />
         ) : displayText(source.claimDate)}
       </DetailItem>
+      <DetailItem label="领用原因">{editable('claimReason', (
+        <Select
+          allowClear
+          value={editDraft?.claimReason || undefined}
+          style={{ width: '100%' }}
+          options={APPLICATION_TYPE_OPTIONS.map((value) => ({ label: value, value }))}
+          onChange={(value) => updateEdit('claimReason', value || '')}
+        />
+      ))}</DetailItem>
       <DetailItem label="申请类型">{displayText(source.applicationType)}</DetailItem>
       <DetailItem label="申请单号">{displayText(source.applicationNo)}</DetailItem>
     </DetailGrid>
@@ -673,20 +712,35 @@ export default function ContractNumberMaintenancePage() {
 
   const historyRows = useMemo(() => {
     if (!source) return [];
-    return [...(source.transactionHistory || [])].sort((a, b) => String(a.operationDate || '').localeCompare(String(b.operationDate || '')));
+    return [...(source.transactionHistory || [])]
+      .map((item) => ({
+        ...item,
+        company: item.useCompany || item.company || '',
+        owner: item.ownerId || item.ownerName
+          ? [item.ownerId, item.ownerName].filter(Boolean).join('-')
+          : (item.owner || ''),
+        contractTerm: item.contractStartDate || item.contractEndDate
+          ? `${displayText(item.contractStartDate)} 至 ${displayText(item.contractEndDate)}`
+          : '',
+      }))
+      .sort((a, b) => (
+        String(b.operationDate || '').localeCompare(String(a.operationDate || ''))
+        || Number(b.sortSequence || 0) - Number(a.sortSequence || 0)
+        || String(b.id || '').localeCompare(String(a.id || ''), 'zh-CN', { numeric: true })
+      ));
   }, [source]);
 
   const historyColumns = HISTORY_COLUMNS.map(([title, dataIndex, width]) => ({
     title,
     dataIndex,
     width,
-    render: (value) => displayText(value),
+    render: (value) => dataIndex === 'amount' ? amountText(value) : displayText(value),
     onCell: (record) => {
       if (!HISTORY_CHANGE_FIELDS.has(dataIndex)) return {};
       const index = historyRows.findIndex((item) => item.id === record.id);
-      if (index <= 0) return {};
-      const previous = historyRows[index - 1];
-      return String(previous?.[dataIndex] ?? '') !== String(record?.[dataIndex] ?? '')
+      if (index < 0 || index >= historyRows.length - 1) return {};
+      const previousVersion = historyRows[index + 1];
+      return String(previousVersion?.[dataIndex] ?? '') !== String(record?.[dataIndex] ?? '')
         ? { style: { background: '#fffbe6' } }
         : {};
     },
@@ -700,6 +754,16 @@ export default function ContractNumberMaintenancePage() {
       children: <Table rowKey="id" size="small" bordered columns={historyColumns} dataSource={historyRows} pagination={false} scroll={{ x: 'max-content' }} />,
     },
   ] : [];
+
+  if (!hasAccess) {
+    return (
+      <Result
+        status="403"
+        title="403"
+        subTitle={`合约号码维护仅开放给${CONTRACT_NUMBER_MAINTENANCE_USERS.join('、')}`}
+      />
+    );
+  }
 
   return (
     <Space direction="vertical" size={16} className="w-full">
@@ -832,7 +896,7 @@ export default function ContractNumberMaintenancePage() {
           </div>
           <Button icon={<Download size={14} />} onClick={handleTemplateDownload}>下载模板</Button>
           <Dragger
-            accept=".xlsx"
+            accept=".xls,.xlsx"
             maxCount={1}
             beforeUpload={() => false}
             fileList={batchFiles}
@@ -843,10 +907,10 @@ export default function ContractNumberMaintenancePage() {
           >
             <p className="ant-upload-drag-icon"><UploadCloud size={36} /></p>
             <p className="ant-upload-text">点击或拖拽 Excel 文件到此区域上传</p>
-            <p className="ant-upload-hint">仅支持固定合约号码批量修改模板 .xlsx 文件；先校验全部行，通过后才能保存</p>
+            <p className="ant-upload-hint">支持固定合约号码批量修改模板 .xls / .xlsx 文件；先校验全部行，通过后才能保存</p>
           </Dragger>
-          <Typography.Text type="secondary">原型不解析真实 Excel；文件名包含“校验失败”时可演示逐行错误，其余文件演示校验通过。正式实现按 PRD 的 11 列模板逐行校验。</Typography.Text>
-          {batchValidation?.status === 'passed' ? <Alert type="success" showIcon message="文件校验通过" description="全部行校验通过，可点击“保存”完成原型流程。" /> : null}
+          <Typography.Text type="secondary">系统按正式 15 列模板逐行校验，全部通过后才可保存。</Typography.Text>
+          {batchValidation?.status === 'passed' ? <Alert type="success" showIcon message="文件校验通过" description="全部行校验通过，可点击“保存”完成批量修改。" /> : null}
           {batchValidation?.status === 'failed' ? (
             <Card size="small" title={<SectionTitle>校验结果</SectionTitle>}>
               <Alert className="mb-3" type="error" showIcon message={`校验失败，共 ${batchValidation.errors.length} 条错误，本次文件未保存`} />
