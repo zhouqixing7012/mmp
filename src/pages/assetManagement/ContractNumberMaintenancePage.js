@@ -17,6 +17,7 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
+import * as XLSX from 'xlsx';
 import {
   ChevronDown,
   ChevronUp,
@@ -34,10 +35,13 @@ import {
   CURRENT_CONTRACT_NUMBER_OPERATOR,
 } from '../../mock/contractNumberMaintenanceMock';
 import {
+  CONTRACT_NUMBER_BATCH_FIELDS,
   CONTRACT_NUMBER_EDIT_FIELDS,
+  batchUpdateContractNumberMaintenanceRows,
   getContractNumberMaintenanceRows,
   hasContractNumberMaintenanceAccess,
   updateContractNumberMaintenanceRow,
+  validateContractNumberBatchRows,
 } from '../../services/contractNumberMaintenanceService';
 
 const { RangePicker } = DatePicker;
@@ -49,10 +53,13 @@ const APPLICATION_TYPE_OPTIONS = ['业务申请', '个人申请', '管理者配�
 const WAREHOUSE_OPTIONS = ['I10086.集团合约机库'];
 const PHONE_PATTERN = /^(13|14|15|17|18)\d{9}$/;
 
-const BATCH_TEMPLATE_FIELDS = [
-  '标签号', '使用公司', '责任人工号', '身份证号码', '合约号码',
-  '合约开始日期', '合约结束日期', '金额', '号码状态', '仓库',
-  '使用说明', '报废原因', '报废日期', '领用日期', '领用原因',
+const BATCH_TEMPLATE_FIELDS = CONTRACT_NUMBER_BATCH_FIELDS.map((field) => field.header);
+
+const EXPORT_FIELDS = [
+  '行号', '标签号', '合约号码', '使用公司', '资产小类', '合约号码说明', '套餐内容',
+  '合约开始日期', '合约结束日期', '数量', '金额', '号码状态', '仓库', '使用说明',
+  '报废原因', '报废日期', '责任人工号', '责任人姓名', '身份证号码', '部门', '员工职级',
+  '领用日期', '领用原因', '申请类型', '申请单号',
 ];
 
 const EMPTY_FILTERS = {
@@ -206,18 +213,75 @@ function SectionTitle({ children }) {
   );
 }
 
-function buildBatchValidation(file) {
-  const name = String(file?.name || '');
-  if (/校验失败|invalid/i.test(name)) {
-    return {
-      status: 'failed',
-      errors: [
-        { id: 'contract-batch-error-1', rowNo: 3, tag: 'N-0739', field: '号码状态', reason: '第 3 行，号码状态不存在' },
-        { id: 'contract-batch-error-2', rowNo: 6, tag: 'N-0890', field: '金额', reason: '第 6 行，金额必须为数字' },
-      ],
-    };
+function excelSafeText(value) {
+  const text = String(value ?? '');
+  return /^[=+\-@]/.test(text) ? `'${text}` : text;
+}
+
+async function readBatchFile(file) {
+  const fileName = String(file?.name || '');
+  if (!/\.(xls|xlsx)$/i.test(fileName)) {
+    throw new Error('仅支持 .xls 或 .xlsx 文件');
   }
-  return { status: 'passed', errors: [] };
+  const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: false });
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  if (!sheet) throw new Error('Excel 文件没有可读取的工作表');
+
+  const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+  if (!matrix.length) throw new Error('Excel 文件为空');
+
+  const headers = matrix[0].map((value) => String(value || '').trim());
+  if (
+    headers.length !== BATCH_TEMPLATE_FIELDS.length
+    || headers.some((value, index) => value !== BATCH_TEMPLATE_FIELDS[index])
+  ) {
+    throw new Error('导入的EXCEL和系统要求的模板不一致，请核查');
+  }
+
+  const rows = matrix.slice(1)
+    .map((values, index) => {
+      const line = { rowNo: index + 2 };
+      BATCH_TEMPLATE_FIELDS.forEach((header, fieldIndex) => {
+        line[header] = values[fieldIndex] ?? '';
+      });
+      return line;
+    })
+    .filter((line) => BATCH_TEMPLATE_FIELDS.some((header) => String(line[header] ?? '').trim()));
+
+  if (!rows.length) throw new Error('Excel 文件没有可处理的数据');
+  return rows;
+}
+
+function buildExportMatrix(rows) {
+  const dataRows = rows.map((row, index) => ([
+    index + 1,
+    excelSafeText(row.tag),
+    excelSafeText(row.contractNumber),
+    excelSafeText(row.useCompany),
+    '合约号码',
+    excelSafeText(row.contractDesc),
+    excelSafeText(row.packageContent),
+    row.contractStartDate || '',
+    row.contractEndDate || '',
+    row.quantity ?? '',
+    row.amount === '' || row.amount === null || row.amount === undefined ? '' : Number(row.amount),
+    row.status || '',
+    excelSafeText(row.warehouse),
+    excelSafeText(row.usageDescription),
+    excelSafeText(row.scrapReason),
+    row.scrapDate || '',
+    excelSafeText(row.ownerId),
+    excelSafeText(row.ownerName),
+    excelSafeText(row.idCard),
+    excelSafeText(row.department),
+    excelSafeText(row.jobLevel),
+    row.claimDate || '',
+    row.claimReason || '',
+    row.applicationType || '',
+    excelSafeText(row.applicationNo),
+  ]));
+  return [EXPORT_FIELDS, ...dataRows];
 }
 
 export default function ContractNumberMaintenancePage() {
@@ -464,21 +528,38 @@ export default function ContractNumberMaintenancePage() {
       messageApi.warning('当前没有可导出的数据');
       return;
     }
-    const selectedCount = selectedRowKeys.length;
+    const selectedSet = new Set(selectedRowKeys.map(String));
+    const exportRows = selectedRowKeys.length
+      ? filteredRows.filter((row) => selectedSet.has(String(row.id)))
+      : filteredRows;
+    if (!exportRows.length) {
+      messageApi.warning('当前没有可导出的数据');
+      return;
+    }
     Modal.confirm({
       title: '导出确认',
-      content: selectedCount ? '确定要导出选中的数据吗?' : '确定要导出列表中的数据吗?',
+      content: selectedRowKeys.length ? '确定要导出选中的数据吗?' : '确定要导出列表中的数据吗?',
       okText: '确定',
       cancelText: '取消',
       onOk: () => {
-        const size = selectedCount || filteredRows.length;
-        messageApi.success(`已生成导出合约号码信息-${dayjs().format('YYYYMMDD')}.xlsx，共 ${size} 条`);
+        const worksheet = XLSX.utils.aoa_to_sheet(buildExportMatrix(exportRows));
+        worksheet['!cols'] = EXPORT_FIELDS.map((field) => ({ wch: Math.max(12, Math.min(28, field.length * 2 + 6)) }));
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, '合约号码明细');
+        const fileName = `导出合约号码信息-${dayjs().format('YYYYMMDD')}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+        messageApi.success(`导出成功，共 ${exportRows.length} 条`);
       },
     });
   };
 
   const handleTemplateDownload = () => {
-    messageApi.success(`已发起下载：合约号码批量修改模板.xlsx（${BATCH_TEMPLATE_FIELDS.length}列）`);
+    const worksheet = XLSX.utils.aoa_to_sheet([BATCH_TEMPLATE_FIELDS]);
+    worksheet['!cols'] = BATCH_TEMPLATE_FIELDS.map((field) => ({ wch: Math.max(14, field.length * 2 + 6) }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, '批量修改');
+    XLSX.writeFile(workbook, '合约号码批量修改模板.xlsx');
+    messageApi.success(`模板下载成功（${BATCH_TEMPLATE_FIELDS.length}列）`);
   };
 
   const resetBatchState = () => {
@@ -486,23 +567,58 @@ export default function ContractNumberMaintenancePage() {
     setBatchValidation(null);
   };
 
-  const handleBatchAction = () => {
+  const handleBatchAction = async () => {
     if (!batchFiles.length) {
       messageApi.warning('请先选择需要上传的 Excel 文件');
       return;
     }
+
     if (batchValidation?.status === 'passed') {
+      const result = batchUpdateContractNumberMaintenanceRows(
+        batchValidation.batchRows,
+        CURRENT_CONTRACT_NUMBER_OPERATOR,
+        batchValidation.versions,
+      );
+      if (result.status === 'failed') {
+        setBatchValidation({
+          ...batchValidation,
+          status: 'failed',
+          errors: result.errors,
+        });
+        messageApi.error('保存失败，本次文件未修改任何号码');
+        return;
+      }
+      setRows(result.rows);
+      setSelectedRowKeys([]);
+      setPage(1);
       setBatchOpen(false);
       resetBatchState();
-      messageApi.success('修改成功！');
+      messageApi.success(`修改成功！实际修改 ${result.modifiedCount} 条，无变化 ${result.unchangedCount} 条`);
       return;
     }
-    const result = buildBatchValidation(batchFiles[0]);
-    setBatchValidation(result);
-    if (result.status === 'failed') {
-      messageApi.error('文件校验失败，本次文件未保存');
-    } else {
-      messageApi.success('文件校验通过，请确认保存');
+
+    try {
+      const batchRows = await readBatchFile(batchFiles[0]?.originFileObj || batchFiles[0]);
+      const result = validateContractNumberBatchRows(batchRows, CURRENT_CONTRACT_NUMBER_OPERATOR);
+      const nextValidation = { ...result, batchRows };
+      setBatchValidation(nextValidation);
+      if (result.status === 'failed') {
+        messageApi.error('文件校验失败，本次文件未保存');
+      } else {
+        messageApi.success('文件校验通过，请确认保存');
+      }
+    } catch (error) {
+      setBatchValidation({
+        status: 'failed',
+        errors: [{
+          id: 'contract-batch-file-error',
+          rowNo: '-',
+          tag: '',
+          field: '',
+          reason: error.message || '文件读取失败',
+        }],
+      });
+      messageApi.error(error.message || '文件读取失败');
     }
   };
 
@@ -909,7 +1025,7 @@ export default function ContractNumberMaintenancePage() {
             <p className="ant-upload-text">点击或拖拽 Excel 文件到此区域上传</p>
             <p className="ant-upload-hint">支持固定合约号码批量修改模板 .xls / .xlsx 文件；先校验全部行，通过后才能保存</p>
           </Dragger>
-          <Typography.Text type="secondary">系统按正式 15 列模板逐行校验，全部通过后才可保存。</Typography.Text>
+          <Typography.Text type="secondary">系统按 15 列模板逐行校验；空白单元格保留原值，全部通过后才可保存。</Typography.Text>
           {batchValidation?.status === 'passed' ? <Alert type="success" showIcon message="文件校验通过" description="全部行校验通过，可点击“保存”完成批量修改。" /> : null}
           {batchValidation?.status === 'failed' ? (
             <Card size="small" title={<SectionTitle>校验结果</SectionTitle>}>
