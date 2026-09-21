@@ -591,7 +591,6 @@ export default function ConsumableMaintenancePage() {
 
     const patch = EDITABLE_FIELDS.reduce((result, field) => ({ ...result, [field]: editDraft[field] ?? '' }), {});
     patch.serialNumber = serial;
-    patch.enabledDate = patch.enabledDate || activeConsumable.enabledDate || '';
     const changed = EDITABLE_FIELDS.some((field) => String(activeConsumable[field] ?? '') !== String(patch[field] ?? ''));
     if (!changed) {
       messageApi.info('耗材信息未发生变化');
@@ -920,7 +919,11 @@ export default function ConsumableMaintenancePage() {
 
   const historyRows = useMemo(() => {
     if (!source) return [];
-    return [...(source.transactionHistory || [])].sort((a, b) => String(a.operationDate || '').localeCompare(String(b.operationDate || '')));
+    return [...(source.transactionHistory || [])].sort((a, b) => (
+      String(b.operationDate || '').localeCompare(String(a.operationDate || ''))
+      || Number(b.sortSequence || 0) - Number(a.sortSequence || 0)
+      || String(b.id || '').localeCompare(String(a.id || ''), 'zh-CN', { numeric: true })
+    ));
   }, [source]);
 
   const historyColumns = TRANSACTION_COLUMNS.map(([title, dataIndex, width]) => ({
@@ -931,9 +934,9 @@ export default function ConsumableMaintenancePage() {
     onCell: (record) => {
       if (!CHANGE_COMPARE_FIELDS.has(dataIndex)) return {};
       const index = historyRows.findIndex((item) => item.id === record.id);
-      if (index <= 0) return {};
-      const previous = historyRows[index - 1];
-      return String(previous?.[dataIndex] ?? '') !== String(record?.[dataIndex] ?? '')
+      if (index < 0 || index >= historyRows.length - 1) return {};
+      const previousVersion = historyRows[index + 1];
+      return String(previousVersion?.[dataIndex] ?? '') !== String(record?.[dataIndex] ?? '')
         ? { style: { background: '#fffbe6' } }
         : {};
     },
