@@ -234,14 +234,33 @@ describe('耗材维护保存边界', () => {
       .toThrow('责任人不能为空且必须有效');
   });
 
-  test('单条编辑启用日期留空时不能直接写成空值', () => {
+  test('单条编辑启用日期留空时按购买日期重新计算', () => {
     const row = getRow();
     const nextRows = updateConsumableMaintenanceRow(row.id, editablePatch(row, {
       enabledDate: '',
-      remarks: '触发保存',
+      remarks: '触发启用日期重算',
     }));
     const saved = nextRows.find((item) => item.id === row.id);
-    expect(saved.enabledDate).toBe(row.enabledDate);
+    expect(row.purchaseDate).toBe('2026-01-15');
+    expect(saved.enabledDate).toBe('2026-01-15');
+  });
+
+  test('购买日期在26日及之后时启用日期重算为下月1日', () => {
+    const row = getRow();
+    const storageRows = getConsumableMaintenanceRows().map((item) => (
+      item.id === row.id
+        ? { ...item, purchaseDate: '2026-01-26', enabledDate: '2026-01-26' }
+        : item
+    ));
+    window.localStorage.setItem(CONSUMABLE_MAINTENANCE_STORAGE_KEY, JSON.stringify(storageRows));
+    const target = getRow(row.id);
+
+    const nextRows = updateConsumableMaintenanceRow(target.id, editablePatch(target, {
+      enabledDate: '',
+      remarks: '触发跨月启用日期重算',
+    }));
+    const saved = nextRows.find((item) => item.id === target.id);
+    expect(saved.enabledDate).toBe('2026-02-01');
   });
 
   test('不存在的耗材 id 不得静默成功', () => {
