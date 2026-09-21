@@ -12,7 +12,7 @@ import {
 } from '../../mock/warehouseWorkbenchMock';
 import {
   WAREHOUSE_EMPLOYEE_PAGE_STORAGE_KEY,
-  clearWarehouseEmployeePageContext,
+  readWarehouseEmployeePageContext,
   writeWarehouseEmployeePageContext,
 } from '../../services/warehouseWorkbenchEmployeePageService';
 
@@ -234,7 +234,10 @@ export default function WarehouseWorkbenchPage() {
   };
 
   const refreshEmployeePage = () => {
-    clearWarehouseEmployeePageContext();
+    const currentContext = readWarehouseEmployeePageContext();
+    if (currentContext) {
+      writeWarehouseEmployeePageContext(currentContext);
+    }
     messageApi.success('已刷新');
   };
 
