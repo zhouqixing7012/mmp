@@ -81,6 +81,13 @@ export default function ScrapWorkflowCard({
   currentNode = '',
 }) {
   const majorCategory = selectedAssets[0]?.majorCategory || '';
+  const machineQuantity = selectedAssets
+    .filter((item) => item.scope === '机房资产')
+    .reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const hasSpecialTransferCompany = selectedAssets.some((item) => (
+    /上海|广州/.test(String(item.company || ''))
+    || /上海|广州/.test(String(item.newCompany || ''))
+  ));
   const hasMachine = selectedAssets.some((item) => item.scope === '机房资产' && item.scrapMethod !== '调账');
   const needsMis = selectedAssets.some((item) => (
     ['PC', 'NOTEBOOK'].includes(item.majorCategory)
@@ -97,9 +104,17 @@ export default function ScrapWorkflowCard({
 
   const current = Math.max(0, steps.findIndex((item) => currentNode && item.includes(currentNode)));
   const alert = type === 'crossCompany'
-    ? '机房资产、软件、办公设备必须分别建单；进入待报废池后，在库资产变为“在库-待报废”，员工名下资产状态不变。'
+    ? (
+      hasSpecialTransferCompany
+        ? '机房资产、软件、办公设备必须分别建单；本单涉及上海/广州新媒体，后续账面报废按特殊资产号同步规则处理。'
+        : '机房资产、软件、办公设备必须分别建单；进入待报废池后，在库资产变为“在库-待报废”，员工名下资产状态不变。'
+    )
     : type === 'scrap'
-      ? '机房资产达到500台及以上时强制由内审接收报价；PC/NOTEBOOK需MIS鉴定，其余办公设备跳过MIS。'
+      ? (
+        machineQuantity >= 500
+          ? '本单机房资产数量达到500台及以上，报价接收人强制为内审。'
+          : '机房资产达到500台及以上时强制由内审接收报价；PC/NOTEBOOK（含PC类显示器）需MIS鉴定，其余办公设备跳过MIS。'
+      )
       : type === 'accounting'
         ? 'NO审批仅针对非调账机房资产；MIS审批仅针对非丢失、非调账的PC/NOTEBOOK类资产；重复审批人只审批一次。'
         : assetScope === '机房资产'
