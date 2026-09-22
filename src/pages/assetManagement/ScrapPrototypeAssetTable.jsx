@@ -6,7 +6,6 @@ import {
   Select,
   Space,
   Table,
-  Typography,
 } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import SelectModal from '../../components/SelectModal';
@@ -22,8 +21,6 @@ import {
   mockPlates,
 } from '../../mock/businessRulesMock';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
-
-const { Text } = Typography;
 
 const companyOptions = Array.from(
   new Set(warehouseCatalog.map((item) => item.company).filter(Boolean)),
