@@ -13,7 +13,7 @@
 本业务覆盖：
 
 1. 机房资产：14.SERVER、15.NET EQUIPMENT；
-2. 非机房办公设备：11.PC、12.NOTEBOOK、13.OFFICE EQUIPMENT。
+2. 非机房办公设备：11.PC、12.NOTEBOOK、13.OFFICE EQUIPMENT、16.FURNITURE、18.VEHICLE、19.BUILDINGS、20.Investment Properties、21.LEASEHOLD IMPROVEMENT、22.Park lot land use rights。
 
 调账资产、无需处置资产及其他明确不进入处置池的资产，不进入本流程。
 
@@ -307,7 +307,13 @@ ES 专员负责线下供应商取货/实物交接。
 
 - 11.PC；
 - 12.NOTEBOOK；
-- 13.OFFICE EQUIPMENT。
+- 13.OFFICE EQUIPMENT；
+- 16.FURNITURE；
+- 18.VEHICLE；
+- 19.BUILDINGS；
+- 20.Investment Properties；
+- 21.LEASEHOLD IMPROVEMENT；
+- 22.Park lot land use rights。
 
 仅处理进入待处置池且仍需实物处置的办公设备资产。
 
