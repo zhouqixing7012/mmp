@@ -35,7 +35,7 @@
 | 办公设备 | 11.PC / 12.NOTEBOOK / 13.OFFICE EQUIPMENT |
 | 软件 | 17.SOFTWARE |
 
-机房资产不使用 11.PC / 12.NOTEBOOK / 13.OFFICE EQUIPMENT / 17.SOFTWARE 这组非机房大类代码判定；本轮资料未给出机房资产的大类代码映射，资产选择时仅展示系统已标识为机房资产的数据。
+机房资产按资产大类判定：14.SERVER、15.NET EQUIPMENT。
 
 当前跨公司转移仅覆盖以上已明确资产范围。
 
