@@ -97,7 +97,7 @@ export default function ScrapPrototypeList({
   const operationColumn = {
     title: '操作',
     key: 'operation',
-    width: type === 'scrap' ? 240 : 210,
+    width: type === 'disposal' ? 280 : type === 'scrap' ? 240 : 210,
     fixed: 'right',
     render: (_, record) => (
       type === 'disposal'
@@ -422,6 +422,9 @@ export default function ScrapPrototypeList({
             selectedRowKeys: selectedKeys,
             onChange: setSelectedKeys,
             fixed: true,
+            getCheckboxProps: (record) => ({
+              disabled: type !== 'disposal' && record.documentStatus !== '草稿',
+            }),
           }}
           scroll={{ x: 'max-content' }}
           pagination={{
