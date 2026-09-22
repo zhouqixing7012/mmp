@@ -144,10 +144,27 @@ export default function ScrapPrototypeModule({ type }) {
     setEditorState(null);
   }, [type]);
 
-  const openCreate = () => {
+  const openCreate = (selectedAssets = []) => {
+    const pickedAssets = Array.isArray(selectedAssets) ? selectedAssets : [];
+    const scopes = new Set(pickedAssets.map((item) => item.scope).filter(Boolean));
+
+    if (type === 'disposal' && scopes.size > 1) {
+      message.error('机房资产和办公设备必须分别发起处置');
+      return;
+    }
+
+    const form = defaultForm(type);
+    if (type === 'disposal' && pickedAssets.length > 0) {
+      const firstAsset = pickedAssets[0];
+      form.assetScope = firstAsset.scope;
+      form.company = firstAsset.company || form.company;
+      form.region = firstAsset.region || (String(firstAsset.city || '').includes('北京') ? '北京' : '非北京');
+      form.needsCleaning = pickedAssets.some((item) => item.dataCleaning === '是') ? '是' : '否';
+    }
+
     setEditorState({
-      form: defaultForm(type),
-      assets: [],
+      form,
+      assets: pickedAssets.map((item) => ({ ...item })),
       readOnly: false,
     });
     setView('editor');
@@ -293,12 +310,21 @@ export default function ScrapPrototypeModule({ type }) {
     message.success('账面报废执行完成');
   };
 
+  const listRecords = type === 'disposal'
+    ? DISPOSAL_ASSET_POOL.filter((asset) => (
+        !records.some((record) => (
+          record.assetsSnapshot?.some((item) => item.id === asset.id)
+          && record.documentStatus !== '已驳回'
+        ))
+      ))
+    : records;
+
   if (view === 'list') {
     return (
       <ScrapPrototypeList
         type={type}
         config={config}
-        records={records}
+        records={listRecords}
         onCreate={openCreate}
         onOpen={openRecord}
         onCopy={copyRecord}
