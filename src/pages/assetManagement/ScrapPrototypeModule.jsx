@@ -310,6 +310,47 @@ export default function ScrapPrototypeModule({ type }) {
     message.success('账面报废执行完成');
   };
 
+  const completeDisposalAsset = (asset, action) => {
+    if (type !== 'disposal') return;
+
+    const applicationNo = createApplicationNo(type);
+    const completedRecord = {
+      id: `disposal-direct-${asset.id}-${applicationNo}`,
+      applicationNo,
+      documentStatus: '已完成',
+      assetScope: asset.scope,
+      company: asset.company,
+      plate: asset.plate,
+      creator: 'ES专员',
+      createdAt: dayjs().format('YYYY-MM-DD'),
+      lastModifiedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+      assetCount: 1,
+      originalValueTotal: Number(asset.originalValue || 0),
+      netValueTotal: Number(asset.netValue || 0),
+      region: asset.region,
+      currentNode: '已报废-已处置',
+      remark: action,
+      formSnapshot: {
+        ...defaultForm(type),
+        applicationNo,
+        documentStatus: '已完成',
+        assetScope: asset.scope,
+        company: asset.company,
+        region: asset.region,
+        currentNode: '已报废-已处置',
+        remark: action,
+      },
+      assetsSnapshot: [{ ...asset, status: '已报废-已处置', disposalStatus: '已处置' }],
+    };
+
+    setRecords((current) => {
+      const next = [completedRecord, ...current];
+      saveScrapPrototypeRecords(type, next);
+      return next;
+    });
+    message.success(action === '无实物报废' ? '已完成无实物报废' : '已确认资产处置完成');
+  };
+
   const listRecords = type === 'disposal'
     ? DISPOSAL_ASSET_POOL.filter((asset) => (
         !records.some((record) => (
@@ -329,6 +370,7 @@ export default function ScrapPrototypeModule({ type }) {
         onOpen={openRecord}
         onCopy={copyRecord}
         onExecute={executeAccounting}
+        onDirectComplete={completeDisposalAsset}
         onDeleteDrafts={deleteDrafts}
       />
     );
