@@ -46,6 +46,7 @@ export default function ScrapPrototypeList({
   onOpen,
   onCopy,
   onExecute,
+  onDirectComplete,
   onDeleteDrafts,
 }) {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
@@ -101,9 +102,27 @@ export default function ScrapPrototypeList({
     render: (_, record) => (
       type === 'disposal'
         ? (
-          <Button type="link" size="small" onClick={() => onCreate([record])}>
-            发起处置
-          </Button>
+          <Space size={2} wrap>
+            <Button type="link" size="small" onClick={() => onCreate([record])}>
+              发起处置
+            </Button>
+            <Popconfirm
+              title="确认按无实物报废处理？"
+              okText="确认"
+              cancelText="取消"
+              onConfirm={() => onDirectComplete(record, '无实物报废')}
+            >
+              <Button type="link" size="small">无实物报废</Button>
+            </Popconfirm>
+            <Popconfirm
+              title="确认该资产已完成处置？"
+              okText="确认"
+              cancelText="取消"
+              onConfirm={() => onDirectComplete(record, '确认已处置')}
+            >
+              <Button type="link" size="small">确认已处置</Button>
+            </Popconfirm>
+          </Space>
         )
         : (
       <Space size={2} wrap>
