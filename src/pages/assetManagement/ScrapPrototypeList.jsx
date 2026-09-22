@@ -14,7 +14,7 @@ import {
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
-import { ASSET_SCOPE_OPTIONS } from './scrapPrototypeData';
+import { ASSET_SCOPE_OPTIONS, money } from './scrapPrototypeData';
 
 const { RangePicker } = DatePicker;
 const { Text, Title } = Typography;
@@ -42,6 +42,8 @@ export default function ScrapPrototypeList({
   records,
   onCreate,
   onOpen,
+  onCopy,
+  onExecute,
   onDeleteDrafts,
 }) {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
@@ -83,10 +85,10 @@ export default function ScrapPrototypeList({
   const operationColumn = {
     title: '操作',
     key: 'operation',
-    width: 130,
+    width: type === 'scrap' ? 240 : 210,
     fixed: 'right',
     render: (_, record) => (
-      <Space size={4}>
+      <Space size={2} wrap>
         <Button type="link" size="small" onClick={() => onOpen(record, false)}>
           查看
         </Button>
@@ -94,6 +96,29 @@ export default function ScrapPrototypeList({
           <Button type="link" size="small" onClick={() => onOpen(record, true)}>
             编辑
           </Button>
+        )}
+        {type === 'scrap' && (
+          <Button type="link" size="small" onClick={() => onCopy(record)}>
+            复制
+          </Button>
+        )}
+        {!['草稿', '已驳回'].includes(record.documentStatus) && (
+          <Button type="link" size="small" onClick={() => onOpen(record, false)}>
+            查看进度
+          </Button>
+        )}
+        {type === 'accounting' && record.documentStatus === '待提单人确认' && (
+          <Popconfirm
+            title="确认执行账面报废？"
+            description="确认后将完成账面报废并结束流程。"
+            okText="确认并执行"
+            cancelText="取消"
+            onConfirm={() => onExecute(record)}
+          >
+            <Button type="link" size="small">
+              执行账面报废
+            </Button>
+          </Popconfirm>
         )}
       </Space>
     ),
@@ -121,12 +146,14 @@ export default function ScrapPrototypeList({
     crossCompany: [
       applicationColumn,
       statusColumn,
+      { title: '业务类型', key: 'businessType', width: 120, render: () => '跨公司转移' },
       { title: '资产范围', dataIndex: 'assetScope', width: 120 },
       { title: '发起人', dataIndex: 'creator', width: 130 },
       { title: '原公司', dataIndex: 'company', width: 160, ellipsis: true },
       { title: '新公司', dataIndex: 'targetCompany', width: 160, ellipsis: true },
       { title: '资产数量', dataIndex: 'assetCount', width: 100, align: 'right' },
       { title: '制单时间', dataIndex: 'createdAt', width: 120 },
+      { title: '最后修改时间', dataIndex: 'lastModifiedAt', width: 170 },
       { title: '当前节点', dataIndex: 'currentNode', width: 190, ellipsis: true },
       operationColumn,
     ],
@@ -139,6 +166,7 @@ export default function ScrapPrototypeList({
       { title: '制单人', dataIndex: 'creator', width: 130 },
       { title: '制单时间', dataIndex: 'createdAt', width: 120 },
       { title: '资产数量', dataIndex: 'assetCount', width: 100, align: 'right' },
+      { title: '备注', dataIndex: 'remark', width: 220, ellipsis: true },
       { title: '当前节点', dataIndex: 'currentNode', width: 190, ellipsis: true },
       operationColumn,
     ],
@@ -151,6 +179,8 @@ export default function ScrapPrototypeList({
       { title: '制单人', dataIndex: 'creator', width: 130 },
       { title: '制单时间', dataIndex: 'createdAt', width: 120 },
       { title: '资产数量', dataIndex: 'assetCount', width: 100, align: 'right' },
+      { title: '原值合计', dataIndex: 'originalValueTotal', width: 130, align: 'right', render: money },
+      { title: '净值合计', dataIndex: 'netValueTotal', width: 130, align: 'right', render: money },
       { title: '当前节点', dataIndex: 'currentNode', width: 190, ellipsis: true },
       operationColumn,
     ],
@@ -254,7 +284,7 @@ export default function ScrapPrototypeList({
 
   return (
     <div className="space-y-4">
-      <Title level={3} className="!mb-0">{config.title}</Title>
+      <Title level={3} className="!mb-0 !text-[22px]">{config.title}</Title>
 
       <QueryBar
         onQuery={() => setAppliedFilters({ ...filters })}
