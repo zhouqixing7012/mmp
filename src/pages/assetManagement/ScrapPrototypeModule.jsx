@@ -117,7 +117,7 @@ function seedAssets(type, record) {
       ...item,
       scrapMethod: type === 'crossCompany'
         ? '调账'
-        : item.scrapMethod || record.scrapMethod || '全部报废',
+        : record.scrapMethod || item.scrapMethod || '全部报废',
       scrapType: item.scrapType || '已到报废期',
       reason: item.reason || record.remark || '业务演示原因',
       dataCleaning: item.scope === '机房资产' && index === 0 ? '是' : undefined,
