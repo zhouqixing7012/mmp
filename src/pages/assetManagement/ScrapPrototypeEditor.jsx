@@ -133,6 +133,12 @@ export default function ScrapPrototypeEditor({
         message.error(`资产 ${invalid.tagNo} 的调账目标信息未填写完整`);
         return false;
       }
+
+      const sameCompany = assets.find((item) => item.newCompany === item.company);
+      if (sameCompany) {
+        message.error(`资产 ${sameCompany.tagNo} 的新公司不能与原公司相同`);
+        return false;
+      }
     }
 
     if (type === 'scrap') {
@@ -161,6 +167,23 @@ export default function ScrapPrototypeEditor({
       }
       if (scrapMethods.size > 1) {
         message.error('同一账面报废单的报废方式必须一致');
+        return false;
+      }
+
+      const transferInvalid = assets.find((item) => (
+        item.scrapMethod === '调账'
+        && (
+          !item.newCompany
+          || !item.newPlate
+          || !item.newCostCenter
+          || !item.newResponsiblePerson
+          || !item.targetCity
+          || !item.targetBuilding
+          || !item.targetFloor
+        )
+      ));
+      if (transferInvalid) {
+        message.error(`调账资产 ${transferInvalid.tagNo} 的目标信息不完整`);
         return false;
       }
     }
@@ -435,7 +458,9 @@ export default function ScrapPrototypeEditor({
         <Button onClick={onBack}>返回</Button>
         {!readOnly && (
           <>
-            <Button onClick={() => handleSave(false)}>保存草稿</Button>
+            {type !== 'disposal' && (
+              <Button onClick={() => handleSave(false)}>保存草稿</Button>
+            )}
             <Button type="primary" onClick={() => handleSave(true)}>提交</Button>
           </>
         )}
