@@ -106,8 +106,8 @@ function seedAssets(type, record) {
       reason: record.remark || '业务演示原因',
       dataCleaning: item.scope === '机房资产' && index === 0 ? '是' : undefined,
       newCompany: type === 'crossCompany' ? '115.新媒体-上海' : '',
-      newPlate: type === 'crossCompany' ? '17.Corporate' : '',
-      newCostCenter: type === 'crossCompany' ? 'CC1001.产品技术中心' : '',
+      newPlate: type === 'crossCompany' ? '17_Corporate' : '',
+      newCostCenter: type === 'crossCompany' ? '112064_新媒体成本中心' : '',
       newResponsiblePerson: type === 'crossCompany' ? '215410-卢铭华' : '',
       targetWarehouse: type === 'crossCompany' ? 'I3001.资产上海分公司库（新媒体上海）' : '',
       targetCity: type === 'crossCompany' ? '37.上海市' : '',
@@ -138,16 +138,20 @@ export default function ScrapPrototypeModule({ type }) {
   };
 
   const openRecord = (record, editable) => {
-    const form = {
-      ...defaultForm(type),
-      ...record,
-      applicationDate: record.createdAt,
-      documentStatus: record.documentStatus,
-      currentNode: record.currentNode,
-      description: record.remark || '',
-    };
+    const form = record.formSnapshot
+      ? { ...record.formSnapshot }
+      : {
+          ...defaultForm(type),
+          ...record,
+          applicationDate: record.createdAt,
+          documentStatus: record.documentStatus,
+          currentNode: record.currentNode,
+          description: record.remark || '',
+        };
 
-    const assets = seedAssets(type, record);
+    const assets = record.assetsSnapshot
+      ? record.assetsSnapshot.map((item) => ({ ...item }))
+      : seedAssets(type, record);
     if (type === 'disposal' && record.assetScope === '机房资产') {
       form.needsCleaning = assets.some((item) => item.dataCleaning === '是') ? '是' : '否';
     }
@@ -196,6 +200,8 @@ export default function ScrapPrototypeModule({ type }) {
       assetCount: assets.length,
       currentNode: nextForm.currentNode,
       remark: form.remark || form.description,
+      formSnapshot: nextForm,
+      assetsSnapshot: assets.map((item) => ({ ...item })),
     };
 
     setRecords((current) => {
