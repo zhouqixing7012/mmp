@@ -130,3 +130,13 @@
 - 主资产联动是否生成耗材维护事务和操作历史待确认，本轮正式 PRD不新增该结论。
 - 耗材无主资产时允许单条直接报废；有关联主资产时随主资产正式报废并继承报废信息。
 - 合约号码历史身份证底层值保留，但维护功能不再展示、编辑、导出或写入操作历史。
+
+## 2026-09-23 报废专项现状代码基线
+
+- 资产管理正式菜单当前包含“资产报废 / 账面报废 / 资产处置”，统一由 `src/pages/assetManagement/index.js` 接入 `DocumentListPage` 列表，再进入对应编辑页。
+- 资产报废编辑页为 `src/pages/ScrapApplicationEdit.js`；当前包含公司、资产大类、资产所在地、报废说明和可编辑报废资产明细，Excel 导入仍是演示占位。
+- 账面报废编辑页为 `src/pages/AccountingScrapEdit.js`；当前代码包含报废类型、不同报废原因、附件以及跨公司转移相关字段/明细。
+- 资产处置编辑页为 `src/pages/assetManagement/AssetDisposalEditPage.js`；当前包含处置说明、附件、资产选择和报废类型等字段。
+- 仓库还保留独立旧报废链路：`ApprovalPage.js`、`ScrapInternalReview.js`、`ScrapProcurement1~4.js`，以及 `src/config/routes.js` 下的“报废管理”路由组。
+- 机房资产旧页面 `AssetMaintenanceList.js` 左侧存在“资产报废”菜单，但当前主要是旧式静态页面结构；后续必须以用户提供的现状 PRD 和新流程重新确认机房报废正式入口、字段和审批链。
+- 当前没有独立成体系的“资产报废 / 账面报废 / 资产处置”新版主 PRD，现有维护类 PRD只定义正式报废状态由报废业务产生，因此本轮需要从用户提供的现状 PRD建立正式基线。
