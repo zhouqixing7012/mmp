@@ -210,7 +210,12 @@ export default function ScrapPrototypeEditor({
           <Descriptions.Item label="公司">
             {type === 'crossCompany' || type === 'accounting'
               ? showValue(form.company)
-              : renderSelect(form.company, companyOptions, (value) => updateForm('company', value))}
+              : renderSelect(
+                  form.company,
+                  companyOptions,
+                  (value) => updateForm('company', value),
+                  assets.length > 0,
+                )}
           </Descriptions.Item>
 
           {type !== 'accounting' && (
