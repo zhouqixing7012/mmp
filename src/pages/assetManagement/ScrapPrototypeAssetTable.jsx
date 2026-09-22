@@ -27,13 +27,13 @@ const companyOptions = Array.from(
 ).map((value) => ({ label: value, value }));
 
 const plateOptions = mockPlates.map((item) => ({
-  label: `${item.code}.${item.desc}`,
-  value: `${item.code}.${item.desc}`,
+  label: item.desc,
+  value: item.desc,
 }));
 
 const costCenterOptions = mockCostCenters.map((item) => ({
-  label: `${item.code}.${item.desc}`,
-  value: `${item.code}.${item.desc}`,
+  label: item.desc,
+  value: item.desc,
 }));
 
 const warehouseOptions = warehouseCatalog.map((item) => ({
