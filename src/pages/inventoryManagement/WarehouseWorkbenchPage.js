@@ -206,13 +206,6 @@ export default function WarehouseWorkbenchPage() {
     setPage(1);
   };
 
-  const resetQuery = () => {
-    setDraftFilters(EMPTY_FILTERS);
-    setResults(availableTasks);
-    setHasQueried(true);
-    setPage(1);
-  };
-
   const handleAssetEnter = () => {
     if (!draftFilters.assetTag.trim()) {
       messageApi.warning('请扫描/输入资产标签号！');
