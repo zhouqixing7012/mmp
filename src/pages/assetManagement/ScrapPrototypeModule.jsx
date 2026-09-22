@@ -213,6 +213,7 @@ export default function ScrapPrototypeModule({ type }) {
   if (view === 'list') {
     return (
       <ScrapPrototypeList
+        type={type}
         config={config}
         records={records}
         onCreate={openCreate}
