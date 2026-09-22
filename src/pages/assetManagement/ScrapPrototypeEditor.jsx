@@ -13,7 +13,6 @@ import { UploadOutlined } from '@ant-design/icons';
 import StatusTag from '../../components/StatusTag';
 import ScrapWorkflowCard from './ScrapWorkflowCard';
 import ScrapPrototypeAssetTable from './ScrapPrototypeAssetTable';
-import { ASSET_SCOPE_OPTIONS } from './scrapPrototypeData';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 
 const companyOptions = Array.from(
@@ -46,6 +45,24 @@ export default function ScrapPrototypeEditor({
     )));
   };
 
+  const showValue = (value) => (
+    <span>{value === undefined || value === null || value === '' ? '-' : String(value)}</span>
+  );
+
+  const renderSelect = (value, selectOptions, onChange, disabled = false) => (
+    readOnly
+      ? showValue(value)
+      : (
+        <Select
+          disabled={disabled}
+          value={value || undefined}
+          options={selectOptions}
+          className="w-full"
+          onChange={onChange}
+        />
+      )
+  );
+
   const machineScrapQty = useMemo(() => (
     assets
       .filter((item) => item.scope === '机房资产')
@@ -65,12 +82,35 @@ export default function ScrapPrototypeEditor({
 
   const handleAssetReplace = (nextAssets) => {
     setAssets(nextAssets);
-    if (type === 'disposal' && form.assetScope === '机房资产') {
-      updateForm(
-        'needsCleaning',
-        nextAssets.some((item) => item.dataCleaning === '是') ? '是' : '否',
-      );
-    }
+
+    setForm((current) => {
+      const firstAsset = nextAssets[0];
+      const nextScope = type === 'accounting' ? current.assetScope : firstAsset?.scope || '';
+      const nextForm = {
+        ...current,
+        assetScope: nextScope,
+      };
+
+      if (firstAsset) {
+        if (type !== 'crossCompany') {
+          nextForm.company = firstAsset.company || current.company;
+        }
+        if (type === 'accounting') {
+          nextForm.company = firstAsset.company || current.company;
+          nextForm.plate = firstAsset.plate || current.plate;
+          nextForm.scrapMethod = firstAsset.scrapMethod || current.scrapMethod;
+        }
+        if (type === 'disposal') {
+          nextForm.region = firstAsset.region || (String(firstAsset.city || '').includes('北京') ? '北京' : '非北京');
+        }
+      }
+
+      if (type === 'disposal' && nextScope === '机房资产') {
+        nextForm.needsCleaning = nextAssets.some((item) => item.dataCleaning === '是') ? '是' : '否';
+      }
+
+      return nextForm;
+    });
   };
 
   const validate = () => {
@@ -107,9 +147,22 @@ export default function ScrapPrototypeEditor({
       }
     }
 
-    if (type === 'accounting' && form.sourceType === '手动导入' && !form.manualScenario) {
-      message.error('请选择手动导入业务类型');
-      return false;
+    if (type === 'accounting') {
+      if (form.sourceType === '手动导入' && !form.manualScenario) {
+        message.error('请选择手动导入业务类型');
+        return false;
+      }
+
+      const companyPlates = new Set(assets.map((item) => `${item.company}|${item.plate}`));
+      const scrapMethods = new Set(assets.map((item) => item.scrapMethod).filter(Boolean));
+      if (companyPlates.size > 1) {
+        message.error('同一账面报废单必须属于同一公司和板块');
+        return false;
+      }
+      if (scrapMethods.size > 1) {
+        message.error('同一账面报废单的报废方式必须一致');
+        return false;
+      }
     }
 
     if (
@@ -155,71 +208,67 @@ export default function ScrapPrototypeEditor({
 
           <Descriptions.Item label="发起人">{form.creator}</Descriptions.Item>
           <Descriptions.Item label="公司">
-            <Select
-              disabled={readOnly}
-              value={form.company}
-              options={companyOptions}
-              className="w-full"
-              onChange={(value) => updateForm('company', value)}
-            />
+            {type === 'crossCompany' || type === 'accounting'
+              ? showValue(form.company)
+              : renderSelect(form.company, companyOptions, (value) => updateForm('company', value))}
           </Descriptions.Item>
 
           {type !== 'accounting' && (
             <Descriptions.Item label="资产范围">
-              <Select
-                disabled={readOnly || assets.length > 0}
-                value={form.assetScope}
-                options={ASSET_SCOPE_OPTIONS}
-                className="w-full"
-                onChange={(value) => updateForm('assetScope', value)}
-              />
+              {showValue(form.assetScope || '选择资产后自动判定')}
             </Descriptions.Item>
+          )}
+
+          {type === 'accounting' && (
+            <Descriptions.Item label="板块">{showValue(form.plate)}</Descriptions.Item>
+          )}
+
+          {type === 'crossCompany' && (
+            <>
+              <Descriptions.Item label="办公区">{showValue(form.officeArea)}</Descriptions.Item>
+              <Descriptions.Item label="联系电话">{showValue(form.contactPhone)}</Descriptions.Item>
+              <Descriptions.Item label="邮箱">{showValue(form.email)}</Descriptions.Item>
+              <Descriptions.Item label="部门" span={3}>{showValue(form.department)}</Descriptions.Item>
+            </>
           )}
 
           {type === 'scrap' && (
             <>
               <Descriptions.Item label="报废方式">
-                <Select
-                  disabled={readOnly}
-                  value={form.scrapMethod}
-                  options={options(['全部报废', '部分报废'])}
-                  className="w-full"
-                  onChange={(value) => updateForm('scrapMethod', value)}
-                />
+                {renderSelect(
+                  form.scrapMethod,
+                  options(['全部报废', '部分报废']),
+                  (value) => updateForm('scrapMethod', value),
+                )}
               </Descriptions.Item>
 
               {form.assetScope === '办公设备' && (
                 <Descriptions.Item label="是否已处置完成">
-                  <Select
-                    disabled={readOnly}
-                    value={form.disposedComplete}
-                    options={options(['是', '否'])}
-                    className="w-full"
-                    onChange={(value) => updateForm('disposedComplete', value)}
-                  />
+                  {renderSelect(
+                    form.disposedComplete,
+                    options(['是', '否']),
+                    (value) => updateForm('disposedComplete', value),
+                  )}
                 </Descriptions.Item>
               )}
 
               {form.assetScope === '机房资产' && (
                 <>
                   <Descriptions.Item label="地区">
-                    <Select
-                      disabled={readOnly}
-                      value={form.region}
-                      options={options(['北京', '非北京'])}
-                      className="w-full"
-                      onChange={(value) => updateForm('region', value)}
-                    />
+                    {renderSelect(
+                      form.region,
+                      options(['北京', '非北京']),
+                      (value) => updateForm('region', value),
+                    )}
                   </Descriptions.Item>
 
                   <Descriptions.Item label="报价接收人">
-                    <Select
-                      disabled={readOnly || machineScrapQty >= 500}
-                      value={effectiveQuoteReceiver}
-                      options={options(['采购专员', '内审'])}
-                      className="w-full"
-                      onChange={(value) => updateForm('quoteReceiver', value)}
-                    />
+                    {renderSelect(
+                      effectiveQuoteReceiver,
+                      options(['采购专员', '内审']),
+                      (value) => updateForm('quoteReceiver', value),
+                      machineScrapQty >= 500,
+                    )}
                   </Descriptions.Item>
                 </>
               )}
@@ -229,24 +278,20 @@ export default function ScrapPrototypeEditor({
           {type === 'accounting' && (
             <>
               <Descriptions.Item label="数据来源">
-                <Select
-                  disabled={readOnly}
-                  value={form.sourceType}
-                  options={options(['待报废池', '手动导入'])}
-                  className="w-full"
-                  onChange={(value) => updateForm('sourceType', value)}
-                />
+                {renderSelect(
+                  form.sourceType,
+                  options(['待报废池', '手动导入']),
+                  (value) => updateForm('sourceType', value),
+                )}
               </Descriptions.Item>
 
               {form.sourceType === '手动导入' && (
                 <Descriptions.Item label="手动导入类型">
-                  <Select
-                    disabled={readOnly}
-                    value={form.manualScenario || undefined}
-                    options={options(['丢失赔偿', '机房资产盘亏', '装修'])}
-                    className="w-full"
-                    onChange={(value) => updateForm('manualScenario', value)}
-                  />
+                  {renderSelect(
+                    form.manualScenario,
+                    options(['丢失赔偿', '机房资产盘亏', '装修']),
+                    (value) => updateForm('manualScenario', value),
+                  )}
                 </Descriptions.Item>
               )}
             </>
@@ -255,21 +300,10 @@ export default function ScrapPrototypeEditor({
           {type === 'disposal' && form.assetScope === '机房资产' && (
             <>
               <Descriptions.Item label="归属地">
-                <Select
-                  disabled={readOnly}
-                  value={form.region}
-                  options={options(['北京', '非北京'])}
-                  className="w-full"
-                  onChange={(value) => updateForm('region', value)}
-                />
+                {showValue(form.region)}
               </Descriptions.Item>
               <Descriptions.Item label="是否需要数据清洗">
-                <Select
-                  disabled
-                  value={effectiveNeedsCleaning}
-                  options={options(['是', '否'])}
-                  className="w-full"
-                />
+                {showValue(effectiveNeedsCleaning)}
               </Descriptions.Item>
             </>
           )}
@@ -278,30 +312,36 @@ export default function ScrapPrototypeEditor({
             label={type === 'scrap' ? '报废说明' : '备注'}
             span={3}
           >
-            <Input.TextArea
-              disabled={readOnly}
-              value={type === 'scrap' ? form.description : form.remark}
-              autoSize={{ minRows: 2, maxRows: 4 }}
-              onChange={(event) => updateForm(
-                type === 'scrap' ? 'description' : 'remark',
-                event.target.value,
+            {readOnly
+              ? showValue(type === 'scrap' ? form.description : form.remark)
+              : (
+                <Input.TextArea
+                  value={type === 'scrap' ? form.description : form.remark}
+                  autoSize={{ minRows: 2, maxRows: 4 }}
+                  onChange={(event) => updateForm(
+                    type === 'scrap' ? 'description' : 'remark',
+                    event.target.value,
+                  )}
+                />
               )}
-            />
           </Descriptions.Item>
 
           <Descriptions.Item label="附件" span={3}>
-            <Upload
-              disabled={readOnly}
-              beforeUpload={(file) => {
-                if (file.size > 20 * 1024 * 1024) {
-                  message.error('单文件不能超过20MB');
-                  return Upload.LIST_IGNORE;
-                }
-                return false;
-              }}
-            >
-              <Button disabled={readOnly} icon={<UploadOutlined />}>上传附件</Button>
-            </Upload>
+            {readOnly
+              ? showValue('-')
+              : (
+                <Upload
+                  beforeUpload={(file) => {
+                    if (file.size > 20 * 1024 * 1024) {
+                      message.error('单文件不能超过20MB');
+                      return Upload.LIST_IGNORE;
+                    }
+                    return false;
+                  }}
+                >
+                  <Button icon={<UploadOutlined />}>上传附件</Button>
+                </Upload>
+              )}
           </Descriptions.Item>
         </Descriptions>
       </Card>
@@ -319,46 +359,52 @@ export default function ScrapPrototypeEditor({
         <Card size="small" title="报价与处置信息">
           <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="接收报价人">
-              <Select
-                disabled={readOnly}
-                value={form.quoteReceiver}
-                options={options(['采购专员', '内审'])}
-                className="w-full"
-                onChange={(value) => updateForm('quoteReceiver', value)}
-              />
+              {readOnly
+                ? showValue(form.quoteReceiver)
+                : (
+                  <Input
+                    value={form.quoteReceiver}
+                    placeholder="请选择/输入接收报价人"
+                    onChange={(event) => updateForm('quoteReceiver', event.target.value)}
+                  />
+                )}
             </Descriptions.Item>
             <Descriptions.Item label="回收供应商">
-              <Input
-                disabled={readOnly}
-                value={form.supplier}
-                onChange={(event) => updateForm('supplier', event.target.value)}
-              />
+              {readOnly
+                ? showValue(form.supplier)
+                : <Input value={form.supplier} onChange={(event) => updateForm('supplier', event.target.value)} />}
             </Descriptions.Item>
             <Descriptions.Item label="报价金额">
-              <InputNumber
-                disabled={readOnly}
-                min={0}
-                precision={2}
-                value={form.quoteAmount}
-                className="w-full"
-                onChange={(value) => updateForm('quoteAmount', value)}
-              />
+              {readOnly
+                ? showValue(form.quoteAmount ? Number(form.quoteAmount).toFixed(2) : '-')
+                : (
+                  <InputNumber
+                    min={0}
+                    precision={2}
+                    value={form.quoteAmount}
+                    className="w-full"
+                    onChange={(value) => updateForm('quoteAmount', value)}
+                  />
+                )}
             </Descriptions.Item>
             <Descriptions.Item label="处置凭证" span={3}>
-              <Upload
-                disabled={readOnly}
-                beforeUpload={(file) => {
-                  if (file.size > 20 * 1024 * 1024) {
-                    message.error('单文件不能超过20MB');
-                    return Upload.LIST_IGNORE;
-                  }
-                  return false;
-                }}
-              >
-                <Button disabled={readOnly} icon={<UploadOutlined />}>
-                  上传实物照片/到款凭证/交接签字表
-                </Button>
-              </Upload>
+              {readOnly
+                ? showValue('-')
+                : (
+                  <Upload
+                    beforeUpload={(file) => {
+                      if (file.size > 20 * 1024 * 1024) {
+                        message.error('单文件不能超过20MB');
+                        return Upload.LIST_IGNORE;
+                      }
+                      return false;
+                    }}
+                  >
+                    <Button icon={<UploadOutlined />}>
+                      上传实物照片/到款凭证/交接签字表
+                    </Button>
+                  </Upload>
+                )}
             </Descriptions.Item>
           </Descriptions>
         </Card>
