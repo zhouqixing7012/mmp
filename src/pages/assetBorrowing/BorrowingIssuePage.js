@@ -14,10 +14,12 @@ import {
 } from 'antd';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
+import { BORROW_CUSTODY_TEXT } from '../../mock/assetBorrowingMock';
 import {
   getBorrowingIssueApplication,
   updateAssetBorrowingApplication,
 } from '../../services/assetBorrowingService';
+import { writeWarehouseEmployeePageContext } from '../../services/warehouseWorkbenchEmployeePageService';
 import { formatDateText, formatDepartment } from '../../utils/displayFormat';
 import AssetMatchModal from './AssetMatchModal';
 import { nowText } from './utils';
@@ -158,6 +160,32 @@ export default function BorrowingIssuePage() {
           { node: '库管员发放', person: 'SOHU01-库房管理员', status: '等待员工确认', time: nowText(), comment: `确认方式：${confirmMethod}` },
         ],
       }));
+      writeWarehouseEmployeePageContext({
+        status: '等待员工确认',
+        employee: {
+          id: application.applicant?.id || '',
+          name: application.applicant?.name || '',
+          organization: application.applicant?.department || '',
+        },
+        document: {
+          no: application.id,
+          type: '员工借用',
+          approvalNode: '员工确认',
+        },
+        materials: details.map((item) => ({
+          materialGroup: '资产',
+          materialSubClass: item.subCategory || item.matchedAsset?.subCategory || '',
+          assetTag: item.matchedAsset?.assetTag || '',
+          materialCode: item.materialId || '',
+          quantity: Number(item.quantity || 1),
+          unit: item.unit || '',
+          description: formatAssetDescription(item.matchedAsset, item),
+        })),
+        confirmation: {
+          title: '保管职责',
+          text: BORROW_CUSTODY_TEXT,
+        },
+      });
       messageApi.success('已发起员工借用确认，请等待申请人操作。');
       setApplication(null);
     } finally {

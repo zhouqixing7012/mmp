@@ -43,7 +43,10 @@
 | `src/pages/inventoryManagement/MovePage.js` | 移库发起页、创建页、添加物资弹窗，以及接收单据页签入口。 |
 | `src/pages/inventoryManagement/MoveReceiveContent.js` | 移库接收单列表、接收详情、接收资产明细弹窗和接收/驳回操作。 |
 | `src/pages/inventoryManagement/TransferPage.js` | 库存转移单列表、创建页和添加转移物资弹窗。 |
-| `src/pages/assetInventory/` | 资产盘点。 |
+| `src/pages/assetInventory/` | 资产盘点 PC 页面、移动端原型及相关样式。 |
+| `src/pages/assetInventory/AssetInventoryMobilePrototype.jsx` | 移动端资产盘点工作台、详情、普通扫码、快速扫描、照片模拟和报失确认的本地演示状态。 |
+| `src/pages/assetInventory/assetInventoryMobile.css` | 移动端资产盘点原型的移动端容器、卡片、扫码区、弹窗和响应式样式。 |
+| `src/pages/assetInventory/AssetInventoryMobilePrototype.test.jsx` | 移动端原型的工作台筛选、扫码、报失和快速扫描组件测试。 |
 | `src/pages/yewurules/` | 后台框架、菜单和页面 scope。 |
 | `src/prototype-annotations/` | 标注基线、Coverage、target、定位、编辑、评审和诊断。 |
 
@@ -160,6 +163,8 @@ localStorage
 ```
 
 后台页面继续复用 `QueryBar / QueryItem`、`DetailGrid / DetailItem`、`StatusTag`、`SelectModal` 和 Ant Design Table。耗材接收复用资产接收的页面骨架，但按物资类型分为“低值耐用品逐件维护”和“低耗接收后自动入库”两条状态流。入库单由独立 `InboundPage` 承载：公共单据头保持一致，新增入库、采购接收、退库入库、借用归还只在物资列表和添加/选择物资区域按业务类型分叉。出库单由独立 `OutboundPage` 承载：领用出库、借用出库共用单据头，只在物资列表和出库业务维护字段分叉。移库由 `MovePage + MoveReceiveContent` 承载发起和接收两侧；库存转移由独立 `TransferPage` 承载现有查询列表、创建页和添加转移物资弹窗。
+
+资产盘点的后台菜单由 `src/pages/yewurules/config/menuConfig.js` 配置；`src/pages/assetInventory/index.js` 根据二级菜单渲染 PC 盘点项目或 `AssetInventoryMobilePrototype`。移动端原型只维护本地演示状态，不连接后端、不写生产数据；扫码、相机和网络异常均通过可操作的演示按钮复现文档流程。
 
 ### 统一动效
 

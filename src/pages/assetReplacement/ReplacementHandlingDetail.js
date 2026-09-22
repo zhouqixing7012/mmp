@@ -20,6 +20,7 @@ import {
   requestReplacementConfirmation,
   updateAssetReplacementApplication,
 } from '../../services/assetReplacementService';
+import { writeWarehouseEmployeePageContext } from '../../services/warehouseWorkbenchEmployeePageService';
 import { formatDateText, formatDepartment } from '../../utils/displayFormat';
 import ReplacementAssetSelectModal from './ReplacementAssetSelectModal';
 import ReplacementEmployeeAssetsModal from './ReplacementEmployeeAssetsModal';
@@ -43,6 +44,8 @@ const FLOOR_OPTIONS = {
   上海分公司办公区: ['10层', '11层'],
 };
 const PURPOSE_OPTIONS = ['员工用机', '部门公用', '其他用途', '专业用途'];
+const REPLACEMENT_CUSTODY_TEXT = '领用人须承担妥善保管物资的责任，除自然损耗外，不得人为损坏或者疏于维护，否则承担相应的赔偿责任。应公司需要，领用人应当配合及时调换或归还借用物资，如延迟甚至拒绝交还公司物资，公司保留采取进一步手段的权利，包括但不限于留置领用人工资、奖金或者其他个人物资。';
+const REPLACEMENT_RETURN_CONFIRMATION_TEXT = '请核对退库资产明细后完成刷卡或扫码确认。';
 
 function SectionTitle({ children }) {
   return (
@@ -118,6 +121,33 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
   };
 
   const openEmployeeConfirmation = (scene) => {
+    const isReturnScene = scene === '旧资产退回';
+    const targetAsset = isReturnScene ? application.oldAsset : newAsset || application.newAsset;
+    writeWarehouseEmployeePageContext({
+      status: '等待员工确认',
+      employee: {
+        id: application.applicant?.id || '',
+        name: application.applicant?.name || '',
+        organization: application.applicant?.department || '',
+      },
+      document: {
+        no: application.id,
+        type: '资产更换',
+        approvalNode: isReturnScene ? '退库确认' : '领用确认',
+      },
+      materials: targetAsset ? [{
+        materialGroup: '资产',
+        materialSubClass: targetAsset.subCategory || targetAsset.assetSubClass || '',
+        assetTag: targetAsset.assetTag || '',
+        materialCode: targetAsset.materialId || '',
+        quantity: Number(targetAsset.quantity || 1),
+        unit: targetAsset.unit || '',
+        description: targetAsset.assetDesc || targetAsset.materialDesc || '',
+      }] : [],
+      confirmation: isReturnScene
+        ? { title: '退回确认说明', text: REPLACEMENT_RETURN_CONFIRMATION_TEXT }
+        : { title: '保管职责', text: REPLACEMENT_CUSTODY_TEXT },
+    });
     navigate('/yewurules', {
       state: {
         workspace: '员工资产确认',

@@ -1,18 +1,54 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Button, Card, Input, Space, Table, Typography, message as antdMessage } from 'antd';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
-import StatusTag from '../../components/StatusTag';
 
 const { TextArea } = Input;
+
+function money(value) {
+  return Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function displayWarehouseName(value) {
+  return String(value || '').replace(/^[^.-]+[.-]/, '');
+}
+
+function uniqueText(values) {
+  return Array.from(new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))).join('、');
+}
+
+function lineLocation(line) {
+  return [line?.city, line?.building, line?.floor, line?.room].filter(Boolean).join('.');
+}
+
+function approvalRemark(line) {
+  return line?.businessLine || line?.newAssetLocation || line?.enabledDate || lineLocation(line) || '-';
+}
 
 export default function OutboundApprovalPage({ outbound, onApprove, onReject, onBack }) {
   const source = outbound || {};
   const lines = source.lines || [];
-  const history = source.approvalHistory || [];
-  const currentStep = source.approvalSteps?.[source.currentApprovalIndex || 0];
   const [opinion, setOpinion] = useState('');
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const canOperate = source.status === '审批中' && typeof onApprove === 'function';
+
+  const summary = useMemo(() => {
+    const users = lines.map((line) => line.issuePerson || line.borrowPerson || line.person);
+    const departments = lines.map((line) => line.department);
+    const locations = lines.map(lineLocation);
+    const prNos = [source.prNo, ...lines.map((line) => line.prNo || line.prLine)];
+    const poNos = [source.poNo, ...lines.map((line) => line.poNo)];
+    const assetClasses = lines.map((line) => line.assetClass);
+    return {
+      user: uniqueText(users) || '-',
+      department: uniqueText(departments) || '-',
+      location: uniqueText(locations) || '-',
+      prNo: uniqueText(prNos) || '-',
+      poNo: uniqueText(poNos) || '-',
+      assetClass: uniqueText(assetClasses) || '-',
+      quantity: lines.reduce((sum, line) => sum + Number(line.quantity || 0), 0),
+      amount: lines.reduce((sum, line) => sum + Number(line.originalValue || 0), 0),
+    };
+  }, [lines, source.poNo, source.prNo]);
 
   const approve = () => {
     onApprove(opinion.trim() || '同意');
@@ -28,43 +64,63 @@ export default function OutboundApprovalPage({ outbound, onApprove, onReject, on
     setOpinion('');
   };
 
-  const approvalColumns = [
-    { title: '序号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
-    { title: '审批环节', dataIndex: 'node', width: 220 },
-    { title: '申请人/审批人', dataIndex: 'handler', width: 180 },
-    { title: '审批状态', dataIndex: 'action', width: 120, align: 'center', render: (value) => <StatusTag value={value} type="business" /> },
-    { title: '审批时间', dataIndex: 'time', width: 180, render: (value) => value || '-' },
-    { title: '审批意见', dataIndex: 'opinion', render: (value) => value || '-' },
-  ];
-
   const assetColumns = [
     { title: '序号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
-    { title: '物资说明', dataIndex: 'materialDesc', width: 330 },
+    { title: '物资说明', dataIndex: 'materialDesc', width: 320 },
     { title: '资产标签号', dataIndex: 'assetTag', width: 150, render: (value) => value || '-' },
     { title: 'SN号', dataIndex: 'sn', width: 170, render: (value) => value || '-' },
     { title: '数量', dataIndex: 'quantity', width: 85, align: 'center', render: (value) => value || '-' },
-    { title: '领用人', dataIndex: 'issuePerson', width: 150, render: (value) => value || '-' },
-    { title: '领用日期', dataIndex: 'issueDate', width: 130, render: (value) => value || '-' },
-    { title: '资产状态', dataIndex: 'outboundStatus', width: 130, render: (value) => <StatusTag value={value || '-'} /> },
+    {
+      title: '价值',
+      children: [
+        {
+          title: '单价',
+          width: 120,
+          align: 'right',
+          render: (_, line) => {
+            const quantity = Number(line.quantity || 0);
+            const unitPrice = line.unitPrice ?? (quantity > 0 ? Number(line.originalValue || 0) / quantity : 0);
+            return money(unitPrice);
+          },
+        },
+        { title: '原值', dataIndex: 'originalValue', width: 120, align: 'right', render: money },
+      ],
+    },
+    { title: '备注', width: 220, render: (_, line) => approvalRemark(line) },
   ];
 
   return (
     <Space direction="vertical" size={16} className="w-full" data-page-view-key="outbound-approval">
       {contextHolder}
-      <Typography.Title level={3} className="!mb-0">物资出库审批</Typography.Title>
+      <div className="flex items-center justify-between gap-4">
+        <Typography.Title level={3} className="!mb-0">物资出库申请</Typography.Title>
+        <Typography.Text strong>出库单号：{source.documentNo || '-'}</Typography.Text>
+      </div>
 
-      <Card size="small" title="出库单信息">
-        <DetailGrid columns={3} labelWidth={112}>
-          <DetailItem label="出库单号">{source.documentNo || '-'}</DetailItem>
-          <DetailItem label="出库类型">{source.outboundType || '-'}</DetailItem>
-          <DetailItem label="仓库名称">{source.warehouse || '-'}</DetailItem>
+      <Card size="small" title="基本信息">
+        <DetailGrid columns={3} labelWidth={104}>
           <DetailItem label="制单人">{source.creator || '-'}</DetailItem>
           <DetailItem label="制单时间">{source.createdDate || '-'}</DetailItem>
-          <DetailItem label="审批状态"><StatusTag value={source.status || '-'} /></DetailItem>
+          <DetailItem label="使用人">{summary.user}</DetailItem>
+          <DetailItem label="使用部门">{summary.department}</DetailItem>
+          <DetailItem label="仓库名称">{displayWarehouseName(source.warehouse) || '-'}</DetailItem>
+          <DetailItem label="地点位置">{summary.location}</DetailItem>
+          <DetailItem label="PR单号">{summary.prNo}</DetailItem>
+          <DetailItem label="PO单号">{summary.poNo}</DetailItem>
+          <DetailItem label="资产大类">{summary.assetClass}</DetailItem>
         </DetailGrid>
       </Card>
 
-      <Card size="small" title="出库物资" extra={<Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>}>
+      <Card
+        size="small"
+        title="出库资产信息"
+        extra={(
+          <Space size={24}>
+            <Typography.Text>总数量：<Typography.Text strong>{summary.quantity}</Typography.Text></Typography.Text>
+            <Typography.Text>总金额：<Typography.Text strong>{money(summary.amount)}</Typography.Text></Typography.Text>
+          </Space>
+        )}
+      >
         <Table
           rowKey={(record, index) => record.id || record.assetTag || `line-${index}`}
           size="small"
@@ -74,17 +130,6 @@ export default function OutboundApprovalPage({ outbound, onApprove, onReject, on
           dataSource={lines}
           columns={assetColumns}
         />
-      </Card>
-
-      <Card size="small" title="审批信息">
-        <DetailGrid columns={3} labelWidth={112}>
-          <DetailItem label="审批路线">{source.approvalRoute || '-'}</DetailItem>
-          <DetailItem label="当前节点">{currentStep?.name || (source.status === '已完成' ? '审批完成' : '-')}</DetailItem>
-          <DetailItem label="当前处理人">{currentStep?.approver || '-'}</DetailItem>
-          <DetailItem label="发起人">{source.approvalInitiator || source.creator || '-'}</DetailItem>
-          <DetailItem label="发起时间">{source.approvalStartedAt || '-'}</DetailItem>
-          <DetailItem label="审批状态"><StatusTag value={source.status || '-'} /></DetailItem>
-        </DetailGrid>
       </Card>
 
       {canOperate && (
@@ -98,27 +143,13 @@ export default function OutboundApprovalPage({ outbound, onApprove, onReject, on
         </Card>
       )}
 
-      {history.length > 0 && (
-        <Card size="small" title="历史审批记录" extra={<Typography.Text type="secondary">共 {history.length} 条</Typography.Text>}>
-          <Table
-            rowKey={(record, index) => `${record.node || 'record'}-${index}`}
-            columns={approvalColumns}
-            dataSource={history}
-            pagination={false}
-            size="small"
-            bordered
-            scroll={{ x: 'max-content' }}
-          />
-        </Card>
-      )}
-
       <div className="flex justify-center gap-3">
-        {canOperate ? (
+        {canOperate && (
           <>
             <Button type="primary" onClick={approve}>同意</Button>
             <Button danger onClick={reject}>驳回</Button>
           </>
-        ) : null}
+        )}
         <Button onClick={onBack}>返回</Button>
       </div>
     </Space>

@@ -1,4 +1,5 @@
 import { INVENTORY_ASSET_POOL } from './inventoryAssetPool';
+import { BORROW_CUSTODY_TEXT } from './assetBorrowingMock';
 
 export const WAREHOUSE_WORKBENCH_USERS = ['114111-杨芊', '213852-孙志强'];
 export const CURRENT_WAREHOUSE_OPERATOR = '114111-杨芊';
@@ -147,7 +148,21 @@ export const WAREHOUSE_WORKBENCH_TASKS = [
   },
 ];
 
-export const WAREHOUSE_EMPLOYEE_PAGE_STORAGE_KEY = 'mmp.warehouseWorkbench.employeePage.v1';
+const GENERAL_CUSTODY_TEXT = '请核对本人信息及本次领用物资，并按现场提示完成刷卡或扫码确认。领用后请妥善保管公司资产及物资。';
+const RETURN_CONFIRMATION_TEXT = '请核对退库资产明细后完成刷卡或扫码确认。';
+
+export function buildWarehouseEmployeePageConfirmation(task) {
+  if (task?.documentType === '员工退库') {
+    return { title: '退回确认说明', text: RETURN_CONFIRMATION_TEXT };
+  }
+  if (task?.documentType === '员工借用') {
+    return { title: '保管职责', text: BORROW_CUSTODY_TEXT };
+  }
+  if (['新员工领用', '资产申请', '耗材申请', '领用申请单'].includes(task?.documentType)) {
+    return { title: '保管职责', text: GENERAL_CUSTODY_TEXT };
+  }
+  return null;
+}
 
 export function buildWarehouseEmployeePageContext(task) {
   return {
@@ -172,8 +187,6 @@ export function buildWarehouseEmployeePageContext(task) {
       unit: item.unit || '',
       description: item.materialDesc || '',
     })),
-    responsibility: ['新员工领用', '资产申请', '耗材申请', '领用申请单'].includes(task.documentType)
-      ? '请核对本人信息及本次领用物资，并按现场提示完成刷卡或扫码确认。领用后请妥善保管公司资产及物资。'
-      : '',
+    confirmation: buildWarehouseEmployeePageConfirmation(task),
   };
 }

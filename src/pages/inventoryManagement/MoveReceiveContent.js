@@ -272,7 +272,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
           receiveTime: now,
           transactionIn: '25',
         } : line);
-        const nextStatus = syncLines(nextLines, nextLines.every((line) => line.moveStatus !== '待接收') ? { reminderStatus: '已结束' } : {});
+        const nextStatus = syncLines(nextLines, nextLines.every((line) => line.moveStatus !== '待接收') ? { notificationStatus: '已结束', reminderStatus: '已结束' } : {});
         setSelectedKeys([]);
         messageApi.success(nextStatus === '出库待接收' ? '所选物资已接收，单据仍有待接收物资' : `移库单已更新为${nextStatus}`);
       },
@@ -340,6 +340,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
           lines: nextLines,
           status: nextStatus,
           reverseDocumentNos: [...(document.reverseDocumentNos || []), reverseDocumentNo],
+          notificationStatus: nextStatus === '出库待接收' ? document.notificationStatus : '已结束',
           reminderStatus: nextStatus === '出库待接收' ? document.reminderStatus : '已结束',
         } : document),
       ];
