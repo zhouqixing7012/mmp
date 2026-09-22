@@ -81,7 +81,7 @@ export default function ScrapWorkflowCard({
   currentNode = '',
 }) {
   const majorCategory = selectedAssets[0]?.majorCategory || '';
-  const hasMachine = selectedAssets.some((item) => item.scope === '机房资产');
+  const hasMachine = selectedAssets.some((item) => item.scope === '机房资产' && item.scrapMethod !== '调账');
   const needsMis = selectedAssets.some((item) => (
     ['PC', 'NOTEBOOK'].includes(item.majorCategory)
     && item.scrapType !== '丢失'
