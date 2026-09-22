@@ -18,18 +18,16 @@ import {
   money,
 } from './scrapPrototypeData';
 import {
-  mockCompanies,
   mockCostCenters,
   mockPlates,
-  mockWarehouseInfoData,
 } from '../../mock/businessRulesMock';
+import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 
 const { Text } = Typography;
 
-const companyOptions = mockCompanies.map((item) => ({
-  label: `${item.code}.${item.desc}`,
-  value: `${item.code}.${item.desc}`,
-}));
+const companyOptions = Array.from(
+  new Set(warehouseCatalog.map((item) => item.company).filter(Boolean)),
+).map((value) => ({ label: value, value }));
 
 const plateOptions = mockPlates.map((item) => ({
   label: `${item.code}.${item.desc}`,
@@ -41,12 +39,10 @@ const costCenterOptions = mockCostCenters.map((item) => ({
   value: `${item.code}.${item.desc}`,
 }));
 
-const warehouseOptions = mockWarehouseInfoData
-  .filter((item) => item.enabled)
-  .map((item) => ({
-    label: `${item.code}.${item.desc}`,
-    value: `${item.code}.${item.desc}`,
-  }));
+const warehouseOptions = warehouseCatalog.map((item) => ({
+  label: `${item.warehouseCode}.${item.warehouseDescription}`,
+  value: `${item.warehouseCode}.${item.warehouseDescription}`,
+}));
 
 function options(values) {
   return values.map((value) => ({ label: value, value }));
