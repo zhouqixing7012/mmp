@@ -169,6 +169,16 @@ export const ACCOUNTING_ASSET_POOL = SCRAP_ASSET_POOL.map((item, index) => ({
   reason: index % 3 === 2 ? '设备不满足继续使用要求' : '达到报废条件',
   sourceBusinessType: index === 0 ? '跨公司转移' : '资产报废',
   sourceBusinessNo: index === 0 ? 'CT202609230001' : `BF20260923${String(index + 1).padStart(4, '0')}`,
+  newCompany: index === 0 ? '115.新媒体-上海' : '',
+  newPlate: index === 0 ? '17_Corporate' : '',
+  newCostCenter: index === 0 ? '112064_新媒体成本中心' : '',
+  newResponsiblePerson: index === 0 ? '215410-卢铭华' : '',
+  targetWarehouse: index === 0 ? 'I3001.资产上海分公司库（新媒体上海）' : '',
+  targetCity: index === 0 ? '37.上海市' : '',
+  targetBuilding: index === 0 ? '127.瑞安广场' : '',
+  targetFloor: index === 0 ? '12层' : '',
+  purpose: item.purpose || '',
+  project: item.project || '',
 }));
 
 export const DISPOSAL_ASSET_POOL = ACCOUNTING_ASSET_POOL
