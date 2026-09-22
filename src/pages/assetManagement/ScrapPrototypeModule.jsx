@@ -7,7 +7,6 @@ import {
   ACCOUNTING_ASSET_POOL,
   DISPOSAL_ASSET_POOL,
   SCRAP_ASSET_POOL,
-  filterAssetsForScope,
 } from './scrapPrototypeData';
 import {
   getScrapPrototypeRecords,
@@ -176,10 +175,11 @@ export default function ScrapPrototypeModule({ type }) {
 
   const openRecord = (record, editable) => {
     const form = record.formSnapshot
-      ? { ...record.formSnapshot }
+      ? { ...record.formSnapshot, id: record.id }
       : {
           ...defaultForm(type),
           ...record,
+          id: record.id,
           applicationDate: record.createdAt,
           documentStatus: record.documentStatus,
           currentNode: record.currentNode,
@@ -223,11 +223,12 @@ export default function ScrapPrototypeModule({ type }) {
       ? (uniqueScopes.size > 1 ? '混合' : assets[0]?.scope || '混合')
       : form.assetScope;
 
+    const normalizedForm = { ...form, assetScope };
     const nextForm = {
-      ...form,
+      ...normalizedForm,
       applicationNo,
-      documentStatus: submit ? submitStatus(type, form) : '草稿',
-      currentNode: submit ? firstNode(type, form, assets) : '草稿',
+      documentStatus: submit ? submitStatus(type, normalizedForm) : '草稿',
+      currentNode: submit ? firstNode(type, normalizedForm, assets) : '草稿',
     };
 
     const targetCompanies = Array.from(new Set(assets.map((item) => item.newCompany).filter(Boolean)));
