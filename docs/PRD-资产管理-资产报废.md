@@ -29,10 +29,10 @@
 
 | 业务分类 | 资产大类 |
 |---|---|
-| 办公设备 | 11.PC / 12.NOTEBOOK / 13.OFFICE EQUIPMENT |
+| 办公设备 | 11.PC / 12.NOTEBOOK / 13.OFFICE EQUIPMENT / 16.FURNITURE / 18.VEHICLE / 19.BUILDINGS / 20.Investment Properties / 21.LEASEHOLD IMPROVEMENT / 22.Park lot land use rights |
 | 软件 | 17.SOFTWARE |
 
-机房资产按资产大类判定：14.SERVER、15.NET EQUIPMENT。关联配件通过主备件关系随主资产带出，不作为独立资产范围另行发起。
+机房资产按资产大类判定：14.SERVER、15.NET EQUIPMENT。除机房资产和软件外，本轮涉及的其余资产大类统一按“办公设备”流程处理。关联配件通过主备件关系随主资产带出，不作为独立资产范围另行发起。
 
 ### 2.2 发起权限
 
@@ -95,6 +95,8 @@
 
 进入待报废池后：
 
+- 在库资产状态更新为“在库-待报废”；
+- 员工名下资产状态保持不变；
 - 报废申请流程结束；
 - 系统向所有实际参与人发送服务号通知；
 - 后续进入账面报废流程。
@@ -360,7 +362,7 @@ NO 审批节点为 NO 部 7 级及以上领导。
 
 当业务需要内审参与报价时，由内审接收报价并维护报价资料。
 
-现状规则中，报废数量大于 500 台或报废金额大于 100 万元时必须进入内审报价流程。
+采购专员可指定报价接收人为采购专员或内审；当本次报废资产数量达到 500 台及以上时，报价接收人强制为内审，不允许改为采购专员。
 
 内审报价支持多家供应商：
 
@@ -451,11 +453,17 @@ FS 审批通过后判断资产归属地。
 
 ## 7.1 范围
 
-办公设备固定为：
+办公设备范围：
 
 - 11.PC；
 - 12.NOTEBOOK；
-- 13.OFFICE EQUIPMENT。
+- 13.OFFICE EQUIPMENT；
+- 16.FURNITURE；
+- 18.VEHICLE；
+- 19.BUILDINGS；
+- 20.Investment Properties；
+- 21.LEASEHOLD IMPROVEMENT；
+- 22.Park lot land use rights。
 
 发起人为 ES 专员。
 
@@ -479,7 +487,7 @@ ES 专员提单时需选择“是否已处置完成”标签。
 > → 报废申请流程结束  
 > → 账面报废流程
 
-13.OFFICE EQUIPMENT 不经过 MIS 鉴定，直接进入 ES 主管确认。
+除 11.PC、12.NOTEBOOK 外，其余办公设备大类不经过 MIS 鉴定，直接进入 ES 主管确认。
 
 ## 7.4 MIS 鉴定
 
