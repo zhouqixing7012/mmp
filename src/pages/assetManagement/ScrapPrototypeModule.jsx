@@ -4,10 +4,15 @@ import { message } from 'antd';
 import ScrapPrototypeList from './ScrapPrototypeList';
 import ScrapPrototypeEditor from './ScrapPrototypeEditor';
 import {
+  ACCOUNTING_ASSET_POOL,
+  DISPOSAL_ASSET_POOL,
   SCRAP_ASSET_POOL,
   filterAssetsForScope,
-  getInitialBusinessRows,
 } from './scrapPrototypeData';
+import {
+  getScrapPrototypeRecords,
+  saveScrapPrototypeRecords,
+} from '../../services/scrapPrototypeService';
 
 const MODULES = {
   crossCompany: {
@@ -39,7 +44,12 @@ function defaultForm(type) {
     creator: type === 'accounting' ? '吕静' : type === 'disposal' ? 'ES专员' : '当前登录人',
     applicationDate: dayjs().format('YYYY-MM-DD'),
     company: '114.新媒体',
-    assetScope: type === 'accounting' ? '混合' : type === 'scrap' ? '机房资产' : '办公设备',
+    assetScope: type === 'accounting' ? '混合' : '',
+    plate: '17_Corporate',
+    officeArea: '-',
+    contactPhone: '-',
+    email: '-',
+    department: '-',
     remark: '',
     description: '',
     scrapMethod: '全部报废',
@@ -93,17 +103,24 @@ function submitStatus(type, form) {
 }
 
 function seedAssets(type, record) {
+  const sourcePool = type === 'accounting'
+    ? ACCOUNTING_ASSET_POOL
+    : type === 'disposal'
+      ? DISPOSAL_ASSET_POOL
+      : SCRAP_ASSET_POOL;
   const source = record.assetScope === '混合'
-    ? SCRAP_ASSET_POOL
-    : filterAssetsForScope(record.assetScope);
+    ? sourcePool
+    : sourcePool.filter((item) => item.scope === record.assetScope);
 
   return source
     .slice(0, Math.min(3, Math.max(1, record.assetCount || 1)))
     .map((item, index) => ({
       ...item,
-      scrapMethod: type === 'crossCompany' ? '调账' : '全部报废',
-      scrapType: '已到报废期',
-      reason: record.remark || '业务演示原因',
+      scrapMethod: type === 'crossCompany'
+        ? '调账'
+        : item.scrapMethod || record.scrapMethod || '全部报废',
+      scrapType: item.scrapType || '已到报废期',
+      reason: item.reason || record.remark || '业务演示原因',
       dataCleaning: item.scope === '机房资产' && index === 0 ? '是' : undefined,
       newCompany: type === 'crossCompany' ? '115.新媒体-上海' : '',
       newPlate: type === 'crossCompany' ? '17_Corporate' : '',
@@ -118,12 +135,12 @@ function seedAssets(type, record) {
 
 export default function ScrapPrototypeModule({ type }) {
   const config = MODULES[type];
-  const [records, setRecords] = useState(() => getInitialBusinessRows(type));
+  const [records, setRecords] = useState(() => getScrapPrototypeRecords(type));
   const [view, setView] = useState('list');
   const [editorState, setEditorState] = useState(null);
 
   useEffect(() => {
-    setRecords(getInitialBusinessRows(type));
+    setRecords(getScrapPrototypeRecords(type));
     setView('list');
     setEditorState(null);
   }, [type]);
@@ -132,6 +149,26 @@ export default function ScrapPrototypeModule({ type }) {
     setEditorState({
       form: defaultForm(type),
       assets: [],
+      readOnly: false,
+    });
+    setView('editor');
+  };
+
+  const copyRecord = (record) => {
+    const sourceForm = record.formSnapshot
+      ? { ...record.formSnapshot }
+      : { ...defaultForm(type), ...record };
+
+    setEditorState({
+      form: {
+        ...sourceForm,
+        id: undefined,
+        applicationNo: '',
+        documentStatus: '草稿',
+        applicationDate: dayjs().format('YYYY-MM-DD'),
+        currentNode: '草稿',
+      },
+      assets: (record.assetsSnapshot || seedAssets(type, record)).map((item) => ({ ...item })),
       readOnly: false,
     });
     setView('editor');
@@ -171,7 +208,11 @@ export default function ScrapPrototypeModule({ type }) {
       return;
     }
 
-    setRecords((current) => current.filter((item) => !ids.includes(item.id)));
+    setRecords((current) => {
+      const next = current.filter((item) => !ids.includes(item.id));
+      saveScrapPrototypeRecords(type, next);
+      return next;
+    });
     message.success('删除成功');
   };
 
@@ -189,15 +230,25 @@ export default function ScrapPrototypeModule({ type }) {
       currentNode: submit ? firstNode(type, form, assets) : '草稿',
     };
 
+    const targetCompanies = Array.from(new Set(assets.map((item) => item.newCompany).filter(Boolean)));
+    const scrapMethods = Array.from(new Set(assets.map((item) => item.scrapMethod).filter(Boolean)));
+    const nowText = dayjs().format('YYYY-MM-DD HH:mm:ss');
     const nextRecord = {
       id: form.id || `${type}-${applicationNo}`,
       applicationNo,
       documentStatus: nextForm.documentStatus,
       assetScope,
       company: form.company,
+      targetCompany: targetCompanies.length > 1 ? '多公司' : targetCompanies[0] || form.targetCompany || '',
+      plate: form.plate,
       creator: form.creator,
       createdAt: form.applicationDate,
+      lastModifiedAt: nowText,
       assetCount: assets.length,
+      originalValueTotal: assets.reduce((sum, item) => sum + Number(item.originalValue || 0), 0),
+      netValueTotal: assets.reduce((sum, item) => sum + Number(item.netValue || 0), 0),
+      scrapMethod: scrapMethods.length > 1 ? '混合' : scrapMethods[0] || form.scrapMethod,
+      region: form.region,
       currentNode: nextForm.currentNode,
       remark: form.remark || form.description,
       formSnapshot: nextForm,
@@ -206,14 +257,39 @@ export default function ScrapPrototypeModule({ type }) {
 
     setRecords((current) => {
       const exists = current.some((item) => item.id === nextRecord.id);
-      return exists
+      const next = exists
         ? current.map((item) => (item.id === nextRecord.id ? nextRecord : item))
         : [nextRecord, ...current];
+      saveScrapPrototypeRecords(type, next);
+      return next;
     });
 
     message.success(submit ? '提交成功' : '草稿保存成功');
     setView('list');
     setEditorState(null);
+  };
+
+  const executeAccounting = (record) => {
+    if (type !== 'accounting' || record.documentStatus !== '待提单人确认') return;
+
+    setRecords((current) => {
+      const next = current.map((item) => (
+        item.id === record.id
+          ? {
+              ...item,
+              documentStatus: '已完成',
+              currentNode: '流程结束',
+              lastModifiedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+              formSnapshot: item.formSnapshot
+                ? { ...item.formSnapshot, documentStatus: '已完成', currentNode: '流程结束' }
+                : item.formSnapshot,
+            }
+          : item
+      ));
+      saveScrapPrototypeRecords(type, next);
+      return next;
+    });
+    message.success('账面报废执行完成');
   };
 
   if (view === 'list') {
@@ -224,6 +300,8 @@ export default function ScrapPrototypeModule({ type }) {
         records={records}
         onCreate={openCreate}
         onOpen={openRecord}
+        onCopy={copyRecord}
+        onExecute={executeAccounting}
         onDeleteDrafts={deleteDrafts}
       />
     );
