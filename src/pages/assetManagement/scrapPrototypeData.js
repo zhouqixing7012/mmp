@@ -65,6 +65,8 @@ function fromMaintenance(row, extra = {}) {
 
 function fromCatalog({ id, majorCategory, tagNo, company, warehouse, owner, status, city, building, floor, originalValue, scope }) {
   const material = materialByMajor(majorCategory);
+  if (!material) return null;
+
   return {
     id,
     tagNo,
@@ -157,7 +159,33 @@ export const SCRAP_ASSET_POOL = [
     floor: gzWarehouse?.floor || '',
     originalValue: 6500000,
   }),
-].filter((item) => item.majorCategory);
+].filter(Boolean);
+
+export const ACCOUNTING_ASSET_POOL = SCRAP_ASSET_POOL.map((item, index) => ({
+  ...item,
+  status: String(item.status || '').startsWith('在库') ? '在库-待报废' : item.status,
+  scrapMethod: index === 0 ? '调账' : index === 1 ? '部分报废' : '全部报废',
+  scrapType: index % 3 === 2 ? '未到报废期' : '已到报废期',
+  reason: index % 3 === 2 ? '设备不满足继续使用要求' : '达到报废条件',
+  sourceBusinessType: index === 0 ? '跨公司转移' : '资产报废',
+  sourceBusinessNo: index === 0 ? 'CT202609230001' : `BF20260923${String(index + 1).padStart(4, '0')}`,
+}));
+
+export const DISPOSAL_ASSET_POOL = ACCOUNTING_ASSET_POOL
+  .filter((item) => item.scope !== '软件' && item.scrapMethod !== '调账')
+  .map((item, index) => ({
+    ...item,
+    id: `disposal-${item.id}`,
+    sourceAssetId: item.id,
+    status: '已报废-待处置',
+    sourceScrapNo: item.sourceBusinessType === '资产报废' ? item.sourceBusinessNo : '-',
+    sourceAccountingNo: `ZMBF20260923${String(index + 1).padStart(4, '0')}`,
+    scrapDate: '2026-09-23',
+    disposalStatus: '待处置',
+    enteredAt: '2026-09-23',
+    region: String(item.city || '').includes('北京') ? '北京' : '非北京',
+    dataCleaning: item.scope === '机房资产' && index === 0 ? '是' : '否',
+  }));
 
 const businessRows = {
   crossCompany: [
@@ -279,7 +307,25 @@ const businessRows = {
 };
 
 export function getInitialBusinessRows(type) {
-  return (businessRows[type] || []).map((row) => ({ ...row }));
+  const sourcePool = type === 'accounting'
+    ? ACCOUNTING_ASSET_POOL
+    : type === 'disposal'
+      ? DISPOSAL_ASSET_POOL
+      : SCRAP_ASSET_POOL;
+
+  return (businessRows[type] || []).map((row) => {
+    const scoped = row.assetScope === '混合'
+      ? sourcePool
+      : sourcePool.filter((item) => item.scope === row.assetScope);
+    const assets = scoped.slice(0, Math.max(1, row.assetCount || 1));
+
+    return {
+      ...row,
+      lastModifiedAt: row.lastModifiedAt || row.createdAt,
+      originalValueTotal: assets.reduce((sum, item) => sum + Number(item.originalValue || 0), 0),
+      netValueTotal: assets.reduce((sum, item) => sum + Number(item.netValue || 0), 0),
+    };
+  });
 }
 
 export function filterAssetsForScope(scope) {
