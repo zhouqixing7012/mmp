@@ -14,12 +14,11 @@ import StatusTag from '../../components/StatusTag';
 import ScrapWorkflowCard from './ScrapWorkflowCard';
 import ScrapPrototypeAssetTable from './ScrapPrototypeAssetTable';
 import { ASSET_SCOPE_OPTIONS } from './scrapPrototypeData';
-import { mockCompanies } from '../../mock/businessRulesMock';
+import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 
-const companyOptions = mockCompanies.map((item) => ({
-  label: `${item.code}.${item.desc}`,
-  value: `${item.code}.${item.desc}`,
-}));
+const companyOptions = Array.from(
+  new Set(warehouseCatalog.map((item) => item.company).filter(Boolean)),
+).map((value) => ({ label: value, value }));
 
 function options(values) {
   return values.map((value) => ({ label: value, value }));
