@@ -202,7 +202,11 @@ export default function ScrapPrototypeAssetTable({
 
   const crossCompanyColumns = [
     ...baseColumns,
-
+    { title: '原成本中心', dataIndex: 'costCenter', width: 180 },
+    { title: '原仓库', dataIndex: 'warehouse', width: 200 },
+    { title: '原 City', dataIndex: 'city', width: 120 },
+    { title: '原 Building', dataIndex: 'building', width: 150 },
+    { title: '原 Floor', dataIndex: 'floor', width: 110 },
     {
       title: '新公司',
       dataIndex: 'newCompany',
@@ -461,13 +465,16 @@ export default function ScrapPrototypeAssetTable({
       dataIndex: 'scrapType',
       width: 140,
       render: (value, record) => (
-        <Select
-          disabled={readOnly}
-          value={value}
-          options={SCRAP_TYPE_OPTIONS}
-          className="w-full"
-          onChange={(nextValue) => onChange(record.id, 'scrapType', nextValue)}
-        />
+        readOnly
+          ? displayValue(value)
+          : (
+            <Select
+              value={value}
+              options={SCRAP_TYPE_OPTIONS}
+              className="w-full"
+              onChange={(nextValue) => onChange(record.id, 'scrapType', nextValue)}
+            />
+          )
       ),
     },
     {
@@ -482,6 +489,10 @@ export default function ScrapPrototypeAssetTable({
     },
     { title: '来源业务类型', dataIndex: 'sourceBusinessType', width: 140 },
     { title: '来源业务单号', dataIndex: 'sourceBusinessNo', width: 170 },
+    { title: '新公司', dataIndex: 'newCompany', width: 160, render: (value) => displayValue(value) },
+    { title: '新板块', dataIndex: 'newPlate', width: 150, render: (value) => displayValue(value) },
+    { title: '新责任人', dataIndex: 'newResponsiblePerson', width: 160, render: (value) => displayValue(value) },
+    { title: '调账后仓库', dataIndex: 'targetWarehouse', width: 200, render: (value) => displayValue(value) },
   ];
 
   const disposalColumns = [
