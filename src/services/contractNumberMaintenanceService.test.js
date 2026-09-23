@@ -53,12 +53,10 @@ describe('合约号码维护保存边界', () => {
       .toThrow('合约号码维护存在不允许修改的字段');
   });
 
-  test('身份证号码属于单条维护字段，旧副卡和维修记录字段禁止写入', () => {
+  test('身份证号码不属于单条维护字段，旧副卡和维修记录字段也禁止写入', () => {
     const row = getRow();
-    const nextRows = updateContractNumberMaintenanceRow(row.id, editablePatch(row, {
-      idCard: '110101199901019999',
-    }));
-    expect(nextRows.find((item) => item.id === row.id).idCard).toBe('110101199901019999');
+    expect(() => updateContractNumberMaintenanceRow(row.id, { idCard: '110101199901019999' }))
+      .toThrow('合约号码维护存在不允许修改的字段');
 
     expect(() => updateContractNumberMaintenanceRow(row.id, { secondaryCard: '伪造副卡' }))
       .toThrow('合约号码维护存在不允许修改的字段');
@@ -198,7 +196,7 @@ describe('合约号码维护保存边界', () => {
     }))).toThrow('非报废状态不允许填写报废日期或报废原因');
   });
 
-  test('责任人变化刷新姓名部门子公司职级但不覆盖手工身份证号码', () => {
+  test('责任人变化刷新姓名部门子公司职级并保留原有身份证号码数据', () => {
     const row = getRow('contract-number-2');
     const targetOwner = getRow('contract-number-3');
     const originalIdCard = row.idCard;
@@ -303,14 +301,16 @@ describe('合约号码维护保存边界', () => {
     )).toThrow('无合约号码维护权限');
   });
 
-  test('批量模板不提供合约号码字段并包含可编辑套餐内容', () => {
-    expect(CONTRACT_NUMBER_BATCH_FIELDS).toHaveLength(15);
+  test('批量模板不提供合约号码和身份证号码字段并包含可编辑套餐内容', () => {
+    expect(CONTRACT_NUMBER_BATCH_FIELDS).toHaveLength(14);
     expect(CONTRACT_NUMBER_BATCH_FIELDS.map((field) => field.header)).toEqual([
-      '标签号', '使用公司', '责任人工号', '身份证号码', '套餐内容',
+      '标签号', '使用公司', '责任人工号', '套餐内容',
       '合约开始日期', '合约结束日期', '金额', '号码状态', '仓库',
       '使用说明', '报废原因', '报废日期', '领用日期', '领用原因',
     ]);
     expect(CONTRACT_NUMBER_EDIT_FIELDS).not.toContain('contractNumber');
+    expect(CONTRACT_NUMBER_EDIT_FIELDS).not.toContain('idCard');
+    expect(CONTRACT_NUMBER_BATCH_FIELDS.map((field) => field.header)).not.toContain('身份证号码');
   });
 
   test('批量空白字段保留原值，套餐内容可编辑且合约号码不变', () => {
