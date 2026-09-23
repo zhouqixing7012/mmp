@@ -13,7 +13,7 @@ function warehouseName(value) {
 
 function resolveMoveLine(line) {
   const material = line.materialCode ? getMaterialByCode(line.materialCode) : null;
-  const category = line.materialCategory || line.assetClass || material?.majorCategory || '';
+  const category = material?.majorCategory || line.materialCategory || line.assetClass || '';
   const categoryName = String(category).replace(/^\d+\./, '');
   const productName = line.materialDesc || material?.materialDescription || '';
   const [derivedBrand = '', ...derivedModelParts] = String(productName).split('.');
@@ -32,7 +32,7 @@ function resolveMoveLine(line) {
     sn: line.sn || '',
     quantity: line.quantity ?? '',
     // Detailed configuration is deliberately read from current card data by tag at print time.
-    config: currentAsset?.requirementDescription || currentAsset?.demandDescription || currentAsset?.detail || '',
+    config: currentAsset?.requirementDescription || currentAsset?.demandDescription || currentAsset?.needDescription || currentAsset?.requirement || currentAsset?.detail || '',
     reason: line.moveDesc || '',
   };
 }
