@@ -14,11 +14,12 @@ function warehouseName(value) {
 function resolveMoveLine(line) {
   const material = line.materialCode ? getMaterialByCode(line.materialCode) : null;
   const category = line.materialCategory || line.assetClass || material?.majorCategory || '';
-  const categoryName = String(category).replace(/^\\d+\\./, '');
+  const categoryName = String(category).replace(/^\d+\./, '');
   const productName = line.materialDesc || material?.materialDescription || '';
+  const [derivedBrand = '', ...derivedModelParts] = String(productName).split('.');
   const subCategory = line.assetSubClass || material?.minorCategory || '';
-  const brand = line.brand || material?.brand || '';
-  const model = line.model || line.specification || material?.model || '';
+  const brand = line.brand || material?.brand || derivedBrand;
+  const model = line.model || line.specification || material?.model || derivedModelParts.join('.');
   const productParts = [subCategory, brand, model].filter(Boolean);
   const currentAsset = line.assetTag
     ? INVENTORY_ASSET_POOL.find((asset) => asset.assetTag === line.assetTag)
