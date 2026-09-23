@@ -246,6 +246,9 @@ export default function MoveMobilePrototype() {
   const [tab, setTab] = useState('received');
   const [activeDocumentId, setActiveDocumentId] = useState(null);
   const [selectedLineIds, setSelectedLineIds] = useState([]);
+  const [verificationReasonOpen, setVerificationReasonOpen] = useState(false);
+  const [pendingVerificationLineId, setPendingVerificationLineId] = useState(null);
+  const [verificationReason, setVerificationReason] = useState('');
   const [searchDraft, setSearchDraft] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [warehousePicker, setWarehousePicker] = useState('');
@@ -283,7 +286,7 @@ export default function MoveMobilePrototype() {
     setFromWarehouse(doc.fromWarehouse);
     setToWarehouse(doc.toWarehouse);
     setRemark(doc.remark || '');
-    setSelectedLineIds([]);
+    setSelectedLineIds(doc.lines.filter((line) => line.moveStatus === '待接收' && line.verified).map((line) => line.id));
     setActiveLineId(null);
     setPage(doc.status === '草稿' ? 'editor' : 'detail');
   };
@@ -378,10 +381,44 @@ export default function MoveMobilePrototype() {
     message.success('验证成功，已勾选该物资');
   };
 
+  const toggleSelectedLine = (line, checked) => {
+    if (!checked) {
+      if (line.verified) return;
+      setSelectedLineIds((current) => current.filter((id) => id !== line.id));
+      return;
+    }
+    if (line.verified || line.verificationDesc?.trim()) {
+      setSelectedLineIds((current) => [...new Set([...current, line.id])]);
+      return;
+    }
+    setPendingVerificationLineId(line.id);
+    setVerificationReason('');
+    setVerificationReasonOpen(true);
+  };
+
+  const cancelVerificationReason = () => {
+    setVerificationReasonOpen(false);
+    setPendingVerificationLineId(null);
+    setVerificationReason('');
+  };
+
+  const confirmVerificationReason = () => {
+    const reason = verificationReason.trim();
+    if (!reason) return message.warning('请填写验证原因');
+    if (!activeDocument || !pendingVerificationLineId) return;
+    updateDocument(activeDocument.id, {
+      lines: activeDocument.lines.map((line) => line.id === pendingVerificationLineId
+        ? { ...line, verificationDesc: reason }
+        : line),
+    });
+    setSelectedLineIds((current) => [...new Set([...current, pendingVerificationLineId])]);
+    cancelVerificationReason();
+  };
+
   const receiveSelected = () => {
     if (!activeDocument || !selectedLineIds.length) return message.warning('请选择待接收物资');
     const selected = activeDocument.lines.filter((line) => selectedLineIds.includes(line.id));
-    if (selected.some((line) => line.moveStatus !== '待接收' || !line.verified)) return message.warning('请选择已验证的待接收物资');
+    if (selected.some((line) => line.moveStatus !== '待接收' || (!line.verified && !line.verificationDesc?.trim()))) return message.warning('未验证物资需填写验证原因');
     const lines = activeDocument.lines.map((line) => selectedLineIds.includes(line.id) ? { ...line, moveStatus: '已接收', warehouse: activeDocument.toWarehouse, receiver: USER, receiveTime: new Date().toLocaleString('zh-CN', { hour12: false }) } : line);
     updateDocument(activeDocument.id, { lines, status: deriveStatus(lines) });
     setSelectedLineIds([]);
@@ -538,7 +575,6 @@ export default function MoveMobilePrototype() {
               <section className="move-mobile-card">
                 <div className="move-mobile-card-title">验证移库物资</div>
                 <Button type="primary" block className="move-mobile-scan-verify" icon={<QrCode size={16} />} onClick={() => openScanner('verify')}>扫描二维码验证</Button>
-                <p className="move-mobile-hint">验证成功后会自动勾选；验证完成后不能取消。</p>
               </section>
             )}
             <section className="move-mobile-card">
@@ -548,7 +584,7 @@ export default function MoveMobilePrototype() {
                 return (
                   <div className={`move-mobile-asset-card${selectedLineIds.includes(line.id) ? ' is-selected' : ''}`} key={line.id}>
                     <div className="move-mobile-asset-card-top">
-                      {selectable && <Checkbox checked={selectedLineIds.includes(line.id)} onChange={(event) => setSelectedLineIds((current) => event.target.checked ? [...new Set([...current, line.id])] : current.filter((id) => id !== line.id))} />}
+                      {selectable && <Checkbox checked={selectedLineIds.includes(line.id)} disabled={line.verified} onChange={(event) => toggleSelectedLine(line, event.target.checked)} />}
                       <strong>{line.materialDesc}</strong><MobileStatus value={line.moveStatus} />
                       {activeDocument.status !== '草稿' && <MobileStatus value={line.verified ? '已验证' : '未验证'} />}
                     </div>
@@ -562,7 +598,7 @@ export default function MoveMobilePrototype() {
                 );
               })}
             </section>
-            {activeDocument.status === '出库待接收' && <div className="move-mobile-sticky-actions"><Button type="primary" block onClick={receiveSelected}>接收所选（{selectedLineIds.filter((id) => activeDocument.lines.some((line) => line.id === id && line.verified)).length}）</Button><Button danger block onClick={() => setRejectOpen(true)}>驳回所选</Button></div>}
+            {activeDocument.status === '出库待接收' && <div className="move-mobile-sticky-actions"><Button type="primary" block onClick={receiveSelected}>接收所选（{selectedLineIds.filter((id) => activeDocument.lines.some((line) => line.id === id && line.moveStatus === '待接收' && (line.verified || line.verificationDesc?.trim()))).length}）</Button><Button danger block onClick={() => setRejectOpen(true)}>驳回所选</Button></div>}
             {activeDocument.status === '已完成' && <div className="move-mobile-sticky-actions is-single"><Button block onClick={() => setPage('home')}>返回</Button></div>}
             {activeDocument.status === '已驳回' && <div className="move-mobile-sticky-actions is-single"><Button block onClick={() => setPage('home')}>返回</Button></div>}
           </div>
@@ -623,6 +659,27 @@ export default function MoveMobilePrototype() {
         />
         <AssetPicker open={assetPickerOpen} assets={assetCandidates} onClose={() => setAssetPickerOpen(false)} onChoose={addAsset} />
         <QRScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onScan={handleScannedCode} />
+        <Modal
+          open={verificationReasonOpen}
+          title="填写验证原因"
+          okText="确定"
+          cancelText="取消"
+          okButtonProps={{ disabled: !verificationReason.trim() }}
+          onOk={confirmVerificationReason}
+          onCancel={cancelVerificationReason}
+        >
+          <div className="move-mobile-verification-reason">
+            <div>验证原因</div>
+            <Input.TextArea
+              value={verificationReason}
+              onChange={(event) => setVerificationReason(event.target.value)}
+              placeholder="请填写未验证直接接收的原因"
+              maxLength={200}
+              showCount
+              autoSize={{ minRows: 3, maxRows: 5 }}
+            />
+          </div>
+        </Modal>
         <Modal open={rejectOpen} title="驳回移库物资" okText="确认驳回" cancelText="取消" okButtonProps={{ danger: true }} onOk={rejectSelected} onCancel={() => setRejectOpen(false)}>
           <p>将驳回当前勾选的 {selectedLineIds.length} 件物资，并为本次勾选内容生成一张反向移库单。</p>
           <Input.TextArea maxLength={200} showCount value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} placeholder="请填写驳回原因" autoSize={{ minRows: 3, maxRows: 5 }} />
