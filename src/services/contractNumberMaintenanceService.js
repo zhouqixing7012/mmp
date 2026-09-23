@@ -9,7 +9,6 @@ import { readDemoData, writeDemoData } from './demoStorage';
 export const CONTRACT_NUMBER_EDIT_FIELDS = [
   'useCompany',
   'ownerId',
-  'idCard',
   'packageContent',
   'contractStartDate',
   'contractEndDate',
@@ -27,7 +26,6 @@ export const CONTRACT_NUMBER_BATCH_FIELDS = [
   { header: '标签号', key: 'tag', locate: true },
   { header: '使用公司', key: 'useCompany' },
   { header: '责任人工号', key: 'ownerId' },
-  { header: '身份证号码', key: 'idCard' },
   { header: '套餐内容', key: 'packageContent' },
   { header: '合约开始日期', key: 'contractStartDate', date: true },
   { header: '合约结束日期', key: 'contractEndDate', date: true },
@@ -153,7 +151,6 @@ function buildTransaction(row, operationDate, changes, operator) {
     scrapDate: row.scrapDate || '',
     ownerId: row.ownerId || '',
     ownerName: row.ownerName || '',
-    idCard: row.idCard || '',
     department: row.department || '',
     jobLevel: row.jobLevel || '',
     claimDate: row.claimDate || '',
@@ -171,9 +168,6 @@ function canonicalizePatch(row, patch) {
   const ownerId = Object.prototype.hasOwnProperty.call(patch, 'ownerId')
     ? String(patch.ownerId || '').trim()
     : String(row.ownerId || '').trim();
-  const idCard = Object.prototype.hasOwnProperty.call(patch, 'idCard')
-    ? String(patch.idCard || '').trim()
-    : String(row.idCard || '').trim();
   const contractNumber = String(row.contractNumber || '').trim();
   const contractStartDate = Object.prototype.hasOwnProperty.call(patch, 'contractStartDate')
     ? normalizeDateValue(patch.contractStartDate)
@@ -253,7 +247,6 @@ function canonicalizePatch(row, patch) {
   next.subsidiary = owner.subsidiary;
   next.department = owner.department;
   next.jobLevel = owner.jobLevel;
-  next.idCard = idCard;
   next.contractNumber = contractNumber;
   next.packageContent = packageContent;
   next.contractStartDate = contractStartDate;
