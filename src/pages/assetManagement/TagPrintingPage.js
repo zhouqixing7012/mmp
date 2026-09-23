@@ -841,41 +841,9 @@ export default function TagPrintingPage() {
 
       if (printTask.type === 'asset') {
         const idSet = new Set(printTask.ids);
-        const targets = rows.filter((row) => idSet.has(row.id));
-        const batch = makeUniqueBatchNo(existingBatchNumbers);
         setRows((current) => current.map((row) => (
           idSet.has(row.id) ? { ...row, printCount: Number(row.printCount || 0) + copies } : row
         )));
-        setBatchRows((current) => [{
-          id: `batch-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          batch,
-          orderNo: '-',
-          labelCount: targets.length,
-          printed: '是',
-          creator: CURRENT_USER,
-          createdAt: dayjs().format('YYYY-MM-DD'),
-          source: '标签打印',
-          remark: '标签打印',
-        }, ...current]);
-        setLabelRows((current) => [
-          ...targets.map((row) => ({
-            id: `${batch}-${row.assetTag}`,
-            batch,
-            tag: row.assetTag,
-            printCount: copies,
-            printed: '是',
-            source: '标签打印',
-            assetRowId: row.id,
-          })),
-          ...current,
-        ]);
-        appendPrintLogs(targets, {
-          batch,
-          source: '标签打印',
-          copies,
-          operationTime,
-          printTaskId: printTask.printTaskId,
-        });
         setSelectedRowKeys([]);
       } else {
         const idSet = new Set(printTask.ids);
@@ -883,12 +851,6 @@ export default function TagPrintingPage() {
         setLabelRows((current) => current.map((row) => (
           idSet.has(row.id) ? { ...row, printCount: Number(row.printCount || 0) + copies, printed: '是' } : row
         )));
-        const linkedAssetIds = new Set(targets.map((row) => row.assetRowId).filter(Boolean));
-        if (linkedAssetIds.size) {
-          setRows((current) => current.map((row) => (
-            linkedAssetIds.has(row.id) ? { ...row, printCount: Number(row.printCount || 0) + copies } : row
-          )));
-        }
         setBatchRows((current) => current.map((row) => (
           row.batch === printTask.batch ? { ...row, printed: '是' } : row
         )));
@@ -1059,7 +1021,7 @@ export default function TagPrintingPage() {
             <Select value={batchDraftFilters.printed || undefined} allowClear placeholder="全部" options={[{ label: '是', value: '是' }, { label: '否', value: '否' }]} onChange={(value) => updateBatchFilter('printed', value)} />
           </QueryItem>
           <QueryItem label="创建人">
-            <Select value={batchDraftFilters.creator || undefined} allowClear placeholder="请选择" options={uniqueValues(batchRows.filter((row) => row.source === '预打印'), 'creator').map((value) => ({ label: value, value }))} onChange={(value) => updateBatchFilter('creator', value)} />
+            <Select value={batchDraftFilters.creator || undefined} allowClear placeholder="请选择" options={uniqueValues(batchRows, 'creator').map((value) => ({ label: value, value }))} onChange={(value) => updateBatchFilter('creator', value)} />
           </QueryItem>
           <QueryItem label="订单编号"><Input value={batchDraftFilters.orderNo} allowClear placeholder="请输入订单编号" onChange={(event) => updateBatchFilter('orderNo', event.target.value)} /></QueryItem>
           <QueryItem label="资产标签号"><Input value={batchDraftFilters.assetTag} allowClear placeholder="请输入资产标签号" onChange={(event) => updateBatchFilter('assetTag', event.target.value)} /></QueryItem>
@@ -1151,7 +1113,7 @@ export default function TagPrintingPage() {
               columns={labelColumns}
               dataSource={filteredLabelRows}
               rowSelection={{ selectedRowKeys: labelSelectedKeys, onChange: setLabelSelectedKeys, fixed: true, columnTitle: '选择' }}
-              pagination={{ pageSize: 10, showSizeChanger: true }}
+              pagination={{ pageSize: 10, showSizeChanger: true, onChange: () => setLabelSelectedKeys([]) }}
               scroll={{ x: 'max-content' }}
               locale={{ emptyText: '暂无标签数据' }}
             />
@@ -1293,7 +1255,8 @@ export default function TagPrintingPage() {
           dataSource={filteredRows}
           rowSelection={{ type: 'checkbox', columnTitle: '选择', selectedRowKeys, onChange: setSelectedRowKeys, fixed: true }}
           scroll={{ x: 'max-content' }}
-          pagination={{ pageSize: 10, showSizeChanger: true }}
+          pagination={{ pageSize: 10, showSizeChanger: true, onChange: () => setSelectedRowKeys([]) }}
+          onChange={(_, __, ___, extra) => { if (extra?.action === 'sort') setSelectedRowKeys([]); }}
         />
       </Card>
 
