@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Checkbox, Drawer, Empty, Input, Modal, message } from 'antd';
-import { ArrowLeft, ArrowRight, Barcode, Check, ChevronRight, Clock3, PackagePlus, Plus, QrCode, Search, Smartphone, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Barcode, Check, ChevronRight, Clock3, Flashlight, FlashlightOff, PackagePlus, Plus, QrCode, Search, Smartphone, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getEnabledWarehouses } from '../../mock/reference/warehouseCatalog';
 import { INVENTORY_ASSET_POOL } from '../../mock/inventoryAssetPool';
@@ -12,6 +12,7 @@ const TRANSIT_WAREHOUSE = 'V00001.集团在途总库';
 const OUTBOUND_WAREHOUSE_CODES = new Set(['I0001', 'I0013', 'I0022']);
 const INBOUND_WAREHOUSE_CODES = new Set(['I0001']);
 const EMPTY_LINES = [];
+const WAITING_STATUSES = new Set(['出库待接收', '待接收']);
 const formatWarehouse = (row) => `${row.warehouseCode}.${row.warehouseDescription}`;
 const eligibleAssets = (warehouse) => INVENTORY_ASSET_POOL.filter((asset) => (
   ['1.资产', '2.低值耐用品'].includes(asset.materialGroup)
@@ -62,6 +63,100 @@ function deriveStatus(lines) {
 
 function MobileStatus({ value }) {
   return <span className={`move-mobile-status is-${statusTone(value)}`}>{value}</span>;
+}
+
+function QRScanner({ open, onClose, onScan }) {
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const onScanRef = useRef(onScan);
+  const [error, setError] = useState('');
+  const [torchOn, setTorchOn] = useState(false);
+  const [manualValue, setManualValue] = useState('');
+  onScanRef.current = onScan;
+
+  useEffect(() => {
+    if (!open) return undefined;
+    let active = true;
+    let timer;
+    let detector;
+    setError('');
+    setTorchOn(false);
+    setManualValue('');
+
+    const startCamera = async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError('当前浏览器无法访问摄像头，请检查浏览器权限。');
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+        if (!active) { stream.getTracks().forEach((track) => track.stop()); return; }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        if (!('BarcodeDetector' in window)) {
+          setError('此浏览器暂不支持自动识别二维码，可使用下方输入框录入标签号。');
+          return;
+        }
+        detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+        const scanFrame = async () => {
+          if (!active || !videoRef.current || videoRef.current.readyState < 2) {
+            if (active) timer = window.setTimeout(scanFrame, 250);
+            return;
+          }
+          try {
+            const codes = await detector.detect(videoRef.current);
+            const value = codes.find((code) => code.rawValue)?.rawValue;
+            if (value) { onScanRef.current(value); return; }
+          } catch (scanError) {
+            setError('二维码识别暂不可用，请调整镜头或手动输入标签号。');
+          }
+          if (active) timer = window.setTimeout(scanFrame, 250);
+        };
+        scanFrame();
+      } catch (cameraError) {
+        setError('无法打开摄像头，请允许浏览器使用摄像头，或手动输入标签号。');
+      }
+    };
+    startCamera();
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    };
+  }, [open]);
+
+  const toggleTorch = async () => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track?.applyConstraints) { setError('当前设备不支持闪光灯控制。'); return; }
+    try {
+      const next = !torchOn;
+      await track.applyConstraints({ advanced: [{ torch: next }] });
+      setTorchOn(next);
+    } catch (torchError) {
+      setError('当前设备或浏览器不支持开启手电筒。');
+    }
+  };
+
+  if (!open) return null;
+  return (
+    <div className="move-mobile-scanner-backdrop" role="dialog" aria-modal="true" aria-label="扫描资产二维码">
+      <div className="move-mobile-scanner">
+        <div className="move-mobile-scanner-header"><strong>扫描资产二维码</strong><Button type="text" aria-label="关闭扫描" icon={<X size={19} />} onClick={onClose} /></div>
+        <div className="move-mobile-camera-frame">
+          <video ref={videoRef} muted playsInline />
+          <span className="move-mobile-scan-guide" />
+          {!error && <span className="move-mobile-camera-hint">将资产二维码放入框内</span>}
+        </div>
+        <Button className={`move-mobile-torch${torchOn ? ' is-on' : ''}`} icon={torchOn ? <FlashlightOff size={18} /> : <Flashlight size={18} />} onClick={toggleTorch}>{torchOn ? '关闭手电筒' : '打开手电筒'}</Button>
+        {error && <p className="move-mobile-scanner-error">{error}</p>}
+        <div className="move-mobile-manual-scan"><Input value={manualValue} onChange={(event) => setManualValue(event.target.value)} placeholder="也可输入资产标签号" onPressEnter={() => manualValue.trim() && onScanRef.current(manualValue.trim())} /><Button type="primary" disabled={!manualValue.trim()} onClick={() => onScanRef.current(manualValue.trim())}>确认</Button></div>
+      </div>
+    </div>
+  );
 }
 
 function FieldRow({ label, value, onClick, placeholder }) {
@@ -138,7 +233,7 @@ export default function MoveMobilePrototype() {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState(INITIAL_DOCUMENTS);
   const [page, setPage] = useState('home');
-  const [tab, setTab] = useState('initiated');
+  const [tab, setTab] = useState('received');
   const [activeDocumentId, setActiveDocumentId] = useState(null);
   const [selectedLineIds, setSelectedLineIds] = useState([]);
   const [searchDraft, setSearchDraft] = useState('');
@@ -153,6 +248,8 @@ export default function MoveMobilePrototype() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [quickMatches, setQuickMatches] = useState([]);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannerPurpose, setScannerPurpose] = useState('receive');
 
   const activeDocument = documents.find((doc) => doc.id === activeDocumentId) || null;
   const outgoingWarehouses = WAREHOUSES.filter((row) => OUTBOUND_WAREHOUSE_CODES.has(row.warehouseCode));
@@ -168,7 +265,7 @@ export default function MoveMobilePrototype() {
       : INBOUND_WAREHOUSE_CODES.has(doc.toWarehouse?.slice(0, 5));
     const matches = !searchQuery || [doc.documentNo, doc.creator, doc.fromWarehouse, doc.toWarehouse, ...doc.lines.flatMap((line) => [line.assetTag, line.sn])].join(' ').toLowerCase().includes(searchQuery.toLowerCase());
     return belongs && matches && (tab !== 'received' || doc.status !== '草稿');
-  }), [documents, outgoingWarehouses, searchQuery, tab]);
+  }).sort((a, b) => Number(WAITING_STATUSES.has(b.status)) - Number(WAITING_STATUSES.has(a.status)) || b.createdDate.localeCompare(a.createdDate)), [documents, outgoingWarehouses, searchQuery, tab]);
 
   const openDocument = (doc) => {
     setActiveDocumentId(doc.id);
@@ -224,7 +321,7 @@ export default function MoveMobilePrototype() {
     const value = rawValue.trim();
     if (!value) return;
     if (!fromWarehouse) { message.warning('请先选择移出仓库'); setScanValue(''); return; }
-    const asset = INVENTORY_ASSET_POOL.find((item) => item.assetTag === value || item.sn === value);
+    const asset = INVENTORY_ASSET_POOL.find((item) => item.assetTag === value);
     if (!asset) { message.warning('物资不存在或不在移出仓库内！'); setScanValue(''); return; }
     addAsset(asset);
   };
@@ -316,6 +413,17 @@ export default function MoveMobilePrototype() {
     setQuickMatches(matches);
   };
 
+  const openScanner = (purpose) => {
+    setScannerPurpose(purpose);
+    setScannerOpen(true);
+  };
+  const handleScannedCode = (value) => {
+    setScannerOpen(false);
+    if (scannerPurpose === 'create') addScannedAsset(value);
+    else if (scannerPurpose === 'verify') verifyAsset(value, '扫码验证');
+    else { setScanValue(value); runQuickScan(value); }
+  };
+
   const removeDraftLine = (lineId) => {
     Modal.confirm({ title: '删除这条移库物资？', content: '删除后会释放该物资的本流程锁。', okText: '删除', cancelText: '取消', okButtonProps: { danger: true }, onOk: () => {
       const doc = documents.find((row) => row.id === activeDocumentId);
@@ -340,14 +448,13 @@ export default function MoveMobilePrototype() {
         </header>
 
         {page === 'home' && (
-          <div className="move-mobile-content">
+          <div className={`move-mobile-content${tab === 'received' ? ' is-received-home' : ''}`}>
             <div className="move-mobile-actions">
               <Button type="primary" icon={<PackagePlus size={17} />} onClick={startCreate}>创建移库</Button>
-              <Button icon={<QrCode size={17} />} onClick={() => { setPage('quick'); setScanValue(''); }}>快捷扫码</Button>
             </div>
             <div className="move-mobile-tabs" role="tablist">
-              <Button type="text" htmlType="button" className={tab === 'initiated' ? 'is-active' : ''} onClick={() => { setTab('initiated'); setSearchDraft(''); setSearchQuery(''); }}>我发起的</Button>
               <Button type="text" htmlType="button" className={tab === 'received' ? 'is-active' : ''} onClick={() => { setTab('received'); setSearchDraft(''); setSearchQuery(''); }}>我接收的</Button>
+              <Button type="text" htmlType="button" className={tab === 'initiated' ? 'is-active' : ''} onClick={() => { setTab('initiated'); setSearchDraft(''); setSearchQuery(''); }}>我发起的</Button>
             </div>
             <div className="move-mobile-search">
               <Input prefix={<Search size={15} />} allowClear value={searchDraft} placeholder="输入移库单号、标签号或SN" onChange={(event) => setSearchDraft(event.target.value)} onPressEnter={() => setSearchQuery(searchDraft.trim())} />
@@ -364,6 +471,7 @@ export default function MoveMobilePrototype() {
               ))}
               {!filteredDocuments.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={tab === 'initiated' ? '暂无发起单据' : '暂无接收单据'} />}
             </div>
+            {tab === 'received' && <Button className="move-mobile-quick-scan" block icon={<QrCode size={18} />} onClick={() => openScanner('receive')}>快捷扫描资产</Button>}
           </div>
         )}
 
@@ -381,8 +489,10 @@ export default function MoveMobilePrototype() {
             </section>
             <section className="move-mobile-card">
               <div className="move-mobile-card-title move-mobile-card-title-row"><span>移库物资</span><span>{activeDocument?.lines.length || 0} 件</span></div>
-              <div className="move-mobile-scan-row"><Input prefix={<Barcode size={16} />} value={scanValue} placeholder="扫描或输入标签号/SN" onChange={(event) => setScanValue(event.target.value)} onPressEnter={(event) => addScannedAsset(event.target.value)} /><Button type="primary" onClick={() => addScannedAsset(scanValue)}>添加</Button></div>
-              <Button className="move-mobile-add" block icon={<Plus size={16} />} onClick={() => fromWarehouse ? setAssetPickerOpen(true) : message.warning('请先选择移出仓库')}>选择物资</Button>
+              <div className="move-mobile-add-methods">
+                <Button type="primary" icon={<QrCode size={16} />} onClick={() => fromWarehouse ? openScanner('create') : message.warning('请先选择移出仓库')}>扫描添加</Button>
+                <Button className="move-mobile-add" icon={<Plus size={16} />} onClick={() => fromWarehouse ? setAssetPickerOpen(true) : message.warning('请先选择移出仓库')}>手动选择物资</Button>
+              </div>
               {(activeDocument?.lines || EMPTY_LINES).map((line) => (
                 <div className="move-mobile-asset-card" key={line.id}>
                   <div className="move-mobile-asset-card-top"><strong>{line.materialDesc}</strong><Button type="text" danger aria-label="删除移库物资" icon={<Trash2 size={15} />} onClick={() => removeDraftLine(line.id)} /></div>
@@ -409,7 +519,8 @@ export default function MoveMobilePrototype() {
             {activeDocument.status === '出库待接收' && (
               <section className="move-mobile-card">
                 <div className="move-mobile-card-title">验证移库物资</div>
-                <div className="move-mobile-scan-row"><Input prefix={<Barcode size={16} />} value={receiveScan} placeholder="扫描或输入标签号/SN" onChange={(event) => setReceiveScan(event.target.value)} onPressEnter={(event) => verifyAsset(event.target.value, '扫码验证')} /><Button type="primary" onClick={() => verifyAsset(receiveScan)}>验证</Button></div>
+                <Button type="primary" block className="move-mobile-scan-verify" icon={<QrCode size={16} />} onClick={() => openScanner('verify')}>扫描二维码验证</Button>
+                <div className="move-mobile-scan-row"><Input prefix={<Barcode size={16} />} value={receiveScan} placeholder="手动输入资产标签号" onChange={(event) => setReceiveScan(event.target.value)} onPressEnter={(event) => verifyAsset(event.target.value)} /><Button onClick={() => verifyAsset(receiveScan)}>验证</Button></div>
                 <Button block className="move-mobile-fox-button" icon={<Check size={15} />} onClick={() => verifyAsset(receiveScan, '狐小E识别')}>狐小E识别并验证</Button>
                 <p className="move-mobile-hint">验证成功后会自动勾选；验证完成后不能取消。</p>
               </section>
@@ -438,17 +549,6 @@ export default function MoveMobilePrototype() {
           </div>
         )}
 
-        {page === 'quick' && (
-          <div className="move-mobile-content move-mobile-quick">
-            <div className="move-mobile-quick-mark"><QrCode size={30} /></div>
-            <h2>快捷扫码</h2>
-            <p>扫描或输入标签号，查找当前有权接收的待接收移库单。</p>
-            <div className="move-mobile-quick-input"><Input autoFocus prefix={<Barcode size={17} />} value={scanValue} placeholder="输入标签号或SN，回车查询" onChange={(event) => setScanValue(event.target.value)} onPressEnter={(event) => runQuickScan(event.target.value)} /><Button type="primary" onClick={() => runQuickScan(scanValue)}>查询</Button></div>
-            <Button block className="move-mobile-fox-button" icon={<Check size={15} />} onClick={() => runQuickScan(scanValue)}>狐小E识别标签号</Button>
-            <div className="move-mobile-quick-footnote">未找到时，请检查标签号是否属于待接收移库物资。</div>
-          </div>
-        )}
-
         <WarehousePicker
           open={Boolean(warehousePicker)}
           title={warehousePicker === 'from' ? '选择移出仓库' : '选择移入仓库'}
@@ -470,6 +570,7 @@ export default function MoveMobilePrototype() {
           }}
         />
         <AssetPicker open={assetPickerOpen} assets={assetCandidates} onClose={() => setAssetPickerOpen(false)} onChoose={addAsset} />
+        <QRScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onScan={handleScannedCode} />
         <Modal open={rejectOpen} title="驳回移库物资" okText="确认驳回" cancelText="取消" okButtonProps={{ danger: true }} onOk={rejectSelected} onCancel={() => setRejectOpen(false)}>
           <p>将驳回当前勾选的 {selectedLineIds.length} 件物资，并为本次勾选内容生成一张反向移库单。</p>
           <Input.TextArea maxLength={200} showCount value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} placeholder="请填写驳回原因" autoSize={{ minRows: 3, maxRows: 5 }} />
