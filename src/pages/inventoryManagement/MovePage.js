@@ -836,7 +836,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
                   />
                 </div>
               )}
-              {toolbar}
+              {toolbar && <div className="ml-auto">{toolbar}</div>}
             </div>
           )}
           <Table
