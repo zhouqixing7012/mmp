@@ -764,6 +764,7 @@ export default function ConsumableMaintenancePage() {
       ),
     },
     sortableColumn('公司', 'company', 130),
+    sortableColumn('耗材类型', 'assetType', 130),
     sortableColumn('板块', 'plate', 150),
     sortableColumn('耗材大类', 'majorCategory', 160),
     sortableColumn('耗材小类', 'minorCategory', 180),
