@@ -820,22 +820,25 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
         </Card>
 
         <Card size="small" title="移库物资" extra={<Typography.Text type="secondary">共 {visibleLines.length} 条</Typography.Text>}>
-          {editable && (
-            <div className="mb-3 rounded-md bg-slate-50 p-3">
-              <div className="mb-2 flex items-center gap-2">
-                <Typography.Text className="shrink-0">资产扫描</Typography.Text>
-                <Input
-                  value={lineScanDraft}
-                  allowClear
-                  autoFocus
-                  placeholder="扫描或输入资产标签号/SN，回车直接添加"
-                  onChange={(event) => setLineScanDraft(event.target.value)}
-                  onPressEnter={addAssetByScan}
-                />
-              </div>
+          {(editable || toolbar) && (
+            <div className="mb-3 flex flex-wrap items-center gap-3">
+              {editable && (
+                <div className="flex min-w-[320px] flex-1 items-center gap-2 rounded-md bg-slate-50 p-3">
+                  <Typography.Text className="shrink-0">资产扫描</Typography.Text>
+                  <Input
+                    className="min-w-0 flex-1"
+                    value={lineScanDraft}
+                    allowClear
+                    autoFocus
+                    placeholder="扫描或输入资产标签号/SN，回车直接添加"
+                    onChange={(event) => setLineScanDraft(event.target.value)}
+                    onPressEnter={addAssetByScan}
+                  />
+                </div>
+              )}
+              {toolbar}
             </div>
           )}
-          {toolbar && <div className="mb-3 flex justify-end">{toolbar}</div>}
           <Table
             rowKey="id"
             size="small"
