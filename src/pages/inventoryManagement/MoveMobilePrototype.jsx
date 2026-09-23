@@ -286,7 +286,7 @@ export default function MoveMobilePrototype() {
     setFromWarehouse(doc.fromWarehouse);
     setToWarehouse(doc.toWarehouse);
     setRemark(doc.remark || '');
-    setSelectedLineIds(doc.lines.filter((line) => line.moveStatus === '待接收' && line.verified).map((line) => line.id));
+    setSelectedLineIds([]);
     setActiveLineId(null);
     setPage(doc.status === '草稿' ? 'editor' : 'detail');
   };
@@ -377,17 +377,15 @@ export default function MoveMobilePrototype() {
     const line = activeDocument.lines.find((item) => item.assetTag === value && item.moveStatus === '待接收');
     if (!line) return message.warning('当前单据没有匹配的待接收物资');
     updateDocument(activeDocument.id, { lines: activeDocument.lines.map((item) => item.id === line.id ? { ...item, verified: true, verificationDesc: '扫码验证通过' } : item) });
-    setSelectedLineIds((current) => [...new Set([...current, line.id])]);
-    message.success('验证成功，已勾选该物资');
+    message.success('验证成功');
   };
 
   const toggleSelectedLine = (line, checked) => {
     if (!checked) {
-      if (line.verified) return;
       setSelectedLineIds((current) => current.filter((id) => id !== line.id));
       return;
     }
-    if (line.verified || line.verificationDesc?.trim()) {
+    if (line.verified) {
       setSelectedLineIds((current) => [...new Set([...current, line.id])]);
       return;
     }
@@ -408,7 +406,7 @@ export default function MoveMobilePrototype() {
     if (!activeDocument || !pendingVerificationLineId) return;
     updateDocument(activeDocument.id, {
       lines: activeDocument.lines.map((line) => line.id === pendingVerificationLineId
-        ? { ...line, verificationDesc: reason }
+        ? { ...line, verified: true, verificationDesc: reason }
         : line),
     });
     setSelectedLineIds((current) => [...new Set([...current, pendingVerificationLineId])]);
@@ -418,7 +416,7 @@ export default function MoveMobilePrototype() {
   const receiveSelected = () => {
     if (!activeDocument || !selectedLineIds.length) return message.warning('请选择待接收物资');
     const selected = activeDocument.lines.filter((line) => selectedLineIds.includes(line.id));
-    if (selected.some((line) => line.moveStatus !== '待接收' || (!line.verified && !line.verificationDesc?.trim()))) return message.warning('未验证物资需填写验证原因');
+    if (selected.some((line) => line.moveStatus !== '待接收' || !line.verified)) return message.warning('未验证物资需填写验证原因');
     const lines = activeDocument.lines.map((line) => selectedLineIds.includes(line.id) ? { ...line, moveStatus: '已接收', warehouse: activeDocument.toWarehouse, receiver: USER, receiveTime: new Date().toLocaleString('zh-CN', { hour12: false }) } : line);
     updateDocument(activeDocument.id, { lines, status: deriveStatus(lines) });
     setSelectedLineIds([]);
@@ -456,10 +454,10 @@ export default function MoveMobilePrototype() {
       const doc = matches[0];
       const line = doc.lines.find((item) => item.moveStatus === '待接收' && item.assetTag === value);
       setActiveDocumentId(doc.id);
-      setSelectedLineIds([line.id]);
+      setSelectedLineIds([]);
       updateDocument(doc.id, { lines: doc.lines.map((item) => item.id === line.id ? { ...item, verified: true, verificationDesc: '扫码验证通过' } : item) });
       setPage('detail');
-      message.success('验证成功，已打开对应移库单');
+      message.success('验证成功，已打开对应移库单，请选择需要接收的物资');
       return;
     }
     setQuickMatches(matches);
@@ -584,7 +582,7 @@ export default function MoveMobilePrototype() {
                 return (
                   <div className={`move-mobile-asset-card${selectedLineIds.includes(line.id) ? ' is-selected' : ''}`} key={line.id}>
                     <div className="move-mobile-asset-card-top">
-                      {selectable && <Checkbox checked={selectedLineIds.includes(line.id)} disabled={line.verified} onChange={(event) => toggleSelectedLine(line, event.target.checked)} />}
+                      {selectable && <Checkbox checked={selectedLineIds.includes(line.id)} onChange={(event) => toggleSelectedLine(line, event.target.checked)} />}
                       <strong>{line.materialDesc}</strong><MobileStatus value={line.moveStatus} />
                       {activeDocument.status !== '草稿' && <MobileStatus value={line.verified ? '已验证' : '未验证'} />}
                     </div>
@@ -598,7 +596,7 @@ export default function MoveMobilePrototype() {
                 );
               })}
             </section>
-            {activeDocument.status === '出库待接收' && <div className="move-mobile-sticky-actions"><Button type="primary" block onClick={receiveSelected}>接收所选（{selectedLineIds.filter((id) => activeDocument.lines.some((line) => line.id === id && line.moveStatus === '待接收' && (line.verified || line.verificationDesc?.trim()))).length}）</Button><Button danger block onClick={() => setRejectOpen(true)}>驳回所选</Button></div>}
+            {activeDocument.status === '出库待接收' && <div className="move-mobile-sticky-actions"><Button type="primary" block onClick={receiveSelected}>接收所选（{selectedLineIds.filter((id) => activeDocument.lines.some((line) => line.id === id && line.moveStatus === '待接收' && line.verified)).length}）</Button><Button danger block onClick={() => setRejectOpen(true)}>驳回所选</Button></div>}
             {activeDocument.status === '已完成' && <div className="move-mobile-sticky-actions is-single"><Button block onClick={() => setPage('home')}>返回</Button></div>}
             {activeDocument.status === '已驳回' && <div className="move-mobile-sticky-actions is-single"><Button block onClick={() => setPage('home')}>返回</Button></div>}
           </div>
@@ -689,7 +687,7 @@ export default function MoveMobilePrototype() {
             const line = doc.lines.find((item) => item.moveStatus === '待接收' && item.assetTag === scanValue.trim());
             if (line) {
               setActiveDocumentId(doc.id);
-              setSelectedLineIds([line.id]);
+              setSelectedLineIds([]);
               setFromWarehouse(doc.fromWarehouse);
               setToWarehouse(doc.toWarehouse);
               updateDocument(doc.id, { lines: doc.lines.map((item) => item.id === line.id ? { ...item, verified: true, verificationDesc: '扫码验证通过' } : item) });
