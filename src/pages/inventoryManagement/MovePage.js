@@ -13,7 +13,8 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
-import { Download, Plus, Search, Trash2, Upload } from 'lucide-react';
+import { Download, Plus, Search, Smartphone, Trash2, Upload } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
@@ -890,6 +891,7 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
 }
 
 export default function MovePage() {
+  const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [documents, setDocuments] = useState(INITIAL_DOCUMENTS);
   const [draft, setDraft] = useState(EMPTY_FILTERS);
@@ -1046,7 +1048,10 @@ export default function MovePage() {
   return (
     <Space direction="vertical" size={16} className="w-full" data-page-view-key={`move-list-${activeTab}`}>
       {contextHolder}
-      <PageTitle>移库</PageTitle>
+      <div className="flex items-center justify-between">
+        <PageTitle>移库</PageTitle>
+        <Button icon={<Smartphone size={14} />} onClick={() => navigate('/inventory/move/mobile')}>移动端预览</Button>
+      </div>
       {!(activeTab === 'received' && receiveDetailOpen) && (
         <Card size="small">
           <Tabs
