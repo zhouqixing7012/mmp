@@ -260,8 +260,8 @@ test('退库入库与借用归还不再展示鉴定人、鉴定日期、鉴定�
 });
 
 test('库管员工作台类型包含合约号码申请和合约号码退库', () => {
-  expect(workbenchMockSource).toContain("'合约号码申请'");
-  expect(workbenchMockSource).toContain("'合约号码退库'");
+  expect(warehouseWorkbenchMockSource).toContain("'合约号码申请'");
+  expect(warehouseWorkbenchMockSource).toContain("'合约号码退库'");
 });
 
 test('出库物资选择弹窗查询条件和结果列按统一资产选择规则展示', () => {
