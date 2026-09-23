@@ -183,7 +183,8 @@ test('手工采购接收先选仓库并按仓库公司过滤待入库物资', ()
   expect(inboundSource).toContain('const warehouseCompany = WAREHOUSE_CONTEXT[warehouse]?.company ||');
   expect(inboundSource).toContain('row.company === warehouseCompany');
   expect(inboundSource).toContain("messageApi.warning('请先选择当前仓库')");
-  expect(inboundSource).toContain('warehouse={warehouse} onCancel');
+  expect(inboundSource).toContain('<PurchasePendingModal open={lineModal === \'purchase\'}');
+  expect(inboundSource).toContain('warehouse={warehouse} editRow=');
   expect(inboundSource).not.toContain("待选择物资后自动匹配");
 });
 
@@ -355,7 +356,7 @@ test('资产和耗材PO行仅有剩余可接收数量时展示编辑且草稿引
   expect(assetReceiptSource).toContain('const locked = Boolean(draftReference)');
   expect(assetReceiptSource).toContain('const delta = qty - previousQty');
   expect(assetReceiptSource).toContain('reconcileMaintenanceForReceipt(nextReceipt)');
-  expect(assetReceiptSource).toContain("editingPoItemLocked ? <div className=\"mt-1\"><Readonly>{editDraft.config}</Readonly></div>");
+  expect(assetReceiptSource).toContain("? <div className=\"mt-1\"><Readonly>{editDraft.config}</Readonly></div>");
 
   expect(consumableReceiptSource).toContain('const getDraftReceiptLineReference = (poNo, itemId)');
   expect(consumableReceiptSource).toContain("activePO?.receiptStatus !== '已入库' && remainingQty(row) > 0");

@@ -10,6 +10,7 @@ const STATUS_MAP = {
 };
 
 const BUSINESS_STATUS_TONE = {
+  草稿: 'default',
   待处理: 'default',
   待审批: 'warning',
   待配给: 'warning',
@@ -23,6 +24,7 @@ const BUSINESS_STATUS_TONE = {
   '在库-待处理': 'warning',
   待维修: 'warning',
   待打印: 'warning',
+  审批中: 'processing',
   处理中: 'processing',
   业务审批: 'processing',
   资产领用中: 'processing',
@@ -32,6 +34,7 @@ const BUSINESS_STATUS_TONE = {
   '在库-新增': 'processing',
   '在库（新）': 'processing',
   '在库（旧）': 'warning',
+  已审批: 'success',
   已同意: 'success',
   已配给: 'success',
   已汇总: 'success',
@@ -59,6 +62,10 @@ const BUSINESS_STATUS_TONE = {
   打印失败: 'error',
   未授权: 'default',
   未发起: 'default',
+  待提单人确认: 'warning',
+  '在库-待报废': 'warning',
+  '已报废-待处置': 'warning',
+  '已报废-已处置': 'success',
   已延期: 'warning',
   已取消: 'default',
   签名驳回: 'error',

@@ -41,6 +41,7 @@ import EmployeePurchaseSummaryPage from '../pages/employeeSelfService/PurchaseSu
 import EmployeeAssetClaimPage from '../pages/employeeSelfService/AssetClaimPage';
 import EmployeeAssetClaimConfirmPage from '../pages/employeeSelfService/AssetClaimConfirmPage';
 import EmployeeMyApplicationsPage from '../pages/employeeSelfService/MyApplicationsPage';
+import MoveMobilePrototype from '../pages/inventoryManagement/MoveMobilePrototype';
 
 export const routeGroups = [
   { key: 'scrap', name: '报废管理' },
@@ -95,6 +96,7 @@ const routes = [
   { path: '/employee-self-service/my-applications', name: '员工自助新版-我的申请', Page: EmployeeMyApplicationsPage, nav: true, group: 'workspace' },
   { path: '/yewurules', name: '后台基础配置', Page: yewurules, nav: true, group: 'config' },
   { path: '/xitongrules', name: '组织与用户管理', Page: xitongrules, nav: false, group: 'config' },
+  { path: '/inventory/move/mobile', name: '移库移动端原型', Page: MoveMobilePrototype, nav: false, group: 'workspace' },
 ];
 
 export const navRoutes = routes.filter((route) => route.nav);

@@ -13,12 +13,14 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
-import { Download, Plus, Search, Trash2, Upload } from 'lucide-react';
+import { Download, Plus, Search, Smartphone, Trash2, Upload } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import MoveReceiveContent from './MoveReceiveContent';
+import MovePrintPreview from './MovePrintPreview';
 import { INVENTORY_ASSET_POOL } from '../../mock/inventoryAssetPool';
 
 const { TextArea } = Input;
@@ -126,6 +128,7 @@ const INITIAL_DOCUMENTS = [
     id: 4,
     documentNo: 'TS-202609050003',
     status: '已完成',
+    lastUpdatedAt: '2026-09-05 15:30',
     fromWarehouse: 'I0013.资产集团前台库（新媒体）',
     toWarehouse: 'I0001.资产集团总库（新媒体）',
     createdDate: '2026-09-05',
@@ -140,6 +143,7 @@ const INITIAL_DOCUMENTS = [
     id: 5,
     documentNo: 'TS-202609040004',
     status: '已完成',
+    lastUpdatedAt: '2026-09-04 17:00',
     fromWarehouse: 'I0001.资产集团总库（新媒体）',
     toWarehouse: 'I0024.资产网络大厦库（新媒体）',
     createdDate: '2026-09-04',
@@ -529,7 +533,7 @@ function MoveImportModal({ open, currentWarehouse, existingTags, onCancel, onSuc
   );
 }
 
-function MoveEditor({ source, onBack, onSave, onSubmit }) {
+function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const editable = !source || source.status === '草稿';
   const [currentWarehouse, setCurrentWarehouse] = useState(source?.fromWarehouse || '');
@@ -543,6 +547,7 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
   const [selectedLineKeys, setSelectedLineKeys] = useState([]);
   const [editingLine, setEditingLine] = useState(null);
   const [detailAsset, setDetailAsset] = useState(null);
+  const [printOpen, setPrintOpen] = useState(false);
   const documentNo = source?.documentNo || '保存后自动生成';
   const status = source?.status || '草稿';
   const createdDate = source?.createdDate || dayjs().format('YYYY-MM-DD');
@@ -815,22 +820,25 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
         </Card>
 
         <Card size="small" title="移库物资" extra={<Typography.Text type="secondary">共 {visibleLines.length} 条</Typography.Text>}>
-          {editable && (
-            <div className="mb-3 rounded-md bg-slate-50 p-3">
-              <div className="mb-2 flex items-center gap-2">
-                <Typography.Text className="shrink-0">资产扫描</Typography.Text>
-                <Input
-                  value={lineScanDraft}
-                  allowClear
-                  autoFocus
-                  placeholder="扫描或输入资产标签号/SN，回车直接添加"
-                  onChange={(event) => setLineScanDraft(event.target.value)}
-                  onPressEnter={addAssetByScan}
-                />
-              </div>
+          {(editable || toolbar) && (
+            <div className="mb-3 flex flex-wrap items-center gap-3">
+              {editable && (
+                <div className="flex shrink-0 items-center gap-2 rounded-md bg-slate-50 p-3">
+                  <Typography.Text className="w-[88px] shrink-0 text-right">资产扫描</Typography.Text>
+                  <Input
+                    className="w-[260px]"
+                    value={lineScanDraft}
+                    allowClear
+                    autoFocus
+                    placeholder="扫描或输入资产标签号/SN，回车直接添加"
+                    onChange={(event) => setLineScanDraft(event.target.value)}
+                    onPressEnter={addAssetByScan}
+                  />
+                </div>
+              )}
+              {toolbar && <div className="ml-auto">{toolbar}</div>}
             </div>
           )}
-          {toolbar && <div className="mb-3 flex justify-end">{toolbar}</div>}
           <Table
             rowKey="id"
             size="small"
@@ -846,7 +854,7 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
         <div className="flex justify-center gap-3">
           {editable && <Button onClick={saveDraft}>保存草稿</Button>}
           {editable && <Button type="primary" onClick={submitMove}>移库提交</Button>}
-          {!editable && ['已完成', '已驳回'].includes(status) && <Button onClick={() => messageApi.info('移库单打印已生成')}>打印</Button>}
+          {!editable && status === '已完成' && <Button onClick={() => setPrintOpen(true)}>打印</Button>}
           {!editable && ['已完成', '已驳回'].includes(status) && <Button onClick={() => messageApi.success('移库明细已导出')}>导出</Button>}
           <Button onClick={onBack}>返回</Button>
         </div>
@@ -884,12 +892,14 @@ function MoveEditor({ source, onBack, onSave, onSubmit }) {
         />
 
         <MoveAssetDetailModal open={Boolean(detailAsset)} document={source || { documentNo, fromWarehouse: currentWarehouse, toWarehouse: receiveWarehouse, creator: CURRENT_USER }} asset={detailAsset} onCancel={() => setDetailAsset(null)} />
+        <MovePrintPreview open={printOpen} documentNo={source?.documentNo || documentNo} documents={documents} onCancel={() => setPrintOpen(false)} />
       </Space>
     </div>
   );
 }
 
 export default function MovePage() {
+  const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [documents, setDocuments] = useState(INITIAL_DOCUMENTS);
   const [draft, setDraft] = useState(EMPTY_FILTERS);
@@ -948,6 +958,7 @@ export default function MovePage() {
       const next = {
         ...activeRow,
         status: '草稿',
+        lastUpdatedAt: dayjs().format('YYYY-MM-DD HH:mm'),
         fromWarehouse: currentWarehouse,
         toWarehouse: receiveWarehouse,
         remark,
@@ -964,6 +975,7 @@ export default function MovePage() {
       id,
       documentNo: createDocumentNo(documents),
       status: '草稿',
+      lastUpdatedAt: dayjs().format('YYYY-MM-DD HH:mm'),
       fromWarehouse: currentWarehouse,
       toWarehouse: receiveWarehouse,
       createdDate: dayjs().format('YYYY-MM-DD'),
@@ -985,6 +997,7 @@ export default function MovePage() {
       id,
       documentNo,
       status: '出库待接收',
+      lastUpdatedAt: dayjs().format('YYYY-MM-DD HH:mm'),
       fromWarehouse: currentWarehouse,
       toWarehouse: receiveWarehouse,
       createdDate: activeRow?.createdDate || dayjs().format('YYYY-MM-DD'),
@@ -1024,6 +1037,7 @@ export default function MovePage() {
         {contextHolder}
         <MoveEditor
           source={activeRow}
+          documents={documents}
           onBack={() => { setView('list'); setActiveRow(null); }}
           onSave={saveDraft}
           onSubmit={submitMove}
@@ -1046,7 +1060,10 @@ export default function MovePage() {
   return (
     <Space direction="vertical" size={16} className="w-full" data-page-view-key={`move-list-${activeTab}`}>
       {contextHolder}
-      <PageTitle>移库</PageTitle>
+      <div className="flex items-center justify-between">
+        <PageTitle>移库</PageTitle>
+        <Button icon={<Smartphone size={14} />} onClick={() => navigate('/inventory/move/mobile')}>移动端预览</Button>
+      </div>
       {!(activeTab === 'received' && receiveDetailOpen) && (
         <Card size="small">
           <Tabs

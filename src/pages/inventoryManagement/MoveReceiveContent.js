@@ -6,6 +6,7 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
+import MovePrintPreview from './MovePrintPreview';
 
 const { RangePicker } = DatePicker;
 const { TextArea } = Input;
@@ -181,6 +182,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
   const [detailAsset, setDetailAsset] = useState(null);
   const [verificationAsset, setVerificationAsset] = useState(null);
   const [rejectAsset, setRejectAsset] = useState(null);
+  const [printOpen, setPrintOpen] = useState(false);
   const [lines, setLines] = useState(row.lines || []);
 
   useEffect(() => {
@@ -190,7 +192,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
   const syncLines = (nextLines, extra = {}) => {
     const nextStatus = deriveDocumentStatus(nextLines);
     setLines(nextLines);
-    setDocuments((current) => current.map((document) => document.id === row.id ? { ...document, lines: nextLines, status: nextStatus, ...extra } : document));
+    setDocuments((current) => current.map((document) => document.id === row.id ? { ...document, lines: nextLines, status: nextStatus, lastUpdatedAt: dayjs().format('YYYY-MM-DD HH:mm'), ...extra } : document));
     return nextStatus;
   };
 
@@ -319,6 +321,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
       }));
       const reverseDocument = {
         id: reverseId,
+        lastUpdatedAt: dayjs().format('YYYY-MM-DD HH:mm'),
         documentNo: reverseDocumentNo,
         status: '出库待接收',
         fromWarehouse: row.toWarehouse,
@@ -339,6 +342,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
           ...document,
           lines: nextLines,
           status: nextStatus,
+          lastUpdatedAt: dayjs().format('YYYY-MM-DD HH:mm'),
           reverseDocumentNos: [...(document.reverseDocumentNos || []), reverseDocumentNo],
           notificationStatus: nextStatus === '出库待接收' ? document.notificationStatus : '已结束',
           reminderStatus: nextStatus === '出库待接收' ? document.reminderStatus : '已结束',
@@ -457,7 +461,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
 
         <div className="flex justify-center gap-3">
           {waiting && <Button type="primary" onClick={receive}>移库接收确认</Button>}
-          {!waiting && <Button onClick={() => messageApi.info('移库单打印已生成')}>打印</Button>}
+          {row.status === '已完成' && <Button onClick={() => setPrintOpen(true)}>打印</Button>}
           {!waiting && <Button onClick={() => messageApi.success('移库明细已导出')}>导出</Button>}
           <Button onClick={onBack}>返回</Button>
         </div>
@@ -465,6 +469,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
         <ReceiveAssetDetailModal open={Boolean(detailAsset)} document={row} asset={detailAsset} onCancel={() => setDetailAsset(null)} />
         <VerificationModal open={Boolean(verificationAsset)} asset={verificationAsset} onCancel={() => setVerificationAsset(null)} onConfirm={manualVerify} />
         <RejectModal open={Boolean(rejectAsset)} onCancel={() => setRejectAsset(null)} onConfirm={reject} />
+        <MovePrintPreview open={printOpen} documentNo={row.documentNo} documents={documents} onCancel={() => setPrintOpen(false)} />
       </Space>
     </div>
   );

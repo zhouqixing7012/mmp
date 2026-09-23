@@ -222,7 +222,7 @@ function canonicalizePatch(row, patch) {
   if (claimReason && !CLAIM_REASON_OPTIONS.has(claimReason)) throw new Error('领用原因无效');
 
   if (status === '在用-使用中') {
-    warehouse = '';
+    if (warehouse) throw new Error('仓库和状态不匹配。');
   } else if (!WAREHOUSE_OPTIONS.has(warehouse)) {
     throw new Error('仓库和状态不匹配。');
   }
@@ -230,12 +230,18 @@ function canonicalizePatch(row, patch) {
   if (isScrapStatus(status)) {
     if (!scrapDate || !isValidDate(scrapDate)) throw new Error('报废日期不能为空且必须有效');
     if (!scrapReason.trim()) throw new Error('报废原因不能为空');
-  } else {
-    scrapDate = '';
-    scrapReason = '';
+  } else if (scrapDate || scrapReason.trim()) {
+    throw new Error('非报废状态不允许填写报废日期或报废原因');
   }
 
-  const owner = OWNER_BY_ID.get(ownerId);
+  const owner = ownerId === String(row.ownerId || '').trim()
+    ? {
+      ownerName: row.ownerName || '',
+      subsidiary: row.subsidiary || '',
+      department: row.department || '',
+      jobLevel: row.jobLevel || '',
+    }
+    : OWNER_BY_ID.get(ownerId);
   if (!owner.department && !ownerId.startsWith('SOHU')) {
     throw new Error('该员工对应的部门为空，请联系管理员添加');
   }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Card, Empty } from 'antd';
 import AssetMaintenancePage from './AssetMaintenancePage';
 import ConsumableMaintenancePage from './ConsumableMaintenancePage';
@@ -8,9 +8,7 @@ import EmployeeAssetInfoQueryPage from './EmployeeAssetInfoQueryPage';
 import DocumentListPage from './DocumentListPage';
 import AssetDisposalEditPage from './AssetDisposalEditPage';
 import CrossCompanyTransferEditPage from './CrossCompanyTransferEditPage';
-import ScrapApplicationEdit from '../ScrapApplicationEdit';
-import AccountingScrapEdit from '../AccountingScrapEdit';
-import './embeddedPages.css';
+import ScrapPrototypeModule from './ScrapPrototypeModule';
 
 export const ASSET_MANAGEMENT_SUB_MENUS = [
   '资产维护',
@@ -32,17 +30,7 @@ function PendingAssetManagementPage({ title }) {
   );
 }
 
-function EmbeddedPage({ children }) {
-  return <div className="assetManagement-embeddedPage">{children}</div>;
-}
-
 export function AssetManagementContent({ activeSubMenu }) {
-  const [embeddedPage, setEmbeddedPage] = useState(null);
-
-  useEffect(() => {
-    setEmbeddedPage(null);
-  }, [activeSubMenu]);
-
   if (activeSubMenu === '资产维护') {
     return <AssetMaintenancePage />;
   }
@@ -60,88 +48,19 @@ export function AssetManagementContent({ activeSubMenu }) {
   }
 
   if (activeSubMenu === '跨公司转移') {
-    if (embeddedPage === 'crossCompanyTransfer') {
-      return (
-        <EmbeddedPage>
-          <CrossCompanyTransferEditPage onBack={() => setEmbeddedPage(null)} />
-        </EmbeddedPage>
-      );
-    }
-
-    return (
-      <DocumentListPage
-        title="跨公司转移"
-        createLabel="创建跨公司转移申请单"
-        onCreate={() => setEmbeddedPage('crossCompanyTransfer')}
-      />
-    );
+    return <ScrapPrototypeModule key="crossCompany" type="crossCompany" />;
   }
 
   if (activeSubMenu === '资产报废') {
-    if (embeddedPage === 'assetScrap') {
-      return (
-        <EmbeddedPage>
-          <ScrapApplicationEdit embedded onBack={() => setEmbeddedPage(null)} />
-        </EmbeddedPage>
-      );
-    }
-
-    if (embeddedPage === 'scrapCrossCompanyTransfer') {
-      return (
-        <EmbeddedPage>
-          <CrossCompanyTransferEditPage
-            variant="scrap"
-            onBack={() => setEmbeddedPage(null)}
-          />
-        </EmbeddedPage>
-      );
-    }
-
-    return (
-      <DocumentListPage
-        title="资产报废"
-        createLabel="创建资产报废申请单"
-        onCreate={() => setEmbeddedPage('assetScrap')}
-        secondaryCreateLabel="创建跨公司转移申请单"
-        onSecondaryCreate={() => setEmbeddedPage('scrapCrossCompanyTransfer')}
-      />
-    );
+    return <ScrapPrototypeModule key="scrap" type="scrap" />;
   }
 
   if (activeSubMenu === '账面报废') {
-    if (embeddedPage === 'accountingScrap') {
-      return (
-        <EmbeddedPage>
-          <AccountingScrapEdit embedded onBack={() => setEmbeddedPage(null)} />
-        </EmbeddedPage>
-      );
-    }
-
-    return (
-      <DocumentListPage
-        title="账面报废"
-        createLabel="创建账面报废申请单"
-        onCreate={() => setEmbeddedPage('accountingScrap')}
-      />
-    );
+    return <ScrapPrototypeModule key="accounting" type="accounting" />;
   }
 
   if (activeSubMenu === '资产处置') {
-    if (embeddedPage === 'assetDisposal') {
-      return (
-        <EmbeddedPage>
-          <AssetDisposalEditPage onBack={() => setEmbeddedPage(null)} />
-        </EmbeddedPage>
-      );
-    }
-
-    return (
-      <DocumentListPage
-        title="资产处置"
-        createLabel="创建资产处置申请单"
-        onCreate={() => setEmbeddedPage('assetDisposal')}
-      />
-    );
+    return <ScrapPrototypeModule key="disposal" type="disposal" />;
   }
 
   if (activeSubMenu === '员工资产信息查询') {
@@ -163,3 +82,4 @@ export { default as EmployeeAssetInfoQueryPage } from './EmployeeAssetInfoQueryP
 export { default as DocumentListPage } from './DocumentListPage';
 export { default as AssetDisposalEditPage } from './AssetDisposalEditPage';
 export { default as CrossCompanyTransferEditPage } from './CrossCompanyTransferEditPage';
+export { default as ScrapPrototypeModule } from './ScrapPrototypeModule';
