@@ -457,7 +457,7 @@ export default function MoveMobilePrototype() {
       setSelectedLineIds([]);
       updateDocument(doc.id, { lines: doc.lines.map((item) => item.id === line.id ? { ...item, verified: true, verificationDesc: '扫码验证通过' } : item) });
       setPage('detail');
-      message.success('验证成功，已打开对应移库单，请选择需要接收的物资');
+      message.success('验证成功，已打开对应移库单');
       return;
     }
     setQuickMatches(matches);
