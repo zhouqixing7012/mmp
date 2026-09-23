@@ -55,6 +55,7 @@ const PURPOSE_OPTIONS = ['部门公用', '员工用机', '其他用途', '专业
 const ASSET_MARK_OPTIONS = ['硬件老化', '组件缺失', '设备故障', '物理损伤'];
 const ASSET_TYPE_OPTIONS = ['公司资产', '自备资产'];
 const ADD_TYPE_OPTIONS = ['报废新增', '采购新增', '历史新增', '收购新增', '赠与新增', '再利用新增', '转移新增'];
+const SCRAP_TYPE_OPTIONS = ['已到报废期', '未到报废期', '丢失'];
 const PLATE_OPTIONS = [
   '11.搜狐网-web', '12.搜狐网-mobile', '13.汽车', '14.无线', '15.焦点', '16.视频', '17.Corporate',
   '51.焦点 Corporate', '52.房产', '53.家居', '54.二手房', '56.SAAS',
@@ -82,6 +83,7 @@ const EMPTY_FILTERS = {
   purposes: [],
   warehouses: [],
   assetTypes: [],
+  scrapTypes: [],
   mainTag: '',
   city: '',
   building: '',
@@ -491,6 +493,7 @@ export default function AssetMaintenancePage() {
       if (f.building && row.building !== f.building) return false;
       if (f.floors.length && !f.floors.includes(row.floor)) return false;
       if (f.addTypes.length && !f.addTypes.includes(row.addType)) return false;
+      if (f.scrapTypes.length && !f.scrapTypes.includes(row.scrapInfo?.type || '')) return false;
       if (!fuzzyMultiMatch(row.poNo, f.poNo)) return false;
       if (f.purchaseDate.length === 2 && (isEmptyValue(row.purchaseDate) || row.purchaseDate < f.purchaseDate[0] || row.purchaseDate > f.purchaseDate[1])) return false;
       const hasOriginalValueMin = f.originalValueMin !== null && f.originalValueMin !== '';
@@ -774,6 +777,9 @@ export default function AssetMaintenancePage() {
       <QueryItem label="新增类型">
         <Select mode="multiple" value={draftFilters.addTypes} allowClear placeholder="请选择" options={ADD_TYPE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('addTypes', value)} />
       </QueryItem>
+      <QueryItem label="报废类型">
+        <Select mode="multiple" value={draftFilters.scrapTypes} allowClear placeholder="请选择" options={SCRAP_TYPE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('scrapTypes', value)} />
+      </QueryItem>
       <QueryItem label="PO单号">
         <Input value={draftFilters.poNo} allowClear placeholder="支持模糊、多值" onChange={(event) => updateFilter('poNo', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
@@ -945,8 +951,6 @@ export default function AssetMaintenancePage() {
             ))}
           </DetailItem>
           <DetailItem label="板块">{displayText(source.plate)}</DetailItem>
-          <DetailItem label="业务线">{displayText(source.businessLine)}</DetailItem>
-          <DetailItem label="项目">{displayText(source.project)}</DetailItem>
           <DetailItem label="内部费用账户">{displayText(source.internalFeeAccount)}</DetailItem>
           <DetailItem label="费用账户">{displayText(source.feeAccount)}</DetailItem>
         </DetailGrid>

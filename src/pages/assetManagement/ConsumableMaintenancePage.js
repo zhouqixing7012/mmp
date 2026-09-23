@@ -42,6 +42,7 @@ const STATUS_OPTIONS = ['在用', '在库', '维修', '借用中', '待处理', 
 const FORMAL_SCRAP_STATUSES = new Set(['已报废']);
 const EDITABLE_STATUS_OPTIONS = STATUS_OPTIONS.filter((item) => !FORMAL_SCRAP_STATUSES.has(item));
 const ADD_TYPE_OPTIONS = ['采购新增', '历史新增', '收购新增', '赠与新增', '再利用新增', '转移新增'];
+const SCRAP_TYPE_OPTIONS = ['已到报废期', '未到报废期', '丢失'];
 const PLATE_OPTIONS = [
   '11.搜狐网-web', '12.搜狐网-mobile', '13.汽车', '14.无线', '15.焦点', '16.视频', '17.Corporate',
   '51.焦点 Corporate', '52.房产', '53.家居', '54.二手房',
@@ -92,6 +93,7 @@ const EMPTY_FILTERS = {
   originalValueMax: null,
   enabledDate: [],
   prNo: '',
+  scrapTypes: [],
 };
 
 const BATCH_TEMPLATE_FIELDS = [
@@ -419,6 +421,7 @@ export default function ConsumableMaintenancePage() {
       if (f.originalValueMax !== null && f.originalValueMax !== '' && Number(row.originalValue || 0) > Number(f.originalValueMax)) return false;
       if (f.enabledDate.length === 2 && (row.enabledDate < f.enabledDate[0] || row.enabledDate > f.enabledDate[1])) return false;
       if (!fuzzyMultiMatch(row.prNo, f.prNo)) return false;
+      if (f.scrapTypes.length && !f.scrapTypes.includes(row.scrapType || '')) return false;
       return true;
     });
     return [...result].sort((a, b) => (
@@ -727,6 +730,9 @@ export default function ConsumableMaintenancePage() {
       <QueryItem label="新增类型">
         <Select value={draftFilters.addType || undefined} allowClear placeholder="请选择" options={ADD_TYPE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('addType', value || '')} />
       </QueryItem>
+      <QueryItem label="报废类型">
+        <Select mode="multiple" value={draftFilters.scrapTypes} allowClear placeholder="请选择" options={SCRAP_TYPE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('scrapTypes', value)} />
+      </QueryItem>
       <QueryItem label="成本中心">{renderLookup('costCenter', '请选择成本中心')}</QueryItem>
       <QueryItem label="购买日期">
         <RangePicker style={{ width: '100%' }} value={draftFilters.purchaseDate.length === 2 ? draftFilters.purchaseDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('purchaseDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
@@ -764,6 +770,7 @@ export default function ConsumableMaintenancePage() {
       ),
     },
     sortableColumn('公司', 'company', 130),
+    sortableColumn('耗材类型', 'assetType', 130),
     sortableColumn('板块', 'plate', 150),
     sortableColumn('耗材大类', 'majorCategory', 160),
     sortableColumn('耗材小类', 'minorCategory', 180),
@@ -913,6 +920,9 @@ export default function ConsumableMaintenancePage() {
           ))}
         </DetailItem>
         <DetailItem label="成本中心">{displayText(source.costCenter)}</DetailItem>
+        <DetailItem label="报废日期">{displayText(source.scrapDate)}</DetailItem>
+        <DetailItem label="报废类型">{displayText(source.scrapType)}</DetailItem>
+        <DetailItem label="报废原因">{displayText(source.scrapReason)}</DetailItem>
       </DetailGrid>
     </Card>
   ) : null;

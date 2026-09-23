@@ -4,11 +4,11 @@ import * as XLSX from 'xlsx';
 export const INBOUND_IMPORT_HEADERS = {
   '借用归还': [
     '错误提示', '资产标签号*', 'SN号', '责任人(员工编号)*', '库区', '货位', '资产标记',
-    '归还日期(YYYY-MM-DD)', '鉴定单号', '鉴定结果', '鉴定人(员工编号)', '鉴定日期(YYYY-MM-DD)', '归还说明',
+    '归还日期(YYYY-MM-DD)', '鉴定结果', '归还说明',
   ],
   '退库入库': [
     '错误提示', '资产标签号*', 'SN号', '退库数量', '责任人(员工编号)*', '库区', '货位', '资产标记',
-    '退库日期(YYYY-MM-DD)', '退库原因', '鉴定单号', '鉴定结果', '鉴定人(员工编号)', '鉴定日期(YYYY-MM-DD)', '退库说明',
+    '退库日期(YYYY-MM-DD)', '退库原因', '鉴定结果', '退库说明',
   ],
   '新增入库': [
     '错误提示', '资产标签号*', '物资编码*', '物资大类', '物资小类', '品牌', '规格型号', '配置', 'SN号',
@@ -221,7 +221,7 @@ function validateBorrowReturn(matrix, context) {
   dataRows.forEach((row, offset) => {
     const rowIndex = offset + 1;
     const values = Array.from({ length: headers.length }, (_, index) => index === 0 ? normalizeCell(row[index]) : normalizeCell(row[index]));
-    const [, assetTag, sn, responsibleNo, warehouseArea, warehouseLocation, assetMark, returnDateRaw, appraisalNo, appraisalResult, appraiserNo, appraisalDateRaw, returnDescription] = values;
+    const [, assetTag, sn, responsibleNo, warehouseArea, warehouseLocation, assetMark, returnDateRaw, appraisalResult, returnDescription] = values;
     const rowErrors = [];
     const asset = lookupAsset(context.assetPool, assetTag, sn);
     if (!assetTag && !sn) rowErrors.push('资产标签号和SN号至少填写一个');
@@ -243,11 +243,6 @@ function validateBorrowReturn(matrix, context) {
     const returnDate = normalizeDate(returnDateRaw) || dayjs().format('YYYY-MM-DD');
     if (!isValidDate(returnDate)) rowErrors.push('归还日期必须为YYYY-MM-DD');
     if (appraisalResult && !APPRAISAL_RESULTS.includes(appraisalResult)) rowErrors.push('鉴定结果不是系统有效值');
-    const appraiser = appraiserNo ? findEmployee(context.appraisers, appraiserNo) : null;
-    if (appraiserNo && !appraiser) rowErrors.push('鉴定人不是有效鉴定人员');
-    const appraisalDate = normalizeDate(appraisalDateRaw);
-    if (appraisalDateRaw && !isValidDate(appraisalDate)) rowErrors.push('鉴定日期必须为YYYY-MM-DD');
-    if (isValidDate(appraisalDate) && isValidDate(returnDate) && appraisalDate >= returnDate) rowErrors.push('鉴定日期必须早于归还日期');
 
     if (rowErrors.length) {
       errors.push({ rowIndex, error: rowErrors.join('；') });
@@ -264,10 +259,7 @@ function validateBorrowReturn(matrix, context) {
       warehouseLocation,
       assetMark,
       returnDate,
-      appraisalNo,
       appraisalResult,
-      appraiser: appraiser?.name || appraiserNo,
-      appraisalDate,
       usageDesc: returnDescription,
       inboundStatus: '在库-待处理',
       returnType: '',
@@ -288,7 +280,7 @@ function validateReturnInbound(matrix, context) {
   dataRows.forEach((row, offset) => {
     const rowIndex = offset + 1;
     const values = Array.from({ length: headers.length }, (_, index) => normalizeCell(row[index]));
-    const [, assetTag, sn, returnQtyRaw, responsibleNo, warehouseArea, warehouseLocation, assetMark, returnDateRaw, returnReason, appraisalNo, appraisalResult, appraiserNo, appraisalDateRaw, returnDescription] = values;
+    const [, assetTag, sn, returnQtyRaw, responsibleNo, warehouseArea, warehouseLocation, assetMark, returnDateRaw, returnReason, appraisalResult, returnDescription] = values;
     const rowErrors = [];
     const asset = lookupAsset(context.assetPool, assetTag, sn);
     if (!assetTag && !sn) rowErrors.push('资产标签号和SN号至少填写一个');
@@ -314,11 +306,6 @@ function validateReturnInbound(matrix, context) {
     const returnDate = normalizeDate(returnDateRaw) || dayjs().format('YYYY-MM-DD');
     if (!isValidDate(returnDate)) rowErrors.push('退库日期必须为YYYY-MM-DD');
     if (appraisalResult && !APPRAISAL_RESULTS.includes(appraisalResult)) rowErrors.push('鉴定结果不是系统有效值');
-    const appraiser = appraiserNo ? findEmployee(context.appraisers, appraiserNo) : null;
-    if (appraiserNo && !appraiser) rowErrors.push('鉴定人不是有效鉴定人员');
-    const appraisalDate = normalizeDate(appraisalDateRaw);
-    if (appraisalDateRaw && !isValidDate(appraisalDate)) rowErrors.push('鉴定日期必须为YYYY-MM-DD');
-    if (isValidDate(appraisalDate) && isValidDate(returnDate) && appraisalDate > returnDate) rowErrors.push('鉴定日期不能晚于退库日期');
 
     if (rowErrors.length) {
       errors.push({ rowIndex, error: rowErrors.join('；') });
@@ -336,10 +323,7 @@ function validateReturnInbound(matrix, context) {
       assetMark,
       returnDate,
       returnReason,
-      appraisalNo,
       appraisalResult,
-      appraiser: appraiser?.name || appraiserNo,
-      appraisalDate,
       usageDesc: returnDescription,
       inboundStatus: '在库-待处理',
       returnType: '一般退库',

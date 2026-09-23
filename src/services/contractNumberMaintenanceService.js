@@ -9,8 +9,7 @@ import { readDemoData, writeDemoData } from './demoStorage';
 export const CONTRACT_NUMBER_EDIT_FIELDS = [
   'useCompany',
   'ownerId',
-  'idCard',
-  'contractNumber',
+  'packageContent',
   'contractStartDate',
   'contractEndDate',
   'amount',
@@ -27,8 +26,7 @@ export const CONTRACT_NUMBER_BATCH_FIELDS = [
   { header: '标签号', key: 'tag', locate: true },
   { header: '使用公司', key: 'useCompany' },
   { header: '责任人工号', key: 'ownerId' },
-  { header: '身份证号码', key: 'idCard' },
-  { header: '合约号码', key: 'contractNumber' },
+  { header: '套餐内容', key: 'packageContent' },
   { header: '合约开始日期', key: 'contractStartDate', date: true },
   { header: '合约结束日期', key: 'contractEndDate', date: true },
   { header: '金额', key: 'amount' },
@@ -43,16 +41,18 @@ export const CONTRACT_NUMBER_BATCH_FIELDS = [
 
 const ALLOWED_PATCH_FIELDS = new Set(CONTRACT_NUMBER_EDIT_FIELDS);
 const STATUS_OPTIONS = new Set(['在用-使用中', '在库（新）', '在库（旧）', '已报废']);
-const CLAIM_REASON_OPTIONS = new Set(['业务申请', '个人申请', '管理者配送']);
+const CLAIM_REASON_OPTIONS = new Set(['业务申请', '个人申请', '管理者配发']);
 const WAREHOUSE_OPTIONS = new Set(['I10086.集团合约机库']);
 const PHONE_PATTERN = /^(13|14|15|17|18)\d{9}$/;
 
 const DEFAULT_ROW_MAP = new Map(
   DEFAULT_CONTRACT_NUMBER_MAINTENANCE_ROWS.map((row) => [String(row.id), row]),
 );
-const COMPANY_BY_NAME = new Map(
-  DEFAULT_CONTRACT_NUMBER_MAINTENANCE_ROWS.map((row) => [String(row.useCompany), row.useCompanyCode || '']),
-);
+const COMPANY_OPTIONS = new Set(['搜狐', '畅游']);
+const LEGACY_COMPANY_NAMES = new Map([
+  ['北京搜狐新媒体信息技术有限公司', '搜狐'],
+  ['广州搜狐新媒体信息技术有限公司', '搜狐'],
+]);
 const OWNER_BY_ID = new Map(
   DEFAULT_CONTRACT_NUMBER_MAINTENANCE_ROWS.map((row) => [String(row.ownerId), {
     ownerName: row.ownerName || '',
@@ -80,13 +80,20 @@ function assertAccess(operator) {
 function normalizeRow(row) {
   const defaultRow = DEFAULT_ROW_MAP.get(String(row.id)) || {};
   const merged = { ...defaultRow, ...row };
+  const transactionHistory = Array.isArray(merged.transactionHistory)
+    ? merged.transactionHistory
+    : (defaultRow.transactionHistory || []);
   return {
     ...merged,
+    useCompany: LEGACY_COMPANY_NAMES.get(String(merged.useCompany || '')) || String(merged.useCompany || ''),
+    claimReason: merged.claimReason === '管理者配送' ? '管理者配发' : (merged.claimReason || ''),
     assetMajorCode: '34',
     minorCategory: '合约号码',
-    transactionHistory: Array.isArray(merged.transactionHistory)
-      ? merged.transactionHistory
-      : (defaultRow.transactionHistory || []),
+    transactionHistory: transactionHistory.map((item) => ({
+      ...item,
+      useCompany: LEGACY_COMPANY_NAMES.get(String(item.useCompany || '')) || String(item.useCompany || ''),
+      claimReason: item.claimReason === '管理者配送' ? '管理者配发' : (item.claimReason || ''),
+    })),
   };
 }
 
@@ -144,7 +151,6 @@ function buildTransaction(row, operationDate, changes, operator) {
     scrapDate: row.scrapDate || '',
     ownerId: row.ownerId || '',
     ownerName: row.ownerName || '',
-    idCard: row.idCard || '',
     department: row.department || '',
     jobLevel: row.jobLevel || '',
     claimDate: row.claimDate || '',
@@ -162,12 +168,7 @@ function canonicalizePatch(row, patch) {
   const ownerId = Object.prototype.hasOwnProperty.call(patch, 'ownerId')
     ? String(patch.ownerId || '').trim()
     : String(row.ownerId || '').trim();
-  const idCard = Object.prototype.hasOwnProperty.call(patch, 'idCard')
-    ? String(patch.idCard || '').trim()
-    : String(row.idCard || '').trim();
-  const contractNumber = Object.prototype.hasOwnProperty.call(patch, 'contractNumber')
-    ? String(patch.contractNumber || '').trim()
-    : String(row.contractNumber || '').trim();
+  const contractNumber = String(row.contractNumber || '').trim();
   const contractStartDate = Object.prototype.hasOwnProperty.call(patch, 'contractStartDate')
     ? normalizeDateValue(patch.contractStartDate)
     : String(row.contractStartDate || '');
@@ -195,9 +196,12 @@ function canonicalizePatch(row, patch) {
     : String(row.claimDate || '');
   const claimReason = Object.prototype.hasOwnProperty.call(patch, 'claimReason')
     ? String(patch.claimReason || '').trim()
-    : String(row.claimReason || '');
+    : (row.claimReason === '管理者配送' ? '管理者配发' : String(row.claimReason || ''));
+  const packageContent = Object.prototype.hasOwnProperty.call(patch, 'packageContent')
+    ? String(patch.packageContent || '')
+    : String(row.packageContent || '');
 
-  if (!useCompany || !COMPANY_BY_NAME.has(useCompany)) throw new Error('使用公司不能为空且必须有效');
+  if (!useCompany || !COMPANY_OPTIONS.has(useCompany)) throw new Error('使用公司不能为空且必须有效');
   if (!ownerId || !OWNER_BY_ID.has(ownerId)) throw new Error('责任人不能为空且必须有效');
   if (!contractNumber || !PHONE_PATTERN.test(contractNumber)) {
     throw new Error('合约号码必须为有效的11位手机号');
@@ -218,7 +222,7 @@ function canonicalizePatch(row, patch) {
   if (claimReason && !CLAIM_REASON_OPTIONS.has(claimReason)) throw new Error('领用原因无效');
 
   if (status === '在用-使用中') {
-    warehouse = '';
+    if (warehouse) throw new Error('仓库和状态不匹配。');
   } else if (!WAREHOUSE_OPTIONS.has(warehouse)) {
     throw new Error('仓库和状态不匹配。');
   }
@@ -226,25 +230,31 @@ function canonicalizePatch(row, patch) {
   if (isScrapStatus(status)) {
     if (!scrapDate || !isValidDate(scrapDate)) throw new Error('报废日期不能为空且必须有效');
     if (!scrapReason.trim()) throw new Error('报废原因不能为空');
-  } else {
-    scrapDate = '';
-    scrapReason = '';
+  } else if (scrapDate || scrapReason.trim()) {
+    throw new Error('非报废状态不允许填写报废日期或报废原因');
   }
 
-  const owner = OWNER_BY_ID.get(ownerId);
+  const owner = ownerId === String(row.ownerId || '').trim()
+    ? {
+      ownerName: row.ownerName || '',
+      subsidiary: row.subsidiary || '',
+      department: row.department || '',
+      jobLevel: row.jobLevel || '',
+    }
+    : OWNER_BY_ID.get(ownerId);
   if (!owner.department && !ownerId.startsWith('SOHU')) {
     throw new Error('该员工对应的部门为空，请联系管理员添加');
   }
 
   next.useCompany = useCompany;
-  next.useCompanyCode = COMPANY_BY_NAME.get(useCompany) || '';
+  next.useCompanyCode = row.useCompanyCode || '';
   next.ownerId = ownerId;
   next.ownerName = owner.ownerName;
   next.subsidiary = owner.subsidiary;
   next.department = owner.department;
   next.jobLevel = owner.jobLevel;
-  next.idCard = idCard;
   next.contractNumber = contractNumber;
+  next.packageContent = packageContent;
   next.contractStartDate = contractStartDate;
   next.contractEndDate = contractEndDate;
   next.amount = numberAmount;
@@ -374,6 +384,7 @@ function applyCanonicalPatch(row, canonicalPatch, operator, operationDate) {
     .map((field) => ({ field, before: row[field] ?? '', after: canonicalPatch[field] ?? '' }));
 
   const derivedChanges = ['useCompanyCode', 'ownerName', 'subsidiary', 'department', 'jobLevel']
+    .filter((field) => Object.prototype.hasOwnProperty.call(canonicalPatch, field))
     .filter((field) => String(row[field] ?? '') !== String(canonicalPatch[field] ?? ''))
     .map((field) => ({ field, before: row[field] ?? '', after: canonicalPatch[field] ?? '' }));
   const allChanges = [...changes, ...derivedChanges];

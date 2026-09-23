@@ -142,9 +142,14 @@ function normalizeAssetMaintenanceRow(row) {
 
 function normalizeConsumableMaintenanceRow(row) {
   const defaultRow = DEFAULT_CONSUMABLE_ROW_MAP.get(String(row.id)) || {};
+  const assetTypeOptions = ['公司资产', '租赁资产'];
+  const assetType = assetTypeOptions.includes(row.assetType)
+    ? row.assetType
+    : (assetTypeOptions.includes(defaultRow.assetType) ? defaultRow.assetType : '公司资产');
   return {
     ...defaultRow,
     ...row,
+    assetType,
     transactionHistory: Array.isArray(row.transactionHistory)
       ? row.transactionHistory
       : (defaultRow.transactionHistory || []),

@@ -399,7 +399,6 @@ const INBOUND_IMPORT_EMPLOYEES = Array.from(new Map([
   }]),
 ]).values());
 
-const INBOUND_IMPORT_APPRAISERS = INBOUND_IMPORT_EMPLOYEES.filter((item) => !String(item.employeeNo || '').startsWith('SOHU'));
 const INBOUND_IMPORT_SERVICE_MAP = {
   '生产服务器': ['核心业务', '基础设施'],
   '基础运维平台': ['服务器运维', '网络运维'],
@@ -491,14 +490,10 @@ function NewInboundItemModal({ open, warehouse, initialLine, onCancel, onConfirm
     tax: 1066,
     assetTag: '',
     sn: '',
-    city: warehouseContext.city,
-    building: warehouseContext.building,
     floor: '15F',
     responsiblePerson: '',
-    department: '',
     addType: '采购新增',
     originalAssetTag: '',
-    company: warehouseContext.company,
     costCenter: '',
     businessLine: mockLines[0].desc,
     project: mockProjects[0].desc,
@@ -507,8 +502,6 @@ function NewInboundItemModal({ open, warehouse, initialLine, onCancel, onConfirm
     expenseSubSubject: mockSubSubjects[0].desc,
     tradingCompany: mockTrans[0].desc,
     spareSegment: mockMisc[0].desc,
-    purchaseDate: initialPurchaseDate,
-    enableDate: buildEnableDateFromPurchaseDate(initialPurchaseDate),
     prNo: 'PR2603180007',
     applicationNo: '',
     poNo: '',
@@ -828,17 +821,15 @@ function AssetInboundItemModal({ open, mode, warehouse, initialLine, onCancel, o
     setAsset((current) => ({ ...current, responsiblePerson: record.name, department: record.department, costCenter: record.costCenter }));
     setSelector('');
   };
-  const applyAppraiser = (record) => {
-    setAsset((current) => ({ ...current, appraiser: record.name }));
-    setSelector('');
-  };
   const selectedAssetDisplay = [asset.assetTag, asset.sn, asset.materialDesc].filter(Boolean).join(' / ');
   const submit = (shouldClose) => {
     if (!asset.assetTag) return messageApi.warning('请选择资产');
     if (!asset.responsiblePerson) return messageApi.warning('请选择责任人');
     if (!form.returnDate) return messageApi.warning(isBorrow ? '请选择归还日期' : '请选择退库日期');
     if (!isBorrow && !form.returnReason) return messageApi.warning('请维护退库原因');
-    onConfirm({ ...asset, ...form, quantity: form.returnQty || 1, inboundStatus: '在库-待处理', returnType: isBorrow ? '' : '一般退库', borrowReason: asset.borrowReason, borrowDate: asset.borrowDate, borrowApplicationNo: asset.borrowApplicationNo }, shouldClose);
+    const nextAsset = { ...asset };
+    ['appraisalNo', 'appraiser', 'appraisalDate'].forEach((field) => { delete nextAsset[field]; });
+    onConfirm({ ...nextAsset, ...form, quantity: form.returnQty || 1, inboundStatus: '在库-待处理', returnType: isBorrow ? '' : '一般退库', borrowReason: asset.borrowReason, borrowDate: asset.borrowDate, borrowApplicationNo: asset.borrowApplicationNo }, shouldClose);
     return undefined;
   };
 
@@ -902,10 +893,7 @@ function AssetInboundItemModal({ open, mode, warehouse, initialLine, onCancel, o
               <EditorField label={isBorrow ? '归还数量' : '退库数量'}><Readonly>{form.returnQty}</Readonly></EditorField>
               <EditorField label="资产状态"><Readonly>在库-待处理</Readonly></EditorField>
               <EditorField label={isBorrow ? '归还日期' : '退库日期'} required><DatePicker className="w-full" value={form.returnDate ? dayjs(form.returnDate) : null} onChange={(d) => set('returnDate', d?.format('YYYY-MM-DD') || '')} /></EditorField>
-              <EditorField label="鉴定单号"><Input value={asset.appraisalNo} onChange={(e) => setAsset((current) => ({ ...current, appraisalNo: e.target.value }))} /></EditorField>
               {!isBorrow && <EditorField label="退库原因" required><Input value={form.returnReason} onChange={(e) => set('returnReason', e.target.value)} /></EditorField>}
-              <EditorField label="鉴定人"><LookupInput value={asset.appraiser} onClick={() => setSelector('appraiser')} /></EditorField>
-              <EditorField label="鉴定日期"><DatePicker className="w-full" value={asset.appraisalDate ? dayjs(asset.appraisalDate) : null} onChange={(d) => setAsset((current) => ({ ...current, appraisalDate: d?.format('YYYY-MM-DD') || '' }))} /></EditorField>
               <EditorField label="使用说明" span={3}><Input value={form.usageDesc} onChange={(e) => set('usageDesc', e.target.value)} /></EditorField>
             </DetailGrid>
           </Card>
@@ -942,7 +930,6 @@ function AssetInboundItemModal({ open, mode, warehouse, initialLine, onCancel, o
         onConfirm={applyAsset}
       />}
       {selector === 'responsible' && <SelectModal open title="选择责任人" dataSource={RESPONSIBLE_OPTIONS} columns={[{ title: '责任人', dataIndex: 'name' }, { title: '所在部门', dataIndex: 'department' }, { title: '成本中心', dataIndex: 'costCenter' }]} searchFields={[{ label: '责任人', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelector('')} onConfirm={applyResponsible} />}
-      {selector === 'appraiser' && <SelectModal open title="选择鉴定人" dataSource={RESPONSIBLE_OPTIONS} columns={[{ title: '鉴定人', dataIndex: 'name' }, { title: '所在部门', dataIndex: 'department' }]} searchFields={[{ label: '鉴定人', name: 'name', dataIndex: 'name' }]} onCancel={() => setSelector('')} onConfirm={applyAppraiser} />}
     </>
   );
 }
@@ -1117,7 +1104,7 @@ function InboundMaterialDetailModal({ open, row, inboundType, warehouse, editabl
   return <Modal open={open} title="入库物资信息" width={960} onCancel={onCancel} footer={null}><Space direction="vertical" size={16} className="w-full"><Typography.Text>当前仓库：{warehouse}</Typography.Text><Card size="small" title="物资信息"><DetailGrid columns={3} labelWidth={112} >
     <EditorField label="资产标签号"><Readonly>{detail.assetTag}</Readonly></EditorField><EditorField label="SN号"><Readonly>{detail.sn}</Readonly></EditorField><EditorField label="物资说明"><Readonly>{detail.materialDesc}</Readonly></EditorField><EditorField label="启用日期"><Readonly>{detail.enabledDate}</Readonly></EditorField><EditorField label="物资总类"><Readonly>{detail.materialGroup}</Readonly></EditorField><EditorField label="物资大类"><Readonly>{detail.assetClass}</Readonly></EditorField><EditorField label="物资小类"><Readonly>{detail.assetSubClass}</Readonly></EditorField><EditorField label="主资产标签号"><Readonly>{detail.mainAssetTag}</Readonly></EditorField><EditorField label="品牌"><Readonly>{detail.brand}</Readonly></EditorField><EditorField label="规格型号"><Readonly>{detail.model}</Readonly></EditorField><EditorField label="配置"><Readonly>{detail.config}</Readonly></EditorField><EditorField label="计量单位"><Readonly>{detail.unit}</Readonly></EditorField><EditorField label={isBorrow ? '借用人' : '退库人'}><Readonly>{isBorrow ? detail.borrower : '206984-何文'}</Readonly></EditorField><EditorField label={isBorrow ? '借用数量' : '资产数量'}><Readonly>{isBorrow ? detail.borrowQty : detail.quantity}</Readonly></EditorField><EditorField label="资产状态"><Readonly>{isBorrow ? detail.assetStatus : '在用-使用中'}</Readonly></EditorField><EditorField label="公司"><Readonly>{detail.company}</Readonly></EditorField><EditorField label="板块"><Readonly>{detail.plate}</Readonly></EditorField><EditorField label="业务线"><Readonly>{detail.businessLine}</Readonly></EditorField><EditorField label="成本中心"><Readonly>{detail.costCenter}</Readonly></EditorField><EditorField label="City"><Readonly>{detail.city}</Readonly></EditorField><EditorField label="Building"><Readonly>{detail.building}</Readonly></EditorField><EditorField label="Floor"><Readonly>{detail.floor}</Readonly></EditorField><EditorField label="Room"><Readonly>{detail.room}</Readonly></EditorField><EditorField label="费用账户"><Readonly>{detail.expenseAccount}</Readonly></EditorField><EditorField label="用途"><Readonly>{detail.usage}</Readonly></EditorField><EditorField label="部件数量"><Readonly>{detail.partQuantity}</Readonly></EditorField><EditorField label="部件说明"><Readonly>{detail.partDesc}</Readonly></EditorField>{isBorrow && <EditorField label="借用开始日期"><Readonly>{detail.borrowDate}</Readonly></EditorField>}{isBorrow && <EditorField label="借用申请单号"><Readonly>{detail.borrowApplicationNo}</Readonly></EditorField>}{isBorrow && <EditorField label="借用原因"><Readonly>{detail.borrowReason}</Readonly></EditorField>}<EditorField label="备注" span={3}><Readonly>{detail.remark}</Readonly></EditorField>
   </DetailGrid></Card><Card size="small" title={isBorrow ? '借用归还入库' : '一般退库入库'}><DetailGrid columns={3} labelWidth={112}>
-    <EditorField label="责任人"><Readonly>{detail.responsiblePerson}</Readonly></EditorField><EditorField label="资产标记"><Readonly>{detail.assetMark}</Readonly></EditorField><EditorField label={isBorrow ? '归还数量' : '退库数量'}><Readonly>{detail.returnQty || detail.quantity}</Readonly></EditorField><EditorField label="资产状态"><Readonly>{detail.inboundStatus}</Readonly></EditorField><EditorField label={isBorrow ? '归还日期' : '退库日期'}><Readonly>{detail.returnDate}</Readonly></EditorField><EditorField label="鉴定单号"><Readonly>{detail.appraisalNo}</Readonly></EditorField>{!isBorrow && <EditorField label="退库原因"><Readonly>{detail.returnReason}</Readonly></EditorField>}<EditorField label="鉴定人"><Readonly>{detail.appraiser}</Readonly></EditorField><EditorField label="鉴定日期"><Readonly>{detail.appraisalDate}</Readonly></EditorField><EditorField label="使用说明" span={3}><Readonly>{detail.usageDesc}</Readonly></EditorField>
+    <EditorField label="责任人"><Readonly>{detail.responsiblePerson}</Readonly></EditorField><EditorField label="资产标记"><Readonly>{detail.assetMark}</Readonly></EditorField><EditorField label={isBorrow ? '归还数量' : '退库数量'}><Readonly>{detail.returnQty || detail.quantity}</Readonly></EditorField><EditorField label="资产状态"><Readonly>{detail.inboundStatus}</Readonly></EditorField><EditorField label={isBorrow ? '归还日期' : '退库日期'}><Readonly>{detail.returnDate}</Readonly></EditorField>{!isBorrow && <EditorField label="退库原因"><Readonly>{detail.returnReason}</Readonly></EditorField>}<EditorField label="使用说明" span={3}><Readonly>{detail.usageDesc}</Readonly></EditorField>
   </DetailGrid></Card></Space></Modal>;
 }
 
@@ -1265,7 +1252,6 @@ function InboundEditor({ source, pendingRows, onBack, onSave, onExecute, onRetry
         existingLines: lines,
         assetPool: INBOUND_IMPORT_ASSET_POOL,
         employees: INBOUND_IMPORT_EMPLOYEES,
-        appraisers: INBOUND_IMPORT_APPRAISERS,
         virtualAdmins: mockVirtualAdmins,
         materials: NEW_MATERIAL_OPTIONS,
         plates: mockPlates,

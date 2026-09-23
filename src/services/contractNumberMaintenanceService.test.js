@@ -53,12 +53,10 @@ describe('合约号码维护保存边界', () => {
       .toThrow('合约号码维护存在不允许修改的字段');
   });
 
-  test('身份证号码属于单条维护字段，旧副卡和维修记录字段禁止写入', () => {
+  test('身份证号码不属于单条维护字段，旧副卡和维修记录字段也禁止写入', () => {
     const row = getRow();
-    const nextRows = updateContractNumberMaintenanceRow(row.id, editablePatch(row, {
-      idCard: '110101199901019999',
-    }));
-    expect(nextRows.find((item) => item.id === row.id).idCard).toBe('110101199901019999');
+    expect(() => updateContractNumberMaintenanceRow(row.id, { idCard: '110101199901019999' }))
+      .toThrow('合约号码维护存在不允许修改的字段');
 
     expect(() => updateContractNumberMaintenanceRow(row.id, { secondaryCard: '伪造副卡' }))
       .toThrow('合约号码维护存在不允许修改的字段');
@@ -76,23 +74,25 @@ describe('合约号码维护保存边界', () => {
       .toThrow('合约号码维护存在不允许修改的字段');
   });
 
-  test('合约号码说明和套餐内容为只读字段', () => {
+  test('套餐内容可编辑并写入操作历史，合约号码说明保持只读', () => {
     const row = getRow();
     expect(() => updateContractNumberMaintenanceRow(row.id, { contractDesc: '伪造说明' }))
       .toThrow('合约号码维护存在不允许修改的字段');
-    expect(() => updateContractNumberMaintenanceRow(row.id, { packageContent: '伪造套餐' }))
-      .toThrow('合约号码维护存在不允许修改的字段');
+    const nextRows = updateContractNumberMaintenanceRow(row.id, { packageContent: '新套餐内容' });
+    const saved = nextRows.find((item) => item.id === row.id);
+    expect(saved.packageContent).toBe('新套餐内容');
+    expect(saved.transactionHistory[saved.transactionHistory.length - 1].changes).toContainEqual({ field: 'packageContent', before: row.packageContent, after: '新套餐内容' });
   });
 
   test('使用说明和领用原因属于维护字段，旧备注和领用说明字段禁止写入', () => {
     const row = getRow();
     const nextRows = updateContractNumberMaintenanceRow(row.id, editablePatch(row, {
       usageDescription: '新的使用说明',
-      claimReason: '管理者配送',
+      claimReason: '管理者配发',
     }));
     const saved = nextRows.find((item) => item.id === row.id);
     expect(saved.usageDescription).toBe('新的使用说明');
-    expect(saved.claimReason).toBe('管理者配送');
+    expect(saved.claimReason).toBe('管理者配发');
 
     expect(() => updateContractNumberMaintenanceRow(row.id, { remarks: '旧备注字段' }))
       .toThrow('合约号码维护存在不允许修改的字段');
@@ -100,16 +100,16 @@ describe('合约号码维护保存边界', () => {
       .toThrow('合约号码维护存在不允许修改的字段');
   });
 
-  test('合约号码必须满足PRD的11位手机号规则', () => {
+  test('合约号码不可通过单条保存接口修改', () => {
     const row = getRow();
-    expect(() => updateContractNumberMaintenanceRow(row.id, editablePatch(row, { contractNumber: '12345678901' })))
-      .toThrow('合约号码必须为有效的11位手机号');
+    expect(() => updateContractNumberMaintenanceRow(row.id, { contractNumber: '12345678901' }))
+      .toThrow('合约号码维护存在不允许修改的字段');
   });
 
-  test('合约号码自动去除首尾空格但保留号码内容', () => {
+  test('单条编辑不改变合约号码', () => {
     const row = getRow();
-    const nextRows = updateContractNumberMaintenanceRow(row.id, editablePatch(row, { contractNumber: ' 13800138001 ' }));
-    expect(nextRows.find((item) => item.id === row.id).contractNumber).toBe('13800138001');
+    const nextRows = updateContractNumberMaintenanceRow(row.id, editablePatch(row, { packageContent: '套餐已修改' }));
+    expect(nextRows.find((item) => item.id === row.id).contractNumber).toBe(row.contractNumber);
   });
 
   test('金额必须是数字且最多8位整数2位小数', () => {
@@ -196,7 +196,7 @@ describe('合约号码维护保存边界', () => {
     }))).toThrow('非报废状态不允许填写报废日期或报废原因');
   });
 
-  test('责任人变化刷新姓名部门子公司职级但不覆盖手工身份证号码', () => {
+  test('责任人变化刷新姓名部门子公司职级并保留原有身份证号码数据', () => {
     const row = getRow('contract-number-2');
     const targetOwner = getRow('contract-number-3');
     const originalIdCard = row.idCard;
@@ -217,12 +217,12 @@ describe('合约号码维护保存边界', () => {
       .toThrow('责任人不能为空且必须有效');
   });
 
-  test('使用公司编码由系统重新推导', () => {
+  test('使用公司只允许搜狐或畅游并保留现有编码', () => {
     const row = getRow('contract-number-2');
-    const target = getRow('contract-number-5');
-    const nextRows = updateContractNumberMaintenanceRow(row.id, editablePatch(row, { useCompany: target.useCompany }));
+    const nextRows = updateContractNumberMaintenanceRow(row.id, editablePatch(row, { useCompany: '畅游' }));
     const saved = nextRows.find((item) => item.id === row.id);
-    expect(saved.useCompanyCode).toBe(target.useCompanyCode);
+    expect(saved.useCompany).toBe('畅游');
+    expect(saved.useCompanyCode).toBe(row.useCompanyCode);
   });
 
   test('不存在的使用公司不能保存', () => {
@@ -263,27 +263,23 @@ describe('合约号码维护保存边界', () => {
     expect(saved.transactionHistory[saved.transactionHistory.length - 1].source).toBe('合约号码台账维护');
   });
 
-  test('合约号码必须全局唯一且没有缺省例外', () => {
+  test('不能通过接口修改重复号码', () => {
     const row = getRow('contract-number-2');
     const duplicate = getRow('contract-number-3');
-    expect(() => updateContractNumberMaintenanceRow(row.id, editablePatch(row, {
-      contractNumber: duplicate.contractNumber,
-    }))).toThrow('合约号码已存在');
-
-    expect(() => updateContractNumberMaintenanceRow(row.id, editablePatch(row, {
-      contractNumber: '缺省',
-    }))).toThrow('合约号码必须为有效的11位手机号');
+    expect(() => updateContractNumberMaintenanceRow(row.id, { contractNumber: duplicate.contractNumber }))
+      .toThrow('合约号码维护存在不允许修改的字段');
   });
 
-  test('领用原因只允许三个正式枚举', () => {
+  test('领用原因只允许三个正式枚举，申请类型保持原值', () => {
     const row = getRow();
-    expect(() => updateContractNumberMaintenanceRow(row.id, editablePatch(row, {
-      claimReason: '业务使用',
-    }))).toThrow('领用原因无效');
-
-    expect(() => updateContractNumberMaintenanceRow(row.id, editablePatch(row, {
-      claimReason: '个人申请',
-    }))).not.toThrow();
+    expect(() => updateContractNumberMaintenanceRow(row.id, editablePatch(row, { claimReason: '业务使用' })))
+      .toThrow('领用原因无效');
+    expect(() => updateContractNumberMaintenanceRow(row.id, editablePatch(row, { claimReason: '管理者配送' })))
+      .toThrow('领用原因无效');
+    const saved = updateContractNumberMaintenanceRow(row.id, editablePatch(row, { claimReason: '管理者配发' }))
+      .find((item) => item.id === row.id);
+    expect(saved.claimReason).toBe('管理者配发');
+    expect(saved.applicationType).toBe(row.applicationType);
   });
 
   test('维护范围只返回合约号码不包含合约机', () => {
@@ -305,19 +301,23 @@ describe('合约号码维护保存边界', () => {
     )).toThrow('无合约号码维护权限');
   });
 
-  test('批量模板固定为标签号加单条编辑白名单共15列', () => {
-    expect(CONTRACT_NUMBER_BATCH_FIELDS).toHaveLength(15);
+  test('批量模板不提供合约号码和身份证号码字段并包含可编辑套餐内容', () => {
+    expect(CONTRACT_NUMBER_BATCH_FIELDS).toHaveLength(14);
     expect(CONTRACT_NUMBER_BATCH_FIELDS.map((field) => field.header)).toEqual([
-      '标签号', '使用公司', '责任人工号', '身份证号码', '合约号码',
+      '标签号', '使用公司', '责任人工号', '套餐内容',
       '合约开始日期', '合约结束日期', '金额', '号码状态', '仓库',
       '使用说明', '报废原因', '报废日期', '领用日期', '领用原因',
     ]);
+    expect(CONTRACT_NUMBER_EDIT_FIELDS).not.toContain('contractNumber');
+    expect(CONTRACT_NUMBER_EDIT_FIELDS).not.toContain('idCard');
+    expect(CONTRACT_NUMBER_BATCH_FIELDS.map((field) => field.header)).not.toContain('身份证号码');
   });
 
-  test('批量空白字段保留原值，身份证按上传值独立修改', () => {
+  test('批量空白字段保留原值，套餐内容可编辑且合约号码不变', () => {
     const row = getRow('contract-number-2');
     const batchRows = [batchLine(row, {
-      '身份证号码': '110101200001019999',
+      '套餐内容': '批量更新的套餐',
+      '合约号码': '13800138001',
     })];
     const validation = validateContractNumberBatchRows(batchRows);
     expect(validation.status).toBe('passed');
@@ -325,25 +325,21 @@ describe('合约号码维护保存边界', () => {
     const result = batchUpdateContractNumberMaintenanceRows(batchRows, undefined, validation.versions);
     expect(result.status).toBe('passed');
     const saved = result.rows.find((item) => item.id === row.id);
-    expect(saved.idCard).toBe('110101200001019999');
+    expect(saved.packageContent).toBe('批量更新的套餐');
     expect(saved.contractNumber).toBe(row.contractNumber);
     expect(saved.useCompany).toBe(row.useCompany);
   });
 
-  test('批量合约号码按整批最终结果判断唯一性，允许同批换号', () => {
-    const first = getRow('contract-number-2');
-    const second = getRow('contract-number-3');
-    const batchRows = [
-      batchLine(first, { rowNo: 2, '合约号码': second.contractNumber }),
-      batchLine(second, { rowNo: 3, '合约号码': first.contractNumber }),
-    ];
+  test('批量导入不允许修改合约号码，可更新套餐内容', () => {
+    const row = getRow('contract-number-2');
+    const batchRows = [batchLine(row, { '合约号码': '13800138001', '套餐内容': '导入后的套餐' })];
     const validation = validateContractNumberBatchRows(batchRows);
     expect(validation.status).toBe('passed');
-
     const result = batchUpdateContractNumberMaintenanceRows(batchRows, undefined, validation.versions);
     expect(result.status).toBe('passed');
-    expect(result.rows.find((item) => item.id === first.id).contractNumber).toBe(second.contractNumber);
-    expect(result.rows.find((item) => item.id === second.id).contractNumber).toBe(first.contractNumber);
+    const saved = result.rows.find((item) => item.id === row.id);
+    expect(saved.contractNumber).toBe(row.contractNumber);
+    expect(saved.packageContent).toBe('导入后的套餐');
   });
 
   test('批量任一行失败时整批不保存', () => {

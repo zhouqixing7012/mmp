@@ -27,6 +27,10 @@ function row(data) {
   const base = {
     companyCode: '115',
     company: '新媒体',
+    assetType: '公司资产',
+    scrapDate: '',
+    scrapType: '',
+    scrapReason: '',
     plate: '11.搜狐网-web',
     majorCategory: '移动存储设备',
     minorCategory: '移动硬盘',

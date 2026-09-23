@@ -653,7 +653,6 @@ export default function EmployeeAssetInfoQueryPage() {
   ];
 
   const consumableColumns = [
-    { title: '行号', dataIndex: 'rowNo', width: 70, fixed: 'left' },
     {
       title: '耗材标签号',
       dataIndex: 'tag',
@@ -663,21 +662,16 @@ export default function EmployeeAssetInfoQueryPage() {
         <Button type="link" size="small" onClick={() => setDetail({ kind: 'consumable', record })}>{value}</Button>
       ),
     },
-    { title: '公司', dataIndex: 'company', width: 130, render: displayText },
-    { title: '板块', dataIndex: 'plate', width: 130, render: displayText },
-    { title: '耗材大类', dataIndex: 'majorCategory', width: 150, render: displayText },
-    { title: '耗材小类', dataIndex: 'minorCategory', width: 140, render: displayText },
     { title: '耗材说明', dataIndex: 'description', width: 240, render: displayText },
-    { title: '品牌', dataIndex: 'brand', width: 110, render: displayText },
-    { title: '主资产标签号', dataIndex: 'mainAssetTag', width: 160, render: displayText },
-    { title: '数量', dataIndex: 'quantity', width: 90, align: 'right', render: displayText },
-    { title: '原值', dataIndex: 'originalValue', width: 120, align: 'right', render: amountText },
-    { title: '净值', dataIndex: 'netValue', width: 120, align: 'right', render: amountText },
-    { title: '耗材责任人', dataIndex: 'ownerName', width: 180, render: (_, record) => `${record.ownerId}.${record.ownerName}` },
     { title: '耗材状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
-    { title: '成本中心', dataIndex: 'costCenter', width: 160, render: displayText },
-    { title: '仓库', dataIndex: 'warehouse', width: 220, render: displayText },
-    { title: '启用日期', dataIndex: 'enabledDate', width: 120, render: displayText },
+    { title: '耗材责任人', dataIndex: 'ownerName', width: 180, render: (_, record) => `${record.ownerId}.${record.ownerName}` },
+    { title: '关联主资产标签号', dataIndex: 'mainAssetTag', width: 160, render: displayText },
+    {
+      title: '主资产资产说明',
+      dataIndex: 'mainAssetTag',
+      width: 240,
+      render: (value) => displayText(ASSET_ROWS.find((asset) => asset.tag === value)?.description),
+    },
   ];
 
   const contractColumns = [
@@ -691,13 +685,23 @@ export default function EmployeeAssetInfoQueryPage() {
         <Button type="link" size="small" onClick={() => setDetail({ kind: 'contract', record })}>{value}</Button>
       ),
     },
-    { title: '副卡', dataIndex: 'secondaryCard', width: 120, render: displayText },
-    { title: '号码状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
+    { title: '合约号码说明', dataIndex: 'contractDesc', width: 200, render: displayText },
+    { title: '合约号码状态', dataIndex: 'status', width: 140, render: (value) => <StatusTag value={value} type="business" /> },
     { title: '责任人', dataIndex: 'ownerName', width: 170, render: (_, record) => `${record.ownerId}-${record.ownerName}` },
-    { title: '使用公司', dataIndex: 'company', width: 160, render: displayText },
-    { title: '部门', dataIndex: 'department', width: 320, render: displayText },
-    { title: '领用日期', dataIndex: 'claimDate', width: 120, render: displayText },
-    { title: '备注', dataIndex: 'remark', width: 180, render: displayText },
+    { title: '责任人公司', dataIndex: 'ownerCompany', width: 160, render: displayText },
+    {
+      title: '所在单据编号',
+      dataIndex: 'spPoPutinNum',
+      width: 180,
+      render: (value, record) => (value && record.detailAvailable
+        ? <Button type="link" size="small" onClick={() => openDocumentDetail(value)}>{value}</Button>
+        : displayText(value)),
+    },
+    { title: '单据申请人', dataIndex: 'applicant', width: 150, render: displayText },
+    { title: '单据类型', dataIndex: 'documentType', width: 130, render: displayText },
+    { title: '单据业务类型', dataIndex: 'businessType', width: 140, render: displayText },
+    { title: '单据审批环节', dataIndex: 'approvalNode', width: 160, render: displayText },
+    { title: '单据审批人', dataIndex: 'approver', width: 150, render: displayText },
   ];
 
   const documentColumns = [
@@ -749,19 +753,19 @@ export default function EmployeeAssetInfoQueryPage() {
       columns: assetColumns,
       emptyText: '暂无资产信息。',
     },
-    consumable: {
-      label: '耗材',
-      title: '耗材信息',
-      rows: filteredConsumableRows,
-      columns: consumableColumns,
-      emptyText: '暂无耗材信息。',
-    },
     contract: {
       label: '合约号码',
       title: '合约号码信息',
       rows: filteredContractRows,
       columns: contractColumns,
       emptyText: '暂无合约号码信息。',
+    },
+    consumable: {
+      label: '耗材',
+      title: '耗材信息',
+      rows: filteredConsumableRows,
+      columns: consumableColumns,
+      emptyText: '暂无耗材信息。',
     },
     document: {
       label: '单据信息',
