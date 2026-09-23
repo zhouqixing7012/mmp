@@ -412,7 +412,7 @@ export default function MoveMobilePrototype() {
 
   const runQuickScan = (rawValue) => {
     const value = rawValue.trim();
-    if (!value) return message.warning('请输入或扫描资产标签号/SN');
+    if (!value) return message.warning('请扫描资产二维码');
     const matches = documents.filter((doc) => INBOUND_WAREHOUSE_CODES.has(doc.toWarehouse?.slice(0, 5)) && doc.status === '出库待接收' && doc.lines.some((line) => line.moveStatus === '待接收' && line.assetTag === value));
     if (!matches.length) return message.warning('未找到当前待接收移库单');
     if (matches.length === 1) {
