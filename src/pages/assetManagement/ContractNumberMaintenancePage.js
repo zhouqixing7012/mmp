@@ -49,9 +49,10 @@ const { TextArea } = Input;
 const { Dragger } = Upload;
 
 const STATUS_OPTIONS = ['在用-使用中', '在库（新）', '在库（旧）', '已报废'];
+const COMPANY_OPTIONS = ['搜狐', '畅游'];
+const CLAIM_REASON_OPTIONS = ['业务申请', '个人申请', '管理者配发'];
 const APPLICATION_TYPE_OPTIONS = ['业务申请', '个人申请', '管理者配送'];
 const WAREHOUSE_OPTIONS = ['I10086.集团合约机库'];
-const PHONE_PATTERN = /^(13|14|15|17|18)\d{9}$/;
 
 const BATCH_TEMPLATE_FIELDS = CONTRACT_NUMBER_BATCH_FIELDS.map((field) => field.header);
 
@@ -311,12 +312,6 @@ export default function ContractNumberMaintenancePage() {
     [rows, activeRowId],
   );
 
-  const companies = useMemo(() => uniqueValues(rows, 'useCompany').map((name, index) => ({
-    id: `contract-company-${index}`,
-    name,
-    code: rows.find((row) => row.useCompany === name)?.useCompanyCode || '',
-  })), [rows]);
-
   const owners = useMemo(() => [...new Map(rows.map((row) => [row.ownerId, {
     id: row.ownerId,
     code: row.ownerId,
@@ -348,14 +343,9 @@ export default function ContractNumberMaintenancePage() {
         searchFields: [{ name: 'code', label: '员工编号', dataIndex: 'code' }, { name: 'name', label: '员工姓名', dataIndex: 'name' }, { name: 'department', label: '部门', dataIndex: 'department' }],
         columns: [{ title: '员工编号', dataIndex: 'code' }, { title: '员工姓名', dataIndex: 'name' }, { title: '部门', dataIndex: 'department' }],
       },
-      editCompany: {
-        title: '选择使用公司', multiple: false, values: companies, valueField: 'name',
-        searchFields: [{ name: 'code', label: '公司编码', dataIndex: 'code' }, { name: 'name', label: '公司名称', dataIndex: 'name' }],
-        columns: [{ title: '公司编码', dataIndex: 'code' }, { title: '公司名称', dataIndex: 'name' }],
-      },
     };
     return configs[lookupKey] || null;
-  }, [lookupKey, owners, companies]);
+  }, [lookupKey, owners]);
 
   const lookupInitialSelectedKeys = useMemo(() => {
     if (!lookupConfig) return [];
@@ -363,7 +353,6 @@ export default function ContractNumberMaintenancePage() {
     let values = [];
     if (lookupKey === 'owners') values = draftFilters.owners || [];
     if (lookupKey === 'editOwner' && editDraft?.ownerId) values = [editDraft.ownerId];
-    if (lookupKey === 'editCompany' && editDraft?.useCompany) values = [editDraft.useCompany];
     const selectedSet = new Set(values.map(String));
     return lookupConfig.values
       .filter((record) => selectedSet.has(String(record[valueField])))
@@ -466,13 +455,8 @@ export default function ContractNumberMaintenancePage() {
 
   const saveContractNumber = () => {
     if (!activeRow || !editDraft) return;
-    const number = String(editDraft.contractNumber || '').trim();
-    if (!PHONE_PATTERN.test(number)) {
-      messageApi.error('合约号码必须为有效的11位手机号');
-      return;
-    }
-    if (!editDraft.useCompany) {
-      messageApi.warning('使用公司不能为空');
+    if (!COMPANY_OPTIONS.includes(editDraft.useCompany)) {
+      messageApi.warning('使用公司请选择搜狐或畅游');
       return;
     }
     if (!editDraft.ownerId) {
@@ -500,7 +484,6 @@ export default function ContractNumberMaintenancePage() {
       ...result,
       [field]: editDraft[field] ?? '',
     }), {});
-    patch.contractNumber = number;
     const changed = CONTRACT_NUMBER_EDIT_FIELDS.some((field) => (
       String(activeRow[field] ?? '') !== String(patch[field] ?? '')
     ));
@@ -657,7 +640,7 @@ export default function ContractNumberMaintenancePage() {
       <QueryItem label="合约号码">
         <Input value={draftFilters.contractNumber} allowClear placeholder="支持模糊、多值" onChange={(event) => updateFilter('contractNumber', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
-      <QueryItem label="使用公司">{multiSelect('useCompanies', uniqueValues(rows, 'useCompany'))}</QueryItem>
+      <QueryItem label="使用公司">{multiSelect('useCompanies', COMPANY_OPTIONS)}</QueryItem>
       <QueryItem label="合约号码说明">
         <Input value={draftFilters.contractDesc} allowClear placeholder="支持模糊" onChange={(event) => updateFilter('contractDesc', event.target.value)} onPressEnter={handleQuery} />
       </QueryItem>
@@ -690,7 +673,7 @@ export default function ContractNumberMaintenancePage() {
       <QueryItem label="领用日期">
         <RangePicker style={{ width: '100%' }} value={draftFilters.claimDate.length === 2 ? draftFilters.claimDate.map((value) => dayjs(value)) : null} onChange={(dates) => updateFilter('claimDate', dates ? dates.map((date) => date.format('YYYY-MM-DD')) : [])} />
       </QueryItem>
-      <QueryItem label="领用原因">{multiSelect('claimReasons', APPLICATION_TYPE_OPTIONS)}</QueryItem>
+      <QueryItem label="领用原因">{multiSelect('claimReasons', CLAIM_REASON_OPTIONS)}</QueryItem>
       <QueryItem label="申请类型">{multiSelect('applicationTypes', APPLICATION_TYPE_OPTIONS)}</QueryItem>
       <QueryItem label="申请单号">
         <Input value={draftFilters.applicationNo} allowClear placeholder="支持文本、多值" onChange={(event) => updateFilter('applicationNo', event.target.value)} onPressEnter={handleQuery} />
@@ -757,11 +740,11 @@ export default function ContractNumberMaintenancePage() {
   const detailTab = source ? (
     <DetailGrid columns={3} labelWidth={112}>
       <DetailItem label="标签号">{displayText(source.tag)}</DetailItem>
-      <DetailItem label="合约号码">{editable('contractNumber', <Input value={editDraft?.contractNumber || ''} maxLength={25} allowClear onChange={(event) => updateEdit('contractNumber', event.target.value)} />)}</DetailItem>
-      <DetailItem label="使用公司">{cardMode === 'edit' ? <LookupInput value={editDraft?.useCompany || ''} placeholder="请选择使用公司" onOpen={() => setLookupKey('editCompany')} /> : displayText(source.useCompany)}</DetailItem>
+      <DetailItem label="合约号码">{displayText(source.contractNumber)}</DetailItem>
+      <DetailItem label="使用公司">{editable('useCompany', <Select allowClear value={editDraft?.useCompany || undefined} style={{ width: '100%' }} options={COMPANY_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateEdit('useCompany', value || '')} />)}</DetailItem>
       <DetailItem label="资产小类">{displayText(source.minorCategory)}</DetailItem>
       <DetailItem label="合约号码说明">{displayText(source.contractDesc)}</DetailItem>
-      <DetailItem label="套餐内容">{displayText(source.packageContent)}</DetailItem>
+      <DetailItem label="套餐内容">{editable('packageContent', <Input value={editDraft?.packageContent || ''} allowClear onChange={(event) => updateEdit('packageContent', event.target.value)} />)}</DetailItem>
       <DetailItem label="合约期限">
         {cardMode === 'edit' ? (
           <RangePicker
@@ -817,7 +800,7 @@ export default function ContractNumberMaintenancePage() {
           allowClear
           value={editDraft?.claimReason || undefined}
           style={{ width: '100%' }}
-          options={APPLICATION_TYPE_OPTIONS.map((value) => ({ label: value, value }))}
+          options={CLAIM_REASON_OPTIONS.map((value) => ({ label: value, value }))}
           onChange={(value) => updateEdit('claimReason', value || '')}
         />
       ))}</DetailItem>
@@ -945,8 +928,6 @@ export default function ContractNumberMaintenancePage() {
           if (lookupKey === 'owners') {
             const records = Array.isArray(selected) ? selected : [selected];
             updateFilter('owners', records.filter(Boolean).map((record) => record.code));
-          } else if (lookupKey === 'editCompany') {
-            updateEdit('useCompany', selected?.name || '');
           } else if (lookupKey === 'editOwner') {
             if (!selected?.department && selected?.code && !String(selected.code).startsWith('SOHU')) {
               messageApi.warning('该员工对应的部门为空，请联系管理员添加');
