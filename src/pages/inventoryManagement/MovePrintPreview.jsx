@@ -2,6 +2,8 @@ import React from 'react';
 import { Button, Modal, Typography } from 'antd';
 import { Printer } from 'lucide-react';
 import { getWarehouseByCode } from '../../mock/reference/warehouseCatalog';
+import { getMaterialByCode } from '../../mock/reference/materialCatalog';
+import { INVENTORY_ASSET_POOL } from '../../mock/inventoryAssetPool';
 
 function warehouseName(value) {
   const code = String(value || '').split('.')[0];
@@ -10,16 +12,16 @@ function warehouseName(value) {
 }
 
 function resolveMoveLine(line) {
-  const category = line.assetClass || line.materialCategory || '';
-  const catalog = line.materialCode ? null : null;
-  const categoryName = String(catalog?.majorCategory || category).replace(/^\d+\./, '');
-  const productName = line.materialDesc || '';
-  const subCategory = line.assetSubClass || line.minorCategory || '';
-  const brand = line.brand || '';
-  const model = line.model || line.specification || '';
+  const material = line.materialCode ? getMaterialByCode(line.materialCode) : null;
+  const category = line.materialCategory || line.assetClass || material?.majorCategory || '';
+  const categoryName = String(category).replace(/^\\d+\\./, '');
+  const productName = line.materialDesc || material?.materialDescription || '';
+  const subCategory = line.assetSubClass || material?.minorCategory || '';
+  const brand = line.brand || material?.brand || '';
+  const model = line.model || line.specification || material?.model || '';
   const productParts = [subCategory, brand, model].filter(Boolean);
   const currentAsset = line.assetTag
-    ? null
+    ? INVENTORY_ASSET_POOL.find((asset) => asset.assetTag === line.assetTag)
     : null;
   return {
     categoryName,
