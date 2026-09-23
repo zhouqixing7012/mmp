@@ -353,7 +353,17 @@ export function updateAssetMaintenanceRow(id, patch) {
     ));
     if (!hasMaintenanceChange) return normalizeAssetMaintenanceRow(row);
 
-    const nextRow = normalizeAssetMaintenanceRow({ ...row, ...patch });
+    const serial = String(patch.serialNumber ?? row.serialNumber ?? '').trim();
+    if (Array.from(serial).length > 35) throw new Error('资产序列号最多 35 个字符');
+    if (Array.from(String(patch.remarks ?? row.remarks ?? '')).length > 150) throw new Error('备注最多 150 个字符');
+    if (Array.from(String(patch.usageDescription ?? row.usageDescription ?? '')).length > 150) throw new Error('使用说明最多 150 个字符');
+    if (serial && serial !== '缺省' && rows.some((item) => (
+      item.id !== row.id
+      && String(item.serialNumber || '').trim() !== '缺省'
+      && String(item.serialNumber || '').trim().toLowerCase() === serial.toLowerCase()
+    ))) throw new Error('当前资产序列号不唯一！');
+
+    const nextRow = normalizeAssetMaintenanceRow({ ...row, ...patch, serialNumber: serial });
     const operationDate = patch.updatedAt || new Date().toISOString().replace('T', ' ').slice(0, 19);
     const transaction = buildAssetMaintenanceTransaction(nextRow, operationDate, row);
     return {
