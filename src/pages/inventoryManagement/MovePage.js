@@ -823,10 +823,10 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
           {(editable || toolbar) && (
             <div className="mb-3 flex flex-wrap items-center gap-3">
               {editable && (
-                <div className="flex min-w-[320px] flex-1 items-center gap-2 rounded-md bg-slate-50 p-3">
-                  <Typography.Text className="shrink-0">资产扫描</Typography.Text>
+                <div className="flex shrink-0 items-center gap-2 rounded-md bg-slate-50 p-3">
+                  <Typography.Text className="w-[88px] shrink-0 text-right">资产扫描</Typography.Text>
                   <Input
-                    className="min-w-0 flex-1"
+                    className="w-[260px]"
                     value={lineScanDraft}
                     allowClear
                     autoFocus
