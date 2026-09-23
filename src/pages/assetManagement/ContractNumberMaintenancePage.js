@@ -59,7 +59,7 @@ const BATCH_TEMPLATE_FIELDS = CONTRACT_NUMBER_BATCH_FIELDS.map((field) => field.
 const EXPORT_FIELDS = [
   '行号', '标签号', '合约号码', '使用公司', '资产小类', '合约号码说明', '套餐内容',
   '合约开始日期', '合约结束日期', '数量', '金额', '号码状态', '仓库', '使用说明',
-  '报废原因', '报废日期', '责任人工号', '责任人姓名', '身份证号码', '部门', '员工职级',
+  '报废原因', '报废日期', '责任人工号', '责任人姓名', '部门', '员工职级',
   '领用日期', '领用原因', '申请类型', '申请单号',
 ];
 
@@ -108,7 +108,6 @@ const HISTORY_COLUMNS = [
   ['报废原因', 'scrapReason', 220],
   ['报废日期', 'scrapDate', 120],
   ['责任人', 'owner', 170],
-  ['身份证号码', 'idCard', 190],
   ['部门', 'department', 200],
   ['员工职级', 'jobLevel', 110],
   ['领用日期', 'claimDate', 120],
@@ -118,7 +117,7 @@ const HISTORY_COLUMNS = [
 const HISTORY_CHANGE_FIELDS = new Set([
   'tag', 'contractNumber', 'company', 'minorCategory', 'contractDesc', 'packageContent',
   'contractTerm', 'quantity', 'amount', 'status', 'warehouse', 'usageDescription',
-  'scrapReason', 'scrapDate', 'owner', 'idCard', 'department', 'jobLevel',
+  'scrapReason', 'scrapDate', 'owner', 'department', 'jobLevel',
   'claimDate', 'claimReason', 'applicationType',
 ]);
 const BATCH_ERROR_COLUMNS = [
@@ -274,7 +273,6 @@ function buildExportMatrix(rows) {
     row.scrapDate || '',
     excelSafeText(row.ownerId),
     excelSafeText(row.ownerName),
-    excelSafeText(row.idCard),
     excelSafeText(row.department),
     excelSafeText(row.jobLevel),
     row.claimDate || '',
@@ -787,7 +785,6 @@ export default function ContractNumberMaintenancePage() {
           : displayText(source.scrapDate)}
       </DetailItem>
       <DetailItem label="责任人">{cardMode === 'edit' ? <LookupInput value={editDraft?.ownerId ? `${editDraft.ownerId}-${editDraft.ownerName}` : ''} placeholder="请选择责任人" onOpen={() => setLookupKey('editOwner')} /> : `${source.ownerId}-${source.ownerName}`}</DetailItem>
-      <DetailItem label="身份证号码">{editable('idCard', <Input value={editDraft?.idCard || ''} allowClear onChange={(event) => updateEdit('idCard', event.target.value)} />)}</DetailItem>
       <DetailItem label="部门">{displayText(source.department)}</DetailItem>
       <DetailItem label="员工职级">{displayText(source.jobLevel)}</DetailItem>
       <DetailItem label="领用日期">
