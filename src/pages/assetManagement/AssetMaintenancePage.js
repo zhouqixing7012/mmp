@@ -625,6 +625,14 @@ export default function AssetMaintenancePage() {
     }
 
     const serial = normalizeSerial(editDraft.serialNumber);
+    if (Array.from(serial).length > 35) {
+      messageApi.error('资产序列号最多 35 个字符');
+      return;
+    }
+    if (Array.from(editDraft.remarks || '').length > 150 || Array.from(editDraft.usageDescription || '').length > 150) {
+      messageApi.error('备注和使用说明最多 150 个字符');
+      return;
+    }
     if (serial && !isPlaceholderSerial(serial) && rows.some((row) => (
       row.id !== activeAsset.id
       && !isPlaceholderSerial(row.serialNumber)
@@ -655,7 +663,13 @@ export default function AssetMaintenancePage() {
       return;
     }
 
-    const nextRows = updateAssetMaintenanceRow(activeAsset.id, patch);
+    let nextRows;
+    try {
+      nextRows = updateAssetMaintenanceRow(activeAsset.id, patch);
+    } catch (error) {
+      messageApi.error(error.message || '保存失败，请检查数据！');
+      return;
+    }
     setRows(nextRows);
     setSelectedRowKeys([]);
     setPage(1);
@@ -858,7 +872,7 @@ export default function AssetMaintenancePage() {
         <DetailGrid columns={3} labelWidth={104}>
           <DetailItem label="资产标签号">{displayText(source.tag)}</DetailItem>
           <DetailItem label="序列号">
-            {editable('serialNumber', <Input value={editDraft?.serialNumber || ''} allowClear onChange={(event) => updateEdit('serialNumber', event.target.value)} />)}
+            {editable('serialNumber', <Input value={editDraft?.serialNumber || ''} maxLength={35} allowClear onChange={(event) => updateEdit('serialNumber', event.target.value)} />)}
           </DetailItem>
           <DetailItem label="公司">{displayText(source.company)}</DetailItem>
           <DetailItem label="部门">{displayText(source.department)}</DetailItem>
@@ -928,10 +942,10 @@ export default function AssetMaintenancePage() {
           <DetailItem label="PO单号">{displayText(source.poNo)}</DetailItem>
           <DetailSpacer />
           <DetailItem label="使用说明" span={3}>
-            {editable('usageDescription', <TextArea value={editDraft?.usageDescription || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('usageDescription', event.target.value)} />)}
+            {editable('usageDescription', <TextArea value={editDraft?.usageDescription || ''} maxLength={150} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('usageDescription', event.target.value)} />)}
           </DetailItem>
           <DetailItem label="备注" span={3}>
-            {editable('remarks', <TextArea value={editDraft?.remarks || ''} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('remarks', event.target.value)} />)}
+            {editable('remarks', <TextArea value={editDraft?.remarks || ''} maxLength={150} autoSize={{ minRows: 2, maxRows: 4 }} onChange={(event) => updateEdit('remarks', event.target.value)} />)}
           </DetailItem>
         </DetailGrid>
       </AssetSection>
