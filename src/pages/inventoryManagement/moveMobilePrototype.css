@@ -61,7 +61,7 @@
 }
 
 .move-mobile-content.is-received-home { display: flex; flex-direction: column; }
-.is-received-home .move-mobile-document-list { flex: 1 0 auto; }
+.is-received-home .move-mobile-document-list { flex: 1 0 auto; align-content: start; }
 
 .move-mobile-actions {
   display: grid;
@@ -157,6 +157,8 @@
 
 .move-mobile-document-list {
   display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
   gap: 10px;
 }
 
@@ -306,6 +308,14 @@
 .move-mobile-asset-card-top .ant-btn { width: 26px; height: 26px; padding: 0; }
 .move-mobile-asset-meta { margin-top: 6px; color: #747c88; font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
 .move-mobile-reject-note { margin-top: 8px; color: #c4332f; font-size: 11px; }
+.move-mobile-view-asset.ant-btn { display: inline-flex; height: 26px; align-items: center; gap: 3px; margin-top: 6px; padding: 0; font-size: 12px; }
+
+.move-mobile-detail-fields { padding-top: 2px; }
+.move-mobile-info-row { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 10px; align-items: start; min-height: 46px; border-bottom: 1px solid #f0f2f5; padding: 13px 0; font-size: 13px; line-height: 1.5; }
+.move-mobile-info-row:last-child { border-bottom: 0; }
+.move-mobile-info-row > span { color: #6c7480; }
+.move-mobile-info-row > strong { min-width: 0; color: #2c3038; font-size: 13px; font-weight: 400; overflow-wrap: anywhere; }
+.move-mobile-asset-detail { padding-bottom: 0; }
 
 .move-mobile-sticky-actions {
   position: sticky;

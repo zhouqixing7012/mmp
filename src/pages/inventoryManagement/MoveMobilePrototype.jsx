@@ -39,6 +39,18 @@ const INITIAL_DOCUMENTS = [
     createdDate: '2026-09-23', creator: '206984-何文', remark: '前台设备移库',
     lines: [{ ...seedAsset, id: 'line-receive-1', warehouse: TRANSIT_WAREHOUSE, moveStatus: '待接收', verified: false, moveDesc: '', receiveDesc: '', verificationDesc: '' }],
   },
+  {
+    id: 'move-complete-1', documentNo: 'TS-202609220018', status: '已完成',
+    fromWarehouse: warehouseName('I0013'), toWarehouse: warehouseName('I0001'),
+    createdDate: '2026-09-22', creator: '206984-何文', remark: '前台设备移库',
+    lines: [{ ...seedAsset, id: 'line-complete-1', warehouse: warehouseName('I0001'), moveStatus: '已接收', verified: true, verificationDesc: '扫码验证通过', receiver: USER, receiveTime: '2026-09-22 15:36:08', moveDesc: '' }],
+  },
+  {
+    id: 'move-rejected-1', documentNo: 'TS-202609220012', status: '已驳回',
+    fromWarehouse: warehouseName('I0013'), toWarehouse: warehouseName('I0001'),
+    createdDate: '2026-09-22', creator: '206984-何文', remark: '前台设备移库',
+    lines: [{ ...seedAsset, id: 'line-rejected-1', warehouse: TRANSIT_WAREHOUSE, moveStatus: '已驳回', verified: false, rejectReason: '物资标签与实物不一致', moveDesc: '' }],
+  },
 ];
 
 function statusTone(value) {
@@ -250,8 +262,10 @@ export default function MoveMobilePrototype() {
   const [quickMatches, setQuickMatches] = useState([]);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerPurpose, setScannerPurpose] = useState('receive');
+  const [activeLineId, setActiveLineId] = useState(null);
 
   const activeDocument = documents.find((doc) => doc.id === activeDocumentId) || null;
+  const activeLine = activeDocument?.lines.find((line) => line.id === activeLineId) || null;
   const outgoingWarehouses = WAREHOUSES.filter((row) => OUTBOUND_WAREHOUSE_CODES.has(row.warehouseCode));
   const incomingWarehouses = WAREHOUSES.filter((row) => row.company === byCode.get(fromWarehouse?.slice(0, 5))?.company && row.name !== fromWarehouse);
   const assetCandidates = eligibleAssets(fromWarehouse).filter((asset) => !documents.some((doc) => (
@@ -273,7 +287,13 @@ export default function MoveMobilePrototype() {
     setToWarehouse(doc.toWarehouse);
     setRemark(doc.remark || '');
     setSelectedLineIds([]);
+    setActiveLineId(null);
     setPage(doc.status === '草稿' ? 'editor' : 'detail');
+  };
+
+  const openAssetDetail = (line) => {
+    setActiveLineId(line.id);
+    setPage('asset-detail');
   };
 
   const startCreate = () => {
@@ -435,6 +455,7 @@ export default function MoveMobilePrototype() {
 
   const back = () => {
     if (page === 'home') navigate(-1);
+    else if (page === 'asset-detail') setPage('detail');
     else { setPage('home'); setSelectedLineIds([]); }
   };
 
@@ -443,7 +464,7 @@ export default function MoveMobilePrototype() {
       <div className="move-mobile-shell" data-page-view-key={page}>
         <header className="move-mobile-header">
           <Button type="text" aria-label="返回" icon={<ArrowLeft size={19} />} onClick={back} />
-          <strong>{page === 'home' ? '移库' : page === 'editor' ? (activeDocument ? '编辑移库单' : '创建移库单') : page === 'detail' ? '移库接收' : '快捷扫码'}</strong>
+          <strong>{page === 'home' ? '移库' : page === 'editor' ? (activeDocument ? '编辑移库单' : '创建移库单') : page === 'asset-detail' ? '资产详情' : '移库接收'}</strong>
           <Button type="text" aria-label="关闭移动端预览" icon={<X size={18} />} onClick={() => navigate('/yewurules')} />
         </header>
 
@@ -540,12 +561,48 @@ export default function MoveMobilePrototype() {
                     {activeDocument.status === '出库待接收' && <div className="move-mobile-asset-meta">验证状态：{line.verified ? '已验证' : '未验证'}{line.verificationDesc ? ` · ${line.verificationDesc}` : ''}</div>}
                     {line.receiveTime && <div className="move-mobile-asset-meta">接收人：{line.receiver} · {line.receiveTime}</div>}
                     {line.rejectReason && <div className="move-mobile-reject-note">驳回原因：{line.rejectReason}</div>}
+                    {line.receiveDesc && <div className="move-mobile-asset-meta">接收说明：{line.receiveDesc}</div>}
+                    <Button type="link" className="move-mobile-view-asset" onClick={() => openAssetDetail(line)}>查看资产详情<ChevronRight size={15} /></Button>
                   </div>
                 );
               })}
             </section>
             {activeDocument.status === '出库待接收' && <div className="move-mobile-sticky-actions"><Button type="primary" block onClick={receiveSelected}>接收所选（{selectedLineIds.filter((id) => activeDocument.lines.some((line) => line.id === id && line.verified)).length}）</Button><Button danger block onClick={() => setRejectOpen(true)}>驳回所选</Button></div>}
-            {activeDocument.status !== '出库待接收' && <div className="move-mobile-sticky-actions"><Button block onClick={() => setPage('home')}>返回列表</Button></div>}
+            {activeDocument.status === '已完成' && <div className="move-mobile-sticky-actions"><Button type="primary" block onClick={() => message.success('移库单打印已生成')}>打印</Button><Button block onClick={() => setPage('home')}>返回列表</Button></div>}
+            {activeDocument.status === '已驳回' && <div className="move-mobile-sticky-actions"><Button block onClick={() => setPage('home')}>返回列表</Button></div>}
+          </div>
+        )}
+
+        {page === 'asset-detail' && activeDocument && activeLine && (
+          <div className="move-mobile-content move-mobile-asset-detail">
+            <section className="move-mobile-card move-mobile-detail-fields">
+              {[
+                ['资产说明', activeLine.materialDesc],
+                ['资产大类', activeLine.assetClass || activeLine.materialGroup],
+                ['资产小类', activeLine.assetSubClass || '-'],
+                ['资产标签号', activeLine.assetTag],
+                ['序列号', activeLine.sn || '-'],
+                ['数量', activeLine.quantity ?? 1],
+                ['板块', activeLine.plate || '-'],
+                ['公司', activeLine.company || '-'],
+                ['仓库', activeLine.warehouse || activeDocument.toWarehouse],
+                ['使用状态', activeLine.assetStatus || '-'],
+                ['责任人', activeLine.responsiblePerson || '-'],
+                ['资产地点', [activeLine.city, activeLine.building, activeLine.floor, activeLine.room].filter(Boolean).join(' · ') || '-'],
+              ].map(([label, value]) => (
+                <div className="move-mobile-info-row" key={label}><span>{label}</span><strong>{value}</strong></div>
+              ))}
+            </section>
+            <section className="move-mobile-card move-mobile-detail-fields">
+              <div className="move-mobile-card-title">本次移库</div>
+              <div className="move-mobile-info-row"><span>移库单号</span><strong>{activeDocument.documentNo}</strong></div>
+              <div className="move-mobile-info-row"><span>移库状态</span><strong>{activeLine.moveStatus}</strong></div>
+              {activeLine.verificationDesc && <div className="move-mobile-info-row"><span>验证说明</span><strong>{activeLine.verificationDesc}</strong></div>}
+              {activeLine.receiveTime && <div className="move-mobile-info-row"><span>接收时间</span><strong>{activeLine.receiveTime}</strong></div>}
+              {activeLine.receiver && <div className="move-mobile-info-row"><span>接收仓管员</span><strong>{activeLine.receiver}</strong></div>}
+              {activeLine.rejectReason && <div className="move-mobile-info-row"><span>驳回原因</span><strong>{activeLine.rejectReason}</strong></div>}
+            </section>
+            <div className="move-mobile-sticky-actions"><Button block onClick={() => setPage('detail')}>返回移库单</Button></div>
           </div>
         )}
 
