@@ -5,6 +5,7 @@ import {
   Card,
   DatePicker,
   Input,
+  Modal,
   Popconfirm,
   Select,
   Space,
@@ -48,10 +49,30 @@ export default function ScrapPrototypeList({
   onExecute,
   onDirectComplete,
   onDeleteDrafts,
+  onApprove,
 }) {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [selectedKeys, setSelectedKeys] = useState([]);
+  const [directAction, setDirectAction] = useState(null);
+  const [directNote, setDirectNote] = useState('');
+  const [approvalRecord, setApprovalRecord] = useState(null);
+  const [approvalOpinion, setApprovalOpinion] = useState('');
+
+  const confirmDirectAction = () => {
+    const note = directNote.trim();
+    if (!note || !directAction) return;
+    onDirectComplete(directAction.asset, directAction.action, note);
+    setDirectAction(null);
+    setDirectNote('');
+  };
+
+  const finishApproval = (result) => {
+    if (!approvalRecord) return;
+    onApprove(approvalRecord, result, approvalOpinion);
+    setApprovalRecord(null);
+    setApprovalOpinion('');
+  };
 
   const filteredRows = useMemo(() => records.filter((row) => {
     if (type === 'disposal') {
@@ -103,25 +124,23 @@ export default function ScrapPrototypeList({
       type === 'disposal'
         ? (
           <Space size={2} wrap>
-            <Button type="link" size="small" onClick={() => onCreate([record])}>
-              发起处置
-            </Button>
-            <Popconfirm
-              title="确认按无实物报废处理？"
-              okText="确认"
-              cancelText="取消"
-              onConfirm={() => onDirectComplete(record, '无实物报废')}
-            >
-              <Button type="link" size="small">无实物报废</Button>
-            </Popconfirm>
-            <Popconfirm
-              title="确认该资产已完成处置？"
-              okText="确认"
-              cancelText="取消"
-              onConfirm={() => onDirectComplete(record, '确认已处置')}
-            >
-              <Button type="link" size="small">确认已处置</Button>
-            </Popconfirm>
+            {record.disposalStatus === '待处置' ? (
+              <>
+                <Button type="link" size="small" onClick={() => onCreate([record])}>
+                  发起处置
+                </Button>
+                <Button type="link" size="small" onClick={() => setDirectAction({ asset: record, action: '无实物报废' })}>
+                  无实物报废
+                </Button>
+                <Button type="link" size="small" onClick={() => setDirectAction({ asset: record, action: '确认已处置' })}>
+                  确认已处置
+                </Button>
+              </>
+            ) : record.disposalRecord ? (
+              <Button type="link" size="small" onClick={() => onOpen(record.disposalRecord, false)}>
+                查看处置单
+              </Button>
+            ) : null}
           </Space>
         )
         : (
@@ -132,6 +151,14 @@ export default function ScrapPrototypeList({
         {['草稿', '已驳回'].includes(record.documentStatus) && (
           <Button type="link" size="small" onClick={() => onOpen(record, true)}>
             编辑
+          </Button>
+        )}
+        {(
+          ['crossCompany', 'accounting'].includes(type)
+          || (type === 'scrap' && record.assetScope !== '机房资产')
+        ) && record.documentStatus === '审批中' && (
+          <Button type="link" size="small" onClick={() => setApprovalRecord(record)}>
+            审批
           </Button>
         )}
         {type === 'scrap' && (
@@ -387,7 +414,7 @@ export default function ScrapPrototypeList({
               disabled={type === 'disposal' && selectedKeys.length === 0}
               onClick={() => {
                 if (type === 'disposal') {
-                  onCreate(records.filter((item) => selectedKeys.includes(item.id)));
+                  onCreate(records.filter((item) => selectedKeys.includes(item.id) && item.disposalStatus === '待处置'));
                   return;
                 }
                 onCreate();
@@ -423,7 +450,9 @@ export default function ScrapPrototypeList({
             onChange: setSelectedKeys,
             fixed: true,
             getCheckboxProps: (record) => ({
-              disabled: type !== 'disposal' && record.documentStatus !== '草稿',
+              disabled: type === 'disposal'
+                ? record.disposalStatus !== '待处置'
+                : record.documentStatus !== '草稿',
             }),
           }}
           scroll={{ x: 'max-content' }}
@@ -434,6 +463,45 @@ export default function ScrapPrototypeList({
           }}
         />
       </Card>
+      {type === 'disposal' && (
+        <Modal
+          open={Boolean(directAction)}
+          title={directAction?.action === '无实物报废' ? '无实物报废' : '确认已处置'}
+          okText="确认"
+          okButtonProps={{ disabled: !directNote.trim() }}
+          onOk={confirmDirectAction}
+          onCancel={() => { setDirectAction(null); setDirectNote(''); }}
+          destroyOnHidden
+        >
+          <div className="mb-2">{directAction?.action === '无实物报废' ? '原因' : '处置说明'}</div>
+          <Input.TextArea
+            value={directNote}
+            maxLength={200}
+            showCount
+            rows={3}
+            onChange={(event) => setDirectNote(event.target.value)}
+          />
+        </Modal>
+      )}
+      {['crossCompany', 'scrap', 'accounting'].includes(type) && (
+        <Modal
+          open={Boolean(approvalRecord)}
+          title={`审批：${approvalRecord?.currentNode || ''}`}
+          onCancel={() => { setApprovalRecord(null); setApprovalOpinion(''); }}
+          footer={[
+            <Button key="reject" danger onClick={() => finishApproval('驳回')}>驳回</Button>,
+            <Button key="approve" type="primary" onClick={() => finishApproval('通过')}>通过</Button>,
+          ]}
+          destroyOnHidden
+        >
+          <div className="mb-2">审批意见</div>
+          <Input.TextArea
+            value={approvalOpinion}
+            rows={3}
+            onChange={(event) => setApprovalOpinion(event.target.value)}
+          />
+        </Modal>
+      )}
     </div>
   );
 }

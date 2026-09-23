@@ -20,13 +20,16 @@ import * as XLSX from 'xlsx';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import {
-  ACCOUNTING_ASSET_POOL,
-  DISPOSAL_ASSET_POOL,
   SCRAP_ASSET_POOL,
   SCRAP_TYPE_OPTIONS,
   filterAssetsForScope,
   money,
 } from './scrapPrototypeData';
+import {
+  getAccountingCandidates,
+  getDisposalCandidates,
+  getScrapPrototypeRecords,
+} from '../../services/scrapPrototypeService';
 import {
   mockCostCenters,
   mockPlates,
@@ -74,10 +77,31 @@ export default function ScrapPrototypeAssetTable({
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
   const pickerAssets = useMemo(() => {
-    if (type === 'accounting') return ACCOUNTING_ASSET_POOL;
-    if (type === 'disposal') return DISPOSAL_ASSET_POOL;
-    if (!assetScope || assetScope === '混合') return SCRAP_ASSET_POOL;
-    return filterAssetsForScope(assetScope);
+    const pool = type === 'accounting'
+      ? getAccountingCandidates()
+      : type === 'disposal'
+        ? getDisposalCandidates()
+        : !assetScope || assetScope === '混合'
+          ? SCRAP_ASSET_POOL
+          : filterAssetsForScope(assetScope);
+    const relevantTypes = type === 'accounting'
+      ? ['accounting']
+      : type === 'disposal'
+        ? ['disposal']
+        : ['crossCompany', 'scrap'];
+    const occupiedTags = new Set(relevantTypes.flatMap((businessType) => (
+      getScrapPrototypeRecords(businessType)
+        .filter((record) => record.documentStatus !== '已驳回')
+        .flatMap((record) => record.assetsSnapshot || [])
+        .map((item) => item.tagNo)
+    )));
+    return pool.filter((item) => (
+      !occupiedTags.has(item.tagNo)
+      && (
+        ['accounting', 'disposal'].includes(type)
+        || (!String(item.status || '').startsWith('已报废') && item.status !== '在库-待报废')
+      )
+    ));
   }, [type, assetScope]);
 
   const addAssets = (selected) => {
@@ -89,7 +113,15 @@ export default function ScrapPrototypeAssetTable({
 
     if (type !== 'accounting' && selectedScopes.size > 1) {
       message.error('同一申请单不能混合机房资产、软件和办公设备');
-      return;
+      return false;
+    }
+
+    const officePaths = new Set([...assets, ...selected]
+      .filter((item) => item.scope === '办公设备')
+      .map((item) => ['PC', 'NOTEBOOK'].includes(item.majorCategory)));
+    if (type === 'scrap' && officePaths.size > 1) {
+      message.error('电脑类与其他办公设备的鉴定流程不同，请分别建单');
+      return false;
     }
 
     if (type === 'accounting') {
@@ -99,7 +131,7 @@ export default function ScrapPrototypeAssetTable({
       ].filter(Boolean));
       if (methods.size > 1) {
         message.error('同一账面报废单的报废方式必须一致');
-        return;
+        return false;
       }
     }
 
@@ -125,6 +157,7 @@ export default function ScrapPrototypeAssetTable({
       }));
 
     onReplace([...assets, ...next]);
+    return true;
   };
 
   const deleteSelected = () => {
@@ -159,25 +192,67 @@ export default function ScrapPrototypeAssetTable({
   const importAssets = (file) => {
     const reader = new FileReader();
     reader.onload = (event) => {
+      let workbook;
       try {
-        const workbook = XLSX.read(event.target.result, { type: 'array' });
-        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: '' });
-        const tags = new Set(rows.map((row) => String(row['资产标签号'] || '').trim()).filter(Boolean));
-        const matched = pickerAssets.filter((item) => tags.has(String(item.tagNo)));
-        const missingCount = Math.max(0, tags.size - matched.length);
-        if (matched.length === 0) {
-          message.error('导入文件中没有匹配到可选资产');
-          return;
-        }
-        addAssets(matched);
-        if (missingCount > 0) {
-          message.warning(`已匹配 ${matched.length} 条，另有 ${missingCount} 条未通过当前资产范围校验`);
-        } else {
-          message.success(`已导入 ${matched.length} 条资产`);
-        }
+        workbook = XLSX.read(event.target.result, { type: 'array' });
       } catch (error) {
         message.error('Excel 文件解析失败，请使用下载的模板');
+        return;
       }
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const header = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })[0] || [];
+      if (header.length !== 1 || String(header[0]).trim() !== '资产标签号') {
+        message.error('导入表头与下载模板不一致');
+        return;
+      }
+
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false, blankrows: false });
+      if (rows.length === 0) {
+        message.error('导入文件没有资产明细');
+        return;
+      }
+
+      const selectedIds = new Set(assets.map((item) => item.id));
+      const seenTags = new Set();
+      const matched = [];
+      const result = rows.map((row) => {
+        const tag = String(row['资产标签号'] || '').trim();
+        const asset = pickerAssets.find((item) => String(item.tagNo) === tag);
+        let error = '';
+        if (!tag) error = '资产标签号不能为空';
+        else if (seenTags.has(tag)) error = '导入文件中的资产标签号重复';
+        else if (!asset) error = '资产不存在或不符合当前资产范围';
+        else if (selectedIds.has(asset.id)) error = '资产已在当前单据中';
+        seenTags.add(tag);
+        if (!error) matched.push(asset);
+        return { 错误原因: error, 资产标签号: tag };
+      });
+
+      const selectedScopes = new Set([...assets, ...matched].map((item) => item.scope).filter(Boolean));
+      const methods = new Set([...assets, ...matched].map((item) => item.scrapMethod).filter(Boolean));
+      const officePaths = new Set([...assets, ...matched]
+        .filter((item) => item.scope === '办公设备')
+        .map((item) => ['PC', 'NOTEBOOK'].includes(item.majorCategory)));
+      if (type !== 'accounting' && selectedScopes.size > 1) {
+        result.forEach((row) => { if (!row.错误原因) row.错误原因 = '同一单据不能混合资产范围'; });
+      }
+      if (type === 'accounting' && methods.size > 1) {
+        result.forEach((row) => { if (!row.错误原因) row.错误原因 = '同一账面报废单的报废方式必须一致'; });
+      }
+      if (type === 'scrap' && officePaths.size > 1) {
+        result.forEach((row) => { if (!row.错误原因) row.错误原因 = '电脑类与其他办公设备的鉴定流程不同，需分别建单'; });
+      }
+
+      const errorCount = result.filter((row) => row.错误原因).length;
+      if (errorCount > 0) {
+        const errorBook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(errorBook, XLSX.utils.json_to_sheet(result, { header: ['错误原因', '资产标签号'] }), '导入结果');
+        XLSX.writeFile(errorBook, '资产导入错误结果.xlsx');
+        message.error(`${errorCount} 行校验失败，已下载错误结果，整批未导入`);
+        return;
+      }
+
+      if (addAssets(matched)) message.success(`已导入 ${matched.length} 条资产`);
     };
     reader.readAsArrayBuffer(file);
     return false;

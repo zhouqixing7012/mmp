@@ -4,11 +4,16 @@ import { message } from 'antd';
 import ScrapPrototypeList from './ScrapPrototypeList';
 import ScrapPrototypeEditor from './ScrapPrototypeEditor';
 import {
-  ACCOUNTING_ASSET_POOL,
-  DISPOSAL_ASSET_POOL,
+  getAccountingApprovalNodes,
+  getCrossCompanyApprovalNodes,
+  getScrapApprovalNodes,
+} from './scrapPrototypeWorkflow';
+import {
   SCRAP_ASSET_POOL,
 } from './scrapPrototypeData';
 import {
+  getAccountingCandidates,
+  getDisposalCandidates,
   getScrapPrototypeRecords,
   saveScrapPrototypeRecords,
 } from '../../services/scrapPrototypeService';
@@ -78,7 +83,7 @@ function createApplicationNo(type) {
 
 function firstNode(type, form, assets) {
   if (type === 'crossCompany') {
-    return form.assetScope === '办公设备' ? 'ES主管确认' : '5级及以上直属领导';
+    return getCrossCompanyApprovalNodes(form.assetScope)[0];
   }
 
   if (type === 'scrap') {
@@ -103,9 +108,9 @@ function submitStatus(type, form) {
 
 function seedAssets(type, record) {
   const sourcePool = type === 'accounting'
-    ? ACCOUNTING_ASSET_POOL
+    ? getAccountingCandidates()
     : type === 'disposal'
-      ? DISPOSAL_ASSET_POOL
+      ? getDisposalCandidates()
       : SCRAP_ASSET_POOL;
   const source = record.assetScope === '混合'
     ? sourcePool
@@ -183,6 +188,7 @@ export default function ScrapPrototypeModule({ type }) {
         documentStatus: '草稿',
         applicationDate: dayjs().format('YYYY-MM-DD'),
         currentNode: '草稿',
+        approvalHistory: [],
       },
       assets: (record.assetsSnapshot || seedAssets(type, record)).map((item) => ({ ...item })),
       readOnly: false,
@@ -192,7 +198,7 @@ export default function ScrapPrototypeModule({ type }) {
 
   const openRecord = (record, editable) => {
     const form = record.formSnapshot
-      ? { ...record.formSnapshot, id: record.id }
+      ? { ...record.formSnapshot, id: record.id, approvalHistory: record.approvalHistory || [] }
       : {
           ...defaultForm(type),
           ...record,
@@ -201,6 +207,7 @@ export default function ScrapPrototypeModule({ type }) {
           documentStatus: record.documentStatus,
           currentNode: record.currentNode,
           description: record.remark || '',
+          approvalHistory: record.approvalHistory || [],
         };
 
     const assets = record.assetsSnapshot
@@ -269,6 +276,7 @@ export default function ScrapPrototypeModule({ type }) {
       region: form.region,
       currentNode: nextForm.currentNode,
       remark: form.remark || form.description,
+      approvalHistory: form.approvalHistory || [],
       formSnapshot: nextForm,
       assetsSnapshot: assets.map((item) => ({ ...item })),
     };
@@ -287,6 +295,60 @@ export default function ScrapPrototypeModule({ type }) {
     setEditorState(null);
   };
 
+  const processApproval = (record, result, opinion) => {
+    if (!['crossCompany', 'scrap', 'accounting'].includes(type) || record.documentStatus !== '审批中') return;
+    const recordAssets = record.assetsSnapshot || seedAssets(type, record);
+    const nodes = type === 'crossCompany'
+      ? getCrossCompanyApprovalNodes(record.assetScope)
+      : type === 'scrap'
+        ? getScrapApprovalNodes(record.assetScope, recordAssets)
+        : getAccountingApprovalNodes(recordAssets);
+    if (!nodes) return;
+    const currentIndex = nodes.indexOf(record.currentNode);
+    if (currentIndex < 0) throw new Error(`未知审批节点：${record.currentNode}`);
+
+    const approved = result === '通过';
+    const lastNode = approved && currentIndex === nodes.length - 1;
+    const completed = lastNode && type !== 'accounting';
+    const currentNode = approved
+      ? (completed ? '流程结束' : lastNode ? '提单人确认' : nodes[currentIndex + 1])
+      : '发起人修改';
+    const documentStatus = approved
+      ? (completed ? (type === 'scrap' ? '已审批' : '已完成') : lastNode ? '待提单人确认' : '审批中')
+      : '已驳回';
+    const entry = {
+      node: record.currentNode,
+      result,
+      opinion: opinion.trim(),
+      time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+    };
+
+    const next = records.map((item) => (
+      item.id === record.id
+        ? {
+            ...item,
+            documentStatus,
+            currentNode,
+            lastModifiedAt: entry.time,
+            enteredScrapPoolAt: completed ? entry.time : item.enteredScrapPoolAt,
+            assetsSnapshot: completed
+              ? item.assetsSnapshot?.map((asset) => ({
+                  ...asset,
+                  status: String(asset.status || '').startsWith('在库') ? '在库-待报废' : asset.status,
+                }))
+              : item.assetsSnapshot,
+            approvalHistory: [...(item.approvalHistory || []), entry],
+            formSnapshot: item.formSnapshot
+              ? { ...item.formSnapshot, documentStatus, currentNode }
+              : item.formSnapshot,
+          }
+        : item
+    ));
+    saveScrapPrototypeRecords(type, next);
+    setRecords(next);
+    message.success(completed ? '审批完成，资产已进入待报废池' : lastNode ? '审批完成，待提单人确认' : approved ? '审批通过' : '已驳回发起人');
+  };
+
   const executeAccounting = (record) => {
     if (type !== 'accounting' || record.documentStatus !== '待提单人确认') return;
 
@@ -298,6 +360,10 @@ export default function ScrapPrototypeModule({ type }) {
               documentStatus: '已完成',
               currentNode: '流程结束',
               lastModifiedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+              approvalHistory: [
+                ...(item.approvalHistory || []),
+                { node: '提单人确认', result: '确认并执行', opinion: '', time: dayjs().format('YYYY-MM-DD HH:mm:ss') },
+              ],
               formSnapshot: item.formSnapshot
                 ? { ...item.formSnapshot, documentStatus: '已完成', currentNode: '流程结束' }
                 : item.formSnapshot,
@@ -310,8 +376,9 @@ export default function ScrapPrototypeModule({ type }) {
     message.success('账面报废执行完成');
   };
 
-  const completeDisposalAsset = (asset, action) => {
+  const completeDisposalAsset = (asset, action, note) => {
     if (type !== 'disposal') return;
+    if (asset.disposalStatus !== '待处置' || !note?.trim()) return;
 
     const applicationNo = createApplicationNo(type);
     const completedRecord = {
@@ -329,7 +396,8 @@ export default function ScrapPrototypeModule({ type }) {
       netValueTotal: Number(asset.netValue || 0),
       region: asset.region,
       currentNode: '已报废-已处置',
-      remark: action,
+      remark: note.trim(),
+      disposalAction: action,
       formSnapshot: {
         ...defaultForm(type),
         applicationNo,
@@ -338,9 +406,10 @@ export default function ScrapPrototypeModule({ type }) {
         company: asset.company,
         region: asset.region,
         currentNode: '已报废-已处置',
-        remark: action,
+        remark: note.trim(),
+        disposalAction: action,
       },
-      assetsSnapshot: [{ ...asset, status: '已报废-已处置', disposalStatus: '已处置' }],
+      assetsSnapshot: [{ ...asset, status: '已报废-已处置', disposalStatus: '已处置', disposalNote: note.trim() }],
     };
 
     setRecords((current) => {
@@ -352,12 +421,22 @@ export default function ScrapPrototypeModule({ type }) {
   };
 
   const listRecords = type === 'disposal'
-    ? DISPOSAL_ASSET_POOL.filter((asset) => (
-        !records.some((record) => (
-          record.assetsSnapshot?.some((item) => item.id === asset.id)
-          && record.documentStatus !== '已驳回'
-        ))
-      ))
+    ? getDisposalCandidates().map((asset) => {
+        const disposalRecord = [...records].reverse().find((record) => (
+          record.documentStatus !== '已驳回'
+          && record.assetsSnapshot?.some((item) => item.id === asset.id)
+        ));
+        if (!disposalRecord) return asset;
+        const snapshot = disposalRecord.assetsSnapshot.find((item) => item.id === asset.id);
+        const completed = disposalRecord.documentStatus === '已完成';
+        return {
+          ...asset,
+          ...snapshot,
+          status: completed ? '已报废-已处置' : asset.status,
+          disposalStatus: completed ? '已处置' : '处理中',
+          disposalRecord,
+        };
+      })
     : records;
 
   if (view === 'list') {
@@ -372,6 +451,7 @@ export default function ScrapPrototypeModule({ type }) {
         onExecute={executeAccounting}
         onDirectComplete={completeDisposalAsset}
         onDeleteDrafts={deleteDrafts}
+        onApprove={processApproval}
       />
     );
   }

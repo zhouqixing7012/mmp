@@ -1,24 +1,26 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Alert, Card, Steps, Typography } from 'antd';
+import {
+  getAccountingApprovalNodes,
+  getCrossCompanyApprovalNodes,
+  getScrapApprovalNodes,
+} from './scrapPrototypeWorkflow';
 
 const { Text } = Typography;
 
 function crossCompanySteps(scope) {
-  if (scope === '办公设备') {
-    return ['ES专员提交', 'ES主管确认', '进入待报废池', '流程结束'];
-  }
-  return ['责任人提交', '5级及以上直属领导', '7级及以上直属领导', '进入待报废池', '流程结束'];
+  return [
+    scope === '办公设备' ? 'ES专员提交' : '责任人提交',
+    ...getCrossCompanyApprovalNodes(scope),
+    '进入待报废池',
+    '流程结束',
+  ];
 }
 
-function scrapSteps(scope, majorCategory) {
-  if (scope === '软件') {
-    return ['责任人提交', '5级及以上直属领导', '7级及以上直属领导', '进入待报废池', '流程结束'];
-  }
-  if (scope === '办公设备') {
-    if (['PC', 'NOTEBOOK'].includes(majorCategory)) {
-      return ['ES专员提交', 'MIS鉴定', 'ES主管确认', '进入待报废池', '流程结束'];
-    }
-    return ['ES专员提交', 'ES主管确认', '进入待报废池', '流程结束'];
+function scrapSteps(scope, assets) {
+  const nodes = getScrapApprovalNodes(scope, assets);
+  if (nodes) {
+    return [scope === '软件' ? '责任人提交' : 'ES专员提交', ...nodes, '进入待报废池', '流程结束'];
   }
   return [
     '责任人提交',
@@ -37,17 +39,10 @@ function scrapSteps(scope, majorCategory) {
   ];
 }
 
-function accountingSteps({ hasMachine, needsMis }) {
+function accountingSteps(assets) {
   return [
     'ES账务提交',
-    '财务初审',
-    ...(hasMachine ? ['NO部门5级及以上领导', 'NO部门7级及以上领导'] : []),
-    ...(needsMis ? ['MIS部门5级及以上领导', 'MIS部门7级及以上领导'] : []),
-    'ES二级审批',
-    'ES一级审批',
-    '财务三级审批',
-    '财务二级审批',
-    '财务一级审批',
+    ...getAccountingApprovalNodes(assets),
     '提单人确认',
     '更新台账/生成事务/生成报废单',
     '流程结束',
@@ -80,7 +75,6 @@ export default function ScrapWorkflowCard({
   needsCleaning = '否',
   currentNode = '',
 }) {
-  const majorCategory = selectedAssets[0]?.majorCategory || '';
   const machineQuantity = selectedAssets
     .filter((item) => item.scope === '机房资产')
     .reduce((sum, item) => sum + Number(item.quantity || 0), 0);
@@ -88,19 +82,12 @@ export default function ScrapWorkflowCard({
     /上海|广州/.test(String(item.company || ''))
     || /上海|广州/.test(String(item.newCompany || ''))
   ));
-  const hasMachine = selectedAssets.some((item) => item.scope === '机房资产' && item.scrapMethod !== '调账');
-  const needsMis = selectedAssets.some((item) => (
-    ['PC', 'NOTEBOOK'].includes(item.majorCategory)
-    && item.scrapType !== '丢失'
-    && item.scrapMethod !== '调账'
-  ));
-
-  const steps = useMemo(() => {
-    if (type === 'crossCompany') return crossCompanySteps(assetScope);
-    if (type === 'scrap') return scrapSteps(assetScope, majorCategory);
-    if (type === 'accounting') return accountingSteps({ hasMachine, needsMis });
-    return disposalSteps(assetScope, region, needsCleaning);
-  }, [type, assetScope, majorCategory, hasMachine, needsMis, region, needsCleaning]);
+  let steps;
+  if (type === 'crossCompany') steps = crossCompanySteps(assetScope);
+  else if (type === 'scrap') steps = scrapSteps(assetScope, selectedAssets);
+  else if (type === 'accounting') steps = accountingSteps(selectedAssets);
+  else if (type === 'disposal') steps = disposalSteps(assetScope, region, needsCleaning);
+  else throw new Error(`未知报废业务类型：${type}`);
 
   const current = Math.max(0, steps.findIndex((item) => currentNode && item.includes(currentNode)));
   const alert = type === 'crossCompany'

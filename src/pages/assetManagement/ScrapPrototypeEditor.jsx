@@ -6,6 +6,7 @@ import {
   Input,
   InputNumber,
   Select,
+  Table,
   Upload,
   message,
 } from 'antd';
@@ -149,6 +150,13 @@ export default function ScrapPrototypeEditor({
       const invalid = assets.find((item) => !item.scrapType || !String(item.reason || '').trim());
       if (invalid) {
         message.error(`资产 ${invalid.tagNo} 的报废类型或报废原因未填写完整`);
+        return false;
+      }
+      const officePaths = new Set(assets
+        .filter((item) => item.scope === '办公设备')
+        .map((item) => ['PC', 'NOTEBOOK'].includes(item.majorCategory)));
+      if (officePaths.size > 1) {
+        message.error('电脑类与其他办公设备的鉴定流程不同，请分别建单');
         return false;
       }
     }
@@ -382,6 +390,23 @@ export default function ScrapPrototypeEditor({
         needsCleaning={effectiveNeedsCleaning}
         currentNode={form.currentNode}
       />
+
+      {['crossCompany', 'scrap', 'accounting'].includes(type) && (form.approvalHistory || []).length > 0 && (
+        <Card size="small" title="审批记录">
+          <Table
+            rowKey={(_, index) => index}
+            size="small"
+            pagination={false}
+            dataSource={form.approvalHistory}
+            columns={[
+              { title: '审批节点', dataIndex: 'node' },
+              { title: '审批结果', dataIndex: 'result' },
+              { title: '审批意见', dataIndex: 'opinion', render: (value) => showValue(value) },
+              { title: '审批时间', dataIndex: 'time' },
+            ]}
+          />
+        </Card>
+      )}
 
       {type === 'disposal' && form.assetScope === '办公设备' && (
         <Card size="small" title="报价与处置信息">

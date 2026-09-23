@@ -1,4 +1,8 @@
-import { getInitialBusinessRows } from '../pages/assetManagement/scrapPrototypeData';
+import {
+  ACCOUNTING_ASSET_POOL,
+  DISPOSAL_ASSET_POOL,
+  getInitialBusinessRows,
+} from '../pages/assetManagement/scrapPrototypeData';
 import { readDemoData, writeDemoData } from './demoStorage';
 
 const STORAGE_VERSION = 'v1';
@@ -13,4 +17,55 @@ export function getScrapPrototypeRecords(type) {
 
 export function saveScrapPrototypeRecords(type, records) {
   return writeDemoData(storageKey(type), records);
+}
+
+export function getAccountingCandidates() {
+  const result = new Map(ACCOUNTING_ASSET_POOL.map((asset) => [asset.tagNo, asset]));
+  for (const type of ['crossCompany', 'scrap']) {
+    for (const record of getScrapPrototypeRecords(type)) {
+      if (!['已完成', '已审批'].includes(record.documentStatus)) continue;
+      for (const asset of record.assetsSnapshot || []) {
+        result.set(asset.tagNo, {
+          ...asset,
+          scrapMethod: type === 'crossCompany' ? '调账' : asset.scrapMethod,
+          sourceBusinessType: type === 'crossCompany' ? '跨公司转移' : '资产报废',
+          sourceBusinessNo: record.applicationNo,
+          disposedComplete: type === 'scrap'
+            ? record.formSnapshot?.disposedComplete || asset.disposedComplete || '否'
+            : '否',
+          status: String(asset.status || '').startsWith('在库') ? '在库-待报废' : asset.status,
+        });
+      }
+    }
+  }
+  return [...result.values()];
+}
+
+export function getDisposalCandidates() {
+  const result = new Map(DISPOSAL_ASSET_POOL.map((asset) => [asset.tagNo, asset]));
+  for (const record of getScrapPrototypeRecords('accounting')) {
+    if (record.documentStatus !== '已完成') continue;
+    for (const asset of record.assetsSnapshot || []) {
+      if (
+        asset.scope === '软件'
+        || asset.scrapMethod === '调账'
+        || asset.scrapType === '丢失'
+        || asset.disposedComplete === '是'
+        || asset.disposalRequired !== '是'
+      ) continue;
+      result.set(asset.tagNo, {
+        ...asset,
+        id: `disposal-${asset.id}`,
+        sourceAssetId: asset.id,
+        status: '已报废-待处置',
+        sourceScrapNo: asset.sourceBusinessType === '资产报废' ? asset.sourceBusinessNo : '-',
+        sourceAccountingNo: record.applicationNo,
+        scrapDate: record.lastModifiedAt?.slice(0, 10) || record.createdAt,
+        disposalStatus: '待处置',
+        enteredAt: record.lastModifiedAt || record.createdAt,
+        region: String(asset.city || '').includes('北京') ? '北京' : '非北京',
+      });
+    }
+  }
+  return [...result.values()];
 }
