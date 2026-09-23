@@ -749,19 +749,19 @@ export default function EmployeeAssetInfoQueryPage() {
       columns: assetColumns,
       emptyText: '暂无资产信息。',
     },
-    consumable: {
-      label: '耗材',
-      title: '耗材信息',
-      rows: filteredConsumableRows,
-      columns: consumableColumns,
-      emptyText: '暂无耗材信息。',
-    },
     contract: {
       label: '合约号码',
       title: '合约号码信息',
       rows: filteredContractRows,
       columns: contractColumns,
       emptyText: '暂无合约号码信息。',
+    },
+    consumable: {
+      label: '耗材',
+      title: '耗材信息',
+      rows: filteredConsumableRows,
+      columns: consumableColumns,
+      emptyText: '暂无耗材信息。',
     },
     document: {
       label: '单据信息',
