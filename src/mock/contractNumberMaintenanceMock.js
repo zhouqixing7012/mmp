@@ -47,7 +47,7 @@ function row(data) {
   const base = {
     assetMajorCode: '34',
     useCompanyCode: '115',
-    useCompany: '北京搜狐新媒体信息技术有限公司',
+    useCompany: '搜狐',
     brand: '电信',
     minorCategory: '合约号码',
     assetDesc: '电信.畅享套餐',
@@ -80,7 +80,7 @@ function row(data) {
   };
   const merged = { ...base, ...data };
   if (!Object.prototype.hasOwnProperty.call(data, 'claimReason')) {
-    merged.claimReason = merged.applicationType || '业务申请';
+    merged.claimReason = merged.applicationType === '管理者配送' ? '管理者配发' : (merged.applicationType || '业务申请');
   }
   if (!merged.transactionHistory.length) {
     merged.transactionHistory = [
@@ -198,7 +198,7 @@ export const DEFAULT_CONTRACT_NUMBER_MAINTENANCE_ROWS = [
     status: '在库（新）',
     warehouse: 'I10086.集团合约机库',
     useCompanyCode: '116',
-    useCompany: '广州搜狐新媒体信息技术有限公司',
+    useCompany: '搜狐',
     ownerId: 'SOHU01',
     ownerName: '系统虚拟用户',
     subsidiary: '集团',
