@@ -153,3 +153,9 @@
 - 本地缓存的两个既有搜狐公司全称及旧领用原因按明确旧值映射，申请类型文案不变。
 - 员工资产信息查询顺序改为资产 → 合约号码 → 耗材 → 单据信息。
 - GitHub main 静态复核通过；未运行本地构建/测试，因工作区无项目源码检出。
+
+## 2026-09-23 耗材类型新增及维护差异复核
+
+- 耗材维护列表新增“耗材类型”列，枚举为“公司资产、租赁资产”；页面数据字段使用 `assetType`，缺失或无效值在读取时回落为“公司资产”；PRD 已同步。
+- 用户再次询问的四项原型差异经 main 当前源码复核均仍未修复：资产维护缺报废类型查询且详情仍展示业务线/项目；耗材维护缺报废类型查询且详情缺报废日期/类型/原因；合约号码维护的身份证号码仍在模板、导出、详情编辑和维护服务中；员工资产信息查询的耗材列缺主资产说明并含多余列、合约号码列缺责任人公司及单据/审批信息。见对应源码 `src/pages/assetManagement/AssetMaintenancePage.js`、`ConsumableMaintenancePage.js`、`ContractNumberMaintenancePage.js`、`EmployeeAssetInfoQueryPage.js` 与 `src/services/contractNumberMaintenanceService.js`。
+- 本轮只实现耗材类型字段；上述四项保持待整改状态。
