@@ -17,6 +17,8 @@ export const WAREHOUSE_WORKBENCH_DOCUMENT_TYPES = [
   '耗材申请',
   '领用申请单',
   '资产更换',
+  '合约号码申请',
+  '合约号码退库',
 ];
 
 export const WAREHOUSE_WORKBENCH_TASKS = [
