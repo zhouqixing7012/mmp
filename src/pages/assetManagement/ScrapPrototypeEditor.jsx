@@ -12,7 +12,6 @@ import {
 } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import StatusTag from '../../components/StatusTag';
-import ScrapWorkflowCard from './ScrapWorkflowCard';
 import ScrapPrototypeAssetTable from './ScrapPrototypeAssetTable';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 
@@ -382,24 +381,14 @@ export default function ScrapPrototypeEditor({
         </Descriptions>
       </Card>
 
-      {readOnly && (
-        <ScrapWorkflowCard
-          type={type}
-          assetScope={form.assetScope}
-          selectedAssets={assets}
-          region={form.region}
-          needsCleaning={effectiveNeedsCleaning}
-          currentNode={form.currentNode}
-        />
-      )}
-
-      {['crossCompany', 'scrap', 'accounting'].includes(type) && (form.approvalHistory || []).length > 0 && (
+      {((form.approvalHistory || []).length > 0
+        || (form.documentStatus !== '草稿' && !(type === 'disposal' && form.disposalAction))) && (
         <Card size="small" title="审批记录">
           <Table
             rowKey={(_, index) => index}
             size="small"
             pagination={false}
-            dataSource={form.approvalHistory}
+            dataSource={form.approvalHistory || []}
             columns={[
               { title: '审批节点', dataIndex: 'node' },
               { title: '审批结果', dataIndex: 'result' },
