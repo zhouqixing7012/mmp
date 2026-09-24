@@ -1,23 +1,5 @@
-<!-- AI_GENERATED_START -->
-# Workspace Path Index
+# 路径约定
 
-Base: `D:\VS CODE\asset-scrap-react`
+所有项目路径相对仓库根目录解释。先定位当前工作区，不假设其他设备存在相同的 Windows 或 Mac 绝对路径。
 
-- `build/`
-- `docs/`
-- `Inbox/`
-- `memory/`
-- `node_modules/`
-- `public/`
-- `src/`
-- `CLAUDE.md`
-- `HEARTBEAT.md`
-- `memory.md`
-- `package-lock.json`
-- `package.json`
-- `postcss.config.js`
-- `README.md`
-- `soul.md`
-- `tailwind.config.js`
-- `user.md`
-<!-- AI_GENERATED_END -->
+模块职责和路径见 [ARCHITECTURE.md](ARCHITECTURE.md)，启动规则见 [AGENTS.md](AGENTS.md)。

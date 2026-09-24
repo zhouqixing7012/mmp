@@ -156,7 +156,7 @@ npm test
 - 库存管理“入库”四类编辑页：新增入库、采购接收、退库入库、借用归还，以及对应的添加物资/待入库物资弹窗字段。
 - 库存管理“出库”两类编辑页：领用出库、借用出库，以及对应的添加物资弹窗字段。
 - 库存管理“移库”：发起侧创建/添加物资、接收侧接收单列表/详情/资产明细。
-- 库存管理“移库移动端”：发起/接收列表、草稿实时保存、扫码添加、手机扫码验证、分批接收/驳回、快捷扫码；移动端不提供狐小E验证或已完成单打印。
+- 库存管理“移库移动端”：发起/接收列表、草稿实时保存、扫码添加、扫码及狐小E验证、分批接收/驳回、快捷扫码。
 - 移库移动端现状截图与原型说明：`docs/移库移动端/README.md`。
 - 库存管理“转移”：查询列表、转移单创建页、添加转移物资弹窗，以及固定模板 Excel 批量导入、整批错误回传和确认前资产状态复核。
 - 资产盘点“盘点项目”主链路。
@@ -169,16 +169,17 @@ npm test
 
 ## 待办事项
 
-统一维护在 [task_plan.md](task_plan.md)。业务问题来源见 [findings.md](findings.md)，本轮交接见 [CONTEXT.md](CONTEXT.md)，不在这里重复维护执行状态。
+- 逐项处理 Coverage 中的 `review`，确认是修改 PRD、修改原型/演示实现，还是明确为后端/流程能力。
+- 将 Coverage 体系逐步扩展到员工自助之外的资产管理、库存管理和资产盘点。
+- 补充资产盘点尚未明确字段的维护页面。
+- 根据后续截图继续校准库存管理和资产管理细节。
+- 补充关键流程 Playwright 冒烟测试。
 
 ## 主要文档
 
-- [AGENTS.md](AGENTS.md)：统一项目入口、规范分工和安全边界。
-- [AI_RULES.md](AI_RULES.md)：按任务大小推进、确认、自检及交付。
-- [工程规范](docs/ENGINEERING_GUIDELINES.md)：编码、数据来源和技术约束。
-- [PRD 写作规范](docs/PRD_WRITING_GUIDELINES.md)：结构、业务表达和三方比对。
-- [个性化指令替换稿](docs/PERSONAL_INSTRUCTIONS.md)：跨项目协作偏好，需手动粘贴到平台设置。
-- [CONTEXT.md](CONTEXT.md)：当前交接摘要，不复制历史记录。
+- `AGENTS.md`：项目规则和代码约定。
+- `AI_RULES.md`：AI 开发规则。
+- `CONTEXT.md`：当前进度和关键决定。
 - `ARCHITECTURE.md`：模块职责和调用关系。
 - `docs/UI_DESIGN_GUIDELINES.md`：ERP Figma × 资产系统 UI 设计规范。
 - `docs/UI_MOTION_GUIDELINES.md`：B 端统一动效规范和新增页面动效检查清单。
@@ -192,8 +193,7 @@ npm test
 - `docs/asset-inventory/资产盘点-三方比对.md`：原始 PRD、当前原型和新版 PRD 的差异及处理结论。
 - `docs/asset-inventory/资产盘点-待决策清单.md`：需要业务确认的资产盘点口径。
 - `docs/原型标注生成规范.md`：PRD 标注和 Coverage 统一规范。
-- [lessons.md](lessons.md)：可复用纠错经验，业务规则回到对应正式 PRD。
-- [迁移与历史索引](docs/archive/2026-09-24-workflow/README.md)：本次规则整理的完整来源及冲突处理。
+- `lessons.md`：已确认的产品和实现经验。
 
 ## 搜索记录
 

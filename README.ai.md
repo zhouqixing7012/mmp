@@ -1,27 +1,5 @@
-<!-- AI_GENERATED_START -->
-# Workspace Overview
+# AI 项目导航
 
-## Directories
-- **build/** — directory
-- **docs/** — directory
-- **Inbox/** — directory
-- **memory/** — directory
-- **node_modules/** — directory
-- **public/** — directory
-- **src/** — directory
+启动入口：[AGENTS.md](AGENTS.md)。当前交接：[CONTEXT.md](CONTEXT.md)。项目功能与运行：[README.md](README.md)。模块职责：[ARCHITECTURE.md](ARCHITECTURE.md)。
 
-## Root Files
-- CLAUDE.md
-- HEARTBEAT.md
-- memory.md
-- package-lock.json
-- package.json
-- postcss.config.js
-- README.md
-- soul.md
-- tailwind.config.js
-- user.md
-
-## Structure
-This workspace contains 7 directories and 11 root files.
-<!-- AI_GENERATED_END -->
+不在此维护重复目录快照，实际文件以当前目标分支为准。

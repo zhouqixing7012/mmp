@@ -1,309 +1,45 @@
-# AGENTS.md - 项目约定和规则
+# 项目协作入口
 
-## 项目信息
+本仓库是企业资产管理产品演示前端，承载原型、PRD 和研发评审。技术栈、运行方式见 [README.md](README.md)，模块关系见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
-- **项目名称**：企业资产管理系统（Asset Management System）
-- **技术栈**：React 19 + Create React App + Ant Design 6 + Tailwind CSS
-- **主要文件**：src/pages/yewurules.js（后台基础配置 + 业务视图）
+## 启动顺序
 
-## 代码规范
+1. 核对用户指定仓库、目标分支、当前工作区改动和可用能力。本次整改目标为 main；后续任务以用户明确指定为准，未指定时核对当前分支，不自动切换。
+2. 阅读本文件和 [CONTEXT.md](CONTEXT.md)，按任务查阅 [lessons.md](lessons.md)。
+3. 修改前阅读 [AI_RULES.md](AI_RULES.md) 的流程；再按下表读取相关规范，不要求每次通读所有文档。
+4. 开始业务修改时，查对应正式 PRD 及其待决策清单；历史记录只在追溯、核对遗漏或冲突时读取。
 
-### 0. 组件使用规则（必须遵守）
+## 文档职责与唯一维护位置
 
-**禁止自己写按钮/输入框样式，必须使用 Antd 原生组件**
+| 内容 | 权威维护位置 | 使用方式 |
+|---|---|---|
+| 项目入口、授权与安全边界 | 本文件 | 所有执行工具共用 |
+| 任务推进、确认时点、自检与交付 | [AI_RULES.md](AI_RULES.md) | 不在各工具入口复制流程 |
+| 技术边界、编码、数据来源、工程实现 | [工程规范](docs/ENGINEERING_GUIDELINES.md) | 涉及代码时读取 |
+| UI 数值、组件、布局、交互反馈 | [UI 规范](docs/UI_DESIGN_GUIDELINES.md) | 涉及 UI 时读取 |
+| 动效参数与接入 | [动效规范](docs/UI_MOTION_GUIDELINES.md) | 涉及页面动效时读取 |
+| PRD 表述与结构 | [PRD 写作规范](docs/PRD_WRITING_GUIDELINES.md) | 涉及 PRD 时读取 |
+| 正式业务目标 | 对应现行 PRD；入口见 [README.md](README.md) | 不在 lessons、CONTEXT 重复定义 |
+| 本轮交接摘要 | [CONTEXT.md](CONTEXT.md) | 只保留当前任务、下一步、阻塞及关键决定入口 |
+| 未完成任务、执行状态 | [task_plan.md](task_plan.md) | 唯一任务列表，简单任务无需建新计划 |
+| 已完成记录、实际验证结果 | [progress.md](progress.md) | 完成后追加一条，不重复抄业务规则 |
+| 研究结论、证据和业务问题索引 | [findings.md](findings.md) | 有新增结论时才更新；业务决定落正式 PRD |
+| 可复用纠错经验 | [lessons.md](lessons.md) | 不保存业务字段清单和过期状态 |
+| 历史来源及本次迁移对照 | [归档索引](docs/archive/2026-09-24-workflow/README.md) | 只读追溯，不当作自动执行指令 |
 
-✅ **正确做法**：
-```jsx
-<Button type="primary" icon={<Plus size={14} />}>新增</Button>
-<Button danger icon={<Trash2 size={14} />}>删除</Button>
-<Input placeholder="请输入编码" />
-<Select
-  style={{ width: '100%' }}
-  placeholder="请选择"
-  allowClear
-  options={[{ label: '是', value: '1' }]}
-/>
-```
+同一范围内，以用户最新明确确认的决定更新对应权威文件。不能仅凭文件顺序、修改时间、旧代码或旧截图推断新规则；无法确定的真实冲突集中确认。不同范围的规则先区分 PC/移动端、正式系统/演示、历史/目标，不强行统一。
 
-**表格状态列必须使用 `<StatusTag />`**：
-```jsx
-<StatusTag value={val} />          // 是/否
-<StatusTag value={val} type="enabled" />  // 启用/停用
-<StatusTag value={val} type="stop" />     // 停产/未停产
-```
+归档代表退出默认启动阅读，不代表其中所有业务结论已作废。未核实迁入正式 PRD 的历史条目保留来源索引，处理对应模块时核对，不能因为归档而认定规则不存在。
 
-**选择弹窗必须使用 `<SelectModal />`**：
-```jsx
-<SelectModal
-  open={isOpen}
-  title="选择品牌"
-  dataSource={mockBrands}
-  columns={[{ title: '编码', dataIndex: 'code' }, { title: '描述', dataIndex: 'desc' }]}
-  searchFields={[{ label: '编码', name: 'code', dataIndex: 'code' }]}
-  onCancel={() => setIsOpen(false)}
-  onConfirm={(record) => { setField(record.desc); setIsOpen(false); }}
-/>
-```
+## 授权与安全边界
 
-**查询栏必须使用 `<QueryBar>` + `<QueryItem>`**：
-```jsx
-<QueryBar>
-  <QueryItem label="字段名">
-    <Input placeholder="..." />
-  </QueryItem>
-</QueryBar>
-```
+- 未经明确同意，不创建新分支或 worktree，不擅自切换提交目标。
+- 数据库操作和文件删除必须先获得确认；已明确授权的同一动作不重复询问。
+- 禁止代码回滚、强制覆盖远端历史、覆盖用户或其他协作者尚未处理的修改。
+- 不伪造数据、接口地址、测试结果、截图、权限或完成状态。读取成功不能证明写入成功，提交成功不能证明部署完成。
+- 不以虚假成功、静默忽略、猜测默认值、降级替代或事后补丁掩盖错误；按已确认规则处理异常，未定义的业务分支集中确认。
+- 仅执行当前授权范围；原版 PRD、用户原始附件只读保留。整理记录时先保留完整原文，再调整当前入口，不删除来源文件。
 
-### 1. 状态组件（可沿用）
+## 工具入口
 
-```jsx
-<StatusTag value={val} />            // 是/否（绿色/灰色）
-<StatusTag value={val} type="enabled" />  // 启用/停用（绿色/红色）
-<StatusTag value={val} type="stop" />     // 停产/未停产（橙色/灰色）
-```
-
-- 空值显示 `-`
-- `value` 兼容 `'1'`、`true`、`'是'`
-
-## 关键设计决策
-
-### 1. 弹窗选择组件
-系统使用统一的弹窗选择组件来处理所有需要从列表中选择数据的场景。
-
-**弹窗间距硬规则**：
-- 普通业务 Modal 统一使用紧凑 B 端间距：Header / Footer 为 `12px 20px`，Body 为 `16px 20px`。
-- 业务页面不得为了“更宽松”再单独恢复 24px 以上的 Modal 通用内边距；打印预览、图片审核等明确特殊画布场景可单独声明。
-
-**弹窗宽度硬规则**：
-- 普通业务 Modal / Dialog 默认最大宽度统一为 **960px**，且不得超过视口宽度减 32px。
-- 普通弹窗优先使用 400 / 560 / 700～720px；数据密集型弹窗默认仍受 960px 上限约束。
-- **四列表单型 Modal 允许例外最大 1000px**：只用于承载四列 DetailGrid，必须通过栅格/标签宽度/span 适配，表单本体不加横向滚动；通过业务专用 class 明确声明，不修改所有 Modal 的默认上限。
-- 表格型、列表选择型弹窗字段过宽时在 Table 内使用横向滚动；禁止继续把 Modal 撑到 1120 / 1200 / `94vw` 等超宽尺寸。
-- 通用选择弹窗 `SelectModal` 使用 `QueryBar + QueryItem`、Ant Design Table 和右对齐 Footer；QueryBar 按自身实际可用宽度自动采用 1 / 2 / 3 列（<504px=1列，504～767px=2列，≥768px=3列），业务页面不得自行指定查询列数。Table 横向滚动按各列合理最小宽度之和是否超过可用宽度决定，统一优先使用 `scroll={{ x: 'max-content' }}`，禁止按列数判断是否滚动。
-
-**交互模式**：
-- 点击输入框的任何位置都会弹出选择弹窗
-- 输入框设置为 `readOnly`（防止直接编辑）
-- 使用 `pointer-events-none` 让点击事件穿透到父容器
-- 父容器添加 `cursor-pointer` 和 `onClick` 事件
-
-**示例**：
-
-**原位替换弹窗（替代嵌套弹窗）**：
-- 适合"列表→选择"两步操作，不需要两层 Modal 堆叠
-- 用 `roleView` 状态控制当前显示视图（如 `'list'` / `'select'`）
-- 底部按钮栏统一用 `<div className="flex justify-center gap-3 mt-6">`，无 `border-t` / `pt-4` 装饰
-- 按钮用 `className="px-6"`，主按钮 `type="primary"` / 次按钮 `type="default"`
-- 新增时只添加 `ArrowLeft` 返回链接（可选），不保留"返回列表"和"取消"两个重复按钮
-```jsx
-<div className="w-[35%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsModalOpen(true)}>
-  <AntInput value={formData.brand} onChange={(e) => setFormData({...formData, brand: e.target.value})} placeholder="请选择品牌" readOnly className="pointer-events-none" />
-  <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
-</div>
-```
-
-### 2. 菜单结构
-系统采用侧边栏菜单结构，当前一级菜单：
-- **后台基础配置**：包含 13 个子菜单（业务基础数据维护、业务映射规则管理、组织与用户管理等）
-- 其余为独立一级菜单（个人工作台、资产管理、无形资产、资产盘点）
-
-**菜单状态管理**：
-- `activeMenu`：当前活动的一级菜单（如 '后台基础配置')
-- `activeSubMenu`：当前活动的二级菜单（如 '物料大类'、'组织与用户管理')
-- `activeTab`：当前活动的标签页
-
-### 3. 组件复用
-系统大量使用可复用组件，包括：
-- `AntButton`（按钮组件）
-- `AntInput`（输入框组件，默认 `w-full` 填满父容器）
-- `AntSelect`（下拉选择组件，`className` 作用于外层 div）
-- `AntRadio`（单选按钮组件）
-- `AntModal`（弹窗组件）
-- `AntTable`（表格组件）
-
-### 4. 查询条件布局（Grid 三列对齐）
-所有页面的查询条件区域统一使用 CSS Grid 三列布局，确保标签和输入框跨行对齐。
-
-**固定模式**：
-```jsx
-<div className="flex-1 grid grid-cols-[repeat(3,minmax(0,1fr))] gap-x-6 gap-y-3 items-center">
-  <div className="flex items-center justify-end gap-2">
-    <span className="text-sm text-gray-600 whitespace-nowrap w-[88px] text-right">标签名:</span>
-    <div className="flex-1"><AntInput placeholder="请输入..." /></div>
-  </div>
-  {/* AntSelect 同理，className="flex-1" */}
-</div>
-```
-
-**关键规则**：
-- 查询条件标签默认 88px 右对齐；个别超长标签可通过 `labelWidth` 显式覆盖，不得为单页需求整体放大公共标签宽度。
-- AntInput 包在 `<div className="flex-1">` 中（因 AntInput 自带 `w-full` 无法被 className 覆盖）
-- AntSelect 使用 `className="flex-1"`（className 作用于外层 div，可正常覆盖）
-- 每行最多 3 个条件，不足 3 个用空 `<div></div>` 补齐
-- 查询条件区域与右侧查询/重置操作区保持约 24px 间距，第三列不得贴住按钮区。
-- 查询/重置按钮在 grid 右侧，使用 `shrink-0`
-- 范围查询由业务页面显式使用 `RangePicker` 等范围控件，不允许 QueryBar 根据字段名称自动合并或改写业务查询条件。
-- `QueryBar` 的“查询 / 重置”会自动给同一查询区后面的首个 `Table / List` 播放约 140ms 结果刷新反馈；业务页不得再额外做整页动画或假 Loading。
-- 如果查询结果不是 Ant Design `Table / List`，在结果根节点加 `data-mmp-query-result`，继续复用公共查询反馈。
-
-### 5. 页面级操作按钮位置
-- **页面级操作**（例如保存、提交、确认、返回、生成等对整页生效的动作）统一放在页面内容底部居中，使用 `flex justify-center gap-3`。
-- 返回按钮属于页面级操作，不放在 Card 标题栏、表格工具栏或查询区。
-- **分区级操作**（例如表格导出、删除所选、增行、局部查询/重置）继续放在对应 Card 或表格分区内，不与页面级操作混排。
-- 页面存在多个页面级操作时，主操作使用 Antd `type="primary"`，其余按语义使用默认或危险按钮，整体保持底部居中排列。
-
-### 6. 数字展示规范
-- 数量、件数、条数、资产总量、盘点数量、打印次数等普通计数型数字按业务原值展示，不强制增加千分位。
-- 原值、净值、EBS 原值、金额、价格等财务数字统一使用会计展示格式：千分位 + 2 位小数，例如 `1,250,000.00`。
-- 百分比继续使用百分比格式；日期、编号、标签号、序列号、员工编号等标识类数字禁止套用千分位。
-- 千分位与固定两位小数主要用于金额和财务类数值，不得机械套用到普通数量、次数、条数等业务计数。
-
-### 7. 统一动效规范（必须遵守）
-
-完整规范见 `docs/UI_MOTION_GUIDELINES.md`。新增页面和修改交互时必须先复用现有公共动效，不得自行发明动画参数。
-
-**固定规则**：
-- `/yewurules` 的菜单 / 子菜单 / Tab 切换，以及同一菜单内列表 / 详情 / 编辑 / 创建视图替换，默认由 `AdminContent + PageMotionBoundary` 统一处理，业务页禁止再叠加同层整页进入动画。
-- 普通 React Router 路由切换及其同 URL 内的语义视图替换，由 `src/App.js + PageMotionBoundary` 统一处理；无论 `Link` 还是按钮内 `navigate()`，业务页面都不得再单独写一套路由切换动画。
-- `PageMotionBoundary` 会同时根据页面 `h1/h2/h3/h4`、主要 `Card` 标题变化，以及页面出口第一层 Card/Table/Form/Descriptions 等主要业务区块替换识别内部整页视图切换；表格行更新、输入值变化、局部提示/按钮显隐不会触发整页动画。
-- Modal / Drawer / Popover / Dropdown 及项目自定义弹窗内部标题和结构必须被排除，打开浮层不能触发整页页面动效。
-- 如果两个内部视图既没有可区分标题、也没有可识别的主要业务区块替换，必须在当前视图根节点提供 `data-page-view-key="..."`，或使用 `src/components/PageViewMotion.jsx` 显式声明 `viewKey` 作为兜底。
-- `QueryBar` 查询/重置只对结果区播放短刷新反馈，不允许把查询动作升级成整页进入动画；没有真实异步等待时禁止制造 Loading。
-- 选择弹窗继续使用 `<SelectModal />`；普通弹窗优先使用 Ant Design `Modal`，已有自定义场景复用 `src/components/Modal.js`。
-- 明确可点击的卡片/操作块使用 `mmp-interactive-card`；查询 Card、详情 Card、表格 Card 等纯信息容器保持静止。
-- 新增/修改后需要回列表定位结果时，使用 `useTransientRowHighlight`，成功落数据后调用 `highlightRow(key)`，Table 用 `rowClassName` 接入。
-- 侧边栏展开使用 `mmp-sidebar-collapse`，自定义顶部轻量下拉使用 `mmp-nav-dropdown`；优先使用 Ant Design Dropdown/Popover。
-- 禁止业务页面自行写 300ms 以上常规动画、明显 bounce/spring、大距离飞入。
-- 禁止为简单动效引入新的动画依赖。
-- 避免 `transition-all`；只过渡真实需要变化的 `color / background-color / opacity / transform / box-shadow / border-color`。
-- 所有新增动效必须尊重 `prefers-reduced-motion`。
-
-**同 URL 特殊视图兜底示例**：
-```jsx
-<div data-page-view-key={view}>
-  {view === 'list' ? <ListView /> : <EditorView />}
-</div>
-
-<PageViewMotion viewKey={view}>
-  {view === 'list' ? <ListView /> : <EditorView />}
-</PageViewMotion>
-```
-
-**表格结果反馈示例**：
-```jsx
-import useTransientRowHighlight from '../hooks/useTransientRowHighlight';
-
-const { highlightRow, getRowClassName } = useTransientRowHighlight();
-
-<Table
-  rowKey="id"
-  rowClassName={(record) => getRowClassName(record, 'id')}
-/>
-
-// 新增/修改真正成功后调用
-highlightRow(record.id);
-```
-
-### 8. 结构性 UI 变更必须修改源码结构（必须遵守）
-
-以下变化必须直接修改对应页面的 JSX、`columns`、Tabs `items` 或条件渲染逻辑：
-
-- 删除/新增表格列；
-- 隐藏/新增页签；
-- 字段显隐；
-- 编辑态与查看态结构差异；
-- 查询条件合并、拆分、改为范围控件；
-- 业务字段从页面移除。
-
-**禁止用 CSS 代替业务结构修改**：
-- 禁止通过全局 `:has()`、`nth-child`、DOM 顺序等方式隐藏业务列或页签；
-- 禁止依赖 Ant Design 内部 DOM 层级猜测业务字段位置；
-- 禁止在公共组件里按字段名称自动重写某个具体业务页面结构；
-- CSS 只负责视觉样式，不负责决定业务字段是否存在。
-
-完成结构性 UI 变更后，除构建成功外还必须核对最终分支源码，确认目标列/页签/字段已经从实际渲染结构中删除或按条件不渲染。详细检查清单见 `docs/IMPLEMENTATION_GUARDRAILS.md`。
-
-### 9. Mock 基础数据引用规则（必须遵守）
-
-统一基础 Mock 源：
-- `src/mock/reference/materialCatalog.js`：物料参考源，字段来自物料维度组合基础数据；当前覆盖全部启用“物料总类 + 物料大类”组合，并保留真实整行记录。
-- `src/mock/reference/warehouseCatalog.js`：仓库参考源，收录源表全部启用仓库及其真实关联属性。
-
-**Mock 中凡物料、仓库及其关联属性能够从基础数据源获取的，禁止自行编造；必须基于同一真实记录生成。**
-
-具体要求：
-- 物料编号、物料说明、大类、小类、品牌、规格型号、配置、单位、级别、主资产关联、MIS 审核、退库鉴定、参考价格、申请/停产/盘点标识等必须来自同一条 `materialCatalog` 记录，不得跨记录拼接。
-- 仓库编码、仓库描述、City、Building、Floor、地址、仓库类型、仓库用途、公司、库管员、是否虚拟库等必须来自同一条 `warehouseCatalog` 记录，不得人为组合。
-- 普通 Mock 默认选择启用记录；只有明确测试停用/历史场景时才能使用停用基础数据。
-- 当前参考文件未覆盖所需具体物料时，必须先从原始基础数据补录真实整行记录，再生成 Mock；禁止为了凑场景临时编造品牌、型号、分类、配置或仓库地点关系。
-- 标签号、SN、业务单据号、数量、业务状态、操作时间等交易数据不属于基础目录本身，可按对应业务规则生成，但不得反向破坏基础数据中的固定关联关系。
-
-## 开发流程
-
-### 1. 新增页面
-1. 在 `src/pages/` 目录下创建新的页面组件
-2. 在 `src/config/routes.js` 中添加路由配置
-3. 在 `src/pages/yewurules.js` 中添加菜单和标签页
-4. 页面默认复用 `PageMotionBoundary` 自动识别列表 / 详情 / 编辑 / 创建切换；只有自动识别确实无法区分时才补 `data-page-view-key` 或 `PageViewMotion`
-5. 查询列表必须使用 `QueryBar` 的公共查询/重置结果反馈；非 Table/List 结果区补 `data-mmp-query-result`
-6. 按 `docs/UI_MOTION_GUIDELINES.md` 检查页面切换、查询结果反馈、弹窗、可点击 Card、菜单/下拉、表格结果反馈和 reduced motion；不得为新页面另起一套动效
-
-### 2. 新增弹窗选择功能
-1. 创建对应的弹窗选择组件（如 `BrandSelectModal`）
-2. 在页面组件中添加状态（如 `isBrandModalOpen`）
-3. 修改字段为弹窗选择（使用 `readOnly` 和 `pointer-events-none`）
-4. 在页面组件中添加弹窗选择组件
-
-### 3. 修改现有字段
-1. 如果需要将现有字段改为弹窗选择，按照第2步操作
-2. 确保所有弹窗选择字段都遵循统一的交互模式
-
-### 4. 原型变更与文档同步
-
-原型中已经由用户明确确认并落地的变化，不能只改代码和 `CONTEXT.md`。完成实现后按变化类型同步：
-
-- 字段增删、改名、顺序、整行/跨列、查询条件、弹窗字段 → 对应当前实现 PRD。
-- 固定提示、确认文案、保管职责、审批/办理动作、流程节点 → 对应业务 PRD。
-- 可复用的 UI/布局/数据口径经验 → `lessons.md`、`AI_RULES.md` 或 UI 规范中的合适位置。
-- 当前实现状态 → `CONTEXT.md`。
-
-`docs/员工自助功能PRD/00～11` 是来源 PDF 拆分文档，默认保留原文用于溯源；后续原型覆盖统一记录在 `docs/员工自助功能PRD/12-当前原型补充口径.md`，不要为了追平原型直接篡改来源 PDF 原文。
-
-## 禁止事项
-
-1. **禁止使用正则表达式处理嵌套结构**（如 JSX、HTML、XML）——使用状态机解析器
-2. **禁止在 disabled 的 input 上直接绑定 onClick 事件**——使用父容器的 onClick 事件
-3. **禁止在 AGENTS.md 中添加历史叙事**——只添加项目约定和规则
-4. **禁止在 docs/ 中添加"我记得上次……"**——这是记忆的事
-
-## 常用命令
-
-### 启动项目
-```bash
-npm start
-```
-
-### 构建生产版本
-```bash
-npm run build
-```
-
-### 运行测试
-```bash
-npm test
-```
-
-## 相关文档
-
-- README.md - 项目说明和架构
-- docs/UI_DESIGN_GUIDELINES.md - UI 设计规范
-- docs/UI_MOTION_GUIDELINES.md - B 端统一动效规范
-- docs/IMPLEMENTATION_GUARDRAILS.md - 结构性 UI 变更与回归检查
-- docs/PRD-*.md - 产品需求文档
-- docs/员工自助功能PRD/12-当前原型补充口径.md - 来源 PDF 后续原型覆盖口径
-- MEMORY.md - Agent记忆索引
-
-## 版本信息
-
-- 创建日期：2026-06-04
-- 最后更新：2026-09-17
+[CLAUDE.md](CLAUDE.md)、[memory.md](memory.md)、[README.ai.md](README.ai.md)、[PATH.ai.md](PATH.ai.md) 只提供入口，不维护另一套规则、状态或本机绝对路径。个人偏好替换稿见 [PERSONAL_INSTRUCTIONS.md](docs/PERSONAL_INSTRUCTIONS.md)，它不会自动修改平台个性化设置。

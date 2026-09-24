@@ -6,15 +6,15 @@
 
 ## 顶层文件职责
 
-文档职责统一定义在 [AGENTS.md](AGENTS.md)，本节说明阅读关系：
-
-1. AGENTS → CONTEXT：确定规范入口与当前交接。
-2. 按任务读取 AI_RULES、工程规范、UI/动效规范、PRD 写作规范及对应正式 PRD。
-3. task_plan 保存未完成事项，progress 保存完成记录，findings 保存研究证据和问题索引。
-4. lessons 只保存可复用纠错经验；历史正文通过归档索引按需读取。
-5. CLAUDE、memory、README.ai、PATH.ai 只指向上述入口，不再复制规则或状态。
-
-具体源码职责和调用关系如下，本轮文档整理未改变应用架构。
+| 文件 | 职责 |
+|---|---|
+| `AGENTS.md` | 项目代码和操作约束。 |
+| `AI_RULES.md` | AI 开发规则。 |
+| `CONTEXT.md` | 当前进度、停留位置和关键决定。 |
+| `README.md` | 功能、运行、部署、测试和搜索记录。 |
+| `ARCHITECTURE.md` | 模块职责、调用关系和交付方式。 |
+| `lessons.md` | 用户已确认的产品/实现经验。 |
+| `docs/UI_MOTION_GUIDELINES.md` | B 端统一动效规则和新增页面检查清单。 |
 
 ## src 目录职责
 
