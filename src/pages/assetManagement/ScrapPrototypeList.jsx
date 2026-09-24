@@ -420,7 +420,7 @@ export default function ScrapPrototypeList({
                 onCreate();
               }}
             >
-              {type === 'disposal' ? '发起处置' : config.createLabel}
+              创建
             </Button>
             {type !== 'disposal' && (
               <Popconfirm

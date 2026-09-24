@@ -382,14 +382,16 @@ export default function ScrapPrototypeEditor({
         </Descriptions>
       </Card>
 
-      <ScrapWorkflowCard
-        type={type}
-        assetScope={form.assetScope}
-        selectedAssets={assets}
-        region={form.region}
-        needsCleaning={effectiveNeedsCleaning}
-        currentNode={form.currentNode}
-      />
+      {readOnly && (
+        <ScrapWorkflowCard
+          type={type}
+          assetScope={form.assetScope}
+          selectedAssets={assets}
+          region={form.region}
+          needsCleaning={effectiveNeedsCleaning}
+          currentNode={form.currentNode}
+        />
+      )}
 
       {['crossCompany', 'scrap', 'accounting'].includes(type) && (form.approvalHistory || []).length > 0 && (
         <Card size="small" title="审批记录">
