@@ -68,3 +68,22 @@ test('账面报废公司通过弹窗选择，三个报废原因分别可编辑',
   expect(screen.getByPlaceholderText('请填写未到报废期资产的报废原因')).toBeInTheDocument();
   expect(screen.getByPlaceholderText('请填写丢失资产的报废原因')).toBeInTheDocument();
 });
+
+
+test('资产处置编辑页不展示独立报价与处置信息区块', () => {
+  render(
+    <ScrapPrototypeEditor
+      type="disposal"
+      config={{ title: '资产处置', createLabel: '创建资产处置申请单' }}
+      initialForm={{ ...accountingForm, documentStatus: '草稿' }}
+      initialAssets={[]}
+      readOnly={false}
+      approvalPage={false}
+      onBack={jest.fn()}
+      onSave={jest.fn()}
+      onApprove={jest.fn()}
+    />,
+  );
+
+  expect(screen.queryByText('报价与处置信息')).not.toBeInTheDocument();
+});

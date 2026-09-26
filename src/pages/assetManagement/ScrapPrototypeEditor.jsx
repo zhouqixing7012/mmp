@@ -4,7 +4,6 @@ import {
   Card,
   Descriptions,
   Input,
-  InputNumber,
   Modal,
   Select,
   Table,
@@ -261,18 +260,6 @@ export default function ScrapPrototypeEditor({
         message.error('请选择公司并添加该公司的待处置办公资产');
         return false;
       }
-      if (!String(form.supplier || '').trim() || !form.quoteAmount) {
-        message.error('请填写回收供应商和报价金额');
-        return false;
-      }
-      if (!String(form.quoteReceiver || '').trim()) {
-        message.error('请指定接收报价人');
-        return false;
-      }
-      if (!(form.quoteAttachments || []).length) {
-        message.error('请上传盖章报价单');
-        return false;
-      }
     }
 
     return true;
@@ -509,71 +496,6 @@ export default function ScrapPrototypeEditor({
         </Descriptions>
         )}
       </Card>
-
-      {type === 'disposal' && (
-        <Card size="small" title="报价与处置信息">
-          <div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-3">
-            <div>
-              <Typography.Text type="secondary">接收报价人</Typography.Text>
-              {readOnly
-                ? <div className="mt-1">{showValue(form.quoteReceiver)}</div>
-                : <Input className="mt-1" value={form.quoteReceiver} placeholder="请选择/输入接收报价人" onChange={(event) => updateForm('quoteReceiver', event.target.value)} />}
-            </div>
-            <div>
-              <Typography.Text type="secondary">最终回收供应商</Typography.Text>
-              {readOnly
-                ? <div className="mt-1">{showValue(form.supplier)}</div>
-                : <Input className="mt-1" value={form.supplier} onChange={(event) => updateForm('supplier', event.target.value)} />}
-            </div>
-            <div>
-              <Typography.Text type="secondary">最终报价金额</Typography.Text>
-              {readOnly
-                ? <div className="mt-1">{showValue(form.quoteAmount == null ? '-' : money(form.quoteAmount))}</div>
-                : <InputNumber min={0} precision={2} value={form.quoteAmount} className="mt-1 w-full" onChange={(value) => updateForm('quoteAmount', value)} />}
-            </div>
-            <div>
-              <Typography.Text type="secondary">盖章报价单</Typography.Text>
-              {readOnly
-                ? <div className="mt-1">{showValue((form.quoteAttachments || []).map((item) => item.name).filter(Boolean).join('、'))}</div>
-                : (
-                  <Upload
-                    fileList={form.quoteAttachments || []}
-                    onChange={({ fileList }) => updateForm('quoteAttachments', fileList)}
-                    beforeUpload={(file) => {
-                      if (file.size > 20 * 1024 * 1024) {
-                        message.error('单文件不能超过20MB');
-                        return Upload.LIST_IGNORE;
-                      }
-                      return false;
-                    }}
-                  >
-                    <Button className="mt-1" icon={<UploadOutlined />}>上传盖章报价单</Button>
-                  </Upload>
-                )}
-            </div>
-            <div className="md:col-span-2">
-              <Typography.Text type="secondary">处置凭证</Typography.Text>
-              {readOnly
-                ? <div className="mt-1">{showValue((form.disposalAttachments || []).map((item) => item.name).filter(Boolean).join('、'))}</div>
-                : (
-                  <Upload
-                    fileList={form.disposalAttachments || []}
-                    onChange={({ fileList }) => updateForm('disposalAttachments', fileList)}
-                    beforeUpload={(file) => {
-                      if (file.size > 20 * 1024 * 1024) {
-                        message.error('单文件不能超过20MB');
-                        return Upload.LIST_IGNORE;
-                      }
-                      return false;
-                    }}
-                  >
-                    <Button className="mt-1" icon={<UploadOutlined />}>上传实物照片/到款凭证/交接签字表</Button>
-                  </Upload>
-                )}
-            </div>
-          </div>
-        </Card>
-      )}
 
       {type === 'accounting' && form.scrapMethod !== '调账' && !approvalPage && (
         <Card size="small" title="报废原因">

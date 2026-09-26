@@ -58,17 +58,13 @@ function defaultForm(type) {
     remark: '',
     description: '',
     attachments: [],
-    quoteAttachments: [],
-    disposalAttachments: [],
     scrapMethod: type === 'accounting' ? '非调账' : '全部报废',
     scrapReasons: {},
     assetCategory: '',
     assetLocation: '',
     region: '北京',
     needsCleaning: '否',
-    quoteReceiver: '采购专员',
-    supplier: '',
-    quoteAmount: null,
+    quoteReceiver: type === 'scrap' ? '采购专员' : '',
     currentNode: '',
   };
 }
