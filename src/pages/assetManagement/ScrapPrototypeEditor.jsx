@@ -21,6 +21,7 @@ import LookupInput from '../../components/LookupInput';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import BorrowingApprovalHistory from '../assetBorrowing/BorrowingApprovalHistory';
 import ScrapPrototypeAssetTable from './ScrapPrototypeAssetTable';
+import { getScrapPrototypeApprovalRecords } from './scrapPrototypeApproval';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 import { money } from './scrapPrototypeData';
@@ -279,34 +280,10 @@ export default function ScrapPrototypeEditor({
     }, assets, submit);
   };
 
-  const approvalRecords = (form.approvalHistory || []).map((item) => ({
-    node: item.node,
-    person: item.person || (item.node === '发起人提交' ? form.creator : ''),
-    status: item.result === '提交'
-      ? '已提交'
-      : item.result === '通过'
-        ? '已同意'
-        : item.result === '驳回'
-          ? '已驳回'
-          : item.result || '待审批',
-    time: item.time,
-    comment: item.opinion,
-  }));
-  if (
-    approvalPage
-    && ['crossCompany', 'scrap', 'accounting', 'disposal'].includes(type)
-    && ['审批中', '处理中'].includes(form.documentStatus)
-    && form.currentNode
-    && !approvalRecords.some((item) => item.node === form.currentNode && item.status === '待审批')
-  ) {
-    approvalRecords.push({
-      node: form.currentNode,
-      person: form.currentApprover || '',
-      status: '待审批',
-      time: '',
-      comment: '',
-    });
-  }
+  const approvalRecords = getScrapPrototypeApprovalRecords({
+    ...form,
+    assetsSnapshot: assets,
+  }, type);
 
   const disposalSummary = Array.from(assets.reduce((groups, asset) => {
     const key = JSON.stringify([asset.city || '', asset.majorCategory || '']);
@@ -499,7 +476,7 @@ export default function ScrapPrototypeEditor({
         )}
       </Card>
 
-      {type === 'disposal' && form.assetScope === '办公设备' && (
+      {type === 'disposal' && !['机房资产', '软件'].includes(form.assetScope) && form.disposalMode !== '无实物处置' && (
         <Card size="small" title="报价与处置信息">
           <Descriptions bordered size="small" column={3}>
             <Descriptions.Item label="接收报价人">
@@ -529,6 +506,23 @@ export default function ScrapPrototypeEditor({
                     className="w-full"
                     onChange={(value) => updateForm('quoteAmount', value)}
                   />
+                )}
+            </Descriptions.Item>
+            <Descriptions.Item label="盖章报价单" span={3}>
+              {readOnly
+                ? showValue((form.quoteAttachments || []).map((item) => item.name).filter(Boolean).join('、'))
+                : (
+                  <Upload
+                    beforeUpload={(file) => {
+                      if (file.size > 20 * 1024 * 1024) {
+                        message.error('单文件不能超过20MB');
+                        return Upload.LIST_IGNORE;
+                      }
+                      return false;
+                    }}
+                  >
+                    <Button icon={<UploadOutlined />}>上传盖章报价单</Button>
+                  </Upload>
                 )}
             </Descriptions.Item>
             <Descriptions.Item label="处置凭证" span={3}>
