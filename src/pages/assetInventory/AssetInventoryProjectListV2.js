@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
@@ -52,10 +52,25 @@ function hasInventoryHistory(row) {
   return ['盘点中', '盘点关闭'].includes(normalizeStatus(row?.status));
 }
 
-export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview }) {
+export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview, onCloseProject, statusOverrides = {} }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const navigate = useNavigate();
-  const [rows, setRows] = useState(() => PROJECT_LIST_ROWS.map((row) => ({ ...row, status: normalizeStatus(row.status) })));
+  const [rows, setRows] = useState(() => PROJECT_LIST_ROWS.map((row) => ({ ...row, status: statusOverrides[row.projectNo] || normalizeStatus(row.status) })));
+
+  useEffect(() => {
+    setRows((current) => current.map((row) => statusOverrides[row.projectNo] ? { ...row, status: statusOverrides[row.projectNo] } : row));
+  }, [statusOverrides]);
+
+  useEffect(() => {
+    const completedRoomProjects = rows.filter((row) => row.projectType === '初盘'
+      && row.generationSource === '系统生成'
+      && row.scopeRanges?.includes('机房')
+      && Number(row.progress) >= 100
+      && row.status !== '盘点关闭');
+    if (!completedRoomProjects.length) return;
+    setRows((current) => current.map((row) => completedRoomProjects.some((project) => project.projectNo === row.projectNo) ? { ...row, status: '盘点关闭' } : row));
+    completedRoomProjects.forEach((row) => onCloseProject?.({ ...row, status: '盘点关闭', closedBy: '系统' }));
+  }, [rows, onCloseProject]);
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [selectedKeys, setSelectedKeys] = useState([]);
@@ -108,10 +123,24 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
     if (selectedKeys.length !== 1) { messageApi.warning('请选择一个需要关闭的盘点项目'); return; }
     const row = rows.find((item) => item.key === selectedKeys[0]);
     if (!row) return;
-    if (row.status === '草稿' || row.status === '快照生成') { messageApi.warning('当前项目尚未完成盘点计划启动，无法关闭'); return; }
-    setRows((current) => current.map((item) => item.key === row.key ? { ...item, status: '盘点关闭' } : item));
-    setSelectedKeys([]);
-    messageApi.success('盘点项目已关闭');
+    if (row.status !== '盘点中') { messageApi.warning('只有盘点中的项目可以手动关闭'); return; }
+    if (row.projectType === '初盘' && row.generationSource === '系统生成' && row.scopeRanges?.includes('机房')) {
+      messageApi.info('机房初盘进度达到100%后由系统自动关闭');
+      return;
+    }
+    if (row.projectType === '复盘' && row.approvalStatus !== '已审核') { messageApi.warning('复盘审批通过后才能关闭项目'); return; }
+    Modal.confirm({
+      title: '确认关闭盘点项目？',
+      content: '项目关闭后，移动端待办将结束，不能继续扫码或提交。未盘资产和待提交结果不阻止关闭。',
+      okText: '关闭项目',
+      cancelText: '取消',
+      onOk: () => {
+        setRows((current) => current.map((item) => item.key === row.key ? { ...item, status: '盘点关闭' } : item));
+        onCloseProject?.({ ...row, status: '盘点关闭', closedBy: '手动' });
+        setSelectedKeys([]);
+        messageApi.success('盘点项目已关闭');
+      },
+    });
   };
 
   const columns = [
