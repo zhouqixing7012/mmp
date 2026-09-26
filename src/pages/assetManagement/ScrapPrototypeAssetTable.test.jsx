@@ -10,6 +10,11 @@ jest.mock('antd', () => {
     return ReactModule.createElement('button', domProps, children);
   };
   const Input = ({ suffix, allowClear, ...props }) => ReactModule.createElement('input', props);
+  const InputNumber = ({ onChange, ...props }) => ReactModule.createElement('input', {
+    ...props,
+    type: 'number',
+    onChange: (event) => onChange?.(event.target.value === '' ? null : Number(event.target.value)),
+  });
   const Select = ({ options = [], ...props }) => ReactModule.createElement(
     'select',
     props,
@@ -49,7 +54,7 @@ jest.mock('antd', () => {
   return {
     Button,
     Input,
-    InputNumber: Input,
+    InputNumber,
     Select,
     Space: ({ children }) => ReactModule.createElement('div', null, children),
     Table,
@@ -226,4 +231,26 @@ test('新责任人、新公司、新成本中心均从弹窗选择', () => {
     fireEvent.click(screen.getByTestId('selection-modal').querySelector('button'));
     expect(onChange).toHaveBeenLastCalledWith(source.id, field, expect.any(String));
   });
+});
+
+
+test('资产处置回收商一至三按报价金额输入', () => {
+  const source = { ...SCRAP_ASSET_POOL[0], recycler1: null, recycler2: null, recycler3: null };
+  const onChange = jest.fn();
+  render(
+    <ScrapPrototypeAssetTable
+      type="disposal"
+      assetScope="办公设备"
+      assets={[source]}
+      readOnly={false}
+      onChange={onChange}
+      onReplace={jest.fn()}
+    />,
+  );
+
+  expect(screen.getByText('回收商一')).toBeInTheDocument();
+  const amountInputs = screen.getAllByRole('spinbutton');
+  expect(amountInputs).toHaveLength(3);
+  fireEvent.change(amountInputs[0], { target: { value: '1200.5' } });
+  expect(onChange).toHaveBeenCalledWith(source.id, 'recycler1', 1200.5);
 });

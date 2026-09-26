@@ -368,22 +368,25 @@ export default function ScrapPrototypeEditor({
         <h3 className="m-0 text-xl font-semibold">
           {approvalPage ? `${config.title}审批` : readOnly ? `${config.title}详情` : config.createLabel}
         </h3>
-        {approvalPage && type === 'crossCompany' && (
+        {approvalPage && (
           <span className="text-gray-500">申请单号：{form.applicationNo}</span>
         )}
       </div>
 
-      <Card size="small" title={approvalPage && type === 'crossCompany' ? '申请人信息' : '基本信息'}>
-        {approvalPage && type === 'crossCompany' ? (
+      <Card size="small" title={approvalPage ? '申请人信息' : '基本信息'}>
+        {approvalPage ? (
           <DetailGrid>
             <DetailItem label="申请人">{showValue(form.creator)}</DetailItem>
             <DetailItem label="申请日期">{showValue(form.applicationDate)}</DetailItem>
             <DetailItem label="公司">{showValue(form.company)}</DetailItem>
+            <DetailItem label="办公区">{showValue(form.officeArea)}</DetailItem>
             <DetailItem label="联系电话">{showValue(form.contactPhone)}</DetailItem>
             <DetailItem label="邮箱">{showValue(form.email)}</DetailItem>
             <DetailItem label="部门" span={3}>{showValue(form.department)}</DetailItem>
-            <DetailItem label="备注" span={3}>{showValue(form.remark)}</DetailItem>
-            <DetailItem label="附件" span={3}>{showValue(form.attachments?.map((item) => item.name).join('、'))}</DetailItem>
+            {type === 'scrap' && <DetailItem label="报废说明" span={3}>{showValue(form.description)}</DetailItem>}
+            {type === 'accounting' && <DetailItem label="报废方式">{showValue(form.scrapMethod)}</DetailItem>}
+            {type !== 'scrap' && <DetailItem label="备注" span={3}>{showValue(form.remark)}</DetailItem>}
+            <DetailItem label="附件" span={3}>{showValue(form.attachments?.map((item) => item.name).filter(Boolean).join('、'))}</DetailItem>
           </DetailGrid>
         ) : (
         <Descriptions bordered size="small" column={3}>
@@ -397,7 +400,7 @@ export default function ScrapPrototypeEditor({
 
           <Descriptions.Item label="制单人">{form.creator}</Descriptions.Item>
           <Descriptions.Item label="公司">
-            {['crossCompany', 'disposal'].includes(type)
+            {['crossCompany', 'disposal', 'accounting'].includes(type)
               ? (readOnly
                 ? showValue(form.company)
                 : (
@@ -405,7 +408,7 @@ export default function ScrapPrototypeEditor({
                     value={form.company}
                     placeholder="请选择公司"
                     onOpen={() => setCompanyPickerOpen(true)}
-                    disabled={assets.length > 0}
+                    disabled={type !== 'accounting' && assets.length > 0}
                   />
                 ))
               : showValue(form.company)}
@@ -486,9 +489,11 @@ export default function ScrapPrototypeEditor({
 
           <Descriptions.Item label="附件" span={3}>
             {readOnly
-              ? showValue('-')
+              ? showValue((form.attachments || []).map((item) => item.name).filter(Boolean).join('、'))
               : (
                 <Upload
+                  fileList={form.attachments || []}
+                  onChange={({ fileList }) => updateForm('attachments', fileList)}
                   beforeUpload={(file) => {
                     if (file.size > 20 * 1024 * 1024) {
                       message.error('单文件不能超过20MB');
@@ -505,41 +510,31 @@ export default function ScrapPrototypeEditor({
         )}
       </Card>
 
-      {type === 'disposal' && !['机房资产', '软件'].includes(form.assetScope) && form.disposalMode !== '无实物处置' && (
+      {type === 'disposal' && (
         <Card size="small" title="报价与处置信息">
-          <Descriptions bordered size="small" column={3}>
-            <Descriptions.Item label="接收报价人">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-3">
+            <div>
+              <Typography.Text type="secondary">接收报价人</Typography.Text>
               {readOnly
-                ? showValue(form.quoteReceiver)
-                : (
-                  <Input
-                    value={form.quoteReceiver}
-                    placeholder="请选择/输入接收报价人"
-                    onChange={(event) => updateForm('quoteReceiver', event.target.value)}
-                  />
-                )}
-            </Descriptions.Item>
-            <Descriptions.Item label="回收供应商">
+                ? <div className="mt-1">{showValue(form.quoteReceiver)}</div>
+                : <Input className="mt-1" value={form.quoteReceiver} placeholder="请选择/输入接收报价人" onChange={(event) => updateForm('quoteReceiver', event.target.value)} />}
+            </div>
+            <div>
+              <Typography.Text type="secondary">最终回收供应商</Typography.Text>
               {readOnly
-                ? showValue(form.supplier)
-                : <Input value={form.supplier} onChange={(event) => updateForm('supplier', event.target.value)} />}
-            </Descriptions.Item>
-            <Descriptions.Item label="报价金额">
+                ? <div className="mt-1">{showValue(form.supplier)}</div>
+                : <Input className="mt-1" value={form.supplier} onChange={(event) => updateForm('supplier', event.target.value)} />}
+            </div>
+            <div>
+              <Typography.Text type="secondary">最终报价金额</Typography.Text>
               {readOnly
-                ? showValue(form.quoteAmount ? Number(form.quoteAmount).toFixed(2) : '-')
-                : (
-                  <InputNumber
-                    min={0}
-                    precision={2}
-                    value={form.quoteAmount}
-                    className="w-full"
-                    onChange={(value) => updateForm('quoteAmount', value)}
-                  />
-                )}
-            </Descriptions.Item>
-            <Descriptions.Item label="盖章报价单" span={3}>
+                ? <div className="mt-1">{showValue(form.quoteAmount == null ? '-' : money(form.quoteAmount))}</div>
+                : <InputNumber min={0} precision={2} value={form.quoteAmount} className="mt-1 w-full" onChange={(value) => updateForm('quoteAmount', value)} />}
+            </div>
+            <div>
+              <Typography.Text type="secondary">盖章报价单</Typography.Text>
               {readOnly
-                ? showValue((form.quoteAttachments || []).map((item) => item.name).filter(Boolean).join('、'))
+                ? <div className="mt-1">{showValue((form.quoteAttachments || []).map((item) => item.name).filter(Boolean).join('、'))}</div>
                 : (
                   <Upload
                     fileList={form.quoteAttachments || []}
@@ -552,15 +547,18 @@ export default function ScrapPrototypeEditor({
                       return false;
                     }}
                   >
-                    <Button icon={<UploadOutlined />}>上传盖章报价单</Button>
+                    <Button className="mt-1" icon={<UploadOutlined />}>上传盖章报价单</Button>
                   </Upload>
                 )}
-            </Descriptions.Item>
-            <Descriptions.Item label="处置凭证" span={3}>
+            </div>
+            <div className="md:col-span-2">
+              <Typography.Text type="secondary">处置凭证</Typography.Text>
               {readOnly
-                ? showValue('-')
+                ? <div className="mt-1">{showValue((form.disposalAttachments || []).map((item) => item.name).filter(Boolean).join('、'))}</div>
                 : (
                   <Upload
+                    fileList={form.disposalAttachments || []}
+                    onChange={({ fileList }) => updateForm('disposalAttachments', fileList)}
                     beforeUpload={(file) => {
                       if (file.size > 20 * 1024 * 1024) {
                         message.error('单文件不能超过20MB');
@@ -569,33 +567,34 @@ export default function ScrapPrototypeEditor({
                       return false;
                     }}
                   >
-                    <Button icon={<UploadOutlined />}>
-                      上传实物照片/到款凭证/交接签字表
-                    </Button>
+                    <Button className="mt-1" icon={<UploadOutlined />}>上传实物照片/到款凭证/交接签字表</Button>
                   </Upload>
                 )}
-            </Descriptions.Item>
-          </Descriptions>
+            </div>
+          </div>
         </Card>
       )}
 
-      {type === 'accounting' && form.scrapMethod !== '调账' && (
+      {type === 'accounting' && form.scrapMethod !== '调账' && !approvalPage && (
         <Card size="small" title="报废原因">
-          <Descriptions bordered size="small" column={3}>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             {['已到报废期', '未到报废期', '丢失'].map((kind) => (
-              <Descriptions.Item key={kind} label={`${kind}报废原因`}>
+              <div key={kind} className="rounded-md border border-gray-200 bg-gray-50 p-3">
+                <Typography.Text strong>{kind}</Typography.Text>
                 {readOnly
-                  ? showValue(getAccountingReasonText(kind))
+                  ? <div className="mt-2 min-h-16 whitespace-pre-wrap text-gray-700">{showValue(getAccountingReasonText(kind))}</div>
                   : (
                     <Input.TextArea
-                      rows={3}
+                      className="mt-2"
+                      autoSize={{ minRows: 4, maxRows: 6 }}
+                      placeholder={`请填写${kind}资产的报废原因`}
                       value={getAccountingReasonText(kind)}
                       onChange={(event) => updateAccountingReason(kind, event.target.value)}
                     />
                   )}
-              </Descriptions.Item>
+              </div>
             ))}
-          </Descriptions>
+          </div>
         </Card>
       )}
 
@@ -614,8 +613,8 @@ export default function ScrapPrototypeEditor({
               { title: '原值', dataIndex: 'originalValue', width: 140, align: 'right', render: money },
               { title: '净值', dataIndex: 'netValue', width: 140, align: 'right', render: money },
               ...['回收商一', '回收商二', '回收商三'].map((title, index) => ({
-                title, dataIndex: `recycler${index + 1}`, width: 180, fixed: 'right',
-                render: (values) => values.join('、') || '-',
+                title, dataIndex: `recycler${index + 1}`, width: 145, fixed: 'right', align: 'right',
+                render: (values) => values.map((value) => money(value)).join('、') || '-',
               })),
             ]} />
         ) : type === 'accounting' && approvalPage && form.scrapMethod !== '调账' ? (
@@ -648,6 +647,10 @@ export default function ScrapPrototypeEditor({
                     {approvalTable(rows)}
                   </>,
                 }))} />
+                <div className="mt-3 rounded-md border border-blue-100 bg-blue-50 px-4 py-3">
+                  <Typography.Text strong>{kind}报废原因</Typography.Text>
+                  <div className="mt-1 whitespace-pre-wrap text-gray-700">{showValue(getAccountingReasonText(kind))}</div>
+                </div>
               </> };
             })} />
         ) : <ScrapPrototypeAssetTable
@@ -749,7 +752,7 @@ export default function ScrapPrototypeEditor({
         <Input value={countersignPerson} placeholder="请输入姓名或工号" onChange={(event) => setCountersignPerson(event.target.value)} />
       </Modal>
 
-      {['crossCompany', 'disposal'].includes(type) && !readOnly && (
+      {['crossCompany', 'disposal', 'accounting'].includes(type) && !readOnly && (
         <SelectModal
           open={companyPickerOpen}
           title="选择公司"
@@ -767,7 +770,7 @@ export default function ScrapPrototypeEditor({
             setForm((current) => ({
               ...current,
               company: `${company.code}.${company.name}`,
-              assetScope: '',
+              assetScope: type === 'accounting' ? current.assetScope : '',
             }));
             setCompanyPickerOpen(false);
           }}
