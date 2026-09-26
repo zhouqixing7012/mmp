@@ -13,7 +13,7 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
-import { CheckCircle2, Download, PlayCircle, ScanLine, Trash2, Upload } from 'lucide-react';
+import { CheckCircle2, Download, PlayCircle, ScanLine, Trash2, Upload, XCircle } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
@@ -354,11 +354,36 @@ export default function AssetInventorySnapshotDetailV2({
   onOpenPlans,
   onGenerateDefault,
   onGenerateCustom,
+  onCloseProject,
 }) {
-  const { allowedRanges } = useAssetInventoryVariant();
+  const { allowedRanges: configuredRanges } = useAssetInventoryVariant();
+  const allowedRanges = project?.scopeRanges?.length ? project.scopeRanges : configuredRanges;
+  const isSystemRoomInitial = project?.projectType === '初盘' && project?.generationSource === '系统生成' && project?.scopeRanges?.includes('机房');
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const initialProjectStatus = project?.status === '草稿' ? '快照生成' : (project?.status || '快照生成');
   const [projectStatus, setProjectStatus] = useState(initialProjectStatus);
+  const canManuallyClose = projectStatus === '盘点中'
+    && !isSystemRoomInitial
+    && (project?.projectType !== '复盘' || project?.approvalStatus === '已审核');
+  const handleCloseProject = () => {
+    Modal.confirm({
+      title: '确认关闭盘点项目？',
+      content: '项目关闭后，移动端待办将结束，不能继续扫码或提交。未盘资产和待提交结果不阻止关闭。',
+      okText: '关闭项目',
+      cancelText: '取消',
+      onOk: () => {
+        setProjectStatus('盘点关闭');
+        onCloseProject?.({ ...project, status: '盘点关闭', closedBy: '手动' });
+        messageApi.success('盘点项目已关闭');
+      },
+    });
+  };
+  useEffect(() => {
+    if (!isSystemRoomInitial || projectStatus !== '盘点中' || Number(project?.progress) < 100) return;
+    setProjectStatus('盘点关闭');
+    onCloseProject?.({ ...project, status: '盘点关闭', closedBy: '系统' });
+    messageApi.success('机房初盘进度达到100%，项目已自动关闭');
+  }, [isSystemRoomInitial, projectStatus, project?.progress, onCloseProject, project]);
   const [executionRows, setExecutionRows] = useState(() => ASSET_ROWS
     .filter((row) => row.executeInventory && isInventoryRangeAllowed(row, allowedRanges))
     .map((row) => normalizeAssetForProjectStage(row, initialProjectStatus)));
@@ -429,6 +454,7 @@ export default function AssetInventorySnapshotDetailV2({
           {projectStatus === '快照生成' && <Button type="primary" icon={<PlayCircle size={14} />} onClick={generatePlans}>生成盘点计划</Button>}
           {['快照生成', '生成盘点计划'].includes(projectStatus) && <Button danger icon={<Trash2 size={14} />} onClick={handleDeleteSnapshot}>删除快照</Button>}
           <Button icon={<Download size={14} />} onClick={() => messageApi.success('快照导出已触发，导出模板包含“是否执行盘点”字段')}>快照导出</Button>
+          {canManuallyClose && <Button danger icon={<XCircle size={14} />} onClick={handleCloseProject}>关闭项目</Button>}
           <Button onClick={onBack}>返回</Button>
         </Space>
       </div>
