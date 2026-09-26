@@ -14,7 +14,6 @@ function displayStatus(result, node) {
 
 export function getScrapPrototypeApprovalRecords(record = {}, type) {
   const form = record.formSnapshot || record;
-  const assets = record.assetsSnapshot || [];
   const history = record.approvalHistory?.length
     ? record.approvalHistory
     : form.approvalHistory || [];
