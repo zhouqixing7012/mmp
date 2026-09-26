@@ -513,6 +513,8 @@ export default function ScrapPrototypeEditor({
                 ? showValue((form.quoteAttachments || []).map((item) => item.name).filter(Boolean).join('、'))
                 : (
                   <Upload
+                    fileList={form.quoteAttachments || []}
+                    onChange={({ fileList }) => updateForm('quoteAttachments', fileList)}
                     beforeUpload={(file) => {
                       if (file.size > 20 * 1024 * 1024) {
                         message.error('单文件不能超过20MB');
