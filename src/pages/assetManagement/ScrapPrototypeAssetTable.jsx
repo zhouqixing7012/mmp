@@ -165,14 +165,16 @@ export default function ScrapPrototypeAssetTable({
         scrapType: item.scrapType || '已到报废期',
         reason: item.reason || '',
         dataCleaning: item.scope === '机房资产' ? item.dataCleaning || '否' : undefined,
-        newCompany: item.newCompany || '',
-        newPlate: item.newPlate || '',
-        newCostCenter: item.newCostCenter || '',
-        newResponsiblePerson: item.newResponsiblePerson || '',
-        targetWarehouse: item.targetWarehouse || '',
-        targetCity: item.targetCity || '',
-        targetBuilding: item.targetBuilding || '',
-        targetFloor: item.targetFloor || '',
+        newCompany: type === 'crossCompany' ? item.company || '' : item.newCompany || '',
+        newPlate: type === 'crossCompany' ? item.plate || '' : item.newPlate || '',
+        newCostCenter: type === 'crossCompany' ? item.costCenter || '' : item.newCostCenter || '',
+        newResponsiblePerson: type === 'crossCompany'
+          ? item.responsiblePerson || ''
+          : item.newResponsiblePerson || '',
+        targetWarehouse: type === 'crossCompany' ? item.warehouse || '' : item.targetWarehouse || '',
+        targetCity: type === 'crossCompany' ? item.city || '' : item.targetCity || '',
+        targetBuilding: type === 'crossCompany' ? item.building || '' : item.targetBuilding || '',
+        targetFloor: type === 'crossCompany' ? item.floor || '' : item.targetFloor || '',
         purpose: item.purpose || '',
         project: item.project || '',
         rowRemark: item.rowRemark || '',
@@ -316,7 +318,7 @@ export default function ScrapPrototypeAssetTable({
     { title: '资产标签号', dataIndex: 'tagNo', width: 150, fixed: 'left' },
     { title: '资产序列号', dataIndex: 'serialNumber', width: 160 },
     {
-      title: '资产类别（大类.小类）',
+      title: '资产类别',
       key: 'assetCategory',
       width: 210,
       render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.'),
@@ -616,6 +618,47 @@ export default function ScrapPrototypeAssetTable({
         ? accountingColumns
         : disposalColumns;
 
+  const assetPickerSearchFields = type === 'crossCompany'
+    ? [
+        { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
+        { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
+        { label: '资产说明', name: 'description', dataIndex: 'description' },
+      ]
+    : [
+        { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
+        { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
+        { label: '板块', name: 'plate', dataIndex: 'plate' },
+        { label: '资产说明', name: 'description', dataIndex: 'description' },
+      ];
+
+  const assetPickerColumns = type === 'crossCompany'
+    ? [
+        { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
+        { title: '序列号', dataIndex: 'serialNumber', width: 160 },
+        {
+          title: '资产类别',
+          key: 'assetCategory',
+          width: 210,
+          render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.'),
+        },
+        { title: '资产说明', dataIndex: 'description', width: 220 },
+      ]
+    : [
+        { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
+        { title: '序列号', dataIndex: 'serialNumber', width: 160 },
+        { title: '资产大类', dataIndex: 'majorCategory', width: 150 },
+        { title: '资产小类', dataIndex: 'minorCategory', width: 190 },
+        { title: '资产说明', dataIndex: 'description', width: 220 },
+        { title: '公司', dataIndex: 'company', width: 150 },
+        { title: '责任人', dataIndex: 'responsiblePerson', width: 150 },
+        {
+          title: '资产状态',
+          dataIndex: 'status',
+          width: 130,
+          render: (value) => <StatusTag value={value} type="business" />,
+        },
+      ];
+
   return (
     <>
       {!readOnly && (
@@ -673,27 +716,8 @@ export default function ScrapPrototypeAssetTable({
         multiple
         dataSource={pickerAssets}
         initialSelectedKeys={assets.map((item) => item.id)}
-        searchFields={[
-          { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
-          { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
-          { label: '板块', name: 'plate', dataIndex: 'plate' },
-          { label: '资产说明', name: 'description', dataIndex: 'description' },
-        ]}
-        columns={[
-          { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
-          { title: '序列号', dataIndex: 'serialNumber', width: 160 },
-          { title: '资产大类', dataIndex: 'majorCategory', width: 150 },
-          { title: '资产小类', dataIndex: 'minorCategory', width: 190 },
-          { title: '资产说明', dataIndex: 'description', width: 220 },
-          { title: '公司', dataIndex: 'company', width: 150 },
-          { title: '责任人', dataIndex: 'responsiblePerson', width: 150 },
-          {
-            title: '资产状态',
-            dataIndex: 'status',
-            width: 130,
-            render: (value) => <StatusTag value={value} type="business" />,
-          },
-        ]}
+        searchFields={assetPickerSearchFields}
+        columns={assetPickerColumns}
         onCancel={() => setPickerOpen(false)}
         onConfirm={(selected) => {
           addAssets(selected);

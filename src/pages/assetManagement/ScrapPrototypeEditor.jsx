@@ -10,20 +10,27 @@ import {
   Upload,
   message,
 } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import { SearchOutlined, UploadOutlined } from '@ant-design/icons';
 import StatusTag from '../../components/StatusTag';
 import SelectModal from '../../components/SelectModal';
 import ScrapPrototypeAssetTable from './ScrapPrototypeAssetTable';
+import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 
 const companyOptions = Array.from(
   new Set(warehouseCatalog.map((item) => item.company).filter(Boolean)),
 ).map((value) => ({ label: value, value }));
 
-const transferCompanyOptions = companyOptions.map((item, index) => ({
-  id: index + 1,
-  name: item.value,
-}));
+const transferCompanyOptions = Array.from(
+  getAssetMaintenanceRows().reduce((companies, item) => {
+    const code = String(item.companyCode || '').trim();
+    const name = String(item.company || '').trim();
+    if (code && name && !companies.has(code)) {
+      companies.set(code, { id: `company-${code}`, code, name });
+    }
+    return companies;
+  }, new Map()).values(),
+);
 
 function options(values) {
   return values.map((value) => ({ label: value, value }));
@@ -258,6 +265,7 @@ export default function ScrapPrototypeEditor({
                     readOnly
                     value={form.company}
                     placeholder="请选择公司"
+                    suffix={<SearchOutlined className="text-[#1677ff]" />}
                     className="cursor-pointer"
                     onClick={() => setCompanyPickerOpen(true)}
                     disabled={assets.length > 0}
@@ -512,11 +520,21 @@ export default function ScrapPrototypeEditor({
           open={companyPickerOpen}
           title="选择公司"
           dataSource={transferCompanyOptions}
-          columns={[{ title: '公司名称', dataIndex: 'name' }]}
-          searchFields={[{ label: '公司名称', name: 'name', dataIndex: 'name' }]}
+          columns={[
+            { title: '公司编码', dataIndex: 'code' },
+            { title: '公司名称', dataIndex: 'name' },
+          ]}
+          searchFields={[
+            { label: '公司编码', name: 'code', dataIndex: 'code' },
+            { label: '公司名称', name: 'name', dataIndex: 'name' },
+          ]}
           onCancel={() => setCompanyPickerOpen(false)}
           onConfirm={(company) => {
-            setForm((current) => ({ ...current, company: company.name, assetScope: '' }));
+            setForm((current) => ({
+              ...current,
+              company: `${company.code}.${company.name}`,
+              assetScope: '',
+            }));
             setCompanyPickerOpen(false);
           }}
         />
