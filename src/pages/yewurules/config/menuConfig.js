@@ -10,7 +10,6 @@ export const INVENTORY_MANAGEMENT_MENU_ITEMS = [
 
 export const ASSET_INVENTORY_MENU_ITEMS = [
   '盘点项目',
-  '移动端原型',
   '盘点报表',
 ];
 
