@@ -1,25 +1,9 @@
-import {
-  getAccountingApprovalNodes,
-  getCrossCompanyApprovalNodes,
-  getDisposalApprovalNodes,
-  getScrapApprovalNodes,
-} from './scrapPrototypeWorkflow';
-
 const ACTIVE_STATUSES = new Set([
   '审批中',
   '处理中',
   '待提单人确认',
   '待ES专员处理',
 ]);
-
-function getFirstApprovalNode(record, type, assets) {
-  const scope = record.assetScope || record.formSnapshot?.assetScope || '';
-  if (type === 'crossCompany') return getCrossCompanyApprovalNodes(scope)[0];
-  if (type === 'scrap') return getScrapApprovalNodes(scope, assets)[0];
-  if (type === 'accounting') return getAccountingApprovalNodes(assets)[0];
-  if (type === 'disposal') return getDisposalApprovalNodes(record)[0];
-  return '';
-}
 
 function displayStatus(result, node) {
   if (node === '发起人提交' || result === '提交') return '已提交';
@@ -43,9 +27,11 @@ export function getScrapPrototypeApprovalRecords(record = {}, type) {
     comment: item.opinion || '',
   }));
 
-  if (documentStatus && documentStatus !== '草稿' && !rows.some((item) => item.node === '发起人提交')) {
+  const hasStartRecord = rows.some((item) => ['发起人提交', '系统发起'].includes(item.node));
+  if (documentStatus && documentStatus !== '草稿' && !hasStartRecord) {
+    const systemStarted = form.creator === '系统自动' || record.creator === '系统自动';
     rows.unshift({
-      node: '发起人提交',
+      node: systemStarted ? '系统发起' : '发起人提交',
       person: form.creator || record.creator || '',
       status: '已提交',
       time: form.submittedAt || record.submittedAt || form.applicationDate || record.createdAt || '',
@@ -54,10 +40,9 @@ export function getScrapPrototypeApprovalRecords(record = {}, type) {
   }
 
   if (ACTIVE_STATUSES.has(documentStatus)) {
-    const currentNode = record.currentNode
-      || form.currentNode
-      || getFirstApprovalNode({ ...record, ...form }, type, assets);
-    if (currentNode && !rows.some((item) => item.node === currentNode && item.status === '待审批')) {
+    const currentNode = record.currentNode || form.currentNode;
+    if (!currentNode) throw new Error(`审批中单据缺少当前节点：${record.applicationNo || form.applicationNo || type}`);
+    if (!rows.some((item) => item.node === currentNode && item.status === '待审批')) {
       rows.push({
         node: currentNode,
         person: record.currentApprover || form.currentApprover || '',
