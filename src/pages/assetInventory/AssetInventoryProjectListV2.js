@@ -182,7 +182,11 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
     {contextHolder}
     <div className="flex items-center justify-between">
       <Typography.Title level={4} style={{ margin: 0 }}>盘点项目</Typography.Title>
-      <Button icon={<Smartphone size={14} />} onClick={() => navigate('/asset-inventory/mobile')}>移动端预览</Button>
+      <Button icon={<Smartphone size={14} />} onClick={() => {
+          if (selectedKeys.length > 1) { messageApi.warning('请选择一个盘点项目进行移动端预览'); return; }
+          const selectedProject = rows.find((row) => row.key === selectedKeys[0]);
+          navigate('/asset-inventory/mobile', { state: { projectNo: selectedProject?.projectNo || '' } });
+        }}>移动端预览</Button>
     </div>
     <QueryBar onQuery={() => { setAppliedFilters({ ...draftFilters }); setSelectedKeys([]); }} onReset={() => { setDraftFilters(EMPTY_FILTERS); setAppliedFilters(EMPTY_FILTERS); setSelectedKeys([]); }}>
       <QueryItem label="项目编号"><Input value={draftFilters.projectNo} allowClear placeholder="请输入项目编号" onChange={(event) => updateFilter('projectNo', event.target.value)} /></QueryItem>
