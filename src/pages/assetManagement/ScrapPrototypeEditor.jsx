@@ -9,16 +9,16 @@ import {
   Tabs,
   Collapse,
   Typography,
+  Space,
   Upload,
   message,
 } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
-import StatusTag from '../../components/StatusTag';
+import { DownloadOutlined, UploadOutlined } from '@ant-design/icons';
 import SelectModal from '../../components/SelectModal';
 import LookupInput from '../../components/LookupInput';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import BorrowingApprovalHistory from '../assetBorrowing/BorrowingApprovalHistory';
-import ScrapPrototypeAssetTable from './ScrapPrototypeAssetTable';
+import ScrapPrototypeAssetTable, { exportScrapPrototypeAssets } from './ScrapPrototypeAssetTable';
 import { getScrapPrototypeApprovalRecords } from './scrapPrototypeApproval';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
@@ -40,6 +40,15 @@ const transferCompanyOptions = Array.from(
 
 function options(values) {
   return values.map((value) => ({ label: value, value }));
+}
+
+function sectionTitle(title) {
+  return (
+    <div className="flex items-center gap-2.5 py-0.5">
+      <span className="h-5 w-1 rounded-full bg-[#1677ff]" />
+      <span className="text-base font-semibold text-gray-900">{title}</span>
+    </div>
+  );
 }
 
 export default function ScrapPrototypeEditor({
@@ -298,6 +307,13 @@ export default function ScrapPrototypeEditor({
     && ['crossCompany', 'scrap'].includes(type)
     && !['草稿', '已驳回'].includes(form.documentStatus)
   );
+  const showApprovalActions = approvalPage && (
+    (type === 'crossCompany' && form.documentStatus === '审批中')
+    || (type === 'accounting' && form.documentStatus === '审批中')
+    || (['scrap', 'disposal'].includes(type) && ['审批中', '处理中'].includes(form.documentStatus))
+  );
+  const showPageExport = (type === 'scrap' && approvalView)
+    || (type === 'accounting' && approvalPage && form.scrapMethod !== '调账');
 
   const disposalSummary = Array.from(assets.reduce((groups, asset) => {
     const key = JSON.stringify([asset.city || '', asset.majorCategory || '']);
@@ -333,6 +349,14 @@ export default function ScrapPrototypeEditor({
     accountingMethod={form.scrapMethod}
   />;
 
+  const approvalActionButtons = (onDecision) => (
+    <div data-testid="approval-action-buttons" className="mt-3 flex flex-wrap justify-center gap-3">
+      <Button onClick={onBack}>返回</Button>
+      <Button danger onClick={() => onDecision('驳回')}>驳回</Button>
+      <Button type="primary" onClick={() => onDecision('通过')}>同意</Button>
+    </div>
+  );
+
   const approvalActions = (
     <>
       <Input.TextArea
@@ -340,25 +364,42 @@ export default function ScrapPrototypeEditor({
         placeholder="请输入审批意见（驳回时必填）"
         onChange={(event) => setApprovalOpinion(event.target.value)}
       />
-      <div className="mt-3 flex justify-center gap-3">
-        <Button danger onClick={() => decideTransfer('驳回')}>驳回</Button>
-        <Button type="primary" onClick={() => decideTransfer('通过')}>同意</Button>
-        {!['crossCompany', 'scrap'].includes(type) && <Button onClick={onBack}>返回</Button>}
-      </div>
+      {approvalActionButtons(decideTransfer)}
     </>
   );
+  const assetDetailsTitle = type === 'accounting' && form.scrapMethod === '调账'
+    ? '公司间转移明细'
+    : (type === 'accounting' && approvalPage) || type === 'scrap'
+      ? '报废资产明细'
+      : type === 'disposal' && approvalPage
+        ? '处置资产汇总'
+        : type === 'disposal'
+          ? '处置资产明细'
+          : '资产明细';
+  const useScrapApprovalCardStyle = approvalView && ['scrap', 'accounting'].includes(type);
 
   return (
     <div
       className="space-y-4 pb-4"
       data-page-view-key={`${type}-${approvalView ? 'approval' : readOnly ? 'detail' : 'edit'}`}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <h3 className="m-0 text-xl font-semibold">
           {approvalView ? `${config.title}审批` : readOnly ? `${config.title}详情` : config.createLabel}
         </h3>
-        {approvalView && (
-          <span className="text-gray-500">申请单号：{form.applicationNo}</span>
+        {(approvalView || showPageExport) && (
+          <div className="flex items-center gap-3">
+            {approvalView && <span className="text-gray-500">申请单号：{form.applicationNo}</span>}
+            {showPageExport && (
+              <Button
+                icon={<DownloadOutlined />}
+                disabled={assets.length === 0}
+                onClick={() => exportScrapPrototypeAssets(assets, type, form.scrapMethod)}
+              >
+                导出
+              </Button>
+            )}
+          </div>
         )}
       </div>
 
@@ -371,7 +412,13 @@ export default function ScrapPrototypeEditor({
             <DetailItem label="办公区">{showValue(form.officeArea)}</DetailItem>
             <DetailItem label="联系电话">{showValue(form.contactPhone)}</DetailItem>
             <DetailItem label="邮箱">{showValue(form.email)}</DetailItem>
-            <DetailItem label="部门" span={3}>{showValue(form.department)}</DetailItem>
+            {type === 'scrap' && form.assetScope === '机房资产' && (
+              <>
+                <DetailItem label="资产大类">{showValue(form.assetCategory)}</DetailItem>
+                <DetailItem label="资产所在地">{showValue(form.assetLocation)}</DetailItem>
+              </>
+            )}
+            <DetailItem label="部门" span={type === 'accounting' ? 2 : 3}>{showValue(form.department)}</DetailItem>
             {type === 'scrap' && <DetailItem label="报废说明" span={3}>{showValue(form.description)}</DetailItem>}
             {type === 'accounting' && <DetailItem label="报废方式">{showValue(form.scrapMethod)}</DetailItem>}
             {type !== 'scrap' && <DetailItem label="备注" span={3}>{showValue(form.remark)}</DetailItem>}
@@ -381,9 +428,6 @@ export default function ScrapPrototypeEditor({
         <Descriptions bordered size="small" column={3}>
           <Descriptions.Item label="申请单号">
             {form.applicationNo || '保存/提交后生成'}
-          </Descriptions.Item>
-          <Descriptions.Item label="单据状态">
-            <StatusTag value={form.documentStatus} type="business" />
           </Descriptions.Item>
           <Descriptions.Item label="申请日期">{form.applicationDate}</Descriptions.Item>
 
@@ -524,7 +568,8 @@ export default function ScrapPrototypeEditor({
 
       <Card
         size="small"
-        title={type === 'accounting' && form.scrapMethod === '调账' ? '公司间转移明细' : (type === 'accounting' && approvalPage) || type === 'scrap' ? '报废资产明细' : type === 'disposal' && approvalPage ? '处置资产汇总' : type === 'disposal' ? '处置资产明细' : '资产明细'}
+        title={useScrapApprovalCardStyle ? sectionTitle(assetDetailsTitle) : assetDetailsTitle}
+        className={useScrapApprovalCardStyle ? 'shadow-sm' : undefined}
         extra={<span className="text-sm text-gray-500">共 {assets.length} 条</span>}
       >
         {type === 'disposal' && approvalPage ? (
@@ -553,28 +598,30 @@ export default function ScrapPrototypeEditor({
                 return groups;
               }, new Map()).entries());
               return { key: kind, label: `${kind}（${subset.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}）`, children: <>
-                <div className="mb-3 flex justify-end gap-6">
-                  <Typography.Text>总数量：{subset.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}</Typography.Text>
-                  <Typography.Text>原值合计：{money(subset.reduce((sum, item) => sum + Number(item.originalValue || 0), 0))}</Typography.Text>
-                  <Typography.Text>净值合计：{money(subset.reduce((sum, item) => sum + Number(item.netValue || 0), 0))}</Typography.Text>
+                <div className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-md bg-gray-50 px-3 py-2">
+                  <div className="min-w-[240px] flex-1">
+                    <Typography.Text strong>{kind}报废原因：</Typography.Text>{' '}
+                    <span className="whitespace-pre-wrap break-words">{showValue(getAccountingReasonText(kind))}</span>
+                  </div>
+                  <Space size={18} wrap>
+                    <Typography.Text>总数量：{subset.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}</Typography.Text>
+                    <Typography.Text>原值合计：{money(subset.reduce((sum, item) => sum + Number(item.originalValue || 0), 0))}</Typography.Text>
+                    <Typography.Text>净值合计：{money(subset.reduce((sum, item) => sum + Number(item.netValue || 0), 0))}</Typography.Text>
+                  </Space>
                 </div>
                 <Collapse items={grouped.map(([category, rows]) => ({
                   key: category,
                   label: `${category}（${rows.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}）`,
-                  children: <>
-                    <div className="mb-3 flex flex-wrap gap-6">
+                  extra: (
+                    <Space size={18} wrap>
                       <Typography.Text>数量：{rows.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}</Typography.Text>
-                      <Typography.Text>原值：{money(rows.reduce((sum, item) => sum + Number(item.originalValue || 0), 0))}</Typography.Text>
-                      <Typography.Text>折旧：{money(rows.reduce((sum, item) => sum + Number(item.accumulatedDepreciation || 0), 0))}</Typography.Text>
-                      <Typography.Text>净值：{money(rows.reduce((sum, item) => sum + Number(item.netValue || 0), 0))}</Typography.Text>
-                    </div>
-                    {approvalTable(rows)}
-                  </>,
+                      <Typography.Text>原值合计：{money(rows.reduce((sum, item) => sum + Number(item.originalValue || 0), 0))}</Typography.Text>
+                      <Typography.Text>折旧合计：{money(rows.reduce((sum, item) => sum + Number(item.accumulatedDepreciation || 0), 0))}</Typography.Text>
+                      <Typography.Text>净值合计：{money(rows.reduce((sum, item) => sum + Number(item.netValue || 0), 0))}</Typography.Text>
+                    </Space>
+                  ),
+                  children: approvalTable(rows),
                 }))} />
-                <div className="mt-3 rounded-md border border-blue-100 bg-blue-50 px-4 py-3">
-                  <Typography.Text strong>{kind}报废原因</Typography.Text>
-                  <div className="mt-1 whitespace-pre-wrap text-gray-700">{showValue(getAccountingReasonText(kind))}</div>
-                </div>
               </> };
             })} />
         ) : <ScrapPrototypeAssetTable
@@ -596,7 +643,7 @@ export default function ScrapPrototypeEditor({
         <BorrowingApprovalHistory
           records={approvalRecords}
         >
-          {form.documentStatus === '审批中' && (
+          {showApprovalActions && (
             <>
               <div className="mb-2"><strong>审批意见</strong></div>
               <Input.TextArea
@@ -608,10 +655,7 @@ export default function ScrapPrototypeEditor({
                 placeholder="同意时非必填，驳回时必填"
                 onChange={(event) => setApprovalOpinion(event.target.value)}
               />
-              <div className="mt-3 flex justify-center gap-3">
-                <Button type="primary" onClick={() => decideTransfer('通过')}>同意</Button>
-                <Button danger onClick={() => decideTransfer('驳回')}>驳回</Button>
-              </div>
+              {approvalActionButtons(decideTransfer)}
             </>
           )}
         </BorrowingApprovalHistory>
@@ -621,7 +665,7 @@ export default function ScrapPrototypeEditor({
         readOnly && !approvalPage && type !== 'crossCompany' && !['草稿', '已驳回'].includes(form.documentStatus)
       )) && (
         <BorrowingApprovalHistory records={approvalRecords}>
-          {approvalPage && ['审批中', '处理中'].includes(form.documentStatus) && (
+          {showApprovalActions && (
             <>
               <div className="mb-2"><strong>审批操作</strong></div>
               {approvalActions}
@@ -633,14 +677,12 @@ export default function ScrapPrototypeEditor({
       {approvalPage && type === 'accounting' && (
         <>
           <BorrowingApprovalHistory records={approvalRecords} />
-          {form.documentStatus === '审批中' && <Card size="small" title="审批意见">{approvalActions}</Card>}
+          {showApprovalActions && <Card size="small" title="审批意见">{approvalActions}</Card>}
         </>
       )}
 
       <div className="flex justify-center gap-3">
-        {!(approvalPage && !['crossCompany', 'scrap'].includes(type) && ['审批中', '处理中'].includes(form.documentStatus)) && (
-          <Button onClick={onBack}>返回</Button>
-        )}
+        {!showApprovalActions && <Button onClick={onBack}>返回</Button>}
         {!approvalPage && readOnly && ['草稿', '已驳回'].includes(form.documentStatus) && (
           <Button onClick={() => onEdit?.(form)}>编辑</Button>
         )}
