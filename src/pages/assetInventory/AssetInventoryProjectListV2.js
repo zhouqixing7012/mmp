@@ -52,6 +52,13 @@ function hasInventoryHistory(row) {
   return ['盘点中', '盘点关闭'].includes(normalizeStatus(row?.status));
 }
 
+function getProjectCloseBlockReason(project) {
+  if (Number(project?.unstartedPlanCount || 0) > 0) return '仍有未启动的盘点计划，请先启动计划后再关闭项目';
+  if (Number(project?.pendingImageReviewCount || 0) > 0) return '仍有待审核的盘点图片，请完成审核后再关闭项目';
+  if (Number(project?.rejectedImageReviewCount || 0) > 0) return '仍有审核不通过的盘点图片，请处理后再关闭项目';
+  return '';
+}
+
 export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview, onCloseProject, statusOverrides = {} }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const navigate = useNavigate();
@@ -129,6 +136,8 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
       return;
     }
     if (row.projectType === '复盘' && row.approvalStatus !== '已审核') { messageApi.warning('复盘审批通过后才能关闭项目'); return; }
+    const closeBlockReason = getProjectCloseBlockReason(row);
+    if (closeBlockReason) { messageApi.warning(closeBlockReason); return; }
     Modal.confirm({
       title: '确认关闭盘点项目？',
       content: '项目关闭后，移动端待办将结束，不能继续扫码或提交。未盘资产和待提交结果不阻止关闭。',
