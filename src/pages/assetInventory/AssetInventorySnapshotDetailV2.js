@@ -382,7 +382,7 @@ export default function AssetInventorySnapshotDetailV2({
       onOk: () => {
         setProjectStatus('盘点关闭');
         onCloseProject?.({ ...project, status: '盘点关闭', closedBy: '手动' });
-        messageApi.success('盘点项目已关闭');
+        messageApi.success(project?.projectType === '初盘' ? '初盘项目已关闭，并通过服务号通知财务人员' : '盘点项目已关闭');
       },
     });
   };
@@ -390,7 +390,7 @@ export default function AssetInventorySnapshotDetailV2({
     if (!isSystemRoomInitial || projectStatus !== '盘点中' || Number(project?.progress) < 100) return;
     setProjectStatus('盘点关闭');
     onCloseProject?.({ ...project, status: '盘点关闭', closedBy: '系统' });
-    messageApi.success('机房初盘进度达到100%，项目已自动关闭');
+    messageApi.success('机房初盘进度达到100%，项目已自动关闭，并通过服务号通知财务人员');
   }, [isSystemRoomInitial, projectStatus, project?.progress, onCloseProject, project]);
   const [executionRows, setExecutionRows] = useState(() => ASSET_ROWS
     .filter((row) => row.executeInventory && isInventoryRangeAllowed(row, allowedRanges))
