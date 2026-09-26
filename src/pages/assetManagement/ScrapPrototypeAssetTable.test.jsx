@@ -67,7 +67,7 @@ jest.mock('../../components/SelectModal', () => {
     if (!open) return null;
     return ReactModule.createElement(
       'div',
-      { 'data-testid': title === '选择资产' ? 'asset-picker' : 'selection-modal' },
+      { 'data-testid': title.includes('资产') ? 'asset-picker' : 'selection-modal' },
       ReactModule.createElement('div', null, title),
       ...dataSource.map((record) => ReactModule.createElement(
         'button',
@@ -143,6 +143,31 @@ test('账面报废资产字段只读，位置列使用 City、Building、Floor',
   expect(screen.getByText('Building')).toBeInTheDocument();
   expect(screen.getByText('Floor')).toBeInTheDocument();
   expect(screen.queryByText('资产所在城市')).not.toBeInTheDocument();
+  expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+});
+
+test('调账资产信息只读，且不显示直接添加丢失资产入口', () => {
+  const source = {
+    ...SCRAP_ASSET_POOL[0],
+    scrapMethod: '调账',
+    newCompany: '115.新媒体-上海',
+    targetCity: '37.上海市',
+  };
+  render(
+    <ScrapPrototypeAssetTable
+      type="accounting"
+      assetScope="混合"
+      accountingMethod="调账"
+      assets={[source]}
+      readOnly={false}
+      onChange={jest.fn()}
+      onReplace={jest.fn()}
+    />,
+  );
+
+  expect(screen.getByRole('button', { name: '待报废资产' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '添加资产' })).not.toBeInTheDocument();
   expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
 });

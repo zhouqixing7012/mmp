@@ -637,7 +637,7 @@ export default function ScrapPrototypeAssetTable({
       ['targetFloor', 'Floor'], ['targetWarehouse', '调账后仓库'],
     ].map(([field, title]) => ({
       title: requiredTitle(title), dataIndex: field, width: 180,
-      render: (value, record) => readOnly
+      render: (value, record) => readOnly || type === 'accounting'
         ? displayValue(value)
         : transferLookupConfig[field]
           ? <LookupInput value={value} placeholder={`请选择${title}`} onOpen={() => setTransferLookup({ row: record, field })} />
