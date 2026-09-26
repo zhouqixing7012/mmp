@@ -576,7 +576,7 @@ export const PROGRESS_DETAIL_ROWS = [
     uncounted: 9311,
     progress: 82.0,
     remainingDays: 13,
-    supervisor: '王鹏',
+    supervisor: '-',
     financialSupervisor: '-',
     auditSupervisor: '-',
   },
