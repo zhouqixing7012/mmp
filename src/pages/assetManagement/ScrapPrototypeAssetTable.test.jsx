@@ -203,6 +203,7 @@ test('账面报废分别从审批通过待报废资产和不限范围的丢失�
   const [addedAsset] = onReplace.mock.calls[0][0];
   expect(addedAsset.scrapType).toBe('丢失');
   expect(addedAsset.scrapMethod).toBe('非调账');
+  expect(addedAsset.detailScrapMethod).toBe('全部报废');
   expect(addedAsset.reason).toBe('');
 });
 
@@ -253,4 +254,35 @@ test('资产处置回收商一至三按报价金额输入', () => {
   expect(amountInputs).toHaveLength(3);
   fireEvent.change(amountInputs[0], { target: { value: '1200.5' } });
   expect(onChange).toHaveBeenCalledWith(source.id, 'recycler1', 1200.5);
+});
+
+
+test('资产报废明细使用报废数量，账面报废删除按钮只显示删除', () => {
+  const source = SCRAP_ASSET_POOL[0];
+  const scrap = render(
+    <ScrapPrototypeAssetTable
+      type="scrap"
+      assetScope={source.scope}
+      assets={[source]}
+      readOnly
+      onChange={jest.fn()}
+      onReplace={jest.fn()}
+    />,
+  );
+  expect(screen.getByText('报废数量')).toBeInTheDocument();
+  scrap.unmount();
+
+  render(
+    <ScrapPrototypeAssetTable
+      type="accounting"
+      assetScope="混合"
+      accountingMethod="非调账"
+      assets={[{ ...source, scrapMethod: '非调账', scrapType: '已到报废期' }]}
+      readOnly={false}
+      onChange={jest.fn()}
+      onReplace={jest.fn()}
+    />,
+  );
+  expect(screen.getByRole('button', { name: '删除' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '删除所选' })).not.toBeInTheDocument();
 });
