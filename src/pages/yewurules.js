@@ -50,17 +50,24 @@ export default function App() {
   const location = useLocation();
   const workspaceQuery = new URLSearchParams(location.search).get('workspace');
   const workspaceState = location.state?.workspace || workspaceQuery;
-  const [activeMenu, setActiveMenu] = useState(workspaceState ? '个人工作台' : '库存管理');
-  const [activeSubMenu, setActiveSubMenu] = useState(workspaceState || '资产接收');
-  const [activeTab, setActiveTab] = useState(workspaceState ? workspaceState : '');
+  const returnToInventoryProjects = location.state?.returnTo === 'asset-inventory-projects';
+  const [activeMenu, setActiveMenu] = useState(returnToInventoryProjects ? '资产盘点' : workspaceState ? '个人工作台' : '库存管理');
+  const [activeSubMenu, setActiveSubMenu] = useState(returnToInventoryProjects ? '盘点项目' : workspaceState || '资产接收');
+  const [activeTab, setActiveTab] = useState(workspaceState && !returnToInventoryProjects ? workspaceState : '');
   const tabs = getTabsBySubMenu(activeSubMenu);
 
   useEffect(() => {
+    if (returnToInventoryProjects) {
+      setActiveMenu('资产盘点');
+      setActiveSubMenu('盘点项目');
+      setActiveTab('');
+      return;
+    }
     if (!workspaceState) return;
     setActiveMenu('个人工作台');
     setActiveSubMenu(workspaceState);
     setActiveTab(getDefaultTabBySubMenu(workspaceState));
-  }, [workspaceState, location.key]);
+  }, [workspaceState, location.key, returnToInventoryProjects]);
 
   const handleMenuToggle = (menuKey, collapsible = true) => {
     const isClosing = collapsible && activeMenu === menuKey;
