@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -383,6 +384,7 @@ function ResultNotice({ notice, onContinue, onClose }) {
 }
 
 export default function AssetInventoryMobilePrototype() {
+  const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [view, setView] = useState('workbench');
   const [activeTab, setActiveTab] = useState('unscanned');
@@ -399,7 +401,6 @@ export default function AssetInventoryMobilePrototype() {
   const [reportReason, setReportReason] = useState('');
   const [quickScanned, setQuickScanned] = useState([]);
   const [quickResult, setQuickResult] = useState(null);
-  const [exitNotice, setExitNotice] = useState(false);
 
   const selectedAsset = assets.find((asset) => asset.id === selectedAssetId) || null;
   const filteredAssets = useMemo(() => assets.filter((asset) => includesQuery(asset, query)), [assets, query]);
@@ -407,12 +408,15 @@ export default function AssetInventoryMobilePrototype() {
   const openDetail = (asset) => {
     setSelectedAssetId(asset.id);
     setView('detail');
-    setExitNotice(false);
+  };
+
+  const returnToProjectList = () => {
+    navigate('/yewurules', { state: { returnTo: 'asset-inventory-projects' } });
   };
 
   const goBack = () => {
     if (view === 'workbench') {
-      setExitNotice(true);
+      returnToProjectList();
       return;
     }
     setView(view === 'detail' ? 'workbench' : 'detail');
@@ -421,13 +425,7 @@ export default function AssetInventoryMobilePrototype() {
     setResultNotice(null);
   };
 
-  const exitPrototype = () => {
-    setView('workbench');
-    setExitNotice(true);
-    setScanPickerOpen(false);
-    setScanModal(null);
-    setResultNotice(null);
-  };
+  const exitPrototype = returnToProjectList;
 
   const openScan = (assetId = null) => {
     setSelectedAssetId(assetId);
@@ -519,7 +517,6 @@ export default function AssetInventoryMobilePrototype() {
     )));
     setConfirmLossOpen(false);
     setReportReason('');
-    setExitNotice(false);
     messageApi.success('已提交报失，盘点说明已保存');
   };
 
@@ -820,16 +817,6 @@ export default function AssetInventoryMobilePrototype() {
           <Button danger type="primary" onClick={confirmReportLoss}>确定报失</Button>
         </div>
       </Modal>
-      {exitNotice && (
-        <div className="inventory-exit-notice" role="status">
-          <div>
-            <LogOut size={22} />
-            <strong>已退出移动端盘点原型</strong>
-            <span>返回资产盘点菜单后可再次进入</span>
-          </div>
-          <Button onClick={() => setExitNotice(false)}>继续查看</Button>
-        </div>
-      )}
     </div>
   );
 }
