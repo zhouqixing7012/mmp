@@ -30,7 +30,7 @@ function AppRoutes() {
 
 function NavbarGate() {
   const location = useLocation();
-  if (location.pathname === '/inventory/move/mobile') return null;
+  if (['/inventory/move/mobile', '/asset-inventory/mobile'].includes(location.pathname)) return null;
   return <Navbar />;
 }
 
