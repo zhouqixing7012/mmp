@@ -21,8 +21,8 @@ function getFirstApprovalNode(record, type, assets) {
   return '';
 }
 
-function displayStatus(result) {
-  if (result === '提交') return '已提交';
+function displayStatus(result, node) {
+  if (node === '发起人提交' || result === '提交') return '已提交';
   if (result === '通过') return '已同意';
   if (result === '驳回') return '已驳回';
   return result || '待审批';
@@ -31,16 +31,19 @@ function displayStatus(result) {
 export function getScrapPrototypeApprovalRecords(record = {}, type) {
   const form = record.formSnapshot || record;
   const assets = record.assetsSnapshot || [];
-  const history = record.approvalHistory || form.approvalHistory || [];
+  const history = record.approvalHistory?.length
+    ? record.approvalHistory
+    : form.approvalHistory || [];
+  const documentStatus = record.documentStatus || form.documentStatus;
   const rows = history.map((item) => ({
     node: item.node,
     person: item.person || (item.node === '发起人提交' ? form.creator || record.creator : ''),
-    status: displayStatus(item.result),
+    status: displayStatus(item.result, item.node),
     time: item.time || '',
     comment: item.opinion || '',
   }));
 
-  if (!rows.some((item) => item.node === '发起人提交')) {
+  if (documentStatus && documentStatus !== '草稿' && !rows.some((item) => item.node === '发起人提交')) {
     rows.unshift({
       node: '发起人提交',
       person: form.creator || record.creator || '',
@@ -50,7 +53,6 @@ export function getScrapPrototypeApprovalRecords(record = {}, type) {
     });
   }
 
-  const documentStatus = record.documentStatus || form.documentStatus;
   if (ACTIVE_STATUSES.has(documentStatus)) {
     const currentNode = record.currentNode
       || form.currentNode
