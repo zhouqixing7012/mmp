@@ -130,9 +130,10 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
 
   const openPlanViewByProject = (project, forceGeneratedStatus = false) => {
-    const nextProject = resolveProjectFromRow(project);
+    const resolvedProject = resolveProjectFromRow(project);
+    const nextProject = { ...resolvedProject, status: projectStatusOverrides[resolvedProject.projectNo] || resolvedProject.status };
     resetOverlays();
-    setPlanProject(forceGeneratedStatus ? { ...nextProject, status: '生成盘点计划' } : nextProject);
+    setPlanProject(nextProject.status === '盘点关闭' ? nextProject : forceGeneratedStatus ? { ...nextProject, status: '生成盘点计划' } : nextProject);
     setPlanViewOpen(true);
   };
 
@@ -186,12 +187,14 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
 
   const openManualPlanBuilder = () => {
+    if (planProject?.status === '盘点关闭') return;
     resetOverlays();
     setCustomBuilderSource('plans');
     setCustomBuilderOpen(true);
   };
 
   const openSnapshotPlanBuilder = (project) => {
+    if (project?.status === '盘点关闭') return;
     setPlanProject(resolveProjectFromRow(project));
     setPlanViewOpen(false);
     setActivePlan(null);
@@ -207,6 +210,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
 
   const createManualPlans = (draft) => {
+    if (planProject?.status === '盘点关闭') return;
     const assets = (draft.assets || []).filter((asset) => isInventoryRangeAllowed(asset, allowedRanges));
     const groups = new Map();
     assets.forEach((asset) => {
@@ -248,6 +252,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
 
   const handleCustomPlanConfirm = (draft) => {
+    if (planProject?.status === '盘点关闭') { setCustomBuilderOpen(false); return; }
     if (customBuilderSource === 'plans') {
       createManualPlans(draft);
       setCustomBuilderOpen(false);
@@ -449,8 +454,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     />}
 
     {customBuilderOpen && <AssetInventoryCustomPlanBuilder initialAssets={customBuilderSource === 'plans' ? unplannedSnapshotAssets : availableAssets} onBack={closeCustomBuilder} onConfirmPlan={handleCustomPlanConfirm} />}
-    {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} rows={planRows} setRows={setPlanRows} canManualCreate={canManualCreate} onManualCreate={openManualPlanBuilder} onBack={() => setPlanViewOpen(false)} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}
-    {activePlan && <AssetInventoryPlanAssetListV2 plan={activePlan} onBack={() => setActivePlan(null)} />}
+    {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} rows={planRows} setRows={setPlanRows} canManualCreate={canManualCreate && planProject?.status !== '盘点关闭'} onManualCreate={openManualPlanBuilder} onBack={() => setPlanViewOpen(false)} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}
+    {activePlan && <AssetInventoryPlanAssetListV2 plan={activePlan} project={planProject} onBack={() => setActivePlan(null)} />}
     {imageReviewOpen && <AssetInventoryImageReviewV2 project={planProject} onBack={() => setImageReviewOpen(false)} />}
     {progressOpen && <AssetInventoryProgressV2 project={planProject} onBack={() => setProgressOpen(false)} />}
     <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage /></div>
