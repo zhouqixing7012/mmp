@@ -1,6 +1,5 @@
 import React from 'react';
 import { Alert, Card, Empty, Space, Typography } from 'antd';
-import AssetInventoryMobilePrototype from './AssetInventoryMobilePrototype';
 import AssetInventoryProjectPageV3 from './AssetInventoryProjectPageV3';
 import AssetInventoryFieldPolicy from './AssetInventoryFieldPolicy';
 import './assetInventoryV2.css';
@@ -31,9 +30,6 @@ function withFieldPolicy(content) {
 }
 
 export function AssetInventoryContent({ activeSubMenu }) {
-  if (activeSubMenu === '移动端原型') {
-    return withFieldPolicy(<AssetInventoryMobilePrototype />);
-  }
   if (['盘点项目', '盘点项目（方案二）', '盘点项目（方案三）'].includes(activeSubMenu)) {
     return withFieldPolicy(<AssetInventoryProjectPageV3 />);
   }
