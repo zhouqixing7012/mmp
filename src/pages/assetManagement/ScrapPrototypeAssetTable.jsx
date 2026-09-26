@@ -676,7 +676,7 @@ export default function ScrapPrototypeAssetTable({
     { title: '原值', dataIndex: 'originalValue', width: 130, align: 'right', render: money },
     { title: '净值', dataIndex: 'netValue', width: 130, align: 'right', render: money },
     ...['回收商一', '回收商二', '回收商三'].map((title, index) => ({
-      title, dataIndex: `recycler${index + 1}`, width: 175,
+      title, dataIndex: `recycler${index + 1}`, width: 175, fixed: 'right',
       render: (value, row) => readOnly ? displayValue(value) : <Input value={value} onChange={(event) => onChange(row.id, `recycler${index + 1}`, event.target.value)} />,
     })),
   ];
