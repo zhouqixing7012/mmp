@@ -265,6 +265,14 @@ export default function ScrapPrototypeEditor({
         message.error('请填写回收供应商和报价金额');
         return false;
       }
+      if (!String(form.quoteReceiver || '').trim()) {
+        message.error('请指定接收报价人');
+        return false;
+      }
+      if (!(form.quoteAttachments || []).length) {
+        message.error('请上传盖章报价单');
+        return false;
+      }
     }
 
     return true;
