@@ -77,6 +77,7 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
     if (!completedRoomProjects.length) return;
     setRows((current) => current.map((row) => completedRoomProjects.some((project) => project.projectNo === row.projectNo) ? { ...row, status: '盘点关闭' } : row));
     completedRoomProjects.forEach((row) => onCloseProject?.({ ...row, status: '盘点关闭', closedBy: '系统' }));
+    messageApi.success('机房初盘已自动关闭，并通过服务号通知财务人员');
   }, [rows, onCloseProject]);
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
@@ -147,7 +148,7 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
         setRows((current) => current.map((item) => item.key === row.key ? { ...item, status: '盘点关闭' } : item));
         onCloseProject?.({ ...row, status: '盘点关闭', closedBy: '手动' });
         setSelectedKeys([]);
-        messageApi.success('盘点项目已关闭');
+        messageApi.success(row.projectType === '初盘' ? '初盘项目已关闭，并通过服务号通知财务人员' : '盘点项目已关闭');
       },
     });
   };
