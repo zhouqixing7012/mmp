@@ -6,6 +6,7 @@ import ScrapPrototypeEditor from './ScrapPrototypeEditor';
 import {
   getAccountingApprovalNodes,
   getCrossCompanyApprovalNodes,
+  getDisposalApprovalNodes,
   getScrapApprovalNodes,
 } from './scrapPrototypeWorkflow';
 import {
@@ -45,9 +46,9 @@ function defaultForm(type) {
   return {
     applicationNo: '',
     documentStatus: '草稿',
-    creator: type === 'accounting' ? '吕静' : type === 'disposal' ? 'ES专员' : '213852-孙志强',
+    creator: type === 'accounting' ? '吕静' : '213852-孙志强',
     applicationDate: dayjs().format('YYYY-MM-DD'),
-    company: type === 'crossCompany' ? '' : '114.新媒体',
+    company: ['crossCompany', 'disposal'].includes(type) ? '' : '114.新媒体',
     assetScope: type === 'accounting' ? '混合' : '',
     plate: '17_Corporate',
     officeArea: '-',
@@ -59,11 +60,8 @@ function defaultForm(type) {
     scrapMethod: type === 'accounting' ? '非调账' : '全部报废',
     assetCategory: '',
     assetLocation: '',
-    disposedComplete: '否',
     region: '北京',
     needsCleaning: '否',
-    sourceType: '待报废池',
-    manualScenario: '',
     quoteReceiver: '采购专员',
     supplier: '',
     quoteAmount: null,
@@ -98,14 +96,12 @@ function firstNode(type, form, assets) {
 
   if (type === 'accounting') return '财务初审';
 
-  if (form.assetScope === '办公设备') return 'ES二级审批';
-  if (form.region === '北京') return '采购专员协办';
-  return form.needsCleaning === '是' ? '采购专员数据清洗' : '已报废-已处置';
+  return getDisposalApprovalNodes(form)[0];
 }
 
 function submitStatus(type, form) {
   if (type !== 'disposal') return '审批中';
-  return form.assetScope === '机房资产' ? '处理中' : '审批中';
+  return form.assetScope === '办公设备' && form.disposalMode !== '无实物处置' ? '审批中' : '处理中';
 }
 
 function seedAssets(type, record) {
@@ -168,11 +164,8 @@ export default function ScrapPrototypeModule({ type }) {
     const form = defaultForm(type);
     if (type === 'accounting' && typeof selectedAssets === 'string') form.scrapMethod = selectedAssets;
     if (type === 'disposal' && pickedAssets.length > 0) {
-      const firstAsset = pickedAssets[0];
-      form.assetScope = firstAsset.scope;
-      form.company = firstAsset.company || form.company;
-      form.region = firstAsset.region || (String(firstAsset.city || '').includes('北京') ? '北京' : '非北京');
-      form.needsCleaning = pickedAssets.some((item) => item.dataCleaning === '是') ? '是' : '否';
+      message.error('请先在单头选择公司，再添加待处置办公资产');
+      return;
     }
 
     setEditorState({
@@ -258,7 +251,7 @@ export default function ScrapPrototypeModule({ type }) {
 
     const normalizedForm = { ...form, assetScope };
     const nowText = dayjs().format('YYYY-MM-DD HH:mm:ss');
-    const approvalHistory = submit && ['crossCompany', 'scrap', 'accounting'].includes(type)
+    const approvalHistory = submit && ['crossCompany', 'scrap', 'accounting', 'disposal'].includes(type)
         ? [
           ...(form.approvalHistory || []),
           { node: '发起人提交', person: normalizedForm.creator || '', result: '提交', opinion: '', time: nowText },
@@ -266,6 +259,7 @@ export default function ScrapPrototypeModule({ type }) {
       : form.approvalHistory || [];
     const nextForm = {
       ...normalizedForm,
+      disposalMode: type === 'disposal' ? '实物处置' : normalizedForm.disposalMode,
       applicationNo,
       documentStatus: submit ? submitStatus(type, normalizedForm) : '草稿',
       currentNode: submit ? firstNode(type, normalizedForm, assets) : '草稿',
@@ -290,6 +284,7 @@ export default function ScrapPrototypeModule({ type }) {
       netValueTotal: assets.reduce((sum, item) => sum + Number(item.netValue || 0), 0),
       scrapMethod: type === 'accounting' ? form.scrapMethod : scrapMethods.length > 1 ? '混合' : scrapMethods[0] || form.scrapMethod,
       region: form.region,
+      disposalMode: type === 'disposal' ? nextForm.disposalMode : undefined,
       currentNode: nextForm.currentNode,
       remark: form.remark || form.description,
       approvalHistory,
@@ -307,7 +302,7 @@ export default function ScrapPrototypeModule({ type }) {
     });
 
     message.success(submit ? '提交成功' : '草稿保存成功');
-    if (submit && ['crossCompany', 'scrap'].includes(type)) {
+    if (submit && ['crossCompany', 'scrap', 'accounting', 'disposal'].includes(type)) {
       setEditorState({ form: nextForm, assets: assets.map((item) => ({ ...item })), readOnly: true, approvalPage: true });
       setView('editor');
     } else {
@@ -317,13 +312,15 @@ export default function ScrapPrototypeModule({ type }) {
   };
 
   const processApproval = (record, result, opinion) => {
-    if (!['crossCompany', 'scrap', 'accounting'].includes(type) || record.documentStatus !== '审批中') return;
+    if (!['crossCompany', 'scrap', 'accounting', 'disposal'].includes(type) || !['审批中', '处理中'].includes(record.documentStatus)) return;
     const recordAssets = record.assetsSnapshot || seedAssets(type, record);
     const nodes = type === 'crossCompany'
       ? getCrossCompanyApprovalNodes(record.assetScope)
       : type === 'scrap'
         ? getScrapApprovalNodes(record.assetScope, recordAssets)
-        : getAccountingApprovalNodes(recordAssets);
+        : type === 'accounting'
+          ? getAccountingApprovalNodes(recordAssets)
+          : getDisposalApprovalNodes(record);
     if (!nodes) return;
     const currentIndex = nodes.indexOf(record.currentNode);
     if (currentIndex < 0) throw new Error(`未知审批节点：${record.currentNode}`);
@@ -335,7 +332,7 @@ export default function ScrapPrototypeModule({ type }) {
       ? (completed ? '流程结束' : lastNode ? '提单人确认' : nodes[currentIndex + 1])
       : '发起人修改';
     const documentStatus = approved
-      ? (completed ? (type === 'scrap' ? '已审批' : '已完成') : lastNode ? '待提单人确认' : '审批中')
+      ? (completed ? (type === 'scrap' ? '已审批' : '已完成') : lastNode ? '待提单人确认' : type === 'disposal' && record.disposalMode !== '实物处置' ? '处理中' : '审批中')
       : '已驳回';
     const entry = {
       node: record.currentNode,
@@ -354,7 +351,7 @@ export default function ScrapPrototypeModule({ type }) {
       assetsSnapshot: completed
         ? recordAssets.map((asset) => ({
             ...asset,
-            status: String(asset.status || '').startsWith('在库') ? '在库-待报废' : asset.status,
+            status: type === 'disposal' ? '已报废-已处置' : String(asset.status || '').startsWith('在库') ? '在库-待报废' : asset.status,
           }))
         : recordAssets,
       approvalHistory: [...(record.approvalHistory || []), entry],
@@ -369,111 +366,74 @@ export default function ScrapPrototypeModule({ type }) {
     ));
     saveScrapPrototypeRecords(type, next);
     setRecords(next);
-    message.success(completed ? '审批完成，资产已进入待报废池' : lastNode ? '审批完成，待提单人确认' : approved ? '审批通过' : '已驳回发起人');
+    message.success(completed ? (type === 'disposal' ? '处置流程已完成' : '审批完成，资产已进入待报废池') : lastNode ? '审批完成，待提单人确认' : approved ? '审批通过' : '已驳回发起人');
     return updatedRecord;
   };
 
   const executeAccounting = (record) => {
     if (type !== 'accounting' || record.documentStatus !== '待提单人确认') return;
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
+    const next = records.map((item) => item.id === record.id ? {
+      ...item,
+      documentStatus: '已完成', currentNode: '流程结束', lastModifiedAt: now,
+      approvalHistory: [...(item.approvalHistory || []), { node: '提单人确认', result: '确认并执行', opinion: '', time: now }],
+      formSnapshot: item.formSnapshot ? { ...item.formSnapshot, documentStatus: '已完成', currentNode: '流程结束' } : item.formSnapshot,
+    } : item);
+    saveScrapPrototypeRecords(type, next);
+    setRecords(next);
 
-    setRecords((current) => {
-      const next = current.map((item) => (
-        item.id === record.id
-          ? {
-              ...item,
-              documentStatus: '已完成',
-              currentNode: '流程结束',
-              lastModifiedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-              approvalHistory: [
-                ...(item.approvalHistory || []),
-                { node: '提单人确认', result: '确认并执行', opinion: '', time: dayjs().format('YYYY-MM-DD HH:mm:ss') },
-              ],
-              formSnapshot: item.formSnapshot
-                ? { ...item.formSnapshot, documentStatus: '已完成', currentNode: '流程结束' }
-                : item.formSnapshot,
-            }
-          : item
-      ));
-      saveScrapPrototypeRecords(type, next);
-      return next;
+    // 机房资产和无实物资产在账面报废完成后自动生成处置单；办公设备留待手动创建。
+    const currentDisposal = getScrapPrototypeRecords('disposal');
+    const existingAssetTags = new Set(currentDisposal.flatMap((item) => (item.assetsSnapshot || []).map((asset) => asset.tagNo)));
+    const sourceAssets = record.assetsSnapshot || seedAssets('accounting', record);
+    const automaticAssets = sourceAssets.filter((asset) => (
+      asset.scrapMethod !== '调账'
+      && (asset.scope === '机房资产' || asset.scope === '软件' || asset.scrapType === '丢失')
+      && !existingAssetTags.has(asset.tagNo)
+    ));
+    const today = dayjs().format('YYYYMMDD');
+    const todayNumbers = currentDisposal
+      .map((item) => item.applicationNo)
+      .filter((number) => number?.startsWith(`CZ${today}`))
+      .map((number) => Number(number.slice(10)))
+      .filter(Number.isFinite);
+    const nextSerial = Math.max(0, ...todayNumbers) + 1;
+    const autoRecords = automaticAssets.map((asset, index) => {
+      const applicationNo = `CZ${today}${String(nextSerial + index).padStart(6, '0')}`;
+      const disposalMode = asset.scope === '软件' || asset.scrapType === '丢失' ? '无实物处置' : '实物处置';
+      const region = String(asset.city || '').includes('北京') ? '北京' : '非北京';
+      const basic = {
+        ...defaultForm('disposal'), applicationNo, company: asset.company,
+        assetScope: asset.scope, disposalMode, region,
+        needsCleaning: asset.dataCleaning === '是' ? '是' : '否',
+        creator: '系统自动', applicationDate: now.slice(0, 10),
+        documentStatus: '处理中',
+      };
+      const currentNode = getDisposalApprovalNodes(basic)[0];
+      const approvalHistory = [{ node: '系统发起', person: '系统自动', result: '提交', opinion: '', time: now }];
+      return {
+        id: `disposal-${record.id}-${asset.id}`, applicationNo,
+        documentStatus: '处理中', company: asset.company, assetScope: asset.scope,
+        disposalMode, region, needsCleaning: basic.needsCleaning,
+        creator: '系统自动', createdAt: now.slice(0, 10), currentNode,
+        assetCount: 1, assetsSnapshot: [{ ...asset, sourceAccountingNo: record.applicationNo }],
+        approvalHistory, formSnapshot: { ...basic, currentNode, approvalHistory },
+      };
     });
+    if (autoRecords.length) saveScrapPrototypeRecords('disposal', [...autoRecords, ...currentDisposal]);
     message.success('账面报废执行完成');
   };
-
-  const completeDisposalAsset = (asset, action, note) => {
-    if (type !== 'disposal') return;
-    if (asset.disposalStatus !== '待处置' || !note?.trim()) return;
-
-    const applicationNo = createApplicationNo(type);
-    const completedRecord = {
-      id: `disposal-direct-${asset.id}-${applicationNo}`,
-      applicationNo,
-      documentStatus: '已完成',
-      assetScope: asset.scope,
-      company: asset.company,
-      plate: asset.plate,
-      creator: 'ES专员',
-      createdAt: dayjs().format('YYYY-MM-DD'),
-      lastModifiedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-      assetCount: 1,
-      originalValueTotal: Number(asset.originalValue || 0),
-      netValueTotal: Number(asset.netValue || 0),
-      region: asset.region,
-      currentNode: '已报废-已处置',
-      remark: note.trim(),
-      disposalAction: action,
-      formSnapshot: {
-        ...defaultForm(type),
-        applicationNo,
-        documentStatus: '已完成',
-        assetScope: asset.scope,
-        company: asset.company,
-        region: asset.region,
-        currentNode: '已报废-已处置',
-        remark: note.trim(),
-        disposalAction: action,
-      },
-      assetsSnapshot: [{ ...asset, status: '已报废-已处置', disposalStatus: '已处置', disposalNote: note.trim() }],
-    };
-
-    setRecords((current) => {
-      const next = [completedRecord, ...current];
-      saveScrapPrototypeRecords(type, next);
-      return next;
-    });
-    message.success(action === '无实物报废' ? '已完成无实物报废' : '已确认资产处置完成');
-  };
-
-  const listRecords = type === 'disposal'
-    ? getDisposalCandidates().map((asset) => {
-        const disposalRecord = [...records].reverse().find((record) => (
-          record.documentStatus !== '已驳回'
-          && record.assetsSnapshot?.some((item) => item.id === asset.id)
-        ));
-        if (!disposalRecord) return asset;
-        const snapshot = disposalRecord.assetsSnapshot.find((item) => item.id === asset.id);
-        const completed = disposalRecord.documentStatus === '已完成';
-        return {
-          ...asset,
-          ...snapshot,
-          status: completed ? '已报废-已处置' : asset.status,
-          disposalStatus: completed ? '已处置' : '处理中',
-          disposalRecord,
-        };
-      })
-    : records;
 
   if (view === 'list') {
     return (
       <ScrapPrototypeList
         type={type}
         config={config}
-        records={listRecords}
+        records={records}
         onCreate={openCreate}
         onOpen={openRecord}
         onCopy={copyRecord}
         onExecute={executeAccounting}
-        onDirectComplete={completeDisposalAsset}
         onDeleteDrafts={deleteDrafts}
         onApprove={processApproval}
       />

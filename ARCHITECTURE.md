@@ -216,3 +216,4 @@ Vercel Preview
 ## 资产管理原型模块关系
 
 `ScrapPrototypeModule` 负责跨公司转移、资产报废、账面报废和处置的单据状态及保存；`ScrapPrototypeList` 负责各菜单的查询列表与审批记录弹窗；`ScrapPrototypeEditor` 负责单头、详情及审批展示；`ScrapPrototypeAssetTable` 根据单据类型和调账方式渲染不同的明细、选择弹窗及导入导出。
+账面报废执行时按资产标签号去重，为机房资产、软件以及丢失类资产生成处置申请单；办公设备留在待处置池供手动选择。处置审批明细按 City 和资产大类汇总，资产选择受单头公司限制。

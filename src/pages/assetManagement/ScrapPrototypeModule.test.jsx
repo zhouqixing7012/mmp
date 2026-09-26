@@ -15,14 +15,9 @@ jest.mock('antd', () => ({
 
 jest.mock('./ScrapPrototypeList', () => {
   const React = require('react');
-  return function TestList({ type, config, records, onCreate, onDirectComplete, onApprove, onExecute }) {
+  return function TestList({ type, config, records, onCreate, onApprove, onExecute }) {
     return <div>
       <button type="button" onClick={() => onCreate()}>{config.createLabel}</button>
-      {type === 'disposal' && (
-        <button type="button" onClick={() => onDirectComplete(records[0], '无实物报废', '线下核实无实物')}>
-          模拟无实物报废
-        </button>
-      )}
       {['crossCompany', 'scrap', 'accounting'].includes(type) && (
         <button type="button" onClick={() => onApprove(records.find((record) => record.documentStatus === '审批中'), '通过', '同意')}>
           审批通过
@@ -79,15 +74,33 @@ test('四类原型主模块可加载，跨公司转移草稿保存后可以重�
   expect(screen.getByText(newDraft.applicationNo)).toBeInTheDocument();
 });
 
-test('无实物报废完成后仍可在处置池查看，且保存原因', async () => {
+test('资产处置展示机房自动单、办公手动单以及软件和丢失的无实物单', () => {
   render(<ScrapPrototypeModule type="disposal" />);
-  const initialCount = getScrapPrototypeRecords('disposal').length;
-  fireEvent.click(screen.getByRole('button', { name: '模拟无实物报废' }));
+  const rows = getScrapPrototypeRecords('disposal');
+  expect(rows.some((row) => row.assetScope === '机房资产' && row.creator === '采购专员')).toBe(true);
+  expect(rows.some((row) => row.assetScope === '办公设备' && row.creator === 'ES专员')).toBe(true);
+  expect(rows.some((row) => row.assetScope === '软件' && row.disposalMode === '无实物处置')).toBe(true);
+  expect(rows.some((row) => row.assetsSnapshot.some((asset) => asset.scrapType === '丢失') && row.disposalMode === '无实物处置')).toBe(true);
+});
 
-  await waitFor(() => expect(getScrapPrototypeRecords('disposal')).toHaveLength(initialCount + 1));
-  const completed = getScrapPrototypeRecords('disposal')[0];
-  expect(completed.remark).toBe('线下核实无实物');
-  expect(screen.getAllByText('已处置').length).toBeGreaterThan(0);
+test('账面报废完成时自动生成机房和无实物处置单，办公实物资产等待手动建单', () => {
+  const candidates = getAccountingCandidates();
+  const machine = candidates.find((asset) => asset.scope === '机房资产' && asset.scrapMethod !== '调账');
+  const software = candidates.find((asset) => asset.scope === '软件');
+  const lost = candidates.find((asset) => asset.scrapType === '丢失');
+  const office = candidates.find((asset) => asset.scope === '办公设备' && asset.scrapType !== '丢失');
+  saveScrapPrototypeRecords('disposal', []);
+  saveScrapPrototypeRecords('accounting', [{
+    id: 'accounting-auto-disposal', applicationNo: 'ZMBF20260926000099', documentStatus: '待提单人确认',
+    assetScope: '混合', currentNode: '提单人确认',
+    assetsSnapshot: [machine, software, lost, office],
+  }]);
+  render(<ScrapPrototypeModule type="accounting" />);
+  fireEvent.click(screen.getByRole('button', { name: '执行账面报废' }));
+  const rows = getScrapPrototypeRecords('disposal');
+  expect(rows).toHaveLength(3);
+  expect(rows.map((row) => row.disposalMode)).toEqual(['实物处置', '无实物处置', '无实物处置']);
+  expect(rows.every((row) => row.creator === '系统自动')).toBe(true);
 });
 
 test('跨公司转移提交后直接进入审批页面，不返回列表', async () => {

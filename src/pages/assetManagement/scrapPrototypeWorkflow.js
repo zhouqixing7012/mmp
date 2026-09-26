@@ -6,10 +6,24 @@ export function getCrossCompanyApprovalNodes(scope) {
 
 export function getScrapApprovalNodes(scope, assets) {
   if (scope === '软件') return ['5级及以上直属领导', '7级及以上直属领导'];
-  if (scope !== '办公设备') return null;
+  if (scope === '机房资产') return [
+    '专家评估', '责任人7级及以上直属领导', 'NO部7级及以上领导',
+    '采购专员', '报价处理', '采购专员填写回收商报价',
+    '采购5级及以上领导', '采购专员交接资料', 'FS审批部门',
+  ];
   return ['PC', 'NOTEBOOK'].includes(assets[0]?.majorCategory)
     ? ['MIS鉴定', 'ES主管确认']
     : ['ES主管确认'];
+}
+
+export function getDisposalApprovalNodes(record) {
+  if (record.disposalMode === '无实物处置' || record.assetScope === '软件') return ['无实物处置确认'];
+  if (record.assetScope === '机房资产') return [
+    ...(record.region === '北京' ? ['采购专员协办', 'ES专员协办'] : []),
+    ...(record.needsCleaning === '是' ? ['数据清洗'] : []),
+    '处置确认',
+  ];
+  return ['ES二级审批', 'ES一级审批', '财务审批', 'ES专员处理'];
 }
 
 export function getAccountingApprovalNodes(assets) {

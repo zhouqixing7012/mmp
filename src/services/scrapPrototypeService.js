@@ -47,13 +47,8 @@ export function getDisposalCandidates() {
   for (const record of getScrapPrototypeRecords('accounting')) {
     if (record.documentStatus !== '已完成') continue;
     for (const asset of record.assetsSnapshot || []) {
-      if (
-        asset.scope === '软件'
-        || asset.scrapMethod === '调账'
-        || asset.scrapType === '丢失'
-        || asset.disposedComplete === '是'
-        || asset.disposalRequired !== '是'
-      ) continue;
+      const withoutPhysical = asset.scope === '软件' || asset.scrapType === '丢失';
+      if (asset.scrapMethod === '调账' || (!withoutPhysical && (asset.disposedComplete === '是' || asset.disposalRequired !== '是'))) continue;
       result.set(asset.tagNo, {
         ...asset,
         id: `disposal-${asset.id}`,
@@ -65,6 +60,7 @@ export function getDisposalCandidates() {
         disposalStatus: '待处置',
         enteredAt: record.lastModifiedAt || record.createdAt,
         region: String(asset.city || '').includes('北京') ? '北京' : '非北京',
+        disposalMode: withoutPhysical ? '无实物处置' : '实物处置',
       });
     }
   }

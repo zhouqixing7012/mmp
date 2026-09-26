@@ -45,6 +45,8 @@ function fromMaintenance(row, extra = {}) {
     majorCategory: row.majorCategory,
     minorCategory: row.minorCategory,
     description: row.assetDesc,
+    config: row.config,
+    enableDate: row.enabledDate,
     company: row.companyCode ? `${row.companyCode}.${row.company}` : row.company,
     plate: row.plate,
     responsiblePerson: row.ownerId ? `${row.ownerId}-${row.ownerName}` : row.ownerName,
@@ -178,7 +180,7 @@ export const ACCOUNTING_ASSET_POOL = SCRAP_ASSET_POOL.map((item, index) => ({
   status: String(item.status || '').startsWith('在库') ? '在库-待报废' : item.status,
   scrapMethod: index === 0 ? '调账' : '非调账',
   detailScrapMethod: index === 0 ? '调账' : index === 1 ? '部分报废' : '全部报废',
-  scrapType: index % 3 === 2 ? '未到报废期' : '已到报废期',
+  scrapType: index === 5 ? '丢失' : index % 3 === 2 ? '未到报废期' : '已到报废期',
   reason: index % 3 === 2 ? '设备不满足继续使用要求' : '达到报废条件',
   sourceBusinessType: index === 0 ? '跨公司转移' : '资产报废',
   sourceBusinessNo: index === 0 ? 'CT20260923000001' : `BF20260923${String(index + 1).padStart(6, '0')}`,
@@ -195,7 +197,7 @@ export const ACCOUNTING_ASSET_POOL = SCRAP_ASSET_POOL.map((item, index) => ({
 }));
 
 export const DISPOSAL_ASSET_POOL = ACCOUNTING_ASSET_POOL
-  .filter((item) => item.scope !== '软件' && item.scrapMethod !== '调账')
+  .filter((item) => item.scrapMethod !== '调账')
   .map((item, index) => ({
     ...item,
     id: `disposal-${item.id}`,
@@ -205,6 +207,7 @@ export const DISPOSAL_ASSET_POOL = ACCOUNTING_ASSET_POOL
     sourceAccountingNo: `ZMBF20260923${String(index + 1).padStart(4, '0')}`,
     scrapDate: '2026-09-23',
     disposalStatus: '待处置',
+    disposalMode: item.scope === '软件' || item.scrapType === '丢失' ? '无实物处置' : '实物处置',
     enteredAt: '2026-09-23',
     region: String(item.city || '').includes('北京') ? '北京' : '非北京',
     dataCleaning: item.scope === '机房资产' && index === 0 ? '是' : '否',
@@ -316,7 +319,7 @@ const businessRows = {
   disposal: [
     {
       id: 'disp-1',
-      applicationNo: 'CZ202609230001',
+      applicationNo: 'CZ20260923000001',
       documentStatus: '处理中',
       assetScope: '机房资产',
       company: '114.新媒体',
@@ -329,7 +332,7 @@ const businessRows = {
     },
     {
       id: 'disp-2',
-      applicationNo: 'CZ202609220004',
+      applicationNo: 'CZ20260922000004',
       documentStatus: '审批中',
       assetScope: '办公设备',
       company: '114.新媒体',
@@ -339,6 +342,18 @@ const businessRows = {
       assetCount: 6,
       currentNode: 'ES一级审批',
       remark: '办公设备实物处置',
+    },
+    {
+      id: 'disp-software', applicationNo: 'CZ20260923000003', documentStatus: '处理中',
+      assetScope: '软件', company: '114.新媒体', creator: '系统自动', createdAt: '2026-09-23',
+      assetCount: 1, currentNode: '无实物处置确认', disposalMode: '无实物处置',
+      remark: '软件无实物处置',
+    },
+    {
+      id: 'disp-lost', applicationNo: 'CZ20260923000004', documentStatus: '处理中',
+      assetScope: '办公设备', company: '115.焦点互动', creator: '系统自动', createdAt: '2026-09-23',
+      assetCount: 1, currentNode: '无实物处置确认', disposalMode: '无实物处置',
+      remark: '丢失资产无实物处置',
     },
   ],
 };
@@ -354,13 +369,20 @@ export function getInitialBusinessRows(type) {
     const scoped = row.assetScope === '混合'
       ? sourcePool
       : sourcePool.filter((item) => item.scope === row.assetScope);
-    const assets = scoped.slice(0, Math.max(1, row.assetCount || 1));
+    const matching = type === 'disposal' && row.disposalMode === '无实物处置'
+      ? scoped.filter((item) => row.assetScope === '软件' ? item.scope === '软件' : item.scrapType === '丢失')
+      : scoped.filter((item) => item.disposalMode !== '无实物处置');
+    const assets = (type === 'disposal' ? matching.filter((item) => item.company === row.company) : matching)
+      .slice(0, Math.max(1, row.assetCount || 1));
 
     return {
       ...row,
       lastModifiedAt: row.lastModifiedAt || row.createdAt,
       originalValueTotal: assets.reduce((sum, item) => sum + Number(item.originalValue || 0), 0),
       netValueTotal: assets.reduce((sum, item) => sum + Number(item.netValue || 0), 0),
+      ...(type === 'disposal' ? { assetsSnapshot: assets, approvalHistory: [
+        { node: row.disposalMode === '无实物处置' || row.assetScope === '机房资产' ? '系统发起' : '制单人提交', person: row.creator, result: '提交', opinion: '', time: `${row.createdAt} 09:00:00` },
+      ] } : {}),
     };
   });
 }
