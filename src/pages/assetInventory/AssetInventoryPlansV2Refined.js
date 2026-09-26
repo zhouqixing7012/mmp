@@ -36,6 +36,7 @@ function ProjectInfoCard({ project }) {
 export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPlanAssets, rows, setRows, canManualCreate, onManualCreate }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
+  const projectClosed = project?.status === '盘点关闭';
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [draftFilters, setDraftFilters] = useState(EMPTY_PLAN_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_PLAN_FILTERS);
@@ -43,16 +44,17 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
   const [personTarget, setPersonTarget] = useState(null);
   const [batchDateOpen, setBatchDateOpen] = useState(false);
   const [batchDates, setBatchDates] = useState({ startDate: '', endDate: '' });
-  const visibleRows = useMemo(() => rows.filter((row) => allowedRanges.includes(row.range)), [rows, allowedRanges]);
+  const visibleRows = useMemo(() => rows.filter((row) => allowedRanges.includes(row.range)).map((row) => projectClosed ? { ...row, status: '关闭' } : row), [rows, allowedRanges, projectClosed]);
   const updateFilter = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
   const filteredRows = useMemo(() => visibleRows.filter((row) => includesText(row.planNo, appliedFilters.planNo) && includesText(row.planName, appliedFilters.planName) && includesText(row.status, appliedFilters.planStatus) && includesText(row.organization, appliedFilters.organization) && includesText(row.range, appliedFilters.range)), [visibleRows, appliedFilters]);
-  const editable = (row) => row.status === '草稿';
+  const editable = (row) => !projectClosed && row.status === '草稿';
   const selectedRows = visibleRows.filter((row) => selectedKeys.includes(row.key));
-  const allSelectedDraft = selectedRows.length > 0 && selectedRows.every((row) => row.status === '草稿');
+  const allSelectedDraft = !projectClosed && selectedRows.length > 0 && selectedRows.every((row) => row.status === '草稿');
   const anyStarted = visibleRows.some((row) => row.status === '启动');
-  const applyPersonnel = (record) => { if (!personTarget) return; setRows((current) => current.map((row) => row.key === personTarget.rowKey ? { ...row, [personTarget.field]: record.employeeName } : row)); setPersonTarget(null); };
+  const applyPersonnel = (record) => { if (!personTarget || projectClosed) return; setRows((current) => current.map((row) => row.key === personTarget.rowKey ? { ...row, [personTarget.field]: record.employeeName } : row)); setPersonTarget(null); };
 
   const handleStart = () => {
+    if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
     if (!selectedKeys.length) { messageApi.warning('请先选择需要启动的盘点计划'); return; }
     const selected = new Set(selectedKeys);
     setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '启动' } : row));
@@ -61,6 +63,7 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
   };
 
   const handleDelete = () => {
+    if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
     if (!selectedKeys.length) { messageApi.warning('请先选择需要删除的盘点计划'); return; }
     const selected = new Set(selectedKeys);
     if (visibleRows.some((row) => selected.has(row.key) && row.status !== '草稿')) { messageApi.warning('仅草稿状态的盘点计划可删除'); return; }
@@ -70,12 +73,14 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
   };
 
   const openBatchDate = () => {
+    if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
     const first = visibleRows[0];
     setBatchDates({ startDate: first?.startDate || '', endDate: first?.endDate || '' });
     setBatchDateOpen(true);
   };
 
   const saveBatchDates = () => {
+    if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
     if (!batchDates.startDate || !batchDates.endDate) { messageApi.warning('请完整填写盘点开始日期和盘点结束日期'); return; }
     if (batchDates.endDate < batchDates.startDate) { messageApi.warning('盘点结束日期不能早于盘点开始日期'); return; }
     setRows((current) => current.map((row) => allowedRanges.includes(row.range) ? { ...row, startDate: batchDates.startDate, endDate: batchDates.endDate } : row));
@@ -108,8 +113,8 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
         <QueryItem label="子公司"><Input value={draftFilters.organization} allowClear placeholder="请输入子公司" onChange={(event) => updateFilter('organization', event.target.value)} /></QueryItem>
         <QueryItem label="盘点范围"><Select value={draftFilters.range || undefined} allowClear placeholder="请选择" options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('range', value)} /></QueryItem>
       </QueryBar>
-      <div className="mb-3 flex justify-end"><Space wrap>{canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}<Button onClick={openBatchDate}>批量编辑盘点日期</Button>{allSelectedDraft && <Button type="primary" icon={<PlayCircle size={14} />} onClick={handleStart}>启动盘点计划</Button>}{allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}<Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button><Button icon={<Download size={14} />}>导出</Button>{project?.projectType === '复盘' && anyStarted && <Button type="primary">提交审核</Button>}{anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
-      <Table rowKey="key" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
+      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}{allSelectedDraft && <Button type="primary" icon={<PlayCircle size={14} />} onClick={handleStart}>启动盘点计划</Button>}{allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}{!projectClosed && <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />}>导出</Button>{!projectClosed && project?.projectType === '复盘' && anyStarted && <Button type="primary">提交审核</Button>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
+      <Table rowKey="key" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true, getCheckboxProps: () => ({ disabled: projectClosed }) }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
     </Card>
     <div className="flex justify-center pb-2"><Button onClick={onBack}>返回</Button></div>
     <Modal open={batchDateOpen} title="批量编辑盘点日期" width={560} okText="确定" cancelText="取消" onCancel={() => setBatchDateOpen(false)} onOk={saveBatchDates}>
