@@ -7,7 +7,7 @@ import {
   getScrapPrototypeRecords,
   saveScrapPrototypeRecords,
 } from '../../services/scrapPrototypeService';
-import { SCRAP_ASSET_POOL } from './scrapPrototypeData';
+import { ACCOUNTING_ASSET_POOL, SCRAP_ASSET_POOL } from './scrapPrototypeData';
 
 jest.mock('antd', () => ({
   message: { error: jest.fn(), warning: jest.fn(), success: jest.fn() },
@@ -91,7 +91,7 @@ test('资产处置展示机房自动单、办公手动单以及软件和丢失�
 });
 
 test('账面报废完成时自动生成机房和无实物处置单，办公实物资产等待手动建单', () => {
-  const candidates = getAccountingCandidates();
+  const candidates = ACCOUNTING_ASSET_POOL;
   const machine = candidates.find((asset) => asset.scope === '机房资产' && asset.scrapMethod !== '调账');
   const software = candidates.find((asset) => asset.scope === '软件');
   const lost = candidates.find((asset) => asset.scrapType === '丢失');
@@ -137,6 +137,7 @@ test('跨公司转移审批完成后进入待报废池，调账资产进入账�
     formSnapshot: { assetScope: '办公设备', currentNode: 'ES主管确认' },
   };
   saveScrapPrototypeRecords('crossCompany', [record]);
+  expect(getAccountingCandidates().some((item) => item.tagNo === asset.tagNo)).toBe(false);
   render(<ScrapPrototypeModule type="crossCompany" />);
   fireEvent.click(screen.getByRole('button', { name: '审批通过' }));
 

@@ -1,5 +1,4 @@
 import {
-  ACCOUNTING_ASSET_POOL,
   DISPOSAL_ASSET_POOL,
   getInitialBusinessRows,
 } from '../pages/assetManagement/scrapPrototypeData';
@@ -20,7 +19,7 @@ export function saveScrapPrototypeRecords(type, records) {
 }
 
 export function getAccountingCandidates() {
-  const result = new Map(ACCOUNTING_ASSET_POOL.map((asset) => [asset.tagNo, asset]));
+  const result = new Map();
   for (const type of ['crossCompany', 'scrap']) {
     for (const record of getScrapPrototypeRecords(type)) {
       if (!['已完成', '已审批'].includes(record.documentStatus)) continue;
