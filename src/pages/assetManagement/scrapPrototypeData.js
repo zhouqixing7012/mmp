@@ -1,4 +1,7 @@
 import { materialCatalog } from '../../mock/reference/materialCatalog';
+import { CURRENT_EMPLOYEE } from '../../mock/employeeSelfServiceMock';
+
+const DEMO_APPLICANT = `${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`;
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 import { DEFAULT_ASSET_MAINTENANCE_ROWS } from '../../mock/assetManagementMock';
 
@@ -222,7 +225,7 @@ const businessRows = {
       assetScope: '机房资产',
       company: '114.新媒体',
       targetCompany: '115.新媒体-上海',
-      creator: '213852-孙志强',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-23',
       assetCount: 2,
       currentNode: '责任人7级及以上直属领导',
@@ -235,7 +238,7 @@ const businessRows = {
       assetScope: '办公设备',
       company: '123.天津飞狐',
       targetCompany: '116.新媒体-广州',
-      creator: '213852-孙志强',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-22',
       assetCount: 5,
       currentNode: '已进入待报废池',
@@ -251,7 +254,7 @@ const businessRows = {
       company: '114.新媒体',
       region: '北京',
       scrapMethod: '全部报废',
-      creator: '213852-孙志强',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-23',
       assetCount: 12,
       currentNode: '采购专员',
@@ -265,7 +268,7 @@ const businessRows = {
       company: '114.新媒体',
       region: '北京',
       scrapMethod: '全部报废',
-      creator: '213852-孙志强',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-22',
       assetCount: 3,
       currentNode: '已进入待报废池',
@@ -273,14 +276,14 @@ const businessRows = {
     },
     {
       id: 'scrap-machine-draft', applicationNo: 'BF20260926000001', documentStatus: '草稿',
-      assetScope: '机房资产', company: '114.新媒体', creator: '213852-孙志强',
+      assetScope: '机房资产', company: '114.新媒体', creator: DEMO_APPLICANT,
       createdAt: '2026-09-26', assetCount: 1, scrapMethod: '全部报废',
       assetCategory: 'SERVER', assetLocation: '北京', description: '机房服务器报废演示',
       assetsSnapshot: [SCRAP_ASSET_POOL.find((item) => item.id === 'scrap-machine-114')],
     },
     {
       id: 'scrap-office-draft', applicationNo: 'BF20260926000002', documentStatus: '草稿',
-      assetScope: '办公设备', company: '114.新媒体', creator: '213852-孙志强',
+      assetScope: '办公设备', company: '114.新媒体', creator: DEMO_APPLICANT,
       createdAt: '2026-09-26', assetCount: 1, scrapMethod: '全部报废',
       description: '办公设备报废演示',
       assetsSnapshot: [SCRAP_ASSET_POOL.find((item) => item.id === 'scrap-furniture-1')],
@@ -295,7 +298,7 @@ const businessRows = {
       company: '114.新媒体',
       plate: '17_Corporate',
       scrapMethod: '非调账',
-      creator: '吕静',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-23',
       assetCount: 8,
       currentNode: 'NO部门5级及以上领导',
@@ -309,7 +312,7 @@ const businessRows = {
       company: '115.新媒体-上海',
       plate: '18_Media',
       scrapMethod: '非调账',
-      creator: '卢铭华',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-22',
       assetCount: 4,
       currentNode: '提单人确认',
@@ -324,7 +327,7 @@ const businessRows = {
       assetScope: '机房资产',
       company: '114.新媒体',
       region: '北京',
-      creator: '采购专员',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-23',
       assetCount: 2,
       currentNode: 'ES专员协办',
@@ -337,7 +340,7 @@ const businessRows = {
       assetScope: '办公设备',
       company: '114.新媒体',
       region: '北京',
-      creator: 'ES专员',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-22',
       assetCount: 6,
       currentNode: 'ES一级审批',
