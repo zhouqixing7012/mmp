@@ -177,6 +177,7 @@ export const ACCOUNTING_ASSET_POOL = SCRAP_ASSET_POOL.map((item, index) => ({
   ...item,
   status: String(item.status || '').startsWith('在库') ? '在库-待报废' : item.status,
   scrapMethod: index === 0 ? '调账' : '非调账',
+  detailScrapMethod: index === 0 ? '调账' : index === 1 ? '部分报废' : '全部报废',
   scrapType: index % 3 === 2 ? '未到报废期' : '已到报废期',
   reason: index % 3 === 2 ? '设备不满足继续使用要求' : '达到报废条件',
   sourceBusinessType: index === 0 ? '跨公司转移' : '资产报废',

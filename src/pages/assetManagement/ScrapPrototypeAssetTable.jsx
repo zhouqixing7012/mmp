@@ -608,8 +608,11 @@ export default function ScrapPrototypeAssetTable({
   ];
 
   const accountingColumns = [
-    ...baseColumns,
+    { title: '资产类别', width: 160, fixed: 'left', render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
+    { title: '资产标签号', dataIndex: 'tagNo', width: 150, fixed: 'left' },
     { title: '资产编号', dataIndex: 'assetNo', width: 150 },
+    { title: '资产说明', dataIndex: 'description', width: 220 },
+    { title: '资产关键字', dataIndex: 'assetKeyword', width: 140, render: displayValue },
     { title: '数量', dataIndex: 'quantity', width: 90, align: 'right' },
     {
       title: '原值',
@@ -618,14 +621,16 @@ export default function ScrapPrototypeAssetTable({
       align: 'right',
       render: money,
     },
-    {
-      title: '净值',
-      dataIndex: 'netValue',
-      width: 120,
-      align: 'right',
-      render: money,
-    },
-    { title: '报废方式', dataIndex: 'scrapMethod', width: 120 },
+    { title: '购买日期', dataIndex: 'purchaseDate', width: 130, render: displayValue },
+    { title: '资产寿命（月）', dataIndex: 'lifeMonths', width: 135, render: displayValue },
+    { title: '累计折旧', dataIndex: 'accumulatedDepreciation', width: 130, render: (value) => value == null ? '-' : money(value) },
+    { title: '净值', dataIndex: 'netValue', width: 120, align: 'right', render: money },
+    { title: '责任人姓名', width: 130, render: (_, record) => String(record.responsiblePerson || '').split('-').slice(1).join('-') || '-' },
+    { title: '责任人工号', width: 130, render: (_, record) => String(record.responsiblePerson || '').split('-')[0] || '-' },
+    { title: '资产所在城市', dataIndex: 'city', width: 130, render: displayValue },
+    { title: '资产所在地点', dataIndex: 'building', width: 150, render: displayValue },
+    { title: '资产所在楼层', dataIndex: 'floor', width: 130, render: displayValue },
+    { title: '报废方式', dataIndex: 'detailScrapMethod', width: 120, render: displayValue },
     {
       title: '报废类型',
       dataIndex: 'scrapType',
@@ -658,10 +663,7 @@ export default function ScrapPrototypeAssetTable({
   ];
 
   const accountingTransferColumns = [
-    { title: '行号', width: 75, align: 'center', render: (_, __, index) => index + 1 },
-    { title: '资产标签号', dataIndex: 'tagNo', width: 150, fixed: 'left' },
-    { title: '资产类别', width: 210, render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
-    { title: '资产说明', dataIndex: 'description', width: 220 },
+    { title: requiredTitle('资产标签号'), dataIndex: 'tagNo', width: 160, fixed: 'left' },
     ...[
       ['newResponsiblePerson', '新责任人'], ['newCompany', '新公司'],
       ['newPlate', '新板块'], ['newCostCenter', '新成本中心'],
