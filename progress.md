@@ -11,6 +11,7 @@
 ## 2026-09-26 盘点 PRD 基线纠正
 
 - 核对并纠正盘点文档身份：`docs/PRD-资产盘点.md` 才是完整的 PC 端现状 PRD；`docs/asset-inventory/资产盘点-现状PRD.md` 是简略整理稿，不能替代它。
+- 用户补充确认抽盘同样关联已关闭的初盘，已同步修正新版 PRD；抽盘和复盘都不得关联未关闭初盘。
 - 新版 PRD 位于 `docs/asset-inventory/资产盘点-新版PRD.md`。后续三方比对以 PC 现状 PRD、移动端原始材料和新版 PRD 分别作为对应基线。
 - 复核 GitHub main 文件内容并记录到 lessons.md；未修改任何业务 PRD 或原型。
 
