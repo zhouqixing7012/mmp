@@ -221,7 +221,7 @@ export default function ScrapPrototypeModule({ type }) {
       form,
       assets,
       readOnly: !editable,
-      approvalPage,
+      approvalPage: approvalPage && !['草稿', '已驳回'].includes(record.documentStatus),
     });
     setView('editor');
   };
@@ -249,16 +249,23 @@ export default function ScrapPrototypeModule({ type }) {
       : form.assetScope;
 
     const normalizedForm = { ...form, assetScope };
+    const nowText = dayjs().format('YYYY-MM-DD HH:mm:ss');
+    const approvalHistory = submit && type === 'crossCompany'
+      ? [
+          ...(form.approvalHistory || []),
+          { node: '发起人提交', result: '提交', opinion: '', time: nowText },
+        ]
+      : form.approvalHistory || [];
     const nextForm = {
       ...normalizedForm,
       applicationNo,
       documentStatus: submit ? submitStatus(type, normalizedForm) : '草稿',
       currentNode: submit ? firstNode(type, normalizedForm, assets) : '草稿',
+      approvalHistory,
     };
 
     const targetCompanies = Array.from(new Set(assets.map((item) => item.newCompany).filter(Boolean)));
     const scrapMethods = Array.from(new Set(assets.map((item) => item.scrapMethod).filter(Boolean)));
-    const nowText = dayjs().format('YYYY-MM-DD HH:mm:ss');
     const nextRecord = {
       id: form.id || `${type}-${applicationNo}`,
       applicationNo,
@@ -277,7 +284,7 @@ export default function ScrapPrototypeModule({ type }) {
       region: form.region,
       currentNode: nextForm.currentNode,
       remark: form.remark || form.description,
-      approvalHistory: form.approvalHistory || [],
+      approvalHistory,
       formSnapshot: nextForm,
       assetsSnapshot: assets.map((item) => ({ ...item })),
     };

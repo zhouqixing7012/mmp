@@ -9,7 +9,7 @@ jest.mock('antd', () => {
     const domProps = Object.fromEntries(Object.entries(props).filter(([key]) => !['danger', 'icon'].includes(key)));
     return ReactModule.createElement('button', domProps, children);
   };
-  const Input = (props) => ReactModule.createElement('input', props);
+  const Input = ({ suffix, allowClear, ...props }) => ReactModule.createElement('input', props);
   const Select = ({ options = [], ...props }) => ReactModule.createElement(
     'select',
     props,
@@ -63,19 +63,20 @@ jest.mock('../../components/StatusTag', () => () => null);
 jest.mock('../../components/SelectModal', () => {
   const ReactModule = require('react');
 
-  return function MockSelectModal({ open, dataSource, onConfirm }) {
+  return function MockSelectModal({ open, title, dataSource, multiple, onConfirm }) {
     if (!open) return null;
     return ReactModule.createElement(
       'div',
-      { 'data-testid': 'asset-picker' },
-      ...dataSource.map((asset) => ReactModule.createElement(
+      { 'data-testid': title === '选择资产' ? 'asset-picker' : 'selection-modal' },
+      ReactModule.createElement('div', null, title),
+      ...dataSource.map((record) => ReactModule.createElement(
         'button',
         {
-          key: asset.id,
+          key: record.id,
           type: 'button',
-          onClick: () => onConfirm([asset]),
+          onClick: () => onConfirm(multiple ? [record] : record),
         },
-        asset.tagNo,
+        record.tagNo || [record.code, record.name].filter(Boolean).join(' '),
       )),
     );
   };
@@ -122,4 +123,31 @@ test('跨公司转移按所选公司筛选资产，添加时带出当前资产�
   expect(addedAsset.targetBuilding).toBe(source.building);
   expect(addedAsset.targetFloor).toBe(source.floor);
   expect(addedAsset.targetWarehouse).toBe(source.warehouse);
+});
+
+test('新责任人、新公司、新成本中心均从弹窗选择', () => {
+  const source = SCRAP_ASSET_POOL[0];
+  const onChange = jest.fn();
+  render(
+    <ScrapPrototypeAssetTable
+      type="crossCompany"
+      assetScope={source.scope}
+      sourceCompany={source.company}
+      assets={[{ ...source, newResponsiblePerson: '', newCompany: '', newCostCenter: '' }]}
+      readOnly={false}
+      onChange={onChange}
+      onReplace={jest.fn()}
+    />,
+  );
+
+  [
+    ['请选择新责任人', '选择新责任人', 'newResponsiblePerson'],
+    ['请选择新公司', '选择新公司', 'newCompany'],
+    ['请选择新成本中心', '选择新成本中心', 'newCostCenter'],
+  ].forEach(([placeholder, modalTitle, field]) => {
+    fireEvent.click(screen.getByPlaceholderText(placeholder));
+    expect(screen.getByTestId('selection-modal')).toHaveTextContent(modalTitle);
+    fireEvent.click(screen.getByTestId('selection-modal').querySelector('button'));
+    expect(onChange).toHaveBeenLastCalledWith(source.id, field, expect.any(String));
+  });
 });

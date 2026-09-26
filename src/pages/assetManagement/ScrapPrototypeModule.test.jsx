@@ -97,7 +97,10 @@ test('跨公司转移提交后直接进入审批页面，不返回列表', async
 
   expect(await screen.findByText('跨公司转移审批页面')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '创建跨公司转移申请单' })).not.toBeInTheDocument();
-  expect(getScrapPrototypeRecords('crossCompany')[0].documentStatus).toBe('审批中');
+  const submitted = getScrapPrototypeRecords('crossCompany')[0];
+  expect(submitted.documentStatus).toBe('审批中');
+  expect(submitted.approvalHistory).toHaveLength(1);
+  expect(submitted.approvalHistory[0]).toMatchObject({ node: '发起人提交', result: '提交' });
 });
 
 test('跨公司转移审批完成后进入待报废池，调账资产进入账面报废候选', async () => {

@@ -11,9 +11,10 @@ import {
   Upload,
   message,
 } from 'antd';
-import { SearchOutlined, UploadOutlined } from '@ant-design/icons';
+import { UploadOutlined } from '@ant-design/icons';
 import StatusTag from '../../components/StatusTag';
 import SelectModal from '../../components/SelectModal';
+import LookupInput from '../../components/LookupInput';
 import ScrapPrototypeAssetTable from './ScrapPrototypeAssetTable';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
@@ -68,24 +69,6 @@ export default function ScrapPrototypeEditor({
   const showValue = (value) => (
     <span>{value === undefined || value === null || value === '' ? '-' : String(value)}</span>
   );
-
-  const transferDiffRows = type === 'crossCompany' ? assets.flatMap((asset) => [
-    ['responsiblePerson', 'newResponsiblePerson', '新责任人'],
-    ['company', 'newCompany', '新公司'],
-    ['plate', 'newPlate', '新板块'],
-    ['costCenter', 'newCostCenter', '新成本中心'],
-    ['city', 'targetCity', 'City'],
-    ['building', 'targetBuilding', 'Building'],
-    ['floor', 'targetFloor', 'Floor'],
-    ['warehouse', 'targetWarehouse', '调账后仓库'],
-  ].map(([sourceField, targetField, field]) => ({
-    key: `${asset.id}-${targetField}`,
-    tagNo: asset.tagNo,
-    field,
-    originalValue: asset[sourceField],
-    newValue: asset[targetField],
-  })).filter((row) => String(row.originalValue ?? '') !== String(row.newValue ?? ''))
-  ) : [];
 
   const submitApprovalAction = () => {
     if (!approvalAction) return;
@@ -302,6 +285,11 @@ export default function ScrapPrototypeEditor({
             <StatusTag value={form.documentStatus} type="business" />
           </Descriptions.Item>
           <Descriptions.Item label="申请日期">{form.applicationDate}</Descriptions.Item>
+          {approvalPage && (
+            <Descriptions.Item label="当前审批节点" span={3}>
+              {showValue(form.currentNode)}
+            </Descriptions.Item>
+          )}
 
           <Descriptions.Item label="发起人">{form.creator}</Descriptions.Item>
           <Descriptions.Item label="公司">
@@ -309,13 +297,10 @@ export default function ScrapPrototypeEditor({
               ? (readOnly
                 ? showValue(form.company)
                 : (
-                  <Input
-                    readOnly
+                  <LookupInput
                     value={form.company}
                     placeholder="请选择公司"
-                    suffix={<SearchOutlined className="text-[#1677ff]" />}
-                    className="cursor-pointer"
-                    onClick={() => setCompanyPickerOpen(true)}
+                    onOpen={() => setCompanyPickerOpen(true)}
                     disabled={assets.length > 0}
                   />
                 ))
@@ -545,53 +530,17 @@ export default function ScrapPrototypeEditor({
           sourceCompany={type === 'crossCompany' ? form.company : undefined}
           assets={assets}
           readOnly={readOnly}
+          showTransferDiff={approvalPage}
           onChange={updateAsset}
           onReplace={handleAssetReplace}
           scrapMethod={form.scrapMethod}
         />
       </Card>
 
-      {approvalPage && type === 'crossCompany' && (
-        <>
-          <Card size="small" title="资产信息变更">
-            <Table
-              rowKey="key"
-              size="small"
-              bordered
-              pagination={false}
-              dataSource={transferDiffRows}
-              locale={{ emptyText: '暂无字段变化' }}
-              columns={[
-                { title: '资产标签号', dataIndex: 'tagNo', width: 160 },
-                { title: '变更字段', dataIndex: 'field', width: 150 },
-                { title: '原值', dataIndex: 'originalValue', render: (value) => value || '-' },
-                { title: '新值', dataIndex: 'newValue', render: (value) => value || '-' },
-              ]}
-            />
-          </Card>
-          <Card size="small" title="审批记录">
-            <Table
-              rowKey={(record, index) => `${record.node}-${record.time}-${index}`}
-              size="small"
-              bordered
-              pagination={false}
-              dataSource={form.approvalHistory || []}
-              locale={{ emptyText: '暂无审批记录' }}
-              columns={[
-                { title: '审批节点', dataIndex: 'node' },
-                { title: '结果', dataIndex: 'result', width: 100 },
-                { title: '审批意见', dataIndex: 'opinion' },
-                { title: '审批时间', dataIndex: 'time', width: 180 },
-              ]}
-            />
-          </Card>
-        </>
-      )}
-
       <div className="flex justify-center gap-3">
         <Button onClick={onBack}>返回</Button>
-        {approvalPage && ['草稿', '已驳回'].includes(form.documentStatus) && (
-          <Button onClick={() => onEdit?.(form)}>编辑申请</Button>
+        {!approvalPage && readOnly && type === 'crossCompany' && ['草稿', '已驳回'].includes(form.documentStatus) && (
+          <Button onClick={() => onEdit?.(form)}>编辑</Button>
         )}
         {approvalPage && type === 'crossCompany' && form.documentStatus === '审批中' && (
           <>

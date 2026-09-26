@@ -18,6 +18,7 @@ import {
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import SelectModal from '../../components/SelectModal';
+import LookupInput from '../../components/LookupInput';
 import StatusTag from '../../components/StatusTag';
 import {
   SCRAP_ASSET_POOL,
@@ -143,6 +144,7 @@ export default function ScrapPrototypeAssetTable({
   sourceCompany,
   assets,
   readOnly,
+  showTransferDiff = false,
   onChange,
   onReplace,
   scrapMethod,
@@ -150,6 +152,22 @@ export default function ScrapPrototypeAssetTable({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [transferLookup, setTransferLookup] = useState(null);
+
+  const renderTransferValue = (value, record, sourceField) => {
+    if (!readOnly || !showTransferDiff) return displayValue(value);
+    const originalValue = record[sourceField];
+    if (String(originalValue ?? '') === String(value ?? '')) return displayValue(value);
+    return (
+      <div className="flex flex-col items-start gap-1">
+        <span className="text-[rgba(0,0,0,0.35)] text-xs leading-none line-through">
+          {displayValue(originalValue)}
+        </span>
+        <span className="inline-block rounded border border-[#ffe58f] bg-[#fffbe6] px-2 py-0.5 text-[13px] font-medium leading-tight text-[#faad14]">
+          {displayValue(value)}
+        </span>
+      </div>
+    );
+  };
 
   const pickerAssets = useMemo(() => {
     const pool = type === 'accounting'
@@ -395,15 +413,12 @@ export default function ScrapPrototypeAssetTable({
       width: 160,
       render: (value, record) => (
         readOnly
-          ? displayValue(value)
+          ? renderTransferValue(value, record, 'responsiblePerson')
           : (
-            <Input
-              readOnly
+            <LookupInput
               value={value}
               placeholder="请选择新责任人"
-              suffix={<span className="text-[#1677ff]">选择</span>}
-              className="cursor-pointer"
-              onClick={() => setTransferLookup({ row: record, field: 'newResponsiblePerson' })}
+              onOpen={() => setTransferLookup({ row: record, field: 'newResponsiblePerson' })}
             />
           )
       ),
@@ -414,15 +429,12 @@ export default function ScrapPrototypeAssetTable({
       width: 180,
       render: (value, record) => (
         readOnly
-          ? displayValue(value)
+          ? renderTransferValue(value, record, 'company')
           : (
-            <Input
-              readOnly
+            <LookupInput
               value={value}
               placeholder="请选择新公司"
-              suffix={<span className="text-[#1677ff]">选择</span>}
-              className="cursor-pointer"
-              onClick={() => setTransferLookup({ row: record, field: 'newCompany' })}
+              onOpen={() => setTransferLookup({ row: record, field: 'newCompany' })}
             />
           )
       ),
@@ -433,7 +445,7 @@ export default function ScrapPrototypeAssetTable({
       width: 180,
       render: (value, record) => (
         readOnly
-          ? displayValue(value)
+          ? renderTransferValue(value, record, 'plate')
           : (
             <Select
               value={value || undefined}
@@ -450,15 +462,12 @@ export default function ScrapPrototypeAssetTable({
       width: 180,
       render: (value, record) => (
         readOnly
-          ? displayValue(value)
+          ? renderTransferValue(value, record, 'costCenter')
           : (
-            <Input
-              readOnly
+            <LookupInput
               value={value}
               placeholder="请选择新成本中心"
-              suffix={<span className="text-[#1677ff]">选择</span>}
-              className="cursor-pointer"
-              onClick={() => setTransferLookup({ row: record, field: 'newCostCenter' })}
+              onOpen={() => setTransferLookup({ row: record, field: 'newCostCenter' })}
             />
           )
       ),
@@ -469,7 +478,7 @@ export default function ScrapPrototypeAssetTable({
       width: 130,
       render: (value, record) => (
         readOnly
-          ? displayValue(value)
+          ? renderTransferValue(value, record, 'city')
           : (
             <Input
               value={value}
@@ -484,7 +493,7 @@ export default function ScrapPrototypeAssetTable({
       width: 150,
       render: (value, record) => (
         readOnly
-          ? displayValue(value)
+          ? renderTransferValue(value, record, 'building')
           : (
             <Input
               value={value}
@@ -499,7 +508,7 @@ export default function ScrapPrototypeAssetTable({
       width: 110,
       render: (value, record) => (
         readOnly
-          ? displayValue(value)
+          ? renderTransferValue(value, record, 'floor')
           : (
             <Input
               value={value}
@@ -514,7 +523,7 @@ export default function ScrapPrototypeAssetTable({
       width: 210,
       render: (value, record) => (
         readOnly
-          ? displayValue(value)
+          ? renderTransferValue(value, record, 'warehouse')
           : (
             <Select
               allowClear

@@ -28,6 +28,7 @@ import {
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
+import LookupInput from '../../components/LookupInput';
 import StatusTag from '../../components/StatusTag';
 import {
   getAssetMaintenanceRows,
@@ -236,34 +237,6 @@ function normalizeSerial(value) {
 
 function isPlaceholderSerial(value) {
   return normalizeSerial(value) === '缺省';
-}
-
-function LookupInput({ value, placeholder, onOpen, onClear }) {
-  const handleOpen = (event) => {
-    if (event?.target?.closest?.('.ant-input-clear-icon')) return;
-    onOpen?.();
-  };
-
-  return (
-    <Input
-      value={value || ''}
-      readOnly
-      allowClear={Boolean(onClear)}
-      placeholder={placeholder}
-      suffix={<Search size={14} className="text-[#1677ff]" />}
-      style={{ cursor: 'pointer' }}
-      onClick={handleOpen}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onOpen?.();
-        }
-      }}
-      onChange={(event) => {
-        if (!event.target.value) onClear?.();
-      }}
-    />
-  );
 }
 
 function EmptyGroup({ children }) {
