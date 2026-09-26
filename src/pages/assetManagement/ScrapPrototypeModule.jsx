@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { message } from 'antd';
 import ScrapPrototypeList from './ScrapPrototypeList';
 import ScrapPrototypeEditor from './ScrapPrototypeEditor';
+import { CURRENT_EMPLOYEE } from '../../mock/employeeSelfServiceMock';
 import {
   getAccountingApprovalNodes,
   getCrossCompanyApprovalNodes,
@@ -46,15 +47,15 @@ function defaultForm(type) {
   return {
     applicationNo: '',
     documentStatus: '草稿',
-    creator: type === 'accounting' ? '吕静' : '213852-孙志强',
+    creator: `${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`,
     applicationDate: dayjs().format('YYYY-MM-DD'),
     company: ['crossCompany', 'disposal'].includes(type) ? '' : '114.新媒体',
     assetScope: type === 'accounting' ? '混合' : '',
     plate: '17_Corporate',
-    officeArea: '-',
-    contactPhone: '-',
-    email: '-',
-    department: '-',
+    officeArea: CURRENT_EMPLOYEE.officeArea,
+    contactPhone: CURRENT_EMPLOYEE.phone,
+    email: CURRENT_EMPLOYEE.email,
+    department: CURRENT_EMPLOYEE.department,
     remark: '',
     description: '',
     attachments: [],
@@ -214,6 +215,12 @@ export default function ScrapPrototypeModule({ type }) {
     const assets = record.assetsSnapshot
       ? record.assetsSnapshot.map((item) => ({ ...item }))
       : seedAssets(type, record);
+    if (type === 'scrap' && form.assetScope === '机房资产') {
+      const machineAsset = assets.find((item) => item.scope === '机房资产') || assets[0];
+      form.assetCategory = form.assetCategory || machineAsset?.majorCategory || '';
+      form.assetLocation = form.assetLocation
+        || (String(machineAsset?.city || '').includes('北京') ? '北京' : '非北京');
+    }
     if (type === 'disposal' && record.assetScope === '机房资产') {
       form.needsCleaning = assets.some((item) => item.dataCleaning === '是') ? '是' : '否';
     }
