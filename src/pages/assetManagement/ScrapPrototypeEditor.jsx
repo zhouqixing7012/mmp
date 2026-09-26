@@ -4,7 +4,6 @@ import {
   Card,
   Descriptions,
   Input,
-  Modal,
   Select,
   Table,
   Tabs,
@@ -59,8 +58,6 @@ export default function ScrapPrototypeEditor({
   const [assets, setAssets] = useState(initialAssets);
   const [companyPickerOpen, setCompanyPickerOpen] = useState(false);
   const [approvalOpinion, setApprovalOpinion] = useState('同意');
-  const [countersignOpen, setCountersignOpen] = useState(false);
-  const [countersignPerson, setCountersignPerson] = useState('');
 
   const updateForm = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -296,6 +293,11 @@ export default function ScrapPrototypeEditor({
     ...form,
     assetsSnapshot: assets,
   }, type);
+  const approvalView = approvalPage || (
+    readOnly
+    && ['crossCompany', 'scrap'].includes(type)
+    && !['草稿', '已驳回'].includes(form.documentStatus)
+  );
 
   const disposalSummary = Array.from(assets.reduce((groups, asset) => {
     const key = JSON.stringify([asset.city || '', asset.majorCategory || '']);
@@ -341,7 +343,7 @@ export default function ScrapPrototypeEditor({
       <div className="mt-3 flex justify-center gap-3">
         <Button danger onClick={() => decideTransfer('驳回')}>驳回</Button>
         <Button type="primary" onClick={() => decideTransfer('通过')}>同意</Button>
-        <Button onClick={onBack}>返回</Button>
+        {!['crossCompany', 'scrap'].includes(type) && <Button onClick={onBack}>返回</Button>}
       </div>
     </>
   );
@@ -349,19 +351,19 @@ export default function ScrapPrototypeEditor({
   return (
     <div
       className="space-y-4 pb-4"
-      data-page-view-key={`${type}-${approvalPage ? 'approval' : readOnly ? 'detail' : 'edit'}`}
+      data-page-view-key={`${type}-${approvalView ? 'approval' : readOnly ? 'detail' : 'edit'}`}
     >
       <div className="flex items-center justify-between">
         <h3 className="m-0 text-xl font-semibold">
-          {approvalPage ? `${config.title}审批` : readOnly ? `${config.title}详情` : config.createLabel}
+          {approvalView ? `${config.title}审批` : readOnly ? `${config.title}详情` : config.createLabel}
         </h3>
-        {approvalPage && (
+        {approvalView && (
           <span className="text-gray-500">申请单号：{form.applicationNo}</span>
         )}
       </div>
 
-      <Card size="small" title={approvalPage ? '申请人信息' : '基本信息'}>
-        {approvalPage ? (
+      <Card size="small" title={approvalView ? '申请人信息' : '基本信息'}>
+        {approvalView ? (
           <DetailGrid>
             <DetailItem label="申请人">{showValue(form.creator)}</DetailItem>
             <DetailItem label="申请日期">{showValue(form.applicationDate)}</DetailItem>
@@ -582,7 +584,7 @@ export default function ScrapPrototypeEditor({
           sourceCompany={['crossCompany', 'disposal'].includes(type) ? form.company : undefined}
           assets={assets}
           readOnly={readOnly}
-          showTransferDiff={approvalPage}
+          showTransferDiff={approvalView && type === 'crossCompany'}
           onChange={updateAsset}
           onReplace={handleAssetReplace}
           scrapMethod={form.scrapMethod}
@@ -590,7 +592,7 @@ export default function ScrapPrototypeEditor({
         />}
       </Card>
 
-      {approvalPage && type === 'crossCompany' && (
+      {approvalView && type === 'crossCompany' && (
         <BorrowingApprovalHistory
           records={approvalRecords}
         >
@@ -609,16 +611,14 @@ export default function ScrapPrototypeEditor({
               <div className="mt-3 flex justify-center gap-3">
                 <Button type="primary" onClick={() => decideTransfer('通过')}>同意</Button>
                 <Button danger onClick={() => decideTransfer('驳回')}>驳回</Button>
-                <Button onClick={onBack}>返回</Button>
-                <Button onClick={() => setCountersignOpen(true)}>加签</Button>
               </div>
             </>
           )}
         </BorrowingApprovalHistory>
       )}
 
-      {((approvalPage && ['scrap', 'disposal'].includes(type)) || (
-        readOnly && !approvalPage && !['草稿', '已驳回'].includes(form.documentStatus)
+      {((approvalView && ['scrap', 'disposal'].includes(type)) || (
+        readOnly && !approvalPage && type !== 'crossCompany' && !['草稿', '已驳回'].includes(form.documentStatus)
       )) && (
         <BorrowingApprovalHistory records={approvalRecords}>
           {approvalPage && ['审批中', '处理中'].includes(form.documentStatus) && (
@@ -638,7 +638,7 @@ export default function ScrapPrototypeEditor({
       )}
 
       <div className="flex justify-center gap-3">
-        {!(approvalPage && ['crossCompany', 'scrap', 'accounting', 'disposal'].includes(type) && ['审批中', '处理中'].includes(form.documentStatus)) && (
+        {!(approvalPage && !['crossCompany', 'scrap'].includes(type) && ['审批中', '处理中'].includes(form.documentStatus)) && (
           <Button onClick={onBack}>返回</Button>
         )}
         {!approvalPage && readOnly && ['草稿', '已驳回'].includes(form.documentStatus) && (
@@ -651,28 +651,6 @@ export default function ScrapPrototypeEditor({
           </>
         )}
       </div>
-
-      <Modal
-        title="加签"
-        open={countersignOpen}
-        okText="确认加签"
-        cancelText="取消"
-        onCancel={() => {
-          setCountersignOpen(false);
-          setCountersignPerson('');
-        }}
-        onOk={() => {
-          if (!countersignPerson.trim()) {
-            message.warning('请输入加签人员');
-            return;
-          }
-          message.success(`已加签：${countersignPerson.trim()}`);
-          setCountersignOpen(false);
-          setCountersignPerson('');
-        }}
-      >
-        <Input value={countersignPerson} placeholder="请输入姓名或工号" onChange={(event) => setCountersignPerson(event.target.value)} />
-      </Modal>
 
       {['crossCompany', 'disposal', 'accounting'].includes(type) && !readOnly && (
         <SelectModal

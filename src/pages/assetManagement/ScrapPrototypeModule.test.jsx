@@ -5,6 +5,7 @@ import {
   getAccountingCandidates,
   getDisposalCandidates,
   getScrapPrototypeRecords,
+  resetScrapPrototypeMemory,
   saveScrapPrototypeRecords,
 } from '../../services/scrapPrototypeService';
 import { ACCOUNTING_ASSET_POOL, SCRAP_ASSET_POOL } from './scrapPrototypeData';
@@ -51,7 +52,10 @@ jest.mock('./ScrapPrototypeEditor', () => {
   };
 });
 
-beforeEach(() => window.localStorage.clear());
+beforeEach(() => {
+  window.localStorage.clear();
+  resetScrapPrototypeMemory();
+});
 
 test('四类原型主模块可加载，跨公司转移草稿保存后可以重新打开', async () => {
   const types = [
@@ -199,4 +203,25 @@ test('办公设备报废经过鉴定和主管确认后进入账面报废候选',
   fireEvent.click(screen.getByRole('button', { name: '审批通过' }));
   expect(getScrapPrototypeRecords('scrap')[0].documentStatus).toBe('已审批');
   expect(getAccountingCandidates().find((item) => item.tagNo === asset.tagNo).sourceBusinessNo).toBe('BF-CASE-001');
+});
+
+test('模拟刷新后恢复初始Mock数据并忽略旧版本地缓存', () => {
+  const initial = getScrapPrototypeRecords('crossCompany');
+  const submittedTestRecord = {
+    ...initial[0],
+    id: 'crossCompany-refresh-test',
+    applicationNo: 'CT-TEST-ONLY',
+    documentStatus: '审批中',
+  };
+  window.localStorage.setItem(
+    'asset_scrap_prototype_crossCompany_v1',
+    JSON.stringify([submittedTestRecord]),
+  );
+
+  resetScrapPrototypeMemory();
+
+  const refreshed = getScrapPrototypeRecords('crossCompany');
+  expect(refreshed.map((record) => record.applicationNo))
+    .toEqual(initial.map((record) => record.applicationNo));
+  expect(refreshed.some((record) => record.applicationNo === 'CT-TEST-ONLY')).toBe(false);
 });

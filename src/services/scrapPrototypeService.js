@@ -2,20 +2,22 @@ import {
   DISPOSAL_ASSET_POOL,
   getInitialBusinessRows,
 } from '../pages/assetManagement/scrapPrototypeData';
-import { readDemoData, writeDemoData } from './demoStorage';
-
-const STORAGE_VERSION = 'v1';
-
-function storageKey(type) {
-  return `asset_scrap_prototype_${type}_${STORAGE_VERSION}`;
-}
+const inMemoryRecords = new Map();
 
 export function getScrapPrototypeRecords(type) {
-  return readDemoData(storageKey(type), getInitialBusinessRows(type));
+  if (!inMemoryRecords.has(type)) {
+    inMemoryRecords.set(type, getInitialBusinessRows(type));
+  }
+  return inMemoryRecords.get(type);
 }
 
 export function saveScrapPrototypeRecords(type, records) {
-  return writeDemoData(storageKey(type), records);
+  inMemoryRecords.set(type, records);
+  return records;
+}
+
+export function resetScrapPrototypeMemory() {
+  inMemoryRecords.clear();
 }
 
 export function getAccountingCandidates() {
