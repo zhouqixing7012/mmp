@@ -1276,6 +1276,18 @@ export default function TransferPage() {
   const [pageSize, setPageSize] = useState(10);
   const creatorData = useMemo(() => toSelectData(rows.map((row) => row.creator)), [rows]);
   const companyData = useMemo(() => toSelectData([...COMPANY_OPTIONS, ...rows.map((row) => row.company)]), [rows]);
+  const departmentData = useMemo(() => toSelectData([
+    ...SOURCE_ASSETS.map((asset) => asset.department),
+    ...rows.flatMap((row) => [row.outDept, row.inDept]),
+  ]), [rows]);
+  const locationData = useMemo(() => toSelectData([
+    ...SOURCE_ASSETS.map((asset) => [asset.city, asset.building].filter(Boolean).join(' / ')),
+    ...rows.flatMap((row) => [row.outLocation, row.inLocation]),
+  ]), [rows]);
+  const plateData = useMemo(() => toSelectData([
+    ...SOURCE_ASSETS.map((asset) => asset.plate),
+    ...rows.map((row) => row.plate),
+  ]), [rows]);
   const draftLockedAssetTags = useMemo(() => new Set(
     rows
       .filter((row) => row.status === '草稿')
@@ -1299,6 +1311,11 @@ export default function TransferPage() {
   const update = (field, value) => setDraft((current) => ({ ...current, [field]: value || '' }));
   const selectorConfig = {
     company: { title: '选择公司', dataSource: companyData, onConfirm: (record) => update('company', record.name) },
+    outDept: { title: '选择转出部门', dataSource: departmentData, onConfirm: (record) => update('outDept', record.name) },
+    outLocation: { title: '选择转出地点', dataSource: locationData, onConfirm: (record) => update('outLocation', record.name) },
+    plate: { title: '选择板块', dataSource: plateData, onConfirm: (record) => update('plate', record.name) },
+    inDept: { title: '选择转入部门', dataSource: departmentData, onConfirm: (record) => update('inDept', record.name) },
+    inLocation: { title: '选择转入地点', dataSource: locationData, onConfirm: (record) => update('inLocation', record.name) },
     creator: { title: '选择制单人', dataSource: creatorData, onConfirm: (record) => update('creator', record.name) },
   }[selectorType];
   const deleteRows = () => {
@@ -1423,11 +1440,11 @@ export default function TransferPage() {
         <QueryItem label="转移原因"><Input value={draft.reason} allowClear placeholder="请输入转移原因" onChange={(event) => update('reason', event.target.value)} /></QueryItem>
         <QueryItem label="单据状态"><Select className="w-full" value={draft.status || undefined} allowClear placeholder="全部" options={['草稿', '已完成'].map((value) => ({ label: value, value }))} onChange={(value) => update('status', value)} /></QueryItem>
         <QueryItem label="公司"><LookupInput value={draft.company} placeholder="请选择公司" onOpen={() => setSelectorType('company')} /></QueryItem>
-        <QueryItem label="转出部门"><Input value={draft.outDept} allowClear placeholder="请输入转出部门" onChange={(event) => update('outDept', event.target.value)} /></QueryItem>
-        <QueryItem label="转出地点"><Input value={draft.outLocation} allowClear placeholder="请输入转出地点" onChange={(event) => update('outLocation', event.target.value)} /></QueryItem>
-        <QueryItem label="板块"><Input value={draft.plate} allowClear placeholder="请输入板块" onChange={(event) => update('plate', event.target.value)} /></QueryItem>
-        <QueryItem label="转入部门"><Input value={draft.inDept} allowClear placeholder="请输入转入部门" onChange={(event) => update('inDept', event.target.value)} /></QueryItem>
-        <QueryItem label="转入地点"><Input value={draft.inLocation} allowClear placeholder="请输入转入地点" onChange={(event) => update('inLocation', event.target.value)} /></QueryItem>
+        <QueryItem label="转出部门"><LookupInput value={draft.outDept} placeholder="请选择转出部门" onOpen={() => setSelectorType('outDept')} /></QueryItem>
+        <QueryItem label="转出地点"><LookupInput value={draft.outLocation} placeholder="请选择转出地点" onOpen={() => setSelectorType('outLocation')} /></QueryItem>
+        <QueryItem label="板块"><LookupInput value={draft.plate} placeholder="请选择板块" onOpen={() => setSelectorType('plate')} /></QueryItem>
+        <QueryItem label="转入部门"><LookupInput value={draft.inDept} placeholder="请选择转入部门" onOpen={() => setSelectorType('inDept')} /></QueryItem>
+        <QueryItem label="转入地点"><LookupInput value={draft.inLocation} placeholder="请选择转入地点" onOpen={() => setSelectorType('inLocation')} /></QueryItem>
         <QueryItem label="制单人"><LookupInput value={draft.creator} placeholder="请选择制单人" onOpen={() => setSelectorType('creator')} /></QueryItem>
         <QueryItem label="制单日期">
           <DatePicker.RangePicker
