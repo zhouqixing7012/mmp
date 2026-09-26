@@ -64,9 +64,19 @@ function displayValue(value) {
   return String(value);
 }
 
+function requiredTitle(label) {
+  return (
+    <span>
+      <span className="mr-1 text-red-500">*</span>
+      {label}
+    </span>
+  );
+}
+
 export default function ScrapPrototypeAssetTable({
   type,
   assetScope,
+  sourceCompany,
   assets,
   readOnly,
   onChange,
@@ -96,15 +106,27 @@ export default function ScrapPrototypeAssetTable({
         .map((item) => item.tagNo)
     )));
     return pool.filter((item) => (
+      (type !== 'crossCompany' || (sourceCompany && item.company === sourceCompany))
+      &&
       !occupiedTags.has(item.tagNo)
       && (
         ['accounting', 'disposal'].includes(type)
         || (!String(item.status || '').startsWith('已报废') && item.status !== '在库-待报废')
       )
     ));
-  }, [type, assetScope]);
+  }, [type, assetScope, sourceCompany]);
 
   const addAssets = (selected) => {
+    if (type === 'crossCompany' && !sourceCompany) {
+      message.error('请先选择公司');
+      return false;
+    }
+
+    if (type === 'crossCompany' && selected.some((item) => item.company !== sourceCompany)) {
+      message.error('只能选择所选公司的资产');
+      return false;
+    }
+
     const existing = new Set(assets.map((item) => item.id));
     const selectedScopes = new Set([
       ...assets.map((item) => item.scope),
@@ -175,15 +197,30 @@ export default function ScrapPrototypeAssetTable({
   };
 
   const exportAssets = () => {
-    const rows = assets.map((item) => ({
-      资产标签号: item.tagNo,
-      资产大类: item.majorCategory,
-      资产小类: item.minorCategory,
-      资产说明: item.description,
-      公司: item.company,
-      责任人: item.responsiblePerson,
-      资产状态: item.status,
-    }));
+    const rows = assets.map((item) => (type === 'crossCompany'
+      ? {
+          资产标签号: item.tagNo,
+          资产序列号: item.serialNumber,
+          资产类别: `${item.majorCategory}.${item.minorCategory}`,
+          资产说明: item.description,
+          新责任人: item.newResponsiblePerson,
+          新公司: item.newCompany,
+          新板块: item.newPlate,
+          新成本中心: item.newCostCenter,
+          City: item.targetCity,
+          Building: item.targetBuilding,
+          Floor: item.targetFloor,
+          调账后仓库: item.targetWarehouse,
+        }
+      : {
+          资产标签号: item.tagNo,
+          资产大类: item.majorCategory,
+          资产小类: item.minorCategory,
+          资产说明: item.description,
+          公司: item.company,
+          责任人: item.responsiblePerson,
+          资产状态: item.status,
+        }));
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), '资产明细');
     XLSX.writeFile(workbook, '资产明细.xlsx');
@@ -276,68 +313,17 @@ export default function ScrapPrototypeAssetTable({
   ];
 
   const crossCompanyColumns = [
-    ...baseColumns,
-    { title: '原成本中心', dataIndex: 'costCenter', width: 180 },
-    { title: '原仓库', dataIndex: 'warehouse', width: 200 },
-    { title: '原 City', dataIndex: 'city', width: 120 },
-    { title: '原 Building', dataIndex: 'building', width: 150 },
-    { title: '原 Floor', dataIndex: 'floor', width: 110 },
+    { title: '资产标签号', dataIndex: 'tagNo', width: 150, fixed: 'left' },
+    { title: '资产序列号', dataIndex: 'serialNumber', width: 160 },
     {
-      title: '新公司',
-      dataIndex: 'newCompany',
-      width: 180,
-      render: (value, record) => (
-        readOnly
-          ? displayValue(value)
-          : (
-            <Select
-              
-              value={value || undefined}
-              options={companyOptions}
-              className="w-full"
-              onChange={(nextValue) => onChange(record.id, 'newCompany', nextValue || '')}
-            />
-          )
-      ),
+      title: '资产类别（大类.小类）',
+      key: 'assetCategory',
+      width: 210,
+      render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.'),
     },
+    { title: '资产说明', dataIndex: 'description', width: 220, ellipsis: true },
     {
-      title: '新板块',
-      dataIndex: 'newPlate',
-      width: 180,
-      render: (value, record) => (
-        readOnly
-          ? displayValue(value)
-          : (
-            <Select
-              
-              value={value || undefined}
-              options={plateOptions}
-              className="w-full"
-              onChange={(nextValue) => onChange(record.id, 'newPlate', nextValue || '')}
-            />
-          )
-      ),
-    },
-    {
-      title: '新成本中心',
-      dataIndex: 'newCostCenter',
-      width: 180,
-      render: (value, record) => (
-        readOnly
-          ? displayValue(value)
-          : (
-            <Select
-              
-              value={value || undefined}
-              options={costCenterOptions}
-              className="w-full"
-              onChange={(nextValue) => onChange(record.id, 'newCostCenter', nextValue || '')}
-            />
-          )
-      ),
-    },
-    {
-      title: '新责任人',
+      title: requiredTitle('新责任人'),
       dataIndex: 'newResponsiblePerson',
       width: 160,
       render: (value, record) => (
@@ -353,7 +339,58 @@ export default function ScrapPrototypeAssetTable({
       ),
     },
     {
-      title: 'City',
+      title: requiredTitle('新公司'),
+      dataIndex: 'newCompany',
+      width: 180,
+      render: (value, record) => (
+        readOnly
+          ? displayValue(value)
+          : (
+            <Select
+              value={value || undefined}
+              options={companyOptions}
+              className="w-full"
+              onChange={(nextValue) => onChange(record.id, 'newCompany', nextValue || '')}
+            />
+          )
+      ),
+    },
+    {
+      title: requiredTitle('新板块'),
+      dataIndex: 'newPlate',
+      width: 180,
+      render: (value, record) => (
+        readOnly
+          ? displayValue(value)
+          : (
+            <Select
+              value={value || undefined}
+              options={plateOptions}
+              className="w-full"
+              onChange={(nextValue) => onChange(record.id, 'newPlate', nextValue || '')}
+            />
+          )
+      ),
+    },
+    {
+      title: requiredTitle('新成本中心'),
+      dataIndex: 'newCostCenter',
+      width: 180,
+      render: (value, record) => (
+        readOnly
+          ? displayValue(value)
+          : (
+            <Select
+              value={value || undefined}
+              options={costCenterOptions}
+              className="w-full"
+              onChange={(nextValue) => onChange(record.id, 'newCostCenter', nextValue || '')}
+            />
+          )
+      ),
+    },
+    {
+      title: requiredTitle('City'),
       dataIndex: 'targetCity',
       width: 130,
       render: (value, record) => (
@@ -368,7 +405,7 @@ export default function ScrapPrototypeAssetTable({
       ),
     },
     {
-      title: 'Building',
+      title: requiredTitle('Building'),
       dataIndex: 'targetBuilding',
       width: 150,
       render: (value, record) => (
@@ -383,7 +420,7 @@ export default function ScrapPrototypeAssetTable({
       ),
     },
     {
-      title: 'Floor',
+      title: requiredTitle('Floor'),
       dataIndex: 'targetFloor',
       width: 110,
       render: (value, record) => (
@@ -415,31 +452,6 @@ export default function ScrapPrototypeAssetTable({
           )
       ),
     },
-    {
-      title: '用途',
-      dataIndex: 'purpose',
-      width: 150,
-      render: (value, record) => (
-        readOnly ? displayValue(value) : <Input value={value} onChange={(event) => onChange(record.id, 'purpose', event.target.value)} />
-      ),
-    },
-    {
-      title: '项目',
-      dataIndex: 'project',
-      width: 150,
-      render: (value, record) => (
-        readOnly ? displayValue(value) : <Input value={value} onChange={(event) => onChange(record.id, 'project', event.target.value)} />
-      ),
-    },
-    {
-      title: '行备注',
-      dataIndex: 'rowRemark',
-      width: 180,
-      render: (value, record) => (
-        readOnly ? displayValue(value) : <Input value={value} onChange={(event) => onChange(record.id, 'rowRemark', event.target.value)} />
-      ),
-    },
-    { title: '是否处置', key: 'disposalFlag', width: 100, render: () => '否' },
   ];
 
   const scrapColumns = [
@@ -607,17 +619,29 @@ export default function ScrapPrototypeAssetTable({
   return (
     <>
       {!readOnly && (
-        <div className="mb-3 flex justify-end">
-          <Space wrap>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setPickerOpen(true)}>
+      <div className="mb-3 flex justify-end">
+        <Space wrap>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              disabled={type === 'crossCompany' && !sourceCompany}
+              onClick={() => setPickerOpen(true)}
+            >
               添加资产
             </Button>
             <Button danger icon={<DeleteOutlined />} disabled={selectedRowKeys.length === 0} onClick={deleteSelected}>
               删除所选
             </Button>
             <Button icon={<DownloadOutlined />} onClick={downloadTemplate}>下载模板</Button>
-            <Upload accept=".xls,.xlsx" showUploadList={false} beforeUpload={importAssets}>
-              <Button icon={<UploadOutlined />}>Excel导入</Button>
+            <Upload
+              accept=".xls,.xlsx"
+              showUploadList={false}
+              beforeUpload={importAssets}
+              disabled={type === 'crossCompany' && !sourceCompany}
+            >
+              <Button disabled={type === 'crossCompany' && !sourceCompany} icon={<UploadOutlined />}>
+                Excel导入
+              </Button>
             </Upload>
             <Button icon={<FileExcelOutlined />} disabled={assets.length === 0} onClick={exportAssets}>
               导出明细

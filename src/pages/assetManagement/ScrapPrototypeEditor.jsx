@@ -12,12 +12,18 @@ import {
 } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import StatusTag from '../../components/StatusTag';
+import SelectModal from '../../components/SelectModal';
 import ScrapPrototypeAssetTable from './ScrapPrototypeAssetTable';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 
 const companyOptions = Array.from(
   new Set(warehouseCatalog.map((item) => item.company).filter(Boolean)),
 ).map((value) => ({ label: value, value }));
+
+const transferCompanyOptions = companyOptions.map((item, index) => ({
+  id: index + 1,
+  name: item.value,
+}));
 
 function options(values) {
   return values.map((value) => ({ label: value, value }));
@@ -34,6 +40,7 @@ export default function ScrapPrototypeEditor({
 }) {
   const [form, setForm] = useState(initialForm);
   const [assets, setAssets] = useState(initialAssets);
+  const [companyPickerOpen, setCompanyPickerOpen] = useState(false);
 
   const updateForm = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -120,6 +127,11 @@ export default function ScrapPrototypeEditor({
     }
 
     if (type === 'crossCompany') {
+      if (!form.company) {
+        message.error('请选择公司');
+        return false;
+      }
+
       const invalid = assets.find((item) => (
         !item.newCompany
         || !item.newPlate
@@ -238,7 +250,20 @@ export default function ScrapPrototypeEditor({
 
           <Descriptions.Item label="发起人">{form.creator}</Descriptions.Item>
           <Descriptions.Item label="公司">
-            {type === 'crossCompany' || type === 'accounting'
+            {type === 'crossCompany'
+              ? (readOnly
+                ? showValue(form.company)
+                : (
+                  <Input
+                    readOnly
+                    value={form.company}
+                    placeholder="请选择公司"
+                    className="cursor-pointer"
+                    onClick={() => setCompanyPickerOpen(true)}
+                    disabled={assets.length > 0}
+                  />
+                ))
+              : type === 'accounting'
               ? showValue(form.company)
               : renderSelect(
                   form.company,
@@ -248,7 +273,7 @@ export default function ScrapPrototypeEditor({
                 )}
           </Descriptions.Item>
 
-          {type !== 'accounting' && (
+          {type !== 'accounting' && type !== 'crossCompany' && (
             <Descriptions.Item label="资产范围">
               {showValue(form.assetScope || '选择资产后自动判定')}
             </Descriptions.Item>
@@ -260,7 +285,6 @@ export default function ScrapPrototypeEditor({
 
           {type === 'crossCompany' && (
             <>
-              <Descriptions.Item label="办公区">{showValue(form.officeArea)}</Descriptions.Item>
               <Descriptions.Item label="联系电话">{showValue(form.contactPhone)}</Descriptions.Item>
               <Descriptions.Item label="邮箱">{showValue(form.email)}</Descriptions.Item>
               <Descriptions.Item label="部门" span={3}>{showValue(form.department)}</Descriptions.Item>
@@ -462,6 +486,7 @@ export default function ScrapPrototypeEditor({
         <ScrapPrototypeAssetTable
           type={type}
           assetScope={form.assetScope}
+          sourceCompany={type === 'crossCompany' ? form.company : undefined}
           assets={assets}
           readOnly={readOnly}
           onChange={updateAsset}
@@ -481,6 +506,21 @@ export default function ScrapPrototypeEditor({
           </>
         )}
       </div>
+
+      {type === 'crossCompany' && !readOnly && (
+        <SelectModal
+          open={companyPickerOpen}
+          title="选择公司"
+          dataSource={transferCompanyOptions}
+          columns={[{ title: '公司名称', dataIndex: 'name' }]}
+          searchFields={[{ label: '公司名称', name: 'name', dataIndex: 'name' }]}
+          onCancel={() => setCompanyPickerOpen(false)}
+          onConfirm={(company) => {
+            setForm((current) => ({ ...current, company: company.name, assetScope: '' }));
+            setCompanyPickerOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

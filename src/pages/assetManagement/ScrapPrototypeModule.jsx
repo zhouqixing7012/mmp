@@ -47,7 +47,7 @@ function defaultForm(type) {
     documentStatus: '草稿',
     creator: type === 'accounting' ? '吕静' : type === 'disposal' ? 'ES专员' : '当前登录人',
     applicationDate: dayjs().format('YYYY-MM-DD'),
-    company: '114.新媒体',
+    company: type === 'crossCompany' ? '' : '114.新媒体',
     assetScope: type === 'accounting' ? '混合' : '',
     plate: '17_Corporate',
     officeArea: '-',

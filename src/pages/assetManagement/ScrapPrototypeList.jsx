@@ -35,6 +35,31 @@ const EMPTY_FILTERS = {
   dateRange: null,
 };
 
+const TRANSFER_DIFF_FIELDS = [
+  ['responsiblePerson', 'newResponsiblePerson', '新责任人'],
+  ['company', 'newCompany', '新公司'],
+  ['plate', 'newPlate', '新板块'],
+  ['costCenter', 'newCostCenter', '新成本中心'],
+  ['city', 'targetCity', 'City'],
+  ['building', 'targetBuilding', 'Building'],
+  ['floor', 'targetFloor', 'Floor'],
+  ['warehouse', 'targetWarehouse', '调账后仓库'],
+];
+
+function getTransferDiffRows(record) {
+  return (record?.assetsSnapshot || []).flatMap((asset) => (
+    TRANSFER_DIFF_FIELDS
+      .map(([sourceField, targetField, label]) => ({
+        key: `${asset.id}-${targetField}`,
+        tagNo: asset.tagNo,
+        field: label,
+        originalValue: asset[sourceField],
+        newValue: asset[targetField],
+      }))
+      .filter((item) => String(item.originalValue ?? '') !== String(item.newValue ?? ''))
+  ));
+}
+
 function options(values) {
   return values.map((value) => ({ label: value, value }));
 }
@@ -487,6 +512,7 @@ export default function ScrapPrototypeList({
         <Modal
           open={Boolean(approvalRecord)}
           title={`审批：${approvalRecord?.currentNode || ''}`}
+          width={1000}
           onCancel={() => { setApprovalRecord(null); setApprovalOpinion(''); }}
           footer={[
             <Button key="reject" danger onClick={() => finishApproval('驳回')}>驳回</Button>,
@@ -494,6 +520,24 @@ export default function ScrapPrototypeList({
           ]}
           destroyOnHidden
         >
+          {type === 'crossCompany' && (
+            <Card size="small" title="资产信息变更" className="mb-4">
+              <Table
+                rowKey="key"
+                size="small"
+                bordered
+                pagination={false}
+                dataSource={getTransferDiffRows(approvalRecord)}
+                locale={{ emptyText: '暂无字段变化' }}
+                columns={[
+                  { title: '资产标签号', dataIndex: 'tagNo', width: 160 },
+                  { title: '变更字段', dataIndex: 'field', width: 150 },
+                  { title: '原值', dataIndex: 'originalValue', render: (value) => value || '-' },
+                  { title: '新值', dataIndex: 'newValue', render: (value) => value || '-' },
+                ]}
+              />
+            </Card>
+          )}
           <div className="mb-2">审批意见</div>
           <Input.TextArea
             value={approvalOpinion}
