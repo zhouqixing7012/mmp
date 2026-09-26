@@ -125,6 +125,57 @@ test('跨公司转移按所选公司筛选资产，添加时带出当前资产�
   expect(addedAsset.targetWarehouse).toBe(source.warehouse);
 });
 
+test('账面报废资产字段只读，位置列使用 City、Building、Floor', () => {
+  const source = { ...SCRAP_ASSET_POOL[0], scrapMethod: '非调账', scrapType: '已到报废期' };
+  render(
+    <ScrapPrototypeAssetTable
+      type="accounting"
+      assetScope="混合"
+      accountingMethod="非调账"
+      assets={[source]}
+      readOnly={false}
+      onChange={jest.fn()}
+      onReplace={jest.fn()}
+    />,
+  );
+
+  expect(screen.getByText('City')).toBeInTheDocument();
+  expect(screen.getByText('Building')).toBeInTheDocument();
+  expect(screen.getByText('Floor')).toBeInTheDocument();
+  expect(screen.queryByText('资产所在城市')).not.toBeInTheDocument();
+  expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+});
+
+test('账面报废分别从审批通过待报废资产和不限范围的丢失资产添加', () => {
+  const onReplace = jest.fn();
+  const source = SCRAP_ASSET_POOL[0];
+  const otherScope = SCRAP_ASSET_POOL.find((asset) => asset.scope !== source.scope);
+  render(
+    <ScrapPrototypeAssetTable
+      type="accounting"
+      assetScope="混合"
+      accountingMethod="非调账"
+      assets={[]}
+      readOnly={false}
+      onChange={jest.fn()}
+      onReplace={onReplace}
+    />,
+  );
+
+  expect(screen.getByRole('button', { name: '待报废资产' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '添加资产' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '添加资产' }));
+  expect(screen.getByTestId('asset-picker')).toHaveTextContent(source.tagNo);
+  if (otherScope) expect(screen.getByTestId('asset-picker')).toHaveTextContent(otherScope.tagNo);
+  fireEvent.click(screen.getByRole('button', { name: source.tagNo }));
+
+  const [addedAsset] = onReplace.mock.calls[0][0];
+  expect(addedAsset.scrapType).toBe('丢失');
+  expect(addedAsset.scrapMethod).toBe('非调账');
+  expect(addedAsset.reason).toBe('');
+});
+
 test('新责任人、新公司、新成本中心均从弹窗选择', () => {
   const source = SCRAP_ASSET_POOL[0];
   const onChange = jest.fn();

@@ -58,6 +58,7 @@ function defaultForm(type) {
     remark: '',
     description: '',
     scrapMethod: type === 'accounting' ? '非调账' : '全部报废',
+    scrapReasons: {},
     assetCategory: '',
     assetLocation: '',
     region: '北京',

@@ -152,6 +152,7 @@ export default function ScrapPrototypeAssetTable({
   scrapMethod,
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerMode, setPickerMode] = useState('waiting');
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [transferLookup, setTransferLookup] = useState(null);
 
@@ -172,8 +173,9 @@ export default function ScrapPrototypeAssetTable({
   };
 
   const pickerAssets = useMemo(() => {
+    const isAccountingLost = type === 'accounting' && pickerMode === 'lost';
     const pool = type === 'accounting'
-      ? getAccountingCandidates()
+      ? isAccountingLost ? SCRAP_ASSET_POOL : getAccountingCandidates()
       : type === 'disposal'
         ? getDisposalCandidates()
         : !assetScope || assetScope === '混合'
@@ -190,22 +192,37 @@ export default function ScrapPrototypeAssetTable({
         .flatMap((record) => record.assetsSnapshot || [])
         .map((item) => item.tagNo)
     )));
+    const priorWorkflowTags = new Set(['crossCompany', 'scrap'].flatMap((businessType) => (
+      getScrapPrototypeRecords(businessType)
+        .filter((record) => record.documentStatus !== '已驳回')
+        .flatMap((record) => record.assetsSnapshot || [])
+        .map((item) => item.tagNo)
+    )));
+    const currentTags = new Set(assets.map((item) => item.tagNo));
     return pool.filter((item) => (
       (type !== 'scrap' || assetScope !== '机房资产' || !assetCategory || item.majorCategory === assetCategory)
       &&
-      (type !== 'accounting' || item.scrapMethod === accountingMethod)
+      (type !== 'accounting' || isAccountingLost || (
+        item.scrapMethod === accountingMethod
+        && item.sourceBusinessType === (accountingMethod === '调账' ? '跨公司转移' : '资产报废')
+        && item.scrapType !== '丢失'
+      ))
+      &&
+      (type !== 'accounting' || !isAccountingLost || !priorWorkflowTags.has(item.tagNo))
       &&
       (type !== 'disposal' || (item.scope === '办公设备' && item.disposalMode !== '无实物处置'))
       &&
       (!['crossCompany', 'disposal'].includes(type) || (sourceCompany && item.company === sourceCompany))
       &&
-      !occupiedTags.has(item.tagNo)
+      (!occupiedTags.has(item.tagNo) || currentTags.has(item.tagNo))
+      &&
+      (!isAccountingLost || (!String(item.status || '').startsWith('已报废') && item.status !== '在库-待报废'))
       && (
         ['accounting', 'disposal'].includes(type)
         || (!String(item.status || '').startsWith('已报废') && item.status !== '在库-待报废')
       )
     ));
-  }, [type, assetScope, assetCategory, sourceCompany, accountingMethod]);
+  }, [type, assetScope, assetCategory, sourceCompany, accountingMethod, pickerMode, assets]);
 
   const addAssets = (selected) => {
     if (type === 'crossCompany' && !sourceCompany) {
@@ -256,9 +273,13 @@ export default function ScrapPrototypeAssetTable({
       .filter((item) => !existing.has(item.id))
       .map((item) => ({
         ...item,
-        scrapMethod: type === 'crossCompany' ? '调账' : item.scrapMethod || scrapMethod,
-        scrapType: item.scrapType || '已到报废期',
-        reason: item.reason || '',
+        scrapMethod: type === 'crossCompany'
+          ? '调账'
+          : type === 'accounting' && pickerMode === 'lost'
+            ? '非调账'
+            : item.scrapMethod || scrapMethod,
+        scrapType: type === 'accounting' && pickerMode === 'lost' ? '丢失' : item.scrapType || '已到报废期',
+        reason: type === 'accounting' && pickerMode === 'lost' ? '' : item.reason || '',
         dataCleaning: item.scope === '机房资产' ? item.dataCleaning || '否' : undefined,
         newCompany: type === 'crossCompany' ? item.company || '' : item.newCompany || '',
         newPlate: type === 'crossCompany' ? item.plate || '' : item.newPlate || '',
@@ -593,50 +614,18 @@ export default function ScrapPrototypeAssetTable({
     { title: '资产说明', dataIndex: 'description', width: 220 },
     { title: '资产关键字', dataIndex: 'assetKeyword', width: 140, render: displayValue },
     { title: '数量', dataIndex: 'quantity', width: 90, align: 'right' },
-    {
-      title: '原值',
-      dataIndex: 'originalValue',
-      width: 120,
-      align: 'right',
-      render: money,
-    },
+    { title: '原值', dataIndex: 'originalValue', width: 120, align: 'right', render: money },
     { title: '购买日期', dataIndex: 'purchaseDate', width: 130, render: displayValue },
     { title: '资产寿命（月）', dataIndex: 'lifeMonths', width: 135, render: displayValue },
     { title: '累计折旧', dataIndex: 'accumulatedDepreciation', width: 130, render: (value) => value == null ? '-' : money(value) },
     { title: '净值', dataIndex: 'netValue', width: 120, align: 'right', render: money },
     { title: '责任人姓名', width: 130, render: (_, record) => String(record.responsiblePerson || '').split('-').slice(1).join('-') || '-' },
     { title: '责任人工号', width: 130, render: (_, record) => String(record.responsiblePerson || '').split('-')[0] || '-' },
-    { title: '资产所在城市', dataIndex: 'city', width: 130, render: displayValue },
-    { title: '资产所在地点', dataIndex: 'building', width: 150, render: displayValue },
-    { title: '资产所在楼层', dataIndex: 'floor', width: 130, render: displayValue },
+    { title: 'City', dataIndex: 'city', width: 130, render: displayValue },
+    { title: 'Building', dataIndex: 'building', width: 150, render: displayValue },
+    { title: 'Floor', dataIndex: 'floor', width: 130, render: displayValue },
     { title: '报废方式', dataIndex: 'detailScrapMethod', width: 120, render: displayValue },
-    {
-      title: '报废类型',
-      dataIndex: 'scrapType',
-      width: 140,
-      render: (value, record) => (
-        readOnly
-          ? displayValue(value)
-          : (
-            <Select
-              value={value}
-              options={SCRAP_TYPE_OPTIONS}
-              className="w-full"
-              onChange={(nextValue) => onChange(record.id, 'scrapType', nextValue)}
-            />
-          )
-      ),
-    },
-    {
-      title: '报废原因',
-      dataIndex: 'reason',
-      width: 200,
-      render: (value, record) => (
-        readOnly
-          ? displayValue(value)
-          : <Input value={value} onChange={(event) => onChange(record.id, 'reason', event.target.value)} />
-      ),
-    },
+    { title: '报废类型', dataIndex: 'scrapType', width: 140, render: displayValue },
   ];
 
   const accountingTransferColumns = [
@@ -701,29 +690,33 @@ export default function ScrapPrototypeAssetTable({
         { label: '报废申请单号', name: 'sourceScrapNo', dataIndex: 'sourceScrapNo' },
       ]
     : type === 'crossCompany'
-    ? [
-        { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
-        { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
-        { label: '板块', name: 'plate', dataIndex: 'plate' },
-        { label: '资产说明', name: 'description', dataIndex: 'description' },
-      ]
-    : [
-        { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
-        { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
-        { label: '板块', name: 'plate', dataIndex: 'plate' },
-        { label: '资产说明', name: 'description', dataIndex: 'description' },
-      ];
+      ? [
+          { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
+          { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
+          { label: '板块', name: 'plate', dataIndex: 'plate' },
+          { label: '资产说明', name: 'description', dataIndex: 'description' },
+        ]
+      : type === 'accounting'
+        ? [
+            { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
+            { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
+            { label: '资产范围', name: 'scope', dataIndex: 'scope' },
+            { label: '公司', name: 'company', dataIndex: 'company' },
+            { label: '板块', name: 'plate', dataIndex: 'plate' },
+            { label: '资产说明', name: 'description', dataIndex: 'description' },
+          ]
+        : [
+            { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
+            { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
+            { label: '板块', name: 'plate', dataIndex: 'plate' },
+            { label: '资产说明', name: 'description', dataIndex: 'description' },
+          ];
 
   const assetPickerColumns = type === 'crossCompany'
     ? [
         { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
         { title: '序列号', dataIndex: 'serialNumber', width: 160 },
-        {
-          title: '资产类别',
-          key: 'assetCategory',
-          width: 210,
-          render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.'),
-        },
+        { title: '资产类别', key: 'assetCategory', width: 210, render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
         { title: '资产说明', dataIndex: 'description', width: 220 },
         { title: '公司', dataIndex: 'company', width: 150 },
         { title: '板块', dataIndex: 'plate', width: 150 },
@@ -731,21 +724,28 @@ export default function ScrapPrototypeAssetTable({
         { title: '资产所在城市', dataIndex: 'city', width: 140 },
         { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
       ]
-    : [
-        { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
-        { title: '序列号', dataIndex: 'serialNumber', width: 160 },
-        { title: '资产类别', key: 'assetCategory', width: 210, render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
-        { title: '资产说明', dataIndex: 'description', width: 220 },
-        { title: '公司', dataIndex: 'company', width: 150 },
-        { title: '板块', dataIndex: 'plate', width: 150 },
-        { title: '责任人', dataIndex: 'responsiblePerson', width: 150 },
-        {
-          title: '资产状态',
-          dataIndex: 'status',
-          width: 130,
-          render: (value) => <StatusTag value={value} type="business" />,
-        },
-      ];
+    : type === 'accounting'
+      ? [
+          { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
+          { title: '序列号', dataIndex: 'serialNumber', width: 160 },
+          { title: '资产范围', dataIndex: 'scope', width: 130 },
+          { title: '资产类别', key: 'assetCategory', width: 210, render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
+          { title: '资产说明', dataIndex: 'description', width: 220 },
+          { title: '公司', dataIndex: 'company', width: 150 },
+          { title: '板块', dataIndex: 'plate', width: 150 },
+          { title: '责任人', dataIndex: 'responsiblePerson', width: 150 },
+          { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
+        ]
+      : [
+          { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
+          { title: '序列号', dataIndex: 'serialNumber', width: 160 },
+          { title: '资产类别', key: 'assetCategory', width: 210, render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
+          { title: '资产说明', dataIndex: 'description', width: 220 },
+          { title: '公司', dataIndex: 'company', width: 150 },
+          { title: '板块', dataIndex: 'plate', width: 150 },
+          { title: '责任人', dataIndex: 'responsiblePerson', width: 150 },
+          { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
+        ];
 
   return (
     <>
@@ -774,14 +774,34 @@ export default function ScrapPrototypeAssetTable({
       {!readOnly && (
       <div className="mb-3 flex justify-end">
         <Space wrap>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              disabled={['crossCompany', 'disposal'].includes(type) && !sourceCompany}
-              onClick={() => setPickerOpen(true)}
-            >
-              添加资产
-            </Button>
+            {type === 'accounting' ? (
+              <>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => { setPickerMode('waiting'); setPickerOpen(true); }}
+                >
+                  待报废资产
+                </Button>
+                {accountingMethod !== '调账' && (
+                  <Button
+                    icon={<PlusOutlined />}
+                    onClick={() => { setPickerMode('lost'); setPickerOpen(true); }}
+                  >
+                    添加资产
+                  </Button>
+                )}
+              </>
+            ) : (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                disabled={['crossCompany', 'disposal'].includes(type) && !sourceCompany}
+                onClick={() => { setPickerMode('waiting'); setPickerOpen(true); }}
+              >
+                添加资产
+              </Button>
+            )}
             <Button danger icon={<DeleteOutlined />} disabled={selectedRowKeys.length === 0} onClick={deleteSelected}>
               删除所选
             </Button>
@@ -821,7 +841,7 @@ export default function ScrapPrototypeAssetTable({
 
       <SelectModal
         open={pickerOpen}
-        title="选择资产"
+        title={type === 'accounting' ? pickerMode === 'lost' ? '选择丢失资产' : '选择待报废资产' : '选择资产'}
         width={960}
         multiple
         dataSource={pickerAssets}

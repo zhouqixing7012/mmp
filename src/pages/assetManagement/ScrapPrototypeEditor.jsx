@@ -278,14 +278,31 @@ export default function ScrapPrototypeEditor({
     return true;
   };
 
+  const getAccountingReasonText = (kind) => {
+    const reasons = form.scrapReasons || {};
+    if (Object.prototype.hasOwnProperty.call(reasons, kind)) return reasons[kind] || '';
+    return [...new Set(assets
+      .filter((item) => item.scrapType === kind)
+      .map((item) => String(item.reason || '').trim())
+      .filter(Boolean))].join('、');
+  };
+
   const handleSave = (submit) => {
     if (submit && !validate()) return;
 
+    const scrapReasons = type === 'accounting' && form.scrapMethod !== '调账'
+      ? Object.fromEntries(['已到报废期', '未到报废期', '丢失'].map((kind) => [kind, getAccountingReasonText(kind)]))
+      : form.scrapReasons;
+    const savedAssets = type === 'accounting' && form.scrapMethod !== '调账'
+      ? assets.map((item) => ({ ...item, reason: scrapReasons[item.scrapType] || '' }))
+      : assets;
+
     onSave({
       ...form,
+      scrapReasons,
       quoteReceiver: effectiveQuoteReceiver,
       needsCleaning: effectiveNeedsCleaning,
-    }, assets, submit);
+    }, savedAssets, submit);
   };
 
   const approvalRecords = getScrapPrototypeApprovalRecords({
@@ -310,6 +327,11 @@ export default function ScrapPrototypeEditor({
     }
     return groups;
   }, new Map()).values());
+
+  const updateAccountingReason = (kind, value) => updateForm('scrapReasons', {
+    ...(form.scrapReasons || {}),
+    [kind]: value,
+  });
 
   const approvalTable = (subset) => <ScrapPrototypeAssetTable
     type="accounting"
@@ -557,12 +579,20 @@ export default function ScrapPrototypeEditor({
         </Card>
       )}
 
-      {approvalPage && type === 'accounting' && form.scrapMethod !== '调账' && (
+      {type === 'accounting' && form.scrapMethod !== '调账' && (
         <Card size="small" title="报废原因">
-          <Descriptions bordered size="small" column={1}>
+          <Descriptions bordered size="small" column={3}>
             {['已到报废期', '未到报废期', '丢失'].map((kind) => (
               <Descriptions.Item key={kind} label={`${kind}报废原因`}>
-                {[...new Set(assets.filter((item) => item.scrapType === kind).map((item) => item.reason).filter(Boolean))].join('、') || '-'}
+                {readOnly
+                  ? showValue(getAccountingReasonText(kind))
+                  : (
+                    <Input.TextArea
+                      rows={3}
+                      value={getAccountingReasonText(kind)}
+                      onChange={(event) => updateAccountingReason(kind, event.target.value)}
+                    />
+                  )}
               </Descriptions.Item>
             ))}
           </Descriptions>
