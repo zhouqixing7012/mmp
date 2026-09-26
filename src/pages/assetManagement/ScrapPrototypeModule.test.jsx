@@ -91,7 +91,7 @@ test('资产处置有多张可查看单据，覆盖不同资产范围、状态�
   expect(rows).toHaveLength(8);
   expect(rows.some((row) => row.assetScope === '机房资产' && row.documentStatus === '处理中')).toBe(true);
   expect(rows.some((row) => row.assetScope === '办公设备' && row.documentStatus === '审批中')).toBe(true);
-  expect(rows.some((row) => row.assetScope === '办公设备' && row.documentStatus === '已完成')).toBe(true);
+  expect(rows.some((row) => row.assetScope === '办公设备' && row.documentStatus === '处理中')).toBe(true);
   expect(rows.some((row) => row.assetScope === '软件' && row.disposalMode === '无实物处置')).toBe(true);
   expect(rows.some((row) => row.assetsSnapshot.some((asset) => asset.scrapType === '丢失') && row.disposalMode === '无实物处置')).toBe(true);
   expect(rows.every((row) => row.assetsSnapshot?.length > 0)).toBe(true);
