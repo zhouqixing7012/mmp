@@ -376,7 +376,7 @@ export default function AssetInventorySnapshotDetailV2({
     if (closeBlockReason) { messageApi.warning(closeBlockReason); return; }
     Modal.confirm({
       title: '确认关闭盘点项目？',
-      content: '项目关闭后，移动端待办将结束，不能继续扫码或提交。未盘资产和待提交结果不阻止关闭。',
+      content: `项目关闭后，移动端待办将结束，不能继续扫码或提交。未盘资产 ${project?.unscannedCount ?? '待计算'} 项，待提交结果 ${project?.pendingSubmissionCount ?? '待计算'} 项；两者不阻止关闭。`,
       okText: '关闭项目',
       cancelText: '取消',
       onOk: () => {
