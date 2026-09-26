@@ -1,7 +1,18 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import ScrapPrototypeAssetTable from './ScrapPrototypeAssetTable';
+import * as XLSX from 'xlsx';
+import ScrapPrototypeAssetTable, { exportScrapPrototypeAssets } from './ScrapPrototypeAssetTable';
 import { SCRAP_ASSET_POOL } from './scrapPrototypeData';
+
+jest.mock('xlsx', () => ({
+  __esModule: true,
+  utils: {
+    book_new: jest.fn(() => ({})),
+    book_append_sheet: jest.fn(),
+    json_to_sheet: jest.fn((rows) => ({ rows })),
+  },
+  writeFile: jest.fn(),
+}));
 
 jest.mock('antd', () => {
   const ReactModule = require('react');
@@ -10,10 +21,19 @@ jest.mock('antd', () => {
     return ReactModule.createElement('button', domProps, children);
   };
   const Input = ({ suffix, allowClear, ...props }) => ReactModule.createElement('input', props);
-  const InputNumber = ({ onChange, ...props }) => ReactModule.createElement('input', {
+  const InputNumber = ({ onChange, formatter, parser, precision, size, min, ...props }) => ReactModule.createElement('input', {
     ...props,
+    min,
     type: 'number',
-    onChange: (event) => onChange?.(event.target.value === '' ? null : Number(event.target.value)),
+    'data-precision': precision,
+    'data-formatted-value': props.value == null
+      ? ''
+      : formatter?.(props.value, { userTyping: false, input: String(props.value) }),
+    onChange: (event) => {
+      const rawValue = event.target.value;
+      const parsedValue = parser ? parser(rawValue) : rawValue;
+      onChange?.(rawValue === '' ? null : Number(parsedValue));
+    },
   });
   const Select = ({ options = [], ...props }) => ReactModule.createElement(
     'select',
@@ -236,7 +256,7 @@ test('新责任人、新公司、新成本中心均从弹窗选择', () => {
 
 
 test('资产处置回收商一至三按报价金额输入', () => {
-  const source = { ...SCRAP_ASSET_POOL[0], recycler1: null, recycler2: null, recycler3: null };
+  const source = { ...SCRAP_ASSET_POOL[0], recycler1: 1250.5, recycler2: null, recycler3: null };
   const onChange = jest.fn();
   render(
     <ScrapPrototypeAssetTable
@@ -252,6 +272,8 @@ test('资产处置回收商一至三按报价金额输入', () => {
   expect(screen.getByText('回收商一')).toBeInTheDocument();
   const amountInputs = screen.getAllByRole('spinbutton');
   expect(amountInputs).toHaveLength(3);
+  expect(amountInputs[0]).toHaveAttribute('data-precision', '2');
+  expect(amountInputs[0]).toHaveAttribute('data-formatted-value', '1,250.50');
   fireEvent.change(amountInputs[0], { target: { value: '1200.5' } });
   expect(onChange).toHaveBeenCalledWith(source.id, 'recycler1', 1200.5);
 });
@@ -285,4 +307,42 @@ test('资产报废明细使用报废数量，账面报废删除按钮只显示�
   );
   expect(screen.getByRole('button', { name: '删除' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '删除所选' })).not.toBeInTheDocument();
+});
+
+
+test('资产处置明细导出包含完整处置字段和三家报价', () => {
+  jest.clearAllMocks();
+  exportScrapPrototypeAssets([{
+    id: 'disposal-export-1',
+    tagNo: 'FA-2026-000120',
+    serialNumber: 'SN-120',
+    reason: '达到报废条件',
+    majorCategory: 'SERVER',
+    minorCategory: '标准机架服务器',
+    description: '机架服务器',
+    config: '双路处理器',
+    enableDate: '2022-06-18',
+    plate: '17_Corporate',
+    city: '北京',
+    building: '北京亦庄数据中心',
+    quantity: 1,
+    originalValue: 128000,
+    netValue: 32000,
+    recycler1: 1250.5,
+    recycler2: 1380,
+    recycler3: 1198.88,
+  }], 'disposal');
+
+  expect(XLSX.utils.json_to_sheet).toHaveBeenCalledWith([
+    expect.objectContaining({
+      序号: 1,
+      报废原因: '达到报废条件',
+      资产类别: 'SERVER.标准机架服务器',
+      City: '北京',
+      回收商一报价: 1250.5,
+      回收商二报价: 1380,
+      回收商三报价: 1198.88,
+    }),
+  ]);
+  expect(XLSX.writeFile).toHaveBeenCalledWith(expect.any(Object), '资产处置明细.xlsx');
 });
