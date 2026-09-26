@@ -293,7 +293,7 @@ export default function ScrapPrototypeEditor({
   }));
   if (
     approvalPage
-    && type === 'crossCompany'
+    && ['crossCompany', 'scrap'].includes(type)
     && form.documentStatus === '审批中'
     && form.currentNode
     && !approvalRecords.some((item) => item.node === form.currentNode && item.status === '待审批')
@@ -314,7 +314,7 @@ export default function ScrapPrototypeEditor({
     >
       <div className="flex items-center justify-between">
         <h3 className="m-0 text-xl font-semibold">
-          {approvalPage && type === 'crossCompany' ? '跨公司转移审批' : readOnly ? `${config.title}详情` : config.createLabel}
+          {approvalPage ? `${config.title}审批` : readOnly ? `${config.title}详情` : config.createLabel}
         </h3>
         {approvalPage && type === 'crossCompany' && (
           <span className="text-gray-500">申请单号：{form.applicationNo}</span>
@@ -605,11 +605,30 @@ export default function ScrapPrototypeEditor({
       {((approvalPage && type === 'scrap') || (
         readOnly && !approvalPage && type !== 'disposal' && !['草稿', '已驳回'].includes(form.documentStatus)
       )) && (
-        <BorrowingApprovalHistory records={approvalRecords} />
+        <BorrowingApprovalHistory records={approvalRecords}>
+          {approvalPage && form.documentStatus === '审批中' && (
+            <>
+              <div className="mb-2"><strong>审批意见</strong></div>
+              <Input.TextArea
+                rows={3}
+                maxLength={400}
+                showCount
+                value={approvalOpinion}
+                placeholder="同意时非必填，驳回时必填"
+                onChange={(event) => setApprovalOpinion(event.target.value)}
+              />
+              <div className="mt-3 flex justify-center gap-3">
+                <Button type="primary" onClick={() => decideTransfer('通过')}>同意</Button>
+                <Button danger onClick={() => decideTransfer('驳回')}>驳回</Button>
+                <Button onClick={onBack}>返回</Button>
+              </div>
+            </>
+          )}
+        </BorrowingApprovalHistory>
       )}
 
       <div className="flex justify-center gap-3">
-        {!(approvalPage && type === 'crossCompany' && form.documentStatus === '审批中') && (
+        {!(approvalPage && ['crossCompany', 'scrap'].includes(type) && form.documentStatus === '审批中') && (
           <Button onClick={onBack}>返回</Button>
         )}
         {!approvalPage && readOnly && type !== 'disposal' && ['草稿', '已驳回'].includes(form.documentStatus) && (
