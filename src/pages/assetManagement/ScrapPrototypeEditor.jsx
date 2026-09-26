@@ -313,7 +313,8 @@ export default function ScrapPrototypeEditor({
     || (['scrap', 'disposal'].includes(type) && ['审批中', '处理中'].includes(form.documentStatus))
   );
   const showPageExport = (type === 'scrap' && approvalView)
-    || (type === 'accounting' && approvalPage && form.scrapMethod !== '调账');
+    || (type === 'accounting' && approvalPage && form.scrapMethod !== '调账')
+    || (type === 'disposal' && approvalPage);
 
   const disposalSummary = Array.from(assets.reduce((groups, asset) => {
     const key = JSON.stringify([asset.city || '', asset.majorCategory || '']);
