@@ -442,6 +442,7 @@ export default function ScrapPrototypeModule({ type }) {
 
   return (
     <ScrapPrototypeEditor
+      key={`${editorState.form.id || editorState.form.applicationNo || 'new'}-${editorState.approvalPage ? 'approval' : editorState.readOnly ? 'detail' : 'edit'}`}
       type={type}
       config={config}
       initialForm={editorState.form}

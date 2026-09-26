@@ -36,8 +36,15 @@ jest.mock('./ScrapPrototypeList', () => {
 jest.mock('./ScrapPrototypeEditor', () => {
   const React = require('react');
   return function TestEditor({ initialForm, initialAssets, onSave, approvalPage }) {
+    const [localForm] = React.useState(initialForm);
     return <div>
-      {approvalPage && <span>跨公司转移审批页面</span>}
+      {approvalPage && (
+        <>
+          <span>跨公司转移审批页面</span>
+          <span data-testid="approval-document-status">{localForm.documentStatus}</span>
+          <span data-testid="approval-record-count">{localForm.approvalHistory?.length || 0}</span>
+        </>
+      )}
       <button type="button" onClick={() => onSave(initialForm, initialAssets, false)}>保存草稿</button>
       <button type="button" onClick={() => onSave(initialForm, initialAssets, true)}>提交申请</button>
     </div>;
@@ -109,6 +116,8 @@ test('跨公司转移提交后直接进入审批页面，不返回列表', async
   fireEvent.click(screen.getByRole('button', { name: '提交申请' }));
 
   expect(await screen.findByText('跨公司转移审批页面')).toBeInTheDocument();
+  expect(screen.getByTestId('approval-document-status')).toHaveTextContent('审批中');
+  expect(screen.getByTestId('approval-record-count')).toHaveTextContent('1');
   expect(screen.queryByRole('button', { name: '创建跨公司转移申请单' })).not.toBeInTheDocument();
   const submitted = getScrapPrototypeRecords('crossCompany')[0];
   expect(submitted.documentStatus).toBe('审批中');

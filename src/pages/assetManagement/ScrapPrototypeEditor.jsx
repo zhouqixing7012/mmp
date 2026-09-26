@@ -340,7 +340,7 @@ export default function ScrapPrototypeEditor({
   return (
     <div
       className="space-y-4 pb-4"
-      data-page-view-key={`${type}-${readOnly ? 'detail' : 'edit'}`}
+      data-page-view-key={`${type}-${approvalPage ? 'approval' : readOnly ? 'detail' : 'edit'}`}
     >
       <div className="flex items-center justify-between">
         <h3 className="m-0 text-xl font-semibold">
@@ -360,7 +360,6 @@ export default function ScrapPrototypeEditor({
             <DetailItem label="联系电话">{showValue(form.contactPhone)}</DetailItem>
             <DetailItem label="邮箱">{showValue(form.email)}</DetailItem>
             <DetailItem label="部门" span={3}>{showValue(form.department)}</DetailItem>
-            <DetailItem label="单据状态"><StatusTag value={form.documentStatus} type="business" /></DetailItem>
             <DetailItem label="备注" span={3}>{showValue(form.remark)}</DetailItem>
             <DetailItem label="附件" span={3}>{showValue(form.attachments?.map((item) => item.name).join('、'))}</DetailItem>
           </DetailGrid>
