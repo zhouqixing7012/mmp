@@ -15,6 +15,7 @@
 - 最近确认的标签打印、资产维护、合约号码和移库规则以正式 PRD 为准；旧记录与现行口径差异见 [迁移对照](docs/archive/2026-09-24-workflow/README.md)。
 - 平台个性化设置需用户粘贴更新，仓库替换稿见 [PERSONAL_INSTRUCTIONS.md](docs/PERSONAL_INSTRUCTIONS.md)。
 - 盘点 PRD 基线：`docs/PRD-资产盘点.md` 是完整 PC 端现状 PRD；`docs/asset-inventory/资产盘点-现状PRD.md` 仅为简略整理稿；新版 PRD 位于同目录的 `资产盘点-新版PRD.md`。
+- 新版盘点 PRD 已明确：初盘关闭后通知财务；复盘由财务发起且仅财务执行；审批按资产范围先经 ES 主管或 NO 领导，再经财务主管。
 
 ## 历史与验证边界
 
