@@ -585,7 +585,7 @@ export default function ScrapPrototypeEditor({
               { title: '原值', dataIndex: 'originalValue', width: 140, align: 'right', render: money },
               { title: '净值', dataIndex: 'netValue', width: 140, align: 'right', render: money },
               ...['回收商一', '回收商二', '回收商三'].map((title, index) => ({
-                title, dataIndex: `recycler${index + 1}`, width: 180,
+                title, dataIndex: `recycler${index + 1}`, width: 180, fixed: 'right',
                 render: (values) => values.join('、') || '-',
               })),
             ]} />
