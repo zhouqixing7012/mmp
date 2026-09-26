@@ -145,7 +145,10 @@ test.each([
   );
   expect(screen.getByTestId('approval-history-records')).toHaveTextContent('发起人提交');
   const approvalHistory = screen.getByTestId('approval-history-records').textContent;
-  expect(screen.getByPlaceholderText('同意时非必填，驳回时必填')).toBeInTheDocument();
+  const opinionPlaceholder = type === 'crossCompany'
+    ? '同意时非必填，驳回时必填'
+    : '请输入审批意见（驳回时必填）';
+  expect(screen.getByPlaceholderText(opinionPlaceholder)).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '同意' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '驳回' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '加签' })).not.toBeInTheDocument();
@@ -165,7 +168,7 @@ test.each([
     type === 'crossCompany' ? 'true' : 'false',
   );
   expect(screen.getByTestId('approval-history-records').textContent).toBe(approvalHistory);
-  expect(screen.queryByPlaceholderText('同意时非必填，驳回时必填')).not.toBeInTheDocument();
+  expect(screen.queryByPlaceholderText(opinionPlaceholder)).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '同意' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '驳回' })).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: '返回' })).toBeInTheDocument();
