@@ -99,6 +99,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const [progressOpen, setProgressOpen] = useState(false);
   const [planProject, setPlanProject] = useState(PROJECT_INFO);
   const [planRows, setPlanRows] = useState(() => initialPlanRows.map((row) => ({ ...row, status: row.status === '暂存' ? '草稿' : row.status })));
+  const [projectStatusOverrides, setProjectStatusOverrides] = useState({});
+  const handleProjectClose = (project) => setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '盘点关闭' }));
   const [assetPlanMap, setAssetPlanMap] = useState(() => Object.fromEntries(availableAssets.map((asset) => [asset.key, initialPlanRows.some((plan) => plan.planNo === asset.planNo) ? asset.planNo : ''])));
 
   const activePlanNos = new Set(planRows.filter((row) => allowedRanges.includes(row.range)).map((row) => row.planNo));
@@ -150,7 +152,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
 
   const openProjectV2 = (row) => {
-    const project = resolveProjectFromRow(row);
+    const project = { ...resolveProjectFromRow(row), status: projectStatusOverrides[row.projectNo] || row.status };
     if (project.status === '草稿') {
       triggerBaseAction(row, 'project');
       return;
@@ -423,6 +425,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     {showProjectListV2 && <AssetInventoryProjectListV2
       onCreate={() => triggerBaseAction(null, 'create')}
       onOpenProject={openProjectV2}
+      onCloseProject={handleProjectClose}
+      statusOverrides={projectStatusOverrides}
       onOpenPlans={(row) => openPlanViewByProject(row)}
       onOpenProgress={(row) => openProgressByProject(row)}
       onOpenImageReview={(row) => { resetOverlays(); setPlanProject(resolveProjectFromRow(row)); setImageReviewOpen(true); }}
@@ -430,6 +434,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
 
     {!customBuilderOpen && (snapshotOpen || showBaseSnapshotV2) && <AssetInventorySnapshotDetailV2
       project={snapshotProject}
+      onCloseProject={handleProjectClose}
       onBack={() => { if (snapshotOpen) setSnapshotOpen(false); else returnToProjectList(); }}
       onOpenPlans={() => openPlanViewByProject(snapshotProject)}
       onGenerateDefault={() => openPlanViewByProject(snapshotProject, true)}
