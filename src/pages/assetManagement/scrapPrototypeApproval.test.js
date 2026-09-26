@@ -33,6 +33,6 @@ test('缺少历史记录时仍按单据流程显示发起记录和当前节点',
     creator: '213852-孙志强',
   }, 'crossCompany');
 
-  expect(rows.map((row) => row.node)).toEqual(['发起人提交', '责任人5级及以上直属领导']);
+  expect(rows.map((row) => row.node)).toEqual(['发起人提交', 'ES主管确认']);
   expect(rows[1].status).toBe('待审批');
 });
