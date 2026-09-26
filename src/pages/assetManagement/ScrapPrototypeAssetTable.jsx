@@ -140,6 +140,28 @@ function requiredTitle(label) {
 
 export function exportScrapPrototypeAssets(assets, type, accountingMethod) {
   const rows = assets.map((item, index) => {
+    if (type === 'disposal') {
+      return {
+        序号: index + 1,
+        报废原因: item.reason,
+        资产类别: [item.majorCategory, item.minorCategory].filter(Boolean).join('.'),
+        资产说明: item.description,
+        资产标签号: item.tagNo,
+        序列号: item.serialNumber,
+        配置: item.config,
+        启用日期: item.enableDate,
+        财务核算板块: item.plate,
+        City: item.city,
+        Building: item.building,
+        数量: item.quantity,
+        原值: item.originalValue,
+        净值: item.netValue,
+        回收商一报价: item.recycler1,
+        回收商二报价: item.recycler2,
+        回收商三报价: item.recycler3,
+      };
+    }
+
     if (type === 'crossCompany' || (type === 'accounting' && accountingMethod === '调账')) {
       return {
         资产标签号: item.tagNo,
@@ -218,7 +240,13 @@ export function exportScrapPrototypeAssets(assets, type, accountingMethod) {
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), '资产明细');
   XLSX.writeFile(
     workbook,
-    type === 'accounting' ? '账面报废资产明细.xlsx' : type === 'scrap' ? '资产报废明细.xlsx' : '资产明细.xlsx',
+    type === 'accounting'
+      ? '账面报废资产明细.xlsx'
+      : type === 'scrap'
+        ? '资产报废明细.xlsx'
+        : type === 'disposal'
+          ? '资产处置明细.xlsx'
+          : '资产明细.xlsx',
   );
 }
 
@@ -727,7 +755,19 @@ export default function ScrapPrototypeAssetTable({
       title, dataIndex: `recycler${index + 1}`, width: 145, fixed: 'right', align: 'right',
       render: (value, row) => readOnly
         ? (value == null || value === '' ? '-' : money(value))
-        : <InputNumber min={0} precision={2} size="small" className="w-full" value={value ?? null} onChange={(nextValue) => onChange(row.id, `recycler${index + 1}`, nextValue)} />,
+        : <InputNumber
+          min={0}
+          precision={2}
+          size="small"
+          className="w-full"
+          value={value ?? null}
+          formatter={(inputValue, info) => {
+            if (info?.userTyping) return info.input;
+            return inputValue == null || inputValue === '' ? '' : money(inputValue);
+          }}
+          parser={(inputValue) => String(inputValue || '').replace(/[^\d.-]/g, '')}
+          onChange={(nextValue) => onChange(row.id, `recycler${index + 1}`, nextValue)}
+        />,
     })),
   ];
 
