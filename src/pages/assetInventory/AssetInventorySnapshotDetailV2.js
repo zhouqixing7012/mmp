@@ -362,10 +362,18 @@ export default function AssetInventorySnapshotDetailV2({
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const initialProjectStatus = project?.status === '草稿' ? '快照生成' : (project?.status || '快照生成');
   const [projectStatus, setProjectStatus] = useState(initialProjectStatus);
+  const getCloseBlockReason = () => {
+    if (Number(project?.unstartedPlanCount || 0) > 0) return '仍有未启动的盘点计划，请先启动计划后再关闭项目';
+    if (Number(project?.pendingImageReviewCount || 0) > 0) return '仍有待审核的盘点图片，请完成审核后再关闭项目';
+    if (Number(project?.rejectedImageReviewCount || 0) > 0) return '仍有审核不通过的盘点图片，请处理后再关闭项目';
+    return '';
+  };
   const canManuallyClose = projectStatus === '盘点中'
     && !isSystemRoomInitial
     && (project?.projectType !== '复盘' || project?.approvalStatus === '已审核');
   const handleCloseProject = () => {
+    const closeBlockReason = getCloseBlockReason();
+    if (closeBlockReason) { messageApi.warning(closeBlockReason); return; }
     Modal.confirm({
       title: '确认关闭盘点项目？',
       content: '项目关闭后，移动端待办将结束，不能继续扫码或提交。未盘资产和待提交结果不阻止关闭。',
