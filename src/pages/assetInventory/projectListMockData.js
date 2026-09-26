@@ -6,6 +6,23 @@
 
 export const PROJECT_LIST_ROWS = [
   {
+    key: 'CP-202607010001',
+    relationGroup: '2026年度机房初盘链路',
+    projectNo: 'CP-202607010001',
+    projectType: '初盘',
+    projectName: '2026年度机房初盘',
+    status: '盘点中',
+    startDate: '2026-07-01',
+    endDate: '2026-07-31',
+    executionCount: 120,
+    assetCount: 120,
+    owner: '系统',
+    createdAt: '2026-07-01',
+    generationSource: '系统生成',
+    scopeRanges: ['机房'],
+    progress: 100,
+  },
+  {
     key: 'CP-202608180001',
     relationGroup: '2026年度盘点链路',
     projectNo: 'CP-202608180001',
