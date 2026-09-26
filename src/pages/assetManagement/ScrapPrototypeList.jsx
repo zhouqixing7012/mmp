@@ -143,10 +143,16 @@ export default function ScrapPrototypeList({
   const operationColumn = {
     title: '操作',
     key: 'operation',
-    width: type === 'disposal' ? 280 : type === 'scrap' ? 240 : 210,
+    width: type === 'crossCompany' ? 120 : type === 'disposal' ? 280 : type === 'scrap' ? 240 : 210,
     fixed: 'right',
     render: (_, record) => (
-      type === 'disposal'
+      type === 'crossCompany'
+        ? (
+          <Button type="link" size="small" onClick={() => onOpen(record, false, true)}>
+            查看进度
+          </Button>
+        )
+        : type === 'disposal'
         ? (
           <Space size={2} wrap>
             {record.disposalStatus === '待处置' ? (
@@ -219,7 +225,7 @@ export default function ScrapPrototypeList({
     dataIndex: 'applicationNo',
     width: 180,
     render: (value, record) => (
-      <Button type="link" size="small" onClick={() => onOpen(record, false)}>
+      <Button type="link" size="small" onClick={() => onOpen(record, false, type === 'crossCompany')}>
         {value}
       </Button>
     ),
@@ -235,16 +241,11 @@ export default function ScrapPrototypeList({
   const columnsByType = {
     crossCompany: [
       applicationColumn,
-      statusColumn,
-      { title: '业务类型', key: 'businessType', width: 120, render: () => '跨公司转移' },
-      { title: '资产范围', dataIndex: 'assetScope', width: 120 },
-      { title: '发起人', dataIndex: 'creator', width: 130 },
+      { title: '制单人', dataIndex: 'creator', width: 130 },
       { title: '原公司', dataIndex: 'company', width: 160, ellipsis: true },
       { title: '新公司', dataIndex: 'targetCompany', width: 160, ellipsis: true },
-      { title: '资产数量', dataIndex: 'assetCount', width: 100, align: 'right' },
       { title: '制单时间', dataIndex: 'createdAt', width: 120 },
-      { title: '最后修改时间', dataIndex: 'lastModifiedAt', width: 170 },
-      { title: '当前节点', dataIndex: 'currentNode', width: 190, ellipsis: true },
+      statusColumn,
       operationColumn,
     ],
     scrap: [

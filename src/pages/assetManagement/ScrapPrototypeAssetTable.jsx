@@ -31,21 +31,12 @@ import {
   getScrapPrototypeRecords,
 } from '../../services/scrapPrototypeService';
 import {
-  mockCostCenters,
   mockPlates,
 } from '../../mock/businessRulesMock';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
-
-const companyOptions = Array.from(
-  new Set(warehouseCatalog.map((item) => item.company).filter(Boolean)),
-).map((value) => ({ label: value, value }));
+import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 
 const plateOptions = mockPlates.map((item) => ({
-  label: item.desc,
-  value: item.desc,
-}));
-
-const costCenterOptions = mockCostCenters.map((item) => ({
   label: item.desc,
   value: item.desc,
 }));
@@ -54,6 +45,79 @@ const warehouseOptions = warehouseCatalog.map((item) => ({
   label: `${item.warehouseCode}.${item.warehouseDescription}`,
   value: `${item.warehouseCode}.${item.warehouseDescription}`,
 }));
+
+const maintenanceRows = getAssetMaintenanceRows();
+const transferLookupRecords = {
+  owners: maintenanceRows
+    .filter((row) => row.ownerId && row.ownerName)
+    .reduce((records, row) => {
+      const code = String(row.ownerId).trim();
+      if (!records.some((item) => item.code === code)) {
+        records.push({ id: `owner-${code}`, code, name: row.ownerName, department: row.department || '' });
+      }
+      return records;
+    }, []),
+  companies: maintenanceRows
+    .filter((row) => row.companyCode && row.company)
+    .reduce((records, row) => {
+      const code = String(row.companyCode).trim();
+      if (!records.some((item) => item.code === code)) {
+        records.push({ id: `company-${code}`, code, name: row.company });
+      }
+      return records;
+    }, []),
+  costCenters: maintenanceRows
+    .filter((row) => row.costCenter)
+    .reduce((records, row) => {
+      const name = String(row.costCenter).trim();
+      const code = name.split('.')[0];
+      if (code && !records.some((item) => item.code === code)) {
+        records.push({ id: `cc-${code}`, code, name });
+      }
+      return records;
+    }, []),
+};
+
+const transferLookupConfig = {
+  newResponsiblePerson: {
+    title: '选择新责任人',
+    values: transferLookupRecords.owners,
+    searchFields: [
+      { label: '员工编码', name: 'code', dataIndex: 'code' },
+      { label: '姓名', name: 'name', dataIndex: 'name' },
+      { label: '部门名称', name: 'department', dataIndex: 'department' },
+    ],
+    columns: [
+      { title: '员工编码', dataIndex: 'code' },
+      { title: '姓名', dataIndex: 'name' },
+      { title: '部门名称', dataIndex: 'department' },
+    ],
+  },
+  newCompany: {
+    title: '选择新公司',
+    values: transferLookupRecords.companies,
+    searchFields: [
+      { label: '公司编码', name: 'code', dataIndex: 'code' },
+      { label: '公司名称', name: 'name', dataIndex: 'name' },
+    ],
+    columns: [
+      { title: '公司编码', dataIndex: 'code' },
+      { title: '公司名称', dataIndex: 'name' },
+    ],
+  },
+  newCostCenter: {
+    title: '选择新成本中心',
+    values: transferLookupRecords.costCenters,
+    searchFields: [
+      { label: '成本中心编码', name: 'code', dataIndex: 'code' },
+      { label: '成本中心', name: 'name', dataIndex: 'name' },
+    ],
+    columns: [
+      { title: '成本中心编码', dataIndex: 'code' },
+      { title: '成本中心', dataIndex: 'name' },
+    ],
+  },
+};
 
 function options(values) {
   return values.map((value) => ({ label: value, value }));
@@ -85,6 +149,7 @@ export default function ScrapPrototypeAssetTable({
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [transferLookup, setTransferLookup] = useState(null);
 
   const pickerAssets = useMemo(() => {
     const pool = type === 'accounting'
@@ -333,9 +398,12 @@ export default function ScrapPrototypeAssetTable({
           ? displayValue(value)
           : (
             <Input
+              readOnly
               value={value}
-              placeholder="请选择/输入新责任人"
-              onChange={(event) => onChange(record.id, 'newResponsiblePerson', event.target.value)}
+              placeholder="请选择新责任人"
+              suffix={<span className="text-[#1677ff]">选择</span>}
+              className="cursor-pointer"
+              onClick={() => setTransferLookup({ row: record, field: 'newResponsiblePerson' })}
             />
           )
       ),
@@ -348,11 +416,13 @@ export default function ScrapPrototypeAssetTable({
         readOnly
           ? displayValue(value)
           : (
-            <Select
-              value={value || undefined}
-              options={companyOptions}
-              className="w-full"
-              onChange={(nextValue) => onChange(record.id, 'newCompany', nextValue || '')}
+            <Input
+              readOnly
+              value={value}
+              placeholder="请选择新公司"
+              suffix={<span className="text-[#1677ff]">选择</span>}
+              className="cursor-pointer"
+              onClick={() => setTransferLookup({ row: record, field: 'newCompany' })}
             />
           )
       ),
@@ -382,11 +452,13 @@ export default function ScrapPrototypeAssetTable({
         readOnly
           ? displayValue(value)
           : (
-            <Select
-              value={value || undefined}
-              options={costCenterOptions}
-              className="w-full"
-              onChange={(nextValue) => onChange(record.id, 'newCostCenter', nextValue || '')}
+            <Input
+              readOnly
+              value={value}
+              placeholder="请选择新成本中心"
+              suffix={<span className="text-[#1677ff]">选择</span>}
+              className="cursor-pointer"
+              onClick={() => setTransferLookup({ row: record, field: 'newCostCenter' })}
             />
           )
       ),
@@ -661,6 +733,28 @@ export default function ScrapPrototypeAssetTable({
 
   return (
     <>
+      {type === 'crossCompany' && transferLookup && (() => {
+        const lookup = transferLookupConfig[transferLookup.field];
+        const display = (item) => transferLookup.field === 'newResponsiblePerson'
+          ? `${item.code}-${item.name}`
+          : transferLookup.field === 'newCompany'
+            ? `${item.code}.${item.name}`
+            : item.name;
+        return (
+          <SelectModal
+            open
+            title={lookup.title}
+            dataSource={lookup.values}
+            searchFields={lookup.searchFields}
+            columns={lookup.columns}
+            onCancel={() => setTransferLookup(null)}
+            onConfirm={(item) => {
+              onChange(transferLookup.row.id, transferLookup.field, display(item));
+              setTransferLookup(null);
+            }}
+          />
+        );
+      })()}
       {!readOnly && (
       <div className="mb-3 flex justify-end">
         <Space wrap>

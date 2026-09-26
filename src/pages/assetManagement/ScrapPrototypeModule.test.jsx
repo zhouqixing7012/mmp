@@ -40,8 +40,12 @@ jest.mock('./ScrapPrototypeList', () => {
 
 jest.mock('./ScrapPrototypeEditor', () => {
   const React = require('react');
-  return function TestEditor({ initialForm, initialAssets, onSave }) {
-    return <button type="button" onClick={() => onSave(initialForm, initialAssets, false)}>保存草稿</button>;
+  return function TestEditor({ initialForm, initialAssets, onSave, approvalPage }) {
+    return <div>
+      {approvalPage && <span>跨公司转移审批页面</span>}
+      <button type="button" onClick={() => onSave(initialForm, initialAssets, false)}>保存草稿</button>
+      <button type="button" onClick={() => onSave(initialForm, initialAssets, true)}>提交申请</button>
+    </div>;
   };
 });
 
@@ -84,6 +88,16 @@ test('无实物报废完成后仍可在处置池查看，且保存原因', async
   const completed = getScrapPrototypeRecords('disposal')[0];
   expect(completed.remark).toBe('线下核实无实物');
   expect(screen.getAllByText('已处置').length).toBeGreaterThan(0);
+});
+
+test('跨公司转移提交后直接进入审批页面，不返回列表', async () => {
+  render(<ScrapPrototypeModule type="crossCompany" />);
+  fireEvent.click(screen.getByRole('button', { name: '创建跨公司转移申请单' }));
+  fireEvent.click(screen.getByRole('button', { name: '提交申请' }));
+
+  expect(await screen.findByText('跨公司转移审批页面')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '创建跨公司转移申请单' })).not.toBeInTheDocument();
+  expect(getScrapPrototypeRecords('crossCompany')[0].documentStatus).toBe('审批中');
 });
 
 test('跨公司转移审批完成后进入待报废池，调账资产进入账面报废候选', async () => {

@@ -196,7 +196,7 @@ export default function ScrapPrototypeModule({ type }) {
     setView('editor');
   };
 
-  const openRecord = (record, editable) => {
+  const openRecord = (record, editable, approvalPage = false) => {
     const form = record.formSnapshot
       ? { ...record.formSnapshot, id: record.id, approvalHistory: record.approvalHistory || [] }
       : {
@@ -221,6 +221,7 @@ export default function ScrapPrototypeModule({ type }) {
       form,
       assets,
       readOnly: !editable,
+      approvalPage,
     });
     setView('editor');
   };
@@ -291,8 +292,13 @@ export default function ScrapPrototypeModule({ type }) {
     });
 
     message.success(submit ? '提交成功' : '草稿保存成功');
-    setView('list');
-    setEditorState(null);
+    if (submit && type === 'crossCompany') {
+      setEditorState({ form: nextForm, assets: assets.map((item) => ({ ...item })), readOnly: true, approvalPage: true });
+      setView('editor');
+    } else {
+      setView('list');
+      setEditorState(null);
+    }
   };
 
   const processApproval = (record, result, opinion) => {
@@ -323,30 +329,32 @@ export default function ScrapPrototypeModule({ type }) {
       time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
     };
 
+    const updatedRecord = {
+      ...record,
+      documentStatus,
+      currentNode,
+      lastModifiedAt: entry.time,
+      enteredScrapPoolAt: completed ? entry.time : record.enteredScrapPoolAt,
+      assetsSnapshot: completed
+        ? recordAssets.map((asset) => ({
+            ...asset,
+            status: String(asset.status || '').startsWith('在库') ? '在库-待报废' : asset.status,
+          }))
+        : recordAssets,
+      approvalHistory: [...(record.approvalHistory || []), entry],
+      formSnapshot: record.formSnapshot
+        ? { ...record.formSnapshot, documentStatus, currentNode, approvalHistory: [...(record.approvalHistory || []), entry] }
+        : record.formSnapshot,
+    };
     const next = records.map((item) => (
       item.id === record.id
-        ? {
-            ...item,
-            documentStatus,
-            currentNode,
-            lastModifiedAt: entry.time,
-            enteredScrapPoolAt: completed ? entry.time : item.enteredScrapPoolAt,
-            assetsSnapshot: completed
-              ? item.assetsSnapshot?.map((asset) => ({
-                  ...asset,
-                  status: String(asset.status || '').startsWith('在库') ? '在库-待报废' : asset.status,
-                }))
-              : item.assetsSnapshot,
-            approvalHistory: [...(item.approvalHistory || []), entry],
-            formSnapshot: item.formSnapshot
-              ? { ...item.formSnapshot, documentStatus, currentNode }
-              : item.formSnapshot,
-          }
+        ? updatedRecord
         : item
     ));
     saveScrapPrototypeRecords(type, next);
     setRecords(next);
     message.success(completed ? '审批完成，资产已进入待报废池' : lastNode ? '审批完成，待提单人确认' : approved ? '审批通过' : '已驳回发起人');
+    return updatedRecord;
   };
 
   const executeAccounting = (record) => {
@@ -463,6 +471,12 @@ export default function ScrapPrototypeModule({ type }) {
       initialForm={editorState.form}
       initialAssets={editorState.assets}
       readOnly={editorState.readOnly}
+      approvalPage={editorState.approvalPage}
+      onApprove={processApproval}
+      onEdit={(form) => {
+        const record = records.find((item) => item.id === form.id);
+        if (record) openRecord(record, true, false);
+      }}
       onBack={() => {
         setView('list');
         setEditorState(null);
