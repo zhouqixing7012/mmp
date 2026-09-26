@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import ScrapPrototypeEditor from './ScrapPrototypeEditor';
+import { exportScrapPrototypeAssets } from './ScrapPrototypeAssetTable';
 
 jest.mock('../../components/LookupInput', () => {
   const ReactModule = require('react');
@@ -107,6 +108,53 @@ test('资产处置编辑页不展示独立报价与处置信息区块', () => {
   );
 
   expect(screen.queryByText('报价与处置信息')).not.toBeInTheDocument();
+  expect(screen.queryByText('单据状态')).not.toBeInTheDocument();
+  expect(screen.getByText('备注')).toBeInTheDocument();
+});
+
+test('资产处置审批页展示会计格式报价并可导出当前申请明细', () => {
+  jest.clearAllMocks();
+  const assets = [{
+    id: 'disposal-approval-asset',
+    tagNo: 'FA-2026-000120',
+    majorCategory: 'SERVER',
+    description: '机架服务器',
+    city: '北京',
+    quantity: 1,
+    originalValue: 128000,
+    netValue: 32000,
+    recycler1: 1250.5,
+    recycler2: 1380,
+    recycler3: 1198.88,
+  }];
+
+  render(
+    <ScrapPrototypeEditor
+      type="disposal"
+      config={{ title: '资产处置', createLabel: '创建资产处置申请单' }}
+      initialForm={{
+        ...accountingForm,
+        applicationNo: 'CZ20260926000001',
+        documentStatus: '审批中',
+        scrapMethod: '全部报废',
+        remark: '北京机房资产处置说明',
+      }}
+      initialAssets={assets}
+      readOnly
+      approvalPage
+      onBack={jest.fn()}
+      onSave={jest.fn()}
+      onApprove={jest.fn()}
+    />,
+  );
+
+  expect(screen.getByText('申请单号：CZ20260926000001')).toBeInTheDocument();
+  expect(screen.getByText('备注')).toBeInTheDocument();
+  expect(screen.getByText('北京机房资产处置说明')).toBeInTheDocument();
+  expect(screen.getByText('1,250.50')).toBeInTheDocument();
+  expect(screen.queryByText('单据状态')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '导出' }));
+  expect(exportScrapPrototypeAssets).toHaveBeenCalledWith(assets, 'disposal', '全部报废');
 });
 
 test.each([
