@@ -30,6 +30,7 @@ test('缺少历史记录时仍按单据流程显示发起记录和当前节点',
   const rows = getScrapPrototypeApprovalRecords({
     assetScope: '办公设备',
     documentStatus: '审批中',
+    currentNode: 'ES主管确认',
     creator: '213852-孙志强',
   }, 'crossCompany');
 
