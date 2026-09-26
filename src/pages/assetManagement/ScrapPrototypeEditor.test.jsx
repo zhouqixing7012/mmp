@@ -2,22 +2,34 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import ScrapPrototypeEditor from './ScrapPrototypeEditor';
 
-jest.mock('../../components/LookupInput', () => function MockLookupInput({ value, placeholder, onOpen, disabled }) {
-  return <button type="button" disabled={disabled} onClick={onOpen}>{value || placeholder}</button>;
+jest.mock('../../components/LookupInput', () => {
+  const ReactModule = require('react');
+  return function MockLookupInput({ value, placeholder, onOpen, disabled }) {
+    return ReactModule.createElement('button', { type: 'button', disabled, onClick: onOpen }, value || placeholder);
+  };
 });
 
-jest.mock('../../components/SelectModal', () => function MockSelectModal({ open, title, dataSource = [], onConfirm }) {
-  if (!open) return null;
-  return (
-    <div role="dialog" aria-label={title}>
-      <span>{title}</span>
-      <button type="button" onClick={() => onConfirm(dataSource[0])}>选择候选公司</button>
-    </div>
-  );
+jest.mock('../../components/SelectModal', () => {
+  const ReactModule = require('react');
+  return function MockSelectModal({ open, title, dataSource = [], onConfirm }) {
+    if (!open) return null;
+    return ReactModule.createElement(
+      'div',
+      { role: 'dialog', 'aria-label': title },
+      ReactModule.createElement('span', null, title),
+      ReactModule.createElement('button', { type: 'button', onClick: () => onConfirm(dataSource[0]) }, '选择候选公司'),
+    );
+  };
 });
 
-jest.mock('./ScrapPrototypeAssetTable', () => () => <div data-testid="asset-table" />);
-jest.mock('../assetBorrowing/BorrowingApprovalHistory', () => ({ children }) => <div>{children}</div>);
+jest.mock('./ScrapPrototypeAssetTable', () => {
+  const ReactModule = require('react');
+  return () => ReactModule.createElement('div', { 'data-testid': 'asset-table' });
+});
+jest.mock('../assetBorrowing/BorrowingApprovalHistory', () => {
+  const ReactModule = require('react');
+  return ({ children }) => ReactModule.createElement('div', null, children);
+});
 
 const accountingForm = {
   applicationNo: '',
