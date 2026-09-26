@@ -51,9 +51,10 @@ export default function App() {
   const workspaceQuery = new URLSearchParams(location.search).get('workspace');
   const workspaceState = location.state?.workspace || workspaceQuery;
   const returnToInventoryProjects = location.state?.returnTo === 'asset-inventory-projects';
-  const [activeMenu, setActiveMenu] = useState(returnToInventoryProjects ? '资产盘点' : workspaceState ? '个人工作台' : '库存管理');
-  const [activeSubMenu, setActiveSubMenu] = useState(returnToInventoryProjects ? '盘点项目' : workspaceState || '资产接收');
-  const [activeTab, setActiveTab] = useState(workspaceState && !returnToInventoryProjects ? workspaceState : '');
+  const returnToAssetManagementHome = location.state?.returnTo === 'asset-management-home';
+  const [activeMenu, setActiveMenu] = useState(returnToInventoryProjects ? '资产盘点' : returnToAssetManagementHome ? '资产管理' : workspaceState ? '个人工作台' : '库存管理');
+  const [activeSubMenu, setActiveSubMenu] = useState(returnToInventoryProjects ? '盘点项目' : returnToAssetManagementHome ? '资产维护' : workspaceState || '资产接收');
+  const [activeTab, setActiveTab] = useState(workspaceState && !returnToInventoryProjects && !returnToAssetManagementHome ? workspaceState : '');
   const tabs = getTabsBySubMenu(activeSubMenu);
 
   useEffect(() => {
@@ -63,11 +64,17 @@ export default function App() {
       setActiveTab('');
       return;
     }
+    if (returnToAssetManagementHome) {
+      setActiveMenu('资产管理');
+      setActiveSubMenu('资产维护');
+      setActiveTab('');
+      return;
+    }
     if (!workspaceState) return;
     setActiveMenu('个人工作台');
     setActiveSubMenu(workspaceState);
     setActiveTab(getDefaultTabBySubMenu(workspaceState));
-  }, [workspaceState, location.key, returnToInventoryProjects]);
+  }, [workspaceState, location.key, returnToInventoryProjects, returnToAssetManagementHome]);
 
   const handleMenuToggle = (menuKey, collapsible = true) => {
     const isClosing = collapsible && activeMenu === menuKey;
