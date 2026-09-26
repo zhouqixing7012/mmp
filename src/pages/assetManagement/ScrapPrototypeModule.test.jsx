@@ -85,13 +85,27 @@ test('四类原型主模块可加载，跨公司转移草稿保存后可以重�
   expect(screen.getByText(newDraft.applicationNo)).toBeInTheDocument();
 });
 
-test('资产处置展示机房自动单、办公手动单以及软件和丢失的无实物单', () => {
+test('资产处置有多张可查看单据，覆盖不同资产范围、状态和带报价的明细', () => {
   render(<ScrapPrototypeModule type="disposal" />);
   const rows = getScrapPrototypeRecords('disposal');
-  expect(rows.some((row) => row.assetScope === '机房资产' && row.creator === '采购专员')).toBe(true);
-  expect(rows.some((row) => row.assetScope === '办公设备' && row.creator === 'ES专员')).toBe(true);
+  expect(rows).toHaveLength(8);
+  expect(rows.some((row) => row.assetScope === '机房资产' && row.documentStatus === '处理中')).toBe(true);
+  expect(rows.some((row) => row.assetScope === '办公设备' && row.documentStatus === '审批中')).toBe(true);
+  expect(rows.some((row) => row.assetScope === '办公设备' && row.documentStatus === '已完成')).toBe(true);
   expect(rows.some((row) => row.assetScope === '软件' && row.disposalMode === '无实物处置')).toBe(true);
   expect(rows.some((row) => row.assetsSnapshot.some((asset) => asset.scrapType === '丢失') && row.disposalMode === '无实物处置')).toBe(true);
+  expect(rows.every((row) => row.assetsSnapshot?.length > 0)).toBe(true);
+
+  const physicalAssets = rows
+    .filter((row) => row.disposalMode !== '无实物处置')
+    .flatMap((row) => row.assetsSnapshot);
+  expect(physicalAssets.length).toBeGreaterThan(5);
+  expect(physicalAssets.some((asset) => asset.recycler1 >= 1000)).toBe(true);
+  expect(physicalAssets.every((asset) => (
+    typeof asset.recycler1 === 'number'
+    && typeof asset.recycler2 === 'number'
+    && typeof asset.recycler3 === 'number'
+  ))).toBe(true);
 });
 
 test('账面报废完成时自动生成机房和无实物处置单，办公实物资产等待手动建单', () => {
