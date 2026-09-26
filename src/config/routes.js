@@ -42,6 +42,7 @@ import EmployeeAssetClaimPage from '../pages/employeeSelfService/AssetClaimPage'
 import EmployeeAssetClaimConfirmPage from '../pages/employeeSelfService/AssetClaimConfirmPage';
 import EmployeeMyApplicationsPage from '../pages/employeeSelfService/MyApplicationsPage';
 import MoveMobilePrototype from '../pages/inventoryManagement/MoveMobilePrototype';
+import AssetInventoryMobilePrototype from '../pages/assetInventory/AssetInventoryMobilePrototype';
 
 export const routeGroups = [
   { key: 'scrap', name: '报废管理' },
@@ -97,6 +98,7 @@ const routes = [
   { path: '/yewurules', name: '后台基础配置', Page: yewurules, nav: true, group: 'config' },
   { path: '/xitongrules', name: '组织与用户管理', Page: xitongrules, nav: false, group: 'config' },
   { path: '/inventory/move/mobile', name: '移库移动端原型', Page: MoveMobilePrototype, nav: false, group: 'workspace' },
+  { path: '/asset-inventory/mobile', name: '资产盘点移动端预览', Page: AssetInventoryMobilePrototype, nav: false, group: 'workspace' },
 ];
 
 export const navRoutes = routes.filter((route) => route.nav);
