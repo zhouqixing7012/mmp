@@ -45,7 +45,7 @@ function defaultForm(type) {
   return {
     applicationNo: '',
     documentStatus: '草稿',
-    creator: type === 'accounting' ? '吕静' : type === 'disposal' ? 'ES专员' : '当前登录人',
+    creator: type === 'accounting' ? '吕静' : type === 'disposal' ? 'ES专员' : '213852-孙志强',
     applicationDate: dayjs().format('YYYY-MM-DD'),
     company: type === 'crossCompany' ? '' : '114.新媒体',
     assetScope: type === 'accounting' ? '混合' : '',
@@ -56,7 +56,9 @@ function defaultForm(type) {
     department: '-',
     remark: '',
     description: '',
-    scrapMethod: '全部报废',
+    scrapMethod: type === 'accounting' ? '非调账' : '全部报废',
+    assetCategory: '',
+    assetLocation: '',
     disposedComplete: '否',
     region: '北京',
     needsCleaning: '否',
@@ -115,25 +117,30 @@ function seedAssets(type, record) {
   const source = record.assetScope === '混合'
     ? sourcePool
     : sourcePool.filter((item) => item.scope === record.assetScope);
+  const methodSource = type === 'accounting'
+    ? source.filter((item) => item.scrapMethod === record.scrapMethod)
+    : type === 'crossCompany'
+      ? source.filter((item) => item.company === record.company)
+      : source;
 
-  return source
+  return methodSource
     .slice(0, Math.min(3, Math.max(1, record.assetCount || 1)))
     .map((item, index) => ({
       ...item,
       scrapMethod: type === 'crossCompany'
         ? '调账'
-        : record.scrapMethod || item.scrapMethod || '全部报废',
+        : type === 'accounting' ? item.scrapMethod : record.scrapMethod || item.scrapMethod || '全部报废',
       scrapType: item.scrapType || '已到报废期',
       reason: item.reason || record.remark || '业务演示原因',
       dataCleaning: item.scope === '机房资产' && index === 0 ? '是' : undefined,
-      newCompany: type === 'crossCompany' ? '115.新媒体-上海' : '',
-      newPlate: type === 'crossCompany' ? '17_Corporate' : '',
-      newCostCenter: type === 'crossCompany' ? '112064_新媒体成本中心' : '',
-      newResponsiblePerson: type === 'crossCompany' ? '215410-卢铭华' : '',
-      targetWarehouse: type === 'crossCompany' ? 'I3001.资产上海分公司库（新媒体上海）' : '',
-      targetCity: type === 'crossCompany' ? '37.上海市' : '',
-      targetBuilding: type === 'crossCompany' ? '127.瑞安广场' : '',
-      targetFloor: type === 'crossCompany' ? '12层' : '',
+      newCompany: type === 'crossCompany' ? '115.新媒体-上海' : item.newCompany || '',
+      newPlate: type === 'crossCompany' ? '17_Corporate' : item.newPlate || '',
+      newCostCenter: type === 'crossCompany' ? '112064_新媒体成本中心' : item.newCostCenter || '',
+      newResponsiblePerson: type === 'crossCompany' ? '215410-卢铭华' : item.newResponsiblePerson || '',
+      targetWarehouse: type === 'crossCompany' ? 'I3001.资产上海分公司库（新媒体上海）' : item.targetWarehouse || '',
+      targetCity: type === 'crossCompany' ? '37.上海市' : item.targetCity || '',
+      targetBuilding: type === 'crossCompany' ? '127.瑞安广场' : item.targetBuilding || '',
+      targetFloor: type === 'crossCompany' ? '12层' : item.targetFloor || '',
     }));
 }
 
@@ -159,6 +166,7 @@ export default function ScrapPrototypeModule({ type }) {
     }
 
     const form = defaultForm(type);
+    if (type === 'accounting' && typeof selectedAssets === 'string') form.scrapMethod = selectedAssets;
     if (type === 'disposal' && pickedAssets.length > 0) {
       const firstAsset = pickedAssets[0];
       form.assetScope = firstAsset.scope;
@@ -250,7 +258,7 @@ export default function ScrapPrototypeModule({ type }) {
 
     const normalizedForm = { ...form, assetScope };
     const nowText = dayjs().format('YYYY-MM-DD HH:mm:ss');
-    const approvalHistory = submit && type === 'crossCompany'
+    const approvalHistory = submit && ['crossCompany', 'scrap', 'accounting'].includes(type)
         ? [
           ...(form.approvalHistory || []),
           { node: '发起人提交', person: normalizedForm.creator || '', result: '提交', opinion: '', time: nowText },
@@ -280,7 +288,7 @@ export default function ScrapPrototypeModule({ type }) {
       assetCount: assets.length,
       originalValueTotal: assets.reduce((sum, item) => sum + Number(item.originalValue || 0), 0),
       netValueTotal: assets.reduce((sum, item) => sum + Number(item.netValue || 0), 0),
-      scrapMethod: scrapMethods.length > 1 ? '混合' : scrapMethods[0] || form.scrapMethod,
+      scrapMethod: type === 'accounting' ? form.scrapMethod : scrapMethods.length > 1 ? '混合' : scrapMethods[0] || form.scrapMethod,
       region: form.region,
       currentNode: nextForm.currentNode,
       remark: form.remark || form.description,
@@ -299,7 +307,7 @@ export default function ScrapPrototypeModule({ type }) {
     });
 
     message.success(submit ? '提交成功' : '草稿保存成功');
-    if (submit && type === 'crossCompany') {
+    if (submit && ['crossCompany', 'scrap'].includes(type)) {
       setEditorState({ form: nextForm, assets: assets.map((item) => ({ ...item })), readOnly: true, approvalPage: true });
       setView('editor');
     } else {

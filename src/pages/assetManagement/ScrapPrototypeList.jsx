@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   DatePicker,
+  Dropdown,
   Input,
   Modal,
   Popconfirm,
@@ -15,6 +16,7 @@ import {
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
+import OutboundApprovalHistoryPage from '../inventoryManagement/OutboundApprovalHistoryPage';
 import { ASSET_SCOPE_OPTIONS, money } from './scrapPrototypeData';
 
 const { RangePicker } = DatePicker;
@@ -27,38 +29,11 @@ const EMPTY_FILTERS = {
   disposalStatus: '',
   assetScope: '',
   company: '',
-  targetCompany: '',
   creator: '',
-  plate: '',
   scrapMethod: '',
   region: '',
   dateRange: null,
 };
-
-const TRANSFER_DIFF_FIELDS = [
-  ['responsiblePerson', 'newResponsiblePerson', '新责任人'],
-  ['company', 'newCompany', '新公司'],
-  ['plate', 'newPlate', '新板块'],
-  ['costCenter', 'newCostCenter', '新成本中心'],
-  ['city', 'targetCity', 'City'],
-  ['building', 'targetBuilding', 'Building'],
-  ['floor', 'targetFloor', 'Floor'],
-  ['warehouse', 'targetWarehouse', '调账后仓库'],
-];
-
-function getTransferDiffRows(record) {
-  return (record?.assetsSnapshot || []).flatMap((asset) => (
-    TRANSFER_DIFF_FIELDS
-      .map(([sourceField, targetField, label]) => ({
-        key: `${asset.id}-${targetField}`,
-        tagNo: asset.tagNo,
-        field: label,
-        originalValue: asset[sourceField],
-        newValue: asset[targetField],
-      }))
-      .filter((item) => String(item.originalValue ?? '') !== String(item.newValue ?? ''))
-  ));
-}
 
 function options(values) {
   return values.map((value) => ({ label: value, value }));
@@ -82,7 +57,6 @@ export default function ScrapPrototypeList({
   const [directAction, setDirectAction] = useState(null);
   const [directNote, setDirectNote] = useState('');
   const [approvalRecord, setApprovalRecord] = useState(null);
-  const [approvalOpinion, setApprovalOpinion] = useState('');
 
   const confirmDirectAction = () => {
     const note = directNote.trim();
@@ -90,13 +64,6 @@ export default function ScrapPrototypeList({
     onDirectComplete(directAction.asset, directAction.action, note);
     setDirectAction(null);
     setDirectNote('');
-  };
-
-  const finishApproval = (result) => {
-    if (!approvalRecord) return;
-    onApprove(approvalRecord, result, approvalOpinion);
-    setApprovalRecord(null);
-    setApprovalOpinion('');
   };
 
   const filteredRows = useMemo(() => records.filter((row) => {
@@ -112,9 +79,7 @@ export default function ScrapPrototypeList({
     const textFields = [
       'applicationNo',
       'company',
-      'targetCompany',
       'creator',
-      'plate',
     ];
 
     for (const field of textFields) {
@@ -143,12 +108,12 @@ export default function ScrapPrototypeList({
   const operationColumn = {
     title: '操作',
     key: 'operation',
-    width: type === 'crossCompany' ? 120 : type === 'disposal' ? 280 : type === 'scrap' ? 240 : 210,
+    width: type === 'disposal' ? 280 : 120,
     fixed: 'right',
     render: (_, record) => (
-      type === 'crossCompany'
+      type !== 'disposal'
         ? (
-          <Button type="link" size="small" onClick={() => onOpen(record, false, true)}>
+          <Button type="link" size="small" onClick={() => setApprovalRecord(record)}>
             查看进度
           </Button>
         )
@@ -174,49 +139,7 @@ export default function ScrapPrototypeList({
             ) : null}
           </Space>
         )
-        : (
-      <Space size={2} wrap>
-        <Button type="link" size="small" onClick={() => onOpen(record, false)}>
-          查看
-        </Button>
-        {['草稿', '已驳回'].includes(record.documentStatus) && (
-          <Button type="link" size="small" onClick={() => onOpen(record, true)}>
-            编辑
-          </Button>
-        )}
-        {(
-          ['crossCompany', 'accounting'].includes(type)
-          || (type === 'scrap' && record.assetScope !== '机房资产')
-        ) && record.documentStatus === '审批中' && (
-          <Button type="link" size="small" onClick={() => setApprovalRecord(record)}>
-            审批
-          </Button>
-        )}
-        {type === 'scrap' && (
-          <Button type="link" size="small" onClick={() => onCopy(record)}>
-            复制
-          </Button>
-        )}
-        {!['草稿', '已驳回'].includes(record.documentStatus) && (
-          <Button type="link" size="small" onClick={() => onOpen(record, false)}>
-            查看进度
-          </Button>
-        )}
-        {type === 'accounting' && record.documentStatus === '待提单人确认' && (
-          <Popconfirm
-            title="确认执行账面报废？"
-            description="确认后将完成账面报废并结束流程。"
-            okText="确认并执行"
-            cancelText="取消"
-            onConfirm={() => onExecute(record)}
-          >
-            <Button type="link" size="small">
-              执行账面报废
-            </Button>
-          </Popconfirm>
-        )}
-      </Space>
-        )
+        : null
     ),
   };
 
@@ -225,7 +148,7 @@ export default function ScrapPrototypeList({
     dataIndex: 'applicationNo',
     width: 180,
     render: (value, record) => (
-      <Button type="link" size="small" onClick={() => onOpen(record, false, type === 'crossCompany')}>
+      <Button type="link" size="small" onClick={() => onOpen(record, false, false)}>
         {value}
       </Button>
     ),
@@ -243,36 +166,25 @@ export default function ScrapPrototypeList({
       applicationColumn,
       { title: '制单人', dataIndex: 'creator', width: 130 },
       { title: '原公司', dataIndex: 'company', width: 160, ellipsis: true },
-      { title: '新公司', dataIndex: 'targetCompany', width: 160, ellipsis: true },
       { title: '制单时间', dataIndex: 'createdAt', width: 120 },
       statusColumn,
       operationColumn,
     ],
     scrap: [
       applicationColumn,
-      statusColumn,
-      { title: '资产范围', dataIndex: 'assetScope', width: 120 },
-      { title: '报废方式', dataIndex: 'scrapMethod', width: 120 },
-      { title: '公司', dataIndex: 'company', width: 160, ellipsis: true },
       { title: '制单人', dataIndex: 'creator', width: 130 },
+      { title: '公司', dataIndex: 'company', width: 160, ellipsis: true },
       { title: '制单时间', dataIndex: 'createdAt', width: 120 },
-      { title: '资产数量', dataIndex: 'assetCount', width: 100, align: 'right' },
-      { title: '备注', dataIndex: 'remark', width: 220, ellipsis: true },
-      { title: '当前节点', dataIndex: 'currentNode', width: 190, ellipsis: true },
+      statusColumn,
       operationColumn,
     ],
     accounting: [
       applicationColumn,
-      statusColumn,
-      { title: '公司', dataIndex: 'company', width: 160, ellipsis: true },
-      { title: '板块', dataIndex: 'plate', width: 150, ellipsis: true },
-      { title: '报废方式', dataIndex: 'scrapMethod', width: 120 },
       { title: '制单人', dataIndex: 'creator', width: 130 },
+      { title: '公司', dataIndex: 'company', width: 160, ellipsis: true },
+      { title: '报废方式', dataIndex: 'scrapMethod', width: 120 },
       { title: '制单时间', dataIndex: 'createdAt', width: 120 },
-      { title: '资产数量', dataIndex: 'assetCount', width: 100, align: 'right' },
-      { title: '原值合计', dataIndex: 'originalValueTotal', width: 130, align: 'right', render: money },
-      { title: '净值合计', dataIndex: 'netValueTotal', width: 130, align: 'right', render: money },
-      { title: '当前节点', dataIndex: 'currentNode', width: 190, ellipsis: true },
+      statusColumn,
       operationColumn,
     ],
     disposal: [
@@ -312,14 +224,11 @@ export default function ScrapPrototypeList({
           <QueryItem label="单据状态">
             <Select value={filters.documentStatus || undefined} allowClear options={options(config.statuses)} onChange={(value) => setFilters((c) => ({ ...c, documentStatus: value || '' }))} />
           </QueryItem>
-          <QueryItem label="发起人">
+          <QueryItem label="制单人">
             <Input value={filters.creator} allowClear onChange={(event) => setFilters((c) => ({ ...c, creator: event.target.value }))} />
           </QueryItem>
           <QueryItem label="原公司">
             <Input value={filters.company} allowClear onChange={(event) => setFilters((c) => ({ ...c, company: event.target.value }))} />
-          </QueryItem>
-          <QueryItem label="新公司">
-            <Input value={filters.targetCompany} allowClear onChange={(event) => setFilters((c) => ({ ...c, targetCompany: event.target.value }))} />
           </QueryItem>
           <QueryItem label="制单日期">
             <RangePicker value={filters.dateRange} className="w-full" onChange={(value) => setFilters((c) => ({ ...c, dateRange: value }))} />
@@ -367,14 +276,11 @@ export default function ScrapPrototypeList({
           <QueryItem label="公司">
             <Input value={filters.company} allowClear onChange={(event) => setFilters((c) => ({ ...c, company: event.target.value }))} />
           </QueryItem>
-          <QueryItem label="板块">
-            <Input value={filters.plate} allowClear onChange={(event) => setFilters((c) => ({ ...c, plate: event.target.value }))} />
-          </QueryItem>
           <QueryItem label="制单人">
             <Input value={filters.creator} allowClear onChange={(event) => setFilters((c) => ({ ...c, creator: event.target.value }))} />
           </QueryItem>
           <QueryItem label="报废方式">
-            <Select value={filters.scrapMethod || undefined} allowClear options={options(['全部报废', '部分报废', '调账'])} onChange={(value) => setFilters((c) => ({ ...c, scrapMethod: value || '' }))} />
+            <Select value={filters.scrapMethod || undefined} allowClear options={options(['调账', '非调账'])} onChange={(value) => setFilters((c) => ({ ...c, scrapMethod: value || '' }))} />
           </QueryItem>
           <QueryItem label="制单时间">
             <RangePicker value={filters.dateRange} className="w-full" onChange={(value) => setFilters((c) => ({ ...c, dateRange: value }))} />
@@ -434,7 +340,9 @@ export default function ScrapPrototypeList({
       >
         <div className="mb-3 flex justify-end">
           <Space>
-            <Button
+            {type === 'accounting' ? <Dropdown menu={{ items: ['调账', '非调账'].map((method) => ({ key: method, label: method, onClick: () => onCreate(method) })) }}>
+              <Button type="primary" icon={<PlusOutlined />}>创建</Button>
+            </Dropdown> : <Button
               type="primary"
               icon={<PlusOutlined />}
               disabled={type === 'disposal' && selectedKeys.length === 0}
@@ -447,7 +355,7 @@ export default function ScrapPrototypeList({
               }}
             >
               创建
-            </Button>
+            </Button>}
             {type !== 'disposal' && (
               <Popconfirm
                 title="确认删除所选草稿？"
@@ -512,39 +420,19 @@ export default function ScrapPrototypeList({
       {['crossCompany', 'scrap', 'accounting'].includes(type) && (
         <Modal
           open={Boolean(approvalRecord)}
-          title={`审批：${approvalRecord?.currentNode || ''}`}
-          width={1000}
-          onCancel={() => { setApprovalRecord(null); setApprovalOpinion(''); }}
-          footer={[
-            <Button key="reject" danger onClick={() => finishApproval('驳回')}>驳回</Button>,
-            <Button key="approve" type="primary" onClick={() => finishApproval('通过')}>通过</Button>,
-          ]}
+          title="审批记录"
+          width={960}
+          onCancel={() => setApprovalRecord(null)}
+          footer={<Button onClick={() => setApprovalRecord(null)}>关闭</Button>}
           destroyOnHidden
         >
-          {type === 'crossCompany' && (
-            <Card size="small" title="资产信息变更" className="mb-4">
-              <Table
-                rowKey="key"
-                size="small"
-                bordered
-                pagination={false}
-                dataSource={getTransferDiffRows(approvalRecord)}
-                locale={{ emptyText: '暂无字段变化' }}
-                columns={[
-                  { title: '资产标签号', dataIndex: 'tagNo', width: 160 },
-                  { title: '变更字段', dataIndex: 'field', width: 150 },
-                  { title: '原值', dataIndex: 'originalValue', render: (value) => value || '-' },
-                  { title: '新值', dataIndex: 'newValue', render: (value) => value || '-' },
-                ]}
-              />
-            </Card>
-          )}
-          <div className="mb-2">审批意见</div>
-          <Input.TextArea
-            value={approvalOpinion}
-            rows={3}
-            onChange={(event) => setApprovalOpinion(event.target.value)}
-          />
+          <OutboundApprovalHistoryPage outbound={{ approvalHistory: (approvalRecord?.approvalHistory || []).map((item) => ({
+            node: item.node,
+            handler: item.person || '-',
+            action: item.result,
+            time: item.time,
+            opinion: item.opinion,
+          })) }} />
         </Modal>
       )}
     </div>

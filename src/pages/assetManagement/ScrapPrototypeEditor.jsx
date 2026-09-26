@@ -141,13 +141,16 @@ export default function ScrapPrototypeEditor({
       };
 
       if (firstAsset) {
+        if (type === 'scrap' && firstAsset.scope === '机房资产') {
+          nextForm.assetCategory = firstAsset.majorCategory;
+          nextForm.assetLocation = String(firstAsset.city || '').includes('北京') ? '北京' : '非北京';
+        }
         if (type !== 'crossCompany') {
           nextForm.company = firstAsset.company || current.company;
         }
         if (type === 'accounting') {
           nextForm.company = firstAsset.company || current.company;
           nextForm.plate = firstAsset.plate || current.plate;
-          nextForm.scrapMethod = firstAsset.scrapMethod || current.scrapMethod;
         }
         if (type === 'disposal') {
           nextForm.region = firstAsset.region || (String(firstAsset.city || '').includes('北京') ? '北京' : '非北京');
@@ -200,9 +203,13 @@ export default function ScrapPrototypeEditor({
         message.error('请填写报废说明');
         return false;
       }
-      const invalid = assets.find((item) => !item.scrapType || !String(item.reason || '').trim());
+      if (form.assetScope === '机房资产' && (!form.assetCategory || !form.assetLocation)) {
+        message.error('请选择资产大类和资产所在地');
+        return false;
+      }
+      const invalid = assets.find((item) => !String(item.reason || '').trim());
       if (invalid) {
-        message.error(`资产 ${invalid.tagNo} 的报废类型或报废原因未填写完整`);
+        message.error(`资产 ${invalid.tagNo} 的报废原因未填写完整`);
         return false;
       }
       const officePaths = new Set(assets
@@ -226,13 +233,13 @@ export default function ScrapPrototypeEditor({
         message.error('同一账面报废单必须属于同一公司和板块');
         return false;
       }
-      if (scrapMethods.size > 1) {
+      if (scrapMethods.size > 1 || (scrapMethods.size && !scrapMethods.has(form.scrapMethod))) {
         message.error('同一账面报废单的报废方式必须一致');
         return false;
       }
 
       const transferInvalid = assets.find((item) => (
-        item.scrapMethod === '调账'
+        form.scrapMethod === '调账'
         && (
           !item.newCompany
           || !item.newPlate
@@ -337,7 +344,7 @@ export default function ScrapPrototypeEditor({
           </Descriptions.Item>
           <Descriptions.Item label="申请日期">{form.applicationDate}</Descriptions.Item>
 
-          <Descriptions.Item label="发起人">{form.creator}</Descriptions.Item>
+          <Descriptions.Item label="制单人">{form.creator}</Descriptions.Item>
           <Descriptions.Item label="公司">
             {type === 'crossCompany'
               ? (readOnly
@@ -360,7 +367,7 @@ export default function ScrapPrototypeEditor({
                 )}
           </Descriptions.Item>
 
-          {type !== 'accounting' && type !== 'crossCompany' && (
+          {type === 'disposal' && (
             <Descriptions.Item label="资产范围">
               {showValue(form.assetScope || '选择资产后自动判定')}
             </Descriptions.Item>
@@ -380,14 +387,6 @@ export default function ScrapPrototypeEditor({
 
           {type === 'scrap' && (
             <>
-              <Descriptions.Item label="报废方式">
-                {renderSelect(
-                  form.scrapMethod,
-                  options(['全部报废', '部分报废']),
-                  (value) => updateForm('scrapMethod', value),
-                )}
-              </Descriptions.Item>
-
               {form.assetScope === '办公设备' && (
                 <Descriptions.Item label="是否已处置完成">
                   {renderSelect(
@@ -400,6 +399,12 @@ export default function ScrapPrototypeEditor({
 
               {form.assetScope === '机房资产' && (
                 <>
+                  <Descriptions.Item label={<span><span className="mr-1 text-red-500">*</span>资产大类</span>}>
+                    {renderSelect(form.assetCategory, options(['SERVER', 'NET EQUIPMENT']), (value) => updateForm('assetCategory', value), assets.length > 0)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={<span><span className="mr-1 text-red-500">*</span>资产所在地</span>}>
+                    {renderSelect(form.assetLocation, options(['北京', '非北京']), (value) => updateForm('assetLocation', value))}
+                  </Descriptions.Item>
                   <Descriptions.Item label="地区">
                     {renderSelect(
                       form.region,
@@ -423,6 +428,8 @@ export default function ScrapPrototypeEditor({
 
           {type === 'accounting' && (
             <>
+              <Descriptions.Item label="报废方式">{showValue(form.scrapMethod)}</Descriptions.Item>
+              <Descriptions.Item label="是否公司间转移">{showValue(form.scrapMethod === '调账' ? '是' : '否')}</Descriptions.Item>
               <Descriptions.Item label="数据来源">
                 {renderSelect(
                   form.sourceType,
@@ -550,12 +557,13 @@ export default function ScrapPrototypeEditor({
 
       <Card
         size="small"
-        title="资产明细"
+        title={type === 'accounting' && form.scrapMethod === '调账' ? '公司间转移明细' : type === 'scrap' ? '报废资产明细' : '资产明细'}
         extra={<span className="text-sm text-gray-500">共 {assets.length} 条</span>}
       >
         <ScrapPrototypeAssetTable
           type={type}
           assetScope={form.assetScope}
+          assetCategory={form.assetCategory}
           sourceCompany={type === 'crossCompany' ? form.company : undefined}
           assets={assets}
           readOnly={readOnly}
@@ -563,6 +571,7 @@ export default function ScrapPrototypeEditor({
           onChange={updateAsset}
           onReplace={handleAssetReplace}
           scrapMethod={form.scrapMethod}
+          accountingMethod={form.scrapMethod}
         />
       </Card>
 
@@ -593,11 +602,17 @@ export default function ScrapPrototypeEditor({
         </BorrowingApprovalHistory>
       )}
 
+      {((approvalPage && type === 'scrap') || (
+        readOnly && !approvalPage && type !== 'disposal' && !['草稿', '已驳回'].includes(form.documentStatus)
+      )) && (
+        <BorrowingApprovalHistory records={approvalRecords} />
+      )}
+
       <div className="flex justify-center gap-3">
         {!(approvalPage && type === 'crossCompany' && form.documentStatus === '审批中') && (
           <Button onClick={onBack}>返回</Button>
         )}
-        {!approvalPage && readOnly && type === 'crossCompany' && ['草稿', '已驳回'].includes(form.documentStatus) && (
+        {!approvalPage && readOnly && type !== 'disposal' && ['草稿', '已驳回'].includes(form.documentStatus) && (
           <Button onClick={() => onEdit?.(form)}>编辑</Button>
         )}
         {!readOnly && (

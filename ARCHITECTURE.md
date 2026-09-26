@@ -212,3 +212,7 @@ Vercel Preview
 - 真实后端接口、真实审批引擎、消息中心、权限中心等不在本仓库实现；Coverage 中会明确标为 `review`，不能用前端演示逻辑冒充完成。
 - 资产盘点未提供字段的维护页不补造。
 - Mock 仅用于当前产品演示，不代表生产实现。
+
+## 资产管理原型模块关系
+
+`ScrapPrototypeModule` 负责跨公司转移、资产报废、账面报废和处置的单据状态及保存；`ScrapPrototypeList` 负责各菜单的查询列表与审批记录弹窗；`ScrapPrototypeEditor` 负责单头、详情及审批展示；`ScrapPrototypeAssetTable` 根据单据类型和调账方式渲染不同的明细、选择弹窗及导入导出。

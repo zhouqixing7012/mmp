@@ -27,7 +27,7 @@ export function getAccountingCandidates() {
       for (const asset of record.assetsSnapshot || []) {
         result.set(asset.tagNo, {
           ...asset,
-          scrapMethod: type === 'crossCompany' ? '调账' : asset.scrapMethod,
+          scrapMethod: type === 'crossCompany' ? '调账' : '非调账',
           sourceBusinessType: type === 'crossCompany' ? '跨公司转移' : '资产报废',
           sourceBusinessNo: record.applicationNo,
           disposedComplete: type === 'scrap'
