@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -16,7 +16,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { Button, Input, Modal, Tag, message as antdMessage } from 'antd';
+import { Alert, Button, Input, Modal, Tag, message as antdMessage } from 'antd';
 import './assetInventoryMobile.css';
 
 const CURRENT_USER = {
@@ -385,6 +385,16 @@ function ResultNotice({ notice, onContinue, onClose }) {
 
 export default function AssetInventoryMobilePrototype() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const previewProjectNo = location.state?.projectNo || '';
+  const [projectClosed, setProjectClosed] = useState(() => {
+    if (typeof window === 'undefined' || !previewProjectNo) return false;
+    return JSON.parse(window.sessionStorage.getItem('assetInventoryClosedProjectNos') || '[]').includes(previewProjectNo);
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined' || !previewProjectNo) { setProjectClosed(false); return; }
+    setProjectClosed(JSON.parse(window.sessionStorage.getItem('assetInventoryClosedProjectNos') || '[]').includes(previewProjectNo));
+  }, [previewProjectNo, location.key]);
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [view, setView] = useState('workbench');
   const [activeTab, setActiveTab] = useState('unscanned');
@@ -406,12 +416,17 @@ export default function AssetInventoryMobilePrototype() {
   const filteredAssets = useMemo(() => assets.filter((asset) => includesQuery(asset, query)), [assets, query]);
 
   const openDetail = (asset) => {
+    if (projectClosed) return;
     setSelectedAssetId(asset.id);
     setView('detail');
   };
 
   const returnToProjectList = () => {
     navigate('/yewurules', { state: { returnTo: 'asset-inventory-projects' } });
+  };
+
+  const exitToAssetManagement = () => {
+    navigate('/yewurules', { state: { returnTo: 'asset-management-home' } });
   };
 
   const goBack = () => {
@@ -425,9 +440,10 @@ export default function AssetInventoryMobilePrototype() {
     setResultNotice(null);
   };
 
-  const exitPrototype = returnToProjectList;
+  const exitPrototype = exitToAssetManagement;
 
   const openScan = (assetId = null) => {
+    if (projectClosed) { messageApi.info('项目已关闭，盘点待办已结束'); return; }
     setSelectedAssetId(assetId);
     setScanPickerOpen(false);
     setScanModal(null);
@@ -435,6 +451,7 @@ export default function AssetInventoryMobilePrototype() {
   };
 
   const handleScanPick = (kind) => {
+    if (projectClosed) { messageApi.info('项目已关闭，不能继续盘点'); return; }
     setScanPickerOpen(false);
     if (kind === 'mine') {
       const asset = assets.find((item) => item.status === '未盘' && item.owner === CURRENT_USER.name);
@@ -450,6 +467,7 @@ export default function AssetInventoryMobilePrototype() {
   };
 
   const handleSubmitScan = (kind) => {
+    if (projectClosed) { messageApi.info('项目已关闭，不能提交盘点结果'); return; }
     const scanAsset = assets.find((asset) => asset.id === scanModal?.assetId);
     if (scanAsset && ['mine', 'proxy'].includes(kind)) {
       setSelectedAssetId(scanAsset.id);
@@ -476,6 +494,7 @@ export default function AssetInventoryMobilePrototype() {
   };
 
   const handleRejectProxy = () => {
+    if (projectClosed) { setScanModal(null); return; }
     setScanModal(null);
     setResultNotice({
       kind: 'rejected',
@@ -500,6 +519,7 @@ export default function AssetInventoryMobilePrototype() {
   };
 
   const submitReportLoss = () => {
+    if (projectClosed) { messageApi.info('项目已关闭，不能提交报失'); return; }
     if (!reportReason.trim()) {
       messageApi.warning('请填写报失原因');
       return;
@@ -509,6 +529,7 @@ export default function AssetInventoryMobilePrototype() {
   };
 
   const confirmReportLoss = () => {
+    if (projectClosed) { messageApi.info('项目已关闭，不能提交报失'); return; }
     if (!selectedAsset) return;
     setAssets((current) => current.map((asset) => (
       asset.id === selectedAsset.id
@@ -521,11 +542,13 @@ export default function AssetInventoryMobilePrototype() {
   };
 
   const addQuickScan = () => {
+    if (projectClosed) { messageApi.info('项目已关闭，不能继续扫描'); return; }
     const next = QUICK_SCAN_TAGS[quickScanned.length % QUICK_SCAN_TAGS.length];
     setQuickScanned((current) => [...current, next]);
   };
 
   const submitQuickScan = () => {
+    if (projectClosed) { messageApi.info('项目已关闭，不能提交盘点结果'); return; }
     const success = [];
     const failed = [];
     quickScanned.forEach((tagNo) => {
@@ -660,9 +683,9 @@ export default function AssetInventoryMobilePrototype() {
           )}
           <div className="inventory-detail-actions">
             {!['已盘', '代盘'].includes(selectedAsset.status) && (
-              <Button danger icon={<AlertTriangle size={16} />} onClick={() => setReportLossOpen(true)}>报失</Button>
+              <Button danger icon={<AlertTriangle size={16} />} disabled={projectClosed} onClick={() => setReportLossOpen(true)}>报失</Button>
             )}
-            <Button type="primary" icon={<ScanLine size={16} />} onClick={() => openScan(selectedAsset.id)}>盘点</Button>
+            <Button type="primary" icon={<ScanLine size={16} />} disabled={projectClosed} onClick={() => openScan(selectedAsset.id)}>盘点</Button>
           </div>
         </div>
       </>
@@ -682,10 +705,10 @@ export default function AssetInventoryMobilePrototype() {
         </div>
         <div className="inventory-scan-help">扫码后系统会根据盘点任务自动校验资产范围和盘点状态</div>
         <div className="inventory-scan-controls">
-          <Button icon={<Flashlight size={17} />} onClick={() => setFlashlightOn((current) => !current)}>
+          <Button disabled={projectClosed} icon={<Flashlight size={17} />} onClick={() => setFlashlightOn((current) => !current)}>
             {flashlightOn ? '已开启手电筒' : '手电筒'}
           </Button>
-          <Button type="primary" icon={<ScanLine size={17} />} onClick={() => setScanPickerOpen((current) => !current)}>
+          <Button type="primary" disabled={projectClosed} icon={<ScanLine size={17} />} onClick={() => setScanPickerOpen((current) => !current)}>
             模拟扫码
           </Button>
         </div>
@@ -717,8 +740,8 @@ export default function AssetInventoryMobilePrototype() {
           </div>
         </div>
         <div className="inventory-quick-scan-actions">
-          <Button type="primary" icon={<ScanLine size={17} />} onClick={addQuickScan}>模拟扫描标签</Button>
-          <Button icon={<Trash2 size={16} />} onClick={() => setQuickScanned([])}>清空</Button>
+          <Button type="primary" disabled={projectClosed} icon={<ScanLine size={17} />} onClick={addQuickScan}>模拟扫描标签</Button>
+          <Button icon={<Trash2 size={16} />} disabled={projectClosed} onClick={() => setQuickScanned([])}>清空</Button>
         </div>
         <div className="inventory-section-title">
           <span>已扫描标签</span>
@@ -738,7 +761,7 @@ export default function AssetInventoryMobilePrototype() {
         <Button
           type="primary"
           block
-          disabled={!quickScanned.length}
+          disabled={projectClosed || !quickScanned.length}
           onClick={submitQuickScan}
         >
           提交盘点结果
@@ -778,7 +801,7 @@ export default function AssetInventoryMobilePrototype() {
                   shape="circle"
                   aria-label="快速扫描"
                   icon={<ListChecks size={19} />}
-                  onClick={() => setView('quickScan')}
+                  disabled={projectClosed} onClick={() => setView('quickScan')}
                 />
               )}
             />
@@ -786,7 +809,7 @@ export default function AssetInventoryMobilePrototype() {
               {renderWorkBench()}
             </div>
             <div className="inventory-mobile-footer">
-              <Button type="primary" icon={<ScanLine size={17} />} onClick={() => openScan()}>开始盘点</Button>
+              <Button type="primary" icon={<ScanLine size={17} />} disabled={projectClosed} onClick={() => openScan()}>开始盘点</Button>
               <span><LogOut size={14} /> 盘点计划：2025 年度员工盘点</span>
             </div>
           </>
@@ -814,7 +837,7 @@ export default function AssetInventoryMobilePrototype() {
         <p className="inventory-modal-message">资产丢失需履行赔偿责任哟！确定不再继续寻找了吗？</p>
         <div className="inventory-modal-actions">
           <Button onClick={() => setConfirmLossOpen(false)}>继续寻找</Button>
-          <Button danger type="primary" onClick={confirmReportLoss}>确定报失</Button>
+          <Button danger type="primary" disabled={projectClosed} onClick={confirmReportLoss}>确定报失</Button>
         </div>
       </Modal>
     </div>
