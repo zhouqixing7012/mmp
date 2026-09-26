@@ -99,7 +99,11 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const [progressOpen, setProgressOpen] = useState(false);
   const [planProject, setPlanProject] = useState(PROJECT_INFO);
   const [planRows, setPlanRows] = useState(() => initialPlanRows.map((row) => ({ ...row, status: row.status === '暂存' ? '草稿' : row.status })));
-  const [projectStatusOverrides, setProjectStatusOverrides] = useState({});
+  const [projectStatusOverrides, setProjectStatusOverrides] = useState(() => {
+    if (typeof window === 'undefined') return {};
+    const closedProjectNos = JSON.parse(window.sessionStorage.getItem('assetInventoryClosedProjectNos') || '[]');
+    return Object.fromEntries(closedProjectNos.map((projectNo) => [projectNo, '盘点关闭']));
+  });
   const handleProjectClose = (project) => {
     setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '盘点关闭' }));
     if (typeof window !== 'undefined') {
