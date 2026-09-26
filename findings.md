@@ -2,6 +2,27 @@
 
 更新：2026-09-26。任务执行状态只维护在 [task_plan.md](task_plan.md)，正式规则只维护在对应 PRD。本文件保留证据、缺口及问题入口。
 
+## 2026-09-26 资产盘点现状/新版PRD/原型对抗性核对（main）
+
+范围：完整 PC 现状 PRD、移动端现状整理稿、新版合并 PRD，以及沿实际菜单/路由进入的 PC 与移动端原型。代码按静态源码核对，未运行浏览器或构建。移动端原始 DOCX 是二进制文件，当前 GitHub 读取接口无法解码；下表有关移动端“现状”的依据仅到整理稿，不能代替原文核对。
+
+| 类别 | 不一致或断点 | 证据 |
+|---|---|---|
+| 已确认规则未同步 | 旧 PC PRD要求抽盘/复盘关联未关闭初盘；新版与用户已确认规则要求关联已关闭初盘。但活跃创建表单仍筛选未关闭初盘。该项是已确认的版本变更，原型未落实，不是业务待确认。 | [旧 PC PRD#L86](docs/PRD-资产盘点.md#L86)；[新版 PRD#L23](docs/asset-inventory/资产盘点-新版PRD.md#L23)；[实际创建页](src/pages/assetInventory/AssetInventoryProjectPage.js#L559) |
+| 复盘权限/审批 | 新版要求财务发起、财务执行，并由 ES 主管或 NO 领导审批后到财务主管；活跃创建入口未按角色限制，执行人候选为全体员工，审批按钮没有提交处理/路由。旧 PC PRD仍写旧的 ES 发起、财务监督人审核。 | [旧 PC PRD#L1181-L1201](docs/PRD-资产盘点.md#L1181)；[新版 PRD#L153、L264、L410-L424](docs/asset-inventory/资产盘点-新版PRD.md#L153)；[计划原型#L111、L119](src/pages/assetInventory/AssetInventoryPlansV2Refined.js#L111) |
+| 关闭流程循环 | 新版把关闭条件写成“初盘或抽盘”关闭时，其关联复盘计划已审核；但复盘只能关联已关闭初盘，且复盘要在初盘关闭后发起。初盘关闭时不可能先有该复盘审批完成。新版也没有写清复盘项目审批后如何关闭。 | [新版 PRD#L23](docs/asset-inventory/资产盘点-新版PRD.md#L23)；[关闭规则#L428-L438](docs/asset-inventory/资产盘点-新版PRD.md#L428) |
+| 关闭原型绕过规则 | PC 关闭项目直接把选中行改为“盘点关闭”，没有校验计划、图片审核，也没有服务号通知、抽盘创建/复盘发起后续动作。 | [活跃项目列表#L73-L77](src/pages/assetInventory/AssetInventoryProjectV2List.js#L73)；[新版 PRD#L428-L436](docs/asset-inventory/资产盘点-新版PRD.md#L428) |
+| 机房范围缺失 | 活跃 PC 页面只允许库房、公共、员工三类范围，机房资产被筛掉；现状 PC PRD和新版 PRD都定义了机房范围。 | [活跃页面范围配置#L5](src/pages/assetInventory/AssetInventoryProjectPageV3.js#L5)；[新版范围表#L27-L32](docs/asset-inventory/资产盘点-新版PRD.md#L27) |
+| 建项配置与清单查询未落地 | 活跃建项页隐藏原盘点规则卡片，替代筛选器缺盘点公司与各范围盘点方式；“生成查询/查看清单/查看全部”只加条件行或弹提示，没有按条件找出资产并供加入范围。 | [现状 PC PRD#L110-L126](docs/PRD-资产盘点.md#L110)；[新版筛选规则#L165-L190](docs/asset-inventory/资产盘点-新版PRD.md#L165)；[V3筛选器#L99-L116](src/pages/assetInventory/AssetInventoryScopeSelectorV3.js#L99) |
+| 计划和快照操作断链 | 启动计划只改计划行状态，没有同步项目为“盘点中”；导入盘点结果、导出、提交复盘审批等按钮无处理。快照多个导入/导出按钮无点击结果，NO 同步只提示待确认。 | [新版计划启动#L268-L275](docs/asset-inventory/资产盘点-新版PRD.md#L268)；[计划原型#L55-L60、L111](src/pages/assetInventory/AssetInventoryPlansV2Refined.js#L55)；[快照原型#L251-L276](src/pages/assetInventory/AssetInventorySnapshotDetailV2.js#L251) |
+| 报告无可达页面 | 新版定义财务报告；实际“盘点报表”菜单仍显示待补空态，项目列表和快照页也没有可达报告导出。 | [新版报告#L440-L454](docs/asset-inventory/资产盘点-新版PRD.md#L440)；[菜单空态](src/pages/assetInventory/index.js#L10) |
+| 移动端监督任务缺失 | 新版要求监督人按员工/公共/库房/机房查看任务及数量/进度；移动原型只有固定项目样例和本人资产列表，没有监督任务入口或有效任务过滤。 | [现状移动 PRD#L11-L29](docs/asset-inventory/资产盘点移动端-现状PRD.md#L11)；[新版移动端#L285-L310](docs/asset-inventory/资产盘点-新版PRD.md#L285)；[移动原型工作台](src/pages/assetInventory/AssetInventoryMobilePrototype.jsx#L552) |
+| 移动盘点操作是演示交互 | 普通扫码为固定情境按钮，缺无效二维码/非资产二维码/已被他人盘点；快速扫描不展示逐条失败原因；照片只是本地状态开关，未校验必传或随结果保存；报失没有责任人/监督人通知。 | [新版扫码#L343-L364、照片#L370-L377、报失#L337-L339](docs/asset-inventory/资产盘点-新版PRD.md#L337)；[移动原型扫码/快速扫描/照片](src/pages/assetInventory/AssetInventoryMobilePrototype.jsx#L672) |
+| 返回路径表述/页面回退 | 用户已明确预览工作台返回 PC 盘点项目列表，现原型已按此返回；新版只写“返回上一页面”，未点明该目标。右上角退出按现代码也回项目列表，但新版写返回资产管理首页。另从首页直接开始扫码或打开快速扫描后点返回，会进入无资产详情视图，详情渲染为空。 | [新版返回规则#L298-L299](docs/asset-inventory/资产盘点-新版PRD.md#L298)；[移动原型返回逻辑](src/pages/assetInventory/AssetInventoryMobilePrototype.jsx#L413)；[详情空态](src/pages/assetInventory/AssetInventoryMobilePrototype.jsx#L606) |
+| 新版 PRD 口径冲突 | §13 已明确数量进度=已盘/应盘，§18仍把“报失是否计入项目数量进度”列为待确认；计划状态表含“已驳回”，审批规则又要求驳回后计划回到“启动”。混合资产审批只说两方都通过后到财务主管，未定义两方并行/串行及一方驳回后另一方如何处理。 | [新版进度/状态#L92-L97、L395-L402、L410-L418、L467-L476](docs/asset-inventory/资产盘点-新版PRD.md#L92) |
+
+现状整理稿将移动端字段、图片要求及异常细节回指 DOCX，所以移动端细节与原始现状的最终对抗结论需等原件可读后补核；没有把未读原文的内容伪装成现状 PRD 冲突。
+
 ## 2026-09-26 库存管理与资产管理 PRD / 页面走查（main）
 
 范围：库存管理 7 页、资产管理 5 页；排除跨公司转移、资产报废、资产处置、账面报废。二轮核对了 main 实际菜单入口、正式 PRD、页面与子组件的可见字段、同字段命名、按钮结果和公共打印预览；线上只抽查菜单及标签打印，未逐页运行完整交互。修正原审查漏项及一处误判，记录差异而不变更业务规则。
