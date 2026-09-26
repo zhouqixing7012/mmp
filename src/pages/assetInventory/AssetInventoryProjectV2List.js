@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Alert, Button, Card, DatePicker, Input, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
+import { Smartphone } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
 import { PROJECT_ROWS } from './mockData';
@@ -8,6 +10,7 @@ import { CardTitle, EMPTY_FILTERS, PageTitle, PROJECT_STATUSES, PROJECT_TYPES, i
 
 export default function ProjectListView({ onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
+  const navigate = useNavigate();
   const [projectRows, setProjectRows] = useState(PROJECT_ROWS);
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
@@ -77,7 +80,10 @@ export default function ProjectListView({ onCreate, onOpenProject, onOpenPlans, 
   return (
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
-      <PageTitle>盘点项目（方案二）</PageTitle>
+      <div className="flex items-center justify-between">
+        <PageTitle>盘点项目（方案二）</PageTitle>
+        <Button icon={<Smartphone size={14} />} onClick={() => navigate('/asset-inventory/mobile')}>移动端预览</Button>
+      </div>
       <Alert type="info" showIcon message="方案二仅调整盘点规则配置时点：创建项目阶段不配置盘点规则；生成快照后再配置盘点方式及图片上传规则。" />
       <QueryBar onQuery={() => setApplied({ ...filters })} onReset={() => { setFilters(EMPTY_FILTERS); setApplied(EMPTY_FILTERS); }}>
         <QueryItem label="项目编号"><Input value={filters.projectNo} allowClear onChange={(event) => setField('projectNo', event.target.value)} /></QueryItem>
