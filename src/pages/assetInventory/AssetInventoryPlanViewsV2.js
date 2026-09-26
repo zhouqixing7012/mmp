@@ -448,11 +448,12 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
   );
 }
 
-export function AssetInventoryPlanAssetListV2({ plan, onBack }) {
+export function AssetInventoryPlanAssetListV2({ plan, project, onBack }) {
   const [rows, setRows] = useState(() => ASSET_ROWS.filter((asset) => asset.planNo === plan.planNo || asset.inventoryRange === plan.range));
   const [draftFilters, setDraftFilters] = useState(EMPTY_ASSET_FILTERS);
   const [filters, setFilters] = useState(EMPTY_ASSET_FILTERS);
   const [personTarget, setPersonTarget] = useState(null);
+  const projectClosed = project?.status === '盘点关闭';
 
   const updateDraft = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
 
@@ -475,7 +476,7 @@ export function AssetInventoryPlanAssetListV2({ plan, onBack }) {
   )), [rows, filters]);
 
   const applyPersonnel = (record) => {
-    if (!personTarget) return;
+    if (!personTarget || projectClosed) return;
     setRows((current) => current.map((row) => (
       row.key === personTarget.rowKey
         ? { ...row, [personTarget.field]: record.employeeName }
@@ -524,14 +525,14 @@ export function AssetInventoryPlanAssetListV2({ plan, onBack }) {
       dataIndex: 'supervisor',
       width: 170,
       fixed: 'right',
-      render: (value, row) => <PersonnelInput value={value} onClick={() => setPersonTarget({ rowKey: row.key, field: 'supervisor' })} />,
+      render: (value, row) => <PersonnelInput disabled={projectClosed} value={value} onClick={() => setPersonTarget({ rowKey: row.key, field: 'supervisor' })} />,
     },
     {
       title: '盘点执行人',
       dataIndex: 'executor',
       width: 170,
       fixed: 'right',
-      render: (value, row) => <PersonnelInput value={value} onClick={() => setPersonTarget({ rowKey: row.key, field: 'executor' })} />,
+      render: (value, row) => <PersonnelInput disabled={projectClosed} value={value} onClick={() => setPersonTarget({ rowKey: row.key, field: 'executor' })} />,
     },
   ];
 
@@ -582,7 +583,7 @@ export function AssetInventoryPlanAssetListV2({ plan, onBack }) {
       </div>
 
       <SelectModal
-        open={Boolean(personTarget)}
+        open={Boolean(personTarget) && !projectClosed}
         title="用户列表"
         rowKey="id"
         dataSource={EMPLOYEE_ROWS}
