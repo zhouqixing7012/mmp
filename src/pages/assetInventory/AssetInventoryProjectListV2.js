@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
+import { Smartphone } from 'lucide-react';
 import { Plus, Trash2, XCircle } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
@@ -52,6 +54,7 @@ function hasInventoryHistory(row) {
 
 export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
+  const navigate = useNavigate();
   const [rows, setRows] = useState(() => PROJECT_LIST_ROWS.map((row) => ({ ...row, status: normalizeStatus(row.status) })));
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
@@ -148,7 +151,10 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
 
   return <Space direction="vertical" size={16} className="w-full">
     {contextHolder}
-    <Typography.Title level={4} style={{ margin: 0 }}>盘点项目</Typography.Title>
+    <div className="flex items-center justify-between">
+      <Typography.Title level={4} style={{ margin: 0 }}>盘点项目</Typography.Title>
+      <Button icon={<Smartphone size={14} />} onClick={() => navigate('/asset-inventory/mobile')}>移动端预览</Button>
+    </div>
     <QueryBar onQuery={() => { setAppliedFilters({ ...draftFilters }); setSelectedKeys([]); }} onReset={() => { setDraftFilters(EMPTY_FILTERS); setAppliedFilters(EMPTY_FILTERS); setSelectedKeys([]); }}>
       <QueryItem label="项目编号"><Input value={draftFilters.projectNo} allowClear placeholder="请输入项目编号" onChange={(event) => updateFilter('projectNo', event.target.value)} /></QueryItem>
       <QueryItem label="项目名称"><Input value={draftFilters.projectName} allowClear placeholder="请输入项目名称" onChange={(event) => updateFilter('projectName', event.target.value)} /></QueryItem>
