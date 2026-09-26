@@ -460,6 +460,7 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [previewPhotos, setPreviewPhotos] = useState(DEFAULT_REVIEW_PHOTOS);
+  const projectClosed = project?.status === '盘点关闭';
 
   const openPreview = (photos, photoKey) => {
     const gallery = photos?.gallery?.length ? photos.gallery : DEFAULT_REVIEW_PHOTOS;
@@ -488,9 +489,13 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
   }), [rows, filters]);
 
   const updateDraft = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
-  const setDecision = (key, decision) => setRows((current) => current.map((row) => row.key === key && row.reviewStatus === '待审核' ? { ...row, decision } : row));
+  const setDecision = (key, decision) => {
+    if (projectClosed) return;
+    setRows((current) => current.map((row) => row.key === key && row.reviewStatus === '待审核' ? { ...row, decision } : row));
+  };
 
   const submitReview = () => {
+    if (projectClosed) { messageApi.info('项目已关闭，内容只读'); return; }
     if (!selectedKeys.length) { messageApi.warning('请先选择需要提交审核的资产'); return; }
     const selected = new Set(selectedKeys);
     const pendingSelected = rows.filter((row) => selected.has(row.key) && row.reviewStatus === '待审核');
@@ -543,7 +548,7 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
     {
       title: '审核结果', width: 220, fixed: 'right',
       render: (_, row) => row.reviewStatus === '待审核'
-        ? <Radio.Group value={row.decision} onChange={(event) => setDecision(row.key, event.target.value)} options={[{ label: '审核通过', value: 'pass' }, { label: '审核不通过', value: 'fail' }]} />
+        ? <Radio.Group disabled={projectClosed} value={row.decision} onChange={(event) => setDecision(row.key, event.target.value)} options={[{ label: '审核通过', value: 'pass' }, { label: '审核不通过', value: 'fail' }]} />
         : <StatusTag value={row.reviewStatus} />,
     },
   ];
@@ -592,14 +597,14 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
         bordered
         columns={columns}
         dataSource={filteredRows}
-        rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, getCheckboxProps: (record) => ({ disabled: record.reviewStatus !== '待审核' }) }}
+        rowSelection={{ selectedRowKeys: selectedKeys, onChange: (keys) => { if (!projectClosed) setSelectedKeys(keys); }, getCheckboxProps: (record) => ({ disabled: projectClosed || record.reviewStatus !== '待审核' }) }}
         scroll={{ x: 'max-content' }}
         pagination={{ pageSize: 5, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
       />
     </Card>
 
     <div className="flex justify-center gap-3 pb-2">
-      <Button type="primary" onClick={submitReview}>提交审核</Button>
+      {!projectClosed && <Button type="primary" onClick={submitReview}>提交审核</Button>}
       <Button onClick={onBack}>返回</Button>
     </div>
 
