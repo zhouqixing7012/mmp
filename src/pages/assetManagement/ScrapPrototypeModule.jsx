@@ -251,9 +251,9 @@ export default function ScrapPrototypeModule({ type }) {
     const normalizedForm = { ...form, assetScope };
     const nowText = dayjs().format('YYYY-MM-DD HH:mm:ss');
     const approvalHistory = submit && type === 'crossCompany'
-      ? [
+        ? [
           ...(form.approvalHistory || []),
-          { node: '发起人提交', result: '提交', opinion: '', time: nowText },
+          { node: '发起人提交', person: normalizedForm.creator || '', result: '提交', opinion: '', time: nowText },
         ]
       : form.approvalHistory || [];
     const nextForm = {
@@ -331,6 +331,7 @@ export default function ScrapPrototypeModule({ type }) {
       : '已驳回';
     const entry = {
       node: record.currentNode,
+      person: record.currentApprover || '',
       result,
       opinion: opinion.trim(),
       time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
