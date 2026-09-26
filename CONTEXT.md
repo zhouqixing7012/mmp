@@ -16,6 +16,7 @@
 - 平台个性化设置需用户粘贴更新，仓库替换稿见 [PERSONAL_INSTRUCTIONS.md](docs/PERSONAL_INSTRUCTIONS.md)。
 - 盘点 PRD 基线：`docs/PRD-资产盘点.md` 是完整 PC 端现状 PRD；`docs/asset-inventory/资产盘点-现状PRD.md` 仅为简略整理稿；新版 PRD 位于同目录的 `资产盘点-新版PRD.md`。
 - 新版盘点 PRD 已明确：初盘关闭后通知财务；抽盘和复盘均关联已关闭初盘；复盘由财务发起且仅财务执行；审批按资产范围先经 ES 主管或 NO 领导，再经财务主管。
+- 现状资料已按 PC / 移动端分开：PC 现状为 `docs/PRD-资产盘点.md`，移动端现状整理稿为 `docs/asset-inventory/资产盘点移动端-现状PRD.md`；新版 PRD 保持 PC+移动端合并。移动端原型从“盘点项目”页的【移动端预览】按钮进入，不再单独占菜单。
 
 ## 历史与验证边界
 
