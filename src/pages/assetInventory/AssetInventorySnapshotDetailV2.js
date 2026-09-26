@@ -157,11 +157,13 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
     && includesText(row.inventoryRange, filters.range)
   )), [rows, filters]);
 
+  const projectClosed = projectStatus === '盘点关闭';
   const beforeStart = projectStatus === '快照生成';
   const during = projectStatus === '盘点中';
   const currentPageRows = filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const moveSelected = (targetExecute) => {
+    if (projectClosed) { messageApi.info('项目已关闭，内容只读'); return; }
     if (!selectedKeys.length) {
       messageApi.warning('请先选择需要转移的资产');
       return;
@@ -175,6 +177,7 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
   };
 
   const confirmSelected = () => {
+    if (projectClosed) { messageApi.info('项目已关闭，内容只读'); return; }
     if (!selectedKeys.length) {
       messageApi.warning('请先选择资产');
       return;
@@ -191,6 +194,7 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
   };
 
   const handlePhotoImport = (event) => {
+    if (projectClosed) { event.target.value = ''; messageApi.info('项目已关闭，内容只读'); return; }
     const files = Array.from(event.target.files || []);
     event.target.value = '';
     if (!files.length) return;
@@ -266,7 +270,7 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
       <Button key="exportResult" icon={<Download size={14} />}>导出盘点结果</Button>,
     );
   }
-  if (type === 'excluded') {
+  if (type === 'excluded' && !projectClosed) {
     operations.push(
       <Button key="toExecution">批量转移至执行盘点</Button>,
       <Button key="toNotExecution">批量转移至未执行盘点</Button>,
@@ -301,7 +305,7 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
         bordered
         columns={makeAssetColumns({ includeNo: showMachineRoomFeatures })}
         dataSource={filteredRows}
-        rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, selections: selectionMenu }}
+        rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, selections: projectClosed ? false : selectionMenu, getCheckboxProps: () => ({ disabled: projectClosed }) }}
         scroll={{ x: 'max-content' }}
         pagination={{
           current: currentPage,
