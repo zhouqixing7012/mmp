@@ -199,22 +199,44 @@ export const ACCOUNTING_ASSET_POOL = SCRAP_ASSET_POOL.map((item, index) => ({
   project: item.project || '',
 }));
 
+const DISPOSAL_QUOTE_SAMPLES = [
+  [1250.5, 1280, 1198.88],
+  [6800, 6520.5, 6200],
+  [23750.25, 22990, 21800.75],
+  [1850, 1725.5, 1680],
+  [980, 1025.25, 950],
+  [14500.75, 13880, 12600],
+  [5600, 5380.25, 5120],
+  [3200.5, 3100, 2899.99],
+  [8500, 8200.5, 7999],
+  [19800, 18750.75, 17600],
+];
+
 export const DISPOSAL_ASSET_POOL = ACCOUNTING_ASSET_POOL
   .filter((item) => item.scrapMethod !== '调账')
-  .map((item, index) => ({
-    ...item,
-    id: `disposal-${item.id}`,
-    sourceAssetId: item.id,
-    status: '已报废-待处置',
-    sourceScrapNo: item.sourceBusinessType === '资产报废' ? item.sourceBusinessNo : '-',
-    sourceAccountingNo: `ZMBF20260923${String(index + 1).padStart(4, '0')}`,
-    scrapDate: '2026-09-23',
-    disposalStatus: '待处置',
-    disposalMode: item.scope === '软件' || item.scrapType === '丢失' ? '无实物处置' : '实物处置',
-    enteredAt: '2026-09-23',
-    region: String(item.city || '').includes('北京') ? '北京' : '非北京',
-    dataCleaning: item.scope === '机房资产' && index === 0 ? '是' : '否',
-  }));
+  .map((item, index) => {
+    const [recycler1, recycler2, recycler3] = DISPOSAL_QUOTE_SAMPLES[index % DISPOSAL_QUOTE_SAMPLES.length];
+    const disposalMode = item.scope === '软件' || item.scrapType === '丢失' ? '无实物处置' : '实物处置';
+    return {
+      ...item,
+      id: `disposal-${item.id}`,
+      sourceAssetId: item.id,
+      status: '已报废-待处置',
+      sourceScrapNo: item.sourceBusinessType === '资产报废' ? item.sourceBusinessNo : '-',
+      sourceAccountingNo: `ZMBF20260923${String(index + 1).padStart(4, '0')}`,
+      scrapDate: '2026-09-23',
+      disposalStatus: '待处置',
+      disposalMode,
+      enteredAt: '2026-09-23',
+      region: String(item.city || '').includes('北京') ? '北京' : '非北京',
+      dataCleaning: item.scope === '机房资产' && index === 0 ? '是' : '否',
+      recycler1: disposalMode === '实物处置' ? recycler1 : null,
+      recycler2: disposalMode === '实物处置' ? recycler2 : null,
+      recycler3: disposalMode === '实物处置' ? recycler3 : null,
+    };
+  });
+
+const lostDisposalAsset = DISPOSAL_ASSET_POOL.find((item) => item.scrapType === '丢失');
 
 const businessRows = {
   crossCompany: [
@@ -354,9 +376,40 @@ const businessRows = {
     },
     {
       id: 'disp-lost', applicationNo: 'CZ20260923000004', documentStatus: '处理中',
-      assetScope: '办公设备', company: '115.焦点互动', creator: '系统自动', createdAt: '2026-09-23',
+      assetScope: lostDisposalAsset?.scope || '办公设备',
+      company: lostDisposalAsset?.company || '115.焦点互动',
+      creator: '系统自动', createdAt: '2026-09-23',
       assetCount: 1, currentNode: '无实物处置确认', disposalMode: '无实物处置',
+      assetIds: lostDisposalAsset ? [lostDisposalAsset.id] : [],
       remark: '丢失资产无实物处置',
+    },
+    {
+      id: 'disp-office-beijing', applicationNo: 'CZ20260921000001', documentStatus: '审批中',
+      assetScope: '办公设备', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-asset-2')?.company || '116.北京新动力',
+      region: '北京', creator: DEMO_APPLICANT, createdAt: '2026-09-21',
+      assetCount: 1, assetIds: ['disposal-asset-2'], currentNode: 'ES二级审批',
+      remark: '笔记本线下询价及处置审批',
+    },
+    {
+      id: 'disp-machine-beijing', applicationNo: 'CZ20260920000002', documentStatus: '处理中',
+      assetScope: '机房资产', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-asset-3')?.company || '115.新媒体',
+      region: '北京', creator: DEMO_APPLICANT, createdAt: '2026-09-20',
+      assetCount: 1, assetIds: ['disposal-asset-3'], currentNode: 'ES专员协办',
+      remark: '机房服务器完成询价待线下交接',
+    },
+    {
+      id: 'disp-office-shanghai', applicationNo: 'CZ20260919000003', documentStatus: '已完成',
+      assetScope: '办公设备', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-scrap-vehicle-1')?.company || '115.新媒体-上海',
+      region: '非北京', creator: '213852-孙志强', createdAt: '2026-09-19',
+      assetCount: 1, assetIds: ['disposal-scrap-vehicle-1'], currentNode: '处置完成',
+      remark: '上海车辆处置流程已完成',
+    },
+    {
+      id: 'disp-office-guangzhou', applicationNo: 'CZ20260918000005', documentStatus: '已完成',
+      assetScope: '办公设备', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-scrap-building-1')?.company || '116.新媒体-广州',
+      region: '非北京', creator: '213852-孙志强', createdAt: '2026-09-18',
+      assetCount: 1, assetIds: ['disposal-scrap-building-1'], currentNode: '处置完成',
+      remark: '广州资产处置单据归档',
     },
   ],
 };
@@ -375,8 +428,12 @@ export function getInitialBusinessRows(type) {
     const matching = type === 'disposal' && row.disposalMode === '无实物处置'
       ? scoped.filter((item) => row.assetScope === '软件' ? item.scope === '软件' : item.scrapType === '丢失')
       : scoped.filter((item) => item.disposalMode !== '无实物处置');
-    const assets = (type === 'disposal' ? matching.filter((item) => item.company === row.company) : matching)
-      .slice(0, Math.max(1, row.assetCount || 1));
+    const companyMatching = type === 'disposal'
+      ? matching.filter((item) => item.company === row.company)
+      : matching;
+    const assets = type === 'disposal' && Array.isArray(row.assetIds)
+      ? companyMatching.filter((item) => row.assetIds.includes(item.id))
+      : companyMatching.slice(0, Math.max(1, row.assetCount || 1));
 
     return {
       ...row,
