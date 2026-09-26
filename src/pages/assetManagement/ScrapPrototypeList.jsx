@@ -18,6 +18,7 @@ import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
 import OutboundApprovalHistoryPage from '../inventoryManagement/OutboundApprovalHistoryPage';
 import { ASSET_SCOPE_OPTIONS } from './scrapPrototypeData';
+import { getScrapPrototypeApprovalRecords } from './scrapPrototypeApproval';
 
 const { RangePicker } = DatePicker;
 const { Text, Title } = Typography;
@@ -314,12 +315,12 @@ export default function ScrapPrototypeList({
           footer={<Button onClick={() => setApprovalRecord(null)}>关闭</Button>}
           destroyOnHidden
         >
-          <OutboundApprovalHistoryPage outbound={{ approvalHistory: (approvalRecord?.approvalHistory || []).map((item) => ({
+          <OutboundApprovalHistoryPage outbound={{ approvalHistory: getScrapPrototypeApprovalRecords(approvalRecord || {}, type).map((item) => ({
             node: item.node,
             handler: item.person || '-',
-            action: item.result,
+            action: item.status,
             time: item.time,
-            opinion: item.opinion,
+            opinion: item.comment,
           })) }} />
         </Modal>
       )}
