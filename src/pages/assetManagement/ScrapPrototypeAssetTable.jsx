@@ -35,6 +35,7 @@ import {
 } from '../../services/scrapPrototypeService';
 import {
   mockPlates,
+  mockVirtualWarehouseManagerData,
 } from '../../mock/businessRulesMock';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
@@ -49,17 +50,45 @@ const warehouseOptions = warehouseCatalog.map((item) => ({
   value: `${item.warehouseCode}.${item.warehouseDescription}`,
 }));
 
+function normalizeMappingValue(value) {
+  return String(value || '').trim().replace(/_/g, '.');
+}
+
+function getTransferWarehouseOptions(record) {
+  if (!record?.newCompany || !record?.newPlate || !record?.targetCity) return [];
+  return warehouseCatalog
+    .filter((item) => (
+      item.status === '启用'
+      && item.company === record.newCompany
+      && item.city === record.targetCity
+      && String(item.warehouseUsage || '').includes('资产')
+    ))
+    .map((item) => ({
+      label: `${item.warehouseCode}.${item.warehouseDescription}`,
+      value: `${item.warehouseCode}.${item.warehouseDescription}`,
+    }));
+}
+
+function resolveTransferWarehouse(record) {
+  const candidates = getTransferWarehouseOptions(record);
+  return candidates.length === 1 ? candidates[0].value : '';
+}
+
+function resolveTransferResponsiblePerson(record, targetWarehouse) {
+  if (!String(record?.status || '').startsWith('在库')) {
+    return record?.responsiblePerson || '';
+  }
+  if (!targetWarehouse) return '';
+  const mapping = mockVirtualWarehouseManagerData.find((item) => (
+    item.enabled
+    && normalizeMappingValue(item.company) === normalizeMappingValue(record.newCompany)
+    && normalizeMappingValue(item.plate) === normalizeMappingValue(record.newPlate)
+  ));
+  return mapping?.virtualAdmin || '';
+}
+
 const maintenanceRows = getAssetMaintenanceRows();
 const transferLookupRecords = {
-  owners: maintenanceRows
-    .filter((row) => row.ownerId && row.ownerName)
-    .reduce((records, row) => {
-      const code = String(row.ownerId).trim();
-      if (!records.some((item) => item.code === code)) {
-        records.push({ id: `owner-${code}`, code, name: row.ownerName, department: row.department || '' });
-      }
-      return records;
-    }, []),
   companies: maintenanceRows
     .filter((row) => row.companyCode && row.company)
     .reduce((records, row) => {
@@ -82,20 +111,6 @@ const transferLookupRecords = {
 };
 
 const transferLookupConfig = {
-  newResponsiblePerson: {
-    title: '选择新责任人',
-    values: transferLookupRecords.owners,
-    searchFields: [
-      { label: '员工编码', name: 'code', dataIndex: 'code' },
-      { label: '姓名', name: 'name', dataIndex: 'name' },
-      { label: '部门名称', name: 'department', dataIndex: 'department' },
-    ],
-    columns: [
-      { title: '员工编码', dataIndex: 'code' },
-      { title: '姓名', dataIndex: 'name' },
-      { title: '部门名称', dataIndex: 'department' },
-    ],
-  },
   newCompany: {
     title: '选择新公司',
     values: transferLookupRecords.companies,
@@ -195,7 +210,7 @@ export function exportScrapPrototypeAssets(assets, type, accountingMethod, dispo
         资产序列号: item.serialNumber,
         资产类别: [item.majorCategory, item.minorCategory].filter(Boolean).join('.'),
         资产说明: item.description,
-        新责任人: item.newResponsiblePerson,
+        [type === 'crossCompany' ? '责任人' : '新责任人']: item.newResponsiblePerson,
         新公司: item.newCompany,
         新板块: item.newPlate,
         新成本中心: item.newCostCenter,
@@ -307,6 +322,27 @@ export default function ScrapPrototypeAssetTable({
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [transferLookup, setTransferLookup] = useState(null);
 
+  const updateCrossCompanyDestination = (record, field, value) => {
+    onChange(record.id, field, value);
+    const nextRecord = { ...record, [field]: value };
+    const targetWarehouse = resolveTransferWarehouse(nextRecord);
+    onChange(record.id, 'targetWarehouse', targetWarehouse);
+    onChange(
+      record.id,
+      'newResponsiblePerson',
+      resolveTransferResponsiblePerson(nextRecord, targetWarehouse),
+    );
+  };
+
+  const updateCrossCompanyWarehouse = (record, value) => {
+    onChange(record.id, 'targetWarehouse', value);
+    onChange(
+      record.id,
+      'newResponsiblePerson',
+      resolveTransferResponsiblePerson(record, value),
+    );
+  };
+
   const renderTransferValue = (value, record, sourceField) => {
     if (!readOnly || !showTransferDiff) return displayValue(value);
     const originalValue = record[sourceField];
@@ -371,7 +407,11 @@ export default function ScrapPrototypeAssetTable({
       &&
       (type !== 'disposal' || (item.scope === '办公设备' && item.disposalMode !== '无实物处置'))
       &&
-      (!['crossCompany', 'disposal', 'accounting'].includes(type) || (sourceCompany && item.company === sourceCompany))
+      (
+        type === 'crossCompany'
+          ? (!sourceCompany || item.company === sourceCompany)
+          : (!['disposal', 'accounting'].includes(type) || (sourceCompany && item.company === sourceCompany))
+      )
       &&
       (!occupiedTags.has(item.tagNo) || currentTags.has(item.tagNo))
       &&
@@ -384,14 +424,19 @@ export default function ScrapPrototypeAssetTable({
   }, [type, assetScope, assetCategory, sourceCompany, accountingMethod, pickerMode, assets, accountingActor, accountingAuthorizationScopes, accountingRecordId]);
 
   const addAssets = (selected, isLostAsset = () => pickerMode === 'lost') => {
-    if (type === 'crossCompany' && !sourceCompany) {
-      message.error('请先选择公司');
+    if (type === 'crossCompany' && sourceCompany && selected.some((item) => item.company !== sourceCompany)) {
+      message.error('已选择公司，只能添加该公司的资产');
       return false;
     }
 
-    if (type === 'crossCompany' && selected.some((item) => item.company !== sourceCompany)) {
-      message.error('只能选择所选公司的资产');
-      return false;
+    if (type === 'crossCompany') {
+      const companies = new Set(
+        [...assets, ...selected].map((item) => item.company).filter(Boolean),
+      );
+      if (companies.size > 1) {
+        message.error('同一跨公司转移单只能选择同一原公司的资产');
+        return false;
+      }
     }
     if (type === 'disposal' && (!sourceCompany || selected.some((item) => item.company !== sourceCompany || item.scope !== '办公设备'))) {
       message.error('只能添加所选公司的待处置办公资产');
@@ -434,33 +479,44 @@ export default function ScrapPrototypeAssetTable({
 
     const next = selected
       .filter((item) => !existing.has(item.id))
-      .map((item) => ({
-        ...item,
-        scrapMethod: type === 'crossCompany'
-          ? '调账'
-          : type === 'accounting' && isLostAsset(item)
-            ? '非调账'
-            : item.scrapMethod || scrapMethod,
-        detailScrapMethod: type === 'accounting' && isLostAsset(item)
-          ? '全部报废'
-          : item.detailScrapMethod || '全部报废',
-        scrapType: type === 'accounting' && isLostAsset(item) ? '丢失' : item.scrapType || '已到报废期',
-        reason: type === 'accounting' && isLostAsset(item) ? '' : item.reason || '',
-        dataCleaning: item.scope === '机房资产' ? item.dataCleaning || '否' : undefined,
-        newCompany: type === 'crossCompany' ? item.company || '' : item.newCompany || '',
-        newPlate: type === 'crossCompany' ? item.plate || '' : item.newPlate || '',
-        newCostCenter: type === 'crossCompany' ? item.costCenter || '' : item.newCostCenter || '',
-        newResponsiblePerson: type === 'crossCompany'
-          ? item.responsiblePerson || ''
-          : item.newResponsiblePerson || '',
-        targetWarehouse: type === 'crossCompany' ? item.warehouse || '' : item.targetWarehouse || '',
-        targetCity: type === 'crossCompany' ? item.city || '' : item.targetCity || '',
-        targetBuilding: type === 'crossCompany' ? item.building || '' : item.targetBuilding || '',
-        targetFloor: type === 'crossCompany' ? item.floor || '' : item.targetFloor || '',
-        purpose: item.purpose || '',
-        project: item.project || '',
-        rowRemark: item.rowRemark || '',
-      }));
+      .map((item) => {
+        const base = {
+          ...item,
+          scrapMethod: type === 'crossCompany'
+            ? '调账'
+            : type === 'accounting' && isLostAsset(item)
+              ? '非调账'
+              : item.scrapMethod || scrapMethod,
+          detailScrapMethod: type === 'accounting' && isLostAsset(item)
+            ? '全部报废'
+            : item.detailScrapMethod || '全部报废',
+          scrapType: type === 'accounting' && isLostAsset(item) ? '丢失' : item.scrapType || '已到报废期',
+          reason: type === 'accounting' && isLostAsset(item) ? '' : item.reason || '',
+          dataCleaning: item.scope === '机房资产' ? item.dataCleaning || '否' : undefined,
+          newCompany: type === 'crossCompany' ? item.company || '' : item.newCompany || '',
+          newPlate: type === 'crossCompany' ? item.plate || '' : item.newPlate || '',
+          newCostCenter: type === 'crossCompany' ? item.costCenter || '' : item.newCostCenter || '',
+          targetCity: type === 'crossCompany' ? item.city || '' : item.targetCity || '',
+          targetBuilding: type === 'crossCompany' ? item.building || '' : item.targetBuilding || '',
+          targetFloor: type === 'crossCompany' ? item.floor || '' : item.targetFloor || '',
+          purpose: item.purpose || '',
+          project: item.project || '',
+          rowRemark: item.rowRemark || '',
+        };
+        if (type !== 'crossCompany') {
+          return {
+            ...base,
+            newResponsiblePerson: item.newResponsiblePerson || '',
+            targetWarehouse: item.targetWarehouse || '',
+          };
+        }
+        const targetWarehouse = resolveTransferWarehouse(base);
+        return {
+          ...base,
+          targetWarehouse,
+          newResponsiblePerson: resolveTransferResponsiblePerson(base, targetWarehouse),
+        };
+      });
 
     if (type === 'accounting') {
       const checked = validateAccountingAssets(
@@ -616,19 +672,13 @@ export default function ScrapPrototypeAssetTable({
     },
     { title: '资产说明', dataIndex: 'description', width: 220, ellipsis: true },
     {
-      title: requiredTitle('新责任人'),
+      title: requiredTitle('责任人'),
       dataIndex: 'newResponsiblePerson',
       width: 160,
       render: (value, record) => (
         readOnly
           ? renderTransferValue(value, record, 'responsiblePerson')
-          : (
-            <LookupInput
-              value={value}
-              placeholder="请选择新责任人"
-              onOpen={() => setTransferLookup({ row: record, field: 'newResponsiblePerson' })}
-            />
-          )
+          : displayValue(value)
       ),
     },
     {
@@ -659,7 +709,7 @@ export default function ScrapPrototypeAssetTable({
               value={value || undefined}
               options={plateOptions}
               className="w-full"
-              onChange={(nextValue) => onChange(record.id, 'newPlate', nextValue || '')}
+              onChange={(nextValue) => updateCrossCompanyDestination(record, 'newPlate', nextValue || '')}
             />
           )
       ),
@@ -690,7 +740,7 @@ export default function ScrapPrototypeAssetTable({
           : (
             <Input
               value={value}
-              onChange={(event) => onChange(record.id, 'targetCity', event.target.value)}
+              onChange={(event) => updateCrossCompanyDestination(record, 'targetCity', event.target.value)}
             />
           )
       ),
@@ -726,7 +776,7 @@ export default function ScrapPrototypeAssetTable({
       ),
     },
     {
-      title: '调账后仓库',
+      title: requiredTitle('调账后仓库'),
       dataIndex: 'targetWarehouse',
       width: 210,
       render: (value, record) => (
@@ -736,9 +786,10 @@ export default function ScrapPrototypeAssetTable({
             <Select
               allowClear
               value={value || undefined}
-              options={warehouseOptions}
+              options={getTransferWarehouseOptions(record)}
               className="w-full"
-              onChange={(nextValue) => onChange(record.id, 'targetWarehouse', nextValue || '')}
+              placeholder="按新公司+新板块+City映射"
+              onChange={(nextValue) => updateCrossCompanyWarehouse(record, nextValue || '')}
             />
           )
       ),
@@ -997,11 +1048,9 @@ export default function ScrapPrototypeAssetTable({
     <>
       {['crossCompany', 'accounting'].includes(type) && transferLookup && (() => {
         const lookup = transferLookupConfig[transferLookup.field];
-        const display = (item) => transferLookup.field === 'newResponsiblePerson'
-          ? `${item.code}-${item.name}`
-          : transferLookup.field === 'newCompany'
-            ? `${item.code}.${item.name}`
-            : item.name;
+        const display = (item) => transferLookup.field === 'newCompany'
+          ? `${item.code}.${item.name}`
+          : item.name;
         return (
           <SelectModal
             open
@@ -1011,7 +1060,12 @@ export default function ScrapPrototypeAssetTable({
             columns={lookup.columns}
             onCancel={() => setTransferLookup(null)}
             onConfirm={(item) => {
-              onChange(transferLookup.row.id, transferLookup.field, display(item));
+              const value = display(item);
+              if (type === 'crossCompany' && transferLookup.field === 'newCompany') {
+                updateCrossCompanyDestination(transferLookup.row, transferLookup.field, value);
+              } else {
+                onChange(transferLookup.row.id, transferLookup.field, value);
+              }
               setTransferLookup(null);
             }}
           />
@@ -1045,7 +1099,7 @@ export default function ScrapPrototypeAssetTable({
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                disabled={['crossCompany', 'disposal'].includes(type) && !sourceCompany}
+                disabled={type === 'disposal' && !sourceCompany}
                 onClick={() => { setPickerMode('waiting'); setPickerOpen(true); }}
               >
                 添加资产
@@ -1059,9 +1113,9 @@ export default function ScrapPrototypeAssetTable({
               accept=".xls,.xlsx"
               showUploadList={false}
               beforeUpload={importAssets}
-              disabled={['crossCompany', 'disposal', 'accounting'].includes(type) && !sourceCompany}
+              disabled={['disposal', 'accounting'].includes(type) && !sourceCompany}
             >
-              <Button disabled={['crossCompany', 'disposal', 'accounting'].includes(type) && !sourceCompany} icon={<UploadOutlined />}>
+              <Button disabled={['disposal', 'accounting'].includes(type) && !sourceCompany} icon={<UploadOutlined />}>
                 Excel导入
               </Button>
             </Upload>
