@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import dayjs from 'dayjs';
 import {
   Button,
   Card,
@@ -10,6 +11,7 @@ import {
   Collapse,
   Typography,
   Space,
+  Steps,
   Upload,
   message,
 } from 'antd';
@@ -52,6 +54,56 @@ function sectionTitle(title) {
   );
 }
 
+const ACCOUNTING_SUMMARY_PROJECTS = [
+  '主机',
+  '显示器',
+  '主机（配件）',
+  '笔记本',
+  '笔记本（配件）',
+  '办公设备',
+  '办公设备（配件）',
+  '服务器',
+  '服务器（配件）',
+  '网络设备',
+  '网络设备（配件）',
+  '家具',
+  'VEHICLE',
+];
+
+function accountingCompanyDisplayName(company) {
+  const text = String(company || '').trim();
+  const [code, ...parts] = text.split('.');
+  const name = parts.length ? parts.join('.') : text;
+  if (code === '114' && name === '新媒体') return '搜狐新媒体';
+  return name;
+}
+
+function accountingSummaryProject(asset) {
+  const category = String(asset?.majorCategory || '').trim().toUpperCase();
+  const minor = String(asset?.minorCategory || '');
+  const description = String(asset?.description || '');
+  const accessory = Boolean(
+    asset?.parentAssetTag
+    || asset?.mainAssetTag
+    || asset?.mainTagNo
+    || asset?.isAccessory
+    || /配件/.test(minor)
+    || /配件/.test(description)
+  );
+  let base = category;
+  if (category === 'PC') base = '主机';
+  else if (category === 'DISPLAY' || /显示器/.test(minor) || /显示器/.test(description)) base = '显示器';
+  else if (category === 'NOTEBOOK') base = '笔记本';
+  else if (category === 'OFFICE EQUIPMENT') base = '办公设备';
+  else if (category === 'SERVER') base = '服务器';
+  else if (category === 'NET EQUIPMENT') base = '网络设备';
+  else if (category === 'FURNITURE') base = '家具';
+  else if (category === 'VEHICLE') base = 'VEHICLE';
+  return accessory && ['主机', '笔记本', '办公设备', '服务器', '网络设备'].includes(base)
+    ? `${base}（配件）`
+    : base;
+}
+
 export default function ScrapPrototypeEditor({
   type,
   config,
@@ -71,6 +123,8 @@ export default function ScrapPrototypeEditor({
   const [assets, setAssets] = useState(initialAssets);
   const [companyPickerOpen, setCompanyPickerOpen] = useState(false);
   const [approvalOpinion, setApprovalOpinion] = useState('同意');
+  const [accountingPreview, setAccountingPreview] = useState(false);
+  const [accountingNameTouched, setAccountingNameTouched] = useState(Boolean(initialForm.scrapFormName));
 
   const updateForm = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
