@@ -34,10 +34,7 @@ import {
   getScrapPrototypeRecords,
   validateAccountingAssets,
 } from '../../services/scrapPrototypeService';
-import {
-  mockPlates,
-  mockVirtualWarehouseManagerData,
-} from '../../mock/businessRulesMock';
+import { mockPlates } from '../../mock/businessRulesMock';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 
@@ -51,40 +48,8 @@ const warehouseOptions = warehouseCatalog.map((item) => ({
   value: `${item.warehouseCode}.${item.warehouseDescription}`,
 }));
 
-function normalizeMappingValue(value) {
-  return String(value || '').trim().replace(/_/g, '.');
-}
-
 function getTransferWarehouseOptions(record) {
-  if (!record?.newCompany || !record?.newPlate || !record?.targetCity) return [];
-
-  // 原型只使用仓库基础资料和现有资产/调账样例中已经存在的三维映射事实，不猜测缺失的板块映射。
-  const mappingFacts = [
-    ...SCRAP_ASSET_POOL.map((item) => ({
-      company: item.company,
-      plate: item.plate,
-      city: item.city,
-      warehouse: item.warehouse,
-    })),
-    ...ACCOUNTING_ASSET_POOL
-      .filter((item) => item.newCompany && item.newPlate && item.targetCity && item.targetWarehouse)
-      .map((item) => ({
-        company: item.newCompany,
-        plate: item.newPlate,
-        city: item.targetCity,
-        warehouse: item.targetWarehouse,
-      })),
-  ];
-  const mappedWarehouses = new Set(
-    mappingFacts
-      .filter((item) => (
-        item.company === record.newCompany
-        && item.plate === record.newPlate
-        && item.city === record.targetCity
-      ))
-      .map((item) => item.warehouse)
-      .filter(Boolean),
-  );
+  if (!record?.newCompany || !record?.targetCity) return [];
 
   return warehouseCatalog
     .filter((item) => (
@@ -92,10 +57,6 @@ function getTransferWarehouseOptions(record) {
       && item.company === record.newCompany
       && item.city === record.targetCity
       && String(item.warehouseUsage || '').includes('资产')
-      && (
-        mappedWarehouses.has(item.warehouseDescription)
-        || mappedWarehouses.has(`${item.warehouseCode}.${item.warehouseDescription}`)
-      )
     ))
     .map((item) => ({
       label: `${item.warehouseCode}.${item.warehouseDescription}`,
@@ -113,25 +74,15 @@ function resolveTransferResponsiblePerson(record, targetWarehouse) {
     return record?.responsiblePerson || '';
   }
   if (!targetWarehouse) return '';
-  const targetDescription = String(targetWarehouse).split('.').slice(1).join('.');
-  const warehouseVirtualKeepers = Array.from(new Set(
-    SCRAP_ASSET_POOL
-      .filter((item) => (
-        String(item.status || '').startsWith('在库')
-        && (item.warehouse === targetWarehouse || item.warehouse === targetDescription)
-        && /^SOHU\d+-/.test(String(item.responsiblePerson || ''))
-      ))
-      .map((item) => item.responsiblePerson)
-      .filter(Boolean),
-  ));
-  if (warehouseVirtualKeepers.length === 1) return warehouseVirtualKeepers[0];
 
-  const mapping = mockVirtualWarehouseManagerData.find((item) => (
-    item.enabled
-    && normalizeMappingValue(item.company) === normalizeMappingValue(record.newCompany)
-    && normalizeMappingValue(item.plate) === normalizeMappingValue(record.newPlate)
+  const warehouse = warehouseCatalog.find((item) => (
+    item.status === '启用'
+    && (
+      targetWarehouse === item.warehouseDescription
+      || targetWarehouse === `${item.warehouseCode}.${item.warehouseDescription}`
+    )
   ));
-  return mapping?.virtualAdmin || '';
+  return warehouse?.keeper || '';
 }
 
 const maintenanceRows = getAssetMaintenanceRows();
@@ -893,7 +844,7 @@ export default function ScrapPrototypeAssetTable({
               value={value || undefined}
               options={getTransferWarehouseOptions(record)}
               className="w-full"
-              placeholder="按新公司+新板块+City映射"
+              placeholder="按新公司+City匹配"
               onChange={(nextValue) => updateCrossCompanyWarehouse(record, nextValue || '')}
             />
           )
