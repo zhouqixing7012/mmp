@@ -349,11 +349,32 @@ export function exportScrapPrototypeAssets(assets, type, accountingMethod, dispo
   );
 }
 
+function exportDisposalPickerAssets(rows) {
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows.map((item) => ({
+    资产标签号: item.tagNo,
+    序列号: item.serialNumber,
+    资产类别: [item.majorCategory, item.minorCategory].filter(Boolean).join('.'),
+    资产说明: item.description,
+    公司: item.company,
+    板块: item.plate,
+    City: item.city,
+    数量: item.quantity,
+    原值: item.originalValue,
+    净值: item.netValue,
+    账面报废申请单号: item.sourceAccountingNo,
+    报废申请单号: item.sourceScrapNo,
+  }))), '查询结果');
+  XLSX.writeFile(workbook, '待处置资产查询结果.xlsx');
+}
+
 export default function ScrapPrototypeAssetTable({
   type,
   assetScope,
   assetCategory,
   sourceCompany,
+  sourceCompanies = [],
+  sourcePlates = [],
   accountingMethod,
   assets,
   readOnly,
@@ -425,6 +446,12 @@ export default function ScrapPrototypeAssetTable({
     );
   };
 
+  const selectedDisposalCompanies = type === 'disposal'
+    ? (sourceCompanies.length > 0 ? sourceCompanies : (sourceCompany ? [sourceCompany] : []))
+    : [];
+  const selectedDisposalPlates = type === 'disposal' ? sourcePlates.filter(Boolean) : [];
+  const hasDisposalCompanyRange = selectedDisposalCompanies.length > 0;
+
   const pickerAssets = useMemo(() => {
     const isAccountingLost = type === 'accounting' && pickerMode === 'lost';
     const accountingFilters = {
@@ -471,12 +498,17 @@ export default function ScrapPrototypeAssetTable({
       &&
       (type !== 'accounting' || !isAccountingLost || !priorWorkflowTags.has(item.tagNo))
       &&
-      (type !== 'disposal' || (item.scope === '办公设备' && item.disposalMode !== '无实物处置'))
+      (type !== 'disposal' || (
+        item.scope === '办公设备'
+        && item.disposalMode !== '无实物处置'
+        && selectedDisposalCompanies.includes(item.company)
+        && (selectedDisposalPlates.length === 0 || selectedDisposalPlates.includes(item.plate))
+      ))
       &&
       (
         type === 'crossCompany'
           ? (!sourceCompany || item.company === sourceCompany)
-          : (!['disposal', 'accounting'].includes(type) || (sourceCompany && item.company === sourceCompany))
+          : (type !== 'accounting' || (sourceCompany && item.company === sourceCompany))
       )
       &&
       (!occupiedTags.has(item.tagNo) || currentTags.has(item.tagNo))
@@ -487,7 +519,7 @@ export default function ScrapPrototypeAssetTable({
         || (!String(item.status || '').startsWith('已报废') && item.status !== '在库-待报废')
       )
     ));
-  }, [type, assetScope, assetCategory, sourceCompany, accountingMethod, pickerMode, assets, accountingActor, accountingAuthorizationScopes, accountingRecordId]);
+  }, [type, assetScope, assetCategory, sourceCompany, sourceCompanies, sourcePlates, accountingMethod, pickerMode, assets, accountingActor, accountingAuthorizationScopes, accountingRecordId]);
 
   const addAssets = (selected, isLostAsset = () => pickerMode === 'lost') => {
     if (type === 'crossCompany' && sourceCompany && selected.some((item) => item.company !== sourceCompany)) {
@@ -504,8 +536,15 @@ export default function ScrapPrototypeAssetTable({
         return false;
       }
     }
-    if (type === 'disposal' && (!sourceCompany || selected.some((item) => item.company !== sourceCompany || item.scope !== '办公设备'))) {
-      message.error('只能添加所选公司的待处置办公资产');
+    if (type === 'disposal' && (
+      !hasDisposalCompanyRange
+      || selected.some((item) => (
+        !selectedDisposalCompanies.includes(item.company)
+        || (selectedDisposalPlates.length > 0 && !selectedDisposalPlates.includes(item.plate))
+        || item.scope !== '办公设备'
+      ))
+    )) {
+      message.error('只能添加所选公司及板块范围内的待处置办公资产');
       return false;
     }
     if (type === 'accounting' && (!sourceCompany || selected.some((item) => item.company !== sourceCompany))) {
@@ -1047,6 +1086,7 @@ export default function ScrapPrototypeAssetTable({
     ? [
         { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
         { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
+        { label: '资产说明', name: 'description', dataIndex: 'description' },
         { label: '资产大类', name: 'majorCategory', dataIndex: 'majorCategory' },
         { label: '资产小类', name: 'minorCategory', dataIndex: 'minorCategory' },
         { label: 'City', name: 'city', dataIndex: 'city' },
@@ -1187,7 +1227,7 @@ export default function ScrapPrototypeAssetTable({
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                disabled={type === 'disposal' && !sourceCompany}
+                disabled={type === 'disposal' && !hasDisposalCompanyRange}
                 onClick={() => { setPickerMode('waiting'); setPickerOpen(true); }}
               >
                 添加资产
@@ -1201,9 +1241,9 @@ export default function ScrapPrototypeAssetTable({
               accept=".xls,.xlsx"
               showUploadList={false}
               beforeUpload={importAssets}
-              disabled={['disposal', 'accounting'].includes(type) && !sourceCompany}
+              disabled={(type === 'disposal' && !hasDisposalCompanyRange) || (type === 'accounting' && !sourceCompany)}
             >
-              <Button disabled={['disposal', 'accounting'].includes(type) && !sourceCompany} icon={<UploadOutlined />}>
+              <Button disabled={(type === 'disposal' && !hasDisposalCompanyRange) || (type === 'accounting' && !sourceCompany)} icon={<UploadOutlined />}>
                 Excel导入
               </Button>
             </Upload>
@@ -1239,6 +1279,8 @@ export default function ScrapPrototypeAssetTable({
         initialSelectedKeys={assets.map((item) => item.id)}
         searchFields={assetPickerSearchFields}
         columns={assetPickerColumns}
+        onExport={type === 'disposal' ? exportDisposalPickerAssets : undefined}
+        exportLabel="导出查询结果"
         onCancel={() => setPickerOpen(false)}
         onConfirm={(selected) => {
           addAssets(selected);
