@@ -164,15 +164,16 @@ export default function ScrapPrototypeEditor({
   const disposalSelectedPlates = type === 'disposal'
     ? (Array.isArray(form.plates) ? form.plates.filter(Boolean) : [])
     : [];
-  const disposalPlateOptions = useMemo(() => {
-    if (type !== 'disposal') return [];
-    const candidates = getDisposalCandidates().filter((item) => (
-      item.scope === '办公设备'
-      && (disposalSelectedCompanies.length === 0 || disposalSelectedCompanies.includes(item.company))
-    ));
-    return Array.from(new Set(candidates.map((item) => item.plate).filter(Boolean)))
-      .map((value) => ({ label: value, value }));
-  }, [type, form.company, form.companies]);
+  const disposalPlateOptions = type === 'disposal'
+    ? Array.from(new Set(getDisposalCandidates()
+      .filter((item) => (
+        item.scope === '办公设备'
+        && (disposalSelectedCompanies.length === 0 || disposalSelectedCompanies.includes(item.company))
+      ))
+      .map((item) => item.plate)
+      .filter(Boolean)))
+      .map((value) => ({ label: value, value }))
+    : [];
   const disposalPlateDisplay = disposalSelectedPlates.length > 0
     ? disposalSelectedPlates.join('、')
     : '全部板块';
@@ -693,7 +694,7 @@ export default function ScrapPrototypeEditor({
       ? '公司间转移明细'
       : type === 'scrap'
         ? '报废资产明细'
-        : type === 'disposal' && approvalPage
+        : type === 'disposal' && (approvalPage || previewView)
           ? '处置资产汇总'
           : type === 'disposal'
             ? '处置资产明细'
