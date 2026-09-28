@@ -232,20 +232,33 @@ export default function ScrapPrototypeEditor({
   const disposalQuantityTotal = assets.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
   const disposalOriginalValueTotal = assets.reduce((sum, item) => sum + Number(item.originalValue || 0), 0);
   const disposalNetValueTotal = assets.reduce((sum, item) => sum + Number(item.netValue || 0), 0);
-  const disposalHighestQuoteIndex = disposalQuoteTotals.reduce(
-    (highest, value, index, values) => (value > values[highest] ? index : highest),
-    0,
+  const disposalRecyclerEntries = [1, 2, 3].map((index) => {
+    const name = String(form[`recycler${index}Name`] || '').trim();
+    const hasQuote = assets.some((asset) => {
+      const value = asset[`recycler${index}`];
+      return value !== undefined && value !== null && String(value).trim() !== '';
+    });
+    return { index, name, hasQuote, total: disposalQuoteTotals[index - 1] || 0 };
+  });
+  const disposalActiveRecyclerEntries = disposalRecyclerEntries.filter((item) => item.name || item.hasQuote);
+  const disposalRecyclerInfoEmpty = disposalActiveRecyclerEntries.length === 0;
+  const disposalHighestRecycler = disposalActiveRecyclerEntries.reduce(
+    (highest, item) => (!highest || item.total > highest.total ? item : highest),
+    null,
   );
-  const disposalHighestQuoteTotal = disposalQuoteTotals[disposalHighestQuoteIndex] || 0;
-  const disposalHighestRecyclerName = String(
-    form[`recycler${disposalHighestQuoteIndex + 1}Name`] || '未填写',
-  ).trim() || '未填写';
+  const disposalHighestQuoteTotal = disposalHighestRecycler?.total || 0;
+  const disposalHighestRecyclerName = disposalHighestRecycler
+    ? disposalHighestRecycler.name || `回收商${['一', '二', '三'][disposalHighestRecycler.index - 1]}`
+    : '';
   const disposalRecoveryWan = (disposalHighestQuoteTotal / 10000).toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  const disposalAutoDescription = type === 'disposal' && form.assetScope === '办公设备'
-    ? `按照报废计划，ES拟对${disposalQuantityTotal}台库存老旧办公资产进行变卖处置，预计回收总价约${disposalRecoveryWan}万元，处置方案如下，请您审批。\n\n(一)  处置数量：共${disposalQuantityTotal}台，资产原值${money(disposalOriginalValueTotal)}元，净值${money(disposalNetValueTotal)}元，已完成账面报废。（注：电脑类资产配置经MIS确认不再满足员工办公需求）\n\n(二) 处置方式：\n\n- 由三家采购回收商分别进行评估报价，其中回收商“${disposalHighestRecyclerName}”总价最高，约${disposalRecoveryWan}万元，建议与其合作（下附比价表）；\n- 待您及集团财务领导审批后，ES将联系回收商打款并完成实物交接。`
+  const disposalRecyclerCountText = ['零', '一', '两', '三'][disposalActiveRecyclerEntries.length] || disposalActiveRecyclerEntries.length;
+  const disposalAutoDescription = type === 'disposal'
+    && form.assetScope === '办公设备'
+    && !disposalRecyclerInfoEmpty
+    ? `按照报废计划，ES拟对${disposalQuantityTotal}台库存老旧办公资产进行变卖处置，预计回收总价约${disposalRecoveryWan}万元，处置方案如下，请您审批。\n\n(一)  处置数量：共${disposalQuantityTotal}台，资产原值${money(disposalOriginalValueTotal)}元，净值${money(disposalNetValueTotal)}元，已完成账面报废。（注：电脑类资产配置经MIS确认不再满足员工办公需求）\n\n(二) 处置方式：\n\n- 由${disposalRecyclerCountText}家采购回收商分别进行评估报价，其中回收商“${disposalHighestRecyclerName}”总价最高，约${disposalRecoveryWan}万元，建议与其合作（下附比价表）；\n- 待您及集团财务领导审批后，ES将联系回收商打款并完成实物交接。`
     : '';
   const disposalDescription = disposalDescriptionTouched
     ? form.disposalDescription || ''
