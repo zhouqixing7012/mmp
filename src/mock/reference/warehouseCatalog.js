@@ -1,9 +1,11 @@
 // 来源：仓库基础数据维护_仓库信息20260709 (3) (1)(1).csv
+// 原始 Excel 归档：docs/source/仓库基础数据维护_仓库信息20260709 (3) (1).xlsx
 // 统一 Mock 仓库基础事实源。
 // 默认 Mock 只使用源表中“启用”的仓库；仓库、公司、City、Building、Floor、用途等必须从同一条真实记录读取。
 
 export const WAREHOUSE_CATALOG_SOURCE = Object.freeze({
   sourceFile: '仓库基础数据维护_仓库信息20260709 (3) (1)(1).csv',
+  sourceArchiveFile: 'docs/source/仓库基础数据维护_仓库信息20260709 (3) (1).xlsx',
   sourceDate: '2026-07-09',
   sourceRecordCount: 158,
   sourceEnabledRecordCount: 72,
