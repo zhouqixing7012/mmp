@@ -71,7 +71,6 @@ function normalizeAccountingSource(asset, sourceType, record) {
     scrapType: netValue === 0 ? '已到报废期' : '未到报废期',
     sourceBusinessType: transfer ? '跨公司转移' : '资产报废',
     sourceBusinessNo: record.applicationNo,
-    disposedComplete: transfer ? '否' : record.formSnapshot?.disposedComplete || asset.disposedComplete || '否',
     status: String(asset.status || '').startsWith('在库') ? '在库-待报废' : asset.status,
   };
 }
@@ -144,19 +143,12 @@ export function getAccountingLostCandidates(options = {}) {
   });
 }
 
-export function machineRequiresDisposal(asset) {
-  if (asset.scope !== '机房资产') return true;
-  const location = asset.region || asset.assetLocation;
-  if (location && !['北京', '非北京'].includes(location)) {
-    throw new Error(`机房资产 ${asset.tagNo || asset.id} 的归属地无效`);
-  }
-  const isBeijing = location === '北京' || (!location && String(asset.city || '').includes('北京'));
-  if (!location && !asset.city) throw new Error(`机房资产 ${asset.tagNo || asset.id} 缺少归属地`);
-  if (isBeijing) return true;
-  if (!['是', '否'].includes(asset.dataCleaning)) {
-    throw new Error(`非北京机房资产 ${asset.tagNo || asset.id} 缺少数据清洗结果`);
-  }
-  return asset.dataCleaning === '是';
+export function requiresPhysicalDisposal(asset) {
+  const majorCategory = String(asset?.majorCategory || '').toUpperCase();
+  const software = asset?.scope === '软件' || majorCategory === '17.SOFTWARE' || majorCategory.startsWith('17.');
+  const lost = asset?.scrapType === '丢失';
+  const transfer = asset?.scrapMethod === '调账' || asset?.detailScrapMethod === '调账';
+  return !software && !lost && !transfer;
 }
 
 export function validateAccountingAssets(form, assets, options = {}) {
@@ -242,15 +234,18 @@ export function validateAccountingAssets(form, assets, options = {}) {
 }
 
 export function getDisposalCandidates() {
+  const disposalRecords = getScrapPrototypeRecords('disposal');
+  const occupiedTags = new Set(disposalRecords
+    .filter((record) => record.documentStatus !== '已驳回')
+    .flatMap((record) => (record.assetsSnapshot || []).map((asset) => asset.tagNo))
+    .filter(Boolean));
   const result = new Map(DISPOSAL_ASSET_POOL
-    .filter((asset) => asset.scope !== '软件' && asset.scrapType !== '丢失' && machineRequiresDisposal(asset))
+    .filter((asset) => requiresPhysicalDisposal(asset) && !occupiedTags.has(asset.tagNo))
     .map((asset) => [asset.tagNo, asset]));
   for (const record of getScrapPrototypeRecords('accounting')) {
     if (record.documentStatus !== '已完成') continue;
     for (const asset of record.assetsSnapshot || []) {
-      const noPhysicalDisposal = asset.scope === '软件' || asset.scrapType === '丢失';
-      if (noPhysicalDisposal || asset.scrapMethod === '调账' || asset.disposedComplete === '是'
-        || asset.disposalRequired !== '是' || !machineRequiresDisposal(asset)) {
+      if (!requiresPhysicalDisposal(asset) || occupiedTags.has(asset.tagNo)) {
         result.delete(asset.tagNo);
         continue;
       }
