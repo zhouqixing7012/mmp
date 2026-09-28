@@ -171,7 +171,12 @@ export default function ScrapPrototypeEditor({
           nextForm.assetCategory = firstAsset.majorCategory;
           nextForm.assetLocation = String(firstAsset.city || '').includes('北京') ? '北京' : '非北京';
         }
-        if (type !== 'crossCompany' && type !== 'accounting') {
+        if (type === 'crossCompany') {
+          const sourceCompanies = new Set(nextAssets.map((item) => item.company).filter(Boolean));
+          if (sourceCompanies.size === 1) {
+            nextForm.company = firstAsset.company || current.company;
+          }
+        } else if (type !== 'accounting') {
           nextForm.company = firstAsset.company || current.company;
         }
         if (type === 'disposal') {
@@ -207,15 +212,18 @@ export default function ScrapPrototypeEditor({
         || !item.targetCity
         || !item.targetBuilding
         || !item.targetFloor
+        || !item.targetWarehouse
       ));
       if (invalid) {
         message.error(`资产 ${invalid.tagNo} 的调账目标信息未填写完整`);
         return false;
       }
 
-      const sameCompany = assets.find((item) => item.newCompany === item.company);
-      if (sameCompany) {
-        message.error(`资产 ${sameCompany.tagNo} 的新公司不能与原公司相同`);
+      const unchangedTarget = assets.find((item) => (
+        item.newCompany === item.company && item.newPlate === item.plate
+      ));
+      if (unchangedTarget) {
+        message.error(`资产 ${unchangedTarget.tagNo} 的新公司+新板块不能与原公司+原板块完全相同`);
         return false;
       }
     }
@@ -437,6 +445,12 @@ export default function ScrapPrototypeEditor({
           </div>
         )}
       </div>
+
+      {type === 'crossCompany' && !readOnly && (
+        <Typography.Text type="danger" className="block">
+          变更内容请提前与财务确认；跨公司转移审批完成后仅进入待报废池，最终变更结果需待后续账面报废流程完成后正式生效。
+        </Typography.Text>
+      )}
 
       <Card size="small" title={approvalView ? '申请人信息' : '基本信息'}>
         {approvalView ? (
