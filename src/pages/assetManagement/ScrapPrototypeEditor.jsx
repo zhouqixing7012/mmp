@@ -342,12 +342,62 @@ export default function ScrapPrototypeEditor({
         return false;
       }
 
+      const sourceCompanies = new Set(assets.map((item) => item.company).filter(Boolean));
+      if (sourceCompanies.size !== 1 || !sourceCompanies.has(form.company)) {
+        message.error('同一跨公司转移单只能选择同一原公司的资产，且必须与单头公司一致');
+        return false;
+      }
+
+      const sourceScopes = new Set(assets.map((item) => item.scope).filter(Boolean));
+      if (sourceScopes.size !== 1) {
+        message.error('同一跨公司转移单不能混合机房资产、软件和办公设备');
+        return false;
+      }
+
       const unchangedTarget = assets.find((item) => (
         item.newCompany === item.company && item.newPlate === item.plate
       ));
       if (unchangedTarget) {
         message.error(`资产 ${unchangedTarget.tagNo} 的新公司+新板块不能与原公司+原板块完全相同`);
         return false;
+      }
+
+      for (const asset of assets) {
+        const warehouse = warehouseCatalog.find((item) => (
+          item.status === '启用'
+          && (
+            asset.targetWarehouse === item.warehouseDescription
+            || asset.targetWarehouse === `${item.warehouseCode}.${item.warehouseDescription}`
+          )
+        ));
+        if (
+          !warehouse
+          || warehouse.company !== asset.newCompany
+          || warehouse.city !== asset.targetCity
+          || !String(warehouse.warehouseUsage || '').includes('资产')
+        ) {
+          message.error(`资产 ${asset.tagNo} 的调账后仓库与新公司、City不匹配`);
+          return false;
+        }
+
+        const knownBuildingRecords = warehouseCatalog.filter((item) => item.building === asset.targetBuilding);
+        if (
+          knownBuildingRecords.length > 0
+          && !knownBuildingRecords.some((item) => item.city === asset.targetCity)
+        ) {
+          message.error(`资产 ${asset.tagNo} 的Building不属于所选City`);
+          return false;
+        }
+
+        if (String(asset.status || '').startsWith('在库')) {
+          if (!warehouse.keeper || asset.newResponsiblePerson !== warehouse.keeper) {
+            message.error(`资产 ${asset.tagNo} 的责任人必须为调账后仓库对应库管员`);
+            return false;
+          }
+        } else if (asset.newResponsiblePerson !== asset.responsiblePerson) {
+          message.error(`资产 ${asset.tagNo} 非在库状态，责任人应保持原责任人`);
+          return false;
+        }
       }
     }
 
