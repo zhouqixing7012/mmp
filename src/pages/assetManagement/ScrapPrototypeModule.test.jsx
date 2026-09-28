@@ -255,6 +255,11 @@ test('跨公司转移审批完成后进入待报废池，调账资产进入账�
 
   await waitFor(() => expect(getScrapPrototypeRecords('crossCompany')[0].documentStatus).toBe('已完成'));
   expect(getScrapPrototypeRecords('crossCompany')[0].approvalHistory[0].opinion).toBe('同意');
+  expect(getScrapPrototypeRecords('crossCompany')[0].serviceNotification).toMatchObject({
+    channel: '服务号',
+    recipientRole: '对应账面报废发起人',
+    trigger: '跨公司转移审批完成',
+  });
   expect(getAccountingCandidates(sourceAccess).find((item) => item.tagNo === asset.tagNo).sourceBusinessNo).toBe('CT-CASE-001');
   expect(getDisposalCandidates().some((item) => item.tagNo === asset.tagNo)).toBe(false);
 });
