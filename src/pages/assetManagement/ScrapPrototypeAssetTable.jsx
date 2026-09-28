@@ -216,7 +216,6 @@ export function exportScrapPrototypeAssets(assets, type, accountingMethod, dispo
         [type === 'accounting' ? '新 Building' : 'Building']: item.targetBuilding,
         [type === 'accounting' ? '新 Floor' : 'Floor']: item.targetFloor,
         调账后仓库: item.targetWarehouse,
-        ...(type === 'accounting' ? { 是否处置: '否' } : {}),
       };
     }
 
