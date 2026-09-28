@@ -28,6 +28,8 @@ export default function SelectModal({
   rowKey = 'id',
   multiple = false,
   width = 700,
+  onExport,
+  exportLabel = '导出查询结果',
   // 默认仅按列宽决定横向滚动；需要限制弹窗内表格高度时由业务显式传入 y。
   scroll,
 }) {
@@ -180,6 +182,14 @@ export default function SelectModal({
             </QueryItem>
           ))}
         </QueryBar>
+      )}
+
+      {onExport && (
+        <div className="mb-3 flex justify-end">
+          <Button disabled={filteredData.length === 0} onClick={() => onExport(filteredData)}>
+            {exportLabel}
+          </Button>
+        </div>
       )}
 
       <div data-prototype-bindable="selection-table" data-prototype-label={`${title}列表`}>
