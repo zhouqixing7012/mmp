@@ -958,7 +958,6 @@ export default function AssetMaintenancePage() {
             <DetailItem label="报废原因">{displayText(source.scrapInfo.reason)}</DetailItem>
             <DetailItem label="报废日期">{displayText(source.scrapInfo.date)}</DetailItem>
             <DetailItem label="报废类型">{displayText(source.scrapInfo.type)}</DetailItem>
-            <DetailItem label="是否处置">{displayText(source.scrapInfo.disposed)}</DetailItem>
             <DetailItem label="报废数量">{count(source.scrapInfo.quantity)}</DetailItem>
             <DetailItem label="ES实物报废期">{displayText(source.scrapInfo.esPeriod)}</DetailItem>
           </DetailGrid>
