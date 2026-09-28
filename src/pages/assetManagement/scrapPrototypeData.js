@@ -68,7 +68,7 @@ function fromMaintenance(row, extra = {}) {
   };
 }
 
-function fromCatalog({ id, majorCategory, tagNo, company, plate = '17_Corporate', warehouse, owner, status, city, building, floor, originalValue, netValue, scope }) {
+function fromCatalog({ id, majorCategory, tagNo, company, plate = '17.Corporate', warehouse, owner, status, city, building, floor, originalValue, netValue, scope }) {
   const material = materialByMajor(majorCategory);
   if (!material) return null;
 
@@ -241,7 +241,7 @@ export const SCRAP_ASSET_POOL = [
 // 仅用于可交互原型；正式人员权限仍由登录身份和组织数据提供。
 export const ACCOUNTING_DEMO_ACCESS = {
   actor: { id: 'accounting-prototype-demo' },
-  authorizationScopes: [{ company: '114.新媒体', plates: ['17_Corporate'] }],
+  authorizationScopes: [{ company: '114.新媒体', plates: ['17.Corporate'] }],
 };
 
 export const ACCOUNTING_ASSET_POOL = SCRAP_ASSET_POOL.map((item, index) => ({
@@ -254,7 +254,7 @@ export const ACCOUNTING_ASSET_POOL = SCRAP_ASSET_POOL.map((item, index) => ({
   sourceBusinessType: index === 0 ? '跨公司转移' : '资产报废',
   sourceBusinessNo: index === 0 ? 'CT20260923000001' : `BF20260923${String(index + 1).padStart(6, '0')}`,
   newCompany: index === 0 ? '115.新媒体-上海' : '',
-  newPlate: index === 0 ? '17_Corporate' : '',
+  newPlate: index === 0 ? '17.Corporate' : '',
   newCostCenter: index === 0 ? '112064_新媒体成本中心' : '',
   newResponsiblePerson: index === 0 ? '215410-卢铭华' : '',
   targetWarehouse: index === 0 ? 'I3001.资产上海分公司库（新媒体上海）' : '',
@@ -461,7 +461,7 @@ const businessRows = {
       documentStatus: '审批中',
       assetScope: '机房资产',
       company: '114.新媒体',
-      plate: '17_Corporate',
+      plate: '17.Corporate',
       scrapMethod: '非调账',
       creator: DEMO_APPLICANT,
       createdAt: '2026-09-23',
@@ -475,7 +475,7 @@ const businessRows = {
       documentStatus: '审批中',
       assetScope: '办公设备',
       company: '114.新媒体',
-      plate: '17_Corporate',
+      plate: '17.Corporate',
       scrapMethod: '非调账',
       creator: DEMO_APPLICANT,
       createdAt: '2026-09-22',
