@@ -38,15 +38,30 @@ import { mockPlates } from '../../mock/businessRulesMock';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 
-const plateOptions = mockPlates.map((item) => ({
-  label: item.desc,
-  value: item.desc,
-}));
+function normalizePlateValue(value) {
+  return String(value || '').trim().replace(/_/g, '.');
+}
+
+const plateOptions = mockPlates.map((item) => {
+  const value = normalizePlateValue(item.desc);
+  return { label: value, value };
+});
 
 const warehouseOptions = warehouseCatalog.map((item) => ({
   label: `${item.warehouseCode}.${item.warehouseDescription}`,
   value: `${item.warehouseCode}.${item.warehouseDescription}`,
 }));
+
+const CROSS_COMPANY_IMPORT_HEADERS = [
+  '资产标签号',
+  '新公司编码',
+  '新板块',
+  '新成本中心编码',
+  'City',
+  'Building',
+  'Floor',
+  '调账后仓库编码',
+];
 
 function getTransferWarehouseOptions(record) {
   if (!record?.newCompany || !record?.targetCity) return [];
@@ -87,7 +102,10 @@ function resolveTransferResponsiblePerson(record, targetWarehouse) {
 
 const maintenanceRows = getAssetMaintenanceRows();
 const transferLookupRecords = {
-  companies: maintenanceRows
+  companies: [...maintenanceRows, ...warehouseCatalog.map((item) => {
+    const [companyCode, ...parts] = String(item.company || '').split('.');
+    return { companyCode, company: parts.join('.') };
+  })]
     .filter((row) => row.companyCode && row.company)
     .reduce((records, row) => {
       const code = String(row.companyCode).trim();
@@ -100,7 +118,7 @@ const transferLookupRecords = {
     .filter((row) => row.costCenter)
     .reduce((records, row) => {
       const name = String(row.costCenter).trim();
-      const code = name.split('.')[0];
+      const code = name.split(/[._]/)[0];
       if (code && !records.some((item) => item.code === code)) {
         records.push({ id: `cc-${code}`, code, name });
       }
@@ -548,12 +566,12 @@ export default function ScrapPrototypeAssetTable({
           scrapType: type === 'accounting' && isLostAsset(item) ? '丢失' : item.scrapType || '已到报废期',
           reason: type === 'accounting' && isLostAsset(item) ? '' : item.reason || '',
           dataCleaning: item.scope === '机房资产' ? item.dataCleaning || '否' : undefined,
-          newCompany: type === 'crossCompany' ? item.company || '' : item.newCompany || '',
-          newPlate: type === 'crossCompany' ? item.plate || '' : item.newPlate || '',
-          newCostCenter: type === 'crossCompany' ? item.costCenter || '' : item.newCostCenter || '',
-          targetCity: type === 'crossCompany' ? item.city || '' : item.targetCity || '',
-          targetBuilding: type === 'crossCompany' ? item.building || '' : item.targetBuilding || '',
-          targetFloor: type === 'crossCompany' ? item.floor || '' : item.targetFloor || '',
+          newCompany: type === 'crossCompany' ? item.newCompany || item.company || '' : item.newCompany || '',
+          newPlate: type === 'crossCompany' ? normalizePlateValue(item.newPlate || item.plate) : item.newPlate || '',
+          newCostCenter: type === 'crossCompany' ? item.newCostCenter || item.costCenter || '' : item.newCostCenter || '',
+          targetCity: type === 'crossCompany' ? item.targetCity || item.city || '' : item.targetCity || '',
+          targetBuilding: type === 'crossCompany' ? item.targetBuilding || item.building || '' : item.targetBuilding || '',
+          targetFloor: type === 'crossCompany' ? item.targetFloor || item.floor || '' : item.targetFloor || '',
           purpose: item.purpose || '',
           project: item.project || '',
           rowRemark: item.rowRemark || '',
@@ -565,7 +583,7 @@ export default function ScrapPrototypeAssetTable({
             targetWarehouse: item.targetWarehouse || '',
           };
         }
-        const targetWarehouse = resolveTransferWarehouse(base);
+        const targetWarehouse = item.targetWarehouse || resolveTransferWarehouse(base);
         return {
           ...base,
           targetWarehouse,
@@ -597,11 +615,15 @@ export default function ScrapPrototypeAssetTable({
   };
 
   const downloadTemplate = () => {
-    const headers = type === 'accounting' ? ['录入来源', '资产标签号', '报废类型'] : ['资产标签号'];
+    const headers = type === 'accounting'
+      ? ['录入来源', '资产标签号', '报废类型']
+      : type === 'crossCompany'
+        ? CROSS_COMPANY_IMPORT_HEADERS
+        : ['资产标签号'];
     const sheet = XLSX.utils.json_to_sheet([], { header: headers });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, sheet, '资产导入模板');
-    XLSX.writeFile(workbook, '资产导入模板.xlsx');
+    XLSX.writeFile(workbook, type === 'crossCompany' ? '跨公司转移资产导入模板.xlsx' : '资产导入模板.xlsx');
   };
 
   const exportAssets = () => exportScrapPrototypeAssets(
@@ -625,7 +647,9 @@ export default function ScrapPrototypeAssetTable({
       const header = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })[0] || [];
       const expectedHeader = type === 'accounting'
         ? ['录入来源', '资产标签号', '报废类型']
-        : ['资产标签号'];
+        : type === 'crossCompany'
+          ? CROSS_COMPANY_IMPORT_HEADERS
+          : ['资产标签号'];
       if (header.length !== expectedHeader.length
         || header.some((value, index) => String(value).trim() !== expectedHeader[index])) {
         message.error('导入表头与下载模板不一致');
@@ -662,6 +686,25 @@ export default function ScrapPrototypeAssetTable({
         const asset = type === 'accounting'
           ? (isLost ? lostByTag : waitingByTag).get(tag)
           : waitingByTag.get(tag);
+
+        const targetCompanyCode = type === 'crossCompany' ? String(row['新公司编码'] || '').trim() : '';
+        const targetCompanyRecord = type === 'crossCompany'
+          ? transferLookupRecords.companies.find((item) => item.code === targetCompanyCode)
+          : null;
+        const targetCompany = targetCompanyRecord ? `${targetCompanyRecord.code}.${targetCompanyRecord.name}` : '';
+        const targetPlate = type === 'crossCompany' ? normalizePlateValue(row['新板块']) : '';
+        const targetCostCenterCode = type === 'crossCompany' ? String(row['新成本中心编码'] || '').trim() : '';
+        const targetCostCenterRecord = type === 'crossCompany'
+          ? transferLookupRecords.costCenters.find((item) => item.code === targetCostCenterCode)
+          : null;
+        const targetCity = type === 'crossCompany' ? String(row.City || '').trim() : '';
+        const targetBuilding = type === 'crossCompany' ? String(row.Building || '').trim() : '';
+        const targetFloor = type === 'crossCompany' ? String(row.Floor || '').trim() : '';
+        const targetWarehouseCode = type === 'crossCompany' ? String(row['调账后仓库编码'] || '').trim() : '';
+        const targetWarehouseRecord = type === 'crossCompany' && targetWarehouseCode
+          ? warehouseCatalog.find((item) => item.warehouseCode === targetWarehouseCode)
+          : null;
+
         let error = '';
         if (type === 'accounting' && !['待报废资产', '丢失资产'].includes(source)) error = '录入来源只能是待报废资产或丢失资产';
         else if (!tag) error = '资产标签号不能为空';
@@ -672,14 +715,67 @@ export default function ScrapPrototypeAssetTable({
         else if (type === 'accounting' && isLost && selectedType && selectedType !== '丢失') error = '丢失资产报废类型只能为丢失';
         else if (type === 'accounting' && !isLost && selectedType
           && !['已到报废期', '未到报废期'].includes(selectedType)) error = '待报废资产报废类型只能为已到报废期或未到报废期';
+        else if (type === 'crossCompany' && !targetCompanyCode) error = '新公司编码不能为空';
+        else if (type === 'crossCompany' && !targetCompanyRecord) error = '新公司编码无效';
+        else if (type === 'crossCompany' && !targetPlate) error = '新板块不能为空';
+        else if (type === 'crossCompany' && !plateOptions.some((item) => item.value === targetPlate)) error = '新板块无效';
+        else if (type === 'crossCompany' && !targetCostCenterCode) error = '新成本中心编码不能为空';
+        else if (type === 'crossCompany' && !targetCostCenterRecord) error = '新成本中心编码无效';
+        else if (type === 'crossCompany' && !targetCity) error = 'City不能为空';
+        else if (type === 'crossCompany' && !targetBuilding) error = 'Building不能为空';
+        else if (type === 'crossCompany' && !targetFloor) error = 'Floor不能为空';
+        else if (type === 'crossCompany' && targetWarehouseCode && (
+          !targetWarehouseRecord
+          || targetWarehouseRecord.status !== '启用'
+          || targetWarehouseRecord.company !== targetCompany
+          || targetWarehouseRecord.city !== targetCity
+          || !String(targetWarehouseRecord.warehouseUsage || '').includes('资产')
+        )) error = '调账后仓库编码与新公司、City不匹配';
+
+        let preparedAsset = asset;
+        if (!error && type === 'crossCompany') {
+          const targetBase = {
+            ...asset,
+            newCompany: targetCompany,
+            newPlate: targetPlate,
+            newCostCenter: targetCostCenterRecord.name,
+            targetCity,
+            targetBuilding,
+            targetFloor,
+          };
+          const warehouseOptionsForTarget = getTransferWarehouseOptions(targetBase);
+          let targetWarehouse = '';
+          if (targetWarehouseRecord) {
+            targetWarehouse = `${targetWarehouseRecord.warehouseCode}.${targetWarehouseRecord.warehouseDescription}`;
+          } else if (warehouseOptionsForTarget.length === 1) {
+            targetWarehouse = warehouseOptionsForTarget[0].value;
+          }
+          preparedAsset = { ...targetBase, targetWarehouse };
+        }
+
         seenTags.add(tag);
         if (!error) {
-          matched.push({ ...asset, scrapType: isLost ? '丢失' : selectedType || asset.scrapType });
+          matched.push(type === 'crossCompany'
+            ? preparedAsset
+            : { ...asset, scrapType: isLost ? '丢失' : selectedType || asset.scrapType });
           if (isLost) lostIds.add(asset.id);
         }
         return type === 'accounting'
           ? { 行号: index + 2, 错误原因: error, 录入来源: source, 资产标签号: tag, 报废类型: selectedType }
-          : { 错误原因: error, 资产标签号: tag };
+          : type === 'crossCompany'
+            ? {
+                行号: index + 2,
+                错误原因: error,
+                资产标签号: tag,
+                新公司编码: targetCompanyCode,
+                新板块: targetPlate,
+                新成本中心编码: targetCostCenterCode,
+                City: targetCity,
+                Building: targetBuilding,
+                Floor: targetFloor,
+                调账后仓库编码: targetWarehouseCode,
+              }
+            : { 错误原因: error, 资产标签号: tag };
       });
 
       const selectedScopes = new Set([...assets, ...matched].map((item) => item.scope).filter(Boolean));
@@ -689,6 +785,12 @@ export default function ScrapPrototypeAssetTable({
         .map((item) => ['PC', 'NOTEBOOK'].includes(item.majorCategory)));
       if (type !== 'accounting' && selectedScopes.size > 1) {
         result.forEach((row) => { if (!row.错误原因) row.错误原因 = '同一单据不能混合资产范围'; });
+      }
+      if (type === 'crossCompany') {
+        const sourceCompaniesInImport = new Set([...assets, ...matched].map((item) => item.company).filter(Boolean));
+        if (sourceCompaniesInImport.size > 1) {
+          result.forEach((row) => { if (!row.错误原因) row.错误原因 = '同一跨公司转移单只能选择同一原公司的资产'; });
+        }
       }
       if (type === 'accounting' && (methods.size > 1 || (methods.size && !methods.has(accountingMethod)))) {
         result.forEach((row) => { if (!row.错误原因) row.错误原因 = '同一账面报废单的报废方式必须一致'; });
@@ -703,7 +805,9 @@ export default function ScrapPrototypeAssetTable({
         XLSX.utils.book_append_sheet(errorBook, XLSX.utils.json_to_sheet(result, {
           header: type === 'accounting'
             ? ['行号', '错误原因', '录入来源', '资产标签号', '报废类型']
-            : ['错误原因', '资产标签号'],
+            : type === 'crossCompany'
+              ? ['行号', '错误原因', ...CROSS_COMPANY_IMPORT_HEADERS]
+              : ['错误原因', '资产标签号'],
         }), '导入结果');
         XLSX.writeFile(errorBook, '资产导入错误结果.xlsx');
         message.error(`${errorCount} 行校验失败，已下载错误结果，整批未导入`);
