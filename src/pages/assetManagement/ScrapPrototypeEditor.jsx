@@ -152,6 +152,11 @@ export default function ScrapPrototypeEditor({
       const nextForm = {
         ...current,
         assetScope: nextScope,
+        ...(type === 'scrap' ? {
+          company: Array.from(new Set(
+            nextAssets.map((item) => item.company).filter(Boolean),
+          )).join('、'),
+        } : {}),
       };
 
       if (firstAsset) {
@@ -164,11 +169,7 @@ export default function ScrapPrototypeEditor({
           if (sourceCompanies.size === 1) {
             nextForm.company = firstAsset.company || current.company;
           }
-        } else if (type === 'scrap') {
-          nextForm.company = Array.from(new Set(
-            nextAssets.map((item) => item.company).filter(Boolean),
-          )).join('、');
-        } else if (type !== 'accounting') {
+        } else if (type !== 'accounting' && type !== 'scrap') {
           nextForm.company = firstAsset.company || current.company;
         }
         if (type === 'disposal') {
