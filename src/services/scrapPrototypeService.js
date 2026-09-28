@@ -1,118 +1,26 @@
 import { DISPOSAL_ASSET_POOL, SCRAP_ASSET_POOL, getInitialBusinessRows } from '../pages/assetManagement/scrapPrototypeData';
 
 const inMemoryRecords = new Map();
-const STORAGE_PREFIX = 'asset-scrap-prototype:v2:';
 const TYPES = ['crossCompany', 'scrap', 'accounting', 'disposal'];
 
-function storage() {
-  if (typeof window === 'undefined') return null;
-  return window.localStorage;
-}
-
-function readStored(type) {
-  const target = storage();
-  if (!target) return null;
-  try {
-    const parsed = JSON.parse(target.getItem(`${STORAGE_PREFIX}${type}`) || 'null');
-    if (!Array.isArray(parsed)) return null;
-    if (type === 'crossCompany' && !parsed.some((record) => record.id === 'cc-accounting-demo')) {
-      const source = getInitialBusinessRows('crossCompany').find((record) => record.id === 'cc-accounting-demo');
-      const migrated = [...parsed, source];
-      target.setItem(`${STORAGE_PREFIX}${type}`, JSON.stringify(migrated));
-      return migrated;
-    }
-    if (type === 'scrap') {
-      const examples = getInitialBusinessRows('scrap');
-      const source = examples.find((record) => record.id === 'scrap-2');
-      const available = examples.find((record) => record.id === 'scrap-accounting-available');
-      const updated = parsed.map((record) => record.id === source.id
-        && record.documentStatus === '已审批' && !record.assetsSnapshot?.length
-        ? { ...record, assetsSnapshot: source.assetsSnapshot }
-        : record);
-      const migrated = updated.some((record) => record.id === available.id)
-        ? updated : [...updated, available];
-      if (migrated.length !== parsed.length || migrated.some((record, index) => record !== parsed[index])) {
-        target.setItem(`${STORAGE_PREFIX}${type}`, JSON.stringify(migrated));
-      }
-      return migrated;
-    }
-    if (type === 'disposal') {
-      const legacyStatuses = new Set(['处理中', '办理中', '待 ES 专员处理', '待ES专员处理']);
-      const migrated = parsed.map((record) => {
-        const recordChanged = legacyStatuses.has(record.documentStatus);
-        const formChanged = legacyStatuses.has(record.formSnapshot?.documentStatus);
-        const cleaningValues = (record.assetsSnapshot || []).filter((asset) => asset.scope === '机房资产')
-          .map((asset) => asset.dataCleaning);
-        const cleaningKnown = cleaningValues.length > 0 && cleaningValues.every((value) => ['是', '否'].includes(value));
-        const missingCleaning = record.assetScope === '机房资产'
-          && !['是', '否'].includes(record.needsCleaning) && cleaningKnown;
-        if (!recordChanged && !formChanged && !missingCleaning) return record;
-        const needsCleaning = cleaningValues.includes('是') ? '是' : '否';
-        return {
-          ...record,
-          documentStatus: recordChanged ? '审批中' : record.documentStatus,
-          ...(missingCleaning ? { needsCleaning } : {}),
-          formSnapshot: record.formSnapshot && (formChanged || missingCleaning)
-            ? { ...record.formSnapshot,
-              documentStatus: formChanged ? '审批中' : record.formSnapshot.documentStatus,
-              ...(missingCleaning ? { needsCleaning } : {}) }
-            : record.formSnapshot,
-        };
-      });
-      if (migrated.some((record, index) => record !== parsed[index])) {
-        target.setItem(`${STORAGE_PREFIX}${type}`, JSON.stringify(migrated));
-      }
-      return migrated;
-    }
-    if (type !== 'accounting') return parsed;
-    const demoConfirm = getInitialBusinessRows('accounting').find((record) => record.id === 'acc-2');
-    const migrated = parsed.map((record) => {
-      const oldStatus = record.documentStatus === '待提单人确认';
-      const missingDemoDetail = record.id === demoConfirm.id
-        && record.currentNode === '提单人确认' && !record.assetsSnapshot?.length;
-      if (!oldStatus && !missingDemoDetail) return record;
-      return {
-        ...record,
-        ...(missingDemoDetail ? { company: demoConfirm.company, plate: demoConfirm.plate,
-          assetCount: demoConfirm.assetCount, assetsSnapshot: demoConfirm.assetsSnapshot } : {}),
-        documentStatus: oldStatus ? '审批中' : record.documentStatus,
-        currentNode: '提单人确认',
-        formSnapshot: record.formSnapshot
-          ? { ...record.formSnapshot, documentStatus: oldStatus ? '审批中' : record.documentStatus,
-              currentNode: '提单人确认',
-              ...(missingDemoDetail ? { company: demoConfirm.company, plate: demoConfirm.plate } : {}) }
-          : record.formSnapshot,
-      };
-    });
-    if (migrated.some((record, index) => record !== parsed[index])) {
-      target.setItem(`${STORAGE_PREFIX}${type}`, JSON.stringify(migrated));
-    }
-    return migrated;
-  } catch (error) {
-    throw new Error(`账面报废演示数据读取失败：${error.message}`);
-  }
-}
-
+// 报废专项原型只保留当前页面会话内的操作结果。
+// 刷新页面后重新加载最新 Mock，避免浏览器旧 LocalStorage 长期覆盖仓库里的演示数据。
 export function getScrapPrototypeRecords(type) {
-  if (!inMemoryRecords.has(type)) inMemoryRecords.set(type, readStored(type) || getInitialBusinessRows(type));
+  if (!TYPES.includes(type)) throw new Error(`未知报废原型类型：${type}`);
+  if (!inMemoryRecords.has(type)) {
+    inMemoryRecords.set(type, getInitialBusinessRows(type));
+  }
   return inMemoryRecords.get(type);
 }
 
 export function saveScrapPrototypeRecords(type, records) {
-  const target = storage();
-  if (!target) throw new Error('当前环境不支持账面报废演示数据持久化');
-  try {
-    target.setItem(`${STORAGE_PREFIX}${type}`, JSON.stringify(records));
-  } catch (error) {
-    throw new Error(`账面报废演示数据保存失败：${error.message}`);
-  }
+  if (!TYPES.includes(type)) throw new Error(`未知报废原型类型：${type}`);
   inMemoryRecords.set(type, records);
   return records;
 }
 
 export function resetScrapPrototypeMemory() {
   inMemoryRecords.clear();
-  TYPES.forEach((type) => storage()?.removeItem(`${STORAGE_PREFIX}${type}`));
 }
 
 function actorIdentity(actor) {
