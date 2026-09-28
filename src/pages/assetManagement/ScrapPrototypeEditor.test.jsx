@@ -148,7 +148,7 @@ test('账面报废公司通过弹窗选择，三个报废原因分别可编辑',
 
 
 test('资产处置编辑页展示三个非必填回收商名称和自动报价合计', () => {
-  const view = render(
+  render(
     <ScrapPrototypeEditor
       type="disposal"
       config={{ title: '资产处置', createLabel: '创建资产处置申请单' }}
@@ -179,7 +179,7 @@ test('资产处置编辑页展示三个非必填回收商名称和自动报价�
 
 test('资产处置办公设备提交前进入预览并自动生成可编辑处置说明', () => {
   const onSave = jest.fn();
-  render(
+  const view = render(
     <ScrapPrototypeEditor
       type="disposal"
       config={{ title: '资产处置', createLabel: '创建资产处置申请单' }}
