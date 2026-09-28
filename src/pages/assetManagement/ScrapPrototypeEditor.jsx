@@ -316,6 +316,10 @@ export default function ScrapPrototypeEditor({
         message.error('请填写报废单名称');
         return false;
       }
+      if (!accountingScrapPeriod) {
+        message.error('报废期间生成失败，请检查创建时间');
+        return false;
+      }
       const checked = validateAccountingAssets({
         ...form,
         scrapFormName: accountingFormName,
@@ -643,7 +647,7 @@ export default function ScrapPrototypeEditor({
             ? `${config.title}预览`
             : approvalView ? `${config.title}审批` : readOnly ? `${config.title}详情` : config.createLabel}
         </h3>
-        {type === 'accounting' && (
+        {type === 'accounting' && (!readOnly || approvalPage || previewView) && (
           <Steps
             className="max-w-[420px]"
             size="small"
