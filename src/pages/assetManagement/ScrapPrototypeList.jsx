@@ -26,11 +26,13 @@ const { Text, Title } = Typography;
 const EMPTY_FILTERS = {
   applicationNo: '',
   assetTag: '',
+  serialNumber: '',
   documentStatus: '',
   assetScope: '',
   company: '',
   creator: '',
   scrapMethod: '',
+  region: '',
   dateRange: null,
 };
 
@@ -72,6 +74,14 @@ export default function ScrapPrototypeList({
       : row.assetTags || [];
     if (assetTagQuery && !rowAssetTags.some(
       (tagNo) => String(tagNo || '').includes(assetTagQuery),
+    )) return false;
+
+    const serialNumberQuery = String(appliedFilters.serialNumber || '').trim();
+    const rowSerialNumbers = row.assetsSnapshot?.length
+      ? row.assetsSnapshot.map((asset) => asset.serialNumber)
+      : row.serialNumbers || [];
+    if (serialNumberQuery && !rowSerialNumbers.some(
+      (serialNumber) => String(serialNumber || '').includes(serialNumberQuery),
     )) return false;
 
     if (appliedFilters.documentStatus && row.documentStatus !== appliedFilters.documentStatus) return false;
@@ -145,11 +155,32 @@ export default function ScrapPrototypeList({
       statusColumn,
       operationColumn,
     ],
-    disposal: [applicationColumn,
+    disposal: [
+      applicationColumn,
       { title: '制单人', dataIndex: 'creator', width: 150 },
-      { title: '公司', dataIndex: 'company', width: 170 },
+      { title: '公司', dataIndex: 'company', width: 190, ellipsis: true },
+      {
+        title: '板块',
+        dataIndex: 'plate',
+        width: 180,
+        ellipsis: true,
+        render: (value, row) => value || Array.from(new Set(
+          (row.assetsSnapshot || []).map((asset) => asset.plate).filter(Boolean),
+        )).join('、') || '-',
+      },
+      {
+        title: '资产数量',
+        dataIndex: 'assetCount',
+        width: 110,
+        align: 'right',
+        render: (value, row) => row.assetsSnapshot?.length
+          ? row.assetsSnapshot.reduce((sum, asset) => sum + Number(asset.quantity || 0), 0)
+          : value || 0,
+      },
       { title: '制单时间', dataIndex: 'createdAt', width: 150 },
-      statusColumn, operationColumn],
+      statusColumn,
+      operationColumn,
+    ],
   };
 
   const renderQueries = () => {
@@ -161,6 +192,12 @@ export default function ScrapPrototypeList({
           </QueryItem>
           <QueryItem label="资产标签号">
             <Input value={filters.assetTag} allowClear onChange={(event) => setFilters((c) => ({ ...c, assetTag: event.target.value }))} />
+          </QueryItem>
+          <QueryItem label="序列号">
+            <Input value={filters.serialNumber} allowClear onChange={(event) => setFilters((c) => ({ ...c, serialNumber: event.target.value }))} />
+          </QueryItem>
+          <QueryItem label="序列号">
+            <Input value={filters.serialNumber} allowClear onChange={(event) => setFilters((c) => ({ ...c, serialNumber: event.target.value }))} />
           </QueryItem>
           <QueryItem label="单据状态">
             <Select value={filters.documentStatus || undefined} allowClear options={options(config.statuses)} onChange={(value) => setFilters((c) => ({ ...c, documentStatus: value || '' }))} />
@@ -185,6 +222,9 @@ export default function ScrapPrototypeList({
           <QueryItem label="资产标签号">
             <Input value={filters.assetTag} allowClear onChange={(event) => setFilters((c) => ({ ...c, assetTag: event.target.value }))} />
           </QueryItem>
+          <QueryItem label="序列号">
+            <Input value={filters.serialNumber} allowClear onChange={(event) => setFilters((c) => ({ ...c, serialNumber: event.target.value }))} />
+          </QueryItem>
           <QueryItem label="单据状态"><Select value={filters.documentStatus || undefined} allowClear options={options(config.statuses)} onChange={(value) => setFilters((c) => ({ ...c, documentStatus: value || '' }))} /></QueryItem>
           <QueryItem label="制单人"><Input value={filters.creator} allowClear onChange={(event) => setFilters((c) => ({ ...c, creator: event.target.value }))} /></QueryItem>
           <QueryItem label="制单时间"><RangePicker value={filters.dateRange} className="w-full" onChange={(value) => setFilters((c) => ({ ...c, dateRange: value }))} /></QueryItem>
@@ -203,6 +243,9 @@ export default function ScrapPrototypeList({
           </QueryItem>
           <QueryItem label="资产标签号">
             <Input value={filters.assetTag} allowClear onChange={(event) => setFilters((c) => ({ ...c, assetTag: event.target.value }))} />
+          </QueryItem>
+          <QueryItem label="序列号">
+            <Input value={filters.serialNumber} allowClear onChange={(event) => setFilters((c) => ({ ...c, serialNumber: event.target.value }))} />
           </QueryItem>
           <QueryItem label="单据状态">
             <Select value={filters.documentStatus || undefined} allowClear options={options(config.statuses)} onChange={(value) => setFilters((c) => ({ ...c, documentStatus: value || '' }))} />
