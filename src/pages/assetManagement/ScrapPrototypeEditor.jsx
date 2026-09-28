@@ -913,44 +913,8 @@ export default function ScrapPrototypeEditor({
                 render: (values) => values.map((value) => money(value)).join('、') || '-',
               })) : []),
             ]} />
-        ) : type === 'accounting' && approvalView ? (
-          <Tabs items={['已到报废期', '未到报废期', '丢失']
-            .filter((kind) => assets.some((asset) => asset.scrapType === kind))
-            .map((kind) => {
-              const subset = assets.filter((asset) => asset.scrapType === kind);
-              const grouped = Array.from(subset.reduce((groups, asset) => {
-                const category = asset.majorCategory || '其他';
-                if (!groups.has(category)) groups.set(category, []);
-                groups.get(category).push(asset);
-                return groups;
-              }, new Map()).entries());
-              return { key: kind, label: `${kind}（${subset.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}）`, children: <>
-                <div className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-md bg-gray-50 px-3 py-2">
-                  <div className="min-w-[240px] flex-1">
-                    <Typography.Text strong>{kind}报废原因：</Typography.Text>{' '}
-                    <span className="whitespace-pre-wrap break-words">{showValue(getAccountingReasonText(kind))}</span>
-                  </div>
-                  <Space size={18} wrap>
-                    <Typography.Text>总数量：{subset.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}</Typography.Text>
-                    <Typography.Text>原值合计：{money(subset.reduce((sum, item) => sum + Number(item.originalValue || 0), 0))}</Typography.Text>
-                    <Typography.Text>净值合计：{money(subset.reduce((sum, item) => sum + Number(item.netValue || 0), 0))}</Typography.Text>
-                  </Space>
-                </div>
-                <Collapse items={grouped.map(([category, rows]) => ({
-                  key: category,
-                  label: `${category}（${rows.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}）`,
-                  extra: (
-                    <Space size={18} wrap>
-                      <Typography.Text>数量：{rows.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}</Typography.Text>
-                      <Typography.Text>原值合计：{money(rows.reduce((sum, item) => sum + Number(item.originalValue || 0), 0))}</Typography.Text>
-                      <Typography.Text>折旧合计：{money(rows.reduce((sum, item) => sum + Number(item.accumulatedDepreciation || 0), 0))}</Typography.Text>
-                      <Typography.Text>净值合计：{money(rows.reduce((sum, item) => sum + Number(item.netValue || 0), 0))}</Typography.Text>
-                    </Space>
-                  ),
-                  children: approvalTable(rows),
-                }))} />
-              </> };
-            })} />
+        ) : type === 'accounting' && (approvalView || previewView) ? (
+          <Tabs defaultActiveKey="summary" items={accountingPreviewTabs} />
         ) : <ScrapPrototypeAssetTable
           type={type}
           assetScope={form.assetScope}
