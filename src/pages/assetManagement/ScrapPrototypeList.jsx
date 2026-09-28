@@ -67,8 +67,11 @@ export default function ScrapPrototypeList({
     }
 
     const assetTagQuery = String(appliedFilters.assetTag || '').trim();
-    if (assetTagQuery && !(row.assetsSnapshot || []).some(
-      (asset) => String(asset.tagNo || '').includes(assetTagQuery),
+    const rowAssetTags = row.assetsSnapshot?.length
+      ? row.assetsSnapshot.map((asset) => asset.tagNo)
+      : row.assetTags || [];
+    if (assetTagQuery && !rowAssetTags.some(
+      (tagNo) => String(tagNo || '').includes(assetTagQuery),
     )) return false;
 
     if (appliedFilters.documentStatus && row.documentStatus !== appliedFilters.documentStatus) return false;
@@ -157,9 +160,7 @@ export default function ScrapPrototypeList({
             <Input value={filters.applicationNo} allowClear onChange={(event) => setFilters((c) => ({ ...c, applicationNo: event.target.value }))} />
           </QueryItem>
           <QueryItem label="资产标签号">
-
             <Input value={filters.assetTag} allowClear onChange={(event) => setFilters((c) => ({ ...c, assetTag: event.target.value }))} />
-
           </QueryItem>
 
           <QueryItem label="单据状态">
@@ -183,9 +184,7 @@ export default function ScrapPrototypeList({
         <>
           <QueryItem label="申请单号"><Input value={filters.applicationNo} allowClear onChange={(event) => setFilters((c) => ({ ...c, applicationNo: event.target.value }))} /></QueryItem>
           <QueryItem label="资产标签号">
-
             <Input value={filters.assetTag} allowClear onChange={(event) => setFilters((c) => ({ ...c, assetTag: event.target.value }))} />
-
           </QueryItem>
 
           <QueryItem label="单据状态"><Select value={filters.documentStatus || undefined} allowClear options={options(config.statuses)} onChange={(value) => setFilters((c) => ({ ...c, documentStatus: value || '' }))} /></QueryItem>
@@ -205,9 +204,7 @@ export default function ScrapPrototypeList({
             <Input value={filters.applicationNo} allowClear onChange={(event) => setFilters((c) => ({ ...c, applicationNo: event.target.value }))} />
           </QueryItem>
           <QueryItem label="资产标签号">
-
             <Input value={filters.assetTag} allowClear onChange={(event) => setFilters((c) => ({ ...c, assetTag: event.target.value }))} />
-
           </QueryItem>
 
           <QueryItem label="单据状态">
@@ -235,9 +232,7 @@ export default function ScrapPrototypeList({
           <Input value={filters.applicationNo} allowClear onChange={(event) => setFilters((c) => ({ ...c, applicationNo: event.target.value }))} />
         </QueryItem>
         <QueryItem label="资产标签号">
-
           <Input value={filters.assetTag} allowClear onChange={(event) => setFilters((c) => ({ ...c, assetTag: event.target.value }))} />
-
         </QueryItem>
 
         <QueryItem label="单据状态">
