@@ -251,6 +251,70 @@ test('资产处置办公设备提交前进入预览并自动生成可编辑处�
   );
 });
 
+test('资产处置自动说明按实际回收商数量生成，全空时不生成', () => {
+  const baseProps = {
+    type: 'disposal',
+    config: { title: '资产处置', createLabel: '创建资产处置申请单' },
+    readOnly: false,
+    approvalPage: false,
+    onBack: jest.fn(),
+    onSave: jest.fn(),
+    onApprove: jest.fn(),
+  };
+  const asset = {
+    id: 'description-asset',
+    tagNo: 'FA-DESC-001',
+    company: '114.新媒体',
+    plate: '17.Corporate',
+    scope: '办公设备',
+    majorCategory: 'PC',
+    city: '北京',
+    quantity: 1,
+    originalValue: 10000,
+    netValue: 500,
+    recycler1: 6000,
+    recycler2: 5500,
+    recycler3: '',
+  };
+
+  const two = render(
+    <ScrapPrototypeEditor
+      {...baseProps}
+      initialForm={{
+        ...accountingForm,
+        company: '114.新媒体',
+        companies: ['114.新媒体'],
+        assetScope: '办公设备',
+        recycler1Name: '回收商甲',
+        recycler2Name: '回收商乙',
+        recycler3Name: '',
+      }}
+      initialAssets={[asset]}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '预览' }));
+  expect(screen.getByDisplayValue(/由两家采购回收商分别进行评估报价/)).toBeInTheDocument();
+  two.unmount();
+
+  render(
+    <ScrapPrototypeEditor
+      {...baseProps}
+      initialForm={{
+        ...accountingForm,
+        company: '114.新媒体',
+        companies: ['114.新媒体'],
+        assetScope: '办公设备',
+        recycler1Name: '',
+        recycler2Name: '',
+        recycler3Name: '',
+      }}
+      initialAssets={[{ ...asset, recycler1: '', recycler2: '', recycler3: '' }]}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '预览' }));
+  expect(screen.queryByDisplayValue(/按照报废计划/)).not.toBeInTheDocument();
+});
+
 test('资产处置审批页展示会计格式报价并可导出当前申请明细', () => {
   jest.clearAllMocks();
   const assets = [{
