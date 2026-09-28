@@ -52,8 +52,10 @@ function defaultForm(type) {
     creator: `${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`,
     applicationDate: dayjs().format('YYYY-MM-DD'),
     company: '',
+    companies: [],
     assetScope: type === 'accounting' ? '混合' : '',
-    plate: '17_Corporate',
+    plate: type === 'disposal' ? '' : '17_Corporate',
+    plates: [],
     officeArea: CURRENT_EMPLOYEE.officeArea,
     contactPhone: CURRENT_EMPLOYEE.phone,
     email: CURRENT_EMPLOYEE.email,
@@ -66,6 +68,8 @@ function defaultForm(type) {
     scrapFormName: '',
     scrapFormNameManual: false,
     scrapPeriod: '',
+    disposalDescription: '',
+    disposalDescriptionManual: false,
     assetCategory: '',
     assetLocation: '',
     region: '北京',
@@ -239,8 +243,20 @@ export default function ScrapPrototypeModule({
           || (String(machineAsset?.city || '').includes('北京') ? '北京' : '非北京');
       }
     }
-    if (type === 'disposal' && record.assetScope === '机房资产') {
-      form.needsCleaning = assets.some((item) => item.dataCleaning === '是') ? '是' : '否';
+    if (type === 'disposal') {
+      const disposalCompanies = Array.from(new Set(assets.map((item) => item.company).filter(Boolean)));
+      const disposalPlates = Array.from(new Set(assets.map((item) => item.plate).filter(Boolean)));
+      form.companies = Array.isArray(form.companies) && form.companies.length > 0
+        ? form.companies
+        : (form.company ? String(form.company).split('、').filter(Boolean) : disposalCompanies);
+      if (record.assetScope === '机房资产') {
+        form.company = disposalCompanies.join('、') || form.company;
+        form.plates = disposalPlates;
+        form.plate = disposalPlates.join('、');
+        form.needsCleaning = assets.some((item) => item.dataCleaning === '是') ? '是' : '否';
+      } else {
+        form.plates = Array.isArray(form.plates) ? form.plates : [];
+      }
     }
 
     setEditorState({
@@ -287,6 +303,7 @@ export default function ScrapPrototypeModule({
       : form.assetScope;
 
     const sourceCompanies = Array.from(new Set(assets.map((item) => item.company).filter(Boolean)));
+    const sourcePlates = Array.from(new Set(assets.map((item) => item.plate).filter(Boolean)));
     const normalizedForm = {
       ...form,
       assetScope,
@@ -317,12 +334,14 @@ export default function ScrapPrototypeModule({
       assetScope,
       company: normalizedForm.company,
       targetCompany: targetCompanies.length > 1 ? '多公司' : targetCompanies[0] || form.targetCompany || '',
-      plate: form.plate,
+      plate: type === 'disposal' ? sourcePlates.join('、') : form.plate,
       creator: form.creator,
       createdAt: form.applicationDate,
       lastModifiedAt: nowText,
       assetCount: assets.length,
+      assetQuantityTotal: assets.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
       assetTags: assets.map((item) => item.tagNo).filter(Boolean),
+      serialNumbers: assets.map((item) => item.serialNumber).filter(Boolean),
       originalValueTotal: assets.reduce((sum, item) => sum + Number(item.originalValue || 0), 0),
       netValueTotal: assets.reduce((sum, item) => sum + Number(item.netValue || 0), 0),
       scrapMethod: type === 'accounting' ? form.scrapMethod : scrapMethods.length > 1 ? '混合' : scrapMethods[0] || form.scrapMethod,
