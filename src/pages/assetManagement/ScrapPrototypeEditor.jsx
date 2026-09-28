@@ -967,20 +967,40 @@ export default function ScrapPrototypeEditor({
         </BorrowingApprovalHistory>
       )}
 
+      {previewView && (
+        <Card size="small" title={sectionTitle('审批记录')} className="shadow-sm">
+          <div className="py-8 text-center text-gray-400">提交发起审批后展示审批记录</div>
+        </Card>
+      )}
+
       <div className="flex justify-center gap-3">
-        {!showApprovalActions && <Button onClick={onBack}>返回</Button>}
-        {!approvalPage && readOnly && ['草稿', '已驳回'].includes(form.documentStatus) && (
-          <Button onClick={() => onEdit?.(form)}>编辑</Button>
-        )}
-        {!readOnly && (
+        {previewView ? (
           <>
-            <Button onClick={() => handleSave(false)}>保存草稿</Button>
-            <Button type="primary" onClick={() => handleSave(true)}>提交</Button>
+            <Button onClick={() => setAccountingPreview(false)}>返回编辑</Button>
+            <Button type="primary" onClick={() => handleSave(true)}>提交发起审批</Button>
+          </>
+        ) : (
+          <>
+            {!showApprovalActions && <Button onClick={onBack}>返回</Button>}
+            {!approvalPage && readOnly && ['草稿', '已驳回'].includes(form.documentStatus) && (
+              <Button onClick={() => onEdit?.(form)}>编辑</Button>
+            )}
+            {!readOnly && (
+              <>
+                <Button onClick={() => handleSave(false)}>保存草稿</Button>
+                <Button
+                  type="primary"
+                  onClick={type === 'accounting' ? handleAccountingPreview : () => handleSave(true)}
+                >
+                  {type === 'accounting' ? '预览' : '提交'}
+                </Button>
+              </>
+            )}
           </>
         )}
       </div>
 
-      {['crossCompany', 'disposal', 'accounting'].includes(type) && !readOnly && (
+      {['crossCompany', 'disposal', 'accounting'].includes(type) && !readOnly && !previewView && (
         <SelectModal
           open={companyPickerOpen}
           title="选择公司"
