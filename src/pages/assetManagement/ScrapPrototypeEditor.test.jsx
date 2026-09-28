@@ -50,7 +50,7 @@ jest.mock('../../components/SelectModal', () => {
     if (!open) return null;
     return ReactModule.createElement(
       'div',
-      { role: 'dialog', 'aria-label': title },
+      { role: 'dialog', 'aria-label': title, 'data-candidate-count': dataSource.length },
       ReactModule.createElement('span', null, title),
       ReactModule.createElement('button', { type: 'button', onClick: () => onConfirm(dataSource[0]) }, '选择候选公司'),
     );
@@ -118,7 +118,8 @@ test('账面报废公司通过弹窗选择，三个报废原因分别可编辑',
   );
 
   fireEvent.click(screen.getByRole('button', { name: '114.新媒体' }));
-  expect(screen.getByRole('dialog', { name: '选择公司' })).toBeInTheDocument();
+  const picker = screen.getByRole('dialog', { name: '选择公司' });
+  expect(Number(picker.getAttribute('data-candidate-count'))).toBeGreaterThan(0);
   expect(screen.getByPlaceholderText('请填写已到报废期资产的报废原因')).toBeInTheDocument();
   expect(screen.getByPlaceholderText('请填写未到报废期资产的报废原因')).toBeInTheDocument();
   expect(screen.getByPlaceholderText('请填写丢失资产的报废原因')).toBeInTheDocument();

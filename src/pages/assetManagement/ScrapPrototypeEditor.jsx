@@ -754,12 +754,7 @@ export default function ScrapPrototypeEditor({
         <SelectModal
           open={companyPickerOpen}
           title="选择公司"
-          dataSource={type === 'accounting'
-            ? transferCompanyOptions.filter((item) => (
-              accountingActor
-              && accountingAuthorizationScopes?.some((scope) => scope.company === `${item.code}.${item.name}`)
-            ))
-            : transferCompanyOptions}
+          dataSource={transferCompanyOptions}
           columns={[
             { title: '公司编码', dataIndex: 'code' },
             { title: '公司名称', dataIndex: 'name' },
