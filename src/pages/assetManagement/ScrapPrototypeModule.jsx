@@ -300,7 +300,9 @@ export default function ScrapPrototypeModule({
     const uniqueScopes = new Set(assets.map((item) => item.scope));
     const assetScope = type === 'accounting'
       ? (uniqueScopes.size > 1 ? '混合' : assets[0]?.scope || '混合')
-      : form.assetScope;
+      : type === 'crossCompany'
+        ? (uniqueScopes.size === 1 ? [...uniqueScopes][0] : form.assetScope)
+        : form.assetScope;
 
     const sourceCompanies = Array.from(new Set(assets.map((item) => item.company).filter(Boolean)));
     const sourcePlates = Array.from(new Set(assets.map((item) => item.plate).filter(Boolean)));
@@ -333,7 +335,7 @@ export default function ScrapPrototypeModule({
       documentStatus: nextForm.documentStatus,
       assetScope,
       company: normalizedForm.company,
-      targetCompany: targetCompanies.length > 1 ? '多公司' : targetCompanies[0] || form.targetCompany || '',
+      targetCompany: targetCompanies.length ? targetCompanies.join('、') : form.targetCompany || '',
       plate: type === 'disposal' ? sourcePlates.join('、') : form.plate,
       creator: form.creator,
       createdAt: form.applicationDate,
