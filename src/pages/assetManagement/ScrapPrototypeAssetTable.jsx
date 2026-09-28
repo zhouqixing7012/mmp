@@ -279,6 +279,8 @@ export function exportScrapPrototypeAssets(assets, type, accountingMethod, dispo
         板块: item.plate,
         责任人: item.responsiblePerson,
         资产状态: item.status,
+        原值: item.originalValue,
+        净值: item.netValue,
         数据清洗: item.dataCleaning,
         报废数量: item.quantity,
         City: item.city,
@@ -852,6 +854,8 @@ export default function ScrapPrototypeAssetTable({
     { title: '板块', dataIndex: 'plate', width: 150 },
     { title: '责任人', dataIndex: 'responsiblePerson', width: 160 },
     { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
+    { title: '原值', dataIndex: 'originalValue', width: 130, align: 'right', render: money },
+    { title: '净值', dataIndex: 'netValue', width: 130, align: 'right', render: money },
     ...(assetScope === '机房资产' ? [{
       title: '数据清洗',
       dataIndex: 'dataCleaning',
