@@ -124,7 +124,7 @@ export default function ScrapPrototypeEditor({
   const [companyPickerOpen, setCompanyPickerOpen] = useState(false);
   const [approvalOpinion, setApprovalOpinion] = useState('同意');
   const [accountingPreview, setAccountingPreview] = useState(false);
-  const [accountingNameTouched, setAccountingNameTouched] = useState(Boolean(initialForm.scrapFormName));
+  const [accountingNameTouched, setAccountingNameTouched] = useState(Boolean(initialForm.scrapFormNameManual));
 
   const updateForm = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -396,6 +396,7 @@ export default function ScrapPrototypeEditor({
         ...form,
         scrapReasons,
         scrapFormName: type === 'accounting' ? accountingFormName : form.scrapFormName,
+        scrapFormNameManual: type === 'accounting' ? accountingNameTouched : form.scrapFormNameManual,
         scrapPeriod: type === 'accounting' ? accountingScrapPeriod : form.scrapPeriod,
         needsCleaning: effectiveNeedsCleaning,
       },
