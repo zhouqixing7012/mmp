@@ -7,6 +7,7 @@ import { CURRENT_EMPLOYEE } from '../../mock/employeeSelfServiceMock';
 import {
   getAccountingApprovalSteps,
   getCrossCompanyApprovalNodes,
+  getCrossCompanyApprovalSteps,
   getDisposalApprovalNodes,
   getScrapApprovalNodes,
 } from './scrapPrototypeWorkflow';
@@ -94,9 +95,18 @@ function createApplicationNo(type) {
   return `${prefix}${dayjs().format('YYYYMMDDHHmmss')}`;
 }
 
+function getCrossCompanyApproverMappings(form) {
+  const currentCreator = `${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`;
+  if (form.creator !== currentCreator) return {};
+  return {
+    '责任人5级及以上直属领导': CURRENT_EMPLOYEE.level5Leader || '',
+    '责任人7级及以上直属领导': CURRENT_EMPLOYEE.level7Leader || '',
+  };
+}
+
 function firstNode(type, form, assets) {
   if (type === 'crossCompany') {
-    return getCrossCompanyApprovalNodes(form.assetScope)[0];
+    return getCrossCompanyApprovalNodes(form.assetScope, getCrossCompanyApproverMappings(form))[0];
   }
 
   if (type === 'scrap') {
@@ -318,12 +328,20 @@ export default function ScrapPrototypeModule({
           { node: '发起人提交', person: normalizedForm.creator || '', result: '提交', opinion: '', time: nowText },
         ]
       : form.approvalHistory || [];
+    const submittedCurrentNode = submit ? firstNode(type, normalizedForm, assets) : '草稿';
+    const crossCompanyPlan = type === 'crossCompany'
+      ? getCrossCompanyApprovalSteps(assetScope, getCrossCompanyApproverMappings(normalizedForm))
+      : [];
+    const submittedApprover = type === 'crossCompany'
+      ? crossCompanyPlan.find((step) => !step.skipped && step.node === submittedCurrentNode)?.approver || ''
+      : normalizedForm.currentApprover || '';
     const nextForm = {
       ...normalizedForm,
       disposalMode: type === 'disposal' ? '实物处置' : normalizedForm.disposalMode,
       applicationNo,
       documentStatus: submit ? submitStatus(type, normalizedForm) : '草稿',
-      currentNode: submit ? firstNode(type, normalizedForm, assets) : '草稿',
+      currentNode: submittedCurrentNode,
+      currentApprover: submittedApprover,
       approvalHistory,
     };
 
@@ -350,6 +368,7 @@ export default function ScrapPrototypeModule({
       region: form.region,
       disposalMode: type === 'disposal' ? nextForm.disposalMode : undefined,
       currentNode: nextForm.currentNode,
+      currentApprover: nextForm.currentApprover,
       remark: form.remark || form.description,
       approvalHistory,
       formSnapshot: nextForm,
@@ -381,8 +400,11 @@ export default function ScrapPrototypeModule({
     const accountingSteps = type === 'accounting'
       ? getAccountingApprovalSteps(recordAssets, accountingApproverMappings)
       : [];
+    const crossCompanySteps = type === 'crossCompany'
+      ? getCrossCompanyApprovalSteps(record.assetScope, getCrossCompanyApproverMappings(record.formSnapshot || record))
+      : [];
     const nodes = type === 'crossCompany'
-      ? getCrossCompanyApprovalNodes(record.assetScope)
+      ? crossCompanySteps.filter((step) => !step.skipped).map((step) => step.node)
       : type === 'scrap'
         ? getScrapApprovalNodes(record.assetScope, recordAssets)
         : type === 'accounting'
@@ -422,6 +444,9 @@ export default function ScrapPrototypeModule({
     };
 
     const nextNode = approved && !lastNode ? nodes[currentIndex + 1] : null;
+    const nextCrossCompanyApprover = type === 'crossCompany' && nextNode
+      ? crossCompanySteps.find((step) => step.node === nextNode)?.approver || ''
+      : '';
     const skippedEntries = type === 'accounting' && approved
       ? accountingSteps
         .filter((step) => step.skipped)
@@ -451,6 +476,7 @@ export default function ScrapPrototypeModule({
       ...record,
       documentStatus,
       currentNode,
+      currentApprover: nextCrossCompanyApprover,
       lastModifiedAt: entry.time,
       enteredScrapPoolAt: completed ? entry.time : record.enteredScrapPoolAt,
       serviceNotification: shouldNotifyAccountingInitiator
@@ -476,7 +502,7 @@ export default function ScrapPrototypeModule({
         : recordAssets,
       approvalHistory: nextHistory,
       formSnapshot: record.formSnapshot
-        ? { ...record.formSnapshot, documentStatus, currentNode, approvalHistory: nextHistory }
+        ? { ...record.formSnapshot, documentStatus, currentNode, currentApprover: nextCrossCompanyApprover, approvalHistory: nextHistory }
         : record.formSnapshot,
     };
     const next = records.map((item) => (
