@@ -51,7 +51,7 @@ function defaultForm(type) {
     documentStatus: '草稿',
     creator: `${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`,
     applicationDate: dayjs().format('YYYY-MM-DD'),
-    company: ['crossCompany', 'accounting', 'disposal'].includes(type) ? '' : '114.新媒体',
+    company: '',
     assetScope: type === 'accounting' ? '混合' : '',
     plate: '17_Corporate',
     officeArea: CURRENT_EMPLOYEE.officeArea,
@@ -67,7 +67,7 @@ function defaultForm(type) {
     assetLocation: '',
     region: '北京',
     needsCleaning: '否',
-    quoteReceiver: type === 'scrap' ? '采购专员' : '',
+    quoteReceiver: '',
     recycler1Name: '',
     recycler2Name: '',
     recycler3Name: '',
@@ -226,11 +226,15 @@ export default function ScrapPrototypeModule({
     const assets = record.assetsSnapshot
       ? record.assetsSnapshot.map((item) => ({ ...item }))
       : seedAssets(type, record);
-    if (type === 'scrap' && form.assetScope === '机房资产') {
-      const machineAsset = assets.find((item) => item.scope === '机房资产') || assets[0];
-      form.assetCategory = form.assetCategory || machineAsset?.majorCategory || '';
-      form.assetLocation = form.assetLocation
-        || (String(machineAsset?.city || '').includes('北京') ? '北京' : '非北京');
+    if (type === 'scrap') {
+      const scrapCompanies = Array.from(new Set(assets.map((item) => item.company).filter(Boolean)));
+      form.company = scrapCompanies.join('、');
+      if (form.assetScope === '机房资产') {
+        const machineAsset = assets.find((item) => item.scope === '机房资产') || assets[0];
+        form.assetCategory = form.assetCategory || machineAsset?.majorCategory || '';
+        form.assetLocation = form.assetLocation
+          || (String(machineAsset?.city || '').includes('北京') ? '北京' : '非北京');
+      }
     }
     if (type === 'disposal' && record.assetScope === '机房资产') {
       form.needsCleaning = assets.some((item) => item.dataCleaning === '是') ? '是' : '否';
@@ -279,7 +283,12 @@ export default function ScrapPrototypeModule({
       ? (uniqueScopes.size > 1 ? '混合' : assets[0]?.scope || '混合')
       : form.assetScope;
 
-    const normalizedForm = { ...form, assetScope };
+    const sourceCompanies = Array.from(new Set(assets.map((item) => item.company).filter(Boolean)));
+    const normalizedForm = {
+      ...form,
+      assetScope,
+      company: type === 'scrap' ? sourceCompanies.join('、') : form.company,
+    };
     const nowText = dayjs().format('YYYY-MM-DD HH:mm:ss');
     const approvalHistory = submit && ['crossCompany', 'scrap', 'accounting', 'disposal'].includes(type)
         ? [
@@ -303,7 +312,7 @@ export default function ScrapPrototypeModule({
       applicationNo,
       documentStatus: nextForm.documentStatus,
       assetScope,
-      company: form.company,
+      company: normalizedForm.company,
       targetCompany: targetCompanies.length > 1 ? '多公司' : targetCompanies[0] || form.targetCompany || '',
       plate: form.plate,
       creator: form.creator,
@@ -407,7 +416,7 @@ export default function ScrapPrototypeModule({
         }))
       : [];
     const nextHistory = [...(record.approvalHistory || []), entry, ...skippedEntries];
-    const shouldNotifyAccountingInitiator = type === 'crossCompany'
+    const shouldNotifyAccountingInitiator = ['crossCompany', 'scrap'].includes(type)
       && completed
       && ['软件', '办公设备'].includes(record.assetScope);
     const updatedRecord = {
@@ -420,7 +429,7 @@ export default function ScrapPrototypeModule({
         ? {
             channel: '服务号',
             recipientRole: '对应账面报废发起人',
-            trigger: '跨公司转移审批完成',
+            trigger: type === 'crossCompany' ? '跨公司转移审批完成' : '资产报废审批完成',
             sentAt: entry.time,
           }
         : record.serviceNotification,
