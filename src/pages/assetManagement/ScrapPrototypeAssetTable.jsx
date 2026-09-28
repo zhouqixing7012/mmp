@@ -21,6 +21,7 @@ import SelectModal from '../../components/SelectModal';
 import LookupInput from '../../components/LookupInput';
 import StatusTag from '../../components/StatusTag';
 import {
+  ACCOUNTING_ASSET_POOL,
   SCRAP_ASSET_POOL,
   SCRAP_TYPE_OPTIONS,
   filterAssetsForScope,
@@ -56,12 +57,45 @@ function normalizeMappingValue(value) {
 
 function getTransferWarehouseOptions(record) {
   if (!record?.newCompany || !record?.newPlate || !record?.targetCity) return [];
+
+  // 原型只使用仓库基础资料和现有资产/调账样例中已经存在的三维映射事实，不猜测缺失的板块映射。
+  const mappingFacts = [
+    ...SCRAP_ASSET_POOL.map((item) => ({
+      company: item.company,
+      plate: item.plate,
+      city: item.city,
+      warehouse: item.warehouse,
+    })),
+    ...ACCOUNTING_ASSET_POOL
+      .filter((item) => item.newCompany && item.newPlate && item.targetCity && item.targetWarehouse)
+      .map((item) => ({
+        company: item.newCompany,
+        plate: item.newPlate,
+        city: item.targetCity,
+        warehouse: item.targetWarehouse,
+      })),
+  ];
+  const mappedWarehouses = new Set(
+    mappingFacts
+      .filter((item) => (
+        item.company === record.newCompany
+        && item.plate === record.newPlate
+        && item.city === record.targetCity
+      ))
+      .map((item) => item.warehouse)
+      .filter(Boolean),
+  );
+
   return warehouseCatalog
     .filter((item) => (
       item.status === '启用'
       && item.company === record.newCompany
       && item.city === record.targetCity
       && String(item.warehouseUsage || '').includes('资产')
+      && (
+        mappedWarehouses.has(item.warehouseDescription)
+        || mappedWarehouses.has(`${item.warehouseCode}.${item.warehouseDescription}`)
+      )
     ))
     .map((item) => ({
       label: `${item.warehouseCode}.${item.warehouseDescription}`,
@@ -79,6 +113,19 @@ function resolveTransferResponsiblePerson(record, targetWarehouse) {
     return record?.responsiblePerson || '';
   }
   if (!targetWarehouse) return '';
+  const targetDescription = String(targetWarehouse).split('.').slice(1).join('.');
+  const warehouseVirtualKeepers = Array.from(new Set(
+    SCRAP_ASSET_POOL
+      .filter((item) => (
+        String(item.status || '').startsWith('在库')
+        && (item.warehouse === targetWarehouse || item.warehouse === targetDescription)
+        && /^SOHU\d+-/.test(String(item.responsiblePerson || ''))
+      ))
+      .map((item) => item.responsiblePerson)
+      .filter(Boolean),
+  ));
+  if (warehouseVirtualKeepers.length === 1) return warehouseVirtualKeepers[0];
+
   const mapping = mockVirtualWarehouseManagerData.find((item) => (
     item.enabled
     && normalizeMappingValue(item.company) === normalizeMappingValue(record.newCompany)
