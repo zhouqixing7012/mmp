@@ -62,6 +62,7 @@ export default function ScrapPrototypeEditor({
   onBack,
   onSave,
   onApprove,
+  onExecute,
   onEdit,
   accountingActor,
   accountingAuthorizationScopes,
@@ -90,7 +91,7 @@ export default function ScrapPrototypeEditor({
       message.warning('驳回时审批意见必填');
       return;
     }
-    const updated = onApprove?.({
+    const approvalRecord = {
       ...form,
       id: form.id,
       applicationNo: form.applicationNo,
@@ -100,11 +101,16 @@ export default function ScrapPrototypeEditor({
       assetsSnapshot: assets,
       approvalHistory: form.approvalHistory || [],
       formSnapshot: form,
-    }, decision, approvalOpinion);
+    };
+    const updated = type === 'accounting' && form.currentNode === '提单人确认' && decision === '通过'
+      ? onExecute?.(form.id, approvalOpinion)
+      : onApprove?.(approvalRecord, decision, approvalOpinion);
     if (updated) {
       setForm((current) => ({
         ...current,
         ...updated.formSnapshot,
+        documentStatus: updated.documentStatus,
+        currentNode: updated.currentNode,
         approvalHistory: updated.approvalHistory || [],
       }));
     }
@@ -387,7 +393,13 @@ export default function ScrapPrototypeEditor({
         placeholder="请输入审批意见（驳回时必填）"
         onChange={(event) => setApprovalOpinion(event.target.value)}
       />
-      {approvalActionButtons(decideTransfer)}
+      {type === 'accounting' && form.currentNode === '提单人确认' ? (
+        <div data-testid="approval-action-buttons" className="mt-3 flex flex-wrap justify-center gap-3">
+          <Button onClick={onBack}>返回</Button>
+          <Button danger onClick={() => decideTransfer('驳回')}>驳回</Button>
+          <Button type="primary" onClick={() => decideTransfer('通过')}>确认并执行</Button>
+        </div>
+      ) : approvalActionButtons(decideTransfer)}
     </>
   );
   const assetDetailsTitle = type === 'accounting' && form.scrapMethod === '调账'
@@ -754,7 +766,11 @@ export default function ScrapPrototypeEditor({
         <SelectModal
           open={companyPickerOpen}
           title="选择公司"
-          dataSource={transferCompanyOptions}
+          dataSource={type === 'accounting' && accountingActor && accountingAuthorizationScopes?.length
+            ? transferCompanyOptions.filter((item) => accountingAuthorizationScopes.some(
+                (scope) => scope.company === `${item.code}.${item.name}`,
+              ))
+            : transferCompanyOptions}
           columns={[
             { title: '公司编码', dataIndex: 'code' },
             { title: '公司名称', dataIndex: 'name' },

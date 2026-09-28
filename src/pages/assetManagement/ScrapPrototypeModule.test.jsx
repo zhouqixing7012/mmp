@@ -9,7 +9,7 @@ import {
   resetScrapPrototypeMemory,
   saveScrapPrototypeRecords,
 } from '../../services/scrapPrototypeService';
-import { SCRAP_ASSET_POOL } from './scrapPrototypeData';
+import { ACCOUNTING_DEMO_ACCESS, SCRAP_ASSET_POOL } from './scrapPrototypeData';
 
 const accountingAccess = {
   actor: { id: 'verified-accountant' },
@@ -31,7 +31,12 @@ jest.mock('./ScrapPrototypeList', () => {
         </button>
       )}
       {type === 'accounting' && (
-        <button type="button" onClick={() => onExecute(records.find((record) => record.documentStatus === '待提单人确认'))}>
+        <button type="button" onClick={() => onApprove(records.find((record) => record.documentStatus === '审批中' && record.currentNode === '提单人确认'), '驳回', '请修改')}>
+          提单人驳回
+        </button>
+      )}
+      {type === 'accounting' && (
+        <button type="button" onClick={() => onExecute(records.find((record) => record.documentStatus === '审批中' && record.currentNode === '提单人确认'))}>
           执行账面报废
         </button>
       )}
@@ -61,6 +66,16 @@ jest.mock('./ScrapPrototypeEditor', () => {
 beforeEach(() => {
   window.localStorage.clear();
   resetScrapPrototypeMemory();
+});
+
+test('114.新媒体有可选的调账与非调账演示资产，均来自已完成的前置单据', () => {
+  const assets = getAccountingCandidates({ ...ACCOUNTING_DEMO_ACCESS, company: '114.新媒体' });
+  expect(assets.filter((item) => item.scrapMethod === '调账')).toEqual([
+    expect.objectContaining({ tagNo: 'SW-2026-000021', sourceBusinessType: '跨公司转移', sourceBusinessNo: 'CT20260921000004' }),
+  ]);
+  expect(assets.filter((item) => item.scrapMethod === '非调账')).toEqual([
+    expect.objectContaining({ tagNo: 'FA-2026-000122', sourceBusinessType: '资产报废', sourceBusinessNo: 'BF20260921000012' }),
+  ]);
 });
 
 test('四类原型主模块可加载，跨公司转移草稿保存后可以重新打开', async () => {
@@ -130,7 +145,7 @@ test('账面报废完成仅自动生成机房实物处置单，软件和丢失�
   expect(lost).toBeDefined();
   saveScrapPrototypeRecords('disposal', []);
   saveScrapPrototypeRecords('accounting', [{
-    id: 'accounting-auto-disposal', applicationNo: 'ZMBF20260926000099', documentStatus: '待提单人确认',
+    id: 'accounting-auto-disposal', applicationNo: 'ZMBF20260926000099', documentStatus: '审批中',
     company: '114.新媒体', assetScope: '混合', currentNode: '提单人确认',
     assetsSnapshot: [...candidates, lost],
   }]);
@@ -210,6 +225,46 @@ test('缺少真实审批人映射时账面报废流程停在当前节点，不�
   expect(getScrapPrototypeRecords('accounting')[0].currentNode).toBe(record.currentNode);
   expect(getScrapPrototypeRecords('accounting')[0].documentStatus).toBe('审批中');
   expect(getScrapPrototypeRecords('accounting')[0].approvalHistory).toEqual(record.approvalHistory);
+});
+
+test('财务终审后仍是审批中，提单人确认可驳回或确认执行', () => {
+  const approved = getAccountingCandidates({ ...ACCOUNTING_DEMO_ACCESS, company: '114.新媒体' })
+    .find((item) => item.scrapMethod === '非调账');
+  const record = {
+    id: 'accounting-final-approval', applicationNo: 'ZMBF-FINAL-001', documentStatus: '审批中',
+    currentNode: '财务一级审批', company: '114.新媒体', creator: '演示提单人',
+    assetsSnapshot: [approved], approvalHistory: [],
+  };
+  saveScrapPrototypeRecords('accounting', [record]);
+  const mapping = { '财务一级审批': 'finance-1' };
+  render(<ScrapPrototypeModule type="accounting" accountingActor={ACCOUNTING_DEMO_ACCESS.actor}
+    accountingAuthorizationScopes={ACCOUNTING_DEMO_ACCESS.authorizationScopes}
+    accountingApproverMappings={mapping} />);
+  fireEvent.click(screen.getByRole('button', { name: '审批通过' }));
+  expect(getScrapPrototypeRecords('accounting')[0]).toMatchObject({
+    documentStatus: '审批中', currentNode: '提单人确认',
+  });
+  fireEvent.click(screen.getByRole('button', { name: '执行账面报废' }));
+  expect(getScrapPrototypeRecords('accounting')[0]).toMatchObject({
+    documentStatus: '已完成', currentNode: '流程结束',
+  });
+  expect(getScrapPrototypeRecords('accounting')[0].approvalHistory).toEqual(expect.arrayContaining([
+    expect.objectContaining({ node: '提单人确认', result: '确认并执行' }),
+  ]));
+});
+
+test('提单人确认驳回后退回发起人，保留审批意见', () => {
+  saveScrapPrototypeRecords('accounting', [{
+    id: 'accounting-confirm-reject', applicationNo: 'ZMBF-REJECT-001',
+    company: '114.新媒体', creator: '演示提单人', documentStatus: '审批中',
+    currentNode: '提单人确认', assetsSnapshot: [], approvalHistory: [],
+  }]);
+  render(<ScrapPrototypeModule type="accounting" />);
+  fireEvent.click(screen.getByRole('button', { name: '提单人驳回' }));
+  expect(getScrapPrototypeRecords('accounting')[0]).toMatchObject({
+    documentStatus: '已驳回', currentNode: '发起人修改',
+    approvalHistory: [expect.objectContaining({ node: '提单人确认', person: '演示提单人', opinion: '请修改' })],
+  });
 });
 
 test('办公设备报废经过鉴定和主管确认后进入账面报废候选', () => {

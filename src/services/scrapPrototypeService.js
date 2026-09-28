@@ -14,7 +14,52 @@ function readStored(type) {
   if (!target) return null;
   try {
     const parsed = JSON.parse(target.getItem(`${STORAGE_PREFIX}${type}`) || 'null');
-    return Array.isArray(parsed) ? parsed : null;
+    if (!Array.isArray(parsed)) return null;
+    if (type === 'crossCompany' && !parsed.some((record) => record.id === 'cc-accounting-demo')) {
+      const source = getInitialBusinessRows('crossCompany').find((record) => record.id === 'cc-accounting-demo');
+      const migrated = [...parsed, source];
+      target.setItem(`${STORAGE_PREFIX}${type}`, JSON.stringify(migrated));
+      return migrated;
+    }
+    if (type === 'scrap') {
+      const examples = getInitialBusinessRows('scrap');
+      const source = examples.find((record) => record.id === 'scrap-2');
+      const available = examples.find((record) => record.id === 'scrap-accounting-available');
+      const updated = parsed.map((record) => record.id === source.id
+        && record.documentStatus === '已审批' && !record.assetsSnapshot?.length
+        ? { ...record, assetsSnapshot: source.assetsSnapshot }
+        : record);
+      const migrated = updated.some((record) => record.id === available.id)
+        ? updated : [...updated, available];
+      if (migrated.length !== parsed.length || migrated.some((record, index) => record !== parsed[index])) {
+        target.setItem(`${STORAGE_PREFIX}${type}`, JSON.stringify(migrated));
+      }
+      return migrated;
+    }
+    if (type !== 'accounting') return parsed;
+    const demoConfirm = getInitialBusinessRows('accounting').find((record) => record.id === 'acc-2');
+    const migrated = parsed.map((record) => {
+      const oldStatus = record.documentStatus === '待提单人确认';
+      const missingDemoDetail = record.id === demoConfirm.id
+        && record.currentNode === '提单人确认' && !record.assetsSnapshot?.length;
+      if (!oldStatus && !missingDemoDetail) return record;
+      return {
+        ...record,
+        ...(missingDemoDetail ? { company: demoConfirm.company, plate: demoConfirm.plate,
+          assetCount: demoConfirm.assetCount, assetsSnapshot: demoConfirm.assetsSnapshot } : {}),
+        documentStatus: oldStatus ? '审批中' : record.documentStatus,
+        currentNode: '提单人确认',
+        formSnapshot: record.formSnapshot
+          ? { ...record.formSnapshot, documentStatus: oldStatus ? '审批中' : record.documentStatus,
+              currentNode: '提单人确认',
+              ...(missingDemoDetail ? { company: demoConfirm.company, plate: demoConfirm.plate } : {}) }
+          : record.formSnapshot,
+      };
+    });
+    if (migrated.some((record, index) => record !== parsed[index])) {
+      target.setItem(`${STORAGE_PREFIX}${type}`, JSON.stringify(migrated));
+    }
+    return migrated;
   } catch (error) {
     throw new Error(`账面报废演示数据读取失败：${error.message}`);
   }

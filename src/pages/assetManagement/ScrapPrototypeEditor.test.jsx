@@ -102,6 +102,22 @@ const accountingForm = {
   attachments: [],
 };
 
+test('提单人确认作为审批中最后节点，审批页展示确认并执行', () => {
+  const onExecute = jest.fn(() => ({
+    documentStatus: '已完成', currentNode: '流程结束', approvalHistory: [],
+  }));
+  render(<ScrapPrototypeEditor
+    type="accounting" config={{ title: '账面报废' }}
+    initialForm={{ ...accountingForm, id: 'confirm-1', documentStatus: '审批中', currentNode: '提单人确认' }}
+    initialAssets={[]} readOnly approvalPage onBack={jest.fn()} onSave={jest.fn()}
+    onApprove={jest.fn()} onExecute={onExecute}
+  />);
+  expect(screen.getByRole('button', { name: '确认并执行' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '同意' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '确认并执行' }));
+  expect(onExecute).toHaveBeenCalledWith('confirm-1', '同意');
+});
+
 test('账面报废公司通过弹窗选择，三个报废原因分别可编辑', () => {
   render(
     <ScrapPrototypeEditor

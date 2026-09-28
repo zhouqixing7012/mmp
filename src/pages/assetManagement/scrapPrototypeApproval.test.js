@@ -37,3 +37,10 @@ test('缺少历史记录时仍按单据流程显示发起记录和当前节点',
   expect(rows.map((row) => row.node)).toEqual(['发起人提交', 'ES主管确认']);
   expect(rows[1].status).toBe('待审批');
 });
+
+test('账面报废提单人确认仍属于审批中，进度展示待确认节点', () => {
+  const rows = getScrapPrototypeApprovalRecords({
+    documentStatus: '审批中', currentNode: '提单人确认', creator: '演示提单人',
+  }, 'accounting');
+  expect(rows[rows.length - 1]).toMatchObject({ node: '提单人确认', status: '待确认' });
+});

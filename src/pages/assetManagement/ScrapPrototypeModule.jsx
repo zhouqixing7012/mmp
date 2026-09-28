@@ -36,7 +36,7 @@ const MODULES = {
   accounting: {
     title: '账面报废',
     createLabel: '创建账面报废申请单',
-    statuses: ['草稿', '审批中', '已驳回', '待提单人确认', '已完成'],
+    statuses: ['草稿', '审批中', '已驳回', '已完成'],
   },
   disposal: {
     title: '资产处置',
@@ -355,8 +355,12 @@ export default function ScrapPrototypeModule({
           ? accountingSteps.filter((step) => !step.skipped).map((step) => step.node)
           : getDisposalApprovalNodes(record);
     if (!nodes) return;
+    if (type === 'accounting') nodes.push('提单人确认');
     const currentIndex = nodes.indexOf(record.currentNode);
     if (currentIndex < 0) throw new Error(`未知审批节点：${record.currentNode}`);
+    if (type === 'accounting' && record.currentNode === '提单人确认' && result === '通过') {
+      return executeAccounting(record, opinion);
+    }
     const currentAccountingStep = type === 'accounting'
       ? accountingSteps.find((step) => step.node === record.currentNode)
       : null;
@@ -369,14 +373,15 @@ export default function ScrapPrototypeModule({
     const lastNode = approved && currentIndex === nodes.length - 1;
     const completed = lastNode && type !== 'accounting';
     const currentNode = approved
-      ? (completed ? '流程结束' : lastNode ? '提单人确认' : nodes[currentIndex + 1])
+      ? (completed ? '流程结束' : nodes[currentIndex + 1])
       : '发起人修改';
     const documentStatus = approved
-      ? (completed ? (type === 'scrap' ? '已审批' : '已完成') : lastNode ? '待提单人确认' : type === 'disposal' && record.disposalMode !== '实物处置' ? '处理中' : '审批中')
+      ? (completed ? (type === 'scrap' ? '已审批' : '已完成') : type === 'disposal' && record.disposalMode !== '实物处置' ? '处理中' : '审批中')
       : '已驳回';
     const entry = {
       node: record.currentNode,
-      person: currentAccountingStep?.approverName || currentAccountingStep?.approverId || record.currentApprover || '',
+      person: currentAccountingStep?.approverName || currentAccountingStep?.approverId
+        || (type === 'accounting' && record.currentNode === '提单人确认' ? record.creator : record.currentApprover) || '',
       result,
       opinion: opinion.trim(),
       time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
@@ -388,7 +393,8 @@ export default function ScrapPrototypeModule({
         .filter((step) => step.skipped)
         .filter((step) => {
           const fullCurrent = accountingSteps.findIndex((item) => item.node === record.currentNode);
-          const fullNext = nextNode ? accountingSteps.findIndex((item) => item.node === nextNode) : accountingSteps.length;
+          const fullNextIndex = nextNode ? accountingSteps.findIndex((item) => item.node === nextNode) : -1;
+          const fullNext = fullNextIndex < 0 ? accountingSteps.length : fullNextIndex;
           const position = accountingSteps.findIndex((item) => item.node === step.node);
           return position > fullCurrent && position < fullNext;
         })
@@ -425,12 +431,12 @@ export default function ScrapPrototypeModule({
     ));
     saveScrapPrototypeRecords(type, next);
     setRecords(next);
-    message.success(completed ? (type === 'disposal' ? '处置流程已完成' : '审批完成，资产已进入待报废池') : lastNode ? '审批完成，待提单人确认' : approved ? '审批通过' : '已驳回发起人');
+    message.success(completed ? (type === 'disposal' ? '处置流程已完成' : '审批完成，资产已进入待报废池') : currentNode === '提单人确认' ? '审批通过，待提单人确认' : approved ? '审批通过' : '已驳回发起人');
     return updatedRecord;
   };
 
-  const executeAccounting = (record) => {
-    if (type !== 'accounting' || record.documentStatus !== '待提单人确认') return;
+  const executeAccounting = (record, opinion = '') => {
+    if (type !== 'accounting' || record?.documentStatus !== '审批中' || record.currentNode !== '提单人确认') return;
     const sourceAssets = record.assetsSnapshot || seedAssets('accounting', record);
     const validation = validateAccountingAssets(record.formSnapshot || record, sourceAssets, {
       actor: accountingActor,
@@ -442,18 +448,20 @@ export default function ScrapPrototypeModule({
       return;
     }
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
-    const next = records.map((item) => item.id === record.id ? {
-      ...item,
+    const completedRecord = {
+      ...record,
       documentStatus: '已完成', currentNode: '流程结束', lastModifiedAt: now,
-      approvalHistory: [...(item.approvalHistory || []), { node: '提单人确认', result: '确认并执行', opinion: '', time: now }],
-      formSnapshot: item.formSnapshot ? { ...item.formSnapshot, documentStatus: '已完成', currentNode: '流程结束' } : item.formSnapshot,
+      approvalHistory: [...(record.approvalHistory || []), { node: '提单人确认', person: record.creator, result: '确认并执行', opinion: opinion.trim(), time: now }],
+      formSnapshot: record.formSnapshot ? { ...record.formSnapshot, documentStatus: '已完成', currentNode: '流程结束',
+        approvalHistory: [...(record.approvalHistory || []), { node: '提单人确认', person: record.creator, result: '确认并执行', opinion: opinion.trim(), time: now }] } : record.formSnapshot,
       assetsSnapshot: sourceAssets.map((asset) => ({
         ...asset,
         status: asset.scope === '软件' || asset.scrapType === '丢失'
           ? '已报废-已处置'
           : asset.status,
       })),
-    } : item);
+    };
+    const next = records.map((item) => item.id === record.id ? completedRecord : item);
     saveScrapPrototypeRecords(type, next);
     setRecords(next);
 
@@ -497,6 +505,7 @@ export default function ScrapPrototypeModule({
     });
     if (autoRecords.length) saveScrapPrototypeRecords('disposal', [...autoRecords, ...currentDisposal]);
     message.success('账面报废执行完成');
+    return completedRecord;
   };
 
   if (view === 'list') {
@@ -527,6 +536,7 @@ export default function ScrapPrototypeModule({
       accountingActor={accountingActor}
       accountingAuthorizationScopes={accountingAuthorizationScopes}
       onApprove={processApproval}
+      onExecute={(recordId, opinion) => executeAccounting(records.find((item) => item.id === recordId), opinion)}
       onEdit={(form) => {
         const record = records.find((item) => item.id === form.id);
         if (record) openRecord(record, true, false);

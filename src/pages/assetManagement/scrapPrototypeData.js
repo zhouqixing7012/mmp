@@ -150,6 +150,18 @@ export const SCRAP_ASSET_POOL = [
     floor: officeWarehouse?.floor || '',
   }),
   fromCatalog({
+    id: 'scrap-office-114-available',
+    majorCategory: 'OFFICE EQUIPMENT',
+    tagNo: 'FA-2026-000122',
+    company: '114.新媒体',
+    warehouse: officeWarehouse?.warehouseDescription || '',
+    owner: '213852-孙志强',
+    status: '在库-再利用',
+    city: officeWarehouse?.city || '',
+    building: officeWarehouse?.building || '',
+    floor: officeWarehouse?.floor || '',
+  }),
+  fromCatalog({
     id: 'scrap-furniture-1',
     majorCategory: 'FURNITURE',
     tagNo: 'FA-2026-000116',
@@ -190,6 +202,12 @@ export const SCRAP_ASSET_POOL = [
   }),
 ].filter(Boolean);
 
+// 仅用于可交互原型；正式人员权限仍由登录身份和组织数据提供。
+export const ACCOUNTING_DEMO_ACCESS = {
+  actor: { id: 'accounting-prototype-demo' },
+  authorizationScopes: [{ company: '114.新媒体', plates: ['17_Corporate'] }],
+};
+
 export const ACCOUNTING_ASSET_POOL = SCRAP_ASSET_POOL.map((item, index) => ({
   ...item,
   status: String(item.status || '').startsWith('在库') ? '在库-待报废' : item.status,
@@ -225,7 +243,8 @@ const DISPOSAL_QUOTE_SAMPLES = [
 ];
 
 export const DISPOSAL_ASSET_POOL = ACCOUNTING_ASSET_POOL
-  .filter((item) => item.scrapMethod !== '调账' && item.scope !== '软件' && item.scrapType !== '丢失')
+  .filter((item) => item.scrapMethod !== '调账' && item.scope !== '软件' && item.scrapType !== '丢失'
+    && !['scrap-office-114-accounting', 'scrap-office-114-available'].includes(item.id))
   .map((item, index) => {
     const [recycler1, recycler2, recycler3] = DISPOSAL_QUOTE_SAMPLES[index % DISPOSAL_QUOTE_SAMPLES.length];
     const disposalMode = '实物处置';
@@ -250,6 +269,22 @@ export const DISPOSAL_ASSET_POOL = ACCOUNTING_ASSET_POOL
 
 const businessRows = {
   crossCompany: [
+    {
+      id: 'cc-accounting-demo', applicationNo: 'CT20260921000004', documentStatus: '已完成',
+      assetScope: '软件', company: '114.新媒体', targetCompany: '115.新媒体-上海',
+      creator: DEMO_APPLICANT, createdAt: '2026-09-21', assetCount: 1,
+      currentNode: '已进入待报废池', remark: '软件公司间转移演示',
+      assetsSnapshot: [SCRAP_ASSET_POOL.find((asset) => asset.id === 'scrap-soft-1')].map((asset) => ({
+        ...asset,
+        cardQuantity: asset.quantity, requestedScrapQuantity: asset.quantity,
+        cardOriginalValue: asset.originalValue, cardNetValue: asset.netValue,
+        newCompany: '115.新媒体-上海', newPlate: asset.plate,
+        newCostCenter: asset.costCenter, newResponsiblePerson: asset.responsiblePerson,
+        targetWarehouse: shWarehouse?.warehouseDescription || '',
+        targetCity: shWarehouse?.city || '', targetBuilding: shWarehouse?.building || '',
+        targetFloor: shWarehouse?.floor || '',
+      })),
+    },
     {
       id: 'cc-1',
       applicationNo: 'CT20260923000001',
@@ -315,6 +350,17 @@ const businessRows = {
         })),
     },
     {
+      id: 'scrap-accounting-available', applicationNo: 'BF20260921000012',
+      documentStatus: '已审批', assetScope: '办公设备', company: '114.新媒体',
+      region: '北京', scrapMethod: '全部报废', creator: DEMO_APPLICANT,
+      createdAt: '2026-09-21', assetCount: 1, currentNode: '已进入待报废池',
+      remark: '可用于新建非调账账面报废单',
+      assetsSnapshot: [SCRAP_ASSET_POOL.find((item) => item.id === 'scrap-office-114-available')]
+        .map((asset) => ({ ...asset, cardQuantity: asset.quantity,
+          requestedScrapQuantity: asset.quantity,
+          cardOriginalValue: asset.originalValue, cardNetValue: asset.netValue })),
+    },
+    {
       id: 'scrap-machine-draft', applicationNo: 'BF20260926000001', documentStatus: '草稿',
       assetScope: '机房资产', company: '114.新媒体', creator: DEMO_APPLICANT,
       createdAt: '2026-09-26', assetCount: 1, scrapMethod: '全部报废',
@@ -347,16 +393,24 @@ const businessRows = {
     {
       id: 'acc-2',
       applicationNo: 'ZMBF20260922000008',
-      documentStatus: '待提单人确认',
+      documentStatus: '审批中',
       assetScope: '办公设备',
-      company: '115.新媒体-上海',
-      plate: '18_Media',
+      company: '114.新媒体',
+      plate: '17_Corporate',
       scrapMethod: '非调账',
       creator: DEMO_APPLICANT,
       createdAt: '2026-09-22',
-      assetCount: 4,
+      assetCount: 1,
       currentNode: '提单人确认',
       remark: '办公设备账面报废',
+      assetsSnapshot: [SCRAP_ASSET_POOL.find((item) => item.id === 'scrap-office-114-accounting')]
+        .map((asset) => ({ ...asset, cardQuantity: asset.quantity,
+          requestedScrapQuantity: asset.quantity,
+          cardOriginalValue: asset.originalValue, cardNetValue: asset.netValue,
+          scrapMethod: '非调账', detailScrapMethod: '全部报废',
+          scrapType: Number(asset.netValue) === 0 ? '已到报废期' : '未到报废期',
+          sourceBusinessType: '资产报废', sourceBusinessNo: 'BF20260922000011',
+          disposedComplete: '否', status: '在库-待报废' })),
     },
   ],
   disposal: [
