@@ -196,9 +196,6 @@ export default function ScrapPrototypeList({
           <QueryItem label="序列号">
             <Input value={filters.serialNumber} allowClear onChange={(event) => setFilters((c) => ({ ...c, serialNumber: event.target.value }))} />
           </QueryItem>
-          <QueryItem label="序列号">
-            <Input value={filters.serialNumber} allowClear onChange={(event) => setFilters((c) => ({ ...c, serialNumber: event.target.value }))} />
-          </QueryItem>
           <QueryItem label="单据状态">
             <Select value={filters.documentStatus || undefined} allowClear options={options(config.statuses)} onChange={(value) => setFilters((c) => ({ ...c, documentStatus: value || '' }))} />
           </QueryItem>
@@ -273,6 +270,9 @@ export default function ScrapPrototypeList({
         </QueryItem>
         <QueryItem label="资产标签号">
           <Input value={filters.assetTag} allowClear onChange={(event) => setFilters((c) => ({ ...c, assetTag: event.target.value }))} />
+        </QueryItem>
+        <QueryItem label="序列号">
+          <Input value={filters.serialNumber} allowClear onChange={(event) => setFilters((c) => ({ ...c, serialNumber: event.target.value }))} />
         </QueryItem>
         <QueryItem label="单据状态">
           <Select value={filters.documentStatus || undefined} allowClear options={options(config.statuses)} onChange={(value) => setFilters((c) => ({ ...c, documentStatus: value || '' }))} />
