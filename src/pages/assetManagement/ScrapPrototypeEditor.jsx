@@ -495,7 +495,7 @@ export default function ScrapPrototypeEditor({
     });
   }, [assets]);
 
-  const accountingSummaryGroupColumns = (title, field, kind) => [
+  const accountingSummaryGroupColumns = (field, kind) => [
     {
       title: '数量',
       width: 82,
@@ -524,9 +524,9 @@ export default function ScrapPrototypeEditor({
 
   const accountingSummaryColumns = [
     { title: '项目', dataIndex: 'project', width: 150, fixed: 'left' },
-    { title: '已到报废期资产', children: accountingSummaryGroupColumns('已到报废期资产', 'expired', '已到报废期') },
-    { title: '未到报废期资产', children: accountingSummaryGroupColumns('未到报废期资产', 'unexpired', '未到报废期') },
-    { title: '丢失资产', children: accountingSummaryGroupColumns('丢失资产', 'lost', '丢失') },
+    { title: '已到报废期资产', children: accountingSummaryGroupColumns('expired', '已到报废期') },
+    { title: '未到报废期资产', children: accountingSummaryGroupColumns('unexpired', '未到报废期') },
+    { title: '丢失资产', children: accountingSummaryGroupColumns('lost', '丢失') },
   ];
 
   const accountingDetailTab = (kind) => {
