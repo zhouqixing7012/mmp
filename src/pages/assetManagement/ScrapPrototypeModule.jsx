@@ -442,6 +442,9 @@ export default function ScrapPrototypeModule({
     const shouldNotifyAccountingInitiator = ['crossCompany', 'scrap'].includes(type)
       && completed
       && ['软件', '办公设备'].includes(record.assetScope);
+    const shouldNotifyMachineTransferParticipants = type === 'crossCompany'
+      && completed
+      && record.assetScope === '机房资产';
     const updatedRecord = {
       ...record,
       documentStatus,
@@ -455,7 +458,14 @@ export default function ScrapPrototypeModule({
             trigger: type === 'crossCompany' ? '跨公司转移审批完成' : '资产报废审批完成',
             sentAt: entry.time,
           }
-        : record.serviceNotification,
+        : shouldNotifyMachineTransferParticipants
+          ? {
+              channel: '服务号',
+              recipientRole: '申请人及审批人',
+              trigger: '跨公司转移审批完成',
+              sentAt: entry.time,
+            }
+          : record.serviceNotification,
       assetsSnapshot: completed
         ? recordAssets.map((asset) => ({
             ...asset,
@@ -479,7 +489,9 @@ export default function ScrapPrototypeModule({
         ? '处置流程已完成'
         : shouldNotifyAccountingInitiator
           ? '审批完成，资产已进入待报废池，并已通知对应账面报废发起人'
-          : '审批完成，资产已进入待报废池')
+          : shouldNotifyMachineTransferParticipants
+            ? '审批完成，资产已进入待报废池，并已通知申请人及审批人'
+            : '审批完成，资产已进入待报废池')
       : currentNode === '提单人确认'
         ? '审批通过，待提单人确认'
         : approved ? '审批通过' : '已驳回发起人');
