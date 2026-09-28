@@ -86,6 +86,7 @@ function accountingSummaryProject(asset) {
     asset?.parentAssetTag
     || asset?.mainAssetTag
     || asset?.mainTagNo
+    || asset?.mainTag
     || asset?.isAccessory
     || /配件/.test(minor)
     || /配件/.test(description)
