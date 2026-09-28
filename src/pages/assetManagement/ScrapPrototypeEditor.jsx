@@ -131,24 +131,12 @@ export default function ScrapPrototypeEditor({
       )
   );
 
-  const machineScrapQty = useMemo(() => (
-    assets
-      .filter((item) => item.scope === '机房资产')
-      .reduce((sum, item) => sum + Number(item.quantity || 0), 0)
-  ), [assets]);
-
   const disposalQuoteTotals = useMemo(() => (
     [1, 2, 3].map((index) => assets.reduce(
       (sum, item) => sum + Number(item[`recycler${index}`] || 0),
       0,
     ))
   ), [assets]);
-
-  const effectiveQuoteReceiver = type === 'scrap'
-    && form.assetScope === '机房资产'
-    && machineScrapQty >= 500
-    ? '内审'
-    : form.quoteReceiver;
 
   const effectiveNeedsCleaning = type === 'disposal'
     && form.assetScope === '机房资产'
@@ -176,6 +164,10 @@ export default function ScrapPrototypeEditor({
           if (sourceCompanies.size === 1) {
             nextForm.company = firstAsset.company || current.company;
           }
+        } else if (type === 'scrap') {
+          nextForm.company = Array.from(new Set(
+            nextAssets.map((item) => item.company).filter(Boolean),
+          )).join('、');
         } else if (type !== 'accounting') {
           nextForm.company = firstAsset.company || current.company;
         }
@@ -329,7 +321,6 @@ export default function ScrapPrototypeEditor({
     onSave({
       ...form,
       scrapReasons,
-      quoteReceiver: effectiveQuoteReceiver,
       needsCleaning: effectiveNeedsCleaning,
     }, savedAssets, submit);
   };
@@ -533,22 +524,6 @@ export default function ScrapPrototypeEditor({
                   </Descriptions.Item>
                   <Descriptions.Item label={<span><span className="mr-1 text-red-500">*</span>资产所在地</span>}>
                     {renderSelect(form.assetLocation, options(['北京', '非北京']), (value) => updateForm('assetLocation', value))}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="地区">
-                    {renderSelect(
-                      form.region,
-                      options(['北京', '非北京']),
-                      (value) => updateForm('region', value),
-                    )}
-                  </Descriptions.Item>
-
-                  <Descriptions.Item label="报价接收人">
-                    {renderSelect(
-                      effectiveQuoteReceiver,
-                      options(['采购专员', '内审']),
-                      (value) => updateForm('quoteReceiver', value),
-                      machineScrapQty >= 500,
-                    )}
                   </Descriptions.Item>
                 </>
               )}
