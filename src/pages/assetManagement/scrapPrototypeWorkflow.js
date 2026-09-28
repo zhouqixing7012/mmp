@@ -21,9 +21,6 @@ export function getDisposalApprovalNodes(record) {
     throw new Error('无需处置资产不生成处置单');
   }
   if (record.assetScope === '机房资产') {
-    if (record.region === '非北京' && record.needsCleaning === '否') {
-      throw new Error('非北京且无需数据清洗的机房资产不生成处置单');
-    }
     if (!['北京', '非北京'].includes(record.region) || !['是', '否'].includes(record.needsCleaning)) {
       throw new Error('机房处置单缺少明确的归属地或数据清洗结果');
     }
