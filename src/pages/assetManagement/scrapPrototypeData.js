@@ -1,9 +1,9 @@
 import { materialCatalog } from '../../mock/reference/materialCatalog';
 import { CURRENT_EMPLOYEE } from '../../mock/employeeSelfServiceMock';
-
-const DEMO_APPLICANT = `${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`;
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 import { DEFAULT_ASSET_MAINTENANCE_ROWS } from '../../mock/assetManagementMock';
+
+const DEMO_APPLICANT = `${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`;
 
 export const OFFICE_MAJOR_CATEGORIES = new Set([
   'PC',
@@ -437,6 +437,11 @@ export function getInitialBusinessRows(type) {
 
     return {
       ...row,
+      ...(type === 'disposal' && row.disposalMode !== '无实物处置' ? {
+        recycler1Name: row.recycler1Name || '广环再生资源利用有限公司',
+        recycler2Name: row.recycler2Name || '广州源创再生资源有限公司',
+        recycler3Name: row.recycler3Name || '东莞市创鑫再生资源有限公司',
+      } : {}),
       lastModifiedAt: row.lastModifiedAt || row.createdAt,
       originalValueTotal: assets.reduce((sum, item) => sum + Number(item.originalValue || 0), 0),
       netValueTotal: assets.reduce((sum, item) => sum + Number(item.netValue || 0), 0),

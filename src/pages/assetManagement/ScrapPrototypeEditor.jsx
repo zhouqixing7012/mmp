@@ -128,6 +128,13 @@ export default function ScrapPrototypeEditor({
       .reduce((sum, item) => sum + Number(item.quantity || 0), 0)
   ), [assets]);
 
+  const disposalQuoteTotals = useMemo(() => (
+    [1, 2, 3].map((index) => assets.reduce(
+      (sum, item) => sum + Number(item[`recycler${index}`] || 0),
+      0,
+    ))
+  ), [assets]);
+
   const effectiveQuoteReceiver = type === 'scrap'
     && form.assetScope === '机房资产'
     && machineScrapQty >= 500
@@ -266,6 +273,21 @@ export default function ScrapPrototypeEditor({
         message.error('请选择公司并添加该公司的待处置办公资产');
         return false;
       }
+      const missingRecyclerName = [1, 2, 3].find((index) => (
+        !String(form[`recycler${index}Name`] || '').trim()
+      ));
+      if (missingRecyclerName) {
+        message.error(`请填写回收商${['一', '二', '三'][missingRecyclerName - 1]}的供应商名称`);
+        return false;
+      }
+      const invalidQuote = assets.find((asset) => [1, 2, 3].some((index) => (
+        !Number.isFinite(Number(asset[`recycler${index}`]))
+        || Number(asset[`recycler${index}`]) <= 0
+      )));
+      if (invalidQuote) {
+        message.error(`资产 ${invalidQuote.tagNo} 的三个回收商报价均须大于0`);
+        return false;
+      }
     }
 
     return true;
@@ -395,7 +417,7 @@ export default function ScrapPrototypeEditor({
               <Button
                 icon={<DownloadOutlined />}
                 disabled={assets.length === 0}
-                onClick={() => exportScrapPrototypeAssets(assets, type, form.scrapMethod)}
+                onClick={() => exportScrapPrototypeAssets(assets, type, form.scrapMethod, form)}
               >
                 导出
               </Button>
@@ -422,6 +444,13 @@ export default function ScrapPrototypeEditor({
             <DetailItem label="部门" span={type === 'accounting' ? 2 : 3}>{showValue(form.department)}</DetailItem>
             {type === 'scrap' && <DetailItem label="报废说明" span={3}>{showValue(form.description)}</DetailItem>}
             {type === 'accounting' && <DetailItem label="报废方式">{showValue(form.scrapMethod)}</DetailItem>}
+            {type === 'disposal' && (
+              <>
+                <DetailItem label="回收商一">{showValue(form.recycler1Name)}</DetailItem>
+                <DetailItem label="回收商二">{showValue(form.recycler2Name)}</DetailItem>
+                <DetailItem label="回收商三">{showValue(form.recycler3Name)}</DetailItem>
+              </>
+            )}
             {type !== 'scrap' && <DetailItem label="备注" span={3}>{showValue(form.remark)}</DetailItem>}
             <DetailItem label="附件" span={3}>{showValue(form.attachments?.map((item) => item.name).filter(Boolean).join('、'))}</DetailItem>
           </DetailGrid>
@@ -503,6 +532,26 @@ export default function ScrapPrototypeEditor({
             </>
           )}
 
+          {type === 'disposal' && (
+            [1, 2, 3].map((index) => (
+              <Descriptions.Item
+                key={`recycler${index}Name`}
+                label={<span><span className="mr-1 text-red-500">*</span>{`回收商${['一', '二', '三'][index - 1]}`}</span>}
+              >
+                {readOnly
+                  ? showValue(form[`recycler${index}Name`])
+                  : (
+                    <Input
+                      required
+                      value={form[`recycler${index}Name`] || ''}
+                      placeholder={`请输入回收商${['一', '二', '三'][index - 1]}的供应商名称`}
+                      onChange={(event) => updateForm(`recycler${index}Name`, event.target.value)}
+                    />
+                  )}
+              </Descriptions.Item>
+            ))
+          )}
+
           <Descriptions.Item
             label={type === 'scrap' ? '报废说明' : '备注'}
             span={3}
@@ -571,7 +620,17 @@ export default function ScrapPrototypeEditor({
         size="small"
         title={useScrapApprovalCardStyle ? sectionTitle(assetDetailsTitle) : assetDetailsTitle}
         className={useScrapApprovalCardStyle ? 'shadow-sm' : undefined}
-        extra={<span className="text-sm text-gray-500">共 {assets.length} 条</span>}
+        extra={type === 'disposal' && !readOnly ? (
+          <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm">
+            {[1, 2, 3].map((index) => (
+              <span key={`recycler${index}Total`}>
+                <span className="text-gray-500">{`回收商${['一', '二', '三'][index - 1]}报价合计：`}</span>
+                <span className="font-semibold text-gray-900">{money(disposalQuoteTotals[index - 1])}</span>
+              </span>
+            ))}
+            <span className="text-gray-500">共 {assets.length} 条</span>
+          </div>
+        ) : <span className="text-sm text-gray-500">共 {assets.length} 条</span>}
       >
         {type === 'disposal' && approvalPage ? (
           <Table rowKey="key" size="small" bordered pagination={false} dataSource={disposalSummary}
@@ -582,7 +641,7 @@ export default function ScrapPrototypeEditor({
               { title: '数量', dataIndex: 'quantity', width: 95, align: 'right' },
               { title: '原值', dataIndex: 'originalValue', width: 140, align: 'right', render: money },
               { title: '净值', dataIndex: 'netValue', width: 140, align: 'right', render: money },
-              ...['回收商一', '回收商二', '回收商三'].map((title, index) => ({
+              ...['回收商一报价', '回收商二报价', '回收商三报价'].map((title, index) => ({
                 title, dataIndex: `recycler${index + 1}`, width: 145, fixed: 'right', align: 'right',
                 render: (values) => values.map((value) => money(value)).join('、') || '-',
               })),
@@ -637,6 +696,7 @@ export default function ScrapPrototypeEditor({
           onReplace={handleAssetReplace}
           scrapMethod={form.scrapMethod}
           accountingMethod={form.scrapMethod}
+          disposalSuppliers={form}
         />}
       </Card>
 

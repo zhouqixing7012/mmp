@@ -269,7 +269,7 @@ test('资产处置回收商一至三按报价金额输入', () => {
     />,
   );
 
-  expect(screen.getByText('回收商一')).toBeInTheDocument();
+  expect(screen.getByText('回收商一报价')).toBeInTheDocument();
   const amountInputs = screen.getAllByRole('spinbutton');
   expect(amountInputs).toHaveLength(3);
   expect(amountInputs[0]).toHaveAttribute('data-precision', '2');
@@ -331,7 +331,11 @@ test('资产处置明细导出包含完整处置字段和三家报价', () => {
     recycler1: 1250.5,
     recycler2: 1380,
     recycler3: 1198.88,
-  }], 'disposal');
+  }], 'disposal', undefined, {
+    recycler1Name: '广环再生资源利用有限公司',
+    recycler2Name: '广州源创再生资源有限公司',
+    recycler3Name: '东莞市创鑫再生资源有限公司',
+  });
 
   expect(XLSX.utils.json_to_sheet).toHaveBeenCalledWith([
     expect.objectContaining({
@@ -339,10 +343,13 @@ test('资产处置明细导出包含完整处置字段和三家报价', () => {
       报废原因: '达到报废条件',
       资产类别: 'SERVER.标准机架服务器',
       City: '北京',
+      回收商一供应商名称: '广环再生资源利用有限公司',
       回收商一报价: 1250.5,
+      回收商二供应商名称: '广州源创再生资源有限公司',
       回收商二报价: 1380,
+      回收商三供应商名称: '东莞市创鑫再生资源有限公司',
       回收商三报价: 1198.88,
     }),
   ]);
-  expect(XLSX.writeFile).toHaveBeenCalledWith(expect.any(Object), '资产处置明细.xlsx');
+  expect(XLSX.writeFile.mock.calls[0][1]).toBe('资产处置明细.xlsx');
 });

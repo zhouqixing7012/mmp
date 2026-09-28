@@ -138,7 +138,7 @@ function requiredTitle(label) {
   );
 }
 
-export function exportScrapPrototypeAssets(assets, type, accountingMethod) {
+export function exportScrapPrototypeAssets(assets, type, accountingMethod, disposalSuppliers = {}) {
   const rows = assets.map((item, index) => {
     if (type === 'disposal') {
       return {
@@ -156,8 +156,11 @@ export function exportScrapPrototypeAssets(assets, type, accountingMethod) {
         数量: item.quantity,
         原值: item.originalValue,
         净值: item.netValue,
+        回收商一供应商名称: disposalSuppliers.recycler1Name || '',
         回收商一报价: item.recycler1,
+        回收商二供应商名称: disposalSuppliers.recycler2Name || '',
         回收商二报价: item.recycler2,
+        回收商三供应商名称: disposalSuppliers.recycler3Name || '',
         回收商三报价: item.recycler3,
       };
     }
@@ -262,6 +265,7 @@ export default function ScrapPrototypeAssetTable({
   onChange,
   onReplace,
   scrapMethod,
+  disposalSuppliers,
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState('waiting');
@@ -429,7 +433,12 @@ export default function ScrapPrototypeAssetTable({
     XLSX.writeFile(workbook, '资产导入模板.xlsx');
   };
 
-  const exportAssets = () => exportScrapPrototypeAssets(assets, type, accountingMethod);
+  const exportAssets = () => exportScrapPrototypeAssets(
+    assets,
+    type,
+    accountingMethod,
+    disposalSuppliers,
+  );
 
   const importAssets = (file) => {
     const reader = new FileReader();
@@ -751,7 +760,7 @@ export default function ScrapPrototypeAssetTable({
     { title: '数量', dataIndex: 'quantity', width: 90, align: 'right' },
     { title: '原值', dataIndex: 'originalValue', width: 130, align: 'right', render: money },
     { title: '净值', dataIndex: 'netValue', width: 130, align: 'right', render: money },
-    ...['回收商一', '回收商二', '回收商三'].map((title, index) => ({
+    ...['回收商一报价', '回收商二报价', '回收商三报价'].map((title, index) => ({
       title, dataIndex: `recycler${index + 1}`, width: 145, fixed: 'right', align: 'right',
       render: (value, row) => readOnly
         ? (value == null || value === '' ? '-' : money(value))

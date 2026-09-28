@@ -92,13 +92,16 @@ test('账面报废公司通过弹窗选择，三个报废原因分别可编辑',
 });
 
 
-test('资产处置编辑页不展示独立报价与处置信息区块', () => {
+test('资产处置编辑页展示三个必填回收商名称和自动报价合计', () => {
   render(
     <ScrapPrototypeEditor
       type="disposal"
       config={{ title: '资产处置', createLabel: '创建资产处置申请单' }}
       initialForm={{ ...accountingForm, documentStatus: '草稿' }}
-      initialAssets={[]}
+      initialAssets={[
+        { id: 'asset-1', recycler1: 1250.5, recycler2: 1380, recycler3: 1198.88 },
+        { id: 'asset-2', recycler1: 500, recycler2: 620.25, recycler3: 701.12 },
+      ]}
       readOnly={false}
       approvalPage={false}
       onBack={jest.fn()}
@@ -110,6 +113,13 @@ test('资产处置编辑页不展示独立报价与处置信息区块', () => {
   expect(screen.queryByText('报价与处置信息')).not.toBeInTheDocument();
   expect(screen.queryByText('单据状态')).not.toBeInTheDocument();
   expect(screen.getByText('备注')).toBeInTheDocument();
+  expect(screen.getByPlaceholderText('请输入回收商一的供应商名称')).toBeRequired();
+  expect(screen.getByPlaceholderText('请输入回收商二的供应商名称')).toBeRequired();
+  expect(screen.getByPlaceholderText('请输入回收商三的供应商名称')).toBeRequired();
+  expect(screen.getByText('回收商一报价合计：')).toBeInTheDocument();
+  expect(screen.getByText('1,750.50')).toBeInTheDocument();
+  expect(screen.getByText('2,000.25')).toBeInTheDocument();
+  expect(screen.getByText('1,900.00')).toBeInTheDocument();
 });
 
 test('资产处置审批页展示会计格式报价并可导出当前申请明细', () => {
@@ -138,6 +148,9 @@ test('资产处置审批页展示会计格式报价并可导出当前申请明�
         documentStatus: '审批中',
         scrapMethod: '全部报废',
         remark: '北京机房资产处置说明',
+        recycler1Name: '广环再生资源利用有限公司',
+        recycler2Name: '广州源创再生资源有限公司',
+        recycler3Name: '东莞市创鑫再生资源有限公司',
       }}
       initialAssets={assets}
       readOnly
@@ -151,10 +164,20 @@ test('资产处置审批页展示会计格式报价并可导出当前申请明�
   expect(screen.getByText('申请单号：CZ20260926000001')).toBeInTheDocument();
   expect(screen.getByText('备注')).toBeInTheDocument();
   expect(screen.getByText('北京机房资产处置说明')).toBeInTheDocument();
+  expect(screen.getByText('广环再生资源利用有限公司')).toBeInTheDocument();
   expect(screen.getByText('1,250.50')).toBeInTheDocument();
   expect(screen.queryByText('单据状态')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '导出' }));
-  expect(exportScrapPrototypeAssets).toHaveBeenCalledWith(assets, 'disposal', '全部报废');
+  expect(exportScrapPrototypeAssets).toHaveBeenCalledWith(
+    assets,
+    'disposal',
+    '全部报废',
+    expect.objectContaining({
+      recycler1Name: '广环再生资源利用有限公司',
+      recycler2Name: '广州源创再生资源有限公司',
+      recycler3Name: '东莞市创鑫再生资源有限公司',
+    }),
+  );
 });
 
 test.each([

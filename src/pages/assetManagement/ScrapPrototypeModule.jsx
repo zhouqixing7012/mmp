@@ -66,6 +66,9 @@ function defaultForm(type) {
     region: '北京',
     needsCleaning: '否',
     quoteReceiver: type === 'scrap' ? '采购专员' : '',
+    recycler1Name: '',
+    recycler2Name: '',
+    recycler3Name: '',
     currentNode: '',
   };
 }
