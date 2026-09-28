@@ -18,8 +18,10 @@ import {
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import SelectModal from '../../components/SelectModal';
+import LookupInput from '../../components/LookupInput';
 import StatusTag from '../../components/StatusTag';
 import {
+  ACCOUNTING_ASSET_POOL,
   SCRAP_ASSET_POOL,
   SCRAP_TYPE_OPTIONS,
   filterAssetsForScope,
@@ -27,25 +29,19 @@ import {
 } from './scrapPrototypeData';
 import {
   getAccountingCandidates,
+  getAccountingLostCandidates,
   getDisposalCandidates,
   getScrapPrototypeRecords,
+  validateAccountingAssets,
 } from '../../services/scrapPrototypeService';
 import {
-  mockCostCenters,
   mockPlates,
+  mockVirtualWarehouseManagerData,
 } from '../../mock/businessRulesMock';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
-
-const companyOptions = Array.from(
-  new Set(warehouseCatalog.map((item) => item.company).filter(Boolean)),
-).map((value) => ({ label: value, value }));
+import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 
 const plateOptions = mockPlates.map((item) => ({
-  label: item.desc,
-  value: item.desc,
-}));
-
-const costCenterOptions = mockCostCenters.map((item) => ({
   label: item.desc,
   value: item.desc,
 }));
@@ -54,6 +50,139 @@ const warehouseOptions = warehouseCatalog.map((item) => ({
   label: `${item.warehouseCode}.${item.warehouseDescription}`,
   value: `${item.warehouseCode}.${item.warehouseDescription}`,
 }));
+
+function normalizeMappingValue(value) {
+  return String(value || '').trim().replace(/_/g, '.');
+}
+
+function getTransferWarehouseOptions(record) {
+  if (!record?.newCompany || !record?.newPlate || !record?.targetCity) return [];
+
+  // 原型只使用仓库基础资料和现有资产/调账样例中已经存在的三维映射事实，不猜测缺失的板块映射。
+  const mappingFacts = [
+    ...SCRAP_ASSET_POOL.map((item) => ({
+      company: item.company,
+      plate: item.plate,
+      city: item.city,
+      warehouse: item.warehouse,
+    })),
+    ...ACCOUNTING_ASSET_POOL
+      .filter((item) => item.newCompany && item.newPlate && item.targetCity && item.targetWarehouse)
+      .map((item) => ({
+        company: item.newCompany,
+        plate: item.newPlate,
+        city: item.targetCity,
+        warehouse: item.targetWarehouse,
+      })),
+  ];
+  const mappedWarehouses = new Set(
+    mappingFacts
+      .filter((item) => (
+        item.company === record.newCompany
+        && item.plate === record.newPlate
+        && item.city === record.targetCity
+      ))
+      .map((item) => item.warehouse)
+      .filter(Boolean),
+  );
+
+  return warehouseCatalog
+    .filter((item) => (
+      item.status === '启用'
+      && item.company === record.newCompany
+      && item.city === record.targetCity
+      && String(item.warehouseUsage || '').includes('资产')
+      && (
+        mappedWarehouses.has(item.warehouseDescription)
+        || mappedWarehouses.has(`${item.warehouseCode}.${item.warehouseDescription}`)
+      )
+    ))
+    .map((item) => ({
+      label: `${item.warehouseCode}.${item.warehouseDescription}`,
+      value: `${item.warehouseCode}.${item.warehouseDescription}`,
+    }));
+}
+
+function resolveTransferWarehouse(record) {
+  const candidates = getTransferWarehouseOptions(record);
+  return candidates.length === 1 ? candidates[0].value : '';
+}
+
+function resolveTransferResponsiblePerson(record, targetWarehouse) {
+  if (!String(record?.status || '').startsWith('在库')) {
+    return record?.responsiblePerson || '';
+  }
+  if (!targetWarehouse) return '';
+  const targetDescription = String(targetWarehouse).split('.').slice(1).join('.');
+  const warehouseVirtualKeepers = Array.from(new Set(
+    SCRAP_ASSET_POOL
+      .filter((item) => (
+        String(item.status || '').startsWith('在库')
+        && (item.warehouse === targetWarehouse || item.warehouse === targetDescription)
+        && /^SOHU\d+-/.test(String(item.responsiblePerson || ''))
+      ))
+      .map((item) => item.responsiblePerson)
+      .filter(Boolean),
+  ));
+  if (warehouseVirtualKeepers.length === 1) return warehouseVirtualKeepers[0];
+
+  const mapping = mockVirtualWarehouseManagerData.find((item) => (
+    item.enabled
+    && normalizeMappingValue(item.company) === normalizeMappingValue(record.newCompany)
+    && normalizeMappingValue(item.plate) === normalizeMappingValue(record.newPlate)
+  ));
+  return mapping?.virtualAdmin || '';
+}
+
+const maintenanceRows = getAssetMaintenanceRows();
+const transferLookupRecords = {
+  companies: maintenanceRows
+    .filter((row) => row.companyCode && row.company)
+    .reduce((records, row) => {
+      const code = String(row.companyCode).trim();
+      if (!records.some((item) => item.code === code)) {
+        records.push({ id: `company-${code}`, code, name: row.company });
+      }
+      return records;
+    }, []),
+  costCenters: maintenanceRows
+    .filter((row) => row.costCenter)
+    .reduce((records, row) => {
+      const name = String(row.costCenter).trim();
+      const code = name.split('.')[0];
+      if (code && !records.some((item) => item.code === code)) {
+        records.push({ id: `cc-${code}`, code, name });
+      }
+      return records;
+    }, []),
+};
+
+const transferLookupConfig = {
+  newCompany: {
+    title: '选择新公司',
+    values: transferLookupRecords.companies,
+    searchFields: [
+      { label: '公司编码', name: 'code', dataIndex: 'code' },
+      { label: '公司名称', name: 'name', dataIndex: 'name' },
+    ],
+    columns: [
+      { title: '公司编码', dataIndex: 'code' },
+      { title: '公司名称', dataIndex: 'name' },
+    ],
+  },
+  newCostCenter: {
+    title: '选择新成本中心',
+    values: transferLookupRecords.costCenters,
+    searchFields: [
+      { label: '成本中心编码', name: 'code', dataIndex: 'code' },
+      { label: '成本中心', name: 'name', dataIndex: 'name' },
+    ],
+    columns: [
+      { title: '成本中心编码', dataIndex: 'code' },
+      { title: '成本中心', dataIndex: 'name' },
+    ],
+  },
+};
 
 function options(values) {
   return values.map((value) => ({ label: value, value }));
@@ -64,21 +193,277 @@ function displayValue(value) {
   return String(value);
 }
 
+function requiredTitle(label) {
+  return (
+    <span>
+      <span className="mr-1 text-red-500">*</span>
+      {label}
+    </span>
+  );
+}
+
+export function exportScrapPrototypeAssets(assets, type, accountingMethod, disposalSuppliers = {}) {
+  const rows = assets.map((item, index) => {
+    if (type === 'disposal') {
+      return {
+        序号: index + 1,
+        报废原因: item.reason,
+        资产类别: [item.majorCategory, item.minorCategory].filter(Boolean).join('.'),
+        资产说明: item.description,
+        资产标签号: item.tagNo,
+        序列号: item.serialNumber,
+        配置: item.config,
+        启用日期: item.enableDate,
+        财务核算板块: item.plate,
+        City: item.city,
+        Building: item.building,
+        数量: item.quantity,
+        原值: item.originalValue,
+        净值: item.netValue,
+        ...(item.scope === '办公设备' ? {
+          回收商一供应商名称: disposalSuppliers.recycler1Name || '',
+          回收商一报价: item.recycler1,
+          回收商二供应商名称: disposalSuppliers.recycler2Name || '',
+          回收商二报价: item.recycler2,
+          回收商三供应商名称: disposalSuppliers.recycler3Name || '',
+          回收商三报价: item.recycler3,
+        } : {}),
+      };
+    }
+
+    if (type === 'crossCompany' || (type === 'accounting' && accountingMethod === '调账')) {
+      return {
+        ...(type === 'accounting' ? {
+          账面报废申请单号: disposalSuppliers.applicationNo,
+          公司: disposalSuppliers.company,
+          板块: item.plate,
+          单据报废方式: accountingMethod,
+          资产报废方式: item.detailScrapMethod,
+          报废类型: item.scrapType,
+          报废原因: item.reason,
+          来源业务: item.sourceBusinessType,
+          来源申请单号: item.sourceBusinessNo,
+          资产编号: item.assetNo,
+          资产卡片数量: item.cardQuantity,
+          报废数量: item.quantity,
+          原值: item.originalValue,
+          净值: item.netValue,
+          累计折旧: item.accumulatedDepreciation,
+          City: item.city,
+          Building: item.building,
+          Floor: item.floor,
+        } : {}),
+        资产标签号: item.tagNo,
+        资产序列号: item.serialNumber,
+        资产类别: [item.majorCategory, item.minorCategory].filter(Boolean).join('.'),
+        资产说明: item.description,
+        [type === 'crossCompany' ? '责任人' : '新责任人']: item.newResponsiblePerson,
+        新公司: item.newCompany,
+        新板块: item.newPlate,
+        新成本中心: item.newCostCenter,
+        [type === 'accounting' ? '新 City' : 'City']: item.targetCity,
+        [type === 'accounting' ? '新 Building' : 'Building']: item.targetBuilding,
+        [type === 'accounting' ? '新 Floor' : 'Floor']: item.targetFloor,
+        调账后仓库: item.targetWarehouse,
+        ...(type === 'accounting' ? { 是否处置: '否' } : {}),
+      };
+    }
+
+    if (type === 'scrap') {
+      return {
+        行号: index + 1,
+        资产标签号: item.tagNo,
+        资产序列号: item.serialNumber,
+        资产类别: [item.majorCategory, item.minorCategory].filter(Boolean).join('.'),
+        资产说明: item.description,
+        板块: item.plate,
+        责任人: item.responsiblePerson,
+        资产状态: item.status,
+        原值: item.originalValue,
+        净值: item.netValue,
+        数据清洗: item.dataCleaning,
+        报废数量: item.quantity,
+        City: item.city,
+        Building: item.building,
+        Floor: item.floor,
+        报废原因: item.reason,
+      };
+    }
+
+    if (type === 'accounting') {
+      return {
+        账面报废申请单号: disposalSuppliers.applicationNo,
+        公司: disposalSuppliers.company,
+        板块: item.plate,
+        单据报废方式: accountingMethod,
+        资产报废方式: item.detailScrapMethod,
+        报废类型: item.scrapType,
+        报废原因: item.reason,
+        来源业务: item.sourceBusinessType,
+        来源申请单号: item.sourceBusinessNo,
+        资产类别: [item.majorCategory, item.minorCategory].filter(Boolean).join('.'),
+        资产标签号: item.tagNo,
+        资产编号: item.assetNo,
+        资产说明: item.description,
+        资产关键字: item.assetKeyword,
+        资产卡片数量: item.cardQuantity,
+        报废数量: item.quantity,
+        原值: item.originalValue,
+        累计折旧: item.accumulatedDepreciation,
+        净值: item.netValue,
+        责任人姓名: String(item.responsiblePerson || '').split('-').slice(1).join('-'),
+        责任人工号: String(item.responsiblePerson || '').split('-')[0],
+        City: item.city,
+        Building: item.building,
+        Floor: item.floor,
+      };
+    }
+
+    return {
+      资产标签号: item.tagNo,
+      资产大类: item.majorCategory,
+      资产小类: item.minorCategory,
+      资产说明: item.description,
+      公司: item.company,
+      责任人: item.responsiblePerson,
+      资产状态: item.status,
+      报废数量: item.quantity,
+      原值: item.originalValue,
+      净值: item.netValue,
+      City: item.city,
+      Building: item.building,
+      Floor: item.floor,
+    };
+  });
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), '资产明细');
+  XLSX.writeFile(
+    workbook,
+    type === 'accounting'
+      ? '账面报废资产明细.xlsx'
+      : type === 'scrap'
+        ? '资产报废明细.xlsx'
+        : type === 'disposal'
+          ? '资产处置明细.xlsx'
+          : '资产明细.xlsx',
+  );
+}
+
+function exportDisposalPickerAssets(rows) {
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows.map((item) => ({
+    资产标签号: item.tagNo,
+    序列号: item.serialNumber,
+    资产类别: [item.majorCategory, item.minorCategory].filter(Boolean).join('.'),
+    资产说明: item.description,
+    公司: item.company,
+    板块: item.plate,
+    City: item.city,
+    数量: item.quantity,
+    原值: item.originalValue,
+    净值: item.netValue,
+    账面报废申请单号: item.sourceAccountingNo,
+    报废申请单号: item.sourceScrapNo,
+  }))), '查询结果');
+  XLSX.writeFile(workbook, '待处置资产查询结果.xlsx');
+}
+
 export default function ScrapPrototypeAssetTable({
   type,
   assetScope,
+  assetCategory,
+  sourceCompany,
+  sourceCompanies = [],
+  sourcePlates = [],
+  accountingMethod,
   assets,
   readOnly,
+  showTransferDiff = false,
   onChange,
   onReplace,
   scrapMethod,
+  disposalSuppliers,
+  accountingActor,
+  accountingAuthorizationScopes,
+  accountingRecordId,
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerMode, setPickerMode] = useState('waiting');
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [transferLookup, setTransferLookup] = useState(null);
+
+  const updateCrossCompanyDestination = (record, field, value) => {
+    onChange(record.id, field, value);
+    const nextRecord = { ...record, [field]: value };
+    const targetWarehouse = resolveTransferWarehouse(nextRecord);
+    onChange(record.id, 'targetWarehouse', targetWarehouse);
+    onChange(
+      record.id,
+      'newResponsiblePerson',
+      resolveTransferResponsiblePerson(nextRecord, targetWarehouse),
+    );
+  };
+
+  const updateCrossCompanyWarehouse = (record, value) => {
+    onChange(record.id, 'targetWarehouse', value);
+    onChange(
+      record.id,
+      'newResponsiblePerson',
+      resolveTransferResponsiblePerson(record, value),
+    );
+  };
+
+  const updateManualAccountingQuantity = (record, value) => {
+    const cardQuantity = Number(record.cardQuantity || 0);
+    const nextQuantity = Number(value || 0);
+    if (!cardQuantity || nextQuantity <= 0 || nextQuantity > cardQuantity) return;
+    const ratio = nextQuantity / cardQuantity;
+    const cardOriginalValue = Number(record.cardOriginalValue ?? record.originalValue ?? 0);
+    const cardNetValue = Number(record.cardNetValue ?? record.netValue ?? 0);
+    const nextOriginalValue = Math.round((cardOriginalValue * ratio + Number.EPSILON) * 100) / 100;
+    const nextNetValue = Math.round((cardNetValue * ratio + Number.EPSILON) * 100) / 100;
+    onChange(record.id, 'quantity', nextQuantity);
+    onChange(record.id, 'requestedScrapQuantity', nextQuantity);
+    onChange(record.id, 'detailScrapMethod', nextQuantity < cardQuantity ? '部分报废' : '全部报废');
+    onChange(record.id, 'originalValue', nextOriginalValue);
+    onChange(record.id, 'netValue', nextNetValue);
+    onChange(record.id, 'accumulatedDepreciation', Math.round(((nextOriginalValue - nextNetValue) + Number.EPSILON) * 100) / 100);
+  };
+
+  const renderTransferValue = (value, record, sourceField) => {
+    if (!readOnly || !showTransferDiff) return displayValue(value);
+    const originalValue = record[sourceField];
+    if (String(originalValue ?? '') === String(value ?? '')) return displayValue(value);
+    return (
+      <div className="flex flex-col items-start gap-1">
+        <span className="text-[rgba(0,0,0,0.35)] text-xs leading-none line-through">
+          {displayValue(originalValue)}
+        </span>
+        <span className="inline-block rounded border border-[#ffe58f] bg-[#fffbe6] px-2 py-0.5 text-[13px] font-medium leading-tight text-[#faad14]">
+          {displayValue(value)}
+        </span>
+      </div>
+    );
+  };
+
+  const selectedDisposalCompanies = type === 'disposal'
+    ? (sourceCompanies.length > 0 ? sourceCompanies : (sourceCompany ? [sourceCompany] : []))
+    : [];
+  const selectedDisposalPlates = type === 'disposal' ? sourcePlates.filter(Boolean) : [];
+  const hasDisposalCompanyRange = selectedDisposalCompanies.length > 0;
 
   const pickerAssets = useMemo(() => {
+    const isAccountingLost = type === 'accounting' && pickerMode === 'lost';
+    const accountingFilters = {
+      company: sourceCompany,
+      actor: accountingActor,
+      authorizationScopes: accountingAuthorizationScopes,
+      recordId: accountingRecordId,
+    };
     const pool = type === 'accounting'
-      ? getAccountingCandidates()
+      ? isAccountingLost
+        ? getAccountingLostCandidates(accountingFilters)
+        : getAccountingCandidates(accountingFilters)
       : type === 'disposal'
         ? getDisposalCandidates()
         : !assetScope || assetScope === '混合'
@@ -95,16 +480,78 @@ export default function ScrapPrototypeAssetTable({
         .flatMap((record) => record.assetsSnapshot || [])
         .map((item) => item.tagNo)
     )));
+    const priorWorkflowTags = new Set(['crossCompany', 'scrap'].flatMap((businessType) => (
+      getScrapPrototypeRecords(businessType)
+        .filter((record) => record.documentStatus !== '已驳回')
+        .flatMap((record) => record.assetsSnapshot || [])
+        .map((item) => item.tagNo)
+    )));
+    const currentTags = new Set(assets.map((item) => item.tagNo));
     return pool.filter((item) => (
-      !occupiedTags.has(item.tagNo)
+      (type !== 'scrap' || assetScope !== '机房资产' || !assetCategory || item.majorCategory === assetCategory)
+      &&
+      (type !== 'accounting' || isAccountingLost || (
+        item.scrapMethod === accountingMethod
+        && item.sourceBusinessType === (accountingMethod === '调账' ? '跨公司转移' : '资产报废')
+        && item.scrapType !== '丢失'
+      ))
+      &&
+      (type !== 'accounting' || !isAccountingLost || !priorWorkflowTags.has(item.tagNo))
+      &&
+      (type !== 'disposal' || (
+        item.scope === '办公设备'
+        && item.disposalMode !== '无实物处置'
+        && selectedDisposalCompanies.includes(item.company)
+        && (selectedDisposalPlates.length === 0 || selectedDisposalPlates.includes(item.plate))
+      ))
+      &&
+      (
+        type === 'crossCompany'
+          ? (!sourceCompany || item.company === sourceCompany)
+          : (type !== 'accounting' || (sourceCompany && item.company === sourceCompany))
+      )
+      &&
+      (!occupiedTags.has(item.tagNo) || currentTags.has(item.tagNo))
+      &&
+      (!isAccountingLost || (!String(item.status || '').startsWith('已报废') && item.status !== '在库-待报废'))
       && (
         ['accounting', 'disposal'].includes(type)
         || (!String(item.status || '').startsWith('已报废') && item.status !== '在库-待报废')
       )
     ));
-  }, [type, assetScope]);
+  }, [type, assetScope, assetCategory, sourceCompany, sourceCompanies, sourcePlates, accountingMethod, pickerMode, assets, accountingActor, accountingAuthorizationScopes, accountingRecordId]);
 
-  const addAssets = (selected) => {
+  const addAssets = (selected, isLostAsset = () => pickerMode === 'lost') => {
+    if (type === 'crossCompany' && sourceCompany && selected.some((item) => item.company !== sourceCompany)) {
+      message.error('已选择公司，只能添加该公司的资产');
+      return false;
+    }
+
+    if (type === 'crossCompany') {
+      const companies = new Set(
+        [...assets, ...selected].map((item) => item.company).filter(Boolean),
+      );
+      if (companies.size > 1) {
+        message.error('同一跨公司转移单只能选择同一原公司的资产');
+        return false;
+      }
+    }
+    if (type === 'disposal' && (
+      !hasDisposalCompanyRange
+      || selected.some((item) => (
+        !selectedDisposalCompanies.includes(item.company)
+        || (selectedDisposalPlates.length > 0 && !selectedDisposalPlates.includes(item.plate))
+        || item.scope !== '办公设备'
+      ))
+    )) {
+      message.error('只能添加所选公司及板块范围内的待处置办公资产');
+      return false;
+    }
+    if (type === 'accounting' && (!sourceCompany || selected.some((item) => item.company !== sourceCompany))) {
+      message.error('请先选择公司，只能添加该公司的资产');
+      return false;
+    }
+
     const existing = new Set(assets.map((item) => item.id));
     const selectedScopes = new Set([
       ...assets.map((item) => item.scope),
@@ -129,7 +576,7 @@ export default function ScrapPrototypeAssetTable({
         ...assets.map((item) => item.scrapMethod),
         ...selected.map((item) => item.scrapMethod),
       ].filter(Boolean));
-      if (methods.size > 1) {
+      if (methods.size > 1 || (methods.size && !methods.has(accountingMethod))) {
         message.error('同一账面报废单的报废方式必须一致');
         return false;
       }
@@ -137,24 +584,56 @@ export default function ScrapPrototypeAssetTable({
 
     const next = selected
       .filter((item) => !existing.has(item.id))
-      .map((item) => ({
-        ...item,
-        scrapMethod: type === 'crossCompany' ? '调账' : item.scrapMethod || scrapMethod,
-        scrapType: item.scrapType || '已到报废期',
-        reason: item.reason || '',
-        dataCleaning: item.scope === '机房资产' ? item.dataCleaning || '否' : undefined,
-        newCompany: item.newCompany || '',
-        newPlate: item.newPlate || '',
-        newCostCenter: item.newCostCenter || '',
-        newResponsiblePerson: item.newResponsiblePerson || '',
-        targetWarehouse: item.targetWarehouse || '',
-        targetCity: item.targetCity || '',
-        targetBuilding: item.targetBuilding || '',
-        targetFloor: item.targetFloor || '',
-        purpose: item.purpose || '',
-        project: item.project || '',
-        rowRemark: item.rowRemark || '',
-      }));
+      .map((item) => {
+        const base = {
+          ...item,
+          scrapMethod: type === 'crossCompany'
+            ? '调账'
+            : type === 'accounting' && isLostAsset(item)
+              ? '非调账'
+              : item.scrapMethod || scrapMethod,
+          detailScrapMethod: type === 'accounting' && isLostAsset(item)
+            ? '全部报废'
+            : item.detailScrapMethod || '全部报废',
+          scrapType: type === 'accounting' && isLostAsset(item) ? '丢失' : item.scrapType || '已到报废期',
+          reason: type === 'accounting' && isLostAsset(item) ? '' : item.reason || '',
+          dataCleaning: item.scope === '机房资产' ? item.dataCleaning || '否' : undefined,
+          newCompany: type === 'crossCompany' ? item.company || '' : item.newCompany || '',
+          newPlate: type === 'crossCompany' ? item.plate || '' : item.newPlate || '',
+          newCostCenter: type === 'crossCompany' ? item.costCenter || '' : item.newCostCenter || '',
+          targetCity: type === 'crossCompany' ? item.city || '' : item.targetCity || '',
+          targetBuilding: type === 'crossCompany' ? item.building || '' : item.targetBuilding || '',
+          targetFloor: type === 'crossCompany' ? item.floor || '' : item.targetFloor || '',
+          purpose: item.purpose || '',
+          project: item.project || '',
+          rowRemark: item.rowRemark || '',
+        };
+        if (type !== 'crossCompany') {
+          return {
+            ...base,
+            newResponsiblePerson: item.newResponsiblePerson || '',
+            targetWarehouse: item.targetWarehouse || '',
+          };
+        }
+        const targetWarehouse = resolveTransferWarehouse(base);
+        return {
+          ...base,
+          targetWarehouse,
+          newResponsiblePerson: resolveTransferResponsiblePerson(base, targetWarehouse),
+        };
+      });
+
+    if (type === 'accounting') {
+      const checked = validateAccountingAssets(
+        { company: sourceCompany, scrapMethod: accountingMethod },
+        [...assets, ...next],
+        { actor: accountingActor, authorizationScopes: accountingAuthorizationScopes, recordId: accountingRecordId },
+      );
+      if (!checked.valid) {
+        message.error(checked.errors[0].message);
+        return false;
+      }
+    }
 
     onReplace([...assets, ...next]);
     return true;
@@ -168,26 +647,19 @@ export default function ScrapPrototypeAssetTable({
   };
 
   const downloadTemplate = () => {
-    const sheet = XLSX.utils.json_to_sheet([{ 资产标签号: '' }], { header: ['资产标签号'] });
+    const headers = type === 'accounting' ? ['录入来源', '资产标签号', '报废类型'] : ['资产标签号'];
+    const sheet = XLSX.utils.json_to_sheet([], { header: headers });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, sheet, '资产导入模板');
     XLSX.writeFile(workbook, '资产导入模板.xlsx');
   };
 
-  const exportAssets = () => {
-    const rows = assets.map((item) => ({
-      资产标签号: item.tagNo,
-      资产大类: item.majorCategory,
-      资产小类: item.minorCategory,
-      资产说明: item.description,
-      公司: item.company,
-      责任人: item.responsiblePerson,
-      资产状态: item.status,
-    }));
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), '资产明细');
-    XLSX.writeFile(workbook, '资产明细.xlsx');
-  };
+  const exportAssets = () => exportScrapPrototypeAssets(
+    assets,
+    type,
+    accountingMethod,
+    disposalSuppliers,
+  );
 
   const importAssets = (file) => {
     const reader = new FileReader();
@@ -201,7 +673,11 @@ export default function ScrapPrototypeAssetTable({
       }
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const header = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })[0] || [];
-      if (header.length !== 1 || String(header[0]).trim() !== '资产标签号') {
+      const expectedHeader = type === 'accounting'
+        ? ['录入来源', '资产标签号', '报废类型']
+        : ['资产标签号'];
+      if (header.length !== expectedHeader.length
+        || header.some((value, index) => String(value).trim() !== expectedHeader[index])) {
         message.error('导入表头与下载模板不一致');
         return;
       }
@@ -215,17 +691,45 @@ export default function ScrapPrototypeAssetTable({
       const selectedIds = new Set(assets.map((item) => item.id));
       const seenTags = new Set();
       const matched = [];
-      const result = rows.map((row) => {
+      const lostIds = new Set();
+      const accountingOptions = {
+        company: sourceCompany,
+        actor: accountingActor,
+        authorizationScopes: accountingAuthorizationScopes,
+        recordId: accountingRecordId,
+      };
+      const waitingByTag = new Map((type === 'accounting'
+        ? getAccountingCandidates(accountingOptions)
+        : pickerAssets).map((item) => [String(item.tagNo), item]));
+      const lostByTag = new Map((type === 'accounting'
+        ? getAccountingLostCandidates(accountingOptions)
+        : []).map((item) => [String(item.tagNo), item]));
+      const result = rows.map((row, index) => {
         const tag = String(row['资产标签号'] || '').trim();
-        const asset = pickerAssets.find((item) => String(item.tagNo) === tag);
+        const source = type === 'accounting' ? String(row['录入来源'] || '').trim() : '';
+        const selectedType = type === 'accounting' ? String(row['报废类型'] || '').trim() : '';
+        const isLost = source === '丢失资产';
+        const asset = type === 'accounting'
+          ? (isLost ? lostByTag : waitingByTag).get(tag)
+          : waitingByTag.get(tag);
         let error = '';
-        if (!tag) error = '资产标签号不能为空';
+        if (type === 'accounting' && !['待报废资产', '丢失资产'].includes(source)) error = '录入来源只能是待报废资产或丢失资产';
+        else if (!tag) error = '资产标签号不能为空';
         else if (seenTags.has(tag)) error = '导入文件中的资产标签号重复';
-        else if (!asset) error = '资产不存在或不符合当前资产范围';
+        else if (type === 'accounting' && isLost && accountingMethod === '调账') error = '调账单不能导入丢失资产';
+        else if (!asset) error = '资产不存在或不符合当前资产范围与权限';
         else if (selectedIds.has(asset.id)) error = '资产已在当前单据中';
+        else if (type === 'accounting' && isLost && selectedType && selectedType !== '丢失') error = '丢失资产报废类型只能为丢失';
+        else if (type === 'accounting' && !isLost && selectedType
+          && !['已到报废期', '未到报废期'].includes(selectedType)) error = '待报废资产报废类型只能为已到报废期或未到报废期';
         seenTags.add(tag);
-        if (!error) matched.push(asset);
-        return { 错误原因: error, 资产标签号: tag };
+        if (!error) {
+          matched.push({ ...asset, scrapType: isLost ? '丢失' : selectedType || asset.scrapType });
+          if (isLost) lostIds.add(asset.id);
+        }
+        return type === 'accounting'
+          ? { 行号: index + 2, 错误原因: error, 录入来源: source, 资产标签号: tag, 报废类型: selectedType }
+          : { 错误原因: error, 资产标签号: tag };
       });
 
       const selectedScopes = new Set([...assets, ...matched].map((item) => item.scope).filter(Boolean));
@@ -236,7 +740,7 @@ export default function ScrapPrototypeAssetTable({
       if (type !== 'accounting' && selectedScopes.size > 1) {
         result.forEach((row) => { if (!row.错误原因) row.错误原因 = '同一单据不能混合资产范围'; });
       }
-      if (type === 'accounting' && methods.size > 1) {
+      if (type === 'accounting' && (methods.size > 1 || (methods.size && !methods.has(accountingMethod)))) {
         result.forEach((row) => { if (!row.错误原因) row.错误原因 = '同一账面报废单的报废方式必须一致'; });
       }
       if (type === 'scrap' && officePaths.size > 1) {
@@ -246,134 +750,113 @@ export default function ScrapPrototypeAssetTable({
       const errorCount = result.filter((row) => row.错误原因).length;
       if (errorCount > 0) {
         const errorBook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(errorBook, XLSX.utils.json_to_sheet(result, { header: ['错误原因', '资产标签号'] }), '导入结果');
+        XLSX.utils.book_append_sheet(errorBook, XLSX.utils.json_to_sheet(result, {
+          header: type === 'accounting'
+            ? ['行号', '错误原因', '录入来源', '资产标签号', '报废类型']
+            : ['错误原因', '资产标签号'],
+        }), '导入结果');
         XLSX.writeFile(errorBook, '资产导入错误结果.xlsx');
         message.error(`${errorCount} 行校验失败，已下载错误结果，整批未导入`);
         return;
       }
 
-      if (addAssets(matched)) message.success(`已导入 ${matched.length} 条资产`);
+      if (addAssets(matched, (item) => lostIds.has(item.id))) message.success(`已导入 ${matched.length} 条资产`);
     };
     reader.readAsArrayBuffer(file);
     return false;
   };
 
-  const baseColumns = [
+  const crossCompanyColumns = [
     { title: '资产标签号', dataIndex: 'tagNo', width: 150, fixed: 'left' },
     { title: '资产序列号', dataIndex: 'serialNumber', width: 160 },
-    { title: '资产大类', dataIndex: 'majorCategory', width: 150 },
-    { title: '资产小类', dataIndex: 'minorCategory', width: 190, ellipsis: true },
+    {
+      title: '资产类别',
+      key: 'assetCategory',
+      width: 210,
+      render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.'),
+    },
     { title: '资产说明', dataIndex: 'description', width: 220, ellipsis: true },
-    { title: '公司', dataIndex: 'company', width: 160 },
-    { title: '板块', dataIndex: 'plate', width: 150 },
-    { title: '责任人', dataIndex: 'responsiblePerson', width: 160 },
     {
-      title: '资产状态',
-      dataIndex: 'status',
-      width: 130,
-      render: (value) => <StatusTag value={value} type="business" />,
-    },
-  ];
-
-  const crossCompanyColumns = [
-    ...baseColumns,
-    { title: '原成本中心', dataIndex: 'costCenter', width: 180 },
-    { title: '原仓库', dataIndex: 'warehouse', width: 200 },
-    { title: '原 City', dataIndex: 'city', width: 120 },
-    { title: '原 Building', dataIndex: 'building', width: 150 },
-    { title: '原 Floor', dataIndex: 'floor', width: 110 },
-    {
-      title: '新公司',
-      dataIndex: 'newCompany',
-      width: 180,
-      render: (value, record) => (
-        readOnly
-          ? displayValue(value)
-          : (
-            <Select
-              
-              value={value || undefined}
-              options={companyOptions}
-              className="w-full"
-              onChange={(nextValue) => onChange(record.id, 'newCompany', nextValue || '')}
-            />
-          )
-      ),
-    },
-    {
-      title: '新板块',
-      dataIndex: 'newPlate',
-      width: 180,
-      render: (value, record) => (
-        readOnly
-          ? displayValue(value)
-          : (
-            <Select
-              
-              value={value || undefined}
-              options={plateOptions}
-              className="w-full"
-              onChange={(nextValue) => onChange(record.id, 'newPlate', nextValue || '')}
-            />
-          )
-      ),
-    },
-    {
-      title: '新成本中心',
-      dataIndex: 'newCostCenter',
-      width: 180,
-      render: (value, record) => (
-        readOnly
-          ? displayValue(value)
-          : (
-            <Select
-              
-              value={value || undefined}
-              options={costCenterOptions}
-              className="w-full"
-              onChange={(nextValue) => onChange(record.id, 'newCostCenter', nextValue || '')}
-            />
-          )
-      ),
-    },
-    {
-      title: '新责任人',
+      title: requiredTitle('责任人'),
       dataIndex: 'newResponsiblePerson',
       width: 160,
       render: (value, record) => (
         readOnly
-          ? displayValue(value)
+          ? renderTransferValue(value, record, 'responsiblePerson')
+          : displayValue(value)
+      ),
+    },
+    {
+      title: requiredTitle('新公司'),
+      dataIndex: 'newCompany',
+      width: 180,
+      render: (value, record) => (
+        readOnly
+          ? renderTransferValue(value, record, 'company')
           : (
-            <Input
+            <LookupInput
               value={value}
-              placeholder="请选择/输入新责任人"
-              onChange={(event) => onChange(record.id, 'newResponsiblePerson', event.target.value)}
+              placeholder="请选择新公司"
+              onOpen={() => setTransferLookup({ row: record, field: 'newCompany' })}
             />
           )
       ),
     },
     {
-      title: 'City',
+      title: requiredTitle('新板块'),
+      dataIndex: 'newPlate',
+      width: 180,
+      render: (value, record) => (
+        readOnly
+          ? renderTransferValue(value, record, 'plate')
+          : (
+            <Select
+              value={value || undefined}
+              options={plateOptions}
+              className="w-full"
+              onChange={(nextValue) => updateCrossCompanyDestination(record, 'newPlate', nextValue || '')}
+            />
+          )
+      ),
+    },
+    {
+      title: requiredTitle('新成本中心'),
+      dataIndex: 'newCostCenter',
+      width: 180,
+      render: (value, record) => (
+        readOnly
+          ? renderTransferValue(value, record, 'costCenter')
+          : (
+            <LookupInput
+              value={value}
+              placeholder="请选择新成本中心"
+              onOpen={() => setTransferLookup({ row: record, field: 'newCostCenter' })}
+            />
+          )
+      ),
+    },
+    {
+      title: requiredTitle('City'),
       dataIndex: 'targetCity',
       width: 130,
       render: (value, record) => (
         readOnly
-          ? displayValue(value)
+          ? renderTransferValue(value, record, 'city')
           : (
             <Input
               value={value}
-              onChange={(event) => onChange(record.id, 'targetCity', event.target.value)}
+              onChange={(event) => updateCrossCompanyDestination(record, 'targetCity', event.target.value)}
             />
           )
       ),
     },
     {
-      title: 'Building',
+      title: requiredTitle('Building'),
       dataIndex: 'targetBuilding',
       width: 150,
       render: (value, record) => (
         readOnly
-          ? displayValue(value)
+          ? renderTransferValue(value, record, 'building')
           : (
             <Input
               value={value}
@@ -383,12 +866,12 @@ export default function ScrapPrototypeAssetTable({
       ),
     },
     {
-      title: 'Floor',
+      title: requiredTitle('Floor'),
       dataIndex: 'targetFloor',
       width: 110,
       render: (value, record) => (
         readOnly
-          ? displayValue(value)
+          ? renderTransferValue(value, record, 'floor')
           : (
             <Input
               value={value}
@@ -398,87 +881,38 @@ export default function ScrapPrototypeAssetTable({
       ),
     },
     {
-      title: '调账后仓库',
+      title: requiredTitle('调账后仓库'),
       dataIndex: 'targetWarehouse',
       width: 210,
       render: (value, record) => (
         readOnly
-          ? displayValue(value)
+          ? renderTransferValue(value, record, 'warehouse')
           : (
             <Select
               allowClear
               value={value || undefined}
-              options={warehouseOptions}
+              options={getTransferWarehouseOptions(record)}
               className="w-full"
-              onChange={(nextValue) => onChange(record.id, 'targetWarehouse', nextValue || '')}
+              placeholder="按新公司+新板块+City映射"
+              onChange={(nextValue) => updateCrossCompanyWarehouse(record, nextValue || '')}
             />
           )
       ),
     },
-    {
-      title: '用途',
-      dataIndex: 'purpose',
-      width: 150,
-      render: (value, record) => (
-        readOnly ? displayValue(value) : <Input value={value} onChange={(event) => onChange(record.id, 'purpose', event.target.value)} />
-      ),
-    },
-    {
-      title: '项目',
-      dataIndex: 'project',
-      width: 150,
-      render: (value, record) => (
-        readOnly ? displayValue(value) : <Input value={value} onChange={(event) => onChange(record.id, 'project', event.target.value)} />
-      ),
-    },
-    {
-      title: '行备注',
-      dataIndex: 'rowRemark',
-      width: 180,
-      render: (value, record) => (
-        readOnly ? displayValue(value) : <Input value={value} onChange={(event) => onChange(record.id, 'rowRemark', event.target.value)} />
-      ),
-    },
-    { title: '是否处置', key: 'disposalFlag', width: 100, render: () => '否' },
   ];
 
   const scrapColumns = [
-    ...baseColumns,
-    {
-      title: '报废数量',
-      dataIndex: 'quantity',
-      width: 110,
-      render: (value, record) => (
-        readOnly
-          ? displayValue(value)
-          : (
-            <InputNumber
-              min={1}
-              max={record.quantity || 1}
-              value={value}
-              onChange={(nextValue) => onChange(record.id, 'quantity', nextValue)}
-            />
-          )
-      ),
-    },
-    {
-      title: '报废类型',
-      dataIndex: 'scrapType',
-      width: 140,
-      render: (value, record) => (
-        readOnly
-          ? displayValue(value)
-          : (
-            <Select
-              value={value}
-              options={SCRAP_TYPE_OPTIONS}
-              className="w-full"
-              onChange={(nextValue) => onChange(record.id, 'scrapType', nextValue)}
-            />
-          )
-      ),
-    },
-    {
+    { title: '行号', width: 75, align: 'center', render: (_, __, index) => index + 1 },
+    { title: '资产标签号', dataIndex: 'tagNo', width: 150, fixed: 'left' },
+    { title: '资产序列号', dataIndex: 'serialNumber', width: 160 },
+    { title: '资产类别', key: 'assetCategory', width: 210, render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
+    { title: '资产说明', dataIndex: 'description', width: 220, ellipsis: true },
+    { title: '板块', dataIndex: 'plate', width: 150 },
+    { title: '责任人', dataIndex: 'responsiblePerson', width: 160 },
+    { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
+    { title: '原值', dataIndex: 'originalValue', width: 130, align: 'right', render: money },
+    { title: '净值', dataIndex: 'netValue', width: 130, align: 'right', render: money },
+    ...(assetScope === '机房资产' ? [{
       title: '数据清洗',
       dataIndex: 'dataCleaning',
       width: 110,
@@ -498,11 +932,18 @@ export default function ScrapPrototypeAssetTable({
           )
           : '-'
       ),
+    }] : []),
+    {
+      title: '报废数量', dataIndex: 'quantity', width: 110, fixed: 'right',
+      render: (value, record) => readOnly ? displayValue(value) : (
+        <InputNumber min={1} max={record.quantity || 1} value={value} style={{ width: '100%' }} onChange={(next) => onChange(record.id, 'quantity', next)} />
+      ),
     },
     {
       title: '报废原因',
       dataIndex: 'reason',
       width: 200,
+      fixed: 'right',
       render: (value, record) => (
         readOnly
           ? displayValue(value)
@@ -517,83 +958,120 @@ export default function ScrapPrototypeAssetTable({
   ];
 
   const accountingColumns = [
-    ...baseColumns,
+    { title: '资产类别', width: 160, fixed: 'left', render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
+    { title: '资产标签号', dataIndex: 'tagNo', width: 150, fixed: 'left' },
     { title: '资产编号', dataIndex: 'assetNo', width: 150 },
-    { title: '数量', dataIndex: 'quantity', width: 90, align: 'right' },
+    { title: '资产说明', dataIndex: 'description', width: 220 },
+    { title: '资产关键字', dataIndex: 'assetKeyword', width: 140, render: displayValue },
+    { title: '资产卡片数量', dataIndex: 'cardQuantity', width: 120, align: 'right', render: displayValue },
     {
-      title: '原值',
-      dataIndex: 'originalValue',
-      width: 120,
+      title: requiredTitle('报废数量'),
+      dataIndex: 'quantity',
+      width: 110,
       align: 'right',
-      render: money,
-    },
-    {
-      title: '净值',
-      dataIndex: 'netValue',
-      width: 120,
-      align: 'right',
-      render: money,
-    },
-    { title: '报废方式', dataIndex: 'scrapMethod', width: 120 },
-    {
-      title: '报废类型',
-      dataIndex: 'scrapType',
-      width: 140,
       render: (value, record) => (
-        readOnly
+        readOnly || record.sourceBusinessType !== '丢失资产'
           ? displayValue(value)
           : (
-            <Select
+            <InputNumber
+              min={1}
+              max={Number(record.cardQuantity || 1)}
+              precision={0}
               value={value}
-              options={SCRAP_TYPE_OPTIONS}
               className="w-full"
-              onChange={(nextValue) => onChange(record.id, 'scrapType', nextValue)}
+              onChange={(nextValue) => updateManualAccountingQuantity(record, nextValue)}
             />
           )
       ),
     },
+    { title: '原值', dataIndex: 'originalValue', width: 120, align: 'right', render: money },
+    { title: '购买日期', dataIndex: 'purchaseDate', width: 130, render: displayValue },
+    { title: '资产寿命（月）', dataIndex: 'lifeMonths', width: 135, render: displayValue },
+    { title: '累计折旧', dataIndex: 'accumulatedDepreciation', width: 130, render: (value) => value == null ? '-' : money(value) },
+    { title: '净值', dataIndex: 'netValue', width: 120, align: 'right', render: money },
+    { title: '责任人姓名', width: 130, render: (_, record) => String(record.responsiblePerson || '').split('-').slice(1).join('-') || '-' },
+    { title: '责任人工号', width: 130, render: (_, record) => String(record.responsiblePerson || '').split('-')[0] || '-' },
+    { title: 'City', dataIndex: 'city', width: 130, render: displayValue },
+    { title: 'Building', dataIndex: 'building', width: 150, render: displayValue },
+    { title: 'Floor', dataIndex: 'floor', width: 130, render: displayValue },
+    { title: '报废方式', dataIndex: 'detailScrapMethod', width: 120, render: displayValue },
     {
-      title: '报废原因',
-      dataIndex: 'reason',
-      width: 200,
-      render: (value, record) => (
-        readOnly
-          ? displayValue(value)
-          : <Input value={value} onChange={(event) => onChange(record.id, 'reason', event.target.value)} />
-      ),
+      title: '报废类型', dataIndex: 'scrapType', width: 150,
+      render: (value, record) => readOnly || value === '丢失'
+        ? displayValue(value)
+        : <Select
+          value={value}
+          className="w-full"
+          options={SCRAP_TYPE_OPTIONS.filter((option) => option.value !== '丢失')}
+          onChange={(nextValue) => onChange(record.id, 'scrapType', nextValue)}
+        />,
     },
-    { title: '来源业务类型', dataIndex: 'sourceBusinessType', width: 140 },
-    { title: '来源业务单号', dataIndex: 'sourceBusinessNo', width: 170 },
-    { title: '新公司', dataIndex: 'newCompany', width: 160, render: (value) => displayValue(value) },
-    { title: '新板块', dataIndex: 'newPlate', width: 150, render: (value) => displayValue(value) },
-    { title: '新责任人', dataIndex: 'newResponsiblePerson', width: 160, render: (value) => displayValue(value) },
-    { title: '调账后仓库', dataIndex: 'targetWarehouse', width: 200, render: (value) => displayValue(value) },
+  ];
+
+  const accountingTransferColumns = [
+    { title: requiredTitle('资产标签号'), dataIndex: 'tagNo', width: 160, fixed: 'left' },
+    { title: '报废类型', dataIndex: 'scrapType', width: 140,
+      render: (value, record) => readOnly
+        ? displayValue(value)
+        : <Select
+          value={value}
+          className="w-full"
+          options={SCRAP_TYPE_OPTIONS.filter((option) => option.value !== '丢失')}
+          onChange={(nextValue) => onChange(record.id, 'scrapType', nextValue)}
+        />,
+    },
+    ...[
+      ['newResponsiblePerson', '新责任人'], ['newCompany', '新公司'],
+      ['newPlate', '新板块'], ['newCostCenter', '新成本中心'],
+      ['targetCity', 'City'], ['targetBuilding', 'Building'],
+      ['targetFloor', 'Floor'], ['targetWarehouse', '调账后仓库'],
+    ].map(([field, title]) => ({
+      title: requiredTitle(title), dataIndex: field, width: 180,
+      render: (value, record) => readOnly || type === 'accounting'
+        ? displayValue(value)
+        : transferLookupConfig[field]
+          ? <LookupInput value={value} placeholder={`请选择${title}`} onOpen={() => setTransferLookup({ row: record, field })} />
+          : field === 'newPlate'
+            ? <Select value={value || undefined} options={plateOptions} className="w-full" onChange={(next) => onChange(record.id, field, next)} />
+            : field === 'targetWarehouse'
+              ? <Select value={value || undefined} options={warehouseOptions} className="w-full" onChange={(next) => onChange(record.id, field, next)} />
+              : <Input value={value} onChange={(event) => onChange(record.id, field, event.target.value)} />,
+    })),
   ];
 
   const disposalColumns = [
-    ...baseColumns,
-    {
-      title: '原值',
-      dataIndex: 'originalValue',
-      width: 120,
-      align: 'right',
-      render: money,
-    },
-    {
-      title: '净值',
-      dataIndex: 'netValue',
-      width: 120,
-      align: 'right',
-      render: money,
-    },
-    { title: 'City', dataIndex: 'city', width: 120 },
+    { title: '序号', width: 75, align: 'center', render: (_, __, index) => index + 1 },
+    { title: '报废原因', dataIndex: 'reason', width: 200, render: displayValue },
+    { title: '资产类别', width: 190, render: (_, row) => [row.majorCategory, row.minorCategory].filter(Boolean).join('.') },
+    { title: '资产说明', dataIndex: 'description', width: 220 },
+    { title: '资产标签号', dataIndex: 'tagNo', width: 165 },
+    { title: '序列号', dataIndex: 'serialNumber', width: 170 },
+    { title: '配置', dataIndex: 'config', width: 180, render: displayValue },
+    { title: '启用日期', dataIndex: 'enableDate', width: 130, render: displayValue },
+    { title: '财务核算板块', dataIndex: 'plate', width: 160 },
+    { title: 'City', dataIndex: 'city', width: 130 },
     { title: 'Building', dataIndex: 'building', width: 160 },
-    { title: 'Floor', dataIndex: 'floor', width: 100 },
-    { title: '报废类型', dataIndex: 'scrapType', width: 130 },
-    { title: '报废原因', dataIndex: 'reason', width: 180, ellipsis: true },
-    { title: '报废申请单号', dataIndex: 'sourceScrapNo', width: 170 },
-    { title: '账面报废单号', dataIndex: 'sourceAccountingNo', width: 180 },
-    { title: '处置状态', dataIndex: 'disposalStatus', width: 110 },
+    { title: '数量', dataIndex: 'quantity', width: 90, align: 'right' },
+    { title: '原值', dataIndex: 'originalValue', width: 130, align: 'right', render: money },
+    { title: '净值', dataIndex: 'netValue', width: 130, align: 'right', render: money },
+    ...(assetScope === '办公设备' ? ['回收商一报价', '回收商二报价', '回收商三报价'].map((title, index) => ({
+      title, dataIndex: `recycler${index + 1}`, width: 145, fixed: 'right', align: 'right',
+      render: (value, row) => readOnly
+        ? (value == null || value === '' ? '-' : money(value))
+        : <InputNumber
+          min={0}
+          precision={2}
+          size="small"
+          className="w-full"
+          value={value ?? null}
+          formatter={(inputValue, info) => {
+            if (info?.userTyping) return info.input;
+            return inputValue == null || inputValue === '' ? '' : money(inputValue);
+          }}
+          parser={(inputValue) => String(inputValue || '').replace(/[^\d.-]/g, '')}
+          onChange={(nextValue) => onChange(row.id, `recycler${index + 1}`, nextValue)}
+        />,
+    })) : []),
   ];
 
   const columns = type === 'crossCompany'
@@ -601,23 +1079,173 @@ export default function ScrapPrototypeAssetTable({
     : type === 'scrap'
       ? scrapColumns
       : type === 'accounting'
-        ? accountingColumns
+        ? accountingMethod === '调账' ? accountingTransferColumns : accountingColumns
         : disposalColumns;
+
+  const assetPickerSearchFields = type === 'disposal'
+    ? [
+        { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
+        { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
+        { label: '资产说明', name: 'description', dataIndex: 'description' },
+        { label: '资产大类', name: 'majorCategory', dataIndex: 'majorCategory' },
+        { label: '资产小类', name: 'minorCategory', dataIndex: 'minorCategory' },
+        { label: 'City', name: 'city', dataIndex: 'city' },
+        { label: '公司', name: 'company', dataIndex: 'company' },
+        { label: '账面申请单号', name: 'sourceAccountingNo', dataIndex: 'sourceAccountingNo' },
+        { label: '报废申请单号', name: 'sourceScrapNo', dataIndex: 'sourceScrapNo' },
+      ]
+    : type === 'crossCompany'
+      ? [
+          { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
+          { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
+          { label: '板块', name: 'plate', dataIndex: 'plate' },
+          { label: '资产说明', name: 'description', dataIndex: 'description' },
+        ]
+      : type === 'accounting'
+        ? pickerMode === 'lost'
+          ? [
+              { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
+              { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
+              { label: '资产类别', name: 'majorCategory', dataIndex: 'majorCategory' },
+              { label: '板块', name: 'plate', dataIndex: 'plate' },
+              { label: 'City', name: 'city', dataIndex: 'city' },
+            ]
+          : [
+              { label: '来源申请单号', name: 'sourceBusinessNo', dataIndex: 'sourceBusinessNo' },
+              { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
+              { label: '资产编号', name: 'assetNo', dataIndex: 'assetNo' },
+              { label: '资产类别', name: 'majorCategory', dataIndex: 'majorCategory' },
+              { label: '板块', name: 'plate', dataIndex: 'plate' },
+            ]
+        : [
+            { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
+            { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
+            { label: '板块', name: 'plate', dataIndex: 'plate' },
+            { label: '资产说明', name: 'description', dataIndex: 'description' },
+          ];
+
+  const assetPickerColumns = type === 'crossCompany'
+    ? [
+        { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
+        { title: '序列号', dataIndex: 'serialNumber', width: 160 },
+        { title: '资产类别', key: 'assetCategory', width: 210, render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
+        { title: '资产说明', dataIndex: 'description', width: 220 },
+        { title: '公司', dataIndex: 'company', width: 150 },
+        { title: '板块', dataIndex: 'plate', width: 150 },
+        { title: '责任人', dataIndex: 'responsiblePerson', width: 160 },
+        { title: '资产所在城市', dataIndex: 'city', width: 140 },
+        { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
+      ]
+    : type === 'accounting'
+      ? pickerMode === 'lost'
+        ? [
+            { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
+            { title: '序列号', dataIndex: 'serialNumber', width: 160 },
+            { title: '资产类别', key: 'assetCategory', width: 210, render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
+            { title: '资产说明', dataIndex: 'description', width: 220 },
+            { title: '公司', dataIndex: 'company', width: 150 },
+            { title: '板块', dataIndex: 'plate', width: 150 },
+            { title: 'City', dataIndex: 'city', width: 140 },
+            { title: '净值', dataIndex: 'netValue', width: 130, render: money },
+            { title: '当前状态', dataIndex: 'status', width: 150, render: (value) => <StatusTag value={value} type="business" /> },
+          ]
+        : [
+            { title: '来源业务', dataIndex: 'sourceBusinessType', width: 140 },
+            { title: '来源申请单号', dataIndex: 'sourceBusinessNo', width: 170 },
+            { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
+            { title: '资产编号', dataIndex: 'assetNo', width: 150 },
+            { title: '资产类别', key: 'assetCategory', width: 210, render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
+            { title: '公司', dataIndex: 'company', width: 150 },
+            { title: '板块', dataIndex: 'plate', width: 150 },
+            { title: '报废数量', dataIndex: 'quantity', width: 95 },
+            { title: '资产报废方式', dataIndex: 'detailScrapMethod', width: 130 },
+            { title: '净值', dataIndex: 'netValue', width: 130, render: money },
+          ]
+      : [
+          { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
+          { title: '序列号', dataIndex: 'serialNumber', width: 160 },
+          { title: '资产类别', key: 'assetCategory', width: 210, render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
+          { title: '资产说明', dataIndex: 'description', width: 220 },
+          { title: '公司', dataIndex: 'company', width: 150 },
+          { title: '板块', dataIndex: 'plate', width: 150 },
+          { title: '责任人', dataIndex: 'responsiblePerson', width: 150 },
+          { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
+        ];
 
   return (
     <>
+      {['crossCompany', 'accounting'].includes(type) && transferLookup && (() => {
+        const lookup = transferLookupConfig[transferLookup.field];
+        const display = (item) => transferLookup.field === 'newCompany'
+          ? `${item.code}.${item.name}`
+          : item.name;
+        return (
+          <SelectModal
+            open
+            title={lookup.title}
+            dataSource={lookup.values}
+            searchFields={lookup.searchFields}
+            columns={lookup.columns}
+            onCancel={() => setTransferLookup(null)}
+            onConfirm={(item) => {
+              const value = display(item);
+              if (type === 'crossCompany' && transferLookup.field === 'newCompany') {
+                updateCrossCompanyDestination(transferLookup.row, transferLookup.field, value);
+              } else {
+                onChange(transferLookup.row.id, transferLookup.field, value);
+              }
+              setTransferLookup(null);
+            }}
+          />
+        );
+      })()}
       {!readOnly && (
-        <div className="mb-3 flex justify-end">
-          <Space wrap>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setPickerOpen(true)}>
-              添加资产
-            </Button>
+      <div className="mb-3 flex justify-end">
+        <Space wrap>
+            {type === 'accounting' ? (
+              <>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  disabled={!sourceCompany}
+                  onClick={() => { setPickerMode('waiting'); setPickerOpen(true); }}
+                >
+                  待报废资产
+                </Button>
+                {accountingMethod !== '调账' && (
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    disabled={!sourceCompany}
+                    onClick={() => { setPickerMode('lost'); setPickerOpen(true); }}
+                  >
+                    添加资产
+                  </Button>
+                )}
+              </>
+            ) : (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                disabled={type === 'disposal' && !hasDisposalCompanyRange}
+                onClick={() => { setPickerMode('waiting'); setPickerOpen(true); }}
+              >
+                添加资产
+              </Button>
+            )}
             <Button danger icon={<DeleteOutlined />} disabled={selectedRowKeys.length === 0} onClick={deleteSelected}>
-              删除所选
+              {type === 'accounting' ? '删除' : '删除所选'}
             </Button>
             <Button icon={<DownloadOutlined />} onClick={downloadTemplate}>下载模板</Button>
-            <Upload accept=".xls,.xlsx" showUploadList={false} beforeUpload={importAssets}>
-              <Button icon={<UploadOutlined />}>Excel导入</Button>
+            <Upload
+              accept=".xls,.xlsx"
+              showUploadList={false}
+              beforeUpload={importAssets}
+              disabled={(type === 'disposal' && !hasDisposalCompanyRange) || (type === 'accounting' && !sourceCompany)}
+            >
+              <Button disabled={(type === 'disposal' && !hasDisposalCompanyRange) || (type === 'accounting' && !sourceCompany)} icon={<UploadOutlined />}>
+                Excel导入
+              </Button>
             </Upload>
             <Button icon={<FileExcelOutlined />} disabled={assets.length === 0} onClick={exportAssets}>
               导出明细
@@ -644,32 +1272,15 @@ export default function ScrapPrototypeAssetTable({
 
       <SelectModal
         open={pickerOpen}
-        title="选择资产"
+        title={type === 'accounting' ? pickerMode === 'lost' ? '选择丢失资产' : '选择待报废资产' : '选择资产'}
         width={960}
         multiple
         dataSource={pickerAssets}
         initialSelectedKeys={assets.map((item) => item.id)}
-        searchFields={[
-          { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
-          { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
-          { label: '板块', name: 'plate', dataIndex: 'plate' },
-          { label: '资产说明', name: 'description', dataIndex: 'description' },
-        ]}
-        columns={[
-          { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
-          { title: '序列号', dataIndex: 'serialNumber', width: 160 },
-          { title: '资产大类', dataIndex: 'majorCategory', width: 150 },
-          { title: '资产小类', dataIndex: 'minorCategory', width: 190 },
-          { title: '资产说明', dataIndex: 'description', width: 220 },
-          { title: '公司', dataIndex: 'company', width: 150 },
-          { title: '责任人', dataIndex: 'responsiblePerson', width: 150 },
-          {
-            title: '资产状态',
-            dataIndex: 'status',
-            width: 130,
-            render: (value) => <StatusTag value={value} type="business" />,
-          },
-        ]}
+        searchFields={assetPickerSearchFields}
+        columns={assetPickerColumns}
+        onExport={type === 'disposal' ? exportDisposalPickerAssets : undefined}
+        exportLabel="导出查询结果"
         onCancel={() => setPickerOpen(false)}
         onConfirm={(selected) => {
           addAssets(selected);

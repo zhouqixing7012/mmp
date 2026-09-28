@@ -62,7 +62,6 @@ const BUSINESS_STATUS_TONE = {
   打印失败: 'error',
   未授权: 'default',
   未发起: 'default',
-  待提单人确认: 'warning',
   '在库-待报废': 'warning',
   '已报废-待处置': 'warning',
   '已报废-已处置': 'success',

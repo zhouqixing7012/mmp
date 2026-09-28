@@ -9,6 +9,7 @@ import DocumentListPage from './DocumentListPage';
 import AssetDisposalEditPage from './AssetDisposalEditPage';
 import CrossCompanyTransferEditPage from './CrossCompanyTransferEditPage';
 import ScrapPrototypeModule from './ScrapPrototypeModule';
+import { ACCOUNTING_DEMO_ACCESS } from './scrapPrototypeData';
 
 export const ASSET_MANAGEMENT_SUB_MENUS = [
   '资产维护',
@@ -56,7 +57,9 @@ export function AssetManagementContent({ activeSubMenu }) {
   }
 
   if (activeSubMenu === '账面报废') {
-    return <ScrapPrototypeModule key="accounting" type="accounting" />;
+    return <ScrapPrototypeModule key="accounting" type="accounting"
+      accountingActor={ACCOUNTING_DEMO_ACCESS.actor}
+      accountingAuthorizationScopes={ACCOUNTING_DEMO_ACCESS.authorizationScopes} />;
   }
 
   if (activeSubMenu === '资产处置') {

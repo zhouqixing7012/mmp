@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   DatePicker,
+  Dropdown,
   Input,
   Modal,
   Popconfirm,
@@ -15,21 +16,21 @@ import {
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
-import { ASSET_SCOPE_OPTIONS, money } from './scrapPrototypeData';
+import OutboundApprovalHistoryPage from '../inventoryManagement/OutboundApprovalHistoryPage';
+import { ASSET_SCOPE_OPTIONS } from './scrapPrototypeData';
+import { getScrapPrototypeApprovalRecords } from './scrapPrototypeApproval';
 
 const { RangePicker } = DatePicker;
 const { Text, Title } = Typography;
 
 const EMPTY_FILTERS = {
   applicationNo: '',
-  tagNo: '',
+  assetTag: '',
+  serialNumber: '',
   documentStatus: '',
-  disposalStatus: '',
   assetScope: '',
   company: '',
-  targetCompany: '',
   creator: '',
-  plate: '',
   scrapMethod: '',
   region: '',
   dateRange: null,
@@ -47,49 +48,19 @@ export default function ScrapPrototypeList({
   onOpen,
   onCopy,
   onExecute,
-  onDirectComplete,
   onDeleteDrafts,
   onApprove,
 }) {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [selectedKeys, setSelectedKeys] = useState([]);
-  const [directAction, setDirectAction] = useState(null);
-  const [directNote, setDirectNote] = useState('');
   const [approvalRecord, setApprovalRecord] = useState(null);
-  const [approvalOpinion, setApprovalOpinion] = useState('');
-
-  const confirmDirectAction = () => {
-    const note = directNote.trim();
-    if (!note || !directAction) return;
-    onDirectComplete(directAction.asset, directAction.action, note);
-    setDirectAction(null);
-    setDirectNote('');
-  };
-
-  const finishApproval = (result) => {
-    if (!approvalRecord) return;
-    onApprove(approvalRecord, result, approvalOpinion);
-    setApprovalRecord(null);
-    setApprovalOpinion('');
-  };
 
   const filteredRows = useMemo(() => records.filter((row) => {
-    if (type === 'disposal') {
-      if (appliedFilters.tagNo && !String(row.tagNo || '').includes(appliedFilters.tagNo.trim())) return false;
-      if (appliedFilters.assetScope && row.scope !== appliedFilters.assetScope) return false;
-      if (appliedFilters.company && !String(row.company || '').includes(appliedFilters.company.trim())) return false;
-      if (appliedFilters.region && row.region !== appliedFilters.region) return false;
-      if (appliedFilters.disposalStatus && row.disposalStatus !== appliedFilters.disposalStatus) return false;
-      return true;
-    }
-
     const textFields = [
       'applicationNo',
       'company',
-      'targetCompany',
       'creator',
-      'plate',
     ];
 
     for (const field of textFields) {
@@ -97,10 +68,25 @@ export default function ScrapPrototypeList({
       if (query && !String(row[field] || '').includes(query)) return false;
     }
 
+    const assetTagQuery = String(appliedFilters.assetTag || '').trim();
+    const rowAssetTags = row.assetsSnapshot?.length
+      ? row.assetsSnapshot.map((asset) => asset.tagNo)
+      : row.assetTags || [];
+    if (assetTagQuery && !rowAssetTags.some(
+      (tagNo) => String(tagNo || '').includes(assetTagQuery),
+    )) return false;
+
+    const serialNumberQuery = String(appliedFilters.serialNumber || '').trim();
+    const rowSerialNumbers = row.assetsSnapshot?.length
+      ? row.assetsSnapshot.map((asset) => asset.serialNumber)
+      : row.serialNumbers || [];
+    if (serialNumberQuery && !rowSerialNumbers.some(
+      (serialNumber) => String(serialNumber || '').includes(serialNumberQuery),
+    )) return false;
+
     if (appliedFilters.documentStatus && row.documentStatus !== appliedFilters.documentStatus) return false;
     if (appliedFilters.assetScope && row.assetScope !== appliedFilters.assetScope) return false;
     if (appliedFilters.scrapMethod && row.scrapMethod !== appliedFilters.scrapMethod) return false;
-    if (appliedFilters.region && row.region !== appliedFilters.region) return false;
 
     if (appliedFilters.dateRange?.length === 2) {
       const value = dayjs(row.createdAt);
@@ -113,79 +99,15 @@ export default function ScrapPrototypeList({
     }
 
     return true;
-  }), [records, appliedFilters, type]);
+  }), [records, appliedFilters]);
 
   const operationColumn = {
     title: '操作',
     key: 'operation',
-    width: type === 'disposal' ? 280 : type === 'scrap' ? 240 : 210,
+    width: 120,
     fixed: 'right',
     render: (_, record) => (
-      type === 'disposal'
-        ? (
-          <Space size={2} wrap>
-            {record.disposalStatus === '待处置' ? (
-              <>
-                <Button type="link" size="small" onClick={() => onCreate([record])}>
-                  发起处置
-                </Button>
-                <Button type="link" size="small" onClick={() => setDirectAction({ asset: record, action: '无实物报废' })}>
-                  无实物报废
-                </Button>
-                <Button type="link" size="small" onClick={() => setDirectAction({ asset: record, action: '确认已处置' })}>
-                  确认已处置
-                </Button>
-              </>
-            ) : record.disposalRecord ? (
-              <Button type="link" size="small" onClick={() => onOpen(record.disposalRecord, false)}>
-                查看处置单
-              </Button>
-            ) : null}
-          </Space>
-        )
-        : (
-      <Space size={2} wrap>
-        <Button type="link" size="small" onClick={() => onOpen(record, false)}>
-          查看
-        </Button>
-        {['草稿', '已驳回'].includes(record.documentStatus) && (
-          <Button type="link" size="small" onClick={() => onOpen(record, true)}>
-            编辑
-          </Button>
-        )}
-        {(
-          ['crossCompany', 'accounting'].includes(type)
-          || (type === 'scrap' && record.assetScope !== '机房资产')
-        ) && record.documentStatus === '审批中' && (
-          <Button type="link" size="small" onClick={() => setApprovalRecord(record)}>
-            审批
-          </Button>
-        )}
-        {type === 'scrap' && (
-          <Button type="link" size="small" onClick={() => onCopy(record)}>
-            复制
-          </Button>
-        )}
-        {!['草稿', '已驳回'].includes(record.documentStatus) && (
-          <Button type="link" size="small" onClick={() => onOpen(record, false)}>
-            查看进度
-          </Button>
-        )}
-        {type === 'accounting' && record.documentStatus === '待提单人确认' && (
-          <Popconfirm
-            title="确认执行账面报废？"
-            description="确认后将完成账面报废并结束流程。"
-            okText="确认并执行"
-            cancelText="取消"
-            onConfirm={() => onExecute(record)}
-          >
-            <Button type="link" size="small">
-              执行账面报废
-            </Button>
-          </Popconfirm>
-        )}
-      </Space>
-        )
+      <Button type="link" size="small" onClick={() => setApprovalRecord(record)}>查看进度</Button>
     ),
   };
 
@@ -194,7 +116,7 @@ export default function ScrapPrototypeList({
     dataIndex: 'applicationNo',
     width: 180,
     render: (value, record) => (
-      <Button type="link" size="small" onClick={() => onOpen(record, false)}>
+      <Button type="link" size="small" onClick={() => onOpen(record, false, false)}>
         {value}
       </Button>
     ),
@@ -210,68 +132,53 @@ export default function ScrapPrototypeList({
   const columnsByType = {
     crossCompany: [
       applicationColumn,
-      statusColumn,
-      { title: '业务类型', key: 'businessType', width: 120, render: () => '跨公司转移' },
-      { title: '资产范围', dataIndex: 'assetScope', width: 120 },
-      { title: '发起人', dataIndex: 'creator', width: 130 },
+      { title: '制单人', dataIndex: 'creator', width: 130 },
       { title: '原公司', dataIndex: 'company', width: 160, ellipsis: true },
-      { title: '新公司', dataIndex: 'targetCompany', width: 160, ellipsis: true },
-      { title: '资产数量', dataIndex: 'assetCount', width: 100, align: 'right' },
       { title: '制单时间', dataIndex: 'createdAt', width: 120 },
-      { title: '最后修改时间', dataIndex: 'lastModifiedAt', width: 170 },
-      { title: '当前节点', dataIndex: 'currentNode', width: 190, ellipsis: true },
+      statusColumn,
       operationColumn,
     ],
     scrap: [
       applicationColumn,
-      statusColumn,
-      { title: '资产范围', dataIndex: 'assetScope', width: 120 },
-      { title: '报废方式', dataIndex: 'scrapMethod', width: 120 },
-      { title: '公司', dataIndex: 'company', width: 160, ellipsis: true },
       { title: '制单人', dataIndex: 'creator', width: 130 },
+      { title: '公司', dataIndex: 'company', width: 160, ellipsis: true },
       { title: '制单时间', dataIndex: 'createdAt', width: 120 },
-      { title: '资产数量', dataIndex: 'assetCount', width: 100, align: 'right' },
-      { title: '备注', dataIndex: 'remark', width: 220, ellipsis: true },
-      { title: '当前节点', dataIndex: 'currentNode', width: 190, ellipsis: true },
+      statusColumn,
       operationColumn,
     ],
     accounting: [
       applicationColumn,
-      statusColumn,
-      { title: '公司', dataIndex: 'company', width: 160, ellipsis: true },
-      { title: '板块', dataIndex: 'plate', width: 150, ellipsis: true },
-      { title: '报废方式', dataIndex: 'scrapMethod', width: 120 },
       { title: '制单人', dataIndex: 'creator', width: 130 },
+      { title: '公司', dataIndex: 'company', width: 160, ellipsis: true },
+      { title: '报废方式', dataIndex: 'scrapMethod', width: 120 },
       { title: '制单时间', dataIndex: 'createdAt', width: 120 },
-      { title: '资产数量', dataIndex: 'assetCount', width: 100, align: 'right' },
-      { title: '原值合计', dataIndex: 'originalValueTotal', width: 130, align: 'right', render: money },
-      { title: '净值合计', dataIndex: 'netValueTotal', width: 130, align: 'right', render: money },
-      { title: '当前节点', dataIndex: 'currentNode', width: 190, ellipsis: true },
+      statusColumn,
       operationColumn,
     ],
     disposal: [
-      { title: '资产范围', dataIndex: 'scope', width: 110, fixed: 'left' },
-      { title: '资产大类', dataIndex: 'majorCategory', width: 150 },
-      { title: '资产小类', dataIndex: 'minorCategory', width: 190, ellipsis: true },
-      { title: '资产标签号', dataIndex: 'tagNo', width: 160, fixed: 'left' },
-      { title: '资产说明', dataIndex: 'description', width: 220, ellipsis: true },
-      { title: '资产状态', dataIndex: 'status', width: 140, render: (value) => <StatusTag value={value} type="business" /> },
-      { title: '数量', dataIndex: 'quantity', width: 90, align: 'right' },
-      { title: '原值', dataIndex: 'originalValue', width: 120, align: 'right', render: money },
-      { title: '净值', dataIndex: 'netValue', width: 120, align: 'right', render: money },
-      { title: '责任人', dataIndex: 'responsiblePerson', width: 160, ellipsis: true },
-      { title: 'City', dataIndex: 'city', width: 120 },
-      { title: 'Building', dataIndex: 'building', width: 150 },
-      { title: 'Floor', dataIndex: 'floor', width: 100 },
-      { title: '公司', dataIndex: 'company', width: 160, ellipsis: true },
-      { title: '板块', dataIndex: 'plate', width: 150, ellipsis: true },
-      { title: '报废日期', dataIndex: 'scrapDate', width: 120 },
-      { title: '报废类型', dataIndex: 'scrapType', width: 130 },
-      { title: '报废原因', dataIndex: 'reason', width: 180, ellipsis: true },
-      { title: '报废申请单号', dataIndex: 'sourceScrapNo', width: 170 },
-      { title: '账面报废单号', dataIndex: 'sourceAccountingNo', width: 180 },
-      { title: '处置状态', dataIndex: 'disposalStatus', width: 110 },
-      { title: '进入处置池时间', dataIndex: 'enteredAt', width: 140 },
+      applicationColumn,
+      { title: '制单人', dataIndex: 'creator', width: 150 },
+      { title: '公司', dataIndex: 'company', width: 190, ellipsis: true },
+      {
+        title: '板块',
+        dataIndex: 'plate',
+        width: 180,
+        ellipsis: true,
+        render: (value, row) => value || Array.from(new Set(
+          (row.assetsSnapshot || []).map((asset) => asset.plate).filter(Boolean),
+        )).join('、') || '-',
+      },
+      {
+        title: '资产数量',
+        dataIndex: 'assetCount',
+        width: 110,
+        align: 'right',
+        render: (value, row) => row.assetsSnapshot?.length
+          ? row.assetsSnapshot.reduce((sum, asset) => sum + Number(asset.quantity || 0), 0)
+          : value || 0,
+      },
+      { title: '制单时间', dataIndex: 'createdAt', width: 150 },
+      statusColumn,
       operationColumn,
     ],
   };
@@ -283,17 +190,20 @@ export default function ScrapPrototypeList({
           <QueryItem label="申请单号">
             <Input value={filters.applicationNo} allowClear onChange={(event) => setFilters((c) => ({ ...c, applicationNo: event.target.value }))} />
           </QueryItem>
+          <QueryItem label="资产标签号">
+            <Input value={filters.assetTag} allowClear onChange={(event) => setFilters((c) => ({ ...c, assetTag: event.target.value }))} />
+          </QueryItem>
+          <QueryItem label="序列号">
+            <Input value={filters.serialNumber} allowClear onChange={(event) => setFilters((c) => ({ ...c, serialNumber: event.target.value }))} />
+          </QueryItem>
           <QueryItem label="单据状态">
             <Select value={filters.documentStatus || undefined} allowClear options={options(config.statuses)} onChange={(value) => setFilters((c) => ({ ...c, documentStatus: value || '' }))} />
           </QueryItem>
-          <QueryItem label="发起人">
+          <QueryItem label="制单人">
             <Input value={filters.creator} allowClear onChange={(event) => setFilters((c) => ({ ...c, creator: event.target.value }))} />
           </QueryItem>
           <QueryItem label="原公司">
             <Input value={filters.company} allowClear onChange={(event) => setFilters((c) => ({ ...c, company: event.target.value }))} />
-          </QueryItem>
-          <QueryItem label="新公司">
-            <Input value={filters.targetCompany} allowClear onChange={(event) => setFilters((c) => ({ ...c, targetCompany: event.target.value }))} />
           </QueryItem>
           <QueryItem label="制单日期">
             <RangePicker value={filters.dateRange} className="w-full" onChange={(value) => setFilters((c) => ({ ...c, dateRange: value }))} />
@@ -305,25 +215,18 @@ export default function ScrapPrototypeList({
     if (type === 'disposal') {
       return (
         <>
+          <QueryItem label="申请单号"><Input value={filters.applicationNo} allowClear onChange={(event) => setFilters((c) => ({ ...c, applicationNo: event.target.value }))} /></QueryItem>
           <QueryItem label="资产标签号">
-            <Input value={filters.tagNo} allowClear onChange={(event) => setFilters((c) => ({ ...c, tagNo: event.target.value }))} />
+            <Input value={filters.assetTag} allowClear onChange={(event) => setFilters((c) => ({ ...c, assetTag: event.target.value }))} />
           </QueryItem>
-          <QueryItem label="资产范围">
-            <Select
-              value={filters.assetScope || undefined}
-              allowClear
-              options={ASSET_SCOPE_OPTIONS.filter((item) => item.value !== '软件')}
-              onChange={(value) => setFilters((c) => ({ ...c, assetScope: value || '' }))}
-            />
+          <QueryItem label="序列号">
+            <Input value={filters.serialNumber} allowClear onChange={(event) => setFilters((c) => ({ ...c, serialNumber: event.target.value }))} />
           </QueryItem>
+          <QueryItem label="单据状态"><Select value={filters.documentStatus || undefined} allowClear options={options(config.statuses)} onChange={(value) => setFilters((c) => ({ ...c, documentStatus: value || '' }))} /></QueryItem>
+          <QueryItem label="制单人"><Input value={filters.creator} allowClear onChange={(event) => setFilters((c) => ({ ...c, creator: event.target.value }))} /></QueryItem>
+          <QueryItem label="制单时间"><RangePicker value={filters.dateRange} className="w-full" onChange={(value) => setFilters((c) => ({ ...c, dateRange: value }))} /></QueryItem>
           <QueryItem label="公司">
             <Input value={filters.company} allowClear onChange={(event) => setFilters((c) => ({ ...c, company: event.target.value }))} />
-          </QueryItem>
-          <QueryItem label="区域">
-            <Select value={filters.region || undefined} allowClear options={options(['北京', '非北京'])} onChange={(value) => setFilters((c) => ({ ...c, region: value || '' }))} />
-          </QueryItem>
-          <QueryItem label="处置状态">
-            <Select value={filters.disposalStatus || undefined} allowClear options={options(['待处置', '处理中', '已处置'])} onChange={(value) => setFilters((c) => ({ ...c, disposalStatus: value || '' }))} />
           </QueryItem>
         </>
       );
@@ -335,20 +238,23 @@ export default function ScrapPrototypeList({
           <QueryItem label="申请单号">
             <Input value={filters.applicationNo} allowClear onChange={(event) => setFilters((c) => ({ ...c, applicationNo: event.target.value }))} />
           </QueryItem>
+          <QueryItem label="资产标签号">
+            <Input value={filters.assetTag} allowClear onChange={(event) => setFilters((c) => ({ ...c, assetTag: event.target.value }))} />
+          </QueryItem>
+          <QueryItem label="序列号">
+            <Input value={filters.serialNumber} allowClear onChange={(event) => setFilters((c) => ({ ...c, serialNumber: event.target.value }))} />
+          </QueryItem>
           <QueryItem label="单据状态">
             <Select value={filters.documentStatus || undefined} allowClear options={options(config.statuses)} onChange={(value) => setFilters((c) => ({ ...c, documentStatus: value || '' }))} />
           </QueryItem>
           <QueryItem label="公司">
             <Input value={filters.company} allowClear onChange={(event) => setFilters((c) => ({ ...c, company: event.target.value }))} />
           </QueryItem>
-          <QueryItem label="板块">
-            <Input value={filters.plate} allowClear onChange={(event) => setFilters((c) => ({ ...c, plate: event.target.value }))} />
-          </QueryItem>
           <QueryItem label="制单人">
             <Input value={filters.creator} allowClear onChange={(event) => setFilters((c) => ({ ...c, creator: event.target.value }))} />
           </QueryItem>
           <QueryItem label="报废方式">
-            <Select value={filters.scrapMethod || undefined} allowClear options={options(['全部报废', '部分报废', '调账'])} onChange={(value) => setFilters((c) => ({ ...c, scrapMethod: value || '' }))} />
+            <Select value={filters.scrapMethod || undefined} allowClear options={options(['调账', '非调账'])} onChange={(value) => setFilters((c) => ({ ...c, scrapMethod: value || '' }))} />
           </QueryItem>
           <QueryItem label="制单时间">
             <RangePicker value={filters.dateRange} className="w-full" onChange={(value) => setFilters((c) => ({ ...c, dateRange: value }))} />
@@ -361,6 +267,12 @@ export default function ScrapPrototypeList({
       <>
         <QueryItem label="申请单号">
           <Input value={filters.applicationNo} allowClear onChange={(event) => setFilters((c) => ({ ...c, applicationNo: event.target.value }))} />
+        </QueryItem>
+        <QueryItem label="资产标签号">
+          <Input value={filters.assetTag} allowClear onChange={(event) => setFilters((c) => ({ ...c, assetTag: event.target.value }))} />
+        </QueryItem>
+        <QueryItem label="序列号">
+          <Input value={filters.serialNumber} allowClear onChange={(event) => setFilters((c) => ({ ...c, serialNumber: event.target.value }))} />
         </QueryItem>
         <QueryItem label="单据状态">
           <Select value={filters.documentStatus || undefined} allowClear options={options(config.statuses)} onChange={(value) => setFilters((c) => ({ ...c, documentStatus: value || '' }))} />
@@ -403,26 +315,23 @@ export default function ScrapPrototypeList({
 
       <Card
         size="small"
-        title={type === 'disposal' ? '待处置池' : '申请单列表'}
+        title="申请单列表"
         extra={<Text type="secondary">共 {filteredRows.length} 条</Text>}
       >
         <div className="mb-3 flex justify-end">
           <Space>
-            <Button
+            {type === 'accounting' ? <Dropdown menu={{ items: ['调账', '非调账'].map((method) => ({ key: method, label: method, onClick: () => onCreate(method) })) }}>
+              <Button type="primary" icon={<PlusOutlined />}>创建</Button>
+            </Dropdown> : <Button
               type="primary"
               icon={<PlusOutlined />}
-              disabled={type === 'disposal' && selectedKeys.length === 0}
               onClick={() => {
-                if (type === 'disposal') {
-                  onCreate(records.filter((item) => selectedKeys.includes(item.id) && item.disposalStatus === '待处置'));
-                  return;
-                }
                 onCreate();
               }}
             >
-              {type === 'disposal' ? '发起处置' : config.createLabel}
-            </Button>
-            {type !== 'disposal' && (
+              创建
+            </Button>}
+            {(
               <Popconfirm
                 title="确认删除所选草稿？"
                 disabled={selectedKeys.length === 0}
@@ -450,9 +359,7 @@ export default function ScrapPrototypeList({
             onChange: setSelectedKeys,
             fixed: true,
             getCheckboxProps: (record) => ({
-              disabled: type === 'disposal'
-                ? record.disposalStatus !== '待处置'
-                : record.documentStatus !== '草稿',
+              disabled: record.documentStatus !== '草稿',
             }),
           }}
           scroll={{ x: 'max-content' }}
@@ -463,43 +370,22 @@ export default function ScrapPrototypeList({
           }}
         />
       </Card>
-      {type === 'disposal' && (
-        <Modal
-          open={Boolean(directAction)}
-          title={directAction?.action === '无实物报废' ? '无实物报废' : '确认已处置'}
-          okText="确认"
-          okButtonProps={{ disabled: !directNote.trim() }}
-          onOk={confirmDirectAction}
-          onCancel={() => { setDirectAction(null); setDirectNote(''); }}
-          destroyOnHidden
-        >
-          <div className="mb-2">{directAction?.action === '无实物报废' ? '原因' : '处置说明'}</div>
-          <Input.TextArea
-            value={directNote}
-            maxLength={200}
-            showCount
-            rows={3}
-            onChange={(event) => setDirectNote(event.target.value)}
-          />
-        </Modal>
-      )}
-      {['crossCompany', 'scrap', 'accounting'].includes(type) && (
+      {['crossCompany', 'scrap', 'accounting', 'disposal'].includes(type) && (
         <Modal
           open={Boolean(approvalRecord)}
-          title={`审批：${approvalRecord?.currentNode || ''}`}
-          onCancel={() => { setApprovalRecord(null); setApprovalOpinion(''); }}
-          footer={[
-            <Button key="reject" danger onClick={() => finishApproval('驳回')}>驳回</Button>,
-            <Button key="approve" type="primary" onClick={() => finishApproval('通过')}>通过</Button>,
-          ]}
+          title="审批记录"
+          width={960}
+          onCancel={() => setApprovalRecord(null)}
+          footer={<Button onClick={() => setApprovalRecord(null)}>关闭</Button>}
           destroyOnHidden
         >
-          <div className="mb-2">审批意见</div>
-          <Input.TextArea
-            value={approvalOpinion}
-            rows={3}
-            onChange={(event) => setApprovalOpinion(event.target.value)}
-          />
+          <OutboundApprovalHistoryPage outbound={{ approvalHistory: getScrapPrototypeApprovalRecords(approvalRecord || {}, type).map((item) => ({
+            node: item.node,
+            handler: item.person || '-',
+            action: item.status,
+            time: item.time,
+            opinion: item.comment,
+          })) }} />
         </Modal>
       )}
     </div>

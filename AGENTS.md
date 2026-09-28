@@ -43,3 +43,7 @@
 ## 工具入口
 
 [CLAUDE.md](CLAUDE.md)、[memory.md](memory.md)、[README.ai.md](README.ai.md)、[PATH.ai.md](PATH.ai.md) 只提供入口，不维护另一套规则、状态或本机绝对路径。个人偏好替换稿见 [PERSONAL_INSTRUCTIONS.md](docs/PERSONAL_INSTRUCTIONS.md)，它不会自动修改平台个性化设置。
+
+## PRD 写作偏好（必须遵守）
+
+编写或修改 PRD 前阅读 [`docs/PRD-撰写偏好与规范.md`](docs/PRD-撰写偏好与规范.md)。用户后续补充偏好时同步更新该文档；业务规则以用户最新确认的口径为准。主 PRD 默认六章，不单列验收标准；范围、数据范围、流程及未定义事项按该规范归入对应章节。对抗性测试另存对比材料，主 PRD 只写未来业务规则，无法确认的事项集中放在补充说明中的“当前尚未定义”。

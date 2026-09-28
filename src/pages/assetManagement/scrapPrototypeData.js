@@ -1,6 +1,9 @@
 import { materialCatalog } from '../../mock/reference/materialCatalog';
+import { CURRENT_EMPLOYEE } from '../../mock/employeeSelfServiceMock';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 import { DEFAULT_ASSET_MAINTENANCE_ROWS } from '../../mock/assetManagementMock';
+
+const DEMO_APPLICANT = `${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`;
 
 export const OFFICE_MAJOR_CATEGORIES = new Set([
   'PC',
@@ -45,6 +48,8 @@ function fromMaintenance(row, extra = {}) {
     majorCategory: row.majorCategory,
     minorCategory: row.minorCategory,
     description: row.assetDesc,
+    config: row.config,
+    enableDate: row.enabledDate,
     company: row.companyCode ? `${row.companyCode}.${row.company}` : row.company,
     plate: row.plate,
     responsiblePerson: row.ownerId ? `${row.ownerId}-${row.ownerName}` : row.ownerName,
@@ -63,7 +68,7 @@ function fromMaintenance(row, extra = {}) {
   };
 }
 
-function fromCatalog({ id, majorCategory, tagNo, company, warehouse, owner, status, city, building, floor, originalValue, scope }) {
+function fromCatalog({ id, majorCategory, tagNo, company, plate = '17.Corporate', warehouse, owner, status, city, building, floor, originalValue, netValue, scope }) {
   const material = materialByMajor(majorCategory);
   if (!material) return null;
 
@@ -80,7 +85,7 @@ function fromCatalog({ id, majorCategory, tagNo, company, warehouse, owner, stat
     model: material.model,
     config: material.config,
     company,
-    plate: '17_Corporate',
+    plate,
     responsiblePerson: owner,
     costCenter: 'CC1001.产品技术中心',
     warehouse,
@@ -90,7 +95,7 @@ function fromCatalog({ id, majorCategory, tagNo, company, warehouse, owner, stat
     status,
     quantity: 1,
     originalValue: originalValue ?? material.referencePrice ?? 0,
-    netValue: Math.max(0, Number(originalValue ?? material.referencePrice ?? 0) * 0.25),
+    netValue: netValue ?? Math.max(0, Number(originalValue ?? material.referencePrice ?? 0) * 0.25),
     purchaseDate: '2023-06-18',
     scope: scope || getAssetScope(majorCategory),
   };
@@ -105,8 +110,56 @@ export function getAssetScope(majorCategory) {
 const maintenanceRows = DEFAULT_ASSET_MAINTENANCE_ROWS.slice(0, 6);
 const basePool = maintenanceRows.map((row) => fromMaintenance(row));
 
+const demoAsset = (config) => fromCatalog({
+  warehouse: officeWarehouse?.warehouseDescription || '',
+  owner: '213852-孙志强',
+  status: '在库-再利用',
+  city: officeWarehouse?.city || '',
+  building: officeWarehouse?.building || '',
+  floor: officeWarehouse?.floor || '',
+  ...config,
+});
+
+// 专门保留给手工建单使用的演示资产，避免初始示例单据占满候选池。
+const demoFreeAssets = [
+  demoAsset({ id: 'demo-office-01', majorCategory: 'PC', tagNo: 'DEMO-FA-000201', company: '114.新媒体', originalValue: 7600, netValue: 0 }),
+  demoAsset({ id: 'demo-office-02', majorCategory: 'PC', tagNo: 'DEMO-FA-000202', company: '114.新媒体', originalValue: 8200, netValue: 600 }),
+  demoAsset({ id: 'demo-office-03', majorCategory: 'NOTEBOOK', tagNo: 'DEMO-FA-000203', company: '114.新媒体', originalValue: 9800, netValue: 0 }),
+  demoAsset({ id: 'demo-office-04', majorCategory: 'NOTEBOOK', tagNo: 'DEMO-FA-000204', company: '114.新媒体', originalValue: 10600, netValue: 1200 }),
+  demoAsset({ id: 'demo-office-05', majorCategory: 'OFFICE EQUIPMENT', tagNo: 'DEMO-FA-000205', company: '114.新媒体', originalValue: 3200, netValue: 0 }),
+  demoAsset({ id: 'demo-office-06', majorCategory: 'OFFICE EQUIPMENT', tagNo: 'DEMO-FA-000206', company: '114.新媒体', originalValue: 4500, netValue: 500 }),
+  demoAsset({ id: 'demo-office-07', majorCategory: 'PC', tagNo: 'DEMO-FA-000207', company: '114.新媒体', originalValue: 6800, netValue: 350 }),
+  demoAsset({ id: 'demo-office-08', majorCategory: 'NOTEBOOK', tagNo: 'DEMO-FA-000208', company: '114.新媒体', originalValue: 12000, netValue: 1600 }),
+  demoAsset({ id: 'demo-office-09', majorCategory: 'OFFICE EQUIPMENT', tagNo: 'DEMO-FA-000209', company: '114.新媒体', originalValue: 2800, netValue: 0 }),
+  demoAsset({ id: 'demo-machine-01', majorCategory: 'SERVER', tagNo: 'DEMO-SV-000210', company: '114.新媒体', originalValue: 68000, netValue: 0 }),
+  demoAsset({ id: 'demo-machine-02', majorCategory: 'SERVER', tagNo: 'DEMO-SV-000211', company: '114.新媒体', originalValue: 72000, netValue: 9000 }),
+  demoAsset({ id: 'demo-machine-03', majorCategory: 'NET EQUIPMENT', tagNo: 'DEMO-NW-000212', company: '114.新媒体', originalValue: 26000, netValue: 0 }),
+  demoAsset({ id: 'demo-machine-04', majorCategory: 'NET EQUIPMENT', tagNo: 'DEMO-NW-000213', company: '114.新媒体', originalValue: 31000, netValue: 4200 }),
+  demoAsset({ id: 'demo-soft-01', majorCategory: 'SOFTWARE', tagNo: 'DEMO-SW-000214', company: '114.新媒体', originalValue: 150000, netValue: 25000 }),
+  demoAsset({ id: 'demo-soft-02', majorCategory: 'SOFTWARE', tagNo: 'DEMO-SW-000215', company: '114.新媒体', originalValue: 86000, netValue: 0 }),
+  demoAsset({ id: 'demo-video-01', majorCategory: 'PC', tagNo: 'DEMO-VD-000216', company: '114.新媒体', plate: '16.视频', originalValue: 7900, netValue: 500 }),
+  demoAsset({ id: 'demo-video-02', majorCategory: 'NOTEBOOK', tagNo: 'DEMO-VD-000217', company: '114.新媒体', plate: '16.视频', originalValue: 11500, netValue: 0 }),
+  demoAsset({ id: 'demo-sh-01', majorCategory: 'PC', tagNo: 'DEMO-SH-000218', company: '115.新媒体-上海', warehouse: shWarehouse?.warehouseDescription || '', city: shWarehouse?.city || '', building: shWarehouse?.building || '', floor: shWarehouse?.floor || '', originalValue: 7300, netValue: 0 }),
+  demoAsset({ id: 'demo-sh-02', majorCategory: 'OFFICE EQUIPMENT', tagNo: 'DEMO-SH-000219', company: '115.新媒体-上海', warehouse: shWarehouse?.warehouseDescription || '', city: shWarehouse?.city || '', building: shWarehouse?.building || '', floor: shWarehouse?.floor || '', originalValue: 3600, netValue: 450 }),
+  demoAsset({ id: 'demo-gz-01', majorCategory: 'NOTEBOOK', tagNo: 'DEMO-GZ-000220', company: '116.新媒体-广州', warehouse: gzWarehouse?.warehouseDescription || '', city: gzWarehouse?.city || '', building: gzWarehouse?.building || '', floor: gzWarehouse?.floor || '', originalValue: 10200, netValue: 0 }),
+  demoAsset({ id: 'demo-gz-02', majorCategory: 'OFFICE EQUIPMENT', tagNo: 'DEMO-GZ-000221', company: '116.新媒体-广州', warehouse: gzWarehouse?.warehouseDescription || '', city: gzWarehouse?.city || '', building: gzWarehouse?.building || '', floor: gzWarehouse?.floor || '', originalValue: 4200, netValue: 700 }),
+].filter(Boolean);
+
 export const SCRAP_ASSET_POOL = [
   ...basePool,
+  ...demoFreeAssets,
+  fromCatalog({
+    id: 'scrap-machine-114',
+    majorCategory: 'SERVER',
+    tagNo: 'FA-2026-000120',
+    company: '114.新媒体',
+    warehouse: officeWarehouse?.warehouseDescription || '',
+    owner: '213852-孙志强',
+    status: '在用-使用中',
+    city: officeWarehouse?.city || '',
+    building: officeWarehouse?.building || '',
+    floor: officeWarehouse?.floor || '',
+  }),
   fromCatalog({
     id: 'scrap-soft-1',
     majorCategory: 'SOFTWARE',
@@ -119,6 +172,30 @@ export const SCRAP_ASSET_POOL = [
     building: officeWarehouse?.building || '',
     floor: officeWarehouse?.floor || '',
     originalValue: 180000,
+  }),
+  fromCatalog({
+    id: 'scrap-office-114-accounting',
+    majorCategory: 'OFFICE EQUIPMENT',
+    tagNo: 'FA-2026-000121',
+    company: '114.新媒体',
+    warehouse: officeWarehouse?.warehouseDescription || '',
+    owner: '213852-孙志强',
+    status: '在库-再利用',
+    city: officeWarehouse?.city || '',
+    building: officeWarehouse?.building || '',
+    floor: officeWarehouse?.floor || '',
+  }),
+  fromCatalog({
+    id: 'scrap-office-114-available',
+    majorCategory: 'OFFICE EQUIPMENT',
+    tagNo: 'FA-2026-000122',
+    company: '114.新媒体',
+    warehouse: officeWarehouse?.warehouseDescription || '',
+    owner: '213852-孙志强',
+    status: '在库-再利用',
+    city: officeWarehouse?.city || '',
+    building: officeWarehouse?.building || '',
+    floor: officeWarehouse?.floor || '',
   }),
   fromCatalog({
     id: 'scrap-furniture-1',
@@ -161,16 +238,23 @@ export const SCRAP_ASSET_POOL = [
   }),
 ].filter(Boolean);
 
+// 仅用于可交互原型；正式人员权限仍由登录身份和组织数据提供。
+export const ACCOUNTING_DEMO_ACCESS = {
+  actor: { id: 'accounting-prototype-demo' },
+  authorizationScopes: [{ company: '114.新媒体', plates: ['17.Corporate'] }],
+};
+
 export const ACCOUNTING_ASSET_POOL = SCRAP_ASSET_POOL.map((item, index) => ({
   ...item,
   status: String(item.status || '').startsWith('在库') ? '在库-待报废' : item.status,
-  scrapMethod: index === 0 ? '调账' : index === 1 ? '部分报废' : '全部报废',
-  scrapType: index % 3 === 2 ? '未到报废期' : '已到报废期',
-  reason: index % 3 === 2 ? '设备不满足继续使用要求' : '达到报废条件',
+  scrapMethod: index === 0 ? '调账' : '非调账',
+  detailScrapMethod: index === 0 ? '调账' : index === 1 ? '部分报废' : '全部报废',
+  scrapType: Number(item.netValue || 0) === 0 ? '已到报废期' : '未到报废期',
+  reason: Number(item.netValue || 0) === 0 ? '达到报废条件' : '设备不满足继续使用要求',
   sourceBusinessType: index === 0 ? '跨公司转移' : '资产报废',
-  sourceBusinessNo: index === 0 ? 'CT202609230001' : `BF20260923${String(index + 1).padStart(4, '0')}`,
+  sourceBusinessNo: index === 0 ? 'CT20260923000001' : `BF20260923${String(index + 1).padStart(6, '0')}`,
   newCompany: index === 0 ? '115.新媒体-上海' : '',
-  newPlate: index === 0 ? '17_Corporate' : '',
+  newPlate: index === 0 ? '17.Corporate' : '',
   newCostCenter: index === 0 ? '112064_新媒体成本中心' : '',
   newResponsiblePerson: index === 0 ? '215410-卢铭华' : '',
   targetWarehouse: index === 0 ? 'I3001.资产上海分公司库（新媒体上海）' : '',
@@ -181,32 +265,97 @@ export const ACCOUNTING_ASSET_POOL = SCRAP_ASSET_POOL.map((item, index) => ({
   project: item.project || '',
 }));
 
+const DISPOSAL_QUOTE_SAMPLES = [
+  [1250.5, 1280, 1198.88],
+  [6800, 6520.5, 6200],
+  [23750.25, 22990, 21800.75],
+  [1850, 1725.5, 1680],
+  [980, 1025.25, 950],
+  [14500.75, 13880, 12600],
+  [5600, 5380.25, 5120],
+  [3200.5, 3100, 2899.99],
+  [8500, 8200.5, 7999],
+  [19800, 18750.75, 17600],
+];
+
 export const DISPOSAL_ASSET_POOL = ACCOUNTING_ASSET_POOL
-  .filter((item) => item.scope !== '软件' && item.scrapMethod !== '调账')
-  .map((item, index) => ({
-    ...item,
-    id: `disposal-${item.id}`,
-    sourceAssetId: item.id,
-    status: '已报废-待处置',
-    sourceScrapNo: item.sourceBusinessType === '资产报废' ? item.sourceBusinessNo : '-',
-    sourceAccountingNo: `ZMBF20260923${String(index + 1).padStart(4, '0')}`,
-    scrapDate: '2026-09-23',
-    disposalStatus: '待处置',
-    enteredAt: '2026-09-23',
-    region: String(item.city || '').includes('北京') ? '北京' : '非北京',
-    dataCleaning: item.scope === '机房资产' && index === 0 ? '是' : '否',
-  }));
+  .filter((item) => item.scrapMethod !== '调账' && item.scope !== '软件' && item.scrapType !== '丢失'
+    && !['scrap-office-114-accounting', 'scrap-office-114-available'].includes(item.id))
+  .map((item, index) => {
+    const [recycler1, recycler2, recycler3] = DISPOSAL_QUOTE_SAMPLES[index % DISPOSAL_QUOTE_SAMPLES.length];
+    const disposalMode = '实物处置';
+    return {
+      ...item,
+      id: `disposal-${item.id}`,
+      sourceAssetId: item.id,
+      status: '已报废-待处置',
+      sourceScrapNo: item.sourceBusinessType === '资产报废' ? item.sourceBusinessNo : '-',
+      sourceAccountingNo: `ZMBF20260923${String(index + 1).padStart(4, '0')}`,
+      scrapDate: '2026-09-23',
+      disposalStatus: '待处置',
+      disposalMode,
+      enteredAt: '2026-09-23',
+      region: String(item.city || '').includes('北京') ? '北京' : '非北京',
+      dataCleaning: item.scope === '机房资产' && index === 0 ? '是' : '否',
+      ...(item.scope === '办公设备' ? { recycler1, recycler2, recycler3 } : {}),
+    };
+  }).filter((item) => item.scope !== '机房资产' || item.region === '北京' || item.dataCleaning === '是');
+
+function approvedSourceAssets(ids) {
+  return ids.map((id) => SCRAP_ASSET_POOL.find((item) => item.id === id))
+    .filter(Boolean)
+    .map((asset) => ({
+      ...asset,
+      cardQuantity: asset.quantity,
+      requestedScrapQuantity: asset.quantity,
+      cardOriginalValue: asset.originalValue,
+      cardNetValue: asset.netValue,
+    }));
+}
 
 const businessRows = {
   crossCompany: [
     {
+      id: 'cc-accounting-demo-batch', applicationNo: 'CT20260928000021', documentStatus: '已完成',
+      assetScope: '办公设备', company: '114.新媒体', targetCompany: '115.新媒体-上海',
+      creator: DEMO_APPLICANT, createdAt: '2026-09-28', assetCount: 2,
+      currentNode: '已进入待报废池', remark: '可用于新建调账账面报废单的演示资产',
+      assetsSnapshot: approvedSourceAssets(['demo-office-07', 'demo-office-08']).map((asset) => ({
+        ...asset,
+        newCompany: '115.新媒体-上海',
+        newPlate: asset.plate,
+        newCostCenter: asset.costCenter,
+        newResponsiblePerson: asset.responsiblePerson,
+        targetWarehouse: shWarehouse?.warehouseDescription || '',
+        targetCity: shWarehouse?.city || '',
+        targetBuilding: shWarehouse?.building || '',
+        targetFloor: shWarehouse?.floor || '',
+      })),
+    },
+    {
+      id: 'cc-accounting-demo', applicationNo: 'CT20260921000004', documentStatus: '已完成',
+      assetScope: '软件', company: '114.新媒体', targetCompany: '115.新媒体-上海',
+      creator: DEMO_APPLICANT, createdAt: '2026-09-21', assetCount: 1,
+      currentNode: '已进入待报废池', remark: '软件公司间转移演示',
+      assetsSnapshot: [SCRAP_ASSET_POOL.find((asset) => asset.id === 'scrap-soft-1')].map((asset) => ({
+        ...asset,
+        cardQuantity: asset.quantity, requestedScrapQuantity: asset.quantity,
+        cardOriginalValue: asset.originalValue, cardNetValue: asset.netValue,
+        newCompany: '115.新媒体-上海', newPlate: asset.plate,
+        newCostCenter: asset.costCenter, newResponsiblePerson: asset.responsiblePerson,
+        targetWarehouse: shWarehouse?.warehouseDescription || '',
+        targetCity: shWarehouse?.city || '', targetBuilding: shWarehouse?.building || '',
+        targetFloor: shWarehouse?.floor || '',
+      })),
+    },
+    {
       id: 'cc-1',
-      applicationNo: 'CT202609230001',
+      applicationNo: 'CT20260923000001',
       documentStatus: '审批中',
       assetScope: '机房资产',
       company: '114.新媒体',
       targetCompany: '115.新媒体-上海',
-      creator: '220314-刘帅',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-23',
       assetCount: 2,
       currentNode: '责任人7级及以上直属领导',
@@ -214,12 +363,12 @@ const businessRows = {
     },
     {
       id: 'cc-2',
-      applicationNo: 'CT202609220003',
+      applicationNo: 'CT20260922000003',
       documentStatus: '已完成',
       assetScope: '办公设备',
       company: '123.天津飞狐',
       targetCompany: '116.新媒体-广州',
-      creator: 'ES专员',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-22',
       assetCount: 5,
       currentNode: '已进入待报废池',
@@ -228,14 +377,30 @@ const businessRows = {
   ],
   scrap: [
     {
+      id: 'scrap-accounting-demo-office-batch', applicationNo: 'BF20260928000031',
+      documentStatus: '已审批', assetScope: '办公设备', company: '114.新媒体',
+      region: '北京', scrapMethod: '全部报废', creator: DEMO_APPLICANT,
+      createdAt: '2026-09-28', assetCount: 4, currentNode: '已进入待报废池',
+      remark: '账面报废候选办公资产演示批次',
+      assetsSnapshot: approvedSourceAssets(['demo-office-01', 'demo-office-02', 'demo-office-03', 'demo-office-04']),
+    },
+    {
+      id: 'scrap-accounting-demo-machine-batch', applicationNo: 'BF20260928000032',
+      documentStatus: '已审批', assetScope: '机房资产', company: '114.新媒体',
+      region: '北京', scrapMethod: '全部报废', creator: DEMO_APPLICANT,
+      createdAt: '2026-09-28', assetCount: 3, currentNode: '已进入待报废池',
+      remark: '账面报废候选机房资产演示批次',
+      assetsSnapshot: approvedSourceAssets(['demo-machine-01', 'demo-machine-02', 'demo-machine-03']),
+    },
+    {
       id: 'scrap-1',
-      applicationNo: 'BF202609230006',
+      applicationNo: 'BF20260923000006',
       documentStatus: '审批中',
       assetScope: '机房资产',
       company: '114.新媒体',
       region: '北京',
       scrapMethod: '全部报废',
-      creator: '220314-刘帅',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-23',
       assetCount: 12,
       currentNode: '采购专员',
@@ -243,29 +408,62 @@ const businessRows = {
     },
     {
       id: 'scrap-2',
-      applicationNo: 'BF202609220011',
+      applicationNo: 'BF20260922000011',
       documentStatus: '已审批',
       assetScope: '办公设备',
       company: '114.新媒体',
       region: '北京',
       scrapMethod: '全部报废',
-      creator: 'ES专员',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-22',
-      assetCount: 3,
+      assetCount: 1,
       currentNode: '已进入待报废池',
       remark: '办公设备报废',
+      assetsSnapshot: [SCRAP_ASSET_POOL.find((item) => item.id === 'scrap-office-114-accounting')]
+        .map((asset) => ({
+          ...asset,
+          cardQuantity: asset.quantity,
+          requestedScrapQuantity: asset.quantity,
+          cardOriginalValue: asset.originalValue,
+          cardNetValue: asset.netValue,
+        })),
+    },
+    {
+      id: 'scrap-accounting-available', applicationNo: 'BF20260921000012',
+      documentStatus: '已审批', assetScope: '办公设备', company: '114.新媒体',
+      region: '北京', scrapMethod: '全部报废', creator: DEMO_APPLICANT,
+      createdAt: '2026-09-21', assetCount: 1, currentNode: '已进入待报废池',
+      remark: '可用于新建非调账账面报废单',
+      assetsSnapshot: [SCRAP_ASSET_POOL.find((item) => item.id === 'scrap-office-114-available')]
+        .map((asset) => ({ ...asset, cardQuantity: asset.quantity,
+          requestedScrapQuantity: asset.quantity,
+          cardOriginalValue: asset.originalValue, cardNetValue: asset.netValue })),
+    },
+    {
+      id: 'scrap-machine-draft', applicationNo: 'BF20260926000001', documentStatus: '草稿',
+      assetScope: '机房资产', company: '114.新媒体', creator: DEMO_APPLICANT,
+      createdAt: '2026-09-26', assetCount: 1, scrapMethod: '全部报废',
+      assetCategory: 'SERVER', assetLocation: '北京', description: '机房服务器报废演示',
+      assetsSnapshot: [SCRAP_ASSET_POOL.find((item) => item.id === 'scrap-machine-114')],
+    },
+    {
+      id: 'scrap-office-draft', applicationNo: 'BF20260926000002', documentStatus: '草稿',
+      assetScope: '办公设备', company: '114.新媒体', creator: DEMO_APPLICANT,
+      createdAt: '2026-09-26', assetCount: 1, scrapMethod: '全部报废',
+      description: '办公设备报废演示',
+      assetsSnapshot: [SCRAP_ASSET_POOL.find((item) => item.id === 'scrap-furniture-1')],
     },
   ],
   accounting: [
     {
       id: 'acc-1',
-      applicationNo: 'ZMBF202609230002',
+      applicationNo: 'ZMBF20260923000002',
       documentStatus: '审批中',
       assetScope: '机房资产',
       company: '114.新媒体',
-      plate: '17_Corporate',
-      scrapMethod: '全部报废',
-      creator: '吕静',
+      plate: '17.Corporate',
+      scrapMethod: '非调账',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-23',
       assetCount: 8,
       currentNode: 'NO部门5级及以上领导',
@@ -273,28 +471,36 @@ const businessRows = {
     },
     {
       id: 'acc-2',
-      applicationNo: 'ZMBF202609220008',
-      documentStatus: '待提单人确认',
+      applicationNo: 'ZMBF20260922000008',
+      documentStatus: '审批中',
       assetScope: '办公设备',
-      company: '115.新媒体-上海',
-      plate: '18_Media',
-      scrapMethod: '全部报废',
-      creator: '卢铭华',
+      company: '114.新媒体',
+      plate: '17.Corporate',
+      scrapMethod: '非调账',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-22',
-      assetCount: 4,
+      assetCount: 1,
       currentNode: '提单人确认',
       remark: '办公设备账面报废',
+      assetsSnapshot: [SCRAP_ASSET_POOL.find((item) => item.id === 'scrap-office-114-accounting')]
+        .map((asset) => ({ ...asset, cardQuantity: asset.quantity,
+          requestedScrapQuantity: asset.quantity,
+          cardOriginalValue: asset.originalValue, cardNetValue: asset.netValue,
+          scrapMethod: '非调账', detailScrapMethod: '全部报废',
+          scrapType: Number(asset.netValue) === 0 ? '已到报废期' : '未到报废期',
+          sourceBusinessType: '资产报废', sourceBusinessNo: 'BF20260922000011',
+          disposedComplete: '否', status: '在库-待报废' })),
     },
   ],
   disposal: [
     {
       id: 'disp-1',
-      applicationNo: 'CZ202609230001',
-      documentStatus: '处理中',
+      applicationNo: 'CZ20260923000001',
+      documentStatus: '审批中',
       assetScope: '机房资产',
       company: '114.新媒体',
       region: '北京',
-      creator: '采购专员',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-23',
       assetCount: 2,
       currentNode: 'ES专员协办',
@@ -302,16 +508,44 @@ const businessRows = {
     },
     {
       id: 'disp-2',
-      applicationNo: 'CZ202609220004',
+      applicationNo: 'CZ20260922000004',
       documentStatus: '审批中',
       assetScope: '办公设备',
       company: '114.新媒体',
       region: '北京',
-      creator: 'ES专员',
+      creator: DEMO_APPLICANT,
       createdAt: '2026-09-22',
       assetCount: 6,
       currentNode: 'ES一级审批',
       remark: '办公设备实物处置',
+    },
+    {
+      id: 'disp-office-beijing', applicationNo: 'CZ20260921000001', documentStatus: '审批中',
+      assetScope: '办公设备', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-asset-2')?.company || '116.北京新动力',
+      region: '北京', creator: DEMO_APPLICANT, createdAt: '2026-09-21',
+      assetCount: 1, assetIds: ['disposal-asset-2'], currentNode: 'ES二级审批',
+      remark: '笔记本线下询价及处置审批',
+    },
+    {
+      id: 'disp-machine-beijing', applicationNo: 'CZ20260920000002', documentStatus: '审批中',
+      assetScope: '机房资产', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-asset-3')?.company || '115.新媒体',
+      region: '北京', creator: DEMO_APPLICANT, createdAt: '2026-09-20',
+      assetCount: 1, assetIds: ['disposal-asset-3'], currentNode: 'ES专员协办',
+      remark: '机房服务器完成询价待线下交接',
+    },
+    {
+      id: 'disp-office-shanghai', applicationNo: 'CZ20260919000003', documentStatus: '审批中',
+      assetScope: '办公设备', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-scrap-vehicle-1')?.company || '115.新媒体-上海',
+      region: '非北京', creator: '213852-孙志强', createdAt: '2026-09-19',
+      assetCount: 1, assetIds: ['disposal-scrap-vehicle-1'], currentNode: 'ES一级审批',
+      remark: '上海车辆处置等待ES一级审批',
+    },
+    {
+      id: 'disp-office-guangzhou', applicationNo: 'CZ20260918000005', documentStatus: '审批中',
+      assetScope: '办公设备', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-scrap-building-1')?.company || '116.新媒体-广州',
+      region: '非北京', creator: '213852-孙志强', createdAt: '2026-09-18',
+      assetCount: 1, assetIds: ['disposal-scrap-building-1'], currentNode: 'ES专员处理',
+      remark: '广州资产进入线下处置办理',
     },
   ],
 };
@@ -327,13 +561,31 @@ export function getInitialBusinessRows(type) {
     const scoped = row.assetScope === '混合'
       ? sourcePool
       : sourcePool.filter((item) => item.scope === row.assetScope);
-    const assets = scoped.slice(0, Math.max(1, row.assetCount || 1));
+    const matching = scoped.filter((item) => item.disposalMode !== '无实物处置');
+    const companyMatching = type === 'disposal'
+      ? matching.filter((item) => item.company === row.company)
+      : matching;
+    const assets = type === 'disposal' && Array.isArray(row.assetIds)
+      ? companyMatching.filter((item) => row.assetIds.includes(item.id))
+      : companyMatching.slice(0, Math.max(1, row.assetCount || 1));
 
     return {
       ...row,
+      ...(type === 'disposal' && row.assetScope === '机房资产' ? {
+        needsCleaning: assets.some((asset) => asset.dataCleaning === '是') ? '是' : '否',
+      } : {}),
+      ...(type === 'disposal' && row.assetScope === '办公设备' ? {
+        recycler1Name: row.recycler1Name || '广环再生资源利用有限公司',
+        recycler2Name: row.recycler2Name || '广州源创再生资源有限公司',
+        recycler3Name: row.recycler3Name || '东莞市创鑫再生资源有限公司',
+      } : {}),
       lastModifiedAt: row.lastModifiedAt || row.createdAt,
+      assetTags: (row.assetsSnapshot?.length ? row.assetsSnapshot : assets).map((item) => item.tagNo).filter(Boolean),
       originalValueTotal: assets.reduce((sum, item) => sum + Number(item.originalValue || 0), 0),
       netValueTotal: assets.reduce((sum, item) => sum + Number(item.netValue || 0), 0),
+      ...(type === 'disposal' ? { assetsSnapshot: assets, approvalHistory: [
+        { node: row.disposalMode === '无实物处置' || row.assetScope === '机房资产' ? '系统发起' : '制单人提交', person: row.creator, result: '提交', opinion: '', time: `${row.createdAt} 09:00:00` },
+      ] } : {}),
     };
   });
 }
