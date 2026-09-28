@@ -136,6 +136,19 @@ export default function ScrapPrototypeEditor({
     )));
   };
 
+  const accountingPlates = Array.from(new Set(assets.map((item) => item.plate).filter(Boolean)));
+  const accountingNamingPlate = assets.length > 0
+    ? (accountingPlates.length === 1 ? accountingPlates[0] : '')
+    : form.plate;
+  const accountingIsVideo = /视频|video/i.test(String(accountingNamingPlate || ''));
+  const accountingAutoName = type === 'accounting' && form.company
+    ? `${accountingCompanyDisplayName(form.company)}${accountingIsVideo ? '视频' : ''}固定资产报废申请表`
+    : '';
+  const accountingFormName = accountingNameTouched ? form.scrapFormName || '' : accountingAutoName;
+  const accountingScrapPeriod = type === 'accounting' && dayjs(form.applicationDate).isValid()
+    ? dayjs(form.applicationDate).format('YYYY年M月')
+    : '';
+
   const showValue = (value) => (
     <span>{value === undefined || value === null || value === '' ? '-' : String(value)}</span>
   );
@@ -299,7 +312,15 @@ export default function ScrapPrototypeEditor({
     }
 
     if (type === 'accounting') {
-      const checked = validateAccountingAssets(form, assets, {
+      if (!String(accountingFormName || '').trim()) {
+        message.error('请填写报废单名称');
+        return false;
+      }
+      const checked = validateAccountingAssets({
+        ...form,
+        scrapFormName: accountingFormName,
+        scrapPeriod: accountingScrapPeriod,
+      }, assets, {
         actor: accountingActor,
         authorizationScopes: accountingAuthorizationScopes,
         recordId: form.id,
@@ -361,9 +382,7 @@ export default function ScrapPrototypeEditor({
       .filter(Boolean))].join('、');
   };
 
-  const handleSave = (submit) => {
-    if (submit && !validate()) return;
-
+  const prepareSavePayload = () => {
     const scrapReasons = type === 'accounting'
       ? Object.fromEntries((form.scrapMethod === '调账'
         ? ['已到报废期', '未到报废期']
@@ -372,12 +391,30 @@ export default function ScrapPrototypeEditor({
     const savedAssets = type === 'accounting'
       ? assets.map((item) => ({ ...item, reason: scrapReasons[item.scrapType] || '' }))
       : assets;
+    return {
+      nextForm: {
+        ...form,
+        scrapReasons,
+        scrapFormName: type === 'accounting' ? accountingFormName : form.scrapFormName,
+        scrapPeriod: type === 'accounting' ? accountingScrapPeriod : form.scrapPeriod,
+        needsCleaning: effectiveNeedsCleaning,
+      },
+      savedAssets,
+    };
+  };
 
-    onSave({
-      ...form,
-      scrapReasons,
-      needsCleaning: effectiveNeedsCleaning,
-    }, savedAssets, submit);
+  const handleSave = (submit) => {
+    if (submit && !validate()) return;
+    const { nextForm, savedAssets } = prepareSavePayload();
+    onSave(nextForm, savedAssets, submit);
+  };
+
+  const handleAccountingPreview = () => {
+    if (!validate()) return;
+    const { nextForm, savedAssets } = prepareSavePayload();
+    setForm(nextForm);
+    setAssets(savedAssets);
+    setAccountingPreview(true);
   };
 
   const approvalRecords = getScrapPrototypeApprovalRecords({
