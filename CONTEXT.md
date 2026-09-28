@@ -1,3 +1,4 @@
+- 2026-09-29：已将 `feature/asset-inventory` 合并至 `main`。采用双父 merge commit，保留合并前 `main` 全部历史与功能分支全部历史；双方独有文件直接保留，双方同改但不重叠的文件做三方合并，AGENTS/CONTEXT/lessons/task_plan 保留 main 新结构并补入功能分支最新有效规则。PR #7 已合并。
 # 当前交接
 
 更新：2026-09-27。当前目标仓库：zhouqixing7012/mmp；本次工作分支：main。
