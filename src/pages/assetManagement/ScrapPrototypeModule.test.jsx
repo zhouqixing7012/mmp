@@ -186,11 +186,11 @@ test('账面报废完成仅自动生成机房实物处置单，软件和丢失�
 });
 
 test.each([
-  ['否', 0, '已报废-已处置'],
-  ['是', 1, '在用-使用中'],
-])('非北京机房清洗结果为%s时自动处置单数量为%i', (dataCleaning, expectedCount, expectedStatus) => {
+  ['否', '已报废-已处置', '已完成'],
+  ['是', '已报废-待处置', '审批中'],
+])('非北京机房清洗结果为%s时仍生成处置单', (dataCleaning, expectedStatus, expectedDisposalStatus) => {
   const machine = SCRAP_ASSET_POOL.find((asset) => asset.id === 'scrap-machine-114');
-  const source = { ...machine, city: '上海', dataCleaning, disposalRequired: '是', cardQuantity: machine.quantity,
+  const source = { ...machine, city: '上海', dataCleaning, cardQuantity: machine.quantity,
     requestedScrapQuantity: machine.quantity, cardOriginalValue: machine.originalValue, cardNetValue: machine.netValue };
   saveScrapPrototypeRecords('scrap', [{ id: 'scrap-approved-shanghai', applicationNo: 'BF-CASE-SH',
     documentStatus: '已审批', assetsSnapshot: [source] }]);
@@ -205,18 +205,20 @@ test.each([
   render(<ScrapPrototypeModule type="accounting" accountingActor={accountingAccess.actor}
     accountingAuthorizationScopes={accountingAccess.authorizationScopes} />);
   fireEvent.click(screen.getByRole('button', { name: '执行账面报废' }));
-  expect(getScrapPrototypeRecords('disposal')).toHaveLength(expectedCount);
+  const disposalRecords = getScrapPrototypeRecords('disposal');
+  expect(disposalRecords).toHaveLength(1);
+  expect(disposalRecords[0].documentStatus).toBe(expectedDisposalStatus);
   expect(getScrapPrototypeRecords('accounting')[0].assetsSnapshot[0].status).toBe(expectedStatus);
-  expect(getDisposalCandidates().some((asset) => asset.tagNo === source.tagNo)).toBe(dataCleaning === '是');
+  expect(getDisposalCandidates().some((asset) => asset.tagNo === source.tagNo)).toBe(false);
 });
 
-test('机房处置节点只包含实际协办，非北京无需清洗不允许创建流程', () => {
+test('机房处置节点只由归属地和数据清洗决定办理步骤，不决定是否生成处置单', () => {
   expect(getDisposalApprovalNodes({ assetScope: '机房资产', region: '北京', needsCleaning: '否' }))
     .toEqual(['采购专员协办', 'ES专员协办']);
   expect(getDisposalApprovalNodes({ assetScope: '机房资产', region: '非北京', needsCleaning: '是' }))
     .toEqual(['数据清洗']);
-  expect(() => getDisposalApprovalNodes({ assetScope: '机房资产', region: '非北京', needsCleaning: '否' }))
-    .toThrow('不生成处置单');
+  expect(getDisposalApprovalNodes({ assetScope: '机房资产', region: '非北京', needsCleaning: '否' }))
+    .toEqual([]);
   expect(() => getDisposalApprovalNodes({ assetScope: '软件' })).toThrow('不生成处置单');
 });
 
@@ -294,7 +296,7 @@ test('非调账资产完成账面报废后进入待处置池', () => {
     applicationNo: 'ZMBF-CASE-001',
     documentStatus: '已完成',
     lastModifiedAt: '2026-09-23 12:00:00',
-    assetsSnapshot: [{ ...asset, scrapMethod: '全部报废', disposedComplete: '否', disposalRequired: '是' }],
+    assetsSnapshot: [{ ...asset, scrapMethod: '非调账', detailScrapMethod: '全部报废' }],
   }]);
 
   const disposal = getDisposalCandidates().find((item) => item.tagNo === asset.tagNo);
