@@ -421,6 +421,7 @@ export default function ScrapPrototypeEditor({
     ...form,
     assetsSnapshot: assets,
   }, type);
+  const previewView = type === 'accounting' && accountingPreview;
   const approvalView = approvalPage || (
     readOnly
     && ['crossCompany', 'scrap', 'accounting', 'disposal'].includes(type)
@@ -432,7 +433,7 @@ export default function ScrapPrototypeEditor({
     || (['scrap', 'disposal'].includes(type) && form.documentStatus === '审批中')
   );
   const showPageExport = (type === 'scrap' && approvalView)
-    || (type === 'accounting' && approvalView)
+    || (type === 'accounting' && (approvalView || previewView))
     || (type === 'disposal' && approvalPage);
 
   const disposalSummary = Array.from(assets.reduce((groups, asset) => {
@@ -617,29 +618,41 @@ export default function ScrapPrototypeEditor({
       ) : approvalActionButtons(decideTransfer)}
     </>
   );
-  const assetDetailsTitle = type === 'accounting' && form.scrapMethod === '调账'
-    ? '公司间转移明细'
-    : (type === 'accounting' && approvalView) || type === 'scrap'
-      ? '报废资产明细'
-      : type === 'disposal' && approvalPage
-        ? '处置资产汇总'
-        : type === 'disposal'
-          ? '处置资产明细'
-          : '资产明细';
-  const useScrapApprovalCardStyle = approvalView && ['scrap', 'accounting'].includes(type);
+  const assetDetailsTitle = type === 'accounting' && (approvalView || previewView)
+    ? '报废资产明细'
+    : type === 'accounting' && form.scrapMethod === '调账'
+      ? '公司间转移明细'
+      : type === 'scrap'
+        ? '报废资产明细'
+        : type === 'disposal' && approvalPage
+          ? '处置资产汇总'
+          : type === 'disposal'
+            ? '处置资产明细'
+            : '资产明细';
+  const useScrapApprovalCardStyle = (approvalView || previewView) && ['scrap', 'accounting'].includes(type);
 
   return (
     <div
       className="space-y-4 pb-4"
-      data-page-view-key={`${type}-${approvalView ? 'approval' : readOnly ? 'detail' : 'edit'}`}
+      data-page-view-key={`${type}-${previewView ? 'preview' : approvalView ? 'approval' : readOnly ? 'detail' : 'edit'}`}
     >
       <div className="flex items-center justify-between gap-4">
         <h3 className="m-0 text-xl font-semibold">
-          {approvalView ? `${config.title}审批` : readOnly ? `${config.title}详情` : config.createLabel}
+          {previewView
+            ? `${config.title}预览`
+            : approvalView ? `${config.title}审批` : readOnly ? `${config.title}详情` : config.createLabel}
         </h3>
-        {(approvalView || showPageExport) && (
+        {type === 'accounting' && (
+          <Steps
+            className="max-w-[420px]"
+            size="small"
+            current={previewView ? 1 : approvalView ? 2 : 0}
+            items={[{ title: '编辑' }, { title: '预览' }, { title: '发起审批' }]}
+          />
+        )}
+        {(approvalView || previewView || showPageExport) && (
           <div className="flex items-center gap-3">
-            {approvalView && <span className="text-gray-500">申请单号：{form.applicationNo}</span>}
+            {(approvalView || previewView) && form.applicationNo && <span className="text-gray-500">申请单号：{form.applicationNo}</span>}
             {showPageExport && (
               <Button
                 icon={<DownloadOutlined />}
