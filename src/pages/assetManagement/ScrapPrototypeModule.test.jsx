@@ -349,9 +349,38 @@ test('办公设备报废经过鉴定和主管确认后进入账面报废候选',
   expect(getScrapPrototypeRecords('scrap')[0].currentNode).toBe('ES主管确认');
   fireEvent.click(screen.getByRole('button', { name: '审批通过' }));
   expect(getScrapPrototypeRecords('scrap')[0].documentStatus).toBe('已审批');
+  expect(getScrapPrototypeRecords('scrap')[0].serviceNotification).toMatchObject({
+    channel: '服务号',
+    recipientRole: '对应账面报废发起人',
+    trigger: '资产报废审批完成',
+  });
   const sourceAccess = { actor: accountingAccess.actor,
     authorizationScopes: [{ company: asset.company, plates: '*' }], company: asset.company };
   expect(getAccountingCandidates(sourceAccess).find((item) => item.tagNo === asset.tagNo).sourceBusinessNo).toBe('BF-CASE-001');
+});
+
+test('软件资产报废流程结束后通知对应账面报废发起人', async () => {
+  const asset = SCRAP_ASSET_POOL.find((item) => item.scope === '软件');
+  saveScrapPrototypeRecords('scrap', [{
+    id: 'scrap-software-notification',
+    applicationNo: 'BF-SOFTWARE-NOTIFY',
+    documentStatus: '审批中',
+    assetScope: '软件',
+    currentNode: '7级及以上直属领导',
+    assetsSnapshot: [{ ...asset, scrapMethod: '全部报废' }],
+    formSnapshot: { assetScope: '软件', currentNode: '7级及以上直属领导' },
+    approvalHistory: [],
+  }]);
+
+  render(<ScrapPrototypeModule type="scrap" />);
+  fireEvent.click(screen.getByRole('button', { name: '审批通过' }));
+
+  await waitFor(() => expect(getScrapPrototypeRecords('scrap')[0].documentStatus).toBe('已审批'));
+  expect(getScrapPrototypeRecords('scrap')[0].serviceNotification).toMatchObject({
+    channel: '服务号',
+    recipientRole: '对应账面报废发起人',
+    trigger: '资产报废审批完成',
+  });
 });
 
 test('模拟刷新后恢复初始Mock数据并忽略旧版本地缓存', () => {
