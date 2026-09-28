@@ -284,8 +284,7 @@ export function validateAccountingAssets(form, assets, options = {}) {
       errors.push({ code: 'TRANSFER_CANNOT_BE_LOST', index, message: `${prefix}调账资产的报废类型不得为丢失` });
     }
     if (asset.scrapType === '丢失') {
-      if (asset.scrapMethod !== '非调账' || asset.detailScrapMethod !== '全部报废'
-        || asset.sourceBusinessType !== '丢失资产') {
+      if (asset.scrapMethod !== '非调账' || asset.sourceBusinessType !== '丢失资产') {
         errors.push({ code: 'INVALID_LOST_SOURCE', index, message: `${prefix}丢失资产来源或报废方式无效` });
       }
       const priorRecord = ['crossCompany', 'scrap'].flatMap((sourceType) => getScrapPrototypeRecords(sourceType))
@@ -293,10 +292,20 @@ export function validateAccountingAssets(form, assets, options = {}) {
           && (record.assetsSnapshot || []).some((item) => item?.tagNo === asset.tagNo));
       if (priorRecord) errors.push({ code: 'LOST_ASSET_HAS_PRIOR_WORKFLOW', index, message: `${prefix}丢失资产已进入其他前置业务` });
       const cardAsset = SCRAP_ASSET_POOL.find((item) => item.tagNo === asset.tagNo);
+      const cardQuantity = positive(asset.cardQuantity);
+      const requestedQuantity = positive(asset.requestedScrapQuantity ?? asset.quantity);
+      const sourceCardQuantity = positive(cardAsset?.cardQuantity ?? cardAsset?.quantity);
+      const expectedMethod = requestedQuantity && cardQuantity && requestedQuantity < cardQuantity ? '部分报废' : '全部报废';
+      const cardOriginalValue = Number(asset.cardOriginalValue ?? cardAsset?.cardOriginalValue ?? cardAsset?.originalValue ?? 0);
+      const cardNetValue = Number(asset.cardNetValue ?? cardAsset?.cardNetValue ?? cardAsset?.netValue ?? 0);
+      const ratio = requestedQuantity && cardQuantity ? requestedQuantity / cardQuantity : 0;
+      const expectedOriginalValue = money(cardOriginalValue * ratio);
+      const expectedNetValue = money(cardNetValue * ratio);
       if (!cardAsset || cardAsset.company !== asset.company || cardAsset.plate !== asset.plate
-        || positive(cardAsset.cardQuantity ?? cardAsset.quantity) !== positive(asset.cardQuantity)
-        || positive(asset.requestedScrapQuantity ?? asset.quantity) !== positive(asset.cardQuantity)) {
-        errors.push({ code: 'INVALID_LOST_ASSET', index, message: `${prefix}丢失资产与资产卡片信息不一致` });
+        || sourceCardQuantity !== cardQuantity || !requestedQuantity || !cardQuantity
+        || requestedQuantity > cardQuantity || asset.detailScrapMethod !== expectedMethod
+        || Number(asset.originalValue) !== expectedOriginalValue || Number(asset.netValue) !== expectedNetValue) {
+        errors.push({ code: 'INVALID_LOST_ASSET', index, message: `${prefix}丢失资产报废数量或金额与资产卡片不一致` });
       }
     } else {
       const sourceRecord = sourceRecordFor(asset);
