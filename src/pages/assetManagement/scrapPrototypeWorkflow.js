@@ -17,12 +17,21 @@ export function getScrapApprovalNodes(scope, assets) {
 }
 
 export function getDisposalApprovalNodes(record) {
-  if (record.disposalMode === '无实物处置' || record.assetScope === '软件') return ['无实物处置确认'];
-  if (record.assetScope === '机房资产') return [
-    ...(record.region === '北京' ? ['采购专员协办', 'ES专员协办'] : []),
-    ...(record.needsCleaning === '是' ? ['数据清洗'] : []),
-    '处置确认',
-  ];
+  if (record.disposalMode === '无实物处置' || record.assetScope === '软件') {
+    throw new Error('无需处置资产不生成处置单');
+  }
+  if (record.assetScope === '机房资产') {
+    if (record.region === '非北京' && record.needsCleaning === '否') {
+      throw new Error('非北京且无需数据清洗的机房资产不生成处置单');
+    }
+    if (!['北京', '非北京'].includes(record.region) || !['是', '否'].includes(record.needsCleaning)) {
+      throw new Error('机房处置单缺少明确的归属地或数据清洗结果');
+    }
+    return [
+      ...(record.region === '北京' ? ['采购专员协办', 'ES专员协办'] : []),
+      ...(record.needsCleaning === '是' ? ['数据清洗'] : []),
+    ];
+  }
   return ['ES二级审批', 'ES一级审批', '财务审批', 'ES专员处理'];
 }
 

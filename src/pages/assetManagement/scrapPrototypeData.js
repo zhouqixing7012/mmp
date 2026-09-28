@@ -261,11 +261,9 @@ export const DISPOSAL_ASSET_POOL = ACCOUNTING_ASSET_POOL
       enteredAt: '2026-09-23',
       region: String(item.city || '').includes('北京') ? '北京' : '非北京',
       dataCleaning: item.scope === '机房资产' && index === 0 ? '是' : '否',
-      recycler1: disposalMode === '实物处置' ? recycler1 : null,
-      recycler2: disposalMode === '实物处置' ? recycler2 : null,
-      recycler3: disposalMode === '实物处置' ? recycler3 : null,
+      ...(item.scope === '办公设备' ? { recycler1, recycler2, recycler3 } : {}),
     };
-  });
+  }).filter((item) => item.scope !== '机房资产' || item.region === '北京' || item.dataCleaning === '是');
 
 const businessRows = {
   crossCompany: [
@@ -492,7 +490,10 @@ export function getInitialBusinessRows(type) {
 
     return {
       ...row,
-      ...(type === 'disposal' && row.disposalMode !== '无实物处置' ? {
+      ...(type === 'disposal' && row.assetScope === '机房资产' ? {
+        needsCleaning: assets.some((asset) => asset.dataCleaning === '是') ? '是' : '否',
+      } : {}),
+      ...(type === 'disposal' && row.assetScope === '办公设备' ? {
         recycler1Name: row.recycler1Name || '广环再生资源利用有限公司',
         recycler2Name: row.recycler2Name || '广州源创再生资源有限公司',
         recycler3Name: row.recycler3Name || '东莞市创鑫再生资源有限公司',

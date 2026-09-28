@@ -308,6 +308,17 @@ test('资产处置回收商一至三按报价金额输入', () => {
   expect(onChange).toHaveBeenCalledWith(source.id, 'recycler1', 1200.5);
 });
 
+test('机房资产处置明细和导出没有三家回收商或报价', () => {
+  const source = { ...SCRAP_ASSET_POOL.find((item) => item.scope === '机房资产') };
+  render(<ScrapPrototypeAssetTable type="disposal" assetScope="机房资产" assets={[source]}
+    readOnly onChange={jest.fn()} onReplace={jest.fn()} />);
+  expect(screen.queryByText('回收商一报价')).not.toBeInTheDocument();
+  XLSX.utils.json_to_sheet.mockClear();
+  exportScrapPrototypeAssets([source], 'disposal', undefined, { assetScope: '机房资产' });
+  expect(Object.keys(XLSX.utils.json_to_sheet.mock.calls[0][0][0])
+    .some((key) => key.includes('回收商') || key.includes('报价'))).toBe(false);
+});
+
 
 test('资产报废明细使用报废数量，账面报废删除按钮只显示删除', () => {
   const source = SCRAP_ASSET_POOL[0];
@@ -350,9 +361,10 @@ test('资产处置明细导出包含完整处置字段和三家报价', () => {
     tagNo: 'FA-2026-000120',
     serialNumber: 'SN-120',
     reason: '达到报废条件',
-    majorCategory: 'SERVER',
-    minorCategory: '标准机架服务器',
-    description: '机架服务器',
+    majorCategory: 'OFFICE EQUIPMENT',
+    minorCategory: '标准办公设备',
+    scope: '办公设备',
+    description: '办公设备',
     config: '双路处理器',
     enableDate: '2022-06-18',
     plate: '17_Corporate',
@@ -374,7 +386,7 @@ test('资产处置明细导出包含完整处置字段和三家报价', () => {
     expect.objectContaining({
       序号: 1,
       报废原因: '达到报废条件',
-      资产类别: 'SERVER.标准机架服务器',
+      资产类别: 'OFFICE EQUIPMENT.标准办公设备',
       City: '北京',
       回收商一供应商名称: '广环再生资源利用有限公司',
       回收商一报价: 1250.5,

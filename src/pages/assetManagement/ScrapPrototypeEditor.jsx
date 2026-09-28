@@ -272,7 +272,7 @@ export default function ScrapPrototypeEditor({
       }
     }
 
-    if (type === 'disposal') {
+    if (type === 'disposal' && form.assetScope === '办公设备') {
       if (!form.company || assets.some((asset) => asset.company !== form.company || asset.scope !== '办公设备')) {
         message.error('请选择公司并添加该公司的待处置办公资产');
         return false;
@@ -357,7 +357,7 @@ export default function ScrapPrototypeEditor({
     group.netValue += Number(asset.netValue || 0);
     for (const field of ['recycler1', 'recycler2', 'recycler3']) {
       const value = String(asset[field] || '').trim();
-      if (value && !group[field].includes(value)) group[field].push(value);
+      if (value) group[field].push(value);
     }
     return groups;
   }, new Map()).values());
@@ -444,19 +444,31 @@ export default function ScrapPrototypeEditor({
             <DetailItem label="申请人">{showValue(form.creator)}</DetailItem>
             <DetailItem label="申请日期">{showValue(form.applicationDate)}</DetailItem>
             <DetailItem label="公司">{showValue(form.company)}</DetailItem>
-            <DetailItem label="办公区">{showValue(form.officeArea)}</DetailItem>
-            <DetailItem label="联系电话">{showValue(form.contactPhone)}</DetailItem>
-            <DetailItem label="邮箱">{showValue(form.email)}</DetailItem>
+            {!(type === 'disposal' && form.assetScope === '机房资产') && (
+              <>
+                <DetailItem label="办公区">{showValue(form.officeArea)}</DetailItem>
+                <DetailItem label="联系电话">{showValue(form.contactPhone)}</DetailItem>
+                <DetailItem label="邮箱">{showValue(form.email)}</DetailItem>
+              </>
+            )}
             {type === 'scrap' && form.assetScope === '机房资产' && (
               <>
                 <DetailItem label="资产大类">{showValue(form.assetCategory)}</DetailItem>
                 <DetailItem label="资产所在地">{showValue(form.assetLocation)}</DetailItem>
               </>
             )}
-            <DetailItem label="部门" span={type === 'accounting' ? 2 : 3}>{showValue(form.department)}</DetailItem>
+            {!(type === 'disposal' && form.assetScope === '机房资产') && (
+              <DetailItem label="部门" span={type === 'accounting' ? 2 : 3}>{showValue(form.department)}</DetailItem>
+            )}
             {type === 'scrap' && <DetailItem label="报废说明" span={3}>{showValue(form.description)}</DetailItem>}
             {type === 'accounting' && <DetailItem label="报废方式">{showValue(form.scrapMethod)}</DetailItem>}
-            {type === 'disposal' && (
+            {type === 'disposal' && form.assetScope === '机房资产' && (
+              <>
+                <DetailItem label="归属地">{showValue(form.region)}</DetailItem>
+                <DetailItem label="是否需要数据清洗">{showValue(effectiveNeedsCleaning)}</DetailItem>
+              </>
+            )}
+            {type === 'disposal' && form.assetScope === '办公设备' && (
               <>
                 <DetailItem label="回收商一">{showValue(form.recycler1Name)}</DetailItem>
                 <DetailItem label="回收商二">{showValue(form.recycler2Name)}</DetailItem>
@@ -544,7 +556,7 @@ export default function ScrapPrototypeEditor({
             </>
           )}
 
-          {type === 'disposal' && (
+          {type === 'disposal' && form.assetScope === '办公设备' && (
             [1, 2, 3].map((index) => (
               <Descriptions.Item
                 key={`recycler${index}Name`}
@@ -633,7 +645,7 @@ export default function ScrapPrototypeEditor({
         size="small"
         title={useScrapApprovalCardStyle ? sectionTitle(assetDetailsTitle) : assetDetailsTitle}
         className={useScrapApprovalCardStyle ? 'shadow-sm' : undefined}
-        extra={type === 'disposal' && !readOnly ? (
+        extra={type === 'disposal' && form.assetScope === '办公设备' ? (
           <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm">
             {[1, 2, 3].map((index) => (
               <span key={`recycler${index}Total`}>
@@ -654,10 +666,10 @@ export default function ScrapPrototypeEditor({
               { title: '数量', dataIndex: 'quantity', width: 95, align: 'right' },
               { title: '原值', dataIndex: 'originalValue', width: 140, align: 'right', render: money },
               { title: '净值', dataIndex: 'netValue', width: 140, align: 'right', render: money },
-              ...['回收商一报价', '回收商二报价', '回收商三报价'].map((title, index) => ({
+              ...(form.assetScope === '办公设备' ? ['回收商一报价', '回收商二报价', '回收商三报价'].map((title, index) => ({
                 title, dataIndex: `recycler${index + 1}`, width: 145, fixed: 'right', align: 'right',
                 render: (values) => values.map((value) => money(value)).join('、') || '-',
-              })),
+              })) : []),
             ]} />
         ) : type === 'accounting' && approvalView ? (
           <Tabs items={['已到报废期', '未到报废期', '丢失']

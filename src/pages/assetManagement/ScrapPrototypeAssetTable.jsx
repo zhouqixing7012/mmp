@@ -158,12 +158,14 @@ export function exportScrapPrototypeAssets(assets, type, accountingMethod, dispo
         数量: item.quantity,
         原值: item.originalValue,
         净值: item.netValue,
-        回收商一供应商名称: disposalSuppliers.recycler1Name || '',
-        回收商一报价: item.recycler1,
-        回收商二供应商名称: disposalSuppliers.recycler2Name || '',
-        回收商二报价: item.recycler2,
-        回收商三供应商名称: disposalSuppliers.recycler3Name || '',
-        回收商三报价: item.recycler3,
+        ...(item.scope === '办公设备' ? {
+          回收商一供应商名称: disposalSuppliers.recycler1Name || '',
+          回收商一报价: item.recycler1,
+          回收商二供应商名称: disposalSuppliers.recycler2Name || '',
+          回收商二报价: item.recycler2,
+          回收商三供应商名称: disposalSuppliers.recycler3Name || '',
+          回收商三报价: item.recycler3,
+        } : {}),
       };
     }
 
@@ -874,7 +876,7 @@ export default function ScrapPrototypeAssetTable({
     { title: '数量', dataIndex: 'quantity', width: 90, align: 'right' },
     { title: '原值', dataIndex: 'originalValue', width: 130, align: 'right', render: money },
     { title: '净值', dataIndex: 'netValue', width: 130, align: 'right', render: money },
-    ...['回收商一报价', '回收商二报价', '回收商三报价'].map((title, index) => ({
+    ...(assetScope === '办公设备' ? ['回收商一报价', '回收商二报价', '回收商三报价'].map((title, index) => ({
       title, dataIndex: `recycler${index + 1}`, width: 145, fixed: 'right', align: 'right',
       render: (value, row) => readOnly
         ? (value == null || value === '' ? '-' : money(value))
@@ -891,7 +893,7 @@ export default function ScrapPrototypeAssetTable({
           parser={(inputValue) => String(inputValue || '').replace(/[^\d.-]/g, '')}
           onChange={(nextValue) => onChange(row.id, `recycler${index + 1}`, nextValue)}
         />,
-    })),
+    })) : []),
   ];
 
   const columns = type === 'crossCompany'

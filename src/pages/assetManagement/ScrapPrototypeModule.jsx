@@ -15,8 +15,8 @@ import {
   SCRAP_ASSET_POOL,
 } from './scrapPrototypeData';
 import {
-  getAccountingCandidates,
   getDisposalCandidates,
+  machineRequiresDisposal,
   getScrapPrototypeRecords,
   saveScrapPrototypeRecords,
   validateAccountingAssets,
@@ -447,6 +447,13 @@ export default function ScrapPrototypeModule({
       message.error(validation.errors[0]?.message || '账面报废执行校验失败');
       return;
     }
+    try {
+      sourceAssets.filter((asset) => asset.scope === '机房资产' && asset.scrapMethod !== '调账'
+        && asset.scrapType !== '丢失').forEach(machineRequiresDisposal);
+    } catch (error) {
+      message.error(error.message);
+      return;
+    }
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
     const completedRecord = {
       ...record,
@@ -457,6 +464,7 @@ export default function ScrapPrototypeModule({
       assetsSnapshot: sourceAssets.map((asset) => ({
         ...asset,
         status: asset.scope === '软件' || asset.scrapType === '丢失'
+          || (asset.scope === '机房资产' && asset.scrapMethod !== '调账' && !machineRequiresDisposal(asset))
           ? '已报废-已处置'
           : asset.status,
       })),
@@ -465,13 +473,16 @@ export default function ScrapPrototypeModule({
     saveScrapPrototypeRecords(type, next);
     setRecords(next);
 
-    // 仅机房实物资产自动生成处置单；软件与丢失资产直接完成为“已报废-已处置”。
+    // 仅需要实物处置的机房资产自动生成处置单；非北京且无需清洗的机房资产直接完成。
     const currentDisposal = getScrapPrototypeRecords('disposal');
     const existingAssetTags = new Set(currentDisposal.flatMap((item) => (item.assetsSnapshot || []).map((asset) => asset.tagNo)));
     const automaticAssets = sourceAssets.filter((asset) => (
       asset.scrapMethod !== '调账'
       && asset.scope === '机房资产'
       && asset.scrapType !== '丢失'
+      && asset.disposedComplete !== '是'
+      && asset.disposalRequired !== '否'
+      && machineRequiresDisposal(asset)
       && !existingAssetTags.has(asset.tagNo)
     ));
     const today = dayjs().format('YYYYMMDD');

@@ -148,7 +148,7 @@ test('资产处置编辑页展示三个必填回收商名称和自动报价合�
     <ScrapPrototypeEditor
       type="disposal"
       config={{ title: '资产处置', createLabel: '创建资产处置申请单' }}
-      initialForm={{ ...accountingForm, documentStatus: '草稿' }}
+      initialForm={{ ...accountingForm, assetScope: '办公设备', documentStatus: '草稿' }}
       initialAssets={[
         { id: 'asset-1', recycler1: 1250.5, recycler2: 1380, recycler3: 1198.88 },
         { id: 'asset-2', recycler1: 500, recycler2: 620.25, recycler3: 701.12 },
@@ -178,8 +178,9 @@ test('资产处置审批页展示会计格式报价并可导出当前申请明�
   const assets = [{
     id: 'disposal-approval-asset',
     tagNo: 'FA-2026-000120',
-    majorCategory: 'SERVER',
-    description: '机架服务器',
+    majorCategory: 'OFFICE EQUIPMENT',
+    scope: '办公设备',
+    description: '办公设备',
     city: '北京',
     quantity: 1,
     originalValue: 128000,
@@ -187,6 +188,10 @@ test('资产处置审批页展示会计格式报价并可导出当前申请明�
     recycler1: 1250.5,
     recycler2: 1380,
     recycler3: 1198.88,
+  }, {
+    id: 'disposal-approval-asset-2', tagNo: 'FA-2026-000121', majorCategory: 'OFFICE EQUIPMENT', scope: '办公设备',
+    city: '北京', quantity: 1, originalValue: 2000, netValue: 800,
+    recycler1: 1250.5, recycler2: 1200, recycler3: 1000,
   }];
 
   render(
@@ -197,9 +202,10 @@ test('资产处置审批页展示会计格式报价并可导出当前申请明�
         ...accountingForm,
         applicationNo: 'CZ20260926000001',
         documentStatus: '审批中',
+        assetScope: '办公设备',
         currentNode: 'ES二级审批',
         scrapMethod: '全部报废',
-        remark: '北京机房资产处置说明',
+        remark: '办公资产处置说明',
         recycler1Name: '广环再生资源利用有限公司',
         recycler2Name: '广州源创再生资源有限公司',
         recycler3Name: '东莞市创鑫再生资源有限公司',
@@ -215,9 +221,10 @@ test('资产处置审批页展示会计格式报价并可导出当前申请明�
 
   expect(screen.getByText('申请单号：CZ20260926000001')).toBeInTheDocument();
   expect(screen.getByText('备注')).toBeInTheDocument();
-  expect(screen.getByText('北京机房资产处置说明')).toBeInTheDocument();
+  expect(screen.getByText('办公资产处置说明')).toBeInTheDocument();
   expect(screen.getByText('广环再生资源利用有限公司')).toBeInTheDocument();
-  expect(screen.getByText('1,250.50')).toBeInTheDocument();
+  expect(screen.getByText('1,250.50、1,250.50')).toBeInTheDocument();
+  expect(screen.getByText('2,501.00')).toBeInTheDocument();
   expect(screen.queryByText('单据状态')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '导出' }));
   expect(exportScrapPrototypeAssets).toHaveBeenCalledWith(
@@ -230,6 +237,22 @@ test('资产处置审批页展示会计格式报价并可导出当前申请明�
       recycler3Name: '东莞市创鑫再生资源有限公司',
     }),
   );
+});
+
+test('机房自动处置单仅展示清洗与资产，不显示或导出回收商报价', () => {
+  jest.clearAllMocks();
+  const assets = [{ id: 'machine-disposal', scope: '机房资产', majorCategory: 'SERVER', city: '北京', quantity: 1 }];
+  render(<ScrapPrototypeEditor
+    type="disposal" config={{ title: '资产处置' }}
+    initialForm={{ ...accountingForm, applicationNo: 'CZ20260926000002', documentStatus: '审批中',
+      assetScope: '机房资产', region: '北京', needsCleaning: '否', currentNode: '采购专员协办' }}
+    initialAssets={assets} readOnly approvalPage onBack={jest.fn()} onSave={jest.fn()} onApprove={jest.fn()}
+  />);
+  expect(screen.getByText('是否需要数据清洗')).toBeInTheDocument();
+  expect(screen.queryByText('回收商一')).not.toBeInTheDocument();
+  expect(screen.queryByText('回收商一报价合计：')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '导出' }));
+  expect(exportScrapPrototypeAssets).toHaveBeenCalledWith(assets, 'disposal', '非调账', expect.objectContaining({ assetScope: '机房资产' }));
 });
 
 test.each([

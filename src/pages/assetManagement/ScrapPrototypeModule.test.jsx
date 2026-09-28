@@ -10,6 +10,7 @@ import {
   saveScrapPrototypeRecords,
 } from '../../services/scrapPrototypeService';
 import { ACCOUNTING_DEMO_ACCESS, SCRAP_ASSET_POOL } from './scrapPrototypeData';
+import { getDisposalApprovalNodes } from './scrapPrototypeWorkflow';
 
 const accountingAccess = {
   actor: { id: 'verified-accountant' },
@@ -119,15 +120,17 @@ test('资产处置有多张可查看单据，覆盖不同资产范围、状态�
   expect(rows.every((row) => row.assetsSnapshot?.length > 0)).toBe(true);
 
   const physicalAssets = rows
-    .filter((row) => row.disposalMode !== '无实物处置')
+    .filter((row) => row.assetScope === '办公设备')
     .flatMap((row) => row.assetsSnapshot);
-  expect(physicalAssets.length).toBeGreaterThan(5);
+  expect(physicalAssets.length).toBeGreaterThan(3);
   expect(physicalAssets.some((asset) => asset.recycler1 >= 1000)).toBe(true);
   expect(physicalAssets.every((asset) => (
     typeof asset.recycler1 === 'number'
     && typeof asset.recycler2 === 'number'
     && typeof asset.recycler3 === 'number'
   ))).toBe(true);
+  expect(rows.filter((row) => row.assetScope === '机房资产')
+    .every((row) => !row.recycler1Name && row.assetsSnapshot.every((asset) => asset.recycler1 == null))).toBe(true);
 });
 
 test('旧资产处置办理状态刷新后统一迁移为审批中，保留节点与历史', () => {
@@ -135,7 +138,8 @@ test('旧资产处置办理状态刷新后统一迁移为审批中，保留节�
     { id: 'legacy-disposal-1', documentStatus: '处理中', currentNode: 'ES专员处理',
       approvalHistory: [{ node: '财务审批', result: '通过' }],
       formSnapshot: { documentStatus: '待 ES 专员处理', currentNode: 'ES专员处理' } },
-    { id: 'legacy-disposal-2', documentStatus: '办理中', currentNode: '采购专员协办',
+    { id: 'legacy-disposal-2', documentStatus: '办理中', assetScope: '机房资产',
+      assetsSnapshot: [{ scope: '机房资产', dataCleaning: '是' }], currentNode: '采购专员协办',
       formSnapshot: { documentStatus: '办理中', currentNode: '采购专员协办' } },
   ];
   window.localStorage.setItem('asset-scrap-prototype:v2:disposal', JSON.stringify(legacyRows));
@@ -144,6 +148,7 @@ test('旧资产处置办理状态刷新后统一迁移为审批中，保留节�
   expect(migrated.map((record) => record.formSnapshot.documentStatus)).toEqual(['审批中', '审批中']);
   expect(migrated[0].currentNode).toBe('ES专员处理');
   expect(migrated[0].approvalHistory).toEqual(legacyRows[0].approvalHistory);
+  expect(migrated[1].needsCleaning).toBe('是');
   expect(JSON.parse(window.localStorage.getItem('asset-scrap-prototype:v2:disposal'))).toEqual(migrated);
 });
 
@@ -178,6 +183,41 @@ test('账面报废完成仅自动生成机房实物处置单，软件和丢失�
   expect(completed.documentStatus).toBe('已完成');
   expect(completed.assetsSnapshot.filter((asset) => asset.scope === '软件' || asset.scrapType === '丢失')
     .every((asset) => asset.status === '已报废-已处置')).toBe(true);
+});
+
+test.each([
+  ['否', 0, '已报废-已处置'],
+  ['是', 1, '在用-使用中'],
+])('非北京机房清洗结果为%s时自动处置单数量为%i', (dataCleaning, expectedCount, expectedStatus) => {
+  const machine = SCRAP_ASSET_POOL.find((asset) => asset.id === 'scrap-machine-114');
+  const source = { ...machine, city: '上海', dataCleaning, disposalRequired: '是', cardQuantity: machine.quantity,
+    requestedScrapQuantity: machine.quantity, cardOriginalValue: machine.originalValue, cardNetValue: machine.netValue };
+  saveScrapPrototypeRecords('scrap', [{ id: 'scrap-approved-shanghai', applicationNo: 'BF-CASE-SH',
+    documentStatus: '已审批', assetsSnapshot: [source] }]);
+  saveScrapPrototypeRecords('crossCompany', []);
+  saveScrapPrototypeRecords('accounting', []);
+  const candidate = getAccountingCandidates({ ...accountingAccess, company: source.company })
+    .find((asset) => asset.tagNo === source.tagNo);
+  saveScrapPrototypeRecords('disposal', []);
+  saveScrapPrototypeRecords('accounting', [{ id: 'accounting-shanghai', applicationNo: 'ZMBF-CASE-SH',
+    documentStatus: '审批中', company: source.company, assetScope: '机房资产', currentNode: '提单人确认',
+    assetsSnapshot: [candidate] }]);
+  render(<ScrapPrototypeModule type="accounting" accountingActor={accountingAccess.actor}
+    accountingAuthorizationScopes={accountingAccess.authorizationScopes} />);
+  fireEvent.click(screen.getByRole('button', { name: '执行账面报废' }));
+  expect(getScrapPrototypeRecords('disposal')).toHaveLength(expectedCount);
+  expect(getScrapPrototypeRecords('accounting')[0].assetsSnapshot[0].status).toBe(expectedStatus);
+  expect(getDisposalCandidates().some((asset) => asset.tagNo === source.tagNo)).toBe(dataCleaning === '是');
+});
+
+test('机房处置节点只包含实际协办，非北京无需清洗不允许创建流程', () => {
+  expect(getDisposalApprovalNodes({ assetScope: '机房资产', region: '北京', needsCleaning: '否' }))
+    .toEqual(['采购专员协办', 'ES专员协办']);
+  expect(getDisposalApprovalNodes({ assetScope: '机房资产', region: '非北京', needsCleaning: '是' }))
+    .toEqual(['数据清洗']);
+  expect(() => getDisposalApprovalNodes({ assetScope: '机房资产', region: '非北京', needsCleaning: '否' }))
+    .toThrow('不生成处置单');
+  expect(() => getDisposalApprovalNodes({ assetScope: '软件' })).toThrow('不生成处置单');
 });
 
 test('跨公司转移提交后直接进入审批页面，不返回列表', async () => {

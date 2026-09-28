@@ -41,12 +41,21 @@ function readStored(type) {
       const migrated = parsed.map((record) => {
         const recordChanged = legacyStatuses.has(record.documentStatus);
         const formChanged = legacyStatuses.has(record.formSnapshot?.documentStatus);
-        if (!recordChanged && !formChanged) return record;
+        const cleaningValues = (record.assetsSnapshot || []).filter((asset) => asset.scope === '机房资产')
+          .map((asset) => asset.dataCleaning);
+        const cleaningKnown = cleaningValues.length > 0 && cleaningValues.every((value) => ['是', '否'].includes(value));
+        const missingCleaning = record.assetScope === '机房资产'
+          && !['是', '否'].includes(record.needsCleaning) && cleaningKnown;
+        if (!recordChanged && !formChanged && !missingCleaning) return record;
+        const needsCleaning = cleaningValues.includes('是') ? '是' : '否';
         return {
           ...record,
           documentStatus: recordChanged ? '审批中' : record.documentStatus,
-          formSnapshot: formChanged
-            ? { ...record.formSnapshot, documentStatus: '审批中' }
+          ...(missingCleaning ? { needsCleaning } : {}),
+          formSnapshot: record.formSnapshot && (formChanged || missingCleaning)
+            ? { ...record.formSnapshot,
+              documentStatus: formChanged ? '审批中' : record.formSnapshot.documentStatus,
+              ...(missingCleaning ? { needsCleaning } : {}) }
             : record.formSnapshot,
         };
       });
@@ -227,6 +236,21 @@ export function getAccountingLostCandidates(options = {}) {
   });
 }
 
+export function machineRequiresDisposal(asset) {
+  if (asset.scope !== '机房资产') return true;
+  const location = asset.region || asset.assetLocation;
+  if (location && !['北京', '非北京'].includes(location)) {
+    throw new Error(`机房资产 ${asset.tagNo || asset.id} 的归属地无效`);
+  }
+  const isBeijing = location === '北京' || (!location && String(asset.city || '').includes('北京'));
+  if (!location && !asset.city) throw new Error(`机房资产 ${asset.tagNo || asset.id} 缺少归属地`);
+  if (isBeijing) return true;
+  if (!['是', '否'].includes(asset.dataCleaning)) {
+    throw new Error(`非北京机房资产 ${asset.tagNo || asset.id} 缺少数据清洗结果`);
+  }
+  return asset.dataCleaning === '是';
+}
+
 export function validateAccountingAssets(form, assets, options = {}) {
   const errors = [];
   const scopes = normalizedScopes(options);
@@ -302,13 +326,17 @@ export function validateAccountingAssets(form, assets, options = {}) {
 
 export function getDisposalCandidates() {
   const result = new Map(DISPOSAL_ASSET_POOL
-    .filter((asset) => asset.scope !== '软件' && asset.scrapType !== '丢失')
+    .filter((asset) => asset.scope !== '软件' && asset.scrapType !== '丢失' && machineRequiresDisposal(asset))
     .map((asset) => [asset.tagNo, asset]));
   for (const record of getScrapPrototypeRecords('accounting')) {
     if (record.documentStatus !== '已完成') continue;
     for (const asset of record.assetsSnapshot || []) {
       const noPhysicalDisposal = asset.scope === '软件' || asset.scrapType === '丢失';
-      if (noPhysicalDisposal || asset.scrapMethod === '调账' || asset.disposedComplete === '是' || asset.disposalRequired !== '是') continue;
+      if (noPhysicalDisposal || asset.scrapMethod === '调账' || asset.disposedComplete === '是'
+        || asset.disposalRequired !== '是' || !machineRequiresDisposal(asset)) {
+        result.delete(asset.tagNo);
+        continue;
+      }
       result.set(asset.tagNo, {
         ...asset, id: `disposal-${asset.id}`, sourceAssetId: asset.id, status: '已报废-待处置',
         sourceScrapNo: asset.sourceBusinessType === '资产报废' ? asset.sourceBusinessNo : '-',
