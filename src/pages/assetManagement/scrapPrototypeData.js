@@ -489,7 +489,7 @@ const businessRows = {
           scrapMethod: '非调账', detailScrapMethod: '全部报废',
           scrapType: Number(asset.netValue) === 0 ? '已到报废期' : '未到报废期',
           sourceBusinessType: '资产报废', sourceBusinessNo: 'BF20260922000011',
-          disposedComplete: '否', status: '在库-待报废' })),
+          status: '在库-待报废' })),
     },
   ],
   disposal: [
