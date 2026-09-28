@@ -10,7 +10,7 @@ import {
   saveScrapPrototypeRecords,
 } from '../../services/scrapPrototypeService';
 import { ACCOUNTING_DEMO_ACCESS, SCRAP_ASSET_POOL } from './scrapPrototypeData';
-import { getDisposalApprovalNodes } from './scrapPrototypeWorkflow';
+import { getAccountingApprovalSteps, getDisposalApprovalNodes } from './scrapPrototypeWorkflow';
 
 const accountingAccess = {
   actor: { id: 'verified-accountant' },
@@ -300,6 +300,59 @@ test('非调账资产完成账面报废后进入待处置池', () => {
   const disposal = getDisposalCandidates().find((item) => item.tagNo === asset.tagNo);
   expect(disposal.sourceAccountingNo).toBe('ZMBF-CASE-001');
   expect(disposal.disposalStatus).toBe('待处置');
+});
+
+test('账面报废财务审批为单人串行，普通范围固定冯丽婷张洁徐博，上海广州非视频走特殊映射', () => {
+  const ordinary = getAccountingApprovalSteps([{
+    company: '114.新媒体',
+    plate: '17.Corporate',
+    majorCategory: 'OFFICE EQUIPMENT',
+    scrapMethod: '非调账',
+    scrapType: '未到报废期',
+  }]);
+  const ordinaryFinance = ordinary.filter((step) => step.node.startsWith('财务'));
+  expect(ordinaryFinance).toEqual([
+    expect.objectContaining({ node: '财务初审', approverName: '冯丽婷', skipped: false }),
+    expect.objectContaining({ node: '财务三级审批', approverName: '冯丽婷', skipped: false }),
+    expect.objectContaining({ node: '财务二级审批', approverName: '张洁', skipped: false }),
+    expect.objectContaining({ node: '财务一级审批', approverName: '徐博', skipped: false }),
+  ]);
+
+  const sh = getAccountingApprovalSteps([{
+    company: '115.新媒体-上海',
+    plate: '17.Corporate',
+    majorCategory: 'OFFICE EQUIPMENT',
+    scrapMethod: '非调账',
+    scrapType: '未到报废期',
+  }]).filter((step) => step.node.startsWith('财务'));
+  expect(sh).toEqual([
+    expect.objectContaining({ node: '财务初审', approverName: '姜艳' }),
+    expect.objectContaining({ node: '财务三级审批', approverName: '姜艳' }),
+    expect.objectContaining({ node: '财务二级审批', approverName: '包亦未' }),
+  ]);
+  expect(sh.some((step) => step.node === '财务一级审批')).toBe(false);
+
+  const gz = getAccountingApprovalSteps([{
+    company: '116.新媒体-广州',
+    plate: '17.Corporate',
+    majorCategory: 'OFFICE EQUIPMENT',
+    scrapMethod: '非调账',
+    scrapType: '未到报废期',
+  }]).filter((step) => step.node.startsWith('财务'));
+  expect(gz.map((step) => [step.node, step.approverName])).toEqual([
+    ['财务初审', '黄青华'],
+    ['财务三级审批', '黄青华'],
+    ['财务二级审批', '易志群'],
+  ]);
+
+  const shVideo = getAccountingApprovalSteps([{
+    company: '115.新媒体-上海',
+    plate: '16.视频',
+    majorCategory: 'PC',
+    scrapMethod: '非调账',
+    scrapType: '未到报废期',
+  }]).filter((step) => step.node.startsWith('财务'));
+  expect(shVideo.map((step) => step.approverName)).toEqual(['冯丽婷', '冯丽婷', '张洁', '徐博']);
 });
 
 test('缺少真实审批人映射时账面报废流程停在当前节点，不虚构审批通过', () => {
