@@ -28,9 +28,10 @@ jest.mock('antd', () => {
   const Tabs = ({ items = [] }) => element('div', items.map((item) => element('section', fragment(element('div', item.label), item.children), { key: item.key })));
   const Collapse = ({ items = [] }) => element('div', items.map((item) => element('section', fragment(element('div', item.label), item.children), { key: item.key })));
   const Typography = { Text: ({ children }) => element('span', children) };
+  const Steps = ({ items = [] }) => element('div', items.map((item) => element('span', item.title, { key: item.title })));
   const Upload = ({ children }) => element('div', children);
   return {
-    Button, Card, Descriptions, Input, Select, Table, Tabs, Collapse, Typography, Upload,
+    Button, Card, Descriptions, Input, Select, Table, Tabs, Collapse, Typography, Steps, Upload,
     Space: ({ children }) => element('div', children),
     theme: { useToken: () => ({ token: { colorBorderSecondary: '#ccc', fontSize: 14, lineHeight: 1.5, colorText: '#222' } }) },
     message: { error: jest.fn(), warning: jest.fn(), success: jest.fn() },
@@ -143,7 +144,7 @@ test('账面报废公司通过弹窗选择，三个报废原因分别可编辑',
 });
 
 
-test('资产处置编辑页展示三个必填回收商名称和自动报价合计', () => {
+test('资产处置编辑页展示三个非必填回收商名称和自动报价合计', () => {
   render(
     <ScrapPrototypeEditor
       type="disposal"
@@ -164,13 +165,70 @@ test('资产处置编辑页展示三个必填回收商名称和自动报价合�
   expect(screen.queryByText('报价与处置信息')).not.toBeInTheDocument();
   expect(screen.queryByText('单据状态')).not.toBeInTheDocument();
   expect(screen.getByText('备注')).toBeInTheDocument();
-  expect(screen.getByPlaceholderText('请输入回收商一的供应商名称')).toBeRequired();
-  expect(screen.getByPlaceholderText('请输入回收商二的供应商名称')).toBeRequired();
-  expect(screen.getByPlaceholderText('请输入回收商三的供应商名称')).toBeRequired();
+  expect(screen.getByPlaceholderText('请输入回收商一的供应商名称')).not.toBeRequired();
+  expect(screen.getByPlaceholderText('请输入回收商二的供应商名称')).not.toBeRequired();
+  expect(screen.getByPlaceholderText('请输入回收商三的供应商名称')).not.toBeRequired();
   expect(screen.getByText('回收商一报价合计：')).toBeInTheDocument();
   expect(screen.getByText('1,750.50')).toBeInTheDocument();
   expect(screen.getByText('2,000.25')).toBeInTheDocument();
   expect(screen.getByText('1,900.00')).toBeInTheDocument();
+});
+
+test('资产处置办公设备提交前进入预览并自动生成可编辑处置说明', () => {
+  const onSave = jest.fn();
+  render(
+    <ScrapPrototypeEditor
+      type="disposal"
+      config={{ title: '资产处置', createLabel: '创建资产处置申请单' }}
+      initialForm={{
+        ...accountingForm,
+        company: '114.新媒体',
+        companies: ['114.新媒体'],
+        plates: [],
+        assetScope: '办公设备',
+        documentStatus: '草稿',
+        recycler1Name: '回收商甲',
+        recycler2Name: '回收商乙',
+        recycler3Name: '回收商丙',
+      }}
+      initialAssets={[{
+        id: 'preview-asset-1',
+        tagNo: 'FA-PREVIEW-001',
+        company: '114.新媒体',
+        plate: '17_Corporate',
+        scope: '办公设备',
+        majorCategory: 'PC',
+        city: '北京',
+        quantity: 2,
+        originalValue: 20000,
+        netValue: 500,
+        recycler1: 12000,
+        recycler2: 10000,
+        recycler3: 9000,
+      }]}
+      readOnly={false}
+      approvalPage={false}
+      onBack={jest.fn()}
+      onSave={onSave}
+      onApprove={jest.fn()}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '预览' }));
+  expect(screen.getByRole('heading', { name: '资产处置预览' })).toBeInTheDocument();
+  expect(screen.getByText('提交发起审批后展示审批记录')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '提交发起审批' })).toBeInTheDocument();
+  const description = screen.getByDisplayValue(/按照报废计划，ES拟对2台库存老旧办公资产进行变卖处置/);
+  expect(description).toHaveValue(expect.stringContaining('回收商“回收商甲”总价最高'));
+  expect(onSave).not.toHaveBeenCalled();
+
+  fireEvent.change(description, { target: { value: '人工调整后的处置说明' } });
+  fireEvent.click(screen.getByRole('button', { name: '提交发起审批' }));
+  expect(onSave).toHaveBeenCalledWith(
+    expect.objectContaining({ disposalDescription: '人工调整后的处置说明' }),
+    expect.any(Array),
+    true,
+  );
 });
 
 test('资产处置审批页展示会计格式报价并可导出当前申请明细', () => {
