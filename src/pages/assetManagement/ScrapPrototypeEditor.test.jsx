@@ -195,7 +195,7 @@ test('资产处置办公设备提交前进入预览并自动生成可编辑处�
         id: 'preview-asset-1',
         tagNo: 'FA-PREVIEW-001',
         company: '114.新媒体',
-        plate: '17_Corporate',
+        plate: '17.Corporate',
         scope: '办公设备',
         majorCategory: 'PC',
         city: '北京',
