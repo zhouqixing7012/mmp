@@ -522,7 +522,9 @@ export default function ScrapPrototypeModule({
         status: asset.scrapMethod === '调账'
           ? asset.status
           : requiresPhysicalDisposal(asset)
-            ? '已报废-待处置'
+            ? (asset.scope === '机房资产' && !String(asset.city || '').includes('北京') && asset.dataCleaning === '否'
+              ? '已报废-已处置'
+              : '已报废-待处置')
             : '已报废-已处置',
       })),
     };
