@@ -42,10 +42,12 @@ function normalizePlateValue(value) {
   return String(value || '').trim().replace(/_/g, '.');
 }
 
-const plateOptions = mockPlates.map((item) => {
-  const value = normalizePlateValue(item.desc);
-  return { label: value, value };
-});
+const maintenanceRows = getAssetMaintenanceRows();
+
+const plateOptions = Array.from(new Set([
+  ...maintenanceRows.map((row) => normalizePlateValue(row.plate)).filter(Boolean),
+  ...mockPlates.map((item) => normalizePlateValue(item.desc)).filter(Boolean),
+])).map((value) => ({ label: value, value }));
 
 const warehouseOptions = warehouseCatalog.map((item) => ({
   label: `${item.warehouseCode}.${item.warehouseDescription}`,
@@ -100,7 +102,6 @@ function resolveTransferResponsiblePerson(record, targetWarehouse) {
   return warehouse?.keeper || '';
 }
 
-const maintenanceRows = getAssetMaintenanceRows();
 const transferLookupRecords = {
   companies: [...maintenanceRows, ...warehouseCatalog.map((item) => {
     const [companyCode, ...parts] = String(item.company || '').split('.');
