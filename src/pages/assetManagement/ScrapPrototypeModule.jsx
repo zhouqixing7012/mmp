@@ -319,6 +319,7 @@ export default function ScrapPrototypeModule({
       createdAt: form.applicationDate,
       lastModifiedAt: nowText,
       assetCount: assets.length,
+      assetTags: assets.map((item) => item.tagNo).filter(Boolean),
       originalValueTotal: assets.reduce((sum, item) => sum + Number(item.originalValue || 0), 0),
       netValueTotal: assets.reduce((sum, item) => sum + Number(item.netValue || 0), 0),
       scrapMethod: type === 'accounting' ? form.scrapMethod : scrapMethods.length > 1 ? '混合' : scrapMethods[0] || form.scrapMethod,
