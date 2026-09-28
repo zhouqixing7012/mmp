@@ -765,7 +765,7 @@ export default function ScrapPrototypeAssetTable({
               value={value || undefined}
               options={plateOptions}
               className="w-full"
-              onChange={(nextValue) => updateCrossCompanyDestination(record, 'newPlate', nextValue || '')}
+              onChange={(nextValue) => onChange(record.id, 'newPlate', nextValue || '')}
             />
           )
       ),
