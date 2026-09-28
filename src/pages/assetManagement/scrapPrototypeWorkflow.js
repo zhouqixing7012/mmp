@@ -1,7 +1,21 @@
-export function getCrossCompanyApprovalNodes(scope) {
-  return scope === '办公设备'
+export function getCrossCompanyApprovalSteps(scope, approverMappings = {}) {
+  const nodes = scope === '办公设备'
     ? ['ES主管确认']
     : ['责任人5级及以上直属领导', '责任人7级及以上直属领导'];
+  const seenApprovers = new Set();
+
+  return nodes.map((node) => {
+    const approver = approverMappings[node] || '';
+    const skipped = Boolean(approver && seenApprovers.has(approver));
+    if (approver && !skipped) seenApprovers.add(approver);
+    return { node, approver, skipped };
+  });
+}
+
+export function getCrossCompanyApprovalNodes(scope, approverMappings = {}) {
+  return getCrossCompanyApprovalSteps(scope, approverMappings)
+    .filter((step) => !step.skipped)
+    .map((step) => step.node);
 }
 
 export function getScrapApprovalNodes(scope, assets) {
