@@ -469,6 +469,130 @@ export default function ScrapPrototypeEditor({
     accountingMethod={form.scrapMethod}
   />;
 
+  const accountingSummaryRows = useMemo(() => {
+    const knownProjects = new Set(ACCOUNTING_SUMMARY_PROJECTS);
+    const extraProjects = Array.from(new Set(
+      assets.map(accountingSummaryProject).filter((project) => project && !knownProjects.has(project)),
+    ));
+    return [...ACCOUNTING_SUMMARY_PROJECTS, ...extraProjects].map((project) => {
+      const row = { key: project, project };
+      [
+        ['expired', '已到报废期'],
+        ['unexpired', '未到报废期'],
+        ['lost', '丢失'],
+      ].forEach(([field, kind]) => {
+        const rows = assets.filter((asset) => (
+          asset.scrapType === kind && accountingSummaryProject(asset) === project
+        ));
+        row[field] = {
+          quantity: rows.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+          originalValue: rows.reduce((sum, item) => sum + Number(item.originalValue || 0), 0),
+          netValue: rows.reduce((sum, item) => sum + Number(item.netValue || 0), 0),
+        };
+      });
+      return row;
+    });
+  }, [assets]);
+
+  const accountingSummaryGroupColumns = (title, field, kind) => [
+    {
+      title: '数量',
+      width: 82,
+      align: 'right',
+      render: (_, row) => row[field].quantity || '-',
+    },
+    {
+      title: '原值',
+      width: 120,
+      align: 'right',
+      render: (_, row) => row[field].quantity ? money(row[field].originalValue) : '-',
+    },
+    {
+      title: '账面净值',
+      width: 120,
+      align: 'right',
+      render: (_, row) => row[field].quantity ? money(row[field].netValue) : '-',
+    },
+    {
+      title: '报废原因',
+      width: 180,
+      render: (_, __, index) => index === 0 ? showValue(getAccountingReasonText(kind)) : null,
+      onCell: (_, index) => ({ rowSpan: index === 0 ? accountingSummaryRows.length : 0 }),
+    },
+  ];
+
+  const accountingSummaryColumns = [
+    { title: '项目', dataIndex: 'project', width: 150, fixed: 'left' },
+    { title: '已到报废期资产', children: accountingSummaryGroupColumns('已到报废期资产', 'expired', '已到报废期') },
+    { title: '未到报废期资产', children: accountingSummaryGroupColumns('未到报废期资产', 'unexpired', '未到报废期') },
+    { title: '丢失资产', children: accountingSummaryGroupColumns('丢失资产', 'lost', '丢失') },
+  ];
+
+  const accountingDetailTab = (kind) => {
+    const subset = assets.filter((asset) => asset.scrapType === kind);
+    const grouped = Array.from(subset.reduce((groups, asset) => {
+      const category = asset.majorCategory || '其他';
+      if (!groups.has(category)) groups.set(category, []);
+      groups.get(category).push(asset);
+      return groups;
+    }, new Map()).entries());
+    if (subset.length === 0) {
+      return <div className="py-10 text-center text-gray-400">暂无{kind}明细</div>;
+    }
+    return (
+      <>
+        <div className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-md bg-gray-50 px-3 py-2">
+          <div className="min-w-[240px] flex-1">
+            <Typography.Text strong>{kind}报废原因：</Typography.Text>{' '}
+            <span className="whitespace-pre-wrap break-words">{showValue(getAccountingReasonText(kind))}</span>
+          </div>
+          <Space size={18} wrap>
+            <Typography.Text>明细数量：{subset.length}</Typography.Text>
+            <Typography.Text>报废数量：{subset.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}</Typography.Text>
+            <Typography.Text>原值合计：{money(subset.reduce((sum, item) => sum + Number(item.originalValue || 0), 0))}</Typography.Text>
+            <Typography.Text>净值合计：{money(subset.reduce((sum, item) => sum + Number(item.netValue || 0), 0))}</Typography.Text>
+          </Space>
+        </div>
+        <Collapse items={grouped.map(([category, rows]) => ({
+          key: category,
+          label: `${category}（${rows.length}）`,
+          extra: (
+            <Space size={18} wrap>
+              <Typography.Text>报废数量：{rows.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}</Typography.Text>
+              <Typography.Text>原值合计：{money(rows.reduce((sum, item) => sum + Number(item.originalValue || 0), 0))}</Typography.Text>
+              <Typography.Text>折旧合计：{money(rows.reduce((sum, item) => sum + Number(item.accumulatedDepreciation || 0), 0))}</Typography.Text>
+              <Typography.Text>净值合计：{money(rows.reduce((sum, item) => sum + Number(item.netValue || 0), 0))}</Typography.Text>
+            </Space>
+          ),
+          children: approvalTable(rows),
+        }))} />
+      </>
+    );
+  };
+
+  const accountingPreviewTabs = [
+    {
+      key: 'summary',
+      label: `汇总（${assets.length}）`,
+      children: (
+        <Table
+          rowKey="key"
+          size="small"
+          bordered
+          pagination={false}
+          dataSource={accountingSummaryRows}
+          columns={accountingSummaryColumns}
+          scroll={{ x: 'max-content' }}
+        />
+      ),
+    },
+    ...['已到报废期', '未到报废期', '丢失'].map((kind) => ({
+      key: kind,
+      label: `${kind}（${assets.filter((asset) => asset.scrapType === kind).length}）`,
+      children: accountingDetailTab(kind),
+    })),
+  ];
+
   const approvalActionButtons = (onDecision) => (
     <div data-testid="approval-action-buttons" className="mt-3 flex flex-wrap justify-center gap-3">
       <Button onClick={onBack}>返回</Button>
