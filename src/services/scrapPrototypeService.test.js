@@ -9,7 +9,7 @@ import {
 } from './scrapPrototypeService';
 
 const actor = { id: 'verified-accountant' };
-const authorizationScopes = [{ company: '114.新媒体', plates: ['17_Corporate'] }];
+const authorizationScopes = [{ company: '114.新媒体', plates: ['17.Corporate'] }];
 const auth = { actor, authorizationScopes };
 
 beforeEach(() => {
@@ -33,7 +33,7 @@ test('asset-scrap quantity derives all/partial and prorated accounting values', 
   saveScrapPrototypeRecords('scrap', [{
     id: 'scrap-source', applicationNo: 'BF-1', documentStatus: '已审批',
     assetsSnapshot: [{
-      id: 'asset-1', tagNo: 'TAG-1', company: '114.新媒体', plate: '17_Corporate',
+      id: 'asset-1', tagNo: 'TAG-1', company: '114.新媒体', plate: '17.Corporate',
       scope: '办公设备', requestedScrapQuantity: 2, cardQuantity: 5,
       cardOriginalValue: 1000, cardNetValue: 250, scrapType: '已到报废期',
     }],
@@ -54,7 +54,7 @@ test('asset-scrap quantity derives all/partial and prorated accounting values', 
 test('ambiguous old source quantity is excluded instead of guessed', () => {
   saveScrapPrototypeRecords('scrap', [{
     id: 'old-source', applicationNo: 'BF-OLD', documentStatus: '已审批',
-    assetsSnapshot: [{ id: 'old', tagNo: 'OLD', company: '114.新媒体', plate: '17_Corporate', quantity: 1 }],
+    assetsSnapshot: [{ id: 'old', tagNo: 'OLD', company: '114.新媒体', plate: '17.Corporate', quantity: 1 }],
   }]);
   saveScrapPrototypeRecords('accounting', []);
   expect(getAccountingCandidates(auth)).toEqual([]);
@@ -62,7 +62,7 @@ test('ambiguous old source quantity is excluded instead of guessed', () => {
 
 test('validation verifies source workflow and excludes only the current accounting record from occupation', () => {
   const sourceAsset = {
-    id: 'asset-source', tagNo: 'TAG-SOURCE', company: '114.新媒体', plate: '17_Corporate',
+    id: 'asset-source', tagNo: 'TAG-SOURCE', company: '114.新媒体', plate: '17.Corporate',
     scope: '办公设备', requestedScrapQuantity: 1, cardQuantity: 2,
     cardOriginalValue: 1000, cardNetValue: 100,
   };
@@ -89,7 +89,7 @@ test('validation verifies source workflow and excludes only the current accounti
 
 test('validation rejects invalid source, lost asset with prior workflow, and lost transfer', () => {
   const invalidSource = {
-    tagNo: 'INVALID', company: '114.新媒体', plate: '17_Corporate', scrapMethod: '非调账',
+    tagNo: 'INVALID', company: '114.新媒体', plate: '17.Corporate', scrapMethod: '非调账',
     detailScrapMethod: '全部报废', scrapType: '未到报废期', sourceBusinessType: '资产报废',
     sourceBusinessNo: 'BF-NOT-FOUND', requestedScrapQuantity: 1, cardQuantity: 1,
   };
