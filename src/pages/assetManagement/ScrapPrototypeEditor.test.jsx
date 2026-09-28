@@ -17,8 +17,8 @@ jest.mock('antd', () => {
   Input.TextArea = ({ value, onChange, placeholder, required, disabled }) => element('textarea', null, {
     value, onChange, placeholder, required, disabled,
   });
-  const Select = ({ value, onChange, options = [], disabled }) => ReactModule.createElement('select', {
-    value, disabled, onChange: (event) => onChange?.(event.target.value),
+  const Select = ({ value, onChange, options = [], disabled, mode }) => ReactModule.createElement('select', {
+    value, disabled, multiple: mode === 'multiple', onChange: (event) => onChange?.(event.target.value),
   }, options.map((option) => element('option', option.label, { key: option.value, value: option.value })));
   const Table = ({ columns = [], dataSource = [] }) => element('table', element('tbody', dataSource.map((record, rowIndex) => (
     element('tr', columns.map((column, index) => element('td', column.render
@@ -219,7 +219,7 @@ test('资产处置办公设备提交前进入预览并自动生成可编辑处�
   expect(screen.getByText('提交发起审批后展示审批记录')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '提交发起审批' })).toBeInTheDocument();
   const description = screen.getByDisplayValue(/按照报废计划，ES拟对2台库存老旧办公资产进行变卖处置/);
-  expect(description).toHaveValue(expect.stringContaining('回收商“回收商甲”总价最高'));
+  expect(description.value).toContain('回收商“回收商甲”总价最高');
   expect(onSave).not.toHaveBeenCalled();
 
   fireEvent.change(description, { target: { value: '人工调整后的处置说明' } });
