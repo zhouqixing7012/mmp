@@ -16,7 +16,7 @@ import {
 } from './scrapPrototypeData';
 import {
   getDisposalCandidates,
-  machineRequiresDisposal,
+  requiresPhysicalDisposal,
   getScrapPrototypeRecords,
   saveScrapPrototypeRecords,
   validateAccountingAssets,
@@ -510,13 +510,6 @@ export default function ScrapPrototypeModule({
       message.error(validation.errors[0]?.message || '账面报废执行校验失败');
       return;
     }
-    try {
-      sourceAssets.filter((asset) => asset.scope === '机房资产' && asset.scrapMethod !== '调账'
-        && asset.scrapType !== '丢失').forEach(machineRequiresDisposal);
-    } catch (error) {
-      message.error(error.message);
-      return;
-    }
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
     const completedRecord = {
       ...record,
@@ -526,26 +519,23 @@ export default function ScrapPrototypeModule({
         approvalHistory: [...(record.approvalHistory || []), { node: '提单人确认', person: record.creator, result: '确认并执行', opinion: opinion.trim(), time: now }] } : record.formSnapshot,
       assetsSnapshot: sourceAssets.map((asset) => ({
         ...asset,
-        status: asset.scope === '软件' || asset.scrapType === '丢失'
-          || (asset.scope === '机房资产' && asset.scrapMethod !== '调账' && !machineRequiresDisposal(asset))
-          ? '已报废-已处置'
-          : asset.status,
+        status: asset.scrapMethod === '调账'
+          ? asset.status
+          : requiresPhysicalDisposal(asset)
+            ? '已报废-待处置'
+            : '已报废-已处置',
       })),
     };
     const next = records.map((item) => item.id === record.id ? completedRecord : item);
     saveScrapPrototypeRecords(type, next);
     setRecords(next);
 
-    // 仅需要实物处置的机房资产自动生成处置单；非北京且无需清洗的机房资产直接完成。
+    // 所有需要实物处置的机房资产自动生成处置单；数据清洗只决定是否增加清洗协办节点。
     const currentDisposal = getScrapPrototypeRecords('disposal');
     const existingAssetTags = new Set(currentDisposal.flatMap((item) => (item.assetsSnapshot || []).map((asset) => asset.tagNo)));
     const automaticAssets = sourceAssets.filter((asset) => (
-      asset.scrapMethod !== '调账'
-      && asset.scope === '机房资产'
-      && asset.scrapType !== '丢失'
-      && asset.disposedComplete !== '是'
-      && asset.disposalRequired !== '否'
-      && machineRequiresDisposal(asset)
+      asset.scope === '机房资产'
+      && requiresPhysicalDisposal(asset)
       && !existingAssetTags.has(asset.tagNo)
     ));
     const today = dayjs().format('YYYYMMDD');
@@ -566,15 +556,21 @@ export default function ScrapPrototypeModule({
         creator: '系统自动', applicationDate: now.slice(0, 10),
         documentStatus: '审批中',
       };
-      const currentNode = getDisposalApprovalNodes(basic)[0];
-      const approvalHistory = [{ node: '系统发起', person: '系统自动', result: '提交', opinion: '', time: now }];
+      const approvalNodes = getDisposalApprovalNodes(basic);
+      const currentNode = approvalNodes[0] || '流程结束';
+      const autoCompleted = approvalNodes.length === 0;
+      const approvalHistory = [
+        { node: '系统发起', person: '系统自动', result: '提交', opinion: '', time: now },
+        ...(autoCompleted ? [{ node: '系统完成', person: '系统自动', result: '完成', opinion: '无需数据清洗，无后续人工协办节点', time: now }] : []),
+      ];
+      const documentStatus = autoCompleted ? '已完成' : '审批中';
       return {
         id: `disposal-${record.id}-${asset.id}`, applicationNo,
-        documentStatus: '审批中', company: asset.company, assetScope: asset.scope,
+        documentStatus, company: asset.company, assetScope: asset.scope,
         disposalMode, region, needsCleaning: basic.needsCleaning,
         creator: '系统自动', createdAt: now.slice(0, 10), currentNode,
-        assetCount: 1, assetsSnapshot: [{ ...asset, sourceAccountingNo: record.applicationNo }],
-        approvalHistory, formSnapshot: { ...basic, currentNode, approvalHistory },
+        assetCount: 1, assetsSnapshot: [{ ...asset, status: autoCompleted ? '已报废-已处置' : '已报废-待处置', sourceAccountingNo: record.applicationNo }],
+        approvalHistory, formSnapshot: { ...basic, documentStatus, currentNode, approvalHistory },
       };
     });
     if (autoRecords.length) saveScrapPrototypeRecords('disposal', [...autoRecords, ...currentDisposal]);
