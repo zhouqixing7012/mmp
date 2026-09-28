@@ -392,6 +392,23 @@ export default function ScrapPrototypeAssetTable({
     );
   };
 
+  const updateManualAccountingQuantity = (record, value) => {
+    const cardQuantity = Number(record.cardQuantity || 0);
+    const nextQuantity = Number(value || 0);
+    if (!cardQuantity || nextQuantity <= 0 || nextQuantity > cardQuantity) return;
+    const ratio = nextQuantity / cardQuantity;
+    const cardOriginalValue = Number(record.cardOriginalValue ?? record.originalValue ?? 0);
+    const cardNetValue = Number(record.cardNetValue ?? record.netValue ?? 0);
+    const nextOriginalValue = Math.round((cardOriginalValue * ratio + Number.EPSILON) * 100) / 100;
+    const nextNetValue = Math.round((cardNetValue * ratio + Number.EPSILON) * 100) / 100;
+    onChange(record.id, 'quantity', nextQuantity);
+    onChange(record.id, 'requestedScrapQuantity', nextQuantity);
+    onChange(record.id, 'detailScrapMethod', nextQuantity < cardQuantity ? '部分报废' : '全部报废');
+    onChange(record.id, 'originalValue', nextOriginalValue);
+    onChange(record.id, 'netValue', nextNetValue);
+    onChange(record.id, 'accumulatedDepreciation', Math.round(((nextOriginalValue - nextNetValue) + Number.EPSILON) * 100) / 100);
+  };
+
   const renderTransferValue = (value, record, sourceField) => {
     if (!readOnly || !showTransferDiff) return displayValue(value);
     const originalValue = record[sourceField];
@@ -907,7 +924,27 @@ export default function ScrapPrototypeAssetTable({
     { title: '资产编号', dataIndex: 'assetNo', width: 150 },
     { title: '资产说明', dataIndex: 'description', width: 220 },
     { title: '资产关键字', dataIndex: 'assetKeyword', width: 140, render: displayValue },
-    { title: '报废数量', dataIndex: 'quantity', width: 90, align: 'right' },
+    { title: '资产卡片数量', dataIndex: 'cardQuantity', width: 120, align: 'right', render: displayValue },
+    {
+      title: requiredTitle('报废数量'),
+      dataIndex: 'quantity',
+      width: 110,
+      align: 'right',
+      render: (value, record) => (
+        readOnly || record.sourceBusinessType !== '丢失资产'
+          ? displayValue(value)
+          : (
+            <InputNumber
+              min={1}
+              max={Number(record.cardQuantity || 1)}
+              precision={0}
+              value={value}
+              className="w-full"
+              onChange={(nextValue) => updateManualAccountingQuantity(record, nextValue)}
+            />
+          )
+      ),
+    },
     { title: '原值', dataIndex: 'originalValue', width: 120, align: 'right', render: money },
     { title: '购买日期', dataIndex: 'purchaseDate', width: 130, render: displayValue },
     { title: '资产寿命（月）', dataIndex: 'lifeMonths', width: 135, render: displayValue },
