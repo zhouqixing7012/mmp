@@ -138,6 +138,18 @@ export const SCRAP_ASSET_POOL = [
     originalValue: 180000,
   }),
   fromCatalog({
+    id: 'scrap-office-114-accounting',
+    majorCategory: 'OFFICE EQUIPMENT',
+    tagNo: 'FA-2026-000121',
+    company: '114.新媒体',
+    warehouse: officeWarehouse?.warehouseDescription || '',
+    owner: '213852-孙志强',
+    status: '在库-再利用',
+    city: officeWarehouse?.city || '',
+    building: officeWarehouse?.building || '',
+    floor: officeWarehouse?.floor || '',
+  }),
+  fromCatalog({
     id: 'scrap-furniture-1',
     majorCategory: 'FURNITURE',
     tagNo: 'FA-2026-000116',
@@ -183,8 +195,8 @@ export const ACCOUNTING_ASSET_POOL = SCRAP_ASSET_POOL.map((item, index) => ({
   status: String(item.status || '').startsWith('在库') ? '在库-待报废' : item.status,
   scrapMethod: index === 0 ? '调账' : '非调账',
   detailScrapMethod: index === 0 ? '调账' : index === 1 ? '部分报废' : '全部报废',
-  scrapType: index === 5 ? '丢失' : index % 3 === 2 ? '未到报废期' : '已到报废期',
-  reason: index % 3 === 2 ? '设备不满足继续使用要求' : '达到报废条件',
+  scrapType: Number(item.netValue || 0) === 0 ? '已到报废期' : '未到报废期',
+  reason: Number(item.netValue || 0) === 0 ? '达到报废条件' : '设备不满足继续使用要求',
   sourceBusinessType: index === 0 ? '跨公司转移' : '资产报废',
   sourceBusinessNo: index === 0 ? 'CT20260923000001' : `BF20260923${String(index + 1).padStart(6, '0')}`,
   newCompany: index === 0 ? '115.新媒体-上海' : '',
@@ -213,10 +225,10 @@ const DISPOSAL_QUOTE_SAMPLES = [
 ];
 
 export const DISPOSAL_ASSET_POOL = ACCOUNTING_ASSET_POOL
-  .filter((item) => item.scrapMethod !== '调账')
+  .filter((item) => item.scrapMethod !== '调账' && item.scope !== '软件' && item.scrapType !== '丢失')
   .map((item, index) => {
     const [recycler1, recycler2, recycler3] = DISPOSAL_QUOTE_SAMPLES[index % DISPOSAL_QUOTE_SAMPLES.length];
-    const disposalMode = item.scope === '软件' || item.scrapType === '丢失' ? '无实物处置' : '实物处置';
+    const disposalMode = '实物处置';
     return {
       ...item,
       id: `disposal-${item.id}`,
@@ -235,8 +247,6 @@ export const DISPOSAL_ASSET_POOL = ACCOUNTING_ASSET_POOL
       recycler3: disposalMode === '实物处置' ? recycler3 : null,
     };
   });
-
-const lostDisposalAsset = DISPOSAL_ASSET_POOL.find((item) => item.scrapType === '丢失');
 
 const businessRows = {
   crossCompany: [
@@ -292,9 +302,17 @@ const businessRows = {
       scrapMethod: '全部报废',
       creator: DEMO_APPLICANT,
       createdAt: '2026-09-22',
-      assetCount: 3,
+      assetCount: 1,
       currentNode: '已进入待报废池',
       remark: '办公设备报废',
+      assetsSnapshot: [SCRAP_ASSET_POOL.find((item) => item.id === 'scrap-office-114-accounting')]
+        .map((asset) => ({
+          ...asset,
+          cardQuantity: asset.quantity,
+          requestedScrapQuantity: asset.quantity,
+          cardOriginalValue: asset.originalValue,
+          cardNetValue: asset.netValue,
+        })),
     },
     {
       id: 'scrap-machine-draft', applicationNo: 'BF20260926000001', documentStatus: '草稿',
@@ -369,21 +387,6 @@ const businessRows = {
       remark: '办公设备实物处置',
     },
     {
-      id: 'disp-software', applicationNo: 'CZ20260923000003', documentStatus: '处理中',
-      assetScope: '软件', company: '114.新媒体', creator: '系统自动', createdAt: '2026-09-23',
-      assetCount: 1, currentNode: '无实物处置确认', disposalMode: '无实物处置',
-      remark: '软件无实物处置',
-    },
-    {
-      id: 'disp-lost', applicationNo: 'CZ20260923000004', documentStatus: '处理中',
-      assetScope: lostDisposalAsset?.scope || '办公设备',
-      company: lostDisposalAsset?.company || '115.焦点互动',
-      creator: '系统自动', createdAt: '2026-09-23',
-      assetCount: 1, currentNode: '无实物处置确认', disposalMode: '无实物处置',
-      assetIds: lostDisposalAsset ? [lostDisposalAsset.id] : [],
-      remark: '丢失资产无实物处置',
-    },
-    {
       id: 'disp-office-beijing', applicationNo: 'CZ20260921000001', documentStatus: '审批中',
       assetScope: '办公设备', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-asset-2')?.company || '116.北京新动力',
       region: '北京', creator: DEMO_APPLICANT, createdAt: '2026-09-21',
@@ -425,9 +428,7 @@ export function getInitialBusinessRows(type) {
     const scoped = row.assetScope === '混合'
       ? sourcePool
       : sourcePool.filter((item) => item.scope === row.assetScope);
-    const matching = type === 'disposal' && row.disposalMode === '无实物处置'
-      ? scoped.filter((item) => row.assetScope === '软件' ? item.scope === '软件' : item.scrapType === '丢失')
-      : scoped.filter((item) => item.disposalMode !== '无实物处置');
+    const matching = scoped.filter((item) => item.disposalMode !== '无实物处置');
     const companyMatching = type === 'disposal'
       ? matching.filter((item) => item.company === row.company)
       : matching;

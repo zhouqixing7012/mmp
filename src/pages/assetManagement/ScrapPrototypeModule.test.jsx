@@ -3,12 +3,18 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ScrapPrototypeModule from './ScrapPrototypeModule';
 import {
   getAccountingCandidates,
+  getAccountingLostCandidates,
   getDisposalCandidates,
   getScrapPrototypeRecords,
   resetScrapPrototypeMemory,
   saveScrapPrototypeRecords,
 } from '../../services/scrapPrototypeService';
-import { ACCOUNTING_ASSET_POOL, SCRAP_ASSET_POOL } from './scrapPrototypeData';
+import { SCRAP_ASSET_POOL } from './scrapPrototypeData';
+
+const accountingAccess = {
+  actor: { id: 'verified-accountant' },
+  authorizationScopes: [{ company: '114.新媒体', plates: '*' }],
+};
 
 jest.mock('antd', () => ({
   message: { error: jest.fn(), warning: jest.fn(), success: jest.fn() },
@@ -88,12 +94,12 @@ test('四类原型主模块可加载，跨公司转移草稿保存后可以重�
 test('资产处置有多张可查看单据，覆盖不同资产范围、状态和带报价的明细', () => {
   render(<ScrapPrototypeModule type="disposal" />);
   const rows = getScrapPrototypeRecords('disposal');
-  expect(rows).toHaveLength(8);
+  expect(rows).toHaveLength(6);
   expect(rows.some((row) => row.assetScope === '机房资产' && row.documentStatus === '处理中')).toBe(true);
   expect(rows.some((row) => row.assetScope === '办公设备' && row.documentStatus === '审批中')).toBe(true);
   expect(rows.some((row) => row.assetScope === '办公设备' && row.documentStatus === '处理中')).toBe(true);
-  expect(rows.some((row) => row.assetScope === '软件' && row.disposalMode === '无实物处置')).toBe(true);
-  expect(rows.some((row) => row.assetsSnapshot.some((asset) => asset.scrapType === '丢失') && row.disposalMode === '无实物处置')).toBe(true);
+  expect(rows.some((row) => row.assetScope === '软件' || row.disposalMode === '无实物处置')).toBe(false);
+  expect(rows.some((row) => row.assetsSnapshot.some((asset) => asset.scrapType === '丢失'))).toBe(false);
   expect(rows.every((row) => row.assetsSnapshot?.length > 0)).toBe(true);
 
   const physicalAssets = rows
@@ -108,24 +114,37 @@ test('资产处置有多张可查看单据，覆盖不同资产范围、状态�
   ))).toBe(true);
 });
 
-test('账面报废完成时自动生成机房和无实物处置单，办公实物资产等待手动建单', () => {
-  const candidates = ACCOUNTING_ASSET_POOL;
-  const machine = candidates.find((asset) => asset.scope === '机房资产' && asset.scrapMethod !== '调账');
-  const software = candidates.find((asset) => asset.scope === '软件');
-  const lost = candidates.find((asset) => asset.scrapType === '丢失');
-  const office = candidates.find((asset) => asset.scope === '办公设备' && asset.scrapType !== '丢失');
+test('账面报废完成仅自动生成机房实物处置单，软件和丢失直接完成', () => {
+  const sourceAssets = ['scrap-machine-114', 'scrap-soft-1', 'scrap-office-114-accounting']
+    .map((id) => SCRAP_ASSET_POOL.find((asset) => asset.id === id))
+    .map((asset) => ({ ...asset, cardQuantity: asset.quantity, requestedScrapQuantity: asset.quantity,
+      cardOriginalValue: asset.originalValue, cardNetValue: asset.netValue }));
+  saveScrapPrototypeRecords('scrap', [{ id: 'scrap-approved-for-accounting', applicationNo: 'BF-CASE-APPROVED',
+    documentStatus: '已审批', assetsSnapshot: sourceAssets }]);
+  saveScrapPrototypeRecords('crossCompany', []);
+  saveScrapPrototypeRecords('accounting', []);
+  const candidates = getAccountingCandidates({ ...accountingAccess, company: '114.新媒体' });
+  const lost = getAccountingLostCandidates({ ...accountingAccess, company: '114.新媒体' })
+    .find((asset) => asset.id === 'scrap-furniture-1');
+  expect(candidates).toHaveLength(3);
+  expect(lost).toBeDefined();
   saveScrapPrototypeRecords('disposal', []);
   saveScrapPrototypeRecords('accounting', [{
     id: 'accounting-auto-disposal', applicationNo: 'ZMBF20260926000099', documentStatus: '待提单人确认',
-    assetScope: '混合', currentNode: '提单人确认',
-    assetsSnapshot: [machine, software, lost, office],
+    company: '114.新媒体', assetScope: '混合', currentNode: '提单人确认',
+    assetsSnapshot: [...candidates, lost],
   }]);
-  render(<ScrapPrototypeModule type="accounting" />);
+  render(<ScrapPrototypeModule type="accounting" accountingActor={accountingAccess.actor}
+    accountingAuthorizationScopes={accountingAccess.authorizationScopes} />);
   fireEvent.click(screen.getByRole('button', { name: '执行账面报废' }));
   const rows = getScrapPrototypeRecords('disposal');
-  expect(rows).toHaveLength(3);
-  expect(rows.map((row) => row.disposalMode)).toEqual(['实物处置', '无实物处置', '无实物处置']);
+  expect(rows).toHaveLength(1);
+  expect(rows.map((row) => row.disposalMode)).toEqual(['实物处置']);
   expect(rows.every((row) => row.creator === '系统自动')).toBe(true);
+  const completed = getScrapPrototypeRecords('accounting')[0];
+  expect(completed.documentStatus).toBe('已完成');
+  expect(completed.assetsSnapshot.filter((asset) => asset.scope === '软件' || asset.scrapType === '丢失')
+    .every((asset) => asset.status === '已报废-已处置')).toBe(true);
 });
 
 test('跨公司转移提交后直接进入审批页面，不返回列表', async () => {
@@ -155,13 +174,15 @@ test('跨公司转移审批完成后进入待报废池，调账资产进入账�
     formSnapshot: { assetScope: '办公设备', currentNode: 'ES主管确认' },
   };
   saveScrapPrototypeRecords('crossCompany', [record]);
-  expect(getAccountingCandidates().some((item) => item.tagNo === asset.tagNo)).toBe(false);
+  const sourceAccess = { actor: accountingAccess.actor,
+    authorizationScopes: [{ company: asset.company, plates: '*' }], company: asset.company };
+  expect(getAccountingCandidates(sourceAccess).some((item) => item.tagNo === asset.tagNo)).toBe(false);
   render(<ScrapPrototypeModule type="crossCompany" />);
   fireEvent.click(screen.getByRole('button', { name: '审批通过' }));
 
   await waitFor(() => expect(getScrapPrototypeRecords('crossCompany')[0].documentStatus).toBe('已完成'));
   expect(getScrapPrototypeRecords('crossCompany')[0].approvalHistory[0].opinion).toBe('同意');
-  expect(getAccountingCandidates().find((item) => item.tagNo === asset.tagNo).sourceBusinessNo).toBe('CT-CASE-001');
+  expect(getAccountingCandidates(sourceAccess).find((item) => item.tagNo === asset.tagNo).sourceBusinessNo).toBe('CT-CASE-001');
   expect(getDisposalCandidates().some((item) => item.tagNo === asset.tagNo)).toBe(false);
 });
 
@@ -180,23 +201,15 @@ test('非调账资产完成账面报废后进入待处置池', () => {
   expect(disposal.disposalStatus).toBe('待处置');
 });
 
-test('账面报废按条件审批后才允许提单人执行', () => {
+test('缺少真实审批人映射时账面报废流程停在当前节点，不虚构审批通过', () => {
   const record = getScrapPrototypeRecords('accounting')[0];
   saveScrapPrototypeRecords('accounting', [record]);
   render(<ScrapPrototypeModule type="accounting" />);
 
   fireEvent.click(screen.getByRole('button', { name: '审批通过' }));
-  expect(getScrapPrototypeRecords('accounting')[0].currentNode).toBe('NO部门7级及以上领导');
+  expect(getScrapPrototypeRecords('accounting')[0].currentNode).toBe(record.currentNode);
   expect(getScrapPrototypeRecords('accounting')[0].documentStatus).toBe('审批中');
-
-  let approvals = 0;
-  while (getScrapPrototypeRecords('accounting')[0].documentStatus === '审批中' && approvals < 10) {
-    fireEvent.click(screen.getByRole('button', { name: '审批通过' }));
-    approvals += 1;
-  }
-  expect(getScrapPrototypeRecords('accounting')[0].documentStatus).toBe('待提单人确认');
-  fireEvent.click(screen.getByRole('button', { name: '执行账面报废' }));
-  expect(getScrapPrototypeRecords('accounting')[0].documentStatus).toBe('已完成');
+  expect(getScrapPrototypeRecords('accounting')[0].approvalHistory).toEqual(record.approvalHistory);
 });
 
 test('办公设备报废经过鉴定和主管确认后进入账面报废候选', () => {
@@ -208,7 +221,9 @@ test('办公设备报废经过鉴定和主管确认后进入账面报废候选',
     documentStatus: '审批中',
     assetScope: '办公设备',
     currentNode: 'MIS鉴定',
-    assetsSnapshot: [{ ...asset, scrapMethod: '全部报废' }],
+    assetsSnapshot: [{ ...asset, scrapMethod: '全部报废', cardQuantity: asset.quantity,
+      requestedScrapQuantity: asset.quantity, cardOriginalValue: asset.originalValue,
+      cardNetValue: asset.netValue }],
     formSnapshot: { assetScope: '办公设备', currentNode: 'MIS鉴定' },
   }]);
   render(<ScrapPrototypeModule type="scrap" />);
@@ -216,7 +231,9 @@ test('办公设备报废经过鉴定和主管确认后进入账面报废候选',
   expect(getScrapPrototypeRecords('scrap')[0].currentNode).toBe('ES主管确认');
   fireEvent.click(screen.getByRole('button', { name: '审批通过' }));
   expect(getScrapPrototypeRecords('scrap')[0].documentStatus).toBe('已审批');
-  expect(getAccountingCandidates().find((item) => item.tagNo === asset.tagNo).sourceBusinessNo).toBe('BF-CASE-001');
+  const sourceAccess = { actor: accountingAccess.actor,
+    authorizationScopes: [{ company: asset.company, plates: '*' }], company: asset.company };
+  expect(getAccountingCandidates(sourceAccess).find((item) => item.tagNo === asset.tagNo).sourceBusinessNo).toBe('BF-CASE-001');
 });
 
 test('模拟刷新后恢复初始Mock数据并忽略旧版本地缓存', () => {

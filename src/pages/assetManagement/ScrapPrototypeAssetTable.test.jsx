@@ -110,7 +110,10 @@ jest.mock('../../components/SelectModal', () => {
 jest.mock('../../services/scrapPrototypeService', () => ({
   getScrapPrototypeRecords: () => [],
   getAccountingCandidates: () => [],
+  getAccountingLostCandidates: ({ company }) => require('./scrapPrototypeData').SCRAP_ASSET_POOL
+    .filter((item) => item.company === company),
   getDisposalCandidates: () => [],
+  validateAccountingAssets: () => ({ valid: true, errors: [] }),
 }));
 
 test('跨公司转移按所选公司筛选资产，添加时带出当前资产目标字段', () => {
@@ -157,6 +160,9 @@ test('账面报废资产字段只读，位置列使用 City、Building、Floor',
       type="accounting"
       assetScope="混合"
       accountingMethod="非调账"
+      sourceCompany={source.company}
+      accountingActor={{ id: 'test-accountant' }}
+      accountingAuthorizationScopes={[{ company: source.company, plates: '*' }]}
       assets={[source]}
       readOnly={false}
       onChange={jest.fn()}
@@ -169,7 +175,7 @@ test('账面报废资产字段只读，位置列使用 City、Building、Floor',
   expect(screen.getByText('Floor')).toBeInTheDocument();
   expect(screen.queryByText('资产所在城市')).not.toBeInTheDocument();
   expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-  expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  expect(screen.getByRole('combobox')).toBeInTheDocument();
 });
 
 test('调账资产信息只读，且不显示直接添加丢失资产入口', () => {
@@ -184,6 +190,9 @@ test('调账资产信息只读，且不显示直接添加丢失资产入口', ()
       type="accounting"
       assetScope="混合"
       accountingMethod="调账"
+      sourceCompany={source.company}
+      accountingActor={{ id: 'test-accountant' }}
+      accountingAuthorizationScopes={[{ company: source.company, plates: '*' }]}
       assets={[source]}
       readOnly={false}
       onChange={jest.fn()}
@@ -194,18 +203,21 @@ test('调账资产信息只读，且不显示直接添加丢失资产入口', ()
   expect(screen.getByRole('button', { name: '待报废资产' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '添加资产' })).not.toBeInTheDocument();
   expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-  expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  expect(screen.getByRole('combobox')).toBeInTheDocument();
 });
 
 test('账面报废分别从审批通过待报废资产和不限范围的丢失资产添加', () => {
   const onReplace = jest.fn();
   const source = SCRAP_ASSET_POOL[0];
-  const otherScope = SCRAP_ASSET_POOL.find((asset) => asset.scope !== source.scope);
+  const otherScope = SCRAP_ASSET_POOL.find((asset) => asset.company === source.company && asset.scope !== source.scope);
   render(
     <ScrapPrototypeAssetTable
       type="accounting"
       assetScope="混合"
       accountingMethod="非调账"
+      sourceCompany={source.company}
+      accountingActor={{ id: 'test-accountant' }}
+      accountingAuthorizationScopes={[{ company: source.company, plates: '*' }]}
       assets={[]}
       readOnly={false}
       onChange={jest.fn()}
@@ -225,6 +237,24 @@ test('账面报废分别从审批通过待报废资产和不限范围的丢失�
   expect(addedAsset.scrapMethod).toBe('非调账');
   expect(addedAsset.detailScrapMethod).toBe('全部报废');
   expect(addedAsset.reason).toBe('');
+});
+
+test('账面报废未选择公司时不能打开候选资产和导入', () => {
+  render(
+    <ScrapPrototypeAssetTable
+      type="accounting"
+      assetScope="混合"
+      accountingMethod="非调账"
+      assets={[]}
+      readOnly={false}
+      onChange={jest.fn()}
+      onReplace={jest.fn()}
+    />,
+  );
+
+  expect(screen.getByRole('button', { name: '待报废资产' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '添加资产' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Excel导入' })).toBeDisabled();
 });
 
 test('新责任人、新公司、新成本中心均从弹窗选择', () => {
@@ -299,6 +329,9 @@ test('资产报废明细使用报废数量，账面报废删除按钮只显示�
       type="accounting"
       assetScope="混合"
       accountingMethod="非调账"
+      sourceCompany={source.company}
+      accountingActor={{ id: 'test-accountant' }}
+      accountingAuthorizationScopes={[{ company: source.company, plates: '*' }]}
       assets={[{ ...source, scrapMethod: '非调账', scrapType: '已到报废期' }]}
       readOnly={false}
       onChange={jest.fn()}

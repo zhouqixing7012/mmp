@@ -23,6 +23,7 @@ import { getScrapPrototypeApprovalRecords } from './scrapPrototypeApproval';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 import { money } from './scrapPrototypeData';
+import { validateAccountingAssets } from '../../services/scrapPrototypeService';
 
 const transferCompanyOptions = Array.from(
   [...getAssetMaintenanceRows(), ...warehouseCatalog.map((item) => {
@@ -62,6 +63,8 @@ export default function ScrapPrototypeEditor({
   onSave,
   onApprove,
   onEdit,
+  accountingActor,
+  accountingAuthorizationScopes,
 }) {
   const [form, setForm] = useState(initialForm);
   const [assets, setAssets] = useState(initialAssets);
@@ -162,12 +165,8 @@ export default function ScrapPrototypeEditor({
           nextForm.assetCategory = firstAsset.majorCategory;
           nextForm.assetLocation = String(firstAsset.city || '').includes('北京') ? '北京' : '非北京';
         }
-        if (type !== 'crossCompany') {
+        if (type !== 'crossCompany' && type !== 'accounting') {
           nextForm.company = firstAsset.company || current.company;
-        }
-        if (type === 'accounting') {
-          nextForm.company = firstAsset.company || current.company;
-          nextForm.plate = firstAsset.plate || current.plate;
         }
         if (type === 'disposal') {
           nextForm.region = firstAsset.region || (String(firstAsset.city || '').includes('北京') ? '北京' : '非北京');
@@ -239,14 +238,13 @@ export default function ScrapPrototypeEditor({
     }
 
     if (type === 'accounting') {
-      const companyPlates = new Set(assets.map((item) => `${item.company}|${item.plate}`));
-      const scrapMethods = new Set(assets.map((item) => item.scrapMethod).filter(Boolean));
-      if (companyPlates.size > 1) {
-        message.error('同一账面报废单必须属于同一公司和板块');
-        return false;
-      }
-      if (scrapMethods.size > 1 || (scrapMethods.size && !scrapMethods.has(form.scrapMethod))) {
-        message.error('同一账面报废单的报废方式必须一致');
+      const checked = validateAccountingAssets(form, assets, {
+        actor: accountingActor,
+        authorizationScopes: accountingAuthorizationScopes,
+        recordId: form.id,
+      });
+      if (!checked.valid) {
+        message.error(checked.errors[0].message);
         return false;
       }
 
@@ -305,10 +303,12 @@ export default function ScrapPrototypeEditor({
   const handleSave = (submit) => {
     if (submit && !validate()) return;
 
-    const scrapReasons = type === 'accounting' && form.scrapMethod !== '调账'
-      ? Object.fromEntries(['已到报废期', '未到报废期', '丢失'].map((kind) => [kind, getAccountingReasonText(kind)]))
+    const scrapReasons = type === 'accounting'
+      ? Object.fromEntries((form.scrapMethod === '调账'
+        ? ['已到报废期', '未到报废期']
+        : ['已到报废期', '未到报废期', '丢失']).map((kind) => [kind, getAccountingReasonText(kind)]))
       : form.scrapReasons;
-    const savedAssets = type === 'accounting' && form.scrapMethod !== '调账'
+    const savedAssets = type === 'accounting'
       ? assets.map((item) => ({ ...item, reason: scrapReasons[item.scrapType] || '' }))
       : assets;
 
@@ -326,8 +326,8 @@ export default function ScrapPrototypeEditor({
   }, type);
   const approvalView = approvalPage || (
     readOnly
-    && ['crossCompany', 'scrap'].includes(type)
-    && !['草稿', '已驳回'].includes(form.documentStatus)
+    && ['crossCompany', 'scrap', 'accounting', 'disposal'].includes(type)
+    && (type === 'accounting' ? form.documentStatus !== '草稿' : !['草稿', '已驳回'].includes(form.documentStatus))
   );
   const showApprovalActions = approvalPage && (
     (type === 'crossCompany' && form.documentStatus === '审批中')
@@ -335,7 +335,7 @@ export default function ScrapPrototypeEditor({
     || (['scrap', 'disposal'].includes(type) && ['审批中', '处理中'].includes(form.documentStatus))
   );
   const showPageExport = (type === 'scrap' && approvalView)
-    || (type === 'accounting' && approvalPage && form.scrapMethod !== '调账')
+    || (type === 'accounting' && approvalView)
     || (type === 'disposal' && approvalPage);
 
   const disposalSummary = Array.from(assets.reduce((groups, asset) => {
@@ -392,7 +392,7 @@ export default function ScrapPrototypeEditor({
   );
   const assetDetailsTitle = type === 'accounting' && form.scrapMethod === '调账'
     ? '公司间转移明细'
-    : (type === 'accounting' && approvalPage) || type === 'scrap'
+    : (type === 'accounting' && approvalView) || type === 'scrap'
       ? '报废资产明细'
       : type === 'disposal' && approvalPage
         ? '处置资产汇总'
@@ -471,7 +471,7 @@ export default function ScrapPrototypeEditor({
                     value={form.company}
                     placeholder="请选择公司"
                     onOpen={() => setCompanyPickerOpen(true)}
-                    disabled={type !== 'accounting' && assets.length > 0}
+                    disabled={assets.length > 0}
                   />
                 ))
               : showValue(form.company)}
@@ -593,7 +593,7 @@ export default function ScrapPrototypeEditor({
         )}
       </Card>
 
-      {type === 'accounting' && form.scrapMethod !== '调账' && !approvalPage && (
+      {type === 'accounting' && !approvalView && (
         <Card size="small" title="报废原因">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             {['已到报废期', '未到报废期', '丢失'].map((kind) => (
@@ -604,9 +604,10 @@ export default function ScrapPrototypeEditor({
                   : (
                     <Input.TextArea
                       className="mt-2"
+                      disabled={form.scrapMethod === '调账' && kind === '丢失'}
                       autoSize={{ minRows: 4, maxRows: 6 }}
                       placeholder={`请填写${kind}资产的报废原因`}
-                      value={getAccountingReasonText(kind)}
+                      value={form.scrapMethod === '调账' && kind === '丢失' ? '' : getAccountingReasonText(kind)}
                       onChange={(event) => updateAccountingReason(kind, event.target.value)}
                     />
                   )}
@@ -646,7 +647,7 @@ export default function ScrapPrototypeEditor({
                 render: (values) => values.map((value) => money(value)).join('、') || '-',
               })),
             ]} />
-        ) : type === 'accounting' && approvalPage && form.scrapMethod !== '调账' ? (
+        ) : type === 'accounting' && approvalView ? (
           <Tabs items={['已到报废期', '未到报废期', '丢失']
             .filter((kind) => assets.some((asset) => asset.scrapType === kind))
             .map((kind) => {
@@ -688,7 +689,10 @@ export default function ScrapPrototypeEditor({
           type={type}
           assetScope={form.assetScope}
           assetCategory={form.assetCategory}
-          sourceCompany={['crossCompany', 'disposal'].includes(type) ? form.company : undefined}
+          sourceCompany={['crossCompany', 'disposal', 'accounting'].includes(type) ? form.company : undefined}
+          accountingActor={accountingActor}
+          accountingAuthorizationScopes={accountingAuthorizationScopes}
+          accountingRecordId={form.id}
           assets={assets}
           readOnly={readOnly}
           showTransferDiff={approvalView && type === 'crossCompany'}
@@ -722,9 +726,7 @@ export default function ScrapPrototypeEditor({
         </BorrowingApprovalHistory>
       )}
 
-      {((approvalView && ['scrap', 'disposal'].includes(type)) || (
-        readOnly && !approvalPage && type !== 'crossCompany' && !['草稿', '已驳回'].includes(form.documentStatus)
-      )) && (
+      {approvalView && ['scrap', 'disposal', 'accounting'].includes(type) && (
         <BorrowingApprovalHistory records={approvalRecords}>
           {showApprovalActions && (
             <>
@@ -733,13 +735,6 @@ export default function ScrapPrototypeEditor({
             </>
           )}
         </BorrowingApprovalHistory>
-      )}
-
-      {approvalPage && type === 'accounting' && (
-        <>
-          <BorrowingApprovalHistory records={approvalRecords} />
-          {showApprovalActions && <Card size="small" title="审批意见">{approvalActions}</Card>}
-        </>
       )}
 
       <div className="flex justify-center gap-3">
@@ -759,7 +754,12 @@ export default function ScrapPrototypeEditor({
         <SelectModal
           open={companyPickerOpen}
           title="选择公司"
-          dataSource={transferCompanyOptions}
+          dataSource={type === 'accounting'
+            ? transferCompanyOptions.filter((item) => (
+              accountingActor
+              && accountingAuthorizationScopes?.some((scope) => scope.company === `${item.code}.${item.name}`)
+            ))
+            : transferCompanyOptions}
           columns={[
             { title: '公司编码', dataIndex: 'code' },
             { title: '公司名称', dataIndex: 'name' },
@@ -770,6 +770,10 @@ export default function ScrapPrototypeEditor({
           ]}
           onCancel={() => setCompanyPickerOpen(false)}
           onConfirm={(company) => {
+            if (type === 'accounting' && assets.length > 0) {
+              message.error('请先删除全部资产明细，再更换公司');
+              return;
+            }
             setForm((current) => ({
               ...current,
               company: `${company.code}.${company.name}`,

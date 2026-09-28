@@ -28,8 +28,10 @@ import {
 } from './scrapPrototypeData';
 import {
   getAccountingCandidates,
+  getAccountingLostCandidates,
   getDisposalCandidates,
   getScrapPrototypeRecords,
+  validateAccountingAssets,
 } from '../../services/scrapPrototypeService';
 import {
   mockPlates,
@@ -167,6 +169,26 @@ export function exportScrapPrototypeAssets(assets, type, accountingMethod, dispo
 
     if (type === 'crossCompany' || (type === 'accounting' && accountingMethod === '调账')) {
       return {
+        ...(type === 'accounting' ? {
+          账面报废申请单号: disposalSuppliers.applicationNo,
+          公司: disposalSuppliers.company,
+          板块: item.plate,
+          单据报废方式: accountingMethod,
+          资产报废方式: item.detailScrapMethod,
+          报废类型: item.scrapType,
+          报废原因: item.reason,
+          来源业务: item.sourceBusinessType,
+          来源申请单号: item.sourceBusinessNo,
+          资产编号: item.assetNo,
+          资产卡片数量: item.cardQuantity,
+          报废数量: item.quantity,
+          原值: item.originalValue,
+          净值: item.netValue,
+          累计折旧: item.accumulatedDepreciation,
+          City: item.city,
+          Building: item.building,
+          Floor: item.floor,
+        } : {}),
         资产标签号: item.tagNo,
         资产序列号: item.serialNumber,
         资产类别: [item.majorCategory, item.minorCategory].filter(Boolean).join('.'),
@@ -175,10 +197,11 @@ export function exportScrapPrototypeAssets(assets, type, accountingMethod, dispo
         新公司: item.newCompany,
         新板块: item.newPlate,
         新成本中心: item.newCostCenter,
-        City: item.targetCity,
-        Building: item.targetBuilding,
-        Floor: item.targetFloor,
+        [type === 'accounting' ? '新 City' : 'City']: item.targetCity,
+        [type === 'accounting' ? '新 Building' : 'Building']: item.targetBuilding,
+        [type === 'accounting' ? '新 Floor' : 'Floor']: item.targetFloor,
         调账后仓库: item.targetWarehouse,
+        ...(type === 'accounting' ? { 是否处置: '否' } : {}),
       };
     }
 
@@ -203,11 +226,21 @@ export function exportScrapPrototypeAssets(assets, type, accountingMethod, dispo
 
     if (type === 'accounting') {
       return {
+        账面报废申请单号: disposalSuppliers.applicationNo,
+        公司: disposalSuppliers.company,
+        板块: item.plate,
+        单据报废方式: accountingMethod,
+        资产报废方式: item.detailScrapMethod,
+        报废类型: item.scrapType,
+        报废原因: item.reason,
+        来源业务: item.sourceBusinessType,
+        来源申请单号: item.sourceBusinessNo,
         资产类别: [item.majorCategory, item.minorCategory].filter(Boolean).join('.'),
         资产标签号: item.tagNo,
         资产编号: item.assetNo,
         资产说明: item.description,
         资产关键字: item.assetKeyword,
+        资产卡片数量: item.cardQuantity,
         报废数量: item.quantity,
         原值: item.originalValue,
         累计折旧: item.accumulatedDepreciation,
@@ -217,9 +250,6 @@ export function exportScrapPrototypeAssets(assets, type, accountingMethod, dispo
         City: item.city,
         Building: item.building,
         Floor: item.floor,
-        报废方式: item.scrapType === '丢失' ? '全部报废' : item.detailScrapMethod,
-        报废类型: item.scrapType,
-        报废原因: item.reason,
       };
     }
 
@@ -266,6 +296,9 @@ export default function ScrapPrototypeAssetTable({
   onReplace,
   scrapMethod,
   disposalSuppliers,
+  accountingActor,
+  accountingAuthorizationScopes,
+  accountingRecordId,
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState('waiting');
@@ -290,8 +323,16 @@ export default function ScrapPrototypeAssetTable({
 
   const pickerAssets = useMemo(() => {
     const isAccountingLost = type === 'accounting' && pickerMode === 'lost';
+    const accountingFilters = {
+      company: sourceCompany,
+      actor: accountingActor,
+      authorizationScopes: accountingAuthorizationScopes,
+      recordId: accountingRecordId,
+    };
     const pool = type === 'accounting'
-      ? isAccountingLost ? SCRAP_ASSET_POOL : getAccountingCandidates()
+      ? isAccountingLost
+        ? getAccountingLostCandidates(accountingFilters)
+        : getAccountingCandidates(accountingFilters)
       : type === 'disposal'
         ? getDisposalCandidates()
         : !assetScope || assetScope === '混合'
@@ -328,7 +369,7 @@ export default function ScrapPrototypeAssetTable({
       &&
       (type !== 'disposal' || (item.scope === '办公设备' && item.disposalMode !== '无实物处置'))
       &&
-      (!['crossCompany', 'disposal'].includes(type) || (sourceCompany && item.company === sourceCompany))
+      (!['crossCompany', 'disposal', 'accounting'].includes(type) || (sourceCompany && item.company === sourceCompany))
       &&
       (!occupiedTags.has(item.tagNo) || currentTags.has(item.tagNo))
       &&
@@ -338,9 +379,9 @@ export default function ScrapPrototypeAssetTable({
         || (!String(item.status || '').startsWith('已报废') && item.status !== '在库-待报废')
       )
     ));
-  }, [type, assetScope, assetCategory, sourceCompany, accountingMethod, pickerMode, assets]);
+  }, [type, assetScope, assetCategory, sourceCompany, accountingMethod, pickerMode, assets, accountingActor, accountingAuthorizationScopes, accountingRecordId]);
 
-  const addAssets = (selected) => {
+  const addAssets = (selected, isLostAsset = () => pickerMode === 'lost') => {
     if (type === 'crossCompany' && !sourceCompany) {
       message.error('请先选择公司');
       return false;
@@ -352,6 +393,10 @@ export default function ScrapPrototypeAssetTable({
     }
     if (type === 'disposal' && (!sourceCompany || selected.some((item) => item.company !== sourceCompany || item.scope !== '办公设备'))) {
       message.error('只能添加所选公司的待处置办公资产');
+      return false;
+    }
+    if (type === 'accounting' && (!sourceCompany || selected.some((item) => item.company !== sourceCompany))) {
+      message.error('请先选择公司，只能添加该公司的资产');
       return false;
     }
 
@@ -391,14 +436,14 @@ export default function ScrapPrototypeAssetTable({
         ...item,
         scrapMethod: type === 'crossCompany'
           ? '调账'
-          : type === 'accounting' && pickerMode === 'lost'
+          : type === 'accounting' && isLostAsset(item)
             ? '非调账'
             : item.scrapMethod || scrapMethod,
-        detailScrapMethod: type === 'accounting' && pickerMode === 'lost'
+        detailScrapMethod: type === 'accounting' && isLostAsset(item)
           ? '全部报废'
           : item.detailScrapMethod || '全部报废',
-        scrapType: type === 'accounting' && pickerMode === 'lost' ? '丢失' : item.scrapType || '已到报废期',
-        reason: type === 'accounting' && pickerMode === 'lost' ? '' : item.reason || '',
+        scrapType: type === 'accounting' && isLostAsset(item) ? '丢失' : item.scrapType || '已到报废期',
+        reason: type === 'accounting' && isLostAsset(item) ? '' : item.reason || '',
         dataCleaning: item.scope === '机房资产' ? item.dataCleaning || '否' : undefined,
         newCompany: type === 'crossCompany' ? item.company || '' : item.newCompany || '',
         newPlate: type === 'crossCompany' ? item.plate || '' : item.newPlate || '',
@@ -415,6 +460,18 @@ export default function ScrapPrototypeAssetTable({
         rowRemark: item.rowRemark || '',
       }));
 
+    if (type === 'accounting') {
+      const checked = validateAccountingAssets(
+        { company: sourceCompany, scrapMethod: accountingMethod },
+        [...assets, ...next],
+        { actor: accountingActor, authorizationScopes: accountingAuthorizationScopes, recordId: accountingRecordId },
+      );
+      if (!checked.valid) {
+        message.error(checked.errors[0].message);
+        return false;
+      }
+    }
+
     onReplace([...assets, ...next]);
     return true;
   };
@@ -427,7 +484,8 @@ export default function ScrapPrototypeAssetTable({
   };
 
   const downloadTemplate = () => {
-    const sheet = XLSX.utils.json_to_sheet([{ 资产标签号: '' }], { header: ['资产标签号'] });
+    const headers = type === 'accounting' ? ['录入来源', '资产标签号', '报废类型'] : ['资产标签号'];
+    const sheet = XLSX.utils.json_to_sheet([], { header: headers });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, sheet, '资产导入模板');
     XLSX.writeFile(workbook, '资产导入模板.xlsx');
@@ -452,7 +510,11 @@ export default function ScrapPrototypeAssetTable({
       }
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const header = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })[0] || [];
-      if (header.length !== 1 || String(header[0]).trim() !== '资产标签号') {
+      const expectedHeader = type === 'accounting'
+        ? ['录入来源', '资产标签号', '报废类型']
+        : ['资产标签号'];
+      if (header.length !== expectedHeader.length
+        || header.some((value, index) => String(value).trim() !== expectedHeader[index])) {
         message.error('导入表头与下载模板不一致');
         return;
       }
@@ -466,17 +528,45 @@ export default function ScrapPrototypeAssetTable({
       const selectedIds = new Set(assets.map((item) => item.id));
       const seenTags = new Set();
       const matched = [];
-      const result = rows.map((row) => {
+      const lostIds = new Set();
+      const accountingOptions = {
+        company: sourceCompany,
+        actor: accountingActor,
+        authorizationScopes: accountingAuthorizationScopes,
+        recordId: accountingRecordId,
+      };
+      const waitingByTag = new Map((type === 'accounting'
+        ? getAccountingCandidates(accountingOptions)
+        : pickerAssets).map((item) => [String(item.tagNo), item]));
+      const lostByTag = new Map((type === 'accounting'
+        ? getAccountingLostCandidates(accountingOptions)
+        : []).map((item) => [String(item.tagNo), item]));
+      const result = rows.map((row, index) => {
         const tag = String(row['资产标签号'] || '').trim();
-        const asset = pickerAssets.find((item) => String(item.tagNo) === tag);
+        const source = type === 'accounting' ? String(row['录入来源'] || '').trim() : '';
+        const selectedType = type === 'accounting' ? String(row['报废类型'] || '').trim() : '';
+        const isLost = source === '丢失资产';
+        const asset = type === 'accounting'
+          ? (isLost ? lostByTag : waitingByTag).get(tag)
+          : waitingByTag.get(tag);
         let error = '';
-        if (!tag) error = '资产标签号不能为空';
+        if (type === 'accounting' && !['待报废资产', '丢失资产'].includes(source)) error = '录入来源只能是待报废资产或丢失资产';
+        else if (!tag) error = '资产标签号不能为空';
         else if (seenTags.has(tag)) error = '导入文件中的资产标签号重复';
-        else if (!asset) error = '资产不存在或不符合当前资产范围';
+        else if (type === 'accounting' && isLost && accountingMethod === '调账') error = '调账单不能导入丢失资产';
+        else if (!asset) error = '资产不存在或不符合当前资产范围与权限';
         else if (selectedIds.has(asset.id)) error = '资产已在当前单据中';
+        else if (type === 'accounting' && isLost && selectedType && selectedType !== '丢失') error = '丢失资产报废类型只能为丢失';
+        else if (type === 'accounting' && !isLost && selectedType
+          && !['已到报废期', '未到报废期'].includes(selectedType)) error = '待报废资产报废类型只能为已到报废期或未到报废期';
         seenTags.add(tag);
-        if (!error) matched.push(asset);
-        return { 错误原因: error, 资产标签号: tag };
+        if (!error) {
+          matched.push({ ...asset, scrapType: isLost ? '丢失' : selectedType || asset.scrapType });
+          if (isLost) lostIds.add(asset.id);
+        }
+        return type === 'accounting'
+          ? { 行号: index + 2, 错误原因: error, 录入来源: source, 资产标签号: tag, 报废类型: selectedType }
+          : { 错误原因: error, 资产标签号: tag };
       });
 
       const selectedScopes = new Set([...assets, ...matched].map((item) => item.scope).filter(Boolean));
@@ -497,13 +587,17 @@ export default function ScrapPrototypeAssetTable({
       const errorCount = result.filter((row) => row.错误原因).length;
       if (errorCount > 0) {
         const errorBook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(errorBook, XLSX.utils.json_to_sheet(result, { header: ['错误原因', '资产标签号'] }), '导入结果');
+        XLSX.utils.book_append_sheet(errorBook, XLSX.utils.json_to_sheet(result, {
+          header: type === 'accounting'
+            ? ['行号', '错误原因', '录入来源', '资产标签号', '报废类型']
+            : ['错误原因', '资产标签号'],
+        }), '导入结果');
         XLSX.writeFile(errorBook, '资产导入错误结果.xlsx');
         message.error(`${errorCount} 行校验失败，已下载错误结果，整批未导入`);
         return;
       }
 
-      if (addAssets(matched)) message.success(`已导入 ${matched.length} 条资产`);
+      if (addAssets(matched, (item) => lostIds.has(item.id))) message.success(`已导入 ${matched.length} 条资产`);
     };
     reader.readAsArrayBuffer(file);
     return false;
@@ -709,7 +803,7 @@ export default function ScrapPrototypeAssetTable({
     { title: '资产编号', dataIndex: 'assetNo', width: 150 },
     { title: '资产说明', dataIndex: 'description', width: 220 },
     { title: '资产关键字', dataIndex: 'assetKeyword', width: 140, render: displayValue },
-    { title: '数量', dataIndex: 'quantity', width: 90, align: 'right' },
+    { title: '报废数量', dataIndex: 'quantity', width: 90, align: 'right' },
     { title: '原值', dataIndex: 'originalValue', width: 120, align: 'right', render: money },
     { title: '购买日期', dataIndex: 'purchaseDate', width: 130, render: displayValue },
     { title: '资产寿命（月）', dataIndex: 'lifeMonths', width: 135, render: displayValue },
@@ -721,11 +815,31 @@ export default function ScrapPrototypeAssetTable({
     { title: 'Building', dataIndex: 'building', width: 150, render: displayValue },
     { title: 'Floor', dataIndex: 'floor', width: 130, render: displayValue },
     { title: '报废方式', dataIndex: 'detailScrapMethod', width: 120, render: displayValue },
-    { title: '报废类型', dataIndex: 'scrapType', width: 140, render: displayValue },
+    {
+      title: '报废类型', dataIndex: 'scrapType', width: 150,
+      render: (value, record) => readOnly || value === '丢失'
+        ? displayValue(value)
+        : <Select
+          value={value}
+          className="w-full"
+          options={SCRAP_TYPE_OPTIONS.filter((option) => option.value !== '丢失')}
+          onChange={(nextValue) => onChange(record.id, 'scrapType', nextValue)}
+        />,
+    },
   ];
 
   const accountingTransferColumns = [
     { title: requiredTitle('资产标签号'), dataIndex: 'tagNo', width: 160, fixed: 'left' },
+    { title: '报废类型', dataIndex: 'scrapType', width: 140,
+      render: (value, record) => readOnly
+        ? displayValue(value)
+        : <Select
+          value={value}
+          className="w-full"
+          options={SCRAP_TYPE_OPTIONS.filter((option) => option.value !== '丢失')}
+          onChange={(nextValue) => onChange(record.id, 'scrapType', nextValue)}
+        />,
+    },
     ...[
       ['newResponsiblePerson', '新责任人'], ['newCompany', '新公司'],
       ['newPlate', '新板块'], ['newCostCenter', '新成本中心'],
@@ -807,14 +921,21 @@ export default function ScrapPrototypeAssetTable({
           { label: '资产说明', name: 'description', dataIndex: 'description' },
         ]
       : type === 'accounting'
-        ? [
-            { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
-            { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
-            { label: '资产范围', name: 'scope', dataIndex: 'scope' },
-            { label: '公司', name: 'company', dataIndex: 'company' },
-            { label: '板块', name: 'plate', dataIndex: 'plate' },
-            { label: '资产说明', name: 'description', dataIndex: 'description' },
-          ]
+        ? pickerMode === 'lost'
+          ? [
+              { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
+              { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
+              { label: '资产类别', name: 'majorCategory', dataIndex: 'majorCategory' },
+              { label: '板块', name: 'plate', dataIndex: 'plate' },
+              { label: 'City', name: 'city', dataIndex: 'city' },
+            ]
+          : [
+              { label: '来源申请单号', name: 'sourceBusinessNo', dataIndex: 'sourceBusinessNo' },
+              { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
+              { label: '资产编号', name: 'assetNo', dataIndex: 'assetNo' },
+              { label: '资产类别', name: 'majorCategory', dataIndex: 'majorCategory' },
+              { label: '板块', name: 'plate', dataIndex: 'plate' },
+            ]
         : [
             { label: '资产标签号', name: 'tagNo', dataIndex: 'tagNo' },
             { label: '序列号', name: 'serialNumber', dataIndex: 'serialNumber' },
@@ -835,17 +956,30 @@ export default function ScrapPrototypeAssetTable({
         { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
       ]
     : type === 'accounting'
-      ? [
-          { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
-          { title: '序列号', dataIndex: 'serialNumber', width: 160 },
-          { title: '资产范围', dataIndex: 'scope', width: 130 },
-          { title: '资产类别', key: 'assetCategory', width: 210, render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
-          { title: '资产说明', dataIndex: 'description', width: 220 },
-          { title: '公司', dataIndex: 'company', width: 150 },
-          { title: '板块', dataIndex: 'plate', width: 150 },
-          { title: '责任人', dataIndex: 'responsiblePerson', width: 150 },
-          { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
-        ]
+      ? pickerMode === 'lost'
+        ? [
+            { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
+            { title: '序列号', dataIndex: 'serialNumber', width: 160 },
+            { title: '资产类别', key: 'assetCategory', width: 210, render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
+            { title: '资产说明', dataIndex: 'description', width: 220 },
+            { title: '公司', dataIndex: 'company', width: 150 },
+            { title: '板块', dataIndex: 'plate', width: 150 },
+            { title: 'City', dataIndex: 'city', width: 140 },
+            { title: '净值', dataIndex: 'netValue', width: 130, render: money },
+            { title: '当前状态', dataIndex: 'status', width: 150, render: (value) => <StatusTag value={value} type="business" /> },
+          ]
+        : [
+            { title: '来源业务', dataIndex: 'sourceBusinessType', width: 140 },
+            { title: '来源申请单号', dataIndex: 'sourceBusinessNo', width: 170 },
+            { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
+            { title: '资产编号', dataIndex: 'assetNo', width: 150 },
+            { title: '资产类别', key: 'assetCategory', width: 210, render: (_, record) => [record.majorCategory, record.minorCategory].filter(Boolean).join('.') },
+            { title: '公司', dataIndex: 'company', width: 150 },
+            { title: '板块', dataIndex: 'plate', width: 150 },
+            { title: '报废数量', dataIndex: 'quantity', width: 95 },
+            { title: '资产报废方式', dataIndex: 'detailScrapMethod', width: 130 },
+            { title: '净值', dataIndex: 'netValue', width: 130, render: money },
+          ]
       : [
           { title: '资产标签号', dataIndex: 'tagNo', width: 150 },
           { title: '序列号', dataIndex: 'serialNumber', width: 160 },
@@ -889,6 +1023,7 @@ export default function ScrapPrototypeAssetTable({
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
+                  disabled={!sourceCompany}
                   onClick={() => { setPickerMode('waiting'); setPickerOpen(true); }}
                 >
                   待报废资产
@@ -897,6 +1032,7 @@ export default function ScrapPrototypeAssetTable({
                   <Button
                     type="primary"
                     icon={<PlusOutlined />}
+                    disabled={!sourceCompany}
                     onClick={() => { setPickerMode('lost'); setPickerOpen(true); }}
                   >
                     添加资产
@@ -921,9 +1057,9 @@ export default function ScrapPrototypeAssetTable({
               accept=".xls,.xlsx"
               showUploadList={false}
               beforeUpload={importAssets}
-              disabled={['crossCompany', 'disposal'].includes(type) && !sourceCompany}
+              disabled={['crossCompany', 'disposal', 'accounting'].includes(type) && !sourceCompany}
             >
-              <Button disabled={['crossCompany', 'disposal'].includes(type) && !sourceCompany} icon={<UploadOutlined />}>
+              <Button disabled={['crossCompany', 'disposal', 'accounting'].includes(type) && !sourceCompany} icon={<UploadOutlined />}>
                 Excel导入
               </Button>
             </Upload>

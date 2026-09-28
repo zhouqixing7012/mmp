@@ -26,14 +26,17 @@ export function getDisposalApprovalNodes(record) {
   return ['ES二级审批', 'ES一级审批', '财务审批', 'ES专员处理'];
 }
 
-export function getAccountingApprovalNodes(assets) {
-  const hasMachine = assets.some((item) => item.scope === '机房资产' && item.scrapMethod !== '调账');
+export function getAccountingApprovalSteps(assets, approverMappings = {}) {
+  const hasMachine = assets.some((item) => (
+    ['SERVER', 'NET EQUIPMENT'].includes(item.majorCategory)
+    && item.scrapMethod !== '调账'
+  ));
   const needsMis = assets.some((item) => (
     ['PC', 'NOTEBOOK'].includes(item.majorCategory)
     && item.scrapType !== '丢失'
     && item.scrapMethod !== '调账'
   ));
-  return [
+  const nodes = [
     '财务初审',
     ...(hasMachine ? ['NO部门5级及以上领导', 'NO部门7级及以上领导'] : []),
     ...(needsMis ? ['MIS部门5级及以上领导', 'MIS部门7级及以上领导'] : []),
@@ -43,4 +46,21 @@ export function getAccountingApprovalNodes(assets) {
     '财务二级审批',
     '财务一级审批',
   ];
+
+  const seenApprovers = new Set();
+  return nodes.map((node) => {
+    const mapping = approverMappings[node];
+    const approverId = typeof mapping === 'string' ? mapping : mapping?.id || null;
+    const approverName = typeof mapping === 'object' ? mapping?.name || '' : '';
+    // 只有经明确映射的稳定身份才能驱动去重；映射缺失时保留阻塞标记，不虚构审批人。
+    const skipped = Boolean(approverId && seenApprovers.has(approverId));
+    if (approverId && !skipped) seenApprovers.add(approverId);
+    return { node, approverId, approverName, skipped, blockedByMissingMapping: !approverId };
+  });
+}
+
+export function getAccountingApprovalNodes(assets, approverMappings = {}) {
+  return getAccountingApprovalSteps(assets, approverMappings)
+    .filter((step) => !step.skipped)
+    .map((step) => step.node);
 }

@@ -3,6 +3,40 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import ScrapPrototypeEditor from './ScrapPrototypeEditor';
 import { exportScrapPrototypeAssets } from './ScrapPrototypeAssetTable';
 
+jest.mock('antd', () => {
+  const ReactModule = require('react');
+  const element = (tag, value, props = {}) => ReactModule.createElement(tag, props, value);
+  const fragment = (...children) => ReactModule.createElement(ReactModule.Fragment, null, ...children);
+  const Button = ({ children, onClick, disabled }) => element('button', children, { type: 'button', onClick, disabled });
+  const Card = ({ children, title, extra }) => element('section', fragment(element('div', title), extra, children));
+  const Descriptions = ({ children }) => element('div', children);
+  Descriptions.Item = ({ children, label }) => element('div', fragment(element('span', label), children));
+  const Input = ({ value, onChange, placeholder, required, disabled }) => element('input', null, {
+    value, onChange, placeholder, required, disabled,
+  });
+  Input.TextArea = ({ value, onChange, placeholder, required, disabled }) => element('textarea', null, {
+    value, onChange, placeholder, required, disabled,
+  });
+  const Select = ({ value, onChange, options = [], disabled }) => ReactModule.createElement('select', {
+    value, disabled, onChange: (event) => onChange?.(event.target.value),
+  }, options.map((option) => element('option', option.label, { key: option.value, value: option.value })));
+  const Table = ({ columns = [], dataSource = [] }) => element('table', element('tbody', dataSource.map((record, rowIndex) => (
+    element('tr', columns.map((column, index) => element('td', column.render
+      ? column.render(record[column.dataIndex], record, rowIndex)
+      : record[column.dataIndex], { key: column.key || column.dataIndex || index })), { key: record.id || record.key || rowIndex })
+  ))));
+  const Tabs = ({ items = [] }) => element('div', items.map((item) => element('section', fragment(element('div', item.label), item.children), { key: item.key })));
+  const Collapse = ({ items = [] }) => element('div', items.map((item) => element('section', fragment(element('div', item.label), item.children), { key: item.key })));
+  const Typography = { Text: ({ children }) => element('span', children) };
+  const Upload = ({ children }) => element('div', children);
+  return {
+    Button, Card, Descriptions, Input, Select, Table, Tabs, Collapse, Typography, Upload,
+    Space: ({ children }) => element('div', children),
+    theme: { useToken: () => ({ token: { colorBorderSecondary: '#ccc', fontSize: 14, lineHeight: 1.5, colorText: '#222' } }) },
+    message: { error: jest.fn(), warning: jest.fn(), success: jest.fn() },
+  };
+});
+
 jest.mock('../../components/LookupInput', () => {
   const ReactModule = require('react');
   return function MockLookupInput({ value, placeholder, onOpen, disabled }) {
@@ -146,6 +180,7 @@ test('资产处置审批页展示会计格式报价并可导出当前申请明�
         ...accountingForm,
         applicationNo: 'CZ20260926000001',
         documentStatus: '审批中',
+        currentNode: 'ES二级审批',
         scrapMethod: '全部报废',
         remark: '北京机房资产处置说明',
         recycler1Name: '广环再生资源利用有限公司',
@@ -263,6 +298,7 @@ test('机房资产报废审批单头展示资产大类、所在地和单独一�
         ...accountingForm,
         applicationNo: 'BF-MACHINE-001',
         documentStatus: '审批中',
+        currentNode: '采购专员',
         officeArea: '北京-搜狐媒体大厦',
         assetScope: '机房资产',
         assetCategory: 'SERVER',
@@ -285,4 +321,39 @@ test('机房资产报废审批单头展示资产大类、所在地和单独一�
   expect(screen.getByText('报废说明')).toBeInTheDocument();
   expect(screen.getByText('机房服务器达到报废条件')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '导出' })).toBeInTheDocument();
+});
+
+test.each(['非调账', '调账'])('账面报废%s详情与审批显示相同原因、明细和历史，详情没有审批按钮', (scrapMethod) => {
+  const asset = {
+    id: `accounting-${scrapMethod}`, tagNo: 'TAG-ACCOUNTING', majorCategory: 'SERVER', minorCategory: '标准服务器',
+    quantity: 1, originalValue: 1000, netValue: 0, scrapType: '已到报废期',
+    scrapMethod, detailScrapMethod: scrapMethod === '调账' ? '调账' : '全部报废',
+  };
+  const props = {
+    type: 'accounting', config: { title: '账面报废', createLabel: '创建账面报废申请单' },
+    initialForm: {
+      ...accountingForm, applicationNo: 'ZMBF-DETAIL-001', documentStatus: '审批中',
+      currentNode: '财务初审', scrapMethod, scrapReasons: { 已到报废期: '达到报废条件' },
+      approvalHistory: [{ node: '发起人提交', person: '115720-吕静', result: '提交', opinion: '', time: '2026-09-28 10:00:00' }],
+    },
+    initialAssets: [asset], readOnly: true, onBack: jest.fn(), onSave: jest.fn(), onApprove: jest.fn(),
+  };
+  const approval = render(<ScrapPrototypeEditor {...props} approvalPage />);
+  expect(screen.getByText('申请人信息')).toBeInTheDocument();
+  expect(screen.getByText('达到报废条件')).toBeInTheDocument();
+  expect(screen.getByText('已到报废期（1）')).toBeInTheDocument();
+  expect(screen.getByTestId('approval-history-records')).toHaveTextContent('发起人提交');
+  expect(screen.getByRole('button', { name: '导出' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '同意' })).toBeInTheDocument();
+  const layout = approval.container.firstChild.getAttribute('data-page-view-key');
+  approval.unmount();
+
+  const detail = render(<ScrapPrototypeEditor {...props} approvalPage={false} />);
+  expect(detail.container.firstChild.getAttribute('data-page-view-key')).toBe(layout);
+  expect(screen.getByText('申请人信息')).toBeInTheDocument();
+  expect(screen.getByText('达到报废条件')).toBeInTheDocument();
+  expect(screen.getByText('已到报废期（1）')).toBeInTheDocument();
+  expect(screen.getByTestId('approval-history-records')).toHaveTextContent('发起人提交');
+  expect(screen.getByRole('button', { name: '导出' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '同意' })).not.toBeInTheDocument();
 });
