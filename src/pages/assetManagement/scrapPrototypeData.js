@@ -417,7 +417,7 @@ const businessRows = {
     {
       id: 'disp-1',
       applicationNo: 'CZ20260923000001',
-      documentStatus: '处理中',
+      documentStatus: '审批中',
       assetScope: '机房资产',
       company: '114.新媒体',
       region: '北京',
@@ -448,7 +448,7 @@ const businessRows = {
       remark: '笔记本线下询价及处置审批',
     },
     {
-      id: 'disp-machine-beijing', applicationNo: 'CZ20260920000002', documentStatus: '处理中',
+      id: 'disp-machine-beijing', applicationNo: 'CZ20260920000002', documentStatus: '审批中',
       assetScope: '机房资产', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-asset-3')?.company || '115.新媒体',
       region: '北京', creator: DEMO_APPLICANT, createdAt: '2026-09-20',
       assetCount: 1, assetIds: ['disposal-asset-3'], currentNode: 'ES专员协办',
@@ -462,7 +462,7 @@ const businessRows = {
       remark: '上海车辆处置等待ES一级审批',
     },
     {
-      id: 'disp-office-guangzhou', applicationNo: 'CZ20260918000005', documentStatus: '处理中',
+      id: 'disp-office-guangzhou', applicationNo: 'CZ20260918000005', documentStatus: '审批中',
       assetScope: '办公设备', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-scrap-building-1')?.company || '116.新媒体-广州',
       region: '非北京', creator: '213852-孙志强', createdAt: '2026-09-18',
       assetCount: 1, assetIds: ['disposal-scrap-building-1'], currentNode: 'ES专员处理',

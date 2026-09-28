@@ -338,7 +338,7 @@ export default function ScrapPrototypeEditor({
   const showApprovalActions = approvalPage && (
     (type === 'crossCompany' && form.documentStatus === '审批中')
     || (type === 'accounting' && form.documentStatus === '审批中')
-    || (['scrap', 'disposal'].includes(type) && ['审批中', '处理中'].includes(form.documentStatus))
+    || (['scrap', 'disposal'].includes(type) && form.documentStatus === '审批中')
   );
   const showPageExport = (type === 'scrap' && approvalView)
     || (type === 'accounting' && approvalView)

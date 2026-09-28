@@ -41,7 +41,7 @@ const MODULES = {
   disposal: {
     title: '资产处置',
     createLabel: '创建资产处置申请单',
-    statuses: ['草稿', '审批中', '处理中', '已驳回', '已完成'],
+    statuses: ['草稿', '审批中', '已驳回', '已完成'],
   },
 };
 
@@ -107,7 +107,7 @@ function firstNode(type, form, assets) {
 
 function submitStatus(type, form) {
   if (type !== 'disposal') return '审批中';
-  return form.assetScope === '办公设备' && form.disposalMode !== '无实物处置' ? '审批中' : '处理中';
+  return '审批中';
 }
 
 function seedAssets(type, record) {
@@ -342,7 +342,7 @@ export default function ScrapPrototypeModule({
   };
 
   const processApproval = (record, result, opinion) => {
-    if (!['crossCompany', 'scrap', 'accounting', 'disposal'].includes(type) || !['审批中', '处理中'].includes(record.documentStatus)) return;
+    if (!['crossCompany', 'scrap', 'accounting', 'disposal'].includes(type) || record.documentStatus !== '审批中') return;
     const recordAssets = record.assetsSnapshot || seedAssets(type, record);
     const accountingSteps = type === 'accounting'
       ? getAccountingApprovalSteps(recordAssets, accountingApproverMappings)
@@ -376,7 +376,7 @@ export default function ScrapPrototypeModule({
       ? (completed ? '流程结束' : nodes[currentIndex + 1])
       : '发起人修改';
     const documentStatus = approved
-      ? (completed ? (type === 'scrap' ? '已审批' : '已完成') : type === 'disposal' && record.disposalMode !== '实物处置' ? '处理中' : '审批中')
+      ? (completed ? (type === 'scrap' ? '已审批' : '已完成') : '审批中')
       : '已驳回';
     const entry = {
       node: record.currentNode,
@@ -490,13 +490,13 @@ export default function ScrapPrototypeModule({
         assetScope: asset.scope, disposalMode, region,
         needsCleaning: asset.dataCleaning === '是' ? '是' : '否',
         creator: '系统自动', applicationDate: now.slice(0, 10),
-        documentStatus: '处理中',
+        documentStatus: '审批中',
       };
       const currentNode = getDisposalApprovalNodes(basic)[0];
       const approvalHistory = [{ node: '系统发起', person: '系统自动', result: '提交', opinion: '', time: now }];
       return {
         id: `disposal-${record.id}-${asset.id}`, applicationNo,
-        documentStatus: '处理中', company: asset.company, assetScope: asset.scope,
+        documentStatus: '审批中', company: asset.company, assetScope: asset.scope,
         disposalMode, region, needsCleaning: basic.needsCleaning,
         creator: '系统自动', createdAt: now.slice(0, 10), currentNode,
         assetCount: 1, assetsSnapshot: [{ ...asset, sourceAccountingNo: record.applicationNo }],

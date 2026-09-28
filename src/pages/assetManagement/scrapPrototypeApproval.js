@@ -1,7 +1,5 @@
 const ACTIVE_STATUSES = new Set([
   '审批中',
-  '处理中',
-  '待ES专员处理',
 ]);
 
 function displayStatus(result, node) {

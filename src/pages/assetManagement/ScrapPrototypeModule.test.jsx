@@ -110,9 +110,10 @@ test('资产处置有多张可查看单据，覆盖不同资产范围、状态�
   render(<ScrapPrototypeModule type="disposal" />);
   const rows = getScrapPrototypeRecords('disposal');
   expect(rows).toHaveLength(6);
-  expect(rows.some((row) => row.assetScope === '机房资产' && row.documentStatus === '处理中')).toBe(true);
+  expect(rows.some((row) => row.assetScope === '机房资产' && row.documentStatus === '审批中')).toBe(true);
   expect(rows.some((row) => row.assetScope === '办公设备' && row.documentStatus === '审批中')).toBe(true);
-  expect(rows.some((row) => row.assetScope === '办公设备' && row.documentStatus === '处理中')).toBe(true);
+  expect(rows.some((row) => row.assetScope === '办公设备' && row.currentNode === 'ES专员处理' && row.documentStatus === '审批中')).toBe(true);
+  expect(rows.some((row) => row.documentStatus === '处理中')).toBe(false);
   expect(rows.some((row) => row.assetScope === '软件' || row.disposalMode === '无实物处置')).toBe(false);
   expect(rows.some((row) => row.assetsSnapshot.some((asset) => asset.scrapType === '丢失'))).toBe(false);
   expect(rows.every((row) => row.assetsSnapshot?.length > 0)).toBe(true);
@@ -127,6 +128,23 @@ test('资产处置有多张可查看单据，覆盖不同资产范围、状态�
     && typeof asset.recycler2 === 'number'
     && typeof asset.recycler3 === 'number'
   ))).toBe(true);
+});
+
+test('旧资产处置办理状态刷新后统一迁移为审批中，保留节点与历史', () => {
+  const legacyRows = [
+    { id: 'legacy-disposal-1', documentStatus: '处理中', currentNode: 'ES专员处理',
+      approvalHistory: [{ node: '财务审批', result: '通过' }],
+      formSnapshot: { documentStatus: '待 ES 专员处理', currentNode: 'ES专员处理' } },
+    { id: 'legacy-disposal-2', documentStatus: '办理中', currentNode: '采购专员协办',
+      formSnapshot: { documentStatus: '办理中', currentNode: '采购专员协办' } },
+  ];
+  window.localStorage.setItem('asset-scrap-prototype:v2:disposal', JSON.stringify(legacyRows));
+  const migrated = getScrapPrototypeRecords('disposal');
+  expect(migrated.map((record) => record.documentStatus)).toEqual(['审批中', '审批中']);
+  expect(migrated.map((record) => record.formSnapshot.documentStatus)).toEqual(['审批中', '审批中']);
+  expect(migrated[0].currentNode).toBe('ES专员处理');
+  expect(migrated[0].approvalHistory).toEqual(legacyRows[0].approvalHistory);
+  expect(JSON.parse(window.localStorage.getItem('asset-scrap-prototype:v2:disposal'))).toEqual(migrated);
 });
 
 test('账面报废完成仅自动生成机房实物处置单，软件和丢失直接完成', () => {

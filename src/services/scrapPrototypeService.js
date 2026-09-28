@@ -36,6 +36,25 @@ function readStored(type) {
       }
       return migrated;
     }
+    if (type === 'disposal') {
+      const legacyStatuses = new Set(['处理中', '办理中', '待 ES 专员处理', '待ES专员处理']);
+      const migrated = parsed.map((record) => {
+        const recordChanged = legacyStatuses.has(record.documentStatus);
+        const formChanged = legacyStatuses.has(record.formSnapshot?.documentStatus);
+        if (!recordChanged && !formChanged) return record;
+        return {
+          ...record,
+          documentStatus: recordChanged ? '审批中' : record.documentStatus,
+          formSnapshot: formChanged
+            ? { ...record.formSnapshot, documentStatus: '审批中' }
+            : record.formSnapshot,
+        };
+      });
+      if (migrated.some((record, index) => record !== parsed[index])) {
+        target.setItem(`${STORAGE_PREFIX}${type}`, JSON.stringify(migrated));
+      }
+      return migrated;
+    }
     if (type !== 'accounting') return parsed;
     const demoConfirm = getInitialBusinessRows('accounting').find((record) => record.id === 'acc-2');
     const migrated = parsed.map((record) => {
