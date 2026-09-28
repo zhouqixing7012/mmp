@@ -672,11 +672,11 @@ export default function ScrapPrototypeEditor({
         </Typography.Text>
       )}
 
-      <Card size="small" title={approvalView ? '申请人信息' : '基本信息'}>
-        {approvalView ? (
+      <Card size="small" title={approvalView || previewView ? '申请人信息' : '基本信息'}>
+        {approvalView || previewView ? (
           <DetailGrid>
             <DetailItem label="申请人">{showValue(form.creator)}</DetailItem>
-            <DetailItem label="申请日期">{showValue(form.applicationDate)}</DetailItem>
+            <DetailItem label={type === 'accounting' ? '创建时间' : '申请日期'}>{showValue(form.applicationDate)}</DetailItem>
             <DetailItem label="公司">{showValue(form.company)}</DetailItem>
             {!(type === 'disposal' && form.assetScope === '机房资产') && (
               <>
@@ -695,7 +695,13 @@ export default function ScrapPrototypeEditor({
               <DetailItem label="部门" span={type === 'accounting' ? 2 : 3}>{showValue(form.department)}</DetailItem>
             )}
             {type === 'scrap' && <DetailItem label="报废说明" span={3}>{showValue(form.description)}</DetailItem>}
-            {type === 'accounting' && <DetailItem label="报废方式">{showValue(form.scrapMethod)}</DetailItem>}
+            {type === 'accounting' && (
+              <>
+                <DetailItem label="报废方式">{showValue(form.scrapMethod)}</DetailItem>
+                <DetailItem label="报废单名称" span={2}>{showValue(form.scrapFormName || accountingFormName)}</DetailItem>
+                <DetailItem label="报废期间">{showValue(form.scrapPeriod || accountingScrapPeriod)}</DetailItem>
+              </>
+            )}
             {type === 'disposal' && form.assetScope === '机房资产' && (
               <>
                 <DetailItem label="归属地">{showValue(form.region)}</DetailItem>
@@ -717,7 +723,7 @@ export default function ScrapPrototypeEditor({
           <Descriptions.Item label="申请单号">
             {form.applicationNo || '保存/提交后生成'}
           </Descriptions.Item>
-          <Descriptions.Item label="申请日期">{form.applicationDate}</Descriptions.Item>
+          <Descriptions.Item label={type === 'accounting' ? '创建时间' : '申请日期'}>{form.applicationDate}</Descriptions.Item>
 
           <Descriptions.Item label="制单人">{form.creator}</Descriptions.Item>
           <Descriptions.Item label="公司">
@@ -760,7 +766,24 @@ export default function ScrapPrototypeEditor({
           )}
 
           {type === 'accounting' && (
-            <Descriptions.Item label="报废方式">{showValue(form.scrapMethod)}</Descriptions.Item>
+            <>
+              <Descriptions.Item label="报废方式">{showValue(form.scrapMethod)}</Descriptions.Item>
+              <Descriptions.Item
+                label={<span><span className="mr-1 text-red-500">*</span>报废单名称</span>}
+                span={2}
+              >
+                <Input
+                  value={accountingFormName}
+                  onChange={(event) => {
+                    setAccountingNameTouched(true);
+                    updateForm('scrapFormName', event.target.value);
+                  }}
+                />
+              </Descriptions.Item>
+              <Descriptions.Item label="报废期间">
+                {showValue(accountingScrapPeriod)}
+              </Descriptions.Item>
+            </>
           )}
 
           {type === 'disposal' && form.assetScope === '机房资产' && (
