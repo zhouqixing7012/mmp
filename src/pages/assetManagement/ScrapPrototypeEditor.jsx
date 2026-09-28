@@ -524,6 +524,20 @@ export default function ScrapPrototypeEditor({
     return groups;
   }, new Map()).values());
 
+  const disposalSummaryWithCitySpan = [...disposalSummary]
+    .sort((left, right) => String(left.city).localeCompare(String(right.city), 'zh-CN')
+      || String(left.majorCategory).localeCompare(String(right.majorCategory), 'zh-CN'))
+    .map((row, index, rows) => {
+      if (index > 0 && rows[index - 1].city === row.city) {
+        return { ...row, cityRowSpan: 0 };
+      }
+      let cityRowSpan = 1;
+      while (index + cityRowSpan < rows.length && rows[index + cityRowSpan].city === row.city) {
+        cityRowSpan += 1;
+      }
+      return { ...row, cityRowSpan };
+    });
+
   const updateAccountingReason = (kind, value) => updateForm('scrapReasons', {
     ...(form.scrapReasons || {}),
     [kind]: value,
@@ -587,7 +601,10 @@ export default function ScrapPrototypeEditor({
     {
       title: '报废原因',
       width: 180,
-      render: (_, __, index) => index === 0 ? showValue(getAccountingReasonText(kind)) : null,
+      align: 'center',
+      render: (_, __, index) => index === 0
+        ? <div className="text-center">{showValue(getAccountingReasonText(kind))}</div>
+        : null,
       onCell: (_, index) => ({ rowSpan: index === 0 ? accountingSummaryRows.length : 0 }),
     },
   ];
@@ -613,7 +630,7 @@ export default function ScrapPrototypeEditor({
     return (
       <>
         <div className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-md bg-gray-50 px-3 py-2">
-          <div className="min-w-[240px] flex-1">
+          <div className="min-w-[240px] flex-1 text-center">
             <Typography.Text strong>{kind}报废原因：</Typography.Text>{' '}
             <span className="whitespace-pre-wrap break-words">{showValue(getAccountingReasonText(kind))}</span>
           </div>
@@ -712,8 +729,9 @@ export default function ScrapPrototypeEditor({
             ? `${config.title}预览`
             : approvalView ? `${config.title}审批` : readOnly ? `${config.title}详情` : config.createLabel}
         </h3>
-        {(type === 'accounting' || (type === 'disposal' && form.assetScope === '办公设备'))
-          && (!readOnly || approvalPage || previewView) && (
+        {!previewView
+          && (type === 'accounting' || (type === 'disposal' && form.assetScope === '办公设备'))
+          && (!readOnly || approvalPage) && (
           <Steps
             className="max-w-[420px]"
             size="small"
@@ -1005,10 +1023,15 @@ export default function ScrapPrototypeEditor({
         ) : <span className="text-sm text-gray-500">共 {assets.length} 条</span>}
       >
         {type === 'disposal' && (approvalPage || previewView) ? (
-          <Table rowKey="key" size="small" bordered pagination={false} dataSource={disposalSummary}
+          <Table rowKey="key" size="small" bordered pagination={false} dataSource={disposalSummaryWithCitySpan}
             scroll={{ x: 'max-content' }}
             columns={[
-              { title: 'City', dataIndex: 'city', width: 150 },
+              {
+                title: 'City',
+                dataIndex: 'city',
+                width: 150,
+                onCell: (row) => ({ rowSpan: row.cityRowSpan }),
+              },
               { title: '资产大类', dataIndex: 'majorCategory', width: 170 },
               { title: '数量', dataIndex: 'quantity', width: 95, align: 'right' },
               { title: '原值', dataIndex: 'originalValue', width: 140, align: 'right', render: money },
@@ -1075,20 +1098,14 @@ export default function ScrapPrototypeEditor({
         </BorrowingApprovalHistory>
       )}
 
-      {previewView && (
-        <Card size="small" title={sectionTitle('审批记录')} className="shadow-sm">
-          <div className="py-8 text-center text-gray-400">提交发起审批后展示审批记录</div>
-        </Card>
-      )}
-
       <div className="flex justify-center gap-3">
         {previewView ? (
           <>
             <Button onClick={() => {
               if (type === 'accounting') setAccountingPreview(false);
               if (type === 'disposal') setDisposalPreview(false);
-            }}>返回编辑</Button>
-            <Button type="primary" onClick={() => handleSave(true)}>提交发起审批</Button>
+            }}>返回</Button>
+            <Button type="primary" onClick={() => handleSave(true)}>提交</Button>
           </>
         ) : (
           <>
