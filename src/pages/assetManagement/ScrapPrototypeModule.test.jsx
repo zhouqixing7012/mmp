@@ -264,6 +264,29 @@ test('跨公司转移审批完成后进入待报废池，调账资产进入账�
   expect(getDisposalCandidates().some((item) => item.tagNo === asset.tagNo)).toBe(false);
 });
 
+test('机房跨公司转移完成后通知申请人及审批人', async () => {
+  const asset = SCRAP_ASSET_POOL.find((item) => item.scope === '机房资产');
+  saveScrapPrototypeRecords('crossCompany', [{
+    id: 'machine-transfer-notice',
+    applicationNo: 'CT-MACHINE-NOTICE',
+    documentStatus: '审批中',
+    assetScope: '机房资产',
+    currentNode: '责任人7级及以上直属领导',
+    assetsSnapshot: [{ ...asset, newCompany: '115.新媒体-上海', scrapMethod: '调账' }],
+    formSnapshot: { assetScope: '机房资产', currentNode: '责任人7级及以上直属领导' },
+  }]);
+
+  render(<ScrapPrototypeModule type="crossCompany" />);
+  fireEvent.click(screen.getByRole('button', { name: '审批通过' }));
+
+  await waitFor(() => expect(getScrapPrototypeRecords('crossCompany')[0].documentStatus).toBe('已完成'));
+  expect(getScrapPrototypeRecords('crossCompany')[0].serviceNotification).toMatchObject({
+    channel: '服务号',
+    recipientRole: '申请人及审批人',
+    trigger: '跨公司转移审批完成',
+  });
+});
+
 test('非调账资产完成账面报废后进入待处置池', () => {
   const asset = SCRAP_ASSET_POOL.find((item) => item.scope === '办公设备');
   saveScrapPrototypeRecords('accounting', [{
