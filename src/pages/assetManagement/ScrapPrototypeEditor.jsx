@@ -858,10 +858,12 @@ export default function ScrapPrototypeEditor({
         )}
       </Card>
 
-      {type === 'accounting' && !approvalView && (
+      {type === 'accounting' && !approvalView && !previewView && (
         <Card size="small" title="报废原因">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            {['已到报废期', '未到报废期', '丢失'].map((kind) => (
+          <div className={`grid grid-cols-1 gap-3 ${form.scrapMethod === '调账' ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+            {(form.scrapMethod === '调账'
+              ? ['已到报废期', '未到报废期']
+              : ['已到报废期', '未到报废期', '丢失']).map((kind) => (
               <div key={kind} className="rounded-md border border-gray-200 bg-gray-50 p-3">
                 <Typography.Text strong>{kind}</Typography.Text>
                 {readOnly
@@ -869,10 +871,9 @@ export default function ScrapPrototypeEditor({
                   : (
                     <Input.TextArea
                       className="mt-2"
-                      disabled={form.scrapMethod === '调账' && kind === '丢失'}
                       autoSize={{ minRows: 4, maxRows: 6 }}
                       placeholder={`请填写${kind}资产的报废原因`}
-                      value={form.scrapMethod === '调账' && kind === '丢失' ? '' : getAccountingReasonText(kind)}
+                      value={getAccountingReasonText(kind)}
                       onChange={(event) => updateAccountingReason(kind, event.target.value)}
                     />
                   )}
