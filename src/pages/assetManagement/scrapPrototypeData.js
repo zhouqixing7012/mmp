@@ -499,6 +499,7 @@ export function getInitialBusinessRows(type) {
         recycler3Name: row.recycler3Name || '东莞市创鑫再生资源有限公司',
       } : {}),
       lastModifiedAt: row.lastModifiedAt || row.createdAt,
+      assetTags: (row.assetsSnapshot?.length ? row.assetsSnapshot : assets).map((item) => item.tagNo).filter(Boolean),
       originalValueTotal: assets.reduce((sum, item) => sum + Number(item.originalValue || 0), 0),
       netValueTotal: assets.reduce((sum, item) => sum + Number(item.netValue || 0), 0),
       ...(type === 'disposal' ? { assetsSnapshot: assets, approvalHistory: [
