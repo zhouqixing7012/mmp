@@ -25,7 +25,7 @@ import { getScrapPrototypeApprovalRecords } from './scrapPrototypeApproval';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 import { money } from './scrapPrototypeData';
-import { validateAccountingAssets } from '../../services/scrapPrototypeService';
+import { getDisposalCandidates, validateAccountingAssets } from '../../services/scrapPrototypeService';
 
 const transferCompanyOptions = Array.from(
   [...getAssetMaintenanceRows(), ...warehouseCatalog.map((item) => {
@@ -125,7 +125,9 @@ export default function ScrapPrototypeEditor({
   const [companyPickerOpen, setCompanyPickerOpen] = useState(false);
   const [approvalOpinion, setApprovalOpinion] = useState('同意');
   const [accountingPreview, setAccountingPreview] = useState(false);
+  const [disposalPreview, setDisposalPreview] = useState(false);
   const [accountingNameTouched, setAccountingNameTouched] = useState(Boolean(initialForm.scrapFormNameManual));
+  const [disposalDescriptionTouched, setDisposalDescriptionTouched] = useState(Boolean(initialForm.disposalDescriptionManual));
 
   const updateForm = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -153,6 +155,27 @@ export default function ScrapPrototypeEditor({
   const showValue = (value) => (
     <span>{value === undefined || value === null || value === '' ? '-' : String(value)}</span>
   );
+
+  const disposalSelectedCompanies = type === 'disposal'
+    ? (Array.isArray(form.companies) && form.companies.length > 0
+      ? form.companies
+      : String(form.company || '').split('、').filter(Boolean))
+    : [];
+  const disposalSelectedPlates = type === 'disposal'
+    ? (Array.isArray(form.plates) ? form.plates.filter(Boolean) : [])
+    : [];
+  const disposalPlateOptions = useMemo(() => {
+    if (type !== 'disposal') return [];
+    const candidates = getDisposalCandidates().filter((item) => (
+      item.scope === '办公设备'
+      && (disposalSelectedCompanies.length === 0 || disposalSelectedCompanies.includes(item.company))
+    ));
+    return Array.from(new Set(candidates.map((item) => item.plate).filter(Boolean)))
+      .map((value) => ({ label: value, value }));
+  }, [type, form.company, form.companies]);
+  const disposalPlateDisplay = disposalSelectedPlates.length > 0
+    ? disposalSelectedPlates.join('、')
+    : '全部板块';
 
   const decideTransfer = (decision) => {
     if (decision === '驳回' && !approvalOpinion.trim()) {
@@ -205,6 +228,27 @@ export default function ScrapPrototypeEditor({
       0,
     ))
   ), [assets]);
+  const disposalQuantityTotal = assets.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const disposalOriginalValueTotal = assets.reduce((sum, item) => sum + Number(item.originalValue || 0), 0);
+  const disposalNetValueTotal = assets.reduce((sum, item) => sum + Number(item.netValue || 0), 0);
+  const disposalHighestQuoteIndex = disposalQuoteTotals.reduce(
+    (highest, value, index, values) => (value > values[highest] ? index : highest),
+    0,
+  );
+  const disposalHighestQuoteTotal = disposalQuoteTotals[disposalHighestQuoteIndex] || 0;
+  const disposalHighestRecyclerName = String(
+    form[`recycler${disposalHighestQuoteIndex + 1}Name`] || '未填写',
+  ).trim() || '未填写';
+  const disposalRecoveryWan = (disposalHighestQuoteTotal / 10000).toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const disposalAutoDescription = type === 'disposal' && form.assetScope === '办公设备'
+    ? `按照报废计划，ES拟对${disposalQuantityTotal}台库存老旧办公资产进行变卖处置，预计回收总价约${disposalRecoveryWan}万元，处置方案如下，请您审批。\n\n(一)  处置数量：共${disposalQuantityTotal}台，资产原值${money(disposalOriginalValueTotal)}元，净值${money(disposalNetValueTotal)}元，已完成账面报废。（注：电脑类资产配置经MIS确认不再满足员工办公需求）\n\n(二) 处置方式：\n\n- 由三家采购回收商分别进行评估报价，其中回收商“${disposalHighestRecyclerName}”总价最高，约${disposalRecoveryWan}万元，建议与其合作（下附比价表）；\n- 待您及集团财务领导审批后，ES将联系回收商打款并完成实物交接。`
+    : '';
+  const disposalDescription = disposalDescriptionTouched
+    ? form.disposalDescription || ''
+    : disposalAutoDescription;
 
   const effectiveNeedsCleaning = type === 'disposal'
     && form.assetScope === '机房资产'
@@ -237,8 +281,12 @@ export default function ScrapPrototypeEditor({
           if (sourceCompanies.size === 1) {
             nextForm.company = firstAsset.company || current.company;
           }
-        } else if (type !== 'accounting' && type !== 'scrap') {
+        } else if (type === 'disposal' && firstAsset.scope === '机房资产') {
           nextForm.company = firstAsset.company || current.company;
+          nextForm.companies = firstAsset.company ? [firstAsset.company] : [];
+          const machinePlates = Array.from(new Set(nextAssets.map((item) => item.plate).filter(Boolean)));
+          nextForm.plates = machinePlates;
+          nextForm.plate = machinePlates.join('、');
         }
         if (type === 'disposal') {
           nextForm.region = firstAsset.region || (String(firstAsset.city || '').includes('北京') ? '北京' : '非北京');
@@ -354,23 +402,27 @@ export default function ScrapPrototypeEditor({
     }
 
     if (type === 'disposal' && form.assetScope === '办公设备') {
-      if (!form.company || assets.some((asset) => asset.company !== form.company || asset.scope !== '办公设备')) {
-        message.error('请选择公司并添加该公司的待处置办公资产');
+      if (
+        disposalSelectedCompanies.length === 0
+        || assets.some((asset) => !disposalSelectedCompanies.includes(asset.company) || asset.scope !== '办公设备')
+      ) {
+        message.error('请选择公司并添加所选公司范围内的待处置办公资产');
         return false;
       }
-      const missingRecyclerName = [1, 2, 3].find((index) => (
-        !String(form[`recycler${index}Name`] || '').trim()
-      ));
-      if (missingRecyclerName) {
-        message.error(`请填写回收商${['一', '二', '三'][missingRecyclerName - 1]}的供应商名称`);
+      if (
+        disposalSelectedPlates.length > 0
+        && assets.some((asset) => !disposalSelectedPlates.includes(asset.plate))
+      ) {
+        message.error('资产明细必须属于所选板块范围');
         return false;
       }
-      const invalidQuote = assets.find((asset) => [1, 2, 3].some((index) => (
-        !Number.isFinite(Number(asset[`recycler${index}`]))
-        || Number(asset[`recycler${index}`]) <= 0
-      )));
+      const invalidQuote = assets.find((asset) => [1, 2, 3].some((index) => {
+        const value = asset[`recycler${index}`];
+        return value !== undefined && value !== null && value !== ''
+          && (!Number.isFinite(Number(value)) || Number(value) <= 0);
+      }));
       if (invalidQuote) {
-        message.error(`资产 ${invalidQuote.tagNo} 的三个回收商报价均须大于0`);
+        message.error(`资产 ${invalidQuote.tagNo} 已填写的回收商报价必须大于0`);
         return false;
       }
     }
@@ -403,6 +455,8 @@ export default function ScrapPrototypeEditor({
         scrapFormName: type === 'accounting' ? accountingFormName : form.scrapFormName,
         scrapFormNameManual: type === 'accounting' ? accountingNameTouched : form.scrapFormNameManual,
         scrapPeriod: type === 'accounting' ? accountingScrapPeriod : form.scrapPeriod,
+        disposalDescription: type === 'disposal' ? disposalDescription : form.disposalDescription,
+        disposalDescriptionManual: type === 'disposal' ? disposalDescriptionTouched : form.disposalDescriptionManual,
         needsCleaning: effectiveNeedsCleaning,
       },
       savedAssets,
@@ -423,11 +477,20 @@ export default function ScrapPrototypeEditor({
     setAccountingPreview(true);
   };
 
+  const handleDisposalPreview = () => {
+    if (!validate()) return;
+    const { nextForm, savedAssets } = prepareSavePayload();
+    setForm(nextForm);
+    setAssets(savedAssets);
+    setDisposalPreview(true);
+  };
+
   const approvalRecords = getScrapPrototypeApprovalRecords({
     ...form,
     assetsSnapshot: assets,
   }, type);
-  const previewView = type === 'accounting' && accountingPreview;
+  const previewView = (type === 'accounting' && accountingPreview)
+    || (type === 'disposal' && disposalPreview);
   const approvalView = approvalPage || (
     readOnly
     && ['crossCompany', 'scrap', 'accounting', 'disposal'].includes(type)
@@ -440,7 +503,7 @@ export default function ScrapPrototypeEditor({
   );
   const showPageExport = (type === 'scrap' && approvalView)
     || (type === 'accounting' && (approvalView || previewView))
-    || (type === 'disposal' && approvalPage);
+    || (type === 'disposal' && (approvalPage || previewView));
 
   const disposalSummary = Array.from(assets.reduce((groups, asset) => {
     const key = JSON.stringify([asset.city || '', asset.majorCategory || '']);
@@ -648,7 +711,8 @@ export default function ScrapPrototypeEditor({
             ? `${config.title}预览`
             : approvalView ? `${config.title}审批` : readOnly ? `${config.title}详情` : config.createLabel}
         </h3>
-        {type === 'accounting' && (!readOnly || approvalPage || previewView) && (
+        {(type === 'accounting' || (type === 'disposal' && form.assetScope === '办公设备'))
+          && (!readOnly || approvalPage || previewView) && (
           <Steps
             className="max-w-[420px]"
             size="small"
@@ -684,6 +748,7 @@ export default function ScrapPrototypeEditor({
             <DetailItem label="申请人">{showValue(form.creator)}</DetailItem>
             <DetailItem label={type === 'accounting' ? '创建时间' : '申请日期'}>{showValue(form.applicationDate)}</DetailItem>
             <DetailItem label="公司">{showValue(form.company)}</DetailItem>
+            {type === 'disposal' && <DetailItem label="板块">{showValue(disposalPlateDisplay)}</DetailItem>}
             {!(type === 'disposal' && form.assetScope === '机房资产') && (
               <>
                 <DetailItem label="办公区">{showValue(form.officeArea)}</DetailItem>
@@ -719,6 +784,18 @@ export default function ScrapPrototypeEditor({
                 <DetailItem label="回收商一">{showValue(form.recycler1Name)}</DetailItem>
                 <DetailItem label="回收商二">{showValue(form.recycler2Name)}</DetailItem>
                 <DetailItem label="回收商三">{showValue(form.recycler3Name)}</DetailItem>
+                <DetailItem label="处置说明" span={3}>
+                  {previewView ? (
+                    <Input.TextArea
+                      value={disposalDescription}
+                      autoSize={{ minRows: 8, maxRows: 14 }}
+                      onChange={(event) => {
+                        setDisposalDescriptionTouched(true);
+                        updateForm('disposalDescription', event.target.value);
+                      }}
+                    />
+                  ) : showValue(form.disposalDescription || disposalAutoDescription)}
+                </DetailItem>
               </>
             )}
             {type !== 'scrap' && <DetailItem label="备注" span={3}>{showValue(form.remark)}</DetailItem>}
@@ -739,7 +816,7 @@ export default function ScrapPrototypeEditor({
                 : (
                   <LookupInput
                     value={form.company}
-                    placeholder="请选择公司"
+                    placeholder={type === 'disposal' ? '请选择公司，可多选' : '请选择公司'}
                     onOpen={() => setCompanyPickerOpen(true)}
                     disabled={assets.length > 0}
                   />
@@ -747,6 +824,28 @@ export default function ScrapPrototypeEditor({
               : showValue(form.company)}
           </Descriptions.Item>
 
+          {type === 'disposal' && (
+            <Descriptions.Item label="板块">
+              {readOnly
+                ? showValue(disposalPlateDisplay)
+                : (
+                  <Select
+                    mode="multiple"
+                    allowClear
+                    disabled={assets.length > 0}
+                    value={disposalSelectedPlates}
+                    options={disposalPlateOptions}
+                    className="w-full"
+                    placeholder="不选择表示所有板块"
+                    onChange={(values) => setForm((current) => ({
+                      ...current,
+                      plates: values,
+                      plate: values.join('、'),
+                    }))}
+                  />
+                )}
+            </Descriptions.Item>
+          )}
 
           {type === 'crossCompany' && (
             <>
@@ -807,13 +906,12 @@ export default function ScrapPrototypeEditor({
             [1, 2, 3].map((index) => (
               <Descriptions.Item
                 key={`recycler${index}Name`}
-                label={<span><span className="mr-1 text-red-500">*</span>{`回收商${['一', '二', '三'][index - 1]}`}</span>}
+                label={`回收商${['一', '二', '三'][index - 1]}`}
               >
                 {readOnly
                   ? showValue(form[`recycler${index}Name`])
                   : (
                     <Input
-                      required
                       value={form[`recycler${index}Name`] || ''}
                       placeholder={`请输入回收商${['一', '二', '三'][index - 1]}的供应商名称`}
                       onChange={(event) => updateForm(`recycler${index}Name`, event.target.value)}
@@ -905,7 +1003,7 @@ export default function ScrapPrototypeEditor({
           </div>
         ) : <span className="text-sm text-gray-500">共 {assets.length} 条</span>}
       >
-        {type === 'disposal' && approvalPage ? (
+        {type === 'disposal' && (approvalPage || previewView) ? (
           <Table rowKey="key" size="small" bordered pagination={false} dataSource={disposalSummary}
             scroll={{ x: 'max-content' }}
             columns={[
@@ -914,8 +1012,9 @@ export default function ScrapPrototypeEditor({
               { title: '数量', dataIndex: 'quantity', width: 95, align: 'right' },
               { title: '原值', dataIndex: 'originalValue', width: 140, align: 'right', render: money },
               { title: '净值', dataIndex: 'netValue', width: 140, align: 'right', render: money },
-              ...(form.assetScope === '办公设备' ? ['回收商一报价', '回收商二报价', '回收商三报价'].map((title, index) => ({
-                title, dataIndex: `recycler${index + 1}`, width: 145, fixed: 'right', align: 'right',
+              ...(form.assetScope === '办公设备' ? [1, 2, 3].map((index) => ({
+                title: `${String(form[`recycler${index}Name`] || `回收商${['一', '二', '三'][index - 1]}`).trim() || `回收商${['一', '二', '三'][index - 1]}`}报价`,
+                dataIndex: `recycler${index}`, width: 165, fixed: 'right', align: 'right',
                 render: (values) => values.map((value) => money(value)).join('、') || '-',
               })) : []),
             ]} />
@@ -925,7 +1024,9 @@ export default function ScrapPrototypeEditor({
           type={type}
           assetScope={form.assetScope}
           assetCategory={form.assetCategory}
-          sourceCompany={['crossCompany', 'disposal', 'accounting'].includes(type) ? form.company : undefined}
+          sourceCompany={['crossCompany', 'accounting'].includes(type) ? form.company : undefined}
+          sourceCompanies={type === 'disposal' ? disposalSelectedCompanies : undefined}
+          sourcePlates={type === 'disposal' ? disposalSelectedPlates : undefined}
           accountingActor={accountingActor}
           accountingAuthorizationScopes={accountingAuthorizationScopes}
           accountingRecordId={form.id}
@@ -982,7 +1083,10 @@ export default function ScrapPrototypeEditor({
       <div className="flex justify-center gap-3">
         {previewView ? (
           <>
-            <Button onClick={() => setAccountingPreview(false)}>返回编辑</Button>
+            <Button onClick={() => {
+              if (type === 'accounting') setAccountingPreview(false);
+              if (type === 'disposal') setDisposalPreview(false);
+            }}>返回编辑</Button>
             <Button type="primary" onClick={() => handleSave(true)}>提交发起审批</Button>
           </>
         ) : (
@@ -996,9 +1100,15 @@ export default function ScrapPrototypeEditor({
                 <Button onClick={() => handleSave(false)}>保存草稿</Button>
                 <Button
                   type="primary"
-                  onClick={type === 'accounting' ? handleAccountingPreview : () => handleSave(true)}
+                  onClick={
+                    type === 'accounting'
+                      ? handleAccountingPreview
+                      : type === 'disposal' && form.assetScope === '办公设备'
+                        ? handleDisposalPreview
+                        : () => handleSave(true)
+                  }
                 >
-                  {type === 'accounting' ? '预览' : '提交'}
+                  {type === 'accounting' || (type === 'disposal' && form.assetScope === '办公设备') ? '预览' : '提交'}
                 </Button>
               </>
             )}
@@ -1023,17 +1133,35 @@ export default function ScrapPrototypeEditor({
             { label: '公司编码', name: 'code', dataIndex: 'code' },
             { label: '公司名称', name: 'name', dataIndex: 'name' },
           ]}
+          multiple={type === 'disposal'}
+          initialSelectedKeys={type === 'disposal'
+            ? disposalSelectedCompanies.map((company) => `company-${String(company).split('.')[0]}`)
+            : []}
           onCancel={() => setCompanyPickerOpen(false)}
-          onConfirm={(company) => {
+          onConfirm={(selection) => {
             if (type === 'accounting' && assets.length > 0) {
               message.error('请先删除全部资产明细，再更换公司');
               return;
             }
-            setForm((current) => ({
-              ...current,
-              company: `${company.code}.${company.name}`,
-              assetScope: type === 'accounting' ? current.assetScope : '',
-            }));
+            if (type === 'disposal') {
+              const companies = (Array.isArray(selection) ? selection : [selection])
+                .map((company) => `${company.code}.${company.name}`);
+              setForm((current) => ({
+                ...current,
+                companies,
+                company: companies.join('、'),
+                plates: [],
+                plate: '',
+                assetScope: '',
+              }));
+            } else {
+              const company = selection;
+              setForm((current) => ({
+                ...current,
+                company: `${company.code}.${company.name}`,
+                assetScope: type === 'accounting' ? current.assetScope : '',
+              }));
+            }
             setCompanyPickerOpen(false);
           }}
         />
