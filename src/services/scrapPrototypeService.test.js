@@ -110,17 +110,21 @@ test('validation rejects invalid source, lost asset with prior workflow, and los
   ]));
 });
 
-test('software and lost assets never enter disposal candidates', () => {
+test('software, lost and transfer assets never enter disposal candidates', () => {
   saveScrapPrototypeRecords('accounting', [{
     id: 'accounting-done', applicationNo: 'ZMBF-1', documentStatus: '已完成',
     assetsSnapshot: [
-      { id: 'software', tagNo: 'SW', scope: '软件', scrapMethod: '非调账', disposalRequired: '是' },
-      { id: 'lost', tagNo: 'LOST', scope: '办公设备', scrapType: '丢失', scrapMethod: '非调账', disposalRequired: '是' },
+      { id: 'software', tagNo: 'SW', scope: '软件', majorCategory: '17.SOFTWARE', scrapMethod: '非调账' },
+      { id: 'lost', tagNo: 'LOST', scope: '办公设备', majorCategory: '11.PC', scrapType: '丢失', scrapMethod: '非调账' },
+      { id: 'transfer', tagNo: 'TRANSFER', scope: '办公设备', majorCategory: '11.PC', scrapMethod: '调账' },
+      { id: 'office', tagNo: 'OFFICE', scope: '办公设备', majorCategory: '13.OFFICE EQUIPMENT', scrapMethod: '非调账' },
     ],
   }]);
   const tags = getDisposalCandidates().map((asset) => asset.tagNo);
   expect(tags).not.toContain('SW');
   expect(tags).not.toContain('LOST');
+  expect(tags).not.toContain('TRANSFER');
+  expect(tags).toContain('OFFICE');
 });
 
 test('unconfirmed accounting demo assets do not appear in disposal candidates', () => {
