@@ -367,7 +367,7 @@ test('资产处置明细导出包含完整处置字段和三家报价', () => {
     description: '办公设备',
     config: '双路处理器',
     enableDate: '2022-06-18',
-    plate: '17_Corporate',
+    plate: '17.Corporate',
     city: '北京',
     building: '北京亦庄数据中心',
     quantity: 1,
