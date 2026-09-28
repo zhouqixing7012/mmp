@@ -84,7 +84,7 @@ export default function ScrapPrototypeList({
 
     for (const field of textFields) {
       const query = String(appliedFilters[field] || '').trim();
-      if (query && !String(row[field] || '').includes(query)) return false;
+      if (query && String(row[field] || '') !== query) return false;
     }
 
     const assetTagQuery = String(appliedFilters.assetTag || '').trim();
@@ -118,7 +118,7 @@ export default function ScrapPrototypeList({
     }
 
     return true;
-  }), [records, appliedFilters]);
+  }).sort((left, right) => dayjs(right.createdAt).valueOf() - dayjs(left.createdAt).valueOf()), [records, appliedFilters]);
 
   const operationColumn = {
     title: '操作',
