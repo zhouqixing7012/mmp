@@ -257,7 +257,7 @@ test('账面报废未选择公司时不能打开候选资产和导入', () => {
   expect(screen.getByRole('button', { name: 'Excel导入' })).toBeDisabled();
 });
 
-test('新责任人、新公司、新成本中心均从弹窗选择', () => {
+test('责任人只读，新公司和新成本中心从弹窗选择', () => {
   const source = SCRAP_ASSET_POOL[0];
   const onChange = jest.fn();
   render(
@@ -265,15 +265,17 @@ test('新责任人、新公司、新成本中心均从弹窗选择', () => {
       type="crossCompany"
       assetScope={source.scope}
       sourceCompany={source.company}
-      assets={[{ ...source, newResponsiblePerson: '', newCompany: '', newCostCenter: '' }]}
+      assets={[{ ...source, newResponsiblePerson: '114111-杨芊', newCompany: '', newCostCenter: '' }]}
       readOnly={false}
       onChange={onChange}
       onReplace={jest.fn()}
     />,
   );
 
+  expect(screen.getByText('114111-杨芊')).toBeInTheDocument();
+  expect(screen.queryByPlaceholderText('请选择新责任人')).not.toBeInTheDocument();
+
   [
-    ['请选择新责任人', '选择新责任人', 'newResponsiblePerson'],
     ['请选择新公司', '选择新公司', 'newCompany'],
     ['请选择新成本中心', '选择新成本中心', 'newCostCenter'],
   ].forEach(([placeholder, modalTitle, field]) => {
