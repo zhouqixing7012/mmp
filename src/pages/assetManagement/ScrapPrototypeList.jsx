@@ -15,10 +15,14 @@ import {
 } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
+import SelectModal from '../../components/SelectModal';
+import LookupInput from '../../components/LookupInput';
 import StatusTag from '../../components/StatusTag';
 import OutboundApprovalHistoryPage from '../inventoryManagement/OutboundApprovalHistoryPage';
 import { ASSET_SCOPE_OPTIONS } from './scrapPrototypeData';
 import { getScrapPrototypeApprovalRecords } from './scrapPrototypeApproval';
+import { getAssetMaintenanceRows } from '../../services/assetManagementService';
+import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 
 const { RangePicker } = DatePicker;
 const { Text, Title } = Typography;
@@ -40,6 +44,20 @@ function options(values) {
   return values.map((value) => ({ label: value, value }));
 }
 
+const maintenanceRows = getAssetMaintenanceRows();
+
+const companyLookupRecords = [...maintenanceRows, ...warehouseCatalog.map((item) => {
+  const [companyCode, ...parts] = String(item.company || '').split('.');
+  return { companyCode, company: parts.join('.') };
+})].reduce((records, row) => {
+  const code = String(row.companyCode || '').trim();
+  const name = String(row.company || '').trim();
+  if (code && name && !records.some((item) => item.code === code)) {
+    records.push({ id: `company-${code}`, code, name });
+  }
+  return records;
+}, []);
+
 export default function ScrapPrototypeList({
   type,
   config,
@@ -55,6 +73,7 @@ export default function ScrapPrototypeList({
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [approvalRecord, setApprovalRecord] = useState(null);
+  const [lookupKey, setLookupKey] = useState('');
 
   const filteredRows = useMemo(() => records.filter((row) => {
     const textFields = [
@@ -134,6 +153,18 @@ export default function ScrapPrototypeList({
       applicationColumn,
       { title: '制单人', dataIndex: 'creator', width: 130 },
       { title: '原公司', dataIndex: 'company', width: 160, ellipsis: true },
+      {
+        title: '新公司',
+        dataIndex: 'targetCompany',
+        width: 220,
+        ellipsis: true,
+        render: (value, row) => {
+          const companies = Array.from(new Set(
+            (row.assetsSnapshot || []).map((asset) => asset.newCompany).filter(Boolean),
+          ));
+          return companies.length ? companies.join('、') : value || '-';
+        },
+      },
       { title: '制单时间', dataIndex: 'createdAt', width: 120 },
       statusColumn,
       operationColumn,
@@ -200,10 +231,20 @@ export default function ScrapPrototypeList({
             <Select value={filters.documentStatus || undefined} allowClear options={options(config.statuses)} onChange={(value) => setFilters((c) => ({ ...c, documentStatus: value || '' }))} />
           </QueryItem>
           <QueryItem label="制单人">
-            <Input value={filters.creator} allowClear onChange={(event) => setFilters((c) => ({ ...c, creator: event.target.value }))} />
+            <LookupInput
+              value={filters.creator}
+              placeholder="请选择制单人"
+              onOpen={() => setLookupKey('creator')}
+              onClear={() => setFilters((current) => ({ ...current, creator: '' }))}
+            />
           </QueryItem>
           <QueryItem label="原公司">
-            <Input value={filters.company} allowClear onChange={(event) => setFilters((c) => ({ ...c, company: event.target.value }))} />
+            <LookupInput
+              value={filters.company}
+              placeholder="请选择原公司"
+              onOpen={() => setLookupKey('company')}
+              onClear={() => setFilters((current) => ({ ...current, company: '' }))}
+            />
           </QueryItem>
           <QueryItem label="制单日期">
             <RangePicker value={filters.dateRange} className="w-full" onChange={(value) => setFilters((c) => ({ ...c, dateRange: value }))} />
@@ -370,6 +411,60 @@ export default function ScrapPrototypeList({
           }}
         />
       </Card>
+      {type === 'crossCompany' && lookupKey && (
+        <SelectModal
+          open
+          title={lookupKey === 'company' ? '选择原公司' : '选择制单人'}
+          dataSource={lookupKey === 'company'
+            ? companyLookupRecords
+            : Array.from(new Map([
+                ...maintenanceRows
+                  .filter((row) => row.ownerId && row.ownerName)
+                  .map((row) => [String(row.ownerId), {
+                    id: `employee-${row.ownerId}`,
+                    code: String(row.ownerId),
+                    name: row.ownerName,
+                    department: row.department || '',
+                  }]),
+                ...records
+                  .map((record) => String(record.creator || ''))
+                  .filter((value) => /^\d+-/.test(value))
+                  .map((value) => {
+                    const [code, ...nameParts] = value.split('-');
+                    return [code, { id: `employee-${code}`, code, name: nameParts.join('-'), department: '' }];
+                  }),
+              ]).values())}
+          searchFields={lookupKey === 'company'
+            ? [
+                { label: '公司编码', name: 'code', dataIndex: 'code' },
+                { label: '公司名称', name: 'name', dataIndex: 'name' },
+              ]
+            : [
+                { label: '员工编码', name: 'code', dataIndex: 'code' },
+                { label: '姓名', name: 'name', dataIndex: 'name' },
+                { label: '部门名称', name: 'department', dataIndex: 'department' },
+              ]}
+          columns={lookupKey === 'company'
+            ? [
+                { title: '公司编码', dataIndex: 'code' },
+                { title: '公司名称', dataIndex: 'name' },
+              ]
+            : [
+                { title: '员工编码', dataIndex: 'code' },
+                { title: '姓名', dataIndex: 'name' },
+                { title: '部门名称', dataIndex: 'department' },
+              ]}
+          onCancel={() => setLookupKey('')}
+          onConfirm={(record) => {
+            if (lookupKey === 'company') {
+              setFilters((current) => ({ ...current, company: `${record.code}.${record.name}` }));
+            } else {
+              setFilters((current) => ({ ...current, creator: `${record.code}-${record.name}` }));
+            }
+            setLookupKey('');
+          }}
+        />
+      )}
       {['crossCompany', 'scrap', 'accounting', 'disposal'].includes(type) && (
         <Modal
           open={Boolean(approvalRecord)}
