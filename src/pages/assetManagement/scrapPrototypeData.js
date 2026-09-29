@@ -403,7 +403,7 @@ const businessRows = {
       creator: DEMO_APPLICANT,
       createdAt: '2026-09-23',
       assetCount: 12,
-      currentNode: '采购专员',
+      currentNode: '采购专员选择报价接收人',
       remark: '机房设备批量报废',
     },
     {
