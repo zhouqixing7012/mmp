@@ -18,13 +18,37 @@ export function getCrossCompanyApprovalNodes(scope, approverMappings = {}) {
     .map((step) => step.node);
 }
 
-export function getScrapApprovalNodes(scope, assets) {
+function machineScrapQuantity(assets = []) {
+  return assets.reduce((sum, asset) => sum + Number(asset.quantity || 0), 0);
+}
+
+function machineExpertNodes(assets = [], form = {}) {
+  const category = String(form.assetCategory || assets[0]?.majorCategory || '').toUpperCase();
+  if (category === 'SERVER') {
+    return ['专家评估（杨威220894）', '专家评估（王帅200636）'];
+  }
+  return ['专家评估（林家展201938）'];
+}
+
+export function getScrapApprovalNodes(scope, assets, form = {}) {
   if (scope === '软件') return ['5级及以上直属领导', '7级及以上直属领导'];
-  if (scope === '机房资产') return [
-    '专家评估', '责任人7级及以上直属领导', 'NO部7级及以上领导',
-    '采购专员', '报价处理', '采购专员填写回收商报价',
-    '采购5级及以上领导', '采购专员交接资料', 'FS审批部门',
-  ];
+  if (scope === '机房资产') {
+    const quantity = machineScrapQuantity(assets);
+    const quoteReceiver = quantity >= 500 ? '内审' : form.quoteReceiver;
+    const quoteNode = quoteReceiver === '内审' ? '内审报价' : '采购专员报价';
+    return [
+      ...machineExpertNodes(assets, form),
+      '责任人7级及以上直属领导',
+      'NO部7级及以上领导',
+      '采购专员选择报价接收人',
+      quoteNode,
+      '采购专员填写回收商报价',
+      '采购5级及以上领导',
+      '采购专员交接资料',
+      'FS审批部门',
+      ...(form.assetLocation === '非北京' ? ['采购专员线下交接'] : []),
+    ];
+  }
   return ['PC', 'NOTEBOOK'].includes(assets[0]?.majorCategory)
     ? ['MIS鉴定', 'ES主管确认']
     : ['ES主管确认'];
