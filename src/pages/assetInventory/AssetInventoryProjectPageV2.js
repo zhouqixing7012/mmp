@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import AssetInventoryProjectPage from './AssetInventoryProjectPage';
 import AssetInventoryCustomPlanBuilder from './AssetInventoryCustomPlanBuilder';
 import AssetInventoryProjectListV2 from './AssetInventoryProjectListV2';
+import { INVENTORY_CREATORS } from './inventoryCreatorPermissions';
 import AssetInventoryPlansV2Refined from './AssetInventoryPlansV2Refined';
 import AssetInventoryImageReviewV2 from './AssetInventoryImageReviewV2';
 import AssetInventoryProgressV2 from './AssetInventoryProgressV2';
@@ -89,6 +90,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const rootRef = useRef(null);
   const baseContainerRef = useRef(null);
   const [basePageTitle, setBasePageTitle] = useState('盘点项目');
+  const [creator, setCreator] = useState(INVENTORY_CREATORS[0].value);
   const [imageRuleSlot, setImageRuleSlot] = useState(null);
   const [snapshotOpen, setSnapshotOpen] = useState(false);
   const [customBuilderOpen, setCustomBuilderOpen] = useState(false);
@@ -439,6 +441,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
 
   return <div ref={rootRef} className="w-full" onClickCapture={interceptNavigation}>
     {showProjectListV2 && <AssetInventoryProjectListV2
+      creator={creator}
+      onCreatorChange={setCreator}
       onCreate={() => triggerBaseAction(null, 'create')}
       onOpenProject={openProjectV2}
       onCloseProject={handleProjectClose}
@@ -462,7 +466,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     {activePlan && <AssetInventoryPlanAssetListV2 plan={activePlan} project={planProject} onBack={() => setActivePlan(null)} />}
     {imageReviewOpen && <AssetInventoryImageReviewV2 project={planProject} onBack={() => setImageReviewOpen(false)} />}
     {progressOpen && <AssetInventoryProgressV2 project={planProject} onBack={() => setProgressOpen(false)} />}
-    <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage /></div>
+    <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage creator={creator} /></div>
     {!overlayOpen && imageRuleSlot ? createPortal(<ImageUploadRuleEditorV2 />, imageRuleSlot) : null}
   </div>;
 }

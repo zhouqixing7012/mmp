@@ -8,6 +8,7 @@ import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
 import { PROJECT_LIST_ROWS } from './projectListMockData';
 import SectionCardTitle from './SectionCardTitle';
+import { INVENTORY_CREATORS, allowedProjectTypes } from './inventoryCreatorPermissions';
 
 const EMPTY_FILTERS = {
   projectNo: '', projectName: '', status: '', owner: '', startFrom: '', startTo: '', type: '', createdFrom: '', createdTo: '',
@@ -25,9 +26,6 @@ function inDateRange(value, from, to) {
   if (from && value < from) return false;
   if (to && value > to) return false;
   return true;
-}
-function DateFilter({ value, onChange, placeholder }) {
-  return <DatePicker value={value ? dayjs(value) : null} format="YYYY-MM-DD" placeholder={placeholder} style={{ width: '100%' }} onChange={(date) => onChange(date ? date.format('YYYY-MM-DD') : '')} />;
 }
 function normalizeStatus(status) {
   return status === '暂存' ? '草稿' : status;
@@ -59,7 +57,7 @@ function getProjectCloseBlockReason(project) {
   return '';
 }
 
-export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview, onCloseProject, statusOverrides = {} }) {
+export default function AssetInventoryProjectListV2({ creator, onCreatorChange, onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview, onCloseProject, statusOverrides = {} }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const navigate = useNavigate();
   const [rows, setRows] = useState(() => PROJECT_LIST_ROWS.map((row) => ({ ...row, status: statusOverrides[row.projectNo] || normalizeStatus(row.status) })));
@@ -90,7 +88,6 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
     && includesText(row.owner, appliedFilters.owner)
     && includesText(row.projectType, appliedFilters.type)
     && inDateRange(row.startDate, appliedFilters.startFrom, appliedFilters.startTo)
-    && inDateRange(row.endDate, appliedFilters.startFrom, appliedFilters.startTo)
     && inDateRange(row.createdAt, appliedFilters.createdFrom, appliedFilters.createdTo)
   )), [rows, appliedFilters]);
 
@@ -203,14 +200,12 @@ export default function AssetInventoryProjectListV2({ onCreate, onOpenProject, o
       <QueryItem label="项目名称"><Input value={draftFilters.projectName} allowClear placeholder="请输入项目名称" onChange={(event) => updateFilter('projectName', event.target.value)} /></QueryItem>
       <QueryItem label="项目状态"><Select value={draftFilters.status || undefined} allowClear placeholder="请选择" options={PROJECT_STATUS_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('status', value)} /></QueryItem>
       <QueryItem label="项目责任人"><Input value={draftFilters.owner} allowClear placeholder="请输入项目责任人" onChange={(event) => updateFilter('owner', event.target.value)} /></QueryItem>
-      <QueryItem label="盘点开始时间"><DateFilter value={draftFilters.startFrom} placeholder="开始日期" onChange={(value) => updateFilter('startFrom', value)} /></QueryItem>
-      <QueryItem label="盘点结束时间"><DateFilter value={draftFilters.startTo} placeholder="结束日期" onChange={(value) => updateFilter('startTo', value)} /></QueryItem>
+      <QueryItem label="盘点开始时间"><DatePicker.RangePicker className="w-full" value={[draftFilters.startFrom ? dayjs(draftFilters.startFrom) : null, draftFilters.startTo ? dayjs(draftFilters.startTo) : null]} onChange={(dates) => setDraftFilters((current) => ({ ...current, startFrom: dates?.[0]?.format('YYYY-MM-DD') || '', startTo: dates?.[1]?.format('YYYY-MM-DD') || '' }))} /></QueryItem>
       <QueryItem label="项目类型"><Select value={draftFilters.type || undefined} allowClear placeholder="请选择" options={PROJECT_TYPE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('type', value)} /></QueryItem>
-      <QueryItem label="创建时间从"><DateFilter value={draftFilters.createdFrom} placeholder="开始日期" onChange={(value) => updateFilter('createdFrom', value)} /></QueryItem>
-      <QueryItem label="创建时间至"><DateFilter value={draftFilters.createdTo} placeholder="结束日期" onChange={(value) => updateFilter('createdTo', value)} /></QueryItem>
+      <QueryItem label="创建时间"><DatePicker.RangePicker className="w-full" value={[draftFilters.createdFrom ? dayjs(draftFilters.createdFrom) : null, draftFilters.createdTo ? dayjs(draftFilters.createdTo) : null]} onChange={(dates) => setDraftFilters((current) => ({ ...current, createdFrom: dates?.[0]?.format('YYYY-MM-DD') || '', createdTo: dates?.[1]?.format('YYYY-MM-DD') || '' }))} /></QueryItem>
     </QueryBar>
     <Card size="small" title={<SectionCardTitle>盘点项目列表</SectionCardTitle>} extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
-      <div className="mb-3 flex justify-end"><Space wrap><Button type="primary" icon={<Plus size={14} />} onClick={onCreate}>创建项目</Button><Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除</Button><Button icon={<XCircle size={14} />} onClick={handleClose}>关闭项目</Button></Space></div>
+      <div className="mb-3 flex justify-between items-center"><Space><Typography.Text>演示操作人</Typography.Text><Select style={{ width: 180 }} value={creator} options={INVENTORY_CREATORS} onChange={onCreatorChange} /></Space><Space wrap><Button type="primary" icon={<Plus size={14} />} disabled={!allowedProjectTypes(creator).length} onClick={onCreate}>创建项目</Button><Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除</Button><Button icon={<XCircle size={14} />} onClick={handleClose}>关闭项目</Button></Space></div>
       <Table
         rowKey="key"
         size="small"

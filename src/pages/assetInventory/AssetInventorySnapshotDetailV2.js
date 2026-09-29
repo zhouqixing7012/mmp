@@ -157,6 +157,18 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
     && includesText(row.inventoryRange, filters.range)
   )), [rows, filters]);
 
+  const exportFilteredRows = () => {
+    const columns = makeAssetColumns({ includeNo: showMachineRoomFeatures }).filter((column) => column.dataIndex);
+    const cell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const csv = [columns.map((column) => cell(column.title)).join(','), ...filteredRows.map((row) => columns.map((column) => cell(row[column.dataIndex])).join(','))].join('\r\n');
+    const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${projectNo}-${type === 'execution' ? '执行盘点资产清单' : type === 'notExecution' ? '未执行盘点资产清单' : '未包含资产清单'}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const projectClosed = projectStatus === '盘点关闭';
   const beforeStart = projectStatus === '快照生成';
   const during = projectStatus === '盘点中';
@@ -254,7 +266,6 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
     operations.push(
       <Button key="importResult" icon={<Upload size={14} />}>导入盘点结果</Button>,
       <Button key="importPhoto" icon={<Upload size={14} />} onClick={() => photoInputRef.current?.click()}>导入盘点照片</Button>,
-      <Button key="exportResult" icon={<Download size={14} />}>导出盘点结果</Button>,
     );
   }
   if (type === 'notExecution' && beforeStart) {
@@ -267,7 +278,6 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
     operations.push(
       <Button key="confirm" type="primary" icon={<CheckCircle2 size={14} />} onClick={confirmSelected}>批量确认</Button>,
       <Button key="importResult" icon={<Upload size={14} />}>导入盘点结果</Button>,
-      <Button key="exportResult" icon={<Download size={14} />}>导出盘点结果</Button>,
     );
   }
   if (type === 'excluded' && !projectClosed) {
@@ -277,7 +287,7 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
       <Button key="import" icon={<Upload size={14} />}>批量导入转移</Button>,
     );
   }
-  operations.push(<Button key="export" icon={<Download size={14} />}>导出查询结果</Button>);
+  operations.push(<Button key="export" icon={<Download size={14} />} onClick={exportFilteredRows}>导出</Button>);
 
   const selectionMenu = [
     {

@@ -111,8 +111,6 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
     { title: 'Building', dataIndex: 'building', width: 180 },
     { title: 'Floor', dataIndex: 'floor', width: 100 },
     { title: '资产责任人职级', dataIndex: 'ownerLevel', width: 130 },
-    { title: '启用开始日期', dataIndex: 'enableFrom', width: 130 },
-    { title: '启用结束日期', dataIndex: 'enableTo', width: 130 },
     { title: '清单', width: 80, fixed: 'right', render: () => <Button type="link" className="px-0" onClick={() => messageApi.info('已展示该盘点范围资产清单')}>查看</Button> },
   ];
 

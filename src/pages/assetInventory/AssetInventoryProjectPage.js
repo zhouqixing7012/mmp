@@ -22,6 +22,7 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
+import { allowedProjectTypes } from './inventoryCreatorPermissions';
 import {
   BellRing,
   CheckCircle2,
@@ -477,11 +478,22 @@ function ProjectListView({ onCreate, onOpenProject, onOpenPlans, onOpenProgress,
   );
 }
 
-function ProjectBasicInfoEditor({ project, setProject }) {
+function getPeriodOptions(inventoryType) {
+  const year = dayjs().year();
+  if (inventoryType === '年度') return Array.from({ length: 4 }, (_, index) => `${year}年Q${index + 1}`);
+  if (inventoryType === '月度') return Array.from({ length: 14 }, (_, index) => {
+    const month = dayjs(`${year - 1}-12-01`).add(index, 'month');
+    return `${month.year()}年${month.month() + 1}月`;
+  });
+  return ['第一季度', '第二季度', '第三季度', '第四季度'];
+}
+
+function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
   const setField = (field, value) => setProject((current) => ({ ...current, [field]: value }));
+  const permittedTypes = allowedProjectTypes(creator);
 
   const changeInventoryType = (value) => {
-    const nextPeriod = value === '年度' ? '2026年' : value === '季度' ? '第三季度' : '8月';
+    const nextPeriod = getPeriodOptions(value)[0];
     setProject((current) => ({
       ...current,
       inventoryType: value,
@@ -495,7 +507,7 @@ function ProjectBasicInfoEditor({ project, setProject }) {
     setProject((current) => ({
       ...current,
       projectType: value,
-      projectNo: `${prefix}-20260818-0003`,
+       projectNo: `${prefix}-${dayjs().format('YYYYMMDD')}-0003`,
       initialProjectNo: value === '初盘' ? '-' : 'CP-202608180001',
       samplingMode: value === '初盘' ? '-' : '全盘',
       samplingRatio: value === '初盘' ? '-' : 100,
@@ -507,7 +519,7 @@ function ProjectBasicInfoEditor({ project, setProject }) {
       <div className="grid grid-cols-3 gap-x-6 gap-y-4">
         <div>
           <Typography.Text type="secondary">项目编号</Typography.Text>
-          <Input value={project.projectNo} readOnly />
+          <div className="py-1.5 text-sm">{project.projectNo || '-'}</div>
         </div>
         <div>
           <Typography.Text type="secondary">项目名称</Typography.Text>
@@ -515,7 +527,7 @@ function ProjectBasicInfoEditor({ project, setProject }) {
         </div>
         <div>
           <Typography.Text type="secondary">项目类型</Typography.Text>
-          <Select value={project.projectType} className="w-full" options={PROJECT_TYPE_OPTIONS.map((value) => ({ label: value, value }))} onChange={changeProjectType} />
+          <Select value={project.projectType} className="w-full" options={(isEditing ? [project.projectType] : permittedTypes).map((value) => ({ label: value, value }))} onChange={changeProjectType} disabled={isEditing} />
         </div>
         <div>
           <Typography.Text type="secondary">盘点开始时间</Typography.Text>
@@ -539,13 +551,7 @@ function ProjectBasicInfoEditor({ project, setProject }) {
           <Select
             value={project.period}
             className="w-full"
-            options={
-              project.inventoryType === '年度'
-                ? [{ label: '2026年', value: '2026年' }]
-                : project.inventoryType === '季度'
-                  ? ['第一季度', '第二季度', '第三季度', '第四季度'].map((value) => ({ label: value, value }))
-                  : Array.from({ length: 12 }, (_, index) => ({ label: `${index + 1}月`, value: `${index + 1}月` }))
-            }
+            options={getPeriodOptions(project.inventoryType).map((value) => ({ label: value, value }))}
             onChange={(value) => setProject((current) => ({ ...current, period: value, projectName: `${value}-${current.inventoryType}盘点` }))}
           />
         </div>
@@ -575,7 +581,7 @@ function ProjectBasicInfoEditor({ project, setProject }) {
         )}
         <div>
           <Typography.Text type="secondary">快照生成日期</Typography.Text>
-          <Input value={project.snapshotTime === '-' ? '' : project.snapshotTime} readOnly placeholder="生成快照后自动反写" />
+          <div className="py-1.5 text-sm">{project.snapshotTime === '-' ? '生成快照后自动更新' : project.snapshotTime}</div>
         </div>
         <div className="col-span-3">
           <Typography.Text type="secondary">盘点说明</Typography.Text>
@@ -755,8 +761,6 @@ function ScopeSelector({ projectType, scopeRows, setScopeRows, onPreviewAssets, 
     { title: 'Building', dataIndex: 'building', width: 180 },
     { title: 'Floor', dataIndex: 'floor', width: 90 },
     { title: '资产责任人职级', dataIndex: 'ownerLevel', width: 130 },
-    { title: '启用开始日期', dataIndex: 'enableFrom', width: 130 },
-    { title: '启用结束日期', dataIndex: 'enableTo', width: 130 },
     { title: '清单', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => onPreviewAssets(row)}>查看</Button> },
   ];
 
@@ -868,13 +872,18 @@ function ScopeSelector({ projectType, scopeRows, setScopeRows, onPreviewAssets, 
   );
 }
 
-function CreateProjectView({ initialProject, onBack, onGenerated }) {
+function CreateProjectView({ initialProject, onBack, onGenerated, creator }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
+  const initialInventoryType = initialProject?.inventoryType || '年度';
+  const initialPeriod = getPeriodOptions(initialInventoryType).includes(initialProject?.period)
+    ? initialProject.period : getPeriodOptions(initialInventoryType)[0];
   const [project, setProject] = useState(() => ({
     ...PROJECT_INFO,
     ...initialProject,
-    projectNo: initialProject?.projectNo || 'CP-20260818-0003',
-    projectName: initialProject?.projectName || '2026年-年度盘点',
+    projectType: initialProject?.projectType || allowedProjectTypes(creator)[0],
+    projectNo: initialProject?.projectNo || `${creator === '冯丽婷' ? 'RCP' : 'CP'}-${dayjs().format('YYYYMMDD')}-0003`,
+    projectName: initialProject?.projectName || `${getPeriodOptions('年度')[0]}-年度盘点`,
+    period: initialPeriod,
     status: '暂存',
     snapshotTime: initialProject?.snapshotTime || '-',
   }));
@@ -883,6 +892,10 @@ function CreateProjectView({ initialProject, onBack, onGenerated }) {
   const [assetPreviewOpen, setAssetPreviewOpen] = useState(false);
 
   const handleSave = () => {
+    if (!initialProject && !allowedProjectTypes(creator).includes(project.projectType)) {
+      messageApi.warning('当前操作人无权创建该项目类型');
+      return;
+    }
     if (!project.projectName || !project.startDate || !project.endDate) {
       messageApi.warning('请完整填写项目信息');
       return;
@@ -891,6 +904,10 @@ function CreateProjectView({ initialProject, onBack, onGenerated }) {
   };
 
   const handleSnapshot = () => {
+    if (!initialProject && !allowedProjectTypes(creator).includes(project.projectType)) {
+      messageApi.warning('当前操作人无权创建该项目类型');
+      return;
+    }
     if (!scopeRows.length) {
       messageApi.warning('请先生成至少一条盘点范围明细');
       return;
@@ -910,7 +927,7 @@ function CreateProjectView({ initialProject, onBack, onGenerated }) {
       {contextHolder}
       <PageTitle>{initialProject ? '编辑盘点项目' : '创建盘点项目'}</PageTitle>
 
-      <ProjectBasicInfoEditor project={project} setProject={setProject} />
+      <ProjectBasicInfoEditor project={project} setProject={setProject} creator={creator} isEditing={Boolean(initialProject)} />
       <InventoryRuleEditor messageApi={messageApi} />
       <ImageUploadRuleEditor />
       <ScopeSelector
@@ -2039,7 +2056,7 @@ function ProgressView({ project, onBack }) {
   );
 }
 
-export default function AssetInventoryProjectPage() {
+export default function AssetInventoryProjectPage({ creator = '213852-孙志强' }) {
   const [view, setView] = useState('list');
   const [activeProject, setActiveProject] = useState(PROJECT_INFO);
   const [activePlan, setActivePlan] = useState(INITIAL_PLAN_ROWS[0]);
@@ -2064,6 +2081,7 @@ export default function AssetInventoryProjectPage() {
   if (view === 'create') {
     return (
       <CreateProjectView
+        creator={creator}
         initialProject={activeProject?.status === '暂存' ? activeProject : null}
         onBack={() => setView('list')}
         onGenerated={(project) => {
