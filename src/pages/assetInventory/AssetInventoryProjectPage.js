@@ -23,6 +23,7 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { allowedProjectTypes } from './inventoryCreatorPermissions';
+import { inventoryDateBlockReason } from './inventoryDateRules';
 import {
   BellRing,
   CheckCircle2,
@@ -161,8 +162,8 @@ function makeAssetColumns({ includeNo = true, includePlan = false, includeCurren
     { title: '资产说明', dataIndex: 'description', width: 180 },
     { title: '数量', dataIndex: 'quantity', width: 70, align: 'right' },
     { title: '原值', dataIndex: 'originalValue', width: 110, align: 'right', render: formatMoney },
-    { title: 'EBS原值', dataIndex: 'ebsOriginalValue', width: 110, align: 'right', render: formatMoney },
     { title: '净值', dataIndex: 'netValue', width: 100, align: 'right', render: formatMoney },
+    { title: 'EBS原值', dataIndex: 'ebsOriginalValue', width: 110, align: 'right', render: formatMoney },
     { title: '使用状态', dataIndex: 'useStatus', width: 140, render: (value) => <StatusTag value={value} /> },
     { title: 'NO位置', dataIndex: 'noLocation', width: 120 },
     { title: '盘点说明', dataIndex: 'inventoryNote', width: 160 },
@@ -227,6 +228,7 @@ const SCOPE_ASSET_COLUMNS = [
   { title: '资产说明', dataIndex: 'description', width: 180 },
   { title: '数量', dataIndex: 'quantity', width: 70, align: 'right' },
   { title: '原值', dataIndex: 'originalValue', width: 110, align: 'right', render: formatMoney },
+  { title: '净值', dataIndex: 'netValue', width: 110, align: 'right', render: formatMoney },
   { title: '使用状态', dataIndex: 'useStatus', width: 140, render: (value) => <StatusTag value={value} /> },
   { title: 'NO位置', dataIndex: 'noLocation', width: 120 },
   { title: '备注', dataIndex: 'remark', width: 130 },
@@ -507,8 +509,9 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
     setProject((current) => ({
       ...current,
       projectType: value,
-       projectNo: `${prefix}-${dayjs().format('YYYYMMDD')}-0003`,
-       initialProjectNo: '-',
+      projectNo: `${prefix}-${dayjs().format('YYYYMMDD')}-0003`,
+      initialProjectNo: '-',
+      endDate: value === '复盘' ? current.startDate : current.endDate,
       samplingMode: value === '初盘' ? '-' : '全盘',
       samplingRatio: value === '初盘' ? '-' : 100,
     }));
@@ -539,14 +542,14 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
         </div>
         <div>
           <Typography.Text type="secondary">盘点开始时间</Typography.Text>
-          <DatePicker value={dayjs(project.startDate)} className="w-full" onChange={(date) => setField('startDate', date ? date.format('YYYY-MM-DD') : '')} />
+          <DatePicker value={project.startDate ? dayjs(project.startDate) : null} className="w-full" onChange={(date) => setProject((current) => ({ ...current, startDate: date ? date.format('YYYY-MM-DD') : '', endDate: current.projectType === '复盘' ? (date ? date.format('YYYY-MM-DD') : '') : current.endDate }))} />
         </div>
         <div>
           <Typography.Text type="secondary">盘点结束时间</Typography.Text>
           <DatePicker
-            value={dayjs(project.endDate)}
+            value={project.endDate ? dayjs(project.endDate) : null}
             className="w-full"
-            disabledDate={(date) => project.startDate && date.isBefore(dayjs(project.startDate), 'day')}
+            disabledDate={(date) => project.startDate && (project.projectType === '复盘' ? !date.isSame(dayjs(project.startDate), 'day') : date.isBefore(dayjs(project.startDate), 'day'))}
             onChange={(date) => setField('endDate', date ? date.format('YYYY-MM-DD') : '')}
           />
         </div>
@@ -743,6 +746,7 @@ function ScopeSelector({ projectType, scopeRows, setScopeRows, onPreviewAssets, 
     owner: '',
     ownerLevel: '',
     ratio: 100,
+    netValueTopPercent: null,
   });
   const [selectedKeys, setSelectedKeys] = useState([]);
 
@@ -787,6 +791,7 @@ function ScopeSelector({ projectType, scopeRows, setScopeRows, onPreviewAssets, 
       ownerLevel: filters.ownerLevel || '全部',
       enableFrom: '2020-01-01',
       enableTo: '2026-06-30',
+      netValueTopPercent: projectType === '复盘' ? filters.netValueTopPercent : null,
     };
     setScopeRows((current) => [...current, next]);
     if (projectType === '复盘') {
@@ -821,6 +826,12 @@ function ScopeSelector({ projectType, scopeRows, setScopeRows, onPreviewAssets, 
             />
           </div>
         ))}
+        {projectType === '复盘' && (
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-24 shrink-0 text-right text-sm text-gray-600">净值前:</span>
+            <InputNumber min={1} max={100} precision={0} value={filters.netValueTopPercent} placeholder="不限制" className="flex-1" addonAfter="%" onChange={(value) => setFilters((current) => ({ ...current, netValueTopPercent: value }))} />
+          </div>
+        )}
         {projectType === '复盘' && (
           <div className="flex items-center gap-2 min-w-0">
             <span className="w-24 shrink-0 text-right text-sm text-gray-600">比例:</span>
@@ -889,6 +900,7 @@ function CreateProjectView({ initialProject, onBack, onGenerated, creator }) {
     ...PROJECT_INFO,
     ...initialProject,
     projectType: initialProject?.projectType || allowedProjectTypes(creator)[0],
+    endDate: !initialProject && creator === '冯丽婷' ? PROJECT_INFO.startDate : (initialProject?.endDate || PROJECT_INFO.endDate),
     projectNo: initialProject?.projectNo || `${creator === '冯丽婷' ? 'RCP' : 'CP'}-${dayjs().format('YYYYMMDD')}-0003`,
     projectName: initialProject?.projectName || `${getPeriodOptions('年度')[0]}-年度盘点`,
     period: initialPeriod,
@@ -912,6 +924,8 @@ function CreateProjectView({ initialProject, onBack, onGenerated, creator }) {
       messageApi.warning('请完整填写项目信息');
       return;
     }
+    const dateBlockReason = inventoryDateBlockReason(project.projectType, project.startDate, project.endDate);
+    if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
     messageApi.success('盘点项目已保存为暂存状态');
   };
 
@@ -924,6 +938,8 @@ function CreateProjectView({ initialProject, onBack, onGenerated, creator }) {
       messageApi.warning('请选择已关闭的初盘项目');
       return;
     }
+    const dateBlockReason = inventoryDateBlockReason(project.projectType, project.startDate, project.endDate);
+    if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
     if (!scopeRows.length) {
       messageApi.warning('请先生成至少一条盘点范围明细');
       return;

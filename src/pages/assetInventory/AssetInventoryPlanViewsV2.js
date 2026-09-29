@@ -13,6 +13,7 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
+import { inventoryDateBlockReason } from './inventoryDateRules';
 import {
   BellRing,
   Download,
@@ -245,6 +246,8 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
       return;
     }
     const selected = new Set(selectedKeys);
+    const invalidDate = rows.filter((row) => selected.has(row.key)).map((row) => inventoryDateBlockReason(project?.projectType, row.startDate, row.endDate)).find(Boolean);
+    if (invalidDate) { messageApi.warning(invalidDate); return; }
     const missing = rows.find((row) => selected.has(row.key) && (!row.manager || !row.executor));
     if (missing) {
       Modal.warning({
@@ -281,14 +284,8 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
   };
 
   const saveBatchDates = () => {
-    if (!batchDates.startDate || !batchDates.endDate) {
-      messageApi.warning('请完整填写盘点开始日期和盘点结束日期');
-      return;
-    }
-    if (batchDates.endDate < batchDates.startDate) {
-      messageApi.warning('盘点结束日期不能早于盘点开始日期');
-      return;
-    }
+    const dateBlockReason = inventoryDateBlockReason(project?.projectType, batchDates.startDate, batchDates.endDate);
+    if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
     const selected = new Set(selectedKeys);
     setRows((current) => current.map((row) => selected.has(row.key) ? {
       ...row,
@@ -319,7 +316,7 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
       dataIndex: 'startDate',
       width: 145,
       render: (value, row) => editable(row)
-        ? <DatePicker value={value ? dayjs(value) : null} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, startDate: date ? date.format('YYYY-MM-DD') : '' } : item))} />
+        ? <DatePicker value={value ? dayjs(value) : null} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, startDate: date ? date.format('YYYY-MM-DD') : '', endDate: project?.projectType === '复盘' ? (date ? date.format('YYYY-MM-DD') : '') : item.endDate } : item))} />
         : value,
     },
     {
@@ -327,7 +324,7 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
       dataIndex: 'endDate',
       width: 145,
       render: (value, row) => editable(row)
-        ? <DatePicker value={value ? dayjs(value) : null} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, endDate: date ? date.format('YYYY-MM-DD') : '' } : item))} />
+        ? <DatePicker value={value ? dayjs(value) : null} disabledDate={(date) => project?.projectType === '复盘' && row.startDate && !date.isSame(dayjs(row.startDate), 'day')} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, endDate: date ? date.format('YYYY-MM-DD') : '' } : item))} />
         : value,
     },
     { title: '计划负责人', dataIndex: 'manager', width: 160, render: (value, row) => <PersonnelInput disabled={!editable(row)} value={value} onClick={() => openPersonnel(row.key, 'manager')} /> },

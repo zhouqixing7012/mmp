@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Card, DatePicker, InputNumber, Select, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Button, Card, DatePicker, InputNumber, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import { Eye, Search, Trash2 } from 'lucide-react';
 import {
@@ -17,6 +17,7 @@ import {
 import { ASSET_ROWS, EMPLOYEE_ROWS, SCOPE_ROWS } from './mockData';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import SectionCardTitle from './SectionCardTitle';
+import { selectScopeAssets } from './inventoryScopeQuery';
 
 const SUBSIDIARY_OPTIONS = ['集团', '搜狐媒体', '焦点', '视频'];
 
@@ -92,10 +93,11 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
   const options = useMemo(() => getScheme3InventoryDemoOptions(allowedRanges), [allowedRanges]);
   const [filters, setFilters] = useState({
     organization: '', department: '', assetCategory: '', assetStatus: '', warehouse: '',
-    city: '', building: '', floor: '', owner: '', ownerLevel: '', enableFrom: '', enableTo: '', ratio: 100,
+    city: '', building: '', floor: '', owner: '', ownerLevel: '', enableFrom: '', enableTo: '', ratio: 100, netValueTopPercent: null,
   });
   const [rows, setRows] = useState(() => SCOPE_ROWS.map((row) => ({ ...row })));
   const [selectedKeys, setSelectedKeys] = useState([]);
+  const [previewKeys, setPreviewKeys] = useState(null);
 
   const fields = [
     ['子公司', 'organization'], ['部门', 'department'], ['资产类别', 'assetCategory'], ['资产状态', 'assetStatus'], ['仓库', 'warehouse'],
@@ -112,10 +114,12 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
     { title: 'Building', dataIndex: 'building', width: 180 },
     { title: 'Floor', dataIndex: 'floor', width: 100 },
     { title: '资产责任人职级', dataIndex: 'ownerLevel', width: 130 },
-    { title: '清单', width: 80, fixed: 'right', render: () => <Button type="link" className="px-0" onClick={() => messageApi.info('已展示该盘点范围资产清单')}>查看</Button> },
+    { title: '清单', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => row.assetKeys ? setPreviewKeys(row.assetKeys) : messageApi.warning('历史演示范围未关联资产明细，请重新生成查询')}>查看</Button> },
   ];
 
   const generate = () => {
+    const matches = selectScopeAssets(ASSET_ROWS.filter((row) => isInventoryRangeAllowed(row, allowedRanges)), filters, projectType);
+    if (!matches.length) { messageApi.warning('当前条件下没有可纳入的资产'); return; }
     setRows((current) => [...current, {
       key: `scope-v3-${Date.now()}`,
       organization: filters.organization || '集团',
@@ -130,8 +134,10 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
       ownerLevel: filters.ownerLevel || '全部',
       enableFrom: filters.enableFrom,
       enableTo: filters.enableTo,
+      netValueTopPercent: projectType === '复盘' ? filters.netValueTopPercent : null,
+      assetKeys: matches.map((asset) => asset.key),
     }]);
-    messageApi.success(projectType === '复盘' ? `已生成复盘范围，本次复盘比例 ${filters.ratio}%` : '已根据当前筛选规则生成盘点范围分录');
+    messageApi.success(`已生成盘点范围分录，匹配 ${matches.length} 条资产`);
   };
 
   return (
@@ -167,6 +173,12 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
         </div>
         {projectType === '复盘' && (
           <div className="flex items-center gap-2 min-w-0">
+            <span className="w-24 shrink-0 text-right text-sm text-gray-600">净值前:</span>
+            <InputNumber min={1} max={100} precision={0} value={filters.netValueTopPercent} placeholder="不限制" className="flex-1" addonAfter="%" onChange={(value) => setFilters((current) => ({ ...current, netValueTopPercent: value }))} />
+          </div>
+        )}
+        {projectType === '复盘' && (
+          <div className="flex items-center gap-2 min-w-0">
             <span className="w-24 shrink-0 text-right text-sm text-gray-600">比例:</span>
             <InputNumber min={1} max={100} value={filters.ratio} className="flex-1" addonAfter="%" onChange={(value) => setFilters((current) => ({ ...current, ratio: value || 100 }))} />
           </div>
@@ -180,7 +192,7 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
       <div className="mb-3 flex items-center justify-between">
         <Typography.Text strong>盘点范围明细</Typography.Text>
         <Space>
-          <Button icon={<Eye size={14} />} onClick={() => messageApi.info('已展示全部盘点范围资产')}>查看全部</Button>
+          <Button icon={<Eye size={14} />} onClick={() => setPreviewKeys([...new Set(rows.flatMap((row) => row.assetKeys || []))])}>查看全部</Button>
           <Button
             danger
             icon={<Trash2 size={14} />}
@@ -210,6 +222,14 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
         scroll={{ x: 1600 }}
         pagination={false}
       />
+      <Modal open={previewKeys !== null} title="盘点范围资产明细" width={900} footer={<Button onClick={() => setPreviewKeys(null)}>返回</Button>} onCancel={() => setPreviewKeys(null)}>
+        <Table rowKey="key" size="small" columns={[
+          { title: '资产标签号', dataIndex: 'assetTag' },
+          { title: '资产说明', dataIndex: 'description' },
+          { title: '原值', dataIndex: 'originalValue' },
+          { title: '净值', dataIndex: 'netValue' },
+        ]} dataSource={ASSET_ROWS.filter((asset) => previewKeys?.includes(asset.key))} pagination={false} />
+      </Modal>
     </Card>
   );
 }

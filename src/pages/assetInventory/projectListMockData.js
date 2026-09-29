@@ -60,7 +60,7 @@ export const PROJECT_LIST_ROWS = [
     projectName: '2026年-年度复盘',
     status: '生成盘点计划',
     startDate: '2026-08-26',
-    endDate: '2026-08-31',
+    endDate: '2026-08-26',
     executionCount: 0,
     assetCount: 51611,
     owner: '系统管理员',

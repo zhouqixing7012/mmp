@@ -1,5 +1,11 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
+import AssetInventoryMobilePrototype from './AssetInventoryMobilePrototype';
+
+jest.mock('react-router-dom', () => ({
+  useNavigate: () => jest.fn(),
+  useLocation: () => ({ state: {}, key: 'mobile-test' }),
+}), { virtual: true });
 
 jest.mock('antd', () => {
   const React = require('react');
@@ -13,8 +19,6 @@ jest.mock('antd', () => {
   const message = { useMessage: () => [{ warning: jest.fn(), success: jest.fn() }, null] };
   return { Button, Input, Modal, Tag, message };
 });
-
-import AssetInventoryMobilePrototype from './AssetInventoryMobilePrototype';
 
 describe('AssetInventoryMobilePrototype', () => {
   test('工作台按状态分组并可进入资产详情', () => {
@@ -49,7 +53,9 @@ describe('AssetInventoryMobilePrototype', () => {
     fireEvent.click(screen.getByRole('button', { name: '再接再厉' }));
     fireEvent.click(screen.getByRole('button', { name: '返回' }));
 
-    expect(screen.getByText('已盘')).toBeInTheDocument();
+    expect(screen.getByText('我的盘点任务')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /已盘 3/ }));
+    fireEvent.click(screen.getByRole('button', { name: /戴尔\.Latitude E7280/ }));
     expect(screen.getByText('盘点人')).toBeInTheDocument();
   });
 

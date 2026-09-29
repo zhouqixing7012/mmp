@@ -16,7 +16,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { Alert, Button, Input, Modal, Tag, message as antdMessage } from 'antd';
+import { Button, Input, Modal, Tag, message as antdMessage } from 'antd';
 import './assetInventoryMobile.css';
 
 const CURRENT_USER = {
@@ -397,10 +397,12 @@ export default function AssetInventoryMobilePrototype() {
   }, [previewProjectNo, location.key]);
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [view, setView] = useState('workbench');
+  const [scanReturnView, setScanReturnView] = useState('workbench');
   const [activeTab, setActiveTab] = useState('unscanned');
   const [assets, setAssets] = useState(() => DEMO_ASSETS.map((asset) => ({ ...asset })));
   const [query, setQuery] = useState('');
   const [selectedAssetId, setSelectedAssetId] = useState(null);
+  const [locationDraft, setLocationDraft] = useState({ city: '', building: '', floor: '' });
   const [scanPickerOpen, setScanPickerOpen] = useState(false);
   const [scanModal, setScanModal] = useState(null);
   const [resultNotice, setResultNotice] = useState(null);
@@ -416,9 +418,22 @@ export default function AssetInventoryMobilePrototype() {
   const filteredAssets = useMemo(() => assets.filter((asset) => includesQuery(asset, query)), [assets, query]);
 
   const openDetail = (asset) => {
-    if (projectClosed) return;
     setSelectedAssetId(asset.id);
+    const [city = '', building = '', floor = ''] = asset.address.split('-');
+    setLocationDraft({ city, building, floor });
     setView('detail');
+  };
+
+  const savePublicLocation = () => {
+    if (!selectedAsset || selectedAsset.area !== '公共' || projectClosed) return;
+    if (!locationDraft.city.trim() || !locationDraft.building.trim() || !locationDraft.floor.trim()) {
+      messageApi.warning('请完整填写 City、Building、Floor');
+      return;
+    }
+    setAssets((current) => current.map((asset) => asset.id === selectedAsset.id
+      ? { ...asset, address: `${locationDraft.city.trim()}-${locationDraft.building.trim()}-${locationDraft.floor.trim()}` }
+      : asset));
+    messageApi.success('公共资产位置已更新');
   };
 
   const returnToProjectList = () => {
@@ -434,7 +449,7 @@ export default function AssetInventoryMobilePrototype() {
       returnToProjectList();
       return;
     }
-    setView(view === 'detail' ? 'workbench' : 'detail');
+    setView(view === 'detail' ? 'workbench' : scanReturnView);
     setScanPickerOpen(false);
     setScanModal(null);
     setResultNotice(null);
@@ -445,6 +460,7 @@ export default function AssetInventoryMobilePrototype() {
   const openScan = (assetId = null) => {
     if (projectClosed) { messageApi.info('项目已关闭，盘点待办已结束'); return; }
     setSelectedAssetId(assetId);
+    setScanReturnView(view === 'detail' ? 'detail' : 'workbench');
     setScanPickerOpen(false);
     setScanModal(null);
     setView('scan');
@@ -459,7 +475,7 @@ export default function AssetInventoryMobilePrototype() {
       return;
     }
     if (kind === 'proxy') {
-      const asset = assets.find((item) => item.status === '代盘');
+      const asset = assets.find((item) => item.status === '未盘' && item.owner !== CURRENT_USER.name);
       setScanModal({ kind, assetId: asset?.id || null });
       return;
     }
@@ -469,6 +485,11 @@ export default function AssetInventoryMobilePrototype() {
   const handleSubmitScan = (kind) => {
     if (projectClosed) { messageApi.info('项目已关闭，不能提交盘点结果'); return; }
     const scanAsset = assets.find((asset) => asset.id === scanModal?.assetId);
+    if (!scanAsset || scanAsset.status !== '未盘') {
+      setScanModal(null);
+      messageApi.warning('该资产已盘点或不在执行范围内');
+      return;
+    }
     if (scanAsset && ['mine', 'proxy'].includes(kind)) {
       setSelectedAssetId(scanAsset.id);
       setAssets((current) => current.map((asset) => (
@@ -553,7 +574,7 @@ export default function AssetInventoryMobilePrototype() {
     const failed = [];
     quickScanned.forEach((tagNo) => {
       const asset = assets.find((item) => item.tagNo === tagNo);
-      if (asset && !['已盘', '代盘'].includes(asset.status) && !success.includes(tagNo)) {
+      if (asset && asset.status === '未盘' && !success.includes(tagNo)) {
         success.push(tagNo);
       } else {
         failed.push(tagNo);
@@ -600,7 +621,7 @@ export default function AssetInventoryMobilePrototype() {
             未盘 <span>{formatStatusCount(filteredAssets, '未盘') + formatStatusCount(filteredAssets, '报失')}</span>
           </button>
           <button type="button" className={activeTab === 'scanned' ? 'is-active' : ''} onClick={() => setActiveTab('scanned')}>
-            已盘 <span>{formatStatusCount(filteredAssets, '已盘') + formatStatusCount(filteredAssets, '代盘') + formatStatusCount(filteredAssets, '未执行盘点')}</span>
+            已盘 <span>{formatStatusCount(filteredAssets, '已盘') + formatStatusCount(filteredAssets, '代盘')}</span>
           </button>
         </div>
         <div className="inventory-mobile-content-list">
@@ -645,11 +666,18 @@ export default function AssetInventoryMobilePrototype() {
             <DetailRow label="使用状态" value={selectedAsset.usageStatus} />
             <DetailRow label="资产说明" value={selectedAsset.assetDesc} />
             <DetailRow label="责任人" value={`${selectedAsset.owner}（${selectedAsset.ownerNo}）`} />
-            <DetailRow label="资产地址" value={selectedAsset.address} />
+            {selectedAsset.area === '公共' && !projectClosed ? (
+              <div className="inventory-public-location">
+                {['city', 'building', 'floor'].map((field) => <label key={field}>{field === 'city' ? 'City' : field === 'building' ? 'Building' : 'Floor'}
+                  <Input value={locationDraft[field]} onChange={(event) => setLocationDraft((current) => ({ ...current, [field]: event.target.value }))} />
+                </label>)}
+                <Button onClick={savePublicLocation}>保存位置</Button>
+              </div>
+            ) : <DetailRow label="资产地址" value={selectedAsset.address} />}
             {selectedAsset.area !== '员工' && <DetailRow label="盘点范围" value={selectedAsset.area} />}
-            <DetailRow label="盘点人" value={selectedAsset.inventoryBy} />
-            <DetailRow label="盘点日期" value={selectedAsset.inventoryDate} />
-            <DetailRow label="盘点说明" value={selectedAsset.inventoryNote} />
+            {selectedAsset.inventoryBy && <DetailRow label="盘点人" value={selectedAsset.inventoryBy} />}
+            {selectedAsset.inventoryDate && <DetailRow label="盘点日期" value={selectedAsset.inventoryDate} />}
+            {selectedAsset.inventoryNote && <DetailRow label="盘点说明" value={selectedAsset.inventoryNote} />}
             {selectedAsset.area !== '员工' && (
               <>
                 <DetailRow label="用途" value={selectedAsset.purpose} />
@@ -682,10 +710,10 @@ export default function AssetInventoryMobilePrototype() {
             </div>
           )}
           <div className="inventory-detail-actions">
-            {!['已盘', '代盘'].includes(selectedAsset.status) && (
+            {selectedAsset.status === '未盘' && (
               <Button danger icon={<AlertTriangle size={16} />} disabled={projectClosed} onClick={() => setReportLossOpen(true)}>报失</Button>
             )}
-            <Button type="primary" icon={<ScanLine size={16} />} disabled={projectClosed} onClick={() => openScan(selectedAsset.id)}>盘点</Button>
+            {selectedAsset.status === '未盘' && <Button type="primary" icon={<ScanLine size={16} />} disabled={projectClosed} onClick={() => openScan(selectedAsset.id)}>盘点</Button>}
           </div>
         </div>
       </>
@@ -801,7 +829,7 @@ export default function AssetInventoryMobilePrototype() {
                   shape="circle"
                   aria-label="快速扫描"
                   icon={<ListChecks size={19} />}
-                  disabled={projectClosed} onClick={() => setView('quickScan')}
+                  disabled={projectClosed} onClick={() => { setScanReturnView('workbench'); setView('quickScan'); }}
                 />
               )}
             />

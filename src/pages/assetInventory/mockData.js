@@ -76,7 +76,7 @@ export const PROJECT_ROWS = [
     projectName: '2026年-年度复盘',
     status: '暂存',
     startDate: '2026-09-12',
-    endDate: '2026-09-20',
+    endDate: '2026-09-12',
     executionCount: 4129,
     assetCount: 51611,
     owner: '系统管理员',

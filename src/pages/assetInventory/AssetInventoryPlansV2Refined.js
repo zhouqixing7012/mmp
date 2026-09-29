@@ -9,6 +9,7 @@ import StatusTag from '../../components/StatusTag';
 import { EMPLOYEE_ROWS } from './mockData';
 import { useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import SectionCardTitle from './SectionCardTitle';
+import { inventoryDateBlockReason } from './inventoryDateRules';
 
 const EMPTY_PLAN_FILTERS = { planNo: '', planName: '', planStatus: '', organization: '', range: '' };
 const RANGE_OPTIONS = ['员工', '库房', '公共', '机房'];
@@ -56,6 +57,8 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
   const handleStart = () => {
     if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
     if (!selectedKeys.length) { messageApi.warning('请先选择需要启动的盘点计划'); return; }
+    const invalid = selectedRows.map((row) => inventoryDateBlockReason(project?.projectType, row.startDate, row.endDate)).find(Boolean);
+    if (invalid) { messageApi.warning(invalid); return; }
     const selected = new Set(selectedKeys);
     setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '启动' } : row));
     setSelectedKeys([]);
@@ -81,8 +84,8 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
 
   const saveBatchDates = () => {
     if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
-    if (!batchDates.startDate || !batchDates.endDate) { messageApi.warning('请完整填写盘点开始日期和盘点结束日期'); return; }
-    if (batchDates.endDate < batchDates.startDate) { messageApi.warning('盘点结束日期不能早于盘点开始日期'); return; }
+    const dateBlockReason = inventoryDateBlockReason(project?.projectType, batchDates.startDate, batchDates.endDate);
+    if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
     setRows((current) => current.map((row) => allowedRanges.includes(row.range) ? { ...row, startDate: batchDates.startDate, endDate: batchDates.endDate } : row));
     setBatchDateOpen(false);
     messageApi.success(`已统一更新全部 ${visibleRows.length} 个盘点计划的盘点日期`);
@@ -98,8 +101,8 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
     { title: '资产总量', dataIndex: 'assetCount', width: 100, align: 'right' },
     { title: '未盘数量', dataIndex: 'uncountedCount', width: 100, align: 'right' },
     { title: '已盘数量', dataIndex: 'countedCount', width: 100, align: 'right' },
-    { title: '盘点开始日期', dataIndex: 'startDate', width: 145, render: (value, row) => editable(row) ? <DatePicker value={value ? dayjs(value) : null} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, startDate: date ? date.format('YYYY-MM-DD') : '' } : item))} /> : value },
-    { title: '盘点结束日期', dataIndex: 'endDate', width: 145, render: (value, row) => editable(row) ? <DatePicker value={value ? dayjs(value) : null} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, endDate: date ? date.format('YYYY-MM-DD') : '' } : item))} /> : value },
+    { title: '盘点开始日期', dataIndex: 'startDate', width: 145, render: (value, row) => editable(row) ? <DatePicker value={value ? dayjs(value) : null} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, startDate: date ? date.format('YYYY-MM-DD') : '', endDate: project?.projectType === '复盘' ? (date ? date.format('YYYY-MM-DD') : '') : item.endDate } : item))} /> : value },
+    { title: '盘点结束日期', dataIndex: 'endDate', width: 145, render: (value, row) => editable(row) ? <DatePicker value={value ? dayjs(value) : null} disabledDate={(date) => project?.projectType === '复盘' && row.startDate && !date.isSame(dayjs(row.startDate), 'day')} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, endDate: date ? date.format('YYYY-MM-DD') : '' } : item))} /> : value },
     { title: '资产清单', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => onOpenPlanAssets(row)}>查看</Button> },
   ];
 
@@ -119,7 +122,7 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
     <div className="flex justify-center pb-2"><Button onClick={onBack}>返回</Button></div>
     <Modal open={batchDateOpen} title="批量编辑盘点日期" width={560} okText="确定" cancelText="取消" onCancel={() => setBatchDateOpen(false)} onOk={saveBatchDates}>
       <Alert type="info" showIcon className="mb-4" message="保存后将统一修改当前全部盘点计划的盘点开始日期和盘点结束日期。" />
-      <div className="grid grid-cols-2 gap-4 py-2"><div><Typography.Text type="secondary">盘点开始日期</Typography.Text><DatePicker className="w-full" value={batchDates.startDate ? dayjs(batchDates.startDate) : null} onChange={(date) => setBatchDates((current) => ({ ...current, startDate: date ? date.format('YYYY-MM-DD') : '' }))} /></div><div><Typography.Text type="secondary">盘点结束日期</Typography.Text><DatePicker className="w-full" value={batchDates.endDate ? dayjs(batchDates.endDate) : null} disabledDate={(date) => batchDates.startDate && date.isBefore(dayjs(batchDates.startDate), 'day')} onChange={(date) => setBatchDates((current) => ({ ...current, endDate: date ? date.format('YYYY-MM-DD') : '' }))} /></div></div>
+      <div className="grid grid-cols-2 gap-4 py-2"><div><Typography.Text type="secondary">盘点开始日期</Typography.Text><DatePicker className="w-full" value={batchDates.startDate ? dayjs(batchDates.startDate) : null} onChange={(date) => setBatchDates((current) => ({ ...current, startDate: date ? date.format('YYYY-MM-DD') : '', endDate: project?.projectType === '复盘' ? (date ? date.format('YYYY-MM-DD') : '') : current.endDate }))} /></div><div><Typography.Text type="secondary">盘点结束日期</Typography.Text><DatePicker className="w-full" value={batchDates.endDate ? dayjs(batchDates.endDate) : null} disabledDate={(date) => batchDates.startDate && (project?.projectType === '复盘' ? !date.isSame(dayjs(batchDates.startDate), 'day') : date.isBefore(dayjs(batchDates.startDate), 'day'))} onChange={(date) => setBatchDates((current) => ({ ...current, endDate: date ? date.format('YYYY-MM-DD') : '' }))} /></div></div>
     </Modal>
     <SelectModal open={Boolean(personTarget)} title="用户列表" rowKey="id" dataSource={EMPLOYEE_ROWS} searchFields={[{ label: '员工编号', name: 'employeeNo', dataIndex: 'employeeNo' }, { label: '员工姓名', name: 'employeeName', dataIndex: 'employeeName' }, { label: '部门名称', name: 'department', dataIndex: 'department' }]} columns={[{ title: '员工编号', dataIndex: 'employeeNo' }, { title: '员工姓名', dataIndex: 'employeeName' }, { title: '部门名称', dataIndex: 'department' }]} onCancel={() => setPersonTarget(null)} onConfirm={applyPersonnel} />
   </Space>;
