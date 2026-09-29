@@ -508,11 +508,19 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
       ...current,
       projectType: value,
        projectNo: `${prefix}-${dayjs().format('YYYYMMDD')}-0003`,
-      initialProjectNo: value === '初盘' ? '-' : 'CP-202608180001',
+       initialProjectNo: '-',
       samplingMode: value === '初盘' ? '-' : '全盘',
       samplingRatio: value === '初盘' ? '-' : 100,
     }));
   };
+
+  const linkedInitialProjects = new Set(PROJECT_ROWS.filter((row) => row.projectType === project.projectType && row.projectNo !== project.projectNo)
+    .map((row) => row.initialProjectNo && row.initialProjectNo !== '-'
+      ? row.initialProjectNo
+      : PROJECT_ROWS.find((initial) => initial.projectType === '初盘' && initial.relationGroup === row.relationGroup)?.projectNo)
+    .filter(Boolean));
+  const initialProjectOptions = PROJECT_ROWS.filter((row) => row.projectType === '初盘'
+    && row.status === '盘点关闭' && !linkedInitialProjects.has(row.projectNo));
 
   return (
     <Card size="small" title={<CardTitle>基本信息</CardTitle>}>
@@ -562,8 +570,8 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
               <Select
                 value={project.initialProjectNo === '-' ? undefined : project.initialProjectNo}
                 className="w-full"
-                placeholder="请选择未关闭且未被同类型关联的初盘项目"
-                options={PROJECT_ROWS.filter((row) => row.projectType === '初盘' && row.status !== '盘点关闭').map((row) => ({ label: `${row.projectNo} ${row.projectName}`, value: row.projectNo }))}
+                 placeholder="请选择已关闭且未被同类型关联的初盘项目"
+                 options={initialProjectOptions.map((row) => ({ label: `${row.projectNo} ${row.projectName}`, value: row.projectNo }))}
                 onChange={(value) => setField('initialProjectNo', value)}
               />
             </div>
@@ -896,6 +904,10 @@ function CreateProjectView({ initialProject, onBack, onGenerated, creator }) {
       messageApi.warning('当前操作人无权创建该项目类型');
       return;
     }
+    if (project.projectType !== '初盘' && (!project.initialProjectNo || project.initialProjectNo === '-')) {
+      messageApi.warning('请选择已关闭的初盘项目');
+      return;
+    }
     if (!project.projectName || !project.startDate || !project.endDate) {
       messageApi.warning('请完整填写项目信息');
       return;
@@ -906,6 +918,10 @@ function CreateProjectView({ initialProject, onBack, onGenerated, creator }) {
   const handleSnapshot = () => {
     if (!initialProject && !allowedProjectTypes(creator).includes(project.projectType)) {
       messageApi.warning('当前操作人无权创建该项目类型');
+      return;
+    }
+    if (project.projectType !== '初盘' && (!project.initialProjectNo || project.initialProjectNo === '-')) {
+      messageApi.warning('请选择已关闭的初盘项目');
       return;
     }
     if (!scopeRows.length) {
