@@ -161,7 +161,11 @@ export default function ScrapPrototypeEditor({
   const updateAuditQuote = (id, field, value) => {
     setForm((current) => ({
       ...current,
-      internalAuditQuotes: (current.internalAuditQuotes || []).map((row) => (
+      internalAuditQuotes: (
+        current.internalAuditQuotes?.length
+          ? current.internalAuditQuotes
+          : [{ id: 'audit-1', supplier: '', amount: '', attachments: [] }]
+      ).map((row) => (
         row.id === id ? { ...row, [field]: value } : row
       )),
     }));
@@ -183,7 +187,9 @@ export default function ScrapPrototypeEditor({
 
   const removeAuditQuote = (id) => {
     setForm((current) => {
-      const rows = current.internalAuditQuotes || [];
+      const rows = current.internalAuditQuotes?.length
+        ? current.internalAuditQuotes
+        : [{ id: 'audit-1', supplier: '', amount: '', attachments: [] }];
       if (rows.length <= 1) {
         message.warning('内审报价至少保留1行');
         return current;
