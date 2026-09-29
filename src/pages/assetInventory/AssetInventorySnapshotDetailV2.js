@@ -13,6 +13,8 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
+import { serializeInventoryAssetExport } from './inventoryAssetExport';
+import { replayCloseBlockReason } from './inventoryCloseRules';
 import { CheckCircle2, Download, PlayCircle, ScanLine, Trash2, Upload, XCircle } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
@@ -158,9 +160,8 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
   )), [rows, filters]);
 
   const exportFilteredRows = () => {
-    const columns = makeAssetColumns({ includeNo: showMachineRoomFeatures }).filter((column) => column.dataIndex);
-    const cell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
-    const csv = [columns.map((column) => cell(column.title)).join(','), ...filteredRows.map((row) => columns.map((column) => cell(row[column.dataIndex])).join(','))].join('\r\n');
+    const { csv, missingFields } = serializeInventoryAssetExport(filteredRows);
+    if (missingFields.length) messageApi.warning(`演示数据缺少${missingFields.join('、')}，对应单元格为空`);
     const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = url;
@@ -384,8 +385,10 @@ export default function AssetInventorySnapshotDetailV2({
   };
   const canManuallyClose = projectStatus === '盘点中'
     && !isSystemRoomInitial
-    && (project?.projectType !== '复盘' || project?.approvalStatus === '已审核');
+    && !replayCloseBlockReason(project);
   const handleCloseProject = () => {
+    const replayBlockReason = replayCloseBlockReason(project);
+    if (replayBlockReason) { messageApi.warning(replayBlockReason); return; }
     const closeBlockReason = getCloseBlockReason();
     if (closeBlockReason) { messageApi.warning(closeBlockReason); return; }
     Modal.confirm({

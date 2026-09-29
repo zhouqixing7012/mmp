@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Card, InputNumber, Select, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Button, Card, DatePicker, InputNumber, Select, Space, Table, Typography, message as antdMessage } from 'antd';
+import dayjs from 'dayjs';
 import { Eye, Search, Trash2 } from 'lucide-react';
 import {
   mockBuildings,
@@ -91,7 +92,7 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
   const options = useMemo(() => getScheme3InventoryDemoOptions(allowedRanges), [allowedRanges]);
   const [filters, setFilters] = useState({
     organization: '', department: '', assetCategory: '', assetStatus: '', warehouse: '',
-    city: '', building: '', floor: '', owner: '', ownerLevel: '', ratio: 100,
+    city: '', building: '', floor: '', owner: '', ownerLevel: '', enableFrom: '', enableTo: '', ratio: 100,
   });
   const [rows, setRows] = useState(() => SCOPE_ROWS.map((row) => ({ ...row })));
   const [selectedKeys, setSelectedKeys] = useState([]);
@@ -127,8 +128,8 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
       floor: filters.floor || '全部',
       owner: filters.owner || '全部',
       ownerLevel: filters.ownerLevel || '全部',
-      enableFrom: '2020-01-01',
-      enableTo: '2026-06-30',
+      enableFrom: filters.enableFrom,
+      enableTo: filters.enableTo,
     }]);
     messageApi.success(projectType === '复盘' ? `已生成复盘范围，本次复盘比例 ${filters.ratio}%` : '已根据当前筛选规则生成盘点范围分录');
   };
@@ -152,6 +153,18 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
             />
           </div>
         ))}
+        <div className="flex items-center gap-2 min-w-0 col-span-2">
+          <span className="w-24 shrink-0 text-right text-sm text-gray-600">启用日期:</span>
+          <DatePicker.RangePicker
+            className="flex-1"
+            value={filters.enableFrom && filters.enableTo ? [dayjs(filters.enableFrom), dayjs(filters.enableTo)] : null}
+            onChange={(dates) => setFilters((current) => ({
+              ...current,
+              enableFrom: dates?.[0]?.format('YYYY-MM-DD') || '',
+              enableTo: dates?.[1]?.format('YYYY-MM-DD') || '',
+            }))}
+          />
+        </div>
         {projectType === '复盘' && (
           <div className="flex items-center gap-2 min-w-0">
             <span className="w-24 shrink-0 text-right text-sm text-gray-600">比例:</span>

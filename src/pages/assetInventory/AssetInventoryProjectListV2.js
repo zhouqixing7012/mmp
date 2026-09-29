@@ -9,6 +9,7 @@ import StatusTag from '../../components/StatusTag';
 import { PROJECT_LIST_ROWS } from './projectListMockData';
 import SectionCardTitle from './SectionCardTitle';
 import { INVENTORY_CREATORS, allowedProjectTypes } from './inventoryCreatorPermissions';
+import { replayCloseBlockReason } from './inventoryCloseRules';
 
 const EMPTY_FILTERS = {
   projectNo: '', projectName: '', status: '', owner: '', startFrom: '', startTo: '', type: '', createdFrom: '', createdTo: '',
@@ -133,7 +134,8 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
       messageApi.info('机房初盘进度达到100%后由系统自动关闭');
       return;
     }
-    if (row.projectType === '复盘' && row.approvalStatus !== '已审核') { messageApi.warning('复盘审批通过后才能关闭项目'); return; }
+    const replayBlockReason = replayCloseBlockReason(row);
+    if (replayBlockReason) { messageApi.warning(replayBlockReason); return; }
     const closeBlockReason = getProjectCloseBlockReason(row);
     if (closeBlockReason) { messageApi.warning(closeBlockReason); return; }
     Modal.confirm({

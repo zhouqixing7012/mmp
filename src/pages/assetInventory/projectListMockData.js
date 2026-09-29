@@ -20,6 +20,8 @@ export const PROJECT_LIST_ROWS = [
     createdAt: '2026-07-01',
     generationSource: '系统生成',
     scopeRanges: ['机房'],
+    inventoryType: '年度',
+    period: '2026年',
     progress: 100,
   },
   {
