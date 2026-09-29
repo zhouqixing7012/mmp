@@ -18,6 +18,7 @@ import {
 import {
   getDisposalCandidates,
   requiresPhysicalDisposal,
+  validateDisposalAssets,
   getScrapPrototypeRecords,
   saveScrapPrototypeRecords,
   validateAccountingAssets,
@@ -628,6 +629,15 @@ export default function ScrapPrototypeModule({
       }
     }
     if (result === '通过' && type === 'disposal') {
+      const disposalChecked = validateDisposalAssets(
+        record.formSnapshot || record,
+        recordAssets,
+        { recordId: record.id },
+      );
+      if (!disposalChecked.valid) {
+        message.error(disposalChecked.errors[0].message);
+        return;
+      }
       const error = machineDisposalNodeError(record);
       if (error) {
         message.error(error);
