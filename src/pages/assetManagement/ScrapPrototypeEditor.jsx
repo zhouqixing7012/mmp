@@ -41,6 +41,23 @@ const transferCompanyOptions = Array.from(
   }, new Map()).values(),
 );
 
+const employeeLookupRecords = Array.from(
+  getAssetMaintenanceRows().reduce((employees, row) => {
+    const code = String(row.ownerId || '').trim();
+    const name = String(row.ownerName || '').trim();
+    if (code && name && !employees.has(code)) {
+      employees.set(code, {
+        id: `employee-${code}`,
+        code,
+        name,
+        company: row.companyCode && row.company ? `${row.companyCode}.${row.company}` : row.company || '',
+        department: row.department || '',
+      });
+    }
+    return employees;
+  }, new Map()).values(),
+);
+
 function options(values) {
   return values.map((value) => ({ label: value, value }));
 }
@@ -123,6 +140,7 @@ export default function ScrapPrototypeEditor({
   const [form, setForm] = useState(initialForm);
   const [assets, setAssets] = useState(initialAssets);
   const [companyPickerOpen, setCompanyPickerOpen] = useState(false);
+  const [employeePickerField, setEmployeePickerField] = useState('');
   const [approvalOpinion, setApprovalOpinion] = useState('同意');
   const [accountingPreview, setAccountingPreview] = useState(false);
   const [disposalPreview, setDisposalPreview] = useState(false);
@@ -138,6 +156,57 @@ export default function ScrapPrototypeEditor({
       item.id === id ? { ...item, [field]: value } : item
     )));
   };
+
+
+  const updateAuditQuote = (id, field, value) => {
+    setForm((current) => ({
+      ...current,
+      internalAuditQuotes: (current.internalAuditQuotes || []).map((row) => (
+        row.id === id ? { ...row, [field]: value } : row
+      )),
+    }));
+  };
+
+  const addAuditQuote = () => {
+    setForm((current) => {
+      const rows = current.internalAuditQuotes || [];
+      const nextNo = rows.reduce((max, row) => {
+        const value = Number(String(row.id || '').replace(/\D/g, ''));
+        return Number.isFinite(value) ? Math.max(max, value) : max;
+      }, 0) + 1;
+      return {
+        ...current,
+        internalAuditQuotes: [...rows, { id: `audit-${nextNo}`, supplier: '', amount: '', attachments: [] }],
+      };
+    });
+  };
+
+  const removeAuditQuote = (id) => {
+    setForm((current) => {
+      const rows = current.internalAuditQuotes || [];
+      if (rows.length <= 1) {
+        message.warning('内审报价至少保留1行');
+        return current;
+      }
+      return { ...current, internalAuditQuotes: rows.filter((row) => row.id !== id) };
+    });
+  };
+
+  const managedUpload = (field, label) => (
+    <Upload
+      fileList={form[field] || []}
+      onChange={({ fileList }) => updateForm(field, fileList)}
+      beforeUpload={(file) => {
+        if (file.size > 20 * 1024 * 1024) {
+          message.error('单文件不能超过20MB');
+          return Upload.LIST_IGNORE;
+        }
+        return false;
+      }}
+    >
+      <Button icon={<UploadOutlined />}>{label}</Button>
+    </Upload>
+  );
 
   const accountingPlates = Array.from(new Set(assets.map((item) => item.plate).filter(Boolean)));
   const accountingNamingPlate = assets.length > 0
@@ -155,6 +224,27 @@ export default function ScrapPrototypeEditor({
   const showValue = (value) => (
     <span>{value === undefined || value === null || value === '' ? '-' : String(value)}</span>
   );
+
+
+  const allAttachments = useMemo(() => {
+    const groups = [
+      form.attachments || [],
+      form.procurementQuoteAttachments || [],
+      ...(form.internalAuditQuotes || []).map((row) => row.attachments || []),
+      form.finalQuoteAttachments || [],
+      form.stampedQuoteAttachments || [],
+      form.handoverSignatureAttachments || [],
+      form.paymentReceiptAttachments || [],
+      form.dataCleaningReportAttachments || [],
+    ];
+    const seen = new Set();
+    return groups.flat().filter((file) => {
+      const key = file?.uid || file?.name;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [form]);
 
   const disposalSelectedCompanies = type === 'disposal'
     ? (Array.isArray(form.companies) && form.companies.length > 0
@@ -744,11 +834,213 @@ export default function ScrapPrototypeEditor({
     })),
   ];
 
+  const machineQuantity = assets.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const effectiveQuoteReceiver = type === 'scrap' && form.assetScope === '机房资产' && machineQuantity >= 500
+    ? '内审'
+    : form.quoteReceiver;
+  const auditQuoteRows = [...(form.internalAuditQuotes || [{ id: 'audit-1', supplier: '', amount: '', attachments: [] }])]
+    .sort((left, right) => Number(right.amount || 0) - Number(left.amount || 0));
+  const addSignEligible = type === 'scrap'
+    && form.assetScope === '机房资产'
+    && (
+      String(form.currentNode || '').startsWith('专家评估（')
+      || ['责任人7级及以上直属领导', 'NO部7级及以上领导', '采购5级及以上领导'].includes(form.currentNode)
+    );
+  const addSignPending = type === 'scrap' && String(form.currentNode || '').startsWith('加签：');
+  const machineDisposalHandling = type === 'disposal'
+    && form.assetScope === '机房资产'
+    && ['采购专员协办', 'ES专员协办', '数据清洗'].includes(form.currentNode);
+
+  const machineNodePanel = approvalPage && type === 'scrap' && form.assetScope === '机房资产' ? (
+    <Card size="small" title={sectionTitle('办理信息')} className="shadow-sm">
+      {addSignEligible && (
+        <Descriptions bordered size="small" column={2}>
+          <Descriptions.Item label="加签人" span={2}>
+            <LookupInput
+              value={form.addSignPerson || ''}
+              placeholder="请选择加签人"
+              onOpen={() => setEmployeePickerField('addSignPerson')}
+            />
+          </Descriptions.Item>
+        </Descriptions>
+      )}
+
+      {form.currentNode === '采购专员选择报价接收人' && (
+        <Descriptions bordered size="small" column={2}>
+          <Descriptions.Item label="本单报废数量">{machineQuantity}</Descriptions.Item>
+          <Descriptions.Item label="报价接收人">
+            <Select
+              value={effectiveQuoteReceiver || undefined}
+              disabled={machineQuantity >= 500}
+              options={options(['采购专员', '内审'])}
+              className="w-full"
+              onChange={(value) => updateForm('quoteReceiver', value)}
+            />
+          </Descriptions.Item>
+          {machineQuantity >= 500 && (
+            <Descriptions.Item label="规则说明" span={2}>
+              本单达到500台及以上，报价接收人固定为内审。
+            </Descriptions.Item>
+          )}
+        </Descriptions>
+      )}
+
+      {form.currentNode === '采购专员报价' && (
+        <Descriptions bordered size="small" column={2}>
+          <Descriptions.Item label="回收供应商">
+            <Input value={form.procurementQuoteSupplier || ''} onChange={(event) => updateForm('procurementQuoteSupplier', event.target.value)} />
+          </Descriptions.Item>
+          <Descriptions.Item label="报价金额">
+            <Input type="number" min="0" value={form.procurementQuoteAmount || ''} onChange={(event) => updateForm('procurementQuoteAmount', event.target.value)} />
+          </Descriptions.Item>
+          <Descriptions.Item label="报价附件" span={2}>
+            {managedUpload('procurementQuoteAttachments', '上传报价附件')}
+          </Descriptions.Item>
+        </Descriptions>
+      )}
+
+      {form.currentNode === '内审报价' && (
+        <div className="space-y-3">
+          {auditQuoteRows.map((row, index) => (
+            <Card key={row.id} size="small" title={`报价${index + 1}`} extra={
+              <Button danger disabled={auditQuoteRows.length <= 1} onClick={() => removeAuditQuote(row.id)}>删除</Button>
+            }>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <Input placeholder="回收供应商" value={row.supplier || ''} onChange={(event) => updateAuditQuote(row.id, 'supplier', event.target.value)} />
+                <Input type="number" min="0" placeholder="报价金额" value={row.amount || ''} onChange={(event) => updateAuditQuote(row.id, 'amount', event.target.value)} />
+                <Upload
+                  fileList={row.attachments || []}
+                  onChange={({ fileList }) => updateAuditQuote(row.id, 'attachments', fileList)}
+                  beforeUpload={(file) => {
+                    if (file.size > 20 * 1024 * 1024) {
+                      message.error('单文件不能超过20MB');
+                      return Upload.LIST_IGNORE;
+                    }
+                    return false;
+                  }}
+                >
+                  <Button icon={<UploadOutlined />}>上传报价附件</Button>
+                </Upload>
+              </div>
+            </Card>
+          ))}
+          <Button onClick={addAuditQuote}>新增报价</Button>
+        </div>
+      )}
+
+      {form.currentNode === '采购专员填写回收商报价' && (
+        <Descriptions bordered size="small" column={2}>
+          <Descriptions.Item label="最终回收供应商">
+            {effectiveQuoteReceiver === '内审' ? (
+              <Select
+                value={form.finalQuoteSupplier || undefined}
+                options={auditQuoteRows.filter((row) => row.supplier).map((row) => ({ label: row.supplier, value: row.supplier }))}
+                className="w-full"
+                onChange={(value) => {
+                  const selected = auditQuoteRows.find((row) => row.supplier === value);
+                  setForm((current) => ({
+                    ...current,
+                    finalQuoteSupplier: value,
+                    finalQuoteAmount: selected?.amount || '',
+                    finalQuoteAttachments: selected?.attachments || [],
+                  }));
+                }}
+              />
+            ) : (
+              <Input value={form.finalQuoteSupplier || ''} onChange={(event) => updateForm('finalQuoteSupplier', event.target.value)} />
+            )}
+          </Descriptions.Item>
+          <Descriptions.Item label="最终报价金额">
+            <Input
+              type="number"
+              min="0"
+              disabled={effectiveQuoteReceiver === '内审'}
+              value={form.finalQuoteAmount || ''}
+              onChange={(event) => updateForm('finalQuoteAmount', event.target.value)}
+            />
+          </Descriptions.Item>
+          <Descriptions.Item label="报价附件" span={2}>
+            {effectiveQuoteReceiver === '内审'
+              ? showValue((form.finalQuoteAttachments || []).map((item) => item.name).filter(Boolean).join('、'))
+              : managedUpload('finalQuoteAttachments', '上传最终报价附件')}
+          </Descriptions.Item>
+        </Descriptions>
+      )}
+
+      {form.currentNode === '采购专员交接资料' && (
+        <Descriptions bordered size="small" column={2}>
+          <Descriptions.Item label="盖章报价单">
+            {managedUpload('stampedQuoteAttachments', '上传盖章报价单')}
+          </Descriptions.Item>
+          <Descriptions.Item label="实物收货人">
+            <LookupInput
+              value={form.physicalReceiver || ''}
+              placeholder="请选择实物收货人"
+              onOpen={() => setEmployeePickerField('physicalReceiver')}
+            />
+          </Descriptions.Item>
+        </Descriptions>
+      )}
+
+      {form.currentNode === '采购专员线下交接' && (
+        <Descriptions bordered size="small" column={2}>
+          <Descriptions.Item label="交接签字表">
+            {managedUpload('handoverSignatureAttachments', '上传交接签字表')}
+          </Descriptions.Item>
+          <Descriptions.Item label="回款凭证">
+            {managedUpload('paymentReceiptAttachments', '上传回款凭证')}
+          </Descriptions.Item>
+        </Descriptions>
+      )}
+
+      {form.currentNode === 'FS审批部门' && (
+        <Typography.Text type="secondary">
+          FS审核采购专员提交的报价与交接资料；如需补充，使用【打回上一步】退回采购专员交接资料节点。
+        </Typography.Text>
+      )}
+
+      {addSignPending && (
+        <Typography.Text type="secondary">
+          当前为加签办理，确认完成后返回原审批节点。
+        </Typography.Text>
+      )}
+    </Card>
+  ) : approvalPage && machineDisposalHandling ? (
+    <Card size="small" title={sectionTitle('办理信息')} className="shadow-sm">
+      {form.currentNode === '采购专员协办' && (
+        <Descriptions bordered size="small" column={1}>
+          <Descriptions.Item label="到款凭证">{managedUpload('paymentReceiptAttachments', '上传到款凭证')}</Descriptions.Item>
+        </Descriptions>
+      )}
+      {form.currentNode === 'ES专员协办' && (
+        <Descriptions bordered size="small" column={1}>
+          <Descriptions.Item label="交接签字表">{managedUpload('handoverSignatureAttachments', '上传交接签字表')}</Descriptions.Item>
+        </Descriptions>
+      )}
+      {form.currentNode === '数据清洗' && (
+        <Descriptions bordered size="small" column={1}>
+          <Descriptions.Item label="数据清洗报告">{managedUpload('dataCleaningReportAttachments', '上传数据清洗报告')}</Descriptions.Item>
+        </Descriptions>
+      )}
+    </Card>
+  ) : null;
+
   const approvalActionButtons = (onDecision) => (
     <div data-testid="approval-action-buttons" className="mt-3 flex flex-wrap justify-center gap-3">
       <Button onClick={onBack}>返回</Button>
-      <Button danger onClick={() => onDecision('驳回')}>驳回</Button>
-      <Button type="primary" onClick={() => onDecision('通过')}>同意</Button>
+      {addSignPending ? (
+        <Button type="primary" onClick={() => onDecision('通过')}>确认</Button>
+      ) : machineDisposalHandling ? (
+        <Button type="primary" onClick={() => onDecision('通过')}>完成办理</Button>
+      ) : (
+        <>
+          <Button danger onClick={() => onDecision('驳回')}>
+            {type === 'scrap' && form.assetScope === '机房资产' && form.currentNode === 'FS审批部门' ? '打回上一步' : '驳回'}
+          </Button>
+          {addSignEligible && <Button onClick={() => onDecision('加签')}>加签</Button>}
+          <Button type="primary" onClick={() => onDecision('通过')}>同意</Button>
+        </>
+      )}
     </div>
   );
 
@@ -881,7 +1173,7 @@ export default function ScrapPrototypeEditor({
               </>
             )}
             {type !== 'scrap' && <DetailItem label="备注" span={3}>{showValue(form.remark)}</DetailItem>}
-            <DetailItem label="附件" span={3}>{showValue(form.attachments?.map((item) => item.name).filter(Boolean).join('、'))}</DetailItem>
+            <DetailItem label="附件" span={3}>{showValue(allAttachments.map((item) => item.name).filter(Boolean).join('、'))}</DetailItem>
           </DetailGrid>
         ) : (
         <Descriptions bordered size="small" column={3}>
@@ -1128,6 +1420,8 @@ export default function ScrapPrototypeEditor({
         />}
       </Card>
 
+      {machineNodePanel}
+
       {approvalView && type === 'crossCompany' && (
         <BorrowingApprovalHistory
           records={approvalRecords}
@@ -1196,6 +1490,30 @@ export default function ScrapPrototypeEditor({
           </>
         )}
       </div>
+
+      {approvalPage && employeePickerField && (
+        <SelectModal
+          open
+          title={employeePickerField === 'physicalReceiver' ? '选择实物收货人' : '选择加签人'}
+          dataSource={employeeLookupRecords}
+          searchFields={[
+            { label: '员工工号', name: 'code', dataIndex: 'code' },
+            { label: '姓名', name: 'name', dataIndex: 'name' },
+            { label: '部门', name: 'department', dataIndex: 'department' },
+          ]}
+          columns={[
+            { title: '员工工号', dataIndex: 'code' },
+            { title: '姓名', dataIndex: 'name' },
+            { title: '公司', dataIndex: 'company' },
+            { title: '部门', dataIndex: 'department' },
+          ]}
+          onCancel={() => setEmployeePickerField('')}
+          onConfirm={(employee) => {
+            updateForm(employeePickerField, `${employee.code}-${employee.name}`);
+            setEmployeePickerField('');
+          }}
+        />
+      )}
 
       {['crossCompany', 'disposal', 'accounting'].includes(type) && !readOnly && !previewView && (
         <SelectModal
