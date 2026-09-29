@@ -631,8 +631,8 @@ test('机房处置协办节点展示对应凭证并只提供完成办理', () =>
     onSave={jest.fn()}
     onApprove={jest.fn()}
   />);
-  expect(screen.getByText('到款凭证')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '上传到款凭证' })).toBeInTheDocument();
+  expect(screen.getByText(/至少在单头附件新增 1 份到款凭证/)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '上传附件' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '完成办理' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '驳回' })).not.toBeInTheDocument();
 });
