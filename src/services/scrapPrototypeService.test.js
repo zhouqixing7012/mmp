@@ -7,6 +7,7 @@ import {
   resetScrapPrototypeMemory,
   saveScrapPrototypeRecords,
   validateAccountingAssets,
+  validateDisposalAssets,
   validateScrapAssets,
 } from './scrapPrototypeService';
 
@@ -235,5 +236,45 @@ test('disposal candidates require an actually completed accounting source', () =
     documentStatus: '审批中',
   })));
   expect(getDisposalCandidates()).toEqual([]);
+});
+
+test('disposal validation rejects invalid accounting source and cross-order occupation', () => {
+  resetScrapPrototypeMemory();
+  const candidate = getDisposalCandidates()[0];
+  expect(candidate).toBeDefined();
+
+  expect(validateDisposalAssets(
+    { assetScope: candidate.scope },
+    [candidate],
+    { recordId: 'new-disposal' },
+  )).toEqual({ valid: true, errors: [] });
+
+  saveScrapPrototypeRecords('disposal', [{
+    id: 'other-disposal',
+    applicationNo: 'CZ-OCCUPIED',
+    documentStatus: '草稿',
+    assetsSnapshot: [candidate],
+  }]);
+  expect(validateDisposalAssets(
+    { assetScope: candidate.scope },
+    [candidate],
+    { recordId: 'new-disposal' },
+  ).errors).toEqual(expect.arrayContaining([
+    expect.objectContaining({ code: 'DISPOSAL_ASSET_OCCUPIED' }),
+  ]));
+
+  saveScrapPrototypeRecords('disposal', []);
+  saveScrapPrototypeRecords('accounting', getScrapPrototypeRecords('accounting').map((record) => (
+    record.applicationNo === candidate.sourceAccountingNo
+      ? { ...record, documentStatus: '审批中' }
+      : record
+  )));
+  expect(validateDisposalAssets(
+    { assetScope: candidate.scope },
+    [candidate],
+    { recordId: 'new-disposal' },
+  ).errors).toEqual(expect.arrayContaining([
+    expect.objectContaining({ code: 'INVALID_ACCOUNTING_SOURCE' }),
+  ]));
 });
 
