@@ -212,14 +212,13 @@ function machineScrapNodeError(record, assets = []) {
 function machineDisposalNodeError(record) {
   if (record.assetScope !== '机房资产') return '';
   const form = record.formSnapshot || record;
-  if (record.currentNode === '采购专员协办' && !(form.paymentReceiptAttachments || []).length) {
-    return '请上传到款凭证';
-  }
-  if (record.currentNode === 'ES专员协办' && !(form.handoverSignatureAttachments || []).length) {
-    return '请上传交接签字表';
-  }
-  if (record.currentNode === '数据清洗' && !(form.dataCleaningReportAttachments || []).length) {
-    return '请上传数据清洗报告';
+  const hasCurrentNodeAttachment = (form.attachments || []).some(
+    (file) => file.businessNode === record.currentNode,
+  );
+  if (!hasCurrentNodeAttachment) {
+    if (record.currentNode === '采购专员协办') return '请在单头附件中上传本节点到款凭证';
+    if (record.currentNode === 'ES专员协办') return '请在单头附件中上传本节点交接签字表';
+    if (record.currentNode === '数据清洗') return '请在单头附件中上传本节点数据清洗报告';
   }
   return '';
 }
