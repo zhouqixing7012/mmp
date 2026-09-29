@@ -25,7 +25,7 @@ import { getScrapPrototypeApprovalRecords } from './scrapPrototypeApproval';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 import { money } from './scrapPrototypeData';
-import { getDisposalCandidates, validateAccountingAssets, validateScrapAssets } from '../../services/scrapPrototypeService';
+import { getDisposalCandidates, validateAccountingAssets, validateDisposalAssets, validateScrapAssets } from '../../services/scrapPrototypeService';
 
 const transferCompanyOptions = Array.from(
   [...getAssetMaintenanceRows(), ...warehouseCatalog.map((item) => {
@@ -584,6 +584,14 @@ export default function ScrapPrototypeEditor({
       }
     }
 
+    if (type === 'disposal') {
+      const checked = validateDisposalAssets(form, assets, { recordId: form.id });
+      if (!checked.valid) {
+        message.error(checked.errors[0].message);
+        return false;
+      }
+    }
+
     if (type === 'disposal' && form.assetScope === '办公设备') {
       if (
         disposalSelectedCompanies.length === 0
@@ -654,6 +662,13 @@ export default function ScrapPrototypeEditor({
         assets,
         { recordId: form.id, draft: true, allowIncompleteDetails: true },
       );
+      if (!checked.valid) {
+        message.error(checked.errors[0].message);
+        return;
+      }
+    }
+    if (!submit && type === 'disposal') {
+      const checked = validateDisposalAssets(form, assets, { recordId: form.id, draft: true });
       if (!checked.valid) {
         message.error(checked.errors[0].message);
         return;
