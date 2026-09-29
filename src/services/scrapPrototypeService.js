@@ -56,11 +56,11 @@ function relatedAssetTag(asset) {
 }
 
 function scrapOccupation(tagNo, exceptRecordId) {
-  return ['crossCompany', 'scrap'].flatMap((type) => getScrapPrototypeRecords(type))
-    .find((record) => (
+  return ['crossCompany', 'scrap'].flatMap((type) => getScrapPrototypeRecords(type).map((record) => ({ type, record })))
+    .find(({ type, record }) => (
       !(type === 'scrap' && record.id === exceptRecordId)
       && (record.assetsSnapshot || []).some((asset) => asset?.tagNo === tagNo)
-    )) || null;
+    ))?.record || null;
 }
 
 export function prepareScrapAsset(asset) {

@@ -3,6 +3,7 @@ import {
   getAccountingLostCandidates,
   getDisposalCandidates,
   getScrapPrototypeRecords,
+  getScrapCandidates,
   prepareScrapAsset,
   resetScrapPrototypeMemory,
   saveScrapPrototypeRecords,
@@ -19,6 +20,14 @@ beforeEach(() => {
   window.localStorage.clear();
   resetScrapPrototypeMemory();
   saveScrapPrototypeRecords('crossCompany', []);
+});
+
+test('当前报废单不占用自身资产，跨公司转移即使同号也不能豁免', () => {
+  const tagNo = 'FA-2026-000121';
+  saveScrapPrototypeRecords('scrap', [{ id: 'current', assetsSnapshot: [{ tagNo }] }]);
+  expect(getScrapCandidates({ recordId: 'current', assetScope: '办公设备' }).some((asset) => asset.tagNo === tagNo)).toBe(true);
+  saveScrapPrototypeRecords('crossCompany', [{ id: 'current', assetsSnapshot: [{ tagNo }] }]);
+  expect(getScrapCandidates({ recordId: 'current', assetScope: '办公设备' }).some((asset) => asset.tagNo === tagNo)).toBe(false);
 });
 
 test('accounting candidates fail closed without explicit actor authorization', () => {
@@ -277,4 +286,3 @@ test('disposal validation rejects invalid accounting source and cross-order occu
     expect.objectContaining({ code: 'INVALID_ACCOUNTING_SOURCE' }),
   ]));
 });
-
