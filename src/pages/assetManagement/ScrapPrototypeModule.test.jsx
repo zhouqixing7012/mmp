@@ -10,7 +10,7 @@ import {
   saveScrapPrototypeRecords,
 } from '../../services/scrapPrototypeService';
 import { ACCOUNTING_DEMO_ACCESS, SCRAP_ASSET_POOL } from './scrapPrototypeData';
-import { getAccountingApprovalSteps, getDisposalApprovalNodes } from './scrapPrototypeWorkflow';
+import { getAccountingApprovalSteps, getDisposalApprovalNodes, getScrapApprovalNodes } from './scrapPrototypeWorkflow';
 
 const accountingAccess = {
   actor: { id: 'verified-accountant' },
@@ -481,3 +481,49 @@ test('模拟刷新后恢复初始Mock数据并忽略旧版本地缓存', () => {
     .toEqual(initial.map((record) => record.applicationNo));
   expect(refreshed.some((record) => record.applicationNo === 'CT-TEST-ONLY')).toBe(false);
 });
+
+test('机房报废流程按资产类型、报价接收人和地区生成真实节点', () => {
+  const server = [{ majorCategory: 'SERVER', scope: '机房资产', quantity: 20 }];
+  expect(getScrapApprovalNodes('机房资产', server, {
+    assetCategory: 'SERVER',
+    assetLocation: '北京',
+    quoteReceiver: '采购专员',
+  })).toEqual([
+    '专家评估（杨威220894）',
+    '专家评估（王帅200636）',
+    '责任人7级及以上直属领导',
+    'NO部7级及以上领导',
+    '采购专员选择报价接收人',
+    '采购专员报价',
+    '采购专员填写回收商报价',
+    '采购5级及以上领导',
+    '采购专员交接资料',
+    'FS审批部门',
+  ]);
+
+  expect(getScrapApprovalNodes('机房资产', [{ ...server[0], quantity: 500 }], {
+    assetCategory: 'SERVER',
+    assetLocation: '非北京',
+    quoteReceiver: '采购专员',
+  })).toEqual(expect.arrayContaining([
+    '内审报价',
+    '采购专员线下交接',
+  ]));
+  expect(getScrapApprovalNodes('机房资产', [{ majorCategory: 'NET EQUIPMENT', scope: '机房资产', quantity: 1 }], {
+    assetCategory: 'NET EQUIPMENT',
+    assetLocation: '北京',
+    quoteReceiver: '内审',
+  })[0]).toBe('专家评估（林家展201938）');
+});
+
+test('机房处置地区和数据清洗只决定协办节点，不决定是否生成处置流程', () => {
+  expect(getDisposalApprovalNodes({ assetScope: '机房资产', region: '北京', needsCleaning: '否' }))
+    .toEqual(['采购专员协办', 'ES专员协办']);
+  expect(getDisposalApprovalNodes({ assetScope: '机房资产', region: '北京', needsCleaning: '是' }))
+    .toEqual(['采购专员协办', 'ES专员协办', '数据清洗']);
+  expect(getDisposalApprovalNodes({ assetScope: '机房资产', region: '非北京', needsCleaning: '否' }))
+    .toEqual([]);
+  expect(getDisposalApprovalNodes({ assetScope: '机房资产', region: '非北京', needsCleaning: '是' }))
+    .toEqual(['数据清洗']);
+});
+
