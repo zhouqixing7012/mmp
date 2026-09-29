@@ -73,6 +73,9 @@ export function prepareScrapAsset(asset) {
   const ratio = requestedQuantity / cardQuantity;
   const originalValue = money(cardOriginalValue * ratio);
   const netValue = money(cardNetValue * ratio);
+  const remainingQuantity = cardQuantity - requestedQuantity;
+  const remainingOriginalValue = money(cardOriginalValue - originalValue);
+  const remainingNetValue = money(cardNetValue - netValue);
 
   return {
     ...asset,
@@ -84,6 +87,9 @@ export function prepareScrapAsset(asset) {
     originalValue,
     netValue,
     accumulatedDepreciation: money(originalValue - netValue),
+    remainingQuantity,
+    remainingOriginalValue,
+    remainingNetValue,
     detailScrapMethod: requestedQuantity < cardQuantity ? '部分报废' : '全部报废',
     dataCleaning: asset?.scope === '机房资产' && asset?.majorCategory === 'SERVER'
       ? asset.dataCleaning || '否'
@@ -132,6 +138,7 @@ export function validateScrapAssets(form, assets, options = {}) {
   }
 
   const tags = new Set();
+  const allTags = new Set((assets || []).map((asset) => String(asset?.tagNo || '').trim()).filter(Boolean));
   const scopes = new Set();
   const officePaths = new Set();
 
@@ -188,6 +195,13 @@ export function validateScrapAssets(form, assets, options = {}) {
     }
 
     const relation = relatedAssetTag(asset);
+    if (relation && !allTags.has(relation)) {
+      errors.push({
+        code: 'ORPHAN_ACCESSORY',
+        index,
+        message: `${prefix}关联配件缺少对应主资产，不能单独办理报废`,
+      });
+    }
     if (!options.allowIncompleteDetails && !relation && !String(asset.reason || '').trim()) {
       errors.push({ code: 'REASON_REQUIRED', index, message: `${prefix}报废原因未填写完整` });
     }
