@@ -115,6 +115,14 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     }
   };
   const [assetPlanMap, setAssetPlanMap] = useState(() => Object.fromEntries(availableAssets.map((asset) => [asset.key, initialPlanRows.some((plan) => plan.planNo === asset.planNo) ? asset.planNo : ''])));
+  const [planAssets, setPlanAssets] = useState(() => ASSET_ROWS.map((asset) => ({ ...asset })));
+  const assetsForPlan = (plan) => planAssets.filter((asset) => assetPlanMap[asset.key] === plan.planNo);
+  const changePlanAssets = (plan, updater) => setPlanAssets((current) => {
+    const currentRows = current.filter((asset) => assetPlanMap[asset.key] === plan.planNo);
+    const updated = typeof updater === 'function' ? updater(currentRows) : updater;
+    const replacements = new Map(updated.map((asset) => [asset.key, asset]));
+    return current.map((asset) => replacements.get(asset.key) || asset);
+  });
 
   const activePlanNos = new Set(planRows.filter((row) => allowedRanges.includes(row.range)).map((row) => row.planNo));
   const unplannedSnapshotAssets = availableAssets.filter((asset) => !assetPlanMap[asset.key] || !activePlanNos.has(assetPlanMap[asset.key]));
@@ -462,8 +470,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     />}
 
     {customBuilderOpen && <AssetInventoryCustomPlanBuilder initialAssets={customBuilderSource === 'plans' ? unplannedSnapshotAssets : availableAssets} onBack={closeCustomBuilder} onConfirmPlan={handleCustomPlanConfirm} />}
-    {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} rows={planRows} setRows={setPlanRows} canManualCreate={canManualCreate && planProject?.status !== '盘点关闭'} onManualCreate={openManualPlanBuilder} onBack={() => setPlanViewOpen(false)} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}
-    {activePlan && <AssetInventoryPlanAssetListV2 plan={activePlan} project={planProject} onBack={() => setActivePlan(null)} />}
+    {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} rows={planRows} setRows={setPlanRows} assetsForPlan={assetsForPlan} canManualCreate={canManualCreate && planProject?.status !== '盘点关闭'} onManualCreate={openManualPlanBuilder} onBack={() => setPlanViewOpen(false)} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}
+    {activePlan && <AssetInventoryPlanAssetListV2 plan={activePlan} project={planProject} assets={assetsForPlan(activePlan)} onAssetsChange={(updater) => changePlanAssets(activePlan, updater)} onBack={() => setActivePlan(null)} />}
     {imageReviewOpen && <AssetInventoryImageReviewV2 project={planProject} onBack={() => setImageReviewOpen(false)} />}
     {progressOpen && <AssetInventoryProgressV2 project={planProject} onBack={() => setProgressOpen(false)} />}
     <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage creator={creator} /></div>

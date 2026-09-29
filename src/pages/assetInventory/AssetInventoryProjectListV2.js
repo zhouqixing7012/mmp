@@ -38,9 +38,6 @@ function normalizeQuarterText(value) {
     .split('第三季度').join('Q3')
     .split('第四季度').join('Q4');
 }
-function displayGroupName(name) {
-  return normalizeQuarterText(String(name || '').split('链路').join(''));
-}
 function DisabledAction({ children }) {
   return <Typography.Text type="secondary">{children}</Typography.Text>;
 }
@@ -92,24 +89,6 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
     && inDateRange(row.createdAt, appliedFilters.createdFrom, appliedFilters.createdTo)
   )), [rows, appliedFilters]);
 
-  const treeRows = useMemo(() => {
-    const groups = new Map();
-    filteredRows.forEach((row) => {
-      const group = groups.get(row.relationGroup) || [];
-      group.push(row);
-      groups.set(row.relationGroup, group);
-    });
-    return Array.from(groups.entries()).map(([relationGroup, groupRows]) => {
-      const initial = groupRows.find((row) => row.projectType === '初盘') || groupRows[0];
-      const children = groupRows.filter((row) => row.key !== initial.key).map((row) => ({ ...row, relationGroupLabel: '' }));
-      return {
-        ...initial,
-        relationGroupLabel: displayGroupName(relationGroup),
-        children: children.length ? children : undefined,
-      };
-    });
-  }, [filteredRows]);
-
   const updateFilter = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
   const handleDelete = () => {
     if (!selectedKeys.length) { messageApi.warning('请先选择需要删除的盘点项目'); return; }
@@ -153,12 +132,8 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
   };
 
   const columns = [
-    {
-      title: '关联项目', dataIndex: 'relationGroupLabel', width: 180, fixed: 'left',
-      render: (value) => value ? <Typography.Text strong>{value}</Typography.Text> : '-',
-    },
-    { title: '项目编号', dataIndex: 'projectNo', width: 170, fixed: 'left' },
-    { title: '项目名称', dataIndex: 'projectName', width: 180, render: (value, row) => <Button type="link" className="px-0" onClick={() => onOpenProject(row)}>{normalizeQuarterText(value)}</Button> },
+    { title: '项目名称', dataIndex: 'projectName', width: 220, fixed: 'left', render: (value, row) => <Button type="link" className="px-0" onClick={() => onOpenProject(row)}>{normalizeQuarterText(value)}</Button> },
+    { title: '项目编号', dataIndex: 'projectNo', width: 170 },
     { title: '项目类型', dataIndex: 'projectType', width: 90 },
     { title: '项目状态', dataIndex: 'status', width: 120, render: (value) => <StatusTag value={value} /> },
     { title: '盘点开始时间', dataIndex: 'startDate', width: 130 },
@@ -213,8 +188,7 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
         size="small"
         bordered
         columns={columns}
-        dataSource={treeRows}
-        expandable={{ defaultExpandAllRows: true, rowExpandable: (record) => Boolean(record.children?.length), indentSize: 18 }}
+        dataSource={filteredRows}
         rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true }}
         scroll={{ x: 1810 }}
         pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}

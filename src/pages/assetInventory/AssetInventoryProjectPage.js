@@ -162,8 +162,8 @@ function makeAssetColumns({ includeNo = true, includePlan = false, includeCurren
     { title: '资产说明', dataIndex: 'description', width: 180 },
     { title: '数量', dataIndex: 'quantity', width: 70, align: 'right' },
     { title: '原值', dataIndex: 'originalValue', width: 110, align: 'right', render: formatMoney },
-    { title: '净值', dataIndex: 'netValue', width: 100, align: 'right', render: formatMoney },
     { title: 'EBS原值', dataIndex: 'ebsOriginalValue', width: 110, align: 'right', render: formatMoney },
+    { title: '净值', dataIndex: 'netValue', width: 100, align: 'right', render: formatMoney },
     { title: '使用状态', dataIndex: 'useStatus', width: 140, render: (value) => <StatusTag value={value} /> },
     { title: 'NO位置', dataIndex: 'noLocation', width: 120 },
     { title: '盘点说明', dataIndex: 'inventoryNote', width: 160 },
@@ -712,14 +712,14 @@ function ImageUploadRuleEditor() {
               onClick={() => setRows((current) => [...current, {
                 key: `image-${Date.now()}`,
                 range: '员工',
-                ownerLevel: ['全部'],
-                department: ['全部'],
-                category: ['全部'],
-                assetStatus: ['全部'],
-                organization: ['集团'],
-                city: ['北京市'],
-                building: ['全部'],
-                floor: ['全部'],
+                ownerLevel: [],
+                department: [],
+                category: [],
+                assetStatus: [],
+                organization: [],
+                city: [],
+                building: [],
+                floor: [],
                 percent: 100,
               }])}
             >
@@ -909,6 +909,10 @@ function CreateProjectView({ initialProject, onBack, onGenerated, creator }) {
   }));
   const [scopeRows, setScopeRows] = useState(SCOPE_ROWS);
   const [selectedAssets, setSelectedAssets] = useState([]);
+  const [scopeAssetQuery, setScopeAssetQuery] = useState({ assetTag: '', owner: '', ownerLevel: '' });
+  const [scopeAssetFilter, setScopeAssetFilter] = useState({ assetTag: '', owner: '', ownerLevel: '' });
+  const filteredScopeAssets = ASSET_ROWS.filter((asset) =>
+    ['assetTag', 'owner', 'ownerLevel'].every((field) => String(asset[field] || '').includes(scopeAssetFilter[field].trim())));
   const [assetPreviewOpen, setAssetPreviewOpen] = useState(false);
 
   const handleSave = () => {
@@ -970,7 +974,12 @@ function CreateProjectView({ initialProject, onBack, onGenerated, creator }) {
         messageApi={messageApi}
       />
 
-      <Card size="small" title={<CardTitle>盘点资产范围明细</CardTitle>} extra={<Typography.Text type="secondary">共 {ASSET_ROWS.length} 条</Typography.Text>}>
+      <Card size="small" title={<CardTitle>盘点资产范围明细</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredScopeAssets.length} 条</Typography.Text>}>
+        <QueryBar onQuery={() => setScopeAssetFilter({ ...scopeAssetQuery })} onReset={() => { setScopeAssetQuery({ assetTag: '', owner: '', ownerLevel: '' }); setScopeAssetFilter({ assetTag: '', owner: '', ownerLevel: '' }); }}>
+          <QueryItem label="资产标签号"><Input value={scopeAssetQuery.assetTag} allowClear onChange={(event) => setScopeAssetQuery((current) => ({ ...current, assetTag: event.target.value }))} /></QueryItem>
+          <QueryItem label="资产责任人"><Input value={scopeAssetQuery.owner} allowClear onChange={(event) => setScopeAssetQuery((current) => ({ ...current, owner: event.target.value }))} /></QueryItem>
+          <QueryItem label="责任人职级"><Input value={scopeAssetQuery.ownerLevel} allowClear onChange={(event) => setScopeAssetQuery((current) => ({ ...current, ownerLevel: event.target.value }))} /></QueryItem>
+        </QueryBar>
         <div className="mb-3 flex justify-end">
           <Space>
             <Button icon={<Download size={14} />} onClick={() => messageApi.success('已导出当前盘点范围资产清单')}>导出清单</Button>
@@ -992,7 +1001,7 @@ function CreateProjectView({ initialProject, onBack, onGenerated, creator }) {
             <Button icon={<Settings size={14} />}>配置</Button>
           </Space>
         </div>
-        <AssetTable rows={ASSET_ROWS} rowSelection={{ selectedRowKeys: selectedAssets, onChange: setSelectedAssets }} />
+        <AssetTable rows={filteredScopeAssets} rowSelection={{ selectedRowKeys: selectedAssets, onChange: setSelectedAssets }} />
       </Card>
 
       <div className="flex justify-center gap-3 pb-2">
@@ -1453,7 +1462,7 @@ function PlanAssetListView({ project, plan, onBack }) {
   );
 
   const isDraft = plan.status === '暂存';
-  const isStarted = plan.status === '启动';
+  const isStarted = plan.status === '盘点中';
 
   const addScan = () => {
     const value = scanValue.trim();
@@ -1620,7 +1629,7 @@ function PlansView({ project, projectStatus, setProjectStatus, onBack, onOpenPla
       });
       return;
     }
-    setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '启动' } : row));
+    setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '盘点中' } : row));
     setProjectStatus('盘点中');
     setSelectedKeys([]);
     messageApi.success('盘点计划已启动，盘点执行人狐小e盘点入口已开放，并发送待办及通知');
@@ -1683,7 +1692,7 @@ function PlansView({ project, projectStatus, setProjectStatus, onBack, onOpenPla
 
   const selectedRows = rows.filter((row) => selectedKeys.includes(row.key));
   const allSelectedDraft = selectedRows.length > 0 && selectedRows.every((row) => row.status === '暂存');
-  const anyStarted = rows.some((row) => row.status === '启动');
+  const anyStarted = rows.some((row) => row.status === '盘点中');
 
   return (
     <Space direction="vertical" size={16} className="w-full">
@@ -1713,7 +1722,7 @@ function PlansView({ project, projectStatus, setProjectStatus, onBack, onOpenPla
         <div className="mb-3 flex justify-end">
           <Space wrap>
             {!anyStarted && <Button icon={<Plus size={14} />} onClick={() => setCustomPlanOpen(true)}>手工创建计划</Button>}
-            {allSelectedDraft && <Button type="primary" icon={<PlayCircle size={14} />} onClick={handleStart}>启动盘点计划</Button>}
+            <Button type="primary" icon={<PlayCircle size={14} />} disabled={!allSelectedDraft} onClick={handleStart}>启动盘点计划</Button>
             {allSelectedDraft && <Button icon={<Settings size={14} />}>批量填充</Button>}
             {allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}
             <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>

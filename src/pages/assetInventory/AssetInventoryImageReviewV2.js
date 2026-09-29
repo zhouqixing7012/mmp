@@ -7,6 +7,7 @@ import StatusTag from '../../components/StatusTag';
 import { ASSET_ROWS, IMAGE_REVIEW_ROWS } from './mockData';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import { getImportedInventoryPhotos } from './inventoryPhotoImportStore';
+import { getPhotoReviewResults, savePhotoReviewResult } from './inventoryPhotoReviewStore';
 import SectionCardTitle from './SectionCardTitle';
 import overallPhoto from './images/inventory-review-overall.webp';
 import partialPhoto from './images/inventory-review-partial.webp';
@@ -107,6 +108,15 @@ function buildReviewRows(projectNo, allowedRanges) {
     };
     rows.push(reviewRow);
     rowByTag.set(assetTag, reviewRow);
+  });
+
+  getPhotoReviewResults(projectNo).filter((entry) => entry.status === '审核中').forEach((entry) => {
+    if (rowByTag.has(entry.assetTag) || !allowedRanges.includes('员工')) return;
+    const asset = { key: `mobile-${entry.assetTag}`, assetTag: entry.assetTag, description: entry.description,
+      owner: entry.owner, inventoryRange: '员工', inventoryStatus: '审核中', inventoryDate: entry.inventoryDate,
+      organization: '-', ownerDept: '-', category: '-', subCategory: '-', city: '-', building: '-' };
+    rows.push({ key: `mobile-review-${entry.assetTag}`, asset, reviewStatus: '待审核', decision: '',
+      photos: { overall: DEFAULT_REVIEW_PHOTOS[0], partial: DEFAULT_REVIEW_PHOTOS[1], gallery: DEFAULT_REVIEW_PHOTOS } });
   });
 
   return rows;
@@ -500,9 +510,16 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
     const selected = new Set(selectedKeys);
     const pendingSelected = rows.filter((row) => selected.has(row.key) && row.reviewStatus === '待审核');
     if (pendingSelected.find((row) => !row.decision)) { messageApi.warning('所选待审核资产中存在未选择审核结果的分录'); return; }
+    pendingSelected.forEach((row) => {
+      if (getPhotoReviewResults(project?.projectNo).some((entry) => entry.assetTag === row.asset.assetTag)) {
+        savePhotoReviewResult(project?.projectNo, { assetTag: row.asset.assetTag,
+          status: row.decision === 'pass' ? '已盘' : '未盘', owner: row.asset.owner,
+          description: row.asset.description, inventoryDate: row.asset.inventoryDate });
+      }
+    });
     setRows((current) => current.map((row) => {
       if (!selected.has(row.key) || row.reviewStatus !== '待审核') return row;
-      return { ...row, reviewStatus: row.decision === 'pass' ? '审核通过' : '审核不通过' };
+      return { ...row, asset: { ...row.asset, inventoryStatus: row.decision === 'pass' ? '已盘' : '未盘' }, reviewStatus: row.decision === 'pass' ? '审核通过' : '审核不通过' };
     }));
     setSelectedKeys([]);
     messageApi.success('审核结果已提交');
@@ -581,7 +598,7 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
       <QueryItem label="资产类别"><Input value={draftFilters.category} allowClear onChange={(event) => updateDraft('category', event.target.value)} /></QueryItem>
       <QueryItem label="盘点开始时间"><DateFilter value={draftFilters.startDate} onChange={(value) => updateDraft('startDate', value)} /></QueryItem>
       <QueryItem label="盘点结束时间"><DateFilter value={draftFilters.endDate} onChange={(value) => updateDraft('endDate', value)} /></QueryItem>
-      <QueryItem label="盘点状态"><Select value={draftFilters.inventoryStatus || undefined} allowClear options={['未盘', '已盘', '代盘', '报失'].map((value) => ({ label: value, value }))} onChange={(value) => updateDraft('inventoryStatus', value)} /></QueryItem>
+      <QueryItem label="盘点状态"><Select value={draftFilters.inventoryStatus || undefined} allowClear options={['未盘', '审核中', '已盘', '代盘', '报失'].map((value) => ({ label: value, value }))} onChange={(value) => updateDraft('inventoryStatus', value)} /></QueryItem>
       <QueryItem label="City"><Input value={draftFilters.city} allowClear onChange={(event) => updateDraft('city', event.target.value)} /></QueryItem>
       <QueryItem label="Building"><Input value={draftFilters.building} allowClear onChange={(event) => updateDraft('building', event.target.value)} /></QueryItem>
     </QueryBar>

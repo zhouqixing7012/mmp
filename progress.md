@@ -190,3 +190,5 @@
 
 - Vercel `dpl_HUdzZ8G6W3gHRhMQNtgGq2M4B1kJ` 日志确认 `main@03c57f4` 构建被 `scrapPrototypeService.js:61` 未定义变量阻断；资产占用查找保留单据类型后修复。报废服务测试 16 项通过，`CI=false npm run build` 通过；CI=true 仍因仓库既有警告视为错误而失败，与 Vercel 的构建命令不同。
 - 修复提交 `6062f13` 对应 Vercel 新部署 `dpl_EgFG2zBxfm8SURaeNtUGMMWgaNhY` 已为 Ready，生产别名 `mmp-6uby.vercel.app` 指向该部署；仅验证构建及部署状态，未声称业务页面冒烟通过。
+
+- 2026-09-29：盘点新一轮十项需求同步主 PRD 与主要原型：计划盘点中及置灰、员工照片审核中流转、列表平铺、组织部门树与多选、范围资产查询、照片规则空默认、EBS 原值和逐资产人员校验。PC/移动原版迁移首轮核查并回填高确定性遗漏；7 个测试集 12 项通过，`CI=false npm run build` 通过。未声明原版全文迁移完成，详见迁移核查。

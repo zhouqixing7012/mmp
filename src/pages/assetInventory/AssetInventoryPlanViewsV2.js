@@ -27,7 +27,7 @@ import QueryBar, { QueryItem } from '../../components/QueryBar';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
-import { ASSET_ROWS, EMPLOYEE_ROWS, INITIAL_PLAN_ROWS } from './mockData';
+import { EMPLOYEE_ROWS, INITIAL_PLAN_ROWS } from './mockData';
 
 const EMPTY_PLAN_FILTERS = {
   planNo: '',
@@ -226,7 +226,7 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
   const editable = (row) => row.status === '暂存';
   const selectedRows = rows.filter((row) => selectedKeys.includes(row.key));
   const allSelectedDraft = selectedRows.length > 0 && selectedRows.every((row) => row.status === '暂存');
-  const anyStarted = rows.some((row) => row.status === '启动');
+  const anyStarted = rows.some((row) => row.status === '盘点中');
 
   const openPersonnel = (rowKey, field) => setPersonTarget({ rowKey, field });
 
@@ -256,7 +256,7 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
       });
       return;
     }
-    setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '启动' } : row));
+    setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '盘点中' } : row));
     setSelectedKeys([]);
     messageApi.success('盘点计划已启动，盘点执行人狐小e盘点入口已开放，并发送待办及通知');
   };
@@ -352,7 +352,7 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
       >
         <QueryItem label="计划编码"><Input value={draftFilters.planNo} allowClear placeholder="请输入计划编码" onChange={(event) => updateFilter('planNo', event.target.value)} /></QueryItem>
         <QueryItem label="计划名称"><Input value={draftFilters.planName} allowClear placeholder="请输入计划名称" onChange={(event) => updateFilter('planName', event.target.value)} /></QueryItem>
-        <QueryItem label="计划状态"><Select value={draftFilters.planStatus || undefined} allowClear placeholder="请选择" options={['暂存', '启动', '关闭'].map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('planStatus', value)} /></QueryItem>
+        <QueryItem label="计划状态"><Select value={draftFilters.planStatus || undefined} allowClear placeholder="请选择" options={['暂存', '盘点中', '关闭'].map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('planStatus', value)} /></QueryItem>
         <QueryItem label="City"><Input value={draftFilters.city} allowClear placeholder="请输入City" onChange={(event) => updateFilter('city', event.target.value)} /></QueryItem>
         <QueryItem label="盘点组织"><Input value={draftFilters.organization} allowClear placeholder="请输入盘点组织" onChange={(event) => updateFilter('organization', event.target.value)} /></QueryItem>
         <QueryItem label="盘点范围"><Select value={draftFilters.range || undefined} allowClear placeholder="请选择" options={RANGE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('range', value)} /></QueryItem>
@@ -363,7 +363,7 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
           <Space wrap>
             {!anyStarted && <Button icon={<Plus size={14} />} onClick={() => setCustomPlanOpen(true)}>手工创建计划</Button>}
             {!anyStarted && <Button disabled={!allSelectedDraft} onClick={openBatchDate}>批量编辑盘点日期</Button>}
-            {allSelectedDraft && <Button type="primary" icon={<PlayCircle size={14} />} onClick={handleStart}>启动盘点计划</Button>}
+            <Button type="primary" icon={<PlayCircle size={14} />} disabled={!allSelectedDraft} onClick={handleStart}>启动盘点计划</Button>
             {allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}
             <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>
             <Button icon={<Download size={14} />}>导出</Button>
@@ -445,8 +445,9 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
   );
 }
 
-export function AssetInventoryPlanAssetListV2({ plan, project, onBack }) {
-  const [rows, setRows] = useState(() => ASSET_ROWS.filter((asset) => asset.planNo === plan.planNo || asset.inventoryRange === plan.range));
+export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, onAssetsChange }) {
+  const rows = assets;
+  const setRows = onAssetsChange;
   const [draftFilters, setDraftFilters] = useState(EMPTY_ASSET_FILTERS);
   const [filters, setFilters] = useState(EMPTY_ASSET_FILTERS);
   const [personTarget, setPersonTarget] = useState(null);
@@ -558,7 +559,7 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack }) {
         <QueryItem label="Building"><Input value={draftFilters.building} allowClear onChange={(event) => updateDraft('building', event.target.value)} /></QueryItem>
         <QueryItem label="启用日期从"><DateFilter value={draftFilters.enableFrom} onChange={(value) => updateDraft('enableFrom', value)} /></QueryItem>
         <QueryItem label="启用日期至"><DateFilter value={draftFilters.enableTo} onChange={(value) => updateDraft('enableTo', value)} /></QueryItem>
-        <QueryItem label="盘点状态"><Select value={draftFilters.inventoryStatus || undefined} allowClear options={['未盘', '已盘', '代盘', '报失'].map((value) => ({ label: value, value }))} onChange={(value) => updateDraft('inventoryStatus', value)} /></QueryItem>
+        <QueryItem label="盘点状态"><Select value={draftFilters.inventoryStatus || undefined} allowClear options={['未盘', '审核中', '已盘', '代盘', '报失'].map((value) => ({ label: value, value }))} onChange={(value) => updateDraft('inventoryStatus', value)} /></QueryItem>
         <QueryItem label="成本中心"><Input value={draftFilters.costCenter} allowClear onChange={(event) => updateDraft('costCenter', event.target.value)} /></QueryItem>
         <QueryItem label="NO状态"><Input value={draftFilters.noStatus} allowClear onChange={(event) => updateDraft('noStatus', event.target.value)} /></QueryItem>
       </QueryBar>

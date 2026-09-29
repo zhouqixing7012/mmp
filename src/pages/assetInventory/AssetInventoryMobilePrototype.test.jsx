@@ -21,6 +21,7 @@ jest.mock('antd', () => {
 });
 
 describe('AssetInventoryMobilePrototype', () => {
+  beforeEach(() => window.sessionStorage.clear());
   test('工作台按状态分组并可进入资产详情', () => {
     render(<AssetInventoryMobilePrototype />);
 
@@ -43,20 +44,24 @@ describe('AssetInventoryMobilePrototype', () => {
     expect(screen.getByText('1 条')).toBeInTheDocument();
   });
 
-  test('本人扫码提交后资产进入已盘', () => {
+  test('员工上传必需照片后进入审核中', () => {
     render(<AssetInventoryMobilePrototype />);
 
-    fireEvent.click(screen.getByRole('button', { name: '开始盘点' }));
+    fireEvent.click(screen.getByRole('button', { name: /戴尔\.Latitude E7280/ }));
+    screen.getAllByRole('button', { name: '拍照' }).forEach((button) => fireEvent.click(button));
+    fireEvent.click(screen.getByRole('button', { name: '盘点' }));
     fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
     fireEvent.click(screen.getByRole('button', { name: '扫描本人资产' }));
     fireEvent.click(screen.getByRole('button', { name: '提交' }));
     fireEvent.click(screen.getByRole('button', { name: '再接再厉' }));
     fireEvent.click(screen.getByRole('button', { name: '返回' }));
+    fireEvent.click(screen.getByRole('button', { name: '返回' }));
 
     expect(screen.getByText('我的盘点任务')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /已盘 3/ }));
     fireEvent.click(screen.getByRole('button', { name: /戴尔\.Latitude E7280/ }));
-    expect(screen.getByText('盘点人')).toBeInTheDocument();
+    expect(screen.getAllByText('审核中').length).toBeGreaterThan(0);
+    expect(JSON.parse(window.sessionStorage.getItem('assetInventoryPhotoReview:demo'))[0].status).toBe('审核中');
   });
 
   test('报失必须填写原因并经过二次确认', () => {

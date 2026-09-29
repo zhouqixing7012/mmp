@@ -26,16 +26,16 @@ export function PlansView({ project, onBack }) {
   ];
   const startPlans = () => {
     if (!selectedKeys.length) { messageApi.warning('请先选择盘点计划'); return; }
-    setRows((current) => current.map((row) => selectedKeys.includes(row.key) ? { ...row, status: '启动' } : row));
+    setRows((current) => current.map((row) => selectedKeys.includes(row.key) ? { ...row, status: '盘点中' } : row));
     messageApi.success('所选盘点计划已启动');
   };
   return (
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
       <PageTitle>盘点计划（方案二）</PageTitle>
-      <ProjectInfoCard project={{ ...project, status: rows.some((row) => row.status === '启动') ? '盘点中' : '生成盘点计划' }} />
+      <ProjectInfoCard project={{ ...project, status: rows.some((row) => row.status === '盘点中') ? '盘点中' : '生成盘点计划' }} />
       <Card size="small" title={<CardTitle>盘点计划明细</CardTitle>} extra={<Typography.Text type="secondary">共 {rows.length} 条</Typography.Text>}>
-        <div className="mb-3 flex justify-end"><Space><Button type="primary" onClick={startPlans}>启动盘点计划</Button><Button onClick={() => messageApi.success('导入入口已打开')}>导入</Button><Button onClick={() => messageApi.success('导出任务已创建')}>导出</Button></Space></div>
+        <div className="mb-3 flex justify-end"><Space><Button type="primary" disabled={!selectedKeys.length || rows.every((row) => row.status === '盘点中' || row.status === '关闭')} onClick={startPlans}>启动盘点计划</Button><Button onClick={() => messageApi.success('导入入口已打开')}>导入</Button><Button onClick={() => messageApi.success('导出任务已创建')}>导出</Button></Space></div>
         <Table rowKey="key" size="small" bordered rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys }} columns={columns} dataSource={rows} scroll={{ x: 1700 }} pagination={false} />
       </Card>
       <div className="flex justify-center"><Button onClick={onBack}>返回</Button></div>

@@ -10,6 +10,7 @@ import { EMPLOYEE_ROWS } from './mockData';
 import { useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import SectionCardTitle from './SectionCardTitle';
 import { inventoryDateBlockReason } from './inventoryDateRules';
+import { planPersonnelBlockReason } from './inventoryPlanStartRules';
 
 const EMPTY_PLAN_FILTERS = { planNo: '', planName: '', planStatus: '', organization: '', range: '' };
 const RANGE_OPTIONS = ['员工', '库房', '公共', '机房'];
@@ -34,7 +35,7 @@ function ProjectInfoCard({ project }) {
   );
 }
 
-export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPlanAssets, rows, setRows, canManualCreate, onManualCreate }) {
+export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPlanAssets, rows, setRows, assetsForPlan, canManualCreate, onManualCreate }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const projectClosed = project?.status === '盘点关闭';
@@ -51,7 +52,8 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
   const editable = (row) => !projectClosed && row.status === '草稿';
   const selectedRows = visibleRows.filter((row) => selectedKeys.includes(row.key));
   const allSelectedDraft = !projectClosed && selectedRows.length > 0 && selectedRows.every((row) => row.status === '草稿');
-  const anyStarted = visibleRows.some((row) => row.status === '启动');
+  const anyStarted = visibleRows.some((row) => row.status === '盘点中');
+  const allStarted = visibleRows.length > 0 && visibleRows.every((row) => row.status === '盘点中' || row.status === '关闭');
   const applyPersonnel = (record) => { if (!personTarget || projectClosed) return; setRows((current) => current.map((row) => row.key === personTarget.rowKey ? { ...row, [personTarget.field]: record.employeeName } : row)); setPersonTarget(null); };
 
   const handleStart = () => {
@@ -59,8 +61,10 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
     if (!selectedKeys.length) { messageApi.warning('请先选择需要启动的盘点计划'); return; }
     const invalid = selectedRows.map((row) => inventoryDateBlockReason(project?.projectType, row.startDate, row.endDate)).find(Boolean);
     if (invalid) { messageApi.warning(invalid); return; }
+    const personnelBlock = selectedRows.map((row) => planPersonnelBlockReason(row, assetsForPlan(row), project)).find(Boolean);
+    if (personnelBlock) { messageApi.warning(personnelBlock); return; }
     const selected = new Set(selectedKeys);
-    setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '启动' } : row));
+    setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '盘点中' } : row));
     setSelectedKeys([]);
     messageApi.success('盘点计划已启动，并发送盘点待办及通知');
   };
@@ -112,11 +116,11 @@ export default function AssetInventoryPlansV2Refined({ project, onBack, onOpenPl
       <QueryBar onQuery={() => { setAppliedFilters({ ...draftFilters }); setSelectedKeys([]); }} onReset={() => { setDraftFilters(EMPTY_PLAN_FILTERS); setAppliedFilters(EMPTY_PLAN_FILTERS); setSelectedKeys([]); }}>
         <QueryItem label="计划编码"><Input value={draftFilters.planNo} allowClear placeholder="请输入计划编码" onChange={(event) => updateFilter('planNo', event.target.value)} /></QueryItem>
         <QueryItem label="计划名称"><Input value={draftFilters.planName} allowClear placeholder="请输入计划名称" onChange={(event) => updateFilter('planName', event.target.value)} /></QueryItem>
-        <QueryItem label="计划状态"><Select value={draftFilters.planStatus || undefined} allowClear placeholder="请选择" options={['草稿', '启动', '关闭'].map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('planStatus', value)} /></QueryItem>
+        <QueryItem label="计划状态"><Select value={draftFilters.planStatus || undefined} allowClear placeholder="请选择" options={['草稿', '盘点中', '关闭'].map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('planStatus', value)} /></QueryItem>
         <QueryItem label="子公司"><Input value={draftFilters.organization} allowClear placeholder="请输入子公司" onChange={(event) => updateFilter('organization', event.target.value)} /></QueryItem>
         <QueryItem label="盘点范围"><Select value={draftFilters.range || undefined} allowClear placeholder="请选择" options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('range', value)} /></QueryItem>
       </QueryBar>
-      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}{allSelectedDraft && <Button type="primary" icon={<PlayCircle size={14} />} onClick={handleStart}>启动盘点计划</Button>}{allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}{!projectClosed && <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />}>导出</Button>{!projectClosed && project?.projectType === '复盘' && anyStarted && <Button type="primary">提交审核</Button>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
+      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}{!projectClosed && <Button type="primary" icon={<PlayCircle size={14} />} disabled={allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button>}{allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}{!projectClosed && <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />}>导出</Button>{!projectClosed && project?.projectType === '复盘' && anyStarted && <Button type="primary">提交审核</Button>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
       <Table rowKey="key" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true, getCheckboxProps: () => ({ disabled: projectClosed }) }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
     </Card>
     <div className="flex justify-center pb-2"><Button onClick={onBack}>返回</Button></div>

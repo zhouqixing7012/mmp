@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Card, DatePicker, InputNumber, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Button, Card, DatePicker, InputNumber, Modal, Select, Space, Table, TreeSelect, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import { Eye, Search, Trash2 } from 'lucide-react';
 import {
@@ -91,16 +91,21 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
   const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const options = useMemo(() => getScheme3InventoryDemoOptions(allowedRanges), [allowedRanges]);
+  const organizationTree = useMemo(() => unique(ASSET_ROWS.map((asset) => asset.organization)).map((organization) => ({
+    title: organization, value: `org:${organization}`,
+    children: unique(ASSET_ROWS.filter((asset) => asset.organization === organization).map((asset) => asset.ownerDept))
+      .map((department) => ({ title: department, value: `dept:${organization}::${department}` })),
+  })), []);
   const [filters, setFilters] = useState({
-    organization: '', department: '', assetCategory: '', assetStatus: '', warehouse: '',
-    city: '', building: '', floor: '', owner: '', ownerLevel: '', enableFrom: '', enableTo: '', ratio: 100, netValueTopPercent: null,
+    organizationDepartments: [], assetCategory: [], assetStatus: [], warehouse: [],
+    city: [], building: [], floor: [], owner: [], ownerLevel: [], enableFrom: '', enableTo: '', ratio: 100, netValueTopPercent: null,
   });
   const [rows, setRows] = useState(() => SCOPE_ROWS.map((row) => ({ ...row })));
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [previewKeys, setPreviewKeys] = useState(null);
 
   const fields = [
-    ['子公司', 'organization'], ['部门', 'department'], ['资产类别', 'assetCategory'], ['资产状态', 'assetStatus'], ['仓库', 'warehouse'],
+    ['资产类别', 'assetCategory'], ['资产状态', 'assetStatus'], ['仓库', 'warehouse'],
     ['City', 'city'], ['Building', 'building'], ['Floor', 'floor'], ['资产责任人', 'owner'], ['资产责任人职级', 'ownerLevel'],
   ];
 
@@ -122,16 +127,16 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
     if (!matches.length) { messageApi.warning('当前条件下没有可纳入的资产'); return; }
     setRows((current) => [...current, {
       key: `scope-v3-${Date.now()}`,
-      organization: filters.organization || '集团',
-      department: filters.department || '全部',
-      assetCategory: filters.assetCategory || '全部',
-      assetStatus: filters.assetStatus || '全部',
-      warehouse: filters.warehouse || '全部',
-      city: filters.city || '全部',
-      building: filters.building || '全部',
-      floor: filters.floor || '全部',
-      owner: filters.owner || '全部',
-      ownerLevel: filters.ownerLevel || '全部',
+      organization: filters.organizationDepartments.length ? filters.organizationDepartments.join('、') : '全部',
+      department: filters.organizationDepartments.length ? filters.organizationDepartments.join('、') : '全部',
+      assetCategory: filters.assetCategory.join('、') || '全部',
+      assetStatus: filters.assetStatus.join('、') || '全部',
+      warehouse: filters.warehouse.join('、') || '全部',
+      city: filters.city.join('、') || '全部',
+      building: filters.building.join('、') || '全部',
+      floor: filters.floor.join('、') || '全部',
+      owner: filters.owner.join('、') || '全部',
+      ownerLevel: filters.ownerLevel.join('、') || '全部',
       enableFrom: filters.enableFrom,
       enableTo: filters.enableTo,
       netValueTopPercent: projectType === '复盘' ? filters.netValueTopPercent : null,
@@ -144,18 +149,23 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
     <Card size="small" title={<SectionCardTitle>盘点范围筛选</SectionCardTitle>}>
       {contextHolder}
       <div className="grid grid-cols-3 gap-x-6 gap-y-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-24 shrink-0 text-right text-sm text-gray-600">子公司/部门:</span>
+          <TreeSelect treeData={organizationTree} treeCheckable showSearch allowClear value={filters.organizationDepartments} placeholder="请选择子公司或部门" className="flex-1" onChange={(value) => setFilters((current) => ({ ...current, organizationDepartments: value || [] }))} />
+        </div>
         {fields.map(([label, field]) => (
           <div key={field} className="flex items-center gap-2 min-w-0">
             <span className="w-24 shrink-0 text-right text-sm text-gray-600">{label}:</span>
             <Select
+              mode="multiple"
               showSearch
               allowClear
               optionFilterProp="label"
-              value={filters[field] || undefined}
+              value={filters[field]}
               placeholder={`请选择${label}`}
               className="flex-1"
               options={toOptions(options[field] || ['全部'])}
-              onChange={(value) => setFilters((current) => ({ ...current, [field]: value || '' }))}
+              onChange={(value) => setFilters((current) => ({ ...current, [field]: value || [] }))}
             />
           </div>
         ))}

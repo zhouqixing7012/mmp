@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button, Input, Modal, Tag, message as antdMessage } from 'antd';
 import './assetInventoryMobile.css';
+import { getPhotoReviewResults, savePhotoReviewResult } from './inventoryPhotoReviewStore';
 
 const CURRENT_USER = {
   name: '孙志强',
@@ -190,6 +191,7 @@ const TAB_GROUPS = {
     { key: '报失', label: '报失' },
   ],
   scanned: [
+    { key: '审核中', label: '审核中' },
     { key: '已盘', label: '已盘' },
     { key: '代盘', label: '代盘' },
     { key: '未执行盘点', label: '未执行' },
@@ -200,6 +202,7 @@ const STATUS_COLORS = {
   未盘: 'blue',
   报失: 'red',
   已盘: 'green',
+  审核中: 'gold',
   代盘: 'orange',
   未执行盘点: 'default',
 };
@@ -279,7 +282,7 @@ function StatusBadge({ status }) {
 }
 
 function AssetCard({ asset, onClick }) {
-  const showDate = asset.status === '已盘' || asset.status === '代盘'
+  const showDate = ['审核中', '已盘', '代盘'].includes(asset.status)
     ? asset.inventoryDate
     : asset.dueDate;
   return (
@@ -400,6 +403,12 @@ export default function AssetInventoryMobilePrototype() {
   const [scanReturnView, setScanReturnView] = useState('workbench');
   const [activeTab, setActiveTab] = useState('unscanned');
   const [assets, setAssets] = useState(() => DEMO_ASSETS.map((asset) => ({ ...asset })));
+  useEffect(() => {
+    const results = new Map(getPhotoReviewResults(previewProjectNo).map((entry) => [entry.assetTag, entry]));
+    setAssets((current) => current.map((asset) => results.has(asset.tagNo)
+      ? { ...asset, status: results.get(asset.tagNo).status }
+      : asset));
+  }, [previewProjectNo, location.key]);
   const [query, setQuery] = useState('');
   const [selectedAssetId, setSelectedAssetId] = useState(null);
   const [locationDraft, setLocationDraft] = useState({ city: '', building: '', floor: '' });
@@ -490,13 +499,26 @@ export default function AssetInventoryMobilePrototype() {
       messageApi.warning('该资产已盘点或不在执行范围内');
       return;
     }
+    const requiredSlots = scanAsset.area === '机房' ? ['二维码标签照片', '实物序列号照片'] : ['资产整体照片', '二维码标签照片'];
+    if (scanAsset.area === '员工' && scanAsset.photoRequired && requiredSlots.some((slot) => !photoState[`${scanAsset.id}::${slot}`])) {
+      setScanModal(null);
+      setSelectedAssetId(scanAsset.id);
+      setView('detail');
+      messageApi.warning('请先拍摄并上传必需的照片，再提交盘点');
+      return;
+    }
+    const reviewPending = scanAsset.area === '员工' && scanAsset.photoRequired;
+    if (reviewPending) savePhotoReviewResult(previewProjectNo, {
+      assetTag: scanAsset.tagNo, status: '审核中', owner: scanAsset.owner,
+      description: scanAsset.assetDesc, inventoryDate: new Date().toISOString(),
+    });
     if (scanAsset && ['mine', 'proxy'].includes(kind)) {
       setSelectedAssetId(scanAsset.id);
       setAssets((current) => current.map((asset) => (
         asset.id === scanAsset.id
           ? {
             ...asset,
-            status: kind === 'proxy' ? '代盘' : '已盘',
+            status: reviewPending ? '审核中' : kind === 'proxy' ? '代盘' : '已盘',
             inventoryDate: '2025-12-15 10:13',
             inventoryBy: CURRENT_USER.name,
             proxyFor: kind === 'proxy' ? scanAsset.owner : '',
@@ -507,8 +529,8 @@ export default function AssetInventoryMobilePrototype() {
     setScanModal(null);
     setResultNotice({
       kind,
-      title: kind === 'proxy' ? '代盘提交成功' : '盘点提交成功',
-      message: kind === 'proxy'
+      title: reviewPending ? '照片已提交，等待审核' : kind === 'proxy' ? '代盘提交成功' : '盘点提交成功',
+      message: reviewPending ? '审核通过后变为已盘；审核不通过后恢复未盘待办。' : kind === 'proxy'
         ? `${scanAsset?.owner || '资产责任人'}已收到您的代盘信息啦。感谢您的热情帮助！`
         : `您已成功盘到${scanAsset?.assetDesc || '这枚资产'}一枚，您还有未盘到的资产哦，继续吧~`,
     });
@@ -601,7 +623,7 @@ export default function AssetInventoryMobilePrototype() {
             <div className="inventory-hero-title">我的盘点任务</div>
           </div>
           <div className="inventory-hero-stat">
-            <span>{formatStatusCount(filteredAssets, '未盘')}</span>
+          <span>{formatStatusCount(filteredAssets, '未盘')}</span>
             <small>待盘</small>
           </div>
         </div>
@@ -621,7 +643,7 @@ export default function AssetInventoryMobilePrototype() {
             未盘 <span>{formatStatusCount(filteredAssets, '未盘') + formatStatusCount(filteredAssets, '报失')}</span>
           </button>
           <button type="button" className={activeTab === 'scanned' ? 'is-active' : ''} onClick={() => setActiveTab('scanned')}>
-            已盘 <span>{formatStatusCount(filteredAssets, '已盘') + formatStatusCount(filteredAssets, '代盘')}</span>
+            已盘 <span>{formatStatusCount(filteredAssets, '审核中') + formatStatusCount(filteredAssets, '已盘') + formatStatusCount(filteredAssets, '代盘')}</span>
           </button>
         </div>
         <div className="inventory-mobile-content-list">
