@@ -419,6 +419,91 @@ export function validateAccountingAssets(form, assets, options = {}) {
   return { valid: errors.length === 0, errors };
 }
 
+function disposalOccupation(tagNo, exceptRecordId) {
+  return getScrapPrototypeRecords('disposal').find((record) => (
+    record.id !== exceptRecordId
+    && (record.assetsSnapshot || []).some((asset) => asset?.tagNo === tagNo)
+  )) || null;
+}
+
+function completedAccountingRecordForDisposal(asset) {
+  const sourceNo = String(asset?.sourceAccountingNo || '').trim();
+  if (!sourceNo) return null;
+  return getScrapPrototypeRecords('accounting').find((record) => (
+    record.applicationNo === sourceNo
+    && record.documentStatus === '已完成'
+    && (record.assetsSnapshot || []).some((item) => item?.tagNo === asset.tagNo)
+  )) || null;
+}
+
+export function validateDisposalAssets(form, assets, options = {}) {
+  const errors = [];
+  if (!assets?.length) {
+    if (!options.draft) errors.push({ code: 'ASSETS_REQUIRED', message: '请至少添加一条待处置资产' });
+    return { valid: errors.length === 0, errors };
+  }
+
+  const tags = new Set();
+  (assets || []).forEach((asset, index) => {
+    const prefix = `第${index + 1}行`;
+    const tagNo = String(asset?.tagNo || '').trim();
+    if (!tagNo) {
+      errors.push({ code: 'TAG_REQUIRED', index, message: `${prefix}资产标签号不能为空` });
+      return;
+    }
+    if (tags.has(tagNo)) {
+      errors.push({ code: 'DUPLICATE_ASSET', index, message: `${prefix}资产标签号重复` });
+      return;
+    }
+    tags.add(tagNo);
+
+    if (!requiresPhysicalDisposal(asset)) {
+      errors.push({ code: 'DISPOSAL_NOT_REQUIRED', index, message: `${prefix}软件、丢失或调账资产不进入实物处置` });
+    }
+
+    const sourceRecord = completedAccountingRecordForDisposal(asset);
+    if (!sourceRecord) {
+      errors.push({
+        code: 'INVALID_ACCOUNTING_SOURCE',
+        index,
+        message: `${prefix}未找到包含该资产的已完成账面报废单`,
+      });
+    } else {
+      const sourceAsset = (sourceRecord.assetsSnapshot || []).find((item) => item?.tagNo === tagNo);
+      const comparableFields = ['company', 'plate', 'quantity', 'originalValue', 'netValue', 'scrapMethod', 'scrapType'];
+      if (!sourceAsset || comparableFields.some((field) => (
+        sourceAsset[field] !== undefined
+        && asset[field] !== undefined
+        && String(sourceAsset[field]) !== String(asset[field])
+      ))) {
+        errors.push({
+          code: 'ACCOUNTING_SOURCE_CHANGED',
+          index,
+          message: `${prefix}待处置资产与已完成账面报废来源数据不一致`,
+        });
+      }
+    }
+
+    const occupation = disposalOccupation(tagNo, options.recordId);
+    if (occupation) {
+      errors.push({
+        code: 'DISPOSAL_ASSET_OCCUPIED',
+        index,
+        message: `${prefix}资产已在处置单 ${occupation.applicationNo || occupation.id} 中，不能重复办理`,
+      });
+    }
+
+    if (
+      form?.assetScope === '办公设备'
+      && asset.scope !== '办公设备'
+    ) {
+      errors.push({ code: 'DISPOSAL_SCOPE_MISMATCH', index, message: `${prefix}办公设备处置单只能选择办公设备资产` });
+    }
+  });
+
+  return { valid: errors.length === 0, errors };
+}
+
 export function getDisposalCandidates() {
   const disposalRecords = getScrapPrototypeRecords('disposal');
   const occupiedTags = new Set(disposalRecords
