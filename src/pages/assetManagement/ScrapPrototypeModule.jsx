@@ -80,6 +80,7 @@ function defaultForm(type) {
     procurementQuoteAmount: '',
     procurementQuoteAttachments: [],
     internalAuditQuotes: [{ id: 'audit-1', supplier: '', amount: '', attachments: [] }],
+    internalAuditRecommendation: null,
     finalQuoteSupplier: '',
     finalQuoteAmount: '',
     finalQuoteAttachments: [],
@@ -611,6 +612,21 @@ export default function ScrapPrototypeModule({
       if (error) {
         message.error(error);
         return;
+      }
+      if (record.currentNode === '内审报价') {
+        const rankedQuotes = [...((record.formSnapshot || record).internalAuditQuotes || [])]
+          .sort((left, right) => Number(right.amount || 0) - Number(left.amount || 0));
+        const recommendation = rankedQuotes[0]
+          ? { supplier: rankedQuotes[0].supplier, amount: rankedQuotes[0].amount }
+          : null;
+        record = {
+          ...record,
+          internalAuditRecommendation: recommendation,
+          formSnapshot: {
+            ...(record.formSnapshot || record),
+            internalAuditRecommendation: recommendation,
+          },
+        };
       }
     }
     if (result === '通过' && type === 'disposal') {
