@@ -967,12 +967,12 @@ export default function ScrapPrototypeAssetTable({
     { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
     { title: '原值', dataIndex: 'originalValue', width: 130, align: 'right', render: money },
     { title: '净值', dataIndex: 'netValue', width: 130, align: 'right', render: money },
-    ...(assetScope === '机房资产' ? [{
+    ...(assetScope === '机房资产' && assetCategory === 'SERVER' ? [{
       title: '数据清洗',
       dataIndex: 'dataCleaning',
       width: 110,
       render: (value, record) => (
-        record.scope === '机房资产'
+        record.scope === '机房资产' && record.majorCategory === 'SERVER'
           ? (
             readOnly
               ? displayValue(value || '否')
