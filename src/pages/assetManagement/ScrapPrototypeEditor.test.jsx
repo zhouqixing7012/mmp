@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import ScrapPrototypeEditor from './ScrapPrototypeEditor';
 import { exportScrapPrototypeAssets } from './ScrapPrototypeAssetTable';
+import { getDisposalCandidates, resetScrapPrototypeMemory } from '../../services/scrapPrototypeService';
 
 jest.mock('antd', () => {
   const ReactModule = require('react');
@@ -89,6 +90,11 @@ jest.mock('../assetBorrowing/BorrowingApprovalHistory', () => {
     );
   };
 });
+
+function availableOfficeDisposalAssets() {
+  resetScrapPrototypeMemory();
+  return getDisposalCandidates().filter((item) => item.scope === '办公设备' && item.company === '114.新媒体');
+}
 
 const accountingForm = {
   applicationNo: '',
@@ -179,6 +185,14 @@ test('资产处置编辑页展示三个非必填回收商名称和自动报价�
 
 test('资产处置办公设备提交前进入预览并自动生成可编辑处置说明', () => {
   const onSave = jest.fn();
+  const [first, second] = availableOfficeDisposalAssets();
+  expect(first).toBeDefined();
+  expect(second).toBeDefined();
+  const assets = [
+    { ...first, recycler1: 12000, recycler2: 10000, recycler3: 9000 },
+    { ...second, recycler1: 800, recycler2: 700, recycler3: 600 },
+  ];
+
   const view = render(
     <ScrapPrototypeEditor
       type="disposal"
@@ -194,35 +208,7 @@ test('资产处置办公设备提交前进入预览并自动生成可编辑处�
         recycler2Name: '回收商乙',
         recycler3Name: '回收商丙',
       }}
-      initialAssets={[{
-        id: 'preview-asset-1',
-        tagNo: 'FA-PREVIEW-001',
-        company: '114.新媒体',
-        plate: '17.Corporate',
-        scope: '办公设备',
-        majorCategory: 'PC',
-        city: '北京',
-        quantity: 2,
-        originalValue: 20000,
-        netValue: 500,
-        recycler1: 12000,
-        recycler2: 10000,
-        recycler3: 9000,
-      }, {
-        id: 'preview-asset-2',
-        tagNo: 'FA-PREVIEW-002',
-        company: '114.新媒体',
-        plate: '17.Corporate',
-        scope: '办公设备',
-        majorCategory: 'OFFICE EQUIPMENT',
-        city: '北京',
-        quantity: 1,
-        originalValue: 3000,
-        netValue: 300,
-        recycler1: 800,
-        recycler2: 700,
-        recycler3: 600,
-      }]}
+      initialAssets={assets}
       readOnly={false}
       approvalPage={false}
       onBack={jest.fn()}
@@ -238,7 +224,8 @@ test('资产处置办公设备提交前进入预览并自动生成可编辑处�
   expect(screen.getByRole('button', { name: '返回' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '提交' })).toBeInTheDocument();
   expect(view.container.querySelector('td[rowspan="2"]')).not.toBeNull();
-  const description = screen.getByDisplayValue(/按照报废计划，ES拟对3台库存老旧办公资产进行变卖处置/);
+  const totalQuantity = assets.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const description = screen.getByDisplayValue(new RegExp(`按照报废计划，ES拟对${totalQuantity}台库存老旧办公资产进行变卖处置`));
   expect(description.value).toContain('回收商“回收商甲”总价最高');
   expect(onSave).not.toHaveBeenCalled();
 
@@ -261,17 +248,10 @@ test('资产处置自动说明按实际回收商数量生成，全空时不生�
     onSave: jest.fn(),
     onApprove: jest.fn(),
   };
+  const [candidate] = availableOfficeDisposalAssets();
+  expect(candidate).toBeDefined();
   const asset = {
-    id: 'description-asset',
-    tagNo: 'FA-DESC-001',
-    company: '114.新媒体',
-    plate: '17.Corporate',
-    scope: '办公设备',
-    majorCategory: 'PC',
-    city: '北京',
-    quantity: 1,
-    originalValue: 10000,
-    netValue: 500,
+    ...candidate,
     recycler1: 6000,
     recycler2: 5500,
     recycler3: '',
@@ -282,8 +262,8 @@ test('资产处置自动说明按实际回收商数量生成，全空时不生�
       {...baseProps}
       initialForm={{
         ...accountingForm,
-        company: '114.新媒体',
-        companies: ['114.新媒体'],
+        company: candidate.company,
+        companies: [candidate.company],
         assetScope: '办公设备',
         recycler1Name: '回收商甲',
         recycler2Name: '回收商乙',
@@ -301,14 +281,14 @@ test('资产处置自动说明按实际回收商数量生成，全空时不生�
       {...baseProps}
       initialForm={{
         ...accountingForm,
-        company: '114.新媒体',
-        companies: ['114.新媒体'],
+        company: candidate.company,
+        companies: [candidate.company],
         assetScope: '办公设备',
         recycler1Name: '',
         recycler2Name: '',
         recycler3Name: '',
       }}
-      initialAssets={[{ ...asset, recycler1: '', recycler2: '', recycler3: '' }]}
+      initialAssets={[{ ...candidate, recycler1: '', recycler2: '', recycler3: '' }]}
     />,
   );
   fireEvent.click(screen.getByRole('button', { name: '预览' }));
