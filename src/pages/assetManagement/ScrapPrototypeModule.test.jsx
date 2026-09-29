@@ -31,6 +31,11 @@ jest.mock('./ScrapPrototypeList', () => {
           审批通过
         </button>
       )}
+      {type === 'scrap' && (
+        <button type="button" onClick={() => onApprove(records.find((record) => record.documentStatus === '审批中'), '驳回', '请补充资料')}>
+          审批驳回
+        </button>
+      )}
       {type === 'accounting' && (
         <button type="button" onClick={() => onApprove(records.find((record) => record.documentStatus === '审批中' && record.currentNode === '提单人确认'), '驳回', '请修改')}>
           提单人驳回
@@ -519,5 +524,100 @@ test('机房处置地区和数据清洗只决定协办节点，不决定是否�
     .toEqual([]);
   expect(getDisposalApprovalNodes({ assetScope: '机房资产', region: '非北京', needsCleaning: '是' }))
     .toEqual(['数据清洗']);
+});
+
+test('500台机房报废通过报价接收人节点后强制进入内审报价', () => {
+  const asset = { ...SCRAP_ASSET_POOL.find((item) => item.scope === '机房资产'), quantity: 500, majorCategory: 'SERVER' };
+  saveScrapPrototypeRecords('scrap', [{
+    id: 'machine-500-routing',
+    applicationNo: 'BF-MACHINE-500-ROUTE',
+    documentStatus: '审批中',
+    assetScope: '机房资产',
+    currentNode: '采购专员选择报价接收人',
+    assetsSnapshot: [asset],
+    formSnapshot: {
+      assetScope: '机房资产',
+      assetCategory: 'SERVER',
+      assetLocation: '北京',
+      currentNode: '采购专员选择报价接收人',
+      quoteReceiver: '采购专员',
+    },
+    approvalHistory: [],
+  }]);
+
+  render(<ScrapPrototypeModule type="scrap" />);
+  fireEvent.click(screen.getByRole('button', { name: '审批通过' }));
+
+  expect(getScrapPrototypeRecords('scrap')[0]).toMatchObject({
+    documentStatus: '审批中',
+    currentNode: '内审报价',
+    formSnapshot: expect.objectContaining({ quoteReceiver: '内审' }),
+  });
+});
+
+test('SERVER双专家逐一办理并在记录中保留已知专家身份', () => {
+  const asset = { ...SCRAP_ASSET_POOL.find((item) => item.scope === '机房资产'), majorCategory: 'SERVER', quantity: 1 };
+  saveScrapPrototypeRecords('scrap', [{
+    id: 'machine-expert-countersign',
+    applicationNo: 'BF-MACHINE-EXPERT-ROUTE',
+    documentStatus: '审批中',
+    assetScope: '机房资产',
+    currentNode: '专家评估（杨威220894）',
+    currentApprover: '220894-杨威',
+    assetsSnapshot: [asset],
+    formSnapshot: {
+      assetScope: '机房资产',
+      assetCategory: 'SERVER',
+      assetLocation: '北京',
+      quoteReceiver: '采购专员',
+      currentNode: '专家评估（杨威220894）',
+      currentApprover: '220894-杨威',
+    },
+    approvalHistory: [],
+  }]);
+
+  render(<ScrapPrototypeModule type="scrap" />);
+  fireEvent.click(screen.getByRole('button', { name: '审批通过' }));
+
+  expect(getScrapPrototypeRecords('scrap')[0]).toMatchObject({
+    currentNode: '专家评估（王帅200636）',
+    currentApprover: '200636-王帅',
+  });
+  expect(getScrapPrototypeRecords('scrap')[0].approvalHistory).toEqual([
+    expect.objectContaining({ node: '专家评估（杨威220894）', person: '220894-杨威', result: '通过' }),
+  ]);
+});
+
+test('机房报废FS驳回只打回采购交接资料，不退回发起人', () => {
+  const asset = { ...SCRAP_ASSET_POOL.find((item) => item.scope === '机房资产'), majorCategory: 'SERVER', quantity: 1 };
+  saveScrapPrototypeRecords('scrap', [{
+    id: 'machine-fs-return',
+    applicationNo: 'BF-MACHINE-FS-RETURN',
+    documentStatus: '审批中',
+    assetScope: '机房资产',
+    currentNode: 'FS审批部门',
+    assetsSnapshot: [asset],
+    formSnapshot: {
+      assetScope: '机房资产',
+      assetCategory: 'SERVER',
+      assetLocation: '北京',
+      quoteReceiver: '采购专员',
+      currentNode: 'FS审批部门',
+      stampedQuoteAttachments: [{ uid: 'stamp-1', name: '盖章报价单.pdf' }],
+      physicalReceiver: '220784-测试人员',
+    },
+    approvalHistory: [],
+  }]);
+
+  render(<ScrapPrototypeModule type="scrap" />);
+  fireEvent.click(screen.getByRole('button', { name: '审批驳回' }));
+
+  expect(getScrapPrototypeRecords('scrap')[0]).toMatchObject({
+    documentStatus: '审批中',
+    currentNode: '采购专员交接资料',
+  });
+  expect(getScrapPrototypeRecords('scrap')[0].approvalHistory).toEqual([
+    expect.objectContaining({ node: 'FS审批部门', result: '打回', opinion: '请补充资料' }),
+  ]);
 });
 
