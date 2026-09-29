@@ -198,21 +198,32 @@ export default function ScrapPrototypeEditor({
     });
   };
 
-  const annotateNodeFiles = (fileList = []) => fileList.map((file) => (
-    file.businessNode
-      ? file
-      : {
+  const annotateNodeFiles = (fileList = [], existingFiles = []) => {
+    const existingByKey = new Map(existingFiles.map((file) => [file.uid || file.name, file]));
+    return fileList.map((file) => {
+      const key = file.uid || file.name;
+      const existing = existingByKey.get(key);
+      if (existing) {
+        return {
           ...file,
-          businessNode: form.currentNode || (approvalPage ? '当前办理节点' : '草稿'),
-          uploadedBy: approvalPage ? (form.currentApprover || '') : (form.creator || ''),
-          uploadedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-        }
-  ));
+          businessNode: existing.businessNode,
+          uploadedBy: existing.uploadedBy,
+          uploadedAt: existing.uploadedAt,
+        };
+      }
+      return {
+        ...file,
+        businessNode: form.currentNode || (approvalPage ? '当前办理节点' : '草稿'),
+        uploadedBy: approvalPage ? (form.currentApprover || '') : (form.creator || ''),
+        uploadedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+      };
+    });
+  };
 
   const managedUpload = (field, label) => (
     <Upload
       fileList={form[field] || []}
-      onChange={({ fileList }) => updateForm(field, annotateNodeFiles(fileList))}
+      onChange={({ fileList }) => updateForm(field, annotateNodeFiles(fileList, form[field] || []))}
       beforeUpload={(file) => {
         if (file.size > 20 * 1024 * 1024) {
           message.error('单文件不能超过20MB');
@@ -932,7 +943,7 @@ export default function ScrapPrototypeEditor({
                 <Input type="number" min="0" placeholder="报价金额" value={row.amount || ''} onChange={(event) => updateAuditQuote(row.id, 'amount', event.target.value)} />
                 <Upload
                   fileList={row.attachments || []}
-                  onChange={({ fileList }) => updateAuditQuote(row.id, 'attachments', annotateNodeFiles(fileList))}
+                  onChange={({ fileList }) => updateAuditQuote(row.id, 'attachments', annotateNodeFiles(fileList, row.attachments || []))}
                   beforeUpload={(file) => {
                     if (file.size > 20 * 1024 * 1024) {
                       message.error('单文件不能超过20MB');
