@@ -299,7 +299,7 @@ export const DISPOSAL_ASSET_POOL = ACCOUNTING_ASSET_POOL
       dataCleaning: item.scope === '机房资产' && index === 0 ? '是' : '否',
       ...(item.scope === '办公设备' ? { recycler1, recycler2, recycler3 } : {}),
     };
-  }).filter((item) => item.scope !== '机房资产' || item.region === '北京' || item.dataCleaning === '是');
+  });
 
 function approvedSourceAssets(ids) {
   return ids.map((id) => SCRAP_ASSET_POOL.find((item) => item.id === id))
