@@ -475,17 +475,26 @@ const businessRows = {
       id: 'scrap-accounting-demo-office-batch', applicationNo: 'BF20260928000031',
       documentStatus: '已审批', assetScope: '办公设备', company: '114.新媒体',
       region: '北京', scrapMethod: '全部报废', creator: DEMO_APPLICANT,
-      createdAt: '2026-09-28', assetCount: 4, currentNode: '已进入待报废池',
+      createdAt: '2026-09-28', assetCount: 7, currentNode: '已进入待报废池',
       remark: '账面报废候选办公资产演示批次',
-      assetsSnapshot: approvedSourceAssets(['demo-office-01', 'demo-office-02', 'demo-office-03', 'demo-office-04']),
+      assetsSnapshot: approvedSourceAssets([
+        'demo-office-01', 'demo-office-02', 'demo-office-03', 'demo-office-04',
+        'demo-office-05', 'demo-office-06', 'demo-office-09',
+      ]),
     },
     {
       id: 'scrap-accounting-demo-machine-batch', applicationNo: 'BF20260928000032',
       documentStatus: '已审批', assetScope: '机房资产', company: '114.新媒体',
       region: '北京', scrapMethod: '全部报废', creator: DEMO_APPLICANT,
-      createdAt: '2026-09-28', assetCount: 3, currentNode: '已进入待报废池',
+      createdAt: '2026-09-28', assetCount: 4, currentNode: '已进入待报废池',
       remark: '账面报废候选机房资产演示批次',
-      assetsSnapshot: approvedSourceAssets(['demo-machine-01', 'demo-machine-02', 'demo-machine-03']),
+      assetsSnapshot: approvedSourceAssets([
+        'demo-machine-01', 'demo-machine-02', 'demo-machine-03', 'demo-machine-04',
+      ]).map((asset) => (
+        asset.id === 'demo-machine-01' ? { ...asset, dataCleaning: '是' }
+          : asset.id === 'demo-machine-02' ? { ...asset, dataCleaning: '否' }
+            : asset
+      )),
     },
     {
       id: 'scrap-1',
@@ -695,6 +704,8 @@ export function getInitialBusinessRows(type) {
       ? companyMatching.filter((item) => row.assetIds.includes(item.id))
       : companyMatching.slice(0, Math.max(1, row.assetCount || 1));
 
+    const effectiveAssets = row.assetsSnapshot?.length ? row.assetsSnapshot : assets;
+
     return {
       ...row,
       ...(type === 'disposal' && row.assetScope === '机房资产' ? {
@@ -706,9 +717,9 @@ export function getInitialBusinessRows(type) {
         recycler3Name: row.recycler3Name || '东莞市创鑫再生资源有限公司',
       } : {}),
       lastModifiedAt: row.lastModifiedAt || row.createdAt,
-      assetTags: (row.assetsSnapshot?.length ? row.assetsSnapshot : assets).map((item) => item.tagNo).filter(Boolean),
-      originalValueTotal: assets.reduce((sum, item) => sum + Number(item.originalValue || 0), 0),
-      netValueTotal: assets.reduce((sum, item) => sum + Number(item.netValue || 0), 0),
+      assetTags: effectiveAssets.map((item) => item.tagNo).filter(Boolean),
+      originalValueTotal: effectiveAssets.reduce((sum, item) => sum + Number(item.originalValue || 0), 0),
+      netValueTotal: effectiveAssets.reduce((sum, item) => sum + Number(item.netValue || 0), 0),
       ...(type === 'disposal' ? { assetsSnapshot: assets, approvalHistory: [
         { node: row.disposalMode === '无实物处置' || row.assetScope === '机房资产' ? '系统发起' : '制单人提交', person: row.creator, result: '提交', opinion: '', time: `${row.createdAt} 09:00:00` },
       ] } : {}),
