@@ -648,6 +648,17 @@ export default function ScrapPrototypeEditor({
 
   const handleSave = (submit) => {
     if (submit && !validate()) return;
+    if (!submit && type === 'scrap') {
+      const checked = validateScrapAssets(
+        { assetScope: form.assetScope, assetCategory: form.assetCategory },
+        assets,
+        { recordId: form.id, draft: true, allowIncompleteDetails: true },
+      );
+      if (!checked.valid) {
+        message.error(checked.errors[0].message);
+        return;
+      }
+    }
     const { nextForm, savedAssets } = prepareSavePayload();
     onSave(nextForm, savedAssets, submit);
   };
