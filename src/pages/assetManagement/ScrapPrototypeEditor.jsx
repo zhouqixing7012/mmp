@@ -1041,17 +1041,20 @@ export default function ScrapPrototypeEditor({
     <Card size="small" title={sectionTitle('办理信息')} className="shadow-sm">
       {form.currentNode === '采购专员协办' && (
         <Descriptions bordered size="small" column={1}>
-          <Descriptions.Item label="到款凭证">{managedUpload('paymentReceiptAttachments', '上传到款凭证')}</Descriptions.Item>
+          <Descriptions.Item label="办理要求">本节点需在线下确认供应商打款，并至少在单头附件新增 1 份到款凭证。</Descriptions.Item>
+          <Descriptions.Item label="附件">{managedUpload('attachments', '上传附件')}</Descriptions.Item>
         </Descriptions>
       )}
       {form.currentNode === 'ES专员协办' && (
         <Descriptions bordered size="small" column={1}>
-          <Descriptions.Item label="交接签字表">{managedUpload('handoverSignatureAttachments', '上传交接签字表')}</Descriptions.Item>
+          <Descriptions.Item label="办理要求">本节点需完成供应商取货/实物交接，并至少在单头附件新增 1 份交接签字表。</Descriptions.Item>
+          <Descriptions.Item label="附件">{managedUpload('attachments', '上传附件')}</Descriptions.Item>
         </Descriptions>
       )}
       {form.currentNode === '数据清洗' && (
         <Descriptions bordered size="small" column={1}>
-          <Descriptions.Item label="数据清洗报告">{managedUpload('dataCleaningReportAttachments', '上传数据清洗报告')}</Descriptions.Item>
+          <Descriptions.Item label="办理要求">本节点需完成线下数据清洗，并至少在单头附件新增 1 份数据清洗报告。</Descriptions.Item>
+          <Descriptions.Item label="附件">{managedUpload('attachments', '上传附件')}</Descriptions.Item>
         </Descriptions>
       )}
     </Card>
