@@ -45,6 +45,179 @@ function isAuthorized(asset, options) {
 const positive = (value) => Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : null;
 const money = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
+function relatedAssetTag(asset) {
+  return String(
+    asset?.parentAssetTag
+    || asset?.mainAssetTag
+    || asset?.mainTagNo
+    || asset?.mainTag
+    || '',
+  ).trim();
+}
+
+function scrapOccupation(tagNo, exceptRecordId) {
+  return ['crossCompany', 'scrap'].flatMap((type) => getScrapPrototypeRecords(type))
+    .find((record) => (
+      !(type === 'scrap' && record.id === exceptRecordId)
+      && (record.assetsSnapshot || []).some((asset) => asset?.tagNo === tagNo)
+    )) || null;
+}
+
+export function prepareScrapAsset(asset) {
+  const cardQuantity = positive(asset?.cardQuantity ?? asset?.assetCardQuantity ?? asset?.quantity);
+  const requestedQuantity = positive(asset?.requestedScrapQuantity ?? asset?.scrapQuantity ?? asset?.quantity);
+  if (!cardQuantity || !requestedQuantity || requestedQuantity > cardQuantity) return null;
+
+  const cardOriginalValue = Number(asset?.cardOriginalValue ?? asset?.originalCardValue ?? asset?.originalValue ?? 0);
+  const cardNetValue = Number(asset?.cardNetValue ?? asset?.originalCardNetValue ?? asset?.netValue ?? 0);
+  const ratio = requestedQuantity / cardQuantity;
+  const originalValue = money(cardOriginalValue * ratio);
+  const netValue = money(cardNetValue * ratio);
+
+  return {
+    ...asset,
+    cardQuantity,
+    requestedScrapQuantity: requestedQuantity,
+    cardOriginalValue,
+    cardNetValue,
+    quantity: requestedQuantity,
+    originalValue,
+    netValue,
+    accumulatedDepreciation: money(originalValue - netValue),
+    detailScrapMethod: requestedQuantity < cardQuantity ? '部分报废' : '全部报废',
+    dataCleaning: asset?.scope === '机房资产' && asset?.majorCategory === 'SERVER'
+      ? asset.dataCleaning || '否'
+      : undefined,
+  };
+}
+
+export function getRelatedScrapAccessories(mainAsset, options = {}) {
+  const mainTag = String(mainAsset?.tagNo || '').trim();
+  if (!mainTag) return [];
+  return SCRAP_ASSET_POOL
+    .filter((asset) => relatedAssetTag(asset) === mainTag)
+    .map(prepareScrapAsset)
+    .filter(Boolean)
+    .filter((asset) => (
+      !String(asset.status || '').startsWith('已报废')
+      && !String(asset.status || '').includes('待报废')
+      && !scrapOccupation(asset.tagNo, options.recordId)
+    ))
+    .map((asset) => ({ ...asset, isAccessory: true, parentAssetTag: mainTag }));
+}
+
+export function getScrapCandidates(options = {}) {
+  return SCRAP_ASSET_POOL
+    .filter((asset) => !relatedAssetTag(asset))
+    .filter((asset) => !options.assetScope || options.assetScope === '混合' || asset.scope === options.assetScope)
+    .filter((asset) => (
+      options.assetScope !== '机房资产'
+      || !options.assetCategory
+      || asset.majorCategory === options.assetCategory
+    ))
+    .map(prepareScrapAsset)
+    .filter(Boolean)
+    .filter((asset) => (
+      !String(asset.status || '').startsWith('已报废')
+      && !String(asset.status || '').includes('待报废')
+      && !scrapOccupation(asset.tagNo, options.recordId)
+    ));
+}
+
+export function validateScrapAssets(form, assets, options = {}) {
+  const errors = [];
+  if (!assets?.length) {
+    if (!options.draft) errors.push({ code: 'ASSETS_REQUIRED', message: '请至少添加一条资产明细' });
+    return { valid: errors.length === 0, errors };
+  }
+
+  const tags = new Set();
+  const scopes = new Set();
+  const officePaths = new Set();
+
+  assets.forEach((asset, index) => {
+    const prefix = `第${index + 1}行`;
+    const tagNo = String(asset?.tagNo || '').trim();
+    if (!tagNo) {
+      errors.push({ code: 'TAG_REQUIRED', index, message: `${prefix}资产标签号不能为空` });
+      return;
+    }
+    if (tags.has(tagNo)) {
+      errors.push({ code: 'DUPLICATE_ASSET', index, message: `${prefix}资产标签号重复` });
+      return;
+    }
+    tags.add(tagNo);
+
+    const source = SCRAP_ASSET_POOL.find((item) => item.tagNo === tagNo);
+    if (!source) {
+      errors.push({ code: 'ASSET_NOT_FOUND', index, message: `${prefix}资产不存在或已失效` });
+      return;
+    }
+
+    const occupation = scrapOccupation(tagNo, options.recordId);
+    if (occupation) {
+      errors.push({
+        code: 'ASSET_OCCUPIED',
+        index,
+        message: `${prefix}资产已在${occupation.applicationNo || occupation.id}中办理，不能重复选择`,
+      });
+    }
+
+    if (String(source.status || '').startsWith('已报废') || String(source.status || '').includes('待报废')) {
+      errors.push({ code: 'ASSET_NOT_AVAILABLE', index, message: `${prefix}资产已报废或已进入待报废流程` });
+    }
+
+    const normalized = prepareScrapAsset({
+      ...source,
+      ...asset,
+      cardQuantity: asset.cardQuantity ?? source.cardQuantity ?? source.quantity,
+      cardOriginalValue: asset.cardOriginalValue ?? source.cardOriginalValue ?? source.originalValue,
+      cardNetValue: asset.cardNetValue ?? source.cardNetValue ?? source.netValue,
+    });
+    if (!normalized) {
+      errors.push({ code: 'INVALID_QUANTITY', index, message: `${prefix}报废数量必须大于0且不得超过资产卡片数量` });
+      return;
+    }
+    if (
+      Number(asset.quantity) !== normalized.quantity
+      || Number(asset.originalValue) !== normalized.originalValue
+      || Number(asset.netValue) !== normalized.netValue
+      || asset.detailScrapMethod !== normalized.detailScrapMethod
+    ) {
+      errors.push({ code: 'SCRAP_VALUE_MISMATCH', index, message: `${prefix}报废数量、报废方式或报废金额与资产卡片不一致` });
+    }
+
+    const relation = relatedAssetTag(asset);
+    if (!relation && !String(asset.reason || '').trim()) {
+      errors.push({ code: 'REASON_REQUIRED', index, message: `${prefix}报废原因未填写完整` });
+    }
+
+    if (asset.scope === '机房资产' && asset.majorCategory === 'SERVER'
+      && !['是', '否'].includes(asset.dataCleaning)) {
+      errors.push({ code: 'DATA_CLEANING_REQUIRED', index, message: `${prefix}服务器资产必须选择数据清洗` });
+    }
+
+    if (asset.scope) scopes.add(asset.scope);
+    if (asset.scope === '办公设备') officePaths.add(['PC', 'NOTEBOOK'].includes(asset.majorCategory));
+  });
+
+  if (scopes.size > 1) {
+    errors.push({ code: 'SCOPE_MIXED', message: '同一资产报废申请单不能混合机房资产、软件和办公设备' });
+  }
+  if (form?.assetScope && scopes.size === 1 && !scopes.has(form.assetScope)) {
+    errors.push({ code: 'SCOPE_MISMATCH', message: '资产明细范围与单据资产范围不一致' });
+  }
+  if (form?.assetScope === '机房资产' && form.assetCategory
+    && assets.some((asset) => !relatedAssetTag(asset) && asset.majorCategory !== form.assetCategory)) {
+    errors.push({ code: 'MACHINE_CATEGORY_MISMATCH', message: '机房资产明细必须与所选资产大类一致' });
+  }
+  if (officePaths.size > 1) {
+    errors.push({ code: 'OFFICE_PATH_MIXED', message: '电脑类与其他办公设备的鉴定流程不同，请分别建单' });
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
 function normalizeAccountingSource(asset, sourceType, record) {
   const transfer = sourceType === 'crossCompany';
   const requested = positive(asset.requestedScrapQuantity ?? asset.scrapQuantity ?? asset.quantity);
@@ -77,7 +250,7 @@ function normalizeAccountingSource(asset, sourceType, record) {
 
 function occupiedAccountingTags(exceptRecordId) {
   return new Set(getScrapPrototypeRecords('accounting')
-    .filter((record) => record.id !== exceptRecordId && record.documentStatus !== '已驳回')
+    .filter((record) => record.id !== exceptRecordId)
     .flatMap((record) => (record.assetsSnapshot || []).map((asset) => asset.tagNo)).filter(Boolean));
 }
 
@@ -97,7 +270,6 @@ function sourceRecordFor(asset) {
 function accountingOccupation(tagNo, exceptRecordId) {
   return getScrapPrototypeRecords('accounting').find((record) => (
     record.id !== exceptRecordId
-    && record.documentStatus !== '已驳回'
     && (record.assetsSnapshot || []).some((asset) => asset?.tagNo === tagNo)
   )) || null;
 }
@@ -236,7 +408,6 @@ export function validateAccountingAssets(form, assets, options = {}) {
 export function getDisposalCandidates() {
   const disposalRecords = getScrapPrototypeRecords('disposal');
   const occupiedTags = new Set(disposalRecords
-    .filter((record) => record.documentStatus !== '已驳回')
     .flatMap((record) => (record.assetsSnapshot || []).map((asset) => asset.tagNo))
     .filter(Boolean));
   const result = new Map(DISPOSAL_ASSET_POOL
