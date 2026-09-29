@@ -76,6 +76,20 @@ function defaultForm(type) {
     region: '北京',
     needsCleaning: '否',
     quoteReceiver: '',
+    procurementQuoteSupplier: '',
+    procurementQuoteAmount: '',
+    procurementQuoteAttachments: [],
+    internalAuditQuotes: [{ id: 'audit-1', supplier: '', amount: '', attachments: [] }],
+    finalQuoteSupplier: '',
+    finalQuoteAmount: '',
+    finalQuoteAttachments: [],
+    physicalReceiver: '',
+    stampedQuoteAttachments: [],
+    handoverSignatureAttachments: [],
+    paymentReceiptAttachments: [],
+    dataCleaningReportAttachments: [],
+    addSignPerson: '',
+    addSignReturnNode: '',
     recycler1Name: '',
     recycler2Name: '',
     recycler3Name: '',
@@ -110,7 +124,7 @@ function firstNode(type, form, assets) {
   }
 
   if (type === 'scrap') {
-    if (form.assetScope === '机房资产') return '专家评估';
+    if (form.assetScope === '机房资产') return getScrapApprovalNodes(form.assetScope, assets, form)[0];
     if (form.assetScope === '软件') return '5级及以上直属领导';
     return ['PC', 'NOTEBOOK'].includes(assets[0]?.majorCategory)
       ? 'MIS鉴定'
@@ -125,6 +139,81 @@ function firstNode(type, form, assets) {
 function submitStatus(type, form) {
   if (type !== 'disposal') return '审批中';
   return '审批中';
+}
+
+const MACHINE_SCRAP_ADD_SIGN_NODES = [
+  '责任人7级及以上直属领导',
+  'NO部7级及以上领导',
+  '采购5级及以上领导',
+];
+
+function isMachineScrapAddSignNode(node) {
+  return String(node || '').startsWith('专家评估（') || MACHINE_SCRAP_ADD_SIGN_NODES.includes(node);
+}
+
+function machineScrapQuantity(assets = []) {
+  return assets.reduce((sum, asset) => sum + Number(asset.quantity || 0), 0);
+}
+
+function machineScrapNodeError(record, assets = []) {
+  const form = record.formSnapshot || record;
+  const node = record.currentNode;
+  const quantity = machineScrapQuantity(assets);
+  const quoteReceiver = quantity >= 500 ? '内审' : form.quoteReceiver;
+
+  if (node === '采购专员选择报价接收人' && !['采购专员', '内审'].includes(quoteReceiver)) {
+    return '请选择报价接收人';
+  }
+  if (node === '采购专员报价') {
+    if (!String(form.procurementQuoteSupplier || '').trim()) return '请填写回收供应商';
+    if (!Number.isFinite(Number(form.procurementQuoteAmount)) || Number(form.procurementQuoteAmount) <= 0) return '请填写有效报价金额';
+    if (!(form.procurementQuoteAttachments || []).length) return '请上传报价附件';
+  }
+  if (node === '内审报价') {
+    const rows = form.internalAuditQuotes || [];
+    if (!rows.length) return '内审报价至少保留1行';
+    const invalid = rows.find((row) => (
+      !String(row.supplier || '').trim()
+      || !Number.isFinite(Number(row.amount))
+      || Number(row.amount) <= 0
+      || !(row.attachments || []).length
+    ));
+    if (invalid) return '请完整填写每家内审报价的供应商、报价金额和报价附件';
+  }
+  if (node === '采购专员填写回收商报价') {
+    if (!String(form.finalQuoteSupplier || '').trim()) return '请选择或填写最终回收供应商';
+    if (!Number.isFinite(Number(form.finalQuoteAmount)) || Number(form.finalQuoteAmount) <= 0) return '请填写有效最终报价金额';
+    if (!(form.finalQuoteAttachments || []).length) return '请上传最终报价附件';
+    if (quoteReceiver === '内审') {
+      const selected = (form.internalAuditQuotes || []).find((row) => row.supplier === form.finalQuoteSupplier);
+      if (!selected) return '最终回收供应商必须从内审报价供应商中选择';
+      if (Number(selected.amount) !== Number(form.finalQuoteAmount)) return '最终报价金额必须与所选内审报价一致';
+    }
+  }
+  if (node === '采购专员交接资料') {
+    if (!(form.stampedQuoteAttachments || []).length) return '请上传盖章报价单';
+    if (!String(form.physicalReceiver || '').trim()) return '请选择实物收货人';
+  }
+  if (node === '采购专员线下交接') {
+    if (!(form.handoverSignatureAttachments || []).length) return '请上传交接签字表';
+    if (!(form.paymentReceiptAttachments || []).length) return '请上传回款凭证';
+  }
+  return '';
+}
+
+function machineDisposalNodeError(record) {
+  if (record.assetScope !== '机房资产') return '';
+  const form = record.formSnapshot || record;
+  if (record.currentNode === '采购专员协办' && !(form.paymentReceiptAttachments || []).length) {
+    return '请上传到款凭证';
+  }
+  if (record.currentNode === 'ES专员协办' && !(form.handoverSignatureAttachments || []).length) {
+    return '请上传交接签字表';
+  }
+  if (record.currentNode === '数据清洗' && !(form.dataCleaningReportAttachments || []).length) {
+    return '请上传数据清洗报告';
+  }
+  return '';
 }
 
 function seedAssets(type, record) {
@@ -397,6 +486,157 @@ export default function ScrapPrototypeModule({
   const processApproval = (record, result, opinion) => {
     if (!['crossCompany', 'scrap', 'accounting', 'disposal'].includes(type) || record.documentStatus !== '审批中') return;
     const recordAssets = record.assetsSnapshot || seedAssets(type, record);
+    const recordForm = record.formSnapshot || record;
+    const machineQuantity = type === 'scrap' && record.assetScope === '机房资产'
+      ? machineScrapQuantity(recordAssets)
+      : 0;
+    if (
+      type === 'scrap'
+      && record.assetScope === '机房资产'
+      && machineQuantity >= 500
+      && recordForm.quoteReceiver !== '内审'
+    ) {
+      record = {
+        ...record,
+        quoteReceiver: '内审',
+        formSnapshot: { ...recordForm, quoteReceiver: '内审' },
+      };
+    }
+
+    if (type === 'scrap' && record.assetScope === '机房资产' && result === '加签') {
+      if (!isMachineScrapAddSignNode(record.currentNode)) {
+        message.error('当前节点不支持加签');
+        return;
+      }
+      const addSignPerson = String((record.formSnapshot || record).addSignPerson || '').trim();
+      if (!addSignPerson) {
+        message.error('请选择加签人');
+        return;
+      }
+      const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
+      const history = [
+        ...(record.approvalHistory || []),
+        {
+          node: record.currentNode,
+          person: record.currentApprover || '',
+          result: '加签',
+          opinion: opinion.trim(),
+          time: now,
+        },
+      ];
+      const addSignNode = `加签：${addSignPerson}`;
+      const updatedRecord = {
+        ...record,
+        documentStatus: '审批中',
+        currentNode: addSignNode,
+        lastModifiedAt: now,
+        approvalHistory: history,
+        formSnapshot: {
+          ...(record.formSnapshot || {}),
+          documentStatus: '审批中',
+          currentNode: addSignNode,
+          addSignReturnNode: record.currentNode,
+          addSignPerson: '',
+          approvalHistory: history,
+        },
+      };
+      const next = records.map((item) => item.id === record.id ? updatedRecord : item);
+      saveScrapPrototypeRecords(type, next);
+      setRecords(next);
+      message.success('已加签，等待加签人处理');
+      return updatedRecord;
+    }
+
+    if (type === 'scrap' && String(record.currentNode || '').startsWith('加签：')) {
+      if (result !== '通过') {
+        message.error('加签节点仅支持确认完成');
+        return;
+      }
+      const returnNode = String((record.formSnapshot || record).addSignReturnNode || '').trim();
+      if (!returnNode) {
+        message.error('加签返回节点缺失');
+        return;
+      }
+      const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
+      const entry = {
+        node: record.currentNode,
+        person: record.currentNode.replace(/^加签：/, ''),
+        result: '通过',
+        opinion: opinion.trim(),
+        time: now,
+      };
+      const history = [...(record.approvalHistory || []), entry];
+      const updatedRecord = {
+        ...record,
+        documentStatus: '审批中',
+        currentNode: returnNode,
+        lastModifiedAt: now,
+        approvalHistory: history,
+        formSnapshot: {
+          ...(record.formSnapshot || {}),
+          documentStatus: '审批中',
+          currentNode: returnNode,
+          addSignReturnNode: '',
+          approvalHistory: history,
+        },
+      };
+      const next = records.map((item) => item.id === record.id ? updatedRecord : item);
+      saveScrapPrototypeRecords(type, next);
+      setRecords(next);
+      message.success('加签完成，已返回原审批节点');
+      return updatedRecord;
+    }
+
+    if (result === '通过' && type === 'scrap' && record.assetScope === '机房资产') {
+      const error = machineScrapNodeError(record, recordAssets);
+      if (error) {
+        message.error(error);
+        return;
+      }
+    }
+    if (result === '通过' && type === 'disposal') {
+      const error = machineDisposalNodeError(record);
+      if (error) {
+        message.error(error);
+        return;
+      }
+    }
+
+    if (
+      result === '驳回'
+      && type === 'scrap'
+      && record.assetScope === '机房资产'
+      && record.currentNode === 'FS审批部门'
+    ) {
+      const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
+      const entry = {
+        node: 'FS审批部门',
+        person: record.currentApprover || '',
+        result: '打回',
+        opinion: opinion.trim(),
+        time: now,
+      };
+      const history = [...(record.approvalHistory || []), entry];
+      const updatedRecord = {
+        ...record,
+        documentStatus: '审批中',
+        currentNode: '采购专员交接资料',
+        lastModifiedAt: now,
+        approvalHistory: history,
+        formSnapshot: {
+          ...(record.formSnapshot || {}),
+          documentStatus: '审批中',
+          currentNode: '采购专员交接资料',
+          approvalHistory: history,
+        },
+      };
+      const next = records.map((item) => item.id === record.id ? updatedRecord : item);
+      saveScrapPrototypeRecords(type, next);
+      setRecords(next);
+      message.success('已打回采购专员补充交接资料');
+      return updatedRecord;
+    }
+
     const accountingSteps = type === 'accounting'
       ? getAccountingApprovalSteps(recordAssets, accountingApproverMappings)
       : [];
@@ -406,7 +646,7 @@ export default function ScrapPrototypeModule({
     const nodes = type === 'crossCompany'
       ? crossCompanySteps.filter((step) => !step.skipped).map((step) => step.node)
       : type === 'scrap'
-        ? getScrapApprovalNodes(record.assetScope, recordAssets)
+        ? getScrapApprovalNodes(record.assetScope, recordAssets, record.formSnapshot || record)
         : type === 'accounting'
           ? accountingSteps.filter((step) => !step.skipped).map((step) => step.node)
           : getDisposalApprovalNodes(record);
@@ -472,6 +712,12 @@ export default function ScrapPrototypeModule({
     const shouldNotifyMachineTransferParticipants = type === 'crossCompany'
       && completed
       && record.assetScope === '机房资产';
+    const shouldNotifyMachineScrapParticipants = type === 'scrap'
+      && completed
+      && record.assetScope === '机房资产';
+    const shouldNotifyMachineDisposalParticipants = type === 'disposal'
+      && completed
+      && record.assetScope === '机房资产';
     const updatedRecord = {
       ...record,
       documentStatus,
@@ -493,7 +739,21 @@ export default function ScrapPrototypeModule({
               trigger: '跨公司转移审批完成',
               sentAt: entry.time,
             }
-          : record.serviceNotification,
+          : shouldNotifyMachineScrapParticipants
+            ? {
+                channel: '服务号',
+                recipientRole: '所有实际参与人',
+                trigger: '资产报废审批完成',
+                sentAt: entry.time,
+              }
+            : shouldNotifyMachineDisposalParticipants
+              ? {
+                  channel: '服务号',
+                  recipientRole: '申请人及实际审批人',
+                  trigger: '资产处置完成',
+                  sentAt: entry.time,
+                }
+              : record.serviceNotification,
       assetsSnapshot: completed
         ? recordAssets.map((asset) => ({
             ...asset,
@@ -519,7 +779,9 @@ export default function ScrapPrototypeModule({
           ? '审批完成，资产已进入待报废池，并已通知对应账面报废发起人'
           : shouldNotifyMachineTransferParticipants
             ? '审批完成，资产已进入待报废池，并已通知申请人及审批人'
-            : '审批完成，资产已进入待报废池')
+            : shouldNotifyMachineScrapParticipants
+              ? '审批完成，资产已进入待报废池，并已通知实际参与人'
+              : '审批完成，资产已进入待报废池')
       : currentNode === '提单人确认'
         ? '审批通过，待提单人确认'
         : approved ? '审批通过' : '已驳回发起人');
@@ -600,7 +862,16 @@ export default function ScrapPrototypeModule({
         disposalMode, region, needsCleaning: basic.needsCleaning,
         creator: '系统自动', createdAt: now.slice(0, 10), currentNode,
         assetCount: 1, assetsSnapshot: [{ ...asset, status: autoCompleted ? '已报废-已处置' : '已报废-待处置', sourceAccountingNo: record.applicationNo }],
-        approvalHistory, formSnapshot: { ...basic, documentStatus, currentNode, approvalHistory },
+        approvalHistory,
+        serviceNotification: autoCompleted
+          ? {
+              channel: '服务号',
+              recipientRole: '申请人及实际审批人',
+              trigger: '资产处置完成',
+              sentAt: now,
+            }
+          : undefined,
+        formSnapshot: { ...basic, documentStatus, currentNode, approvalHistory },
       };
     });
     if (autoRecords.length) saveScrapPrototypeRecords('disposal', [...autoRecords, ...currentDisposal]);
