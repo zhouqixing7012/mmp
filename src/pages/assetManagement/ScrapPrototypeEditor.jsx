@@ -192,10 +192,21 @@ export default function ScrapPrototypeEditor({
     });
   };
 
+  const annotateNodeFiles = (fileList = []) => fileList.map((file) => (
+    file.businessNode
+      ? file
+      : {
+          ...file,
+          businessNode: form.currentNode || (approvalPage ? '当前办理节点' : '草稿'),
+          uploadedBy: approvalPage ? (form.currentApprover || '') : (form.creator || ''),
+          uploadedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+        }
+  ));
+
   const managedUpload = (field, label) => (
     <Upload
       fileList={form[field] || []}
-      onChange={({ fileList }) => updateForm(field, fileList)}
+      onChange={({ fileList }) => updateForm(field, annotateNodeFiles(fileList))}
       beforeUpload={(file) => {
         if (file.size > 20 * 1024 * 1024) {
           message.error('单文件不能超过20MB');
@@ -245,6 +256,11 @@ export default function ScrapPrototypeEditor({
       return true;
     });
   }, [form]);
+
+  const attachmentSummary = allAttachments.map((file) => {
+    const meta = [file.businessNode, file.uploadedBy, file.uploadedAt].filter(Boolean).join(' / ');
+    return meta ? `${file.name}（${meta}）` : file.name;
+  }).filter(Boolean).join('、');
 
   const disposalSelectedCompanies = type === 'disposal'
     ? (Array.isArray(form.companies) && form.companies.length > 0
@@ -910,7 +926,7 @@ export default function ScrapPrototypeEditor({
                 <Input type="number" min="0" placeholder="报价金额" value={row.amount || ''} onChange={(event) => updateAuditQuote(row.id, 'amount', event.target.value)} />
                 <Upload
                   fileList={row.attachments || []}
-                  onChange={({ fileList }) => updateAuditQuote(row.id, 'attachments', fileList)}
+                  onChange={({ fileList }) => updateAuditQuote(row.id, 'attachments', annotateNodeFiles(fileList))}
                   beforeUpload={(file) => {
                     if (file.size > 20 * 1024 * 1024) {
                       message.error('单文件不能超过20MB');
@@ -1173,7 +1189,7 @@ export default function ScrapPrototypeEditor({
               </>
             )}
             {type !== 'scrap' && <DetailItem label="备注" span={3}>{showValue(form.remark)}</DetailItem>}
-            <DetailItem label="附件" span={3}>{showValue(allAttachments.map((item) => item.name).filter(Boolean).join('、'))}</DetailItem>
+            <DetailItem label="附件" span={3}>{showValue(attachmentSummary)}</DetailItem>
           </DetailGrid>
         ) : (
         <Descriptions bordered size="small" column={3}>
