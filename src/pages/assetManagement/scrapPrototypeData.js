@@ -278,25 +278,120 @@ const DISPOSAL_QUOTE_SAMPLES = [
   [19800, 18750.75, 17600],
 ];
 
-export const DISPOSAL_ASSET_POOL = ACCOUNTING_ASSET_POOL
-  .filter((item) => item.scrapMethod !== '调账' && item.scope !== '软件' && item.scrapType !== '丢失'
-    && !['scrap-office-114-accounting', 'scrap-office-114-available'].includes(item.id))
+function completedAccountingAsset(assetId, sourceBusinessNo, overrides = {}) {
+  const asset = SCRAP_ASSET_POOL.find((item) => item.id === assetId);
+  if (!asset) return null;
+  const cardQuantity = Number(asset.cardQuantity ?? asset.quantity ?? 0);
+  const originalValue = Number(asset.originalValue || 0);
+  const netValue = Number(asset.netValue || 0);
+  return {
+    ...asset,
+    cardQuantity,
+    requestedScrapQuantity: cardQuantity,
+    cardOriginalValue: originalValue,
+    cardNetValue: netValue,
+    quantity: cardQuantity,
+    scrapMethod: '非调账',
+    detailScrapMethod: '全部报废',
+    scrapType: netValue === 0 ? '已到报废期' : '未到报废期',
+    reason: netValue === 0 ? '达到报废条件' : '设备不满足继续使用要求',
+    sourceBusinessType: '资产报废',
+    sourceBusinessNo,
+    status: '已报废-待处置',
+    ...overrides,
+  };
+}
+
+const COMPLETED_ACCOUNTING_SOURCE_ROWS = [
+  {
+    id: 'acc-disposal-office-demo',
+    applicationNo: 'ZMBF20260928000101',
+    documentStatus: '已完成',
+    assetScope: '办公设备',
+    company: '114.新媒体',
+    plate: '17.Corporate',
+    scrapMethod: '非调账',
+    creator: DEMO_APPLICANT,
+    createdAt: '2026-09-28',
+    lastModifiedAt: '2026-09-28 18:00:00',
+    assetCount: 4,
+    currentNode: '流程结束',
+    remark: '已完成账面报废的办公设备处置来源',
+    assetsSnapshot: ['demo-office-01', 'demo-office-02', 'demo-office-03', 'demo-office-04']
+      .map((id) => completedAccountingAsset(id, 'BF20260928000031'))
+      .filter(Boolean),
+  },
+  {
+    id: 'acc-disposal-machine-demo',
+    applicationNo: 'ZMBF20260928000102',
+    documentStatus: '已完成',
+    assetScope: '机房资产',
+    company: '114.新媒体',
+    plate: '17.Corporate',
+    scrapMethod: '非调账',
+    creator: DEMO_APPLICANT,
+    createdAt: '2026-09-28',
+    lastModifiedAt: '2026-09-28 18:10:00',
+    assetCount: 3,
+    currentNode: '流程结束',
+    remark: '已完成账面报废的机房资产处置来源',
+    assetsSnapshot: [
+      completedAccountingAsset('demo-machine-01', 'BF20260928000032', { dataCleaning: '是' }),
+      completedAccountingAsset('demo-machine-02', 'BF20260928000032', { dataCleaning: '否' }),
+      completedAccountingAsset('demo-machine-03', 'BF20260928000032'),
+    ].filter(Boolean),
+  },
+  {
+    id: 'acc-disposal-shanghai-demo',
+    applicationNo: 'ZMBF20260919000103',
+    documentStatus: '已完成',
+    assetScope: '办公设备',
+    company: '115.新媒体-上海',
+    scrapMethod: '非调账',
+    creator: '213852-孙志强',
+    createdAt: '2026-09-19',
+    lastModifiedAt: '2026-09-19 18:00:00',
+    assetCount: 1,
+    currentNode: '流程结束',
+    remark: '已完成账面报废的上海车辆处置来源',
+    assetsSnapshot: [completedAccountingAsset('scrap-vehicle-1', 'BF20260919000041')].filter(Boolean),
+  },
+  {
+    id: 'acc-disposal-guangzhou-demo',
+    applicationNo: 'ZMBF20260918000104',
+    documentStatus: '已完成',
+    assetScope: '办公设备',
+    company: '116.新媒体-广州',
+    scrapMethod: '非调账',
+    creator: '213852-孙志强',
+    createdAt: '2026-09-18',
+    lastModifiedAt: '2026-09-18 18:00:00',
+    assetCount: 1,
+    currentNode: '流程结束',
+    remark: '已完成账面报废的广州房产处置来源',
+    assetsSnapshot: [completedAccountingAsset('scrap-building-1', 'BF20260918000042')].filter(Boolean),
+  },
+];
+
+export const DISPOSAL_ASSET_POOL = COMPLETED_ACCOUNTING_SOURCE_ROWS
+  .flatMap((record) => record.assetsSnapshot.map((item) => ({
+    ...item,
+    sourceAccountingNo: record.applicationNo,
+    accountingCompletedAt: record.lastModifiedAt,
+  })))
   .map((item, index) => {
     const [recycler1, recycler2, recycler3] = DISPOSAL_QUOTE_SAMPLES[index % DISPOSAL_QUOTE_SAMPLES.length];
-    const disposalMode = '实物处置';
     return {
       ...item,
       id: `disposal-${item.id}`,
       sourceAssetId: item.id,
       status: '已报废-待处置',
-      sourceScrapNo: item.sourceBusinessType === '资产报废' ? item.sourceBusinessNo : '-',
-      sourceAccountingNo: `ZMBF20260923${String(index + 1).padStart(4, '0')}`,
-      scrapDate: '2026-09-23',
+      sourceScrapNo: item.sourceBusinessNo || '-',
+      scrapDate: String(item.accountingCompletedAt || '').slice(0, 10),
       disposalStatus: '待处置',
-      disposalMode,
-      enteredAt: '2026-09-23',
+      disposalMode: '实物处置',
+      enteredAt: item.accountingCompletedAt,
       region: String(item.city || '').includes('北京') ? '北京' : '非北京',
-      dataCleaning: item.scope === '机房资产' && index === 0 ? '是' : '否',
       ...(item.scope === '办公设备' ? { recycler1, recycler2, recycler3 } : {}),
     };
   });
@@ -440,6 +535,34 @@ const businessRows = {
           cardOriginalValue: asset.originalValue, cardNetValue: asset.netValue })),
     },
     {
+      id: 'scrap-disposal-shanghai-source',
+      applicationNo: 'BF20260919000041',
+      documentStatus: '已审批',
+      assetScope: '办公设备',
+      company: '115.新媒体-上海',
+      scrapMethod: '全部报废',
+      creator: '213852-孙志强',
+      createdAt: '2026-09-19',
+      assetCount: 1,
+      currentNode: '已进入待报废池',
+      remark: '上海车辆账面报废前置来源',
+      assetsSnapshot: approvedSourceAssets(['scrap-vehicle-1']),
+    },
+    {
+      id: 'scrap-disposal-guangzhou-source',
+      applicationNo: 'BF20260918000042',
+      documentStatus: '已审批',
+      assetScope: '办公设备',
+      company: '116.新媒体-广州',
+      scrapMethod: '全部报废',
+      creator: '213852-孙志强',
+      createdAt: '2026-09-18',
+      assetCount: 1,
+      currentNode: '已进入待报废池',
+      remark: '广州房产账面报废前置来源',
+      assetsSnapshot: approvedSourceAssets(['scrap-building-1']),
+    },
+    {
       id: 'scrap-machine-draft', applicationNo: 'BF20260926000001', documentStatus: '草稿',
       assetScope: '机房资产', company: '114.新媒体', creator: DEMO_APPLICANT,
       createdAt: '2026-09-26', assetCount: 1, scrapMethod: '全部报废',
@@ -455,6 +578,7 @@ const businessRows = {
     },
   ],
   accounting: [
+    ...COMPLETED_ACCOUNTING_SOURCE_ROWS,
     {
       id: 'acc-1',
       applicationNo: 'ZMBF20260923000002',
@@ -502,7 +626,8 @@ const businessRows = {
       region: '北京',
       creator: DEMO_APPLICANT,
       createdAt: '2026-09-23',
-      assetCount: 2,
+      assetCount: 1,
+      assetIds: ['disposal-demo-machine-02'],
       currentNode: 'ES专员协办',
       remark: '北京机房资产实物处置',
     },
@@ -515,22 +640,23 @@ const businessRows = {
       region: '北京',
       creator: DEMO_APPLICANT,
       createdAt: '2026-09-22',
-      assetCount: 6,
+      assetCount: 1,
+      assetIds: ['disposal-demo-office-02'],
       currentNode: 'ES一级审批',
       remark: '办公设备实物处置',
     },
     {
       id: 'disp-office-beijing', applicationNo: 'CZ20260921000001', documentStatus: '审批中',
-      assetScope: '办公设备', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-asset-2')?.company || '116.北京新动力',
+      assetScope: '办公设备', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-demo-office-01')?.company || '114.新媒体',
       region: '北京', creator: DEMO_APPLICANT, createdAt: '2026-09-21',
-      assetCount: 1, assetIds: ['disposal-asset-2'], currentNode: 'ES二级审批',
+      assetCount: 1, assetIds: ['disposal-demo-office-01'], currentNode: 'ES二级审批',
       remark: '笔记本线下询价及处置审批',
     },
     {
       id: 'disp-machine-beijing', applicationNo: 'CZ20260920000002', documentStatus: '审批中',
-      assetScope: '机房资产', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-asset-3')?.company || '115.新媒体',
+      assetScope: '机房资产', company: DISPOSAL_ASSET_POOL.find((item) => item.id === 'disposal-demo-machine-01')?.company || '114.新媒体',
       region: '北京', creator: DEMO_APPLICANT, createdAt: '2026-09-20',
-      assetCount: 1, assetIds: ['disposal-asset-3'], currentNode: 'ES专员协办',
+      assetCount: 1, assetIds: ['disposal-demo-machine-01'], currentNode: 'ES专员协办',
       remark: '机房服务器完成询价待线下交接',
     },
     {
