@@ -6,6 +6,7 @@ import {
   Select,
   Space,
   Table,
+  Tabs,
   Upload,
   message,
 } from 'antd';
@@ -665,13 +666,18 @@ export default function ScrapPrototypeAssetTable({
   const deleteSelected = () => {
     if (selectedRowKeys.length === 0) return;
     const selectedSet = new Set(selectedRowKeys);
-    const selectedMainTags = new Set(
+    const selectedMainIds = new Set(
       assets
         .filter((item) => selectedSet.has(item.id) && !relatedAssetTag(item))
+        .map((item) => item.id),
+    );
+    const selectedMainTags = new Set(
+      assets
+        .filter((item) => selectedMainIds.has(item.id))
         .map((item) => item.tagNo),
     );
     onReplace(assets.filter((item) => (
-      !selectedSet.has(item.id)
+      !selectedMainIds.has(item.id)
       && !selectedMainTags.has(relatedAssetTag(item))
     )));
     setSelectedRowKeys([]);
@@ -1344,6 +1350,34 @@ export default function ScrapPrototypeAssetTable({
           { title: '资产状态', dataIndex: 'status', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
         ];
 
+  const scrapMainAssets = type === 'scrap'
+    ? assets.filter((item) => !relatedAssetTag(item))
+    : assets;
+  const scrapAccessoryAssets = type === 'scrap'
+    ? assets.filter((item) => Boolean(relatedAssetTag(item)))
+    : [];
+
+  const assetTable = (rows, selectable = true) => (
+    <Table
+      rowKey="id"
+      size="small"
+      bordered
+      columns={columns}
+      dataSource={rows}
+      rowSelection={readOnly || !selectable ? undefined : {
+        selectedRowKeys,
+        onChange: setSelectedRowKeys,
+        fixed: true,
+        getCheckboxProps: (record) => ({
+          disabled: type === 'scrap' && Boolean(relatedAssetTag(record)),
+        }),
+      }}
+      scroll={{ x: 'max-content' }}
+      pagination={false}
+      locale={{ emptyText: '暂无资产明细' }}
+    />
+  );
+
   return (
     <>
       {['crossCompany', 'accounting'].includes(type) && transferLookup && (() => {
@@ -1426,24 +1460,23 @@ export default function ScrapPrototypeAssetTable({
         </div>
       )}
 
-      <Table
-        rowKey="id"
-        size="small"
-        bordered
-        columns={columns}
-        dataSource={assets}
-        rowSelection={readOnly ? undefined : {
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-          fixed: true,
-          getCheckboxProps: (record) => ({
-            disabled: type === 'scrap' && Boolean(relatedAssetTag(record)),
-          }),
-        }}
-        scroll={{ x: 'max-content' }}
-        pagination={false}
-        locale={{ emptyText: '暂无资产明细' }}
-      />
+      {type === 'scrap' && assetScope === '机房资产' ? (
+        <Tabs
+          defaultActiveKey="main"
+          items={[
+            {
+              key: 'main',
+              label: `报废资产（${scrapMainAssets.length}）`,
+              children: assetTable(scrapMainAssets, true),
+            },
+            {
+              key: 'accessories',
+              label: `关联配件（${scrapAccessoryAssets.length}）`,
+              children: assetTable(scrapAccessoryAssets, false),
+            },
+          ]}
+        />
+      ) : assetTable(assets, true)}
 
       <SelectModal
         open={pickerOpen}
