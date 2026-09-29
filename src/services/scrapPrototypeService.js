@@ -1,4 +1,4 @@
-import { DISPOSAL_ASSET_POOL, SCRAP_ASSET_POOL, getInitialBusinessRows } from '../pages/assetManagement/scrapPrototypeData';
+import { SCRAP_ASSET_POOL, getInitialBusinessRows } from '../pages/assetManagement/scrapPrototypeData';
 
 const inMemoryRecords = new Map();
 const TYPES = ['crossCompany', 'scrap', 'accounting', 'disposal'];
@@ -424,22 +424,23 @@ export function getDisposalCandidates() {
   const occupiedTags = new Set(disposalRecords
     .flatMap((record) => (record.assetsSnapshot || []).map((asset) => asset.tagNo))
     .filter(Boolean));
-  const result = new Map(DISPOSAL_ASSET_POOL
-    .filter((asset) => requiresPhysicalDisposal(asset) && !occupiedTags.has(asset.tagNo))
-    .map((asset) => [asset.tagNo, asset]));
+  const result = new Map();
   for (const record of getScrapPrototypeRecords('accounting')) {
     if (record.documentStatus !== '已完成') continue;
     for (const asset of record.assetsSnapshot || []) {
-      if (!requiresPhysicalDisposal(asset) || occupiedTags.has(asset.tagNo)) {
-        result.delete(asset.tagNo);
-        continue;
-      }
+      if (!requiresPhysicalDisposal(asset) || occupiedTags.has(asset.tagNo)) continue;
       result.set(asset.tagNo, {
-        ...asset, id: `disposal-${asset.id}`, sourceAssetId: asset.id, status: '已报废-待处置',
+        ...asset,
+        id: `disposal-${asset.id}`,
+        sourceAssetId: asset.id,
+        status: '已报废-待处置',
         sourceScrapNo: asset.sourceBusinessType === '资产报废' ? asset.sourceBusinessNo : '-',
-        sourceAccountingNo: record.applicationNo, scrapDate: record.lastModifiedAt?.slice(0, 10) || record.createdAt,
-        disposalStatus: '待处置', enteredAt: record.lastModifiedAt || record.createdAt,
-        region: String(asset.city || '').includes('北京') ? '北京' : '非北京', disposalMode: '实物处置',
+        sourceAccountingNo: record.applicationNo,
+        scrapDate: record.lastModifiedAt?.slice(0, 10) || record.createdAt,
+        disposalStatus: '待处置',
+        enteredAt: record.lastModifiedAt || record.createdAt,
+        region: String(asset.city || '').includes('北京') ? '北京' : '非北京',
+        disposalMode: '实物处置',
       });
     }
   }
