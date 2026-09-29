@@ -155,6 +155,12 @@ function machineScrapQuantity(assets = []) {
   return assets.reduce((sum, asset) => sum + Number(asset.quantity || 0), 0);
 }
 
+function knownMachineScrapApprover(node) {
+  const match = String(node || '').match(/^专家评估（(.+?)(\d+)）$/);
+  if (!match) return '';
+  return `${match[2]}-${match[1]}`;
+}
+
 function machineScrapNodeError(record, assets = []) {
   const form = record.formSnapshot || record;
   const node = record.currentNode;
@@ -423,7 +429,9 @@ export default function ScrapPrototypeModule({
       : [];
     const submittedApprover = type === 'crossCompany'
       ? crossCompanyPlan.find((step) => !step.skipped && step.node === submittedCurrentNode)?.approver || ''
-      : normalizedForm.currentApprover || '';
+      : type === 'scrap' && assetScope === '机房资产'
+        ? knownMachineScrapApprover(submittedCurrentNode) || normalizedForm.currentApprover || ''
+        : normalizedForm.currentApprover || '';
     const nextForm = {
       ...normalizedForm,
       disposalMode: type === 'disposal' ? '实物处置' : normalizedForm.disposalMode,
@@ -677,7 +685,9 @@ export default function ScrapPrototypeModule({
     const entry = {
       node: record.currentNode,
       person: currentAccountingStep?.approverName || currentAccountingStep?.approverId
-        || (type === 'accounting' && record.currentNode === '提单人确认' ? record.creator : record.currentApprover) || '',
+        || (type === 'accounting' && record.currentNode === '提单人确认' ? record.creator : '')
+        || (type === 'scrap' && record.assetScope === '机房资产' ? knownMachineScrapApprover(record.currentNode) : '')
+        || record.currentApprover || '',
       result,
       opinion: opinion.trim(),
       time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
@@ -687,6 +697,10 @@ export default function ScrapPrototypeModule({
     const nextCrossCompanyApprover = type === 'crossCompany' && nextNode
       ? crossCompanySteps.find((step) => step.node === nextNode)?.approver || ''
       : '';
+    const nextMachineScrapApprover = type === 'scrap' && record.assetScope === '机房资产' && nextNode
+      ? knownMachineScrapApprover(nextNode)
+      : '';
+    const nextApprover = nextCrossCompanyApprover || nextMachineScrapApprover;
     const skippedEntries = type === 'accounting' && approved
       ? accountingSteps
         .filter((step) => step.skipped)
@@ -722,7 +736,7 @@ export default function ScrapPrototypeModule({
       ...record,
       documentStatus,
       currentNode,
-      currentApprover: nextCrossCompanyApprover,
+      currentApprover: nextApprover,
       lastModifiedAt: entry.time,
       enteredScrapPoolAt: completed ? entry.time : record.enteredScrapPoolAt,
       serviceNotification: shouldNotifyAccountingInitiator
@@ -762,7 +776,7 @@ export default function ScrapPrototypeModule({
         : recordAssets,
       approvalHistory: nextHistory,
       formSnapshot: record.formSnapshot
-        ? { ...record.formSnapshot, documentStatus, currentNode, currentApprover: nextCrossCompanyApprover, approvalHistory: nextHistory }
+        ? { ...record.formSnapshot, documentStatus, currentNode, currentApprover: nextApprover, approvalHistory: nextHistory }
         : record.formSnapshot,
     };
     const next = records.map((item) => (
