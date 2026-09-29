@@ -31,8 +31,12 @@ import {
   getAccountingCandidates,
   getAccountingLostCandidates,
   getDisposalCandidates,
+  getRelatedScrapAccessories,
+  getScrapCandidates,
   getScrapPrototypeRecords,
+  prepareScrapAsset,
   validateAccountingAssets,
+  validateScrapAssets,
 } from '../../services/scrapPrototypeService';
 import { mockPlates } from '../../mock/businessRulesMock';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
@@ -156,6 +160,16 @@ const transferLookupConfig = {
 
 function options(values) {
   return values.map((value) => ({ label: value, value }));
+}
+
+function relatedAssetTag(asset) {
+  return String(
+    asset?.parentAssetTag
+    || asset?.mainAssetTag
+    || asset?.mainTagNo
+    || asset?.mainTag
+    || '',
+  ).trim();
 }
 
 function displayValue(value) {
@@ -355,6 +369,7 @@ export default function ScrapPrototypeAssetTable({
   accountingActor,
   accountingAuthorizationScopes,
   accountingRecordId,
+  businessRecordId,
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState('waiting');
@@ -399,6 +414,23 @@ export default function ScrapPrototypeAssetTable({
     onChange(record.id, 'accumulatedDepreciation', Math.round(((nextOriginalValue - nextNetValue) + Number.EPSILON) * 100) / 100);
   };
 
+  const updateScrapQuantity = (record, value) => {
+    const prepared = prepareScrapAsset({
+      ...record,
+      requestedScrapQuantity: value,
+      quantity: value,
+    });
+    if (!prepared) return;
+    [
+      'quantity',
+      'requestedScrapQuantity',
+      'detailScrapMethod',
+      'originalValue',
+      'netValue',
+      'accumulatedDepreciation',
+    ].forEach((field) => onChange(record.id, field, prepared[field]));
+  };
+
   const renderTransferValue = (value, record, sourceField) => {
     if (!readOnly || !showTransferDiff) return displayValue(value);
     const originalValue = record[sourceField];
@@ -435,9 +467,11 @@ export default function ScrapPrototypeAssetTable({
         : getAccountingCandidates(accountingFilters)
       : type === 'disposal'
         ? getDisposalCandidates()
-        : !assetScope || assetScope === '混合'
-          ? SCRAP_ASSET_POOL
-          : filterAssetsForScope(assetScope);
+        : type === 'scrap'
+          ? getScrapCandidates({ recordId: businessRecordId, assetScope, assetCategory })
+          : !assetScope || assetScope === '混合'
+            ? SCRAP_ASSET_POOL
+            : filterAssetsForScope(assetScope);
     const relevantTypes = type === 'accounting'
       ? ['accounting']
       : type === 'disposal'
@@ -445,13 +479,11 @@ export default function ScrapPrototypeAssetTable({
         : ['crossCompany', 'scrap'];
     const occupiedTags = new Set(relevantTypes.flatMap((businessType) => (
       getScrapPrototypeRecords(businessType)
-        .filter((record) => record.documentStatus !== '已驳回')
         .flatMap((record) => record.assetsSnapshot || [])
         .map((item) => item.tagNo)
     )));
     const priorWorkflowTags = new Set(['crossCompany', 'scrap'].flatMap((businessType) => (
       getScrapPrototypeRecords(businessType)
-        .filter((record) => record.documentStatus !== '已驳回')
         .flatMap((record) => record.assetsSnapshot || [])
         .map((item) => item.tagNo)
     )));
@@ -488,17 +520,24 @@ export default function ScrapPrototypeAssetTable({
         || (!String(item.status || '').startsWith('已报废') && item.status !== '在库-待报废')
       )
     ));
-  }, [type, assetScope, assetCategory, sourceCompany, sourceCompanies, sourcePlates, accountingMethod, pickerMode, assets, accountingActor, accountingAuthorizationScopes, accountingRecordId]);
+  }, [type, assetScope, assetCategory, sourceCompany, sourceCompanies, sourcePlates, accountingMethod, pickerMode, assets, accountingActor, accountingAuthorizationScopes, accountingRecordId, businessRecordId]);
 
   const addAssets = (selected, isLostAsset = () => pickerMode === 'lost') => {
-    if (type === 'crossCompany' && sourceCompany && selected.some((item) => item.company !== sourceCompany)) {
+    const selectedForAdd = type === 'scrap'
+      ? selected.flatMap((item) => [
+          item,
+          ...getRelatedScrapAccessories(item, { recordId: businessRecordId }),
+        ])
+      : selected;
+
+    if (type === 'crossCompany' && sourceCompany && selectedForAdd.some((item) => item.company !== sourceCompany)) {
       message.error('已选择公司，只能添加该公司的资产');
       return false;
     }
 
     if (type === 'crossCompany') {
       const companies = new Set(
-        [...assets, ...selected].map((item) => item.company).filter(Boolean),
+        [...assets, ...selectedForAdd].map((item) => item.company).filter(Boolean),
       );
       if (companies.size > 1) {
         message.error('同一跨公司转移单只能选择同一原公司的资产');
@@ -507,7 +546,7 @@ export default function ScrapPrototypeAssetTable({
     }
     if (type === 'disposal' && (
       !hasDisposalCompanyRange
-      || selected.some((item) => (
+      || selectedForAdd.some((item) => (
         !selectedDisposalCompanies.includes(item.company)
         || (selectedDisposalPlates.length > 0 && !selectedDisposalPlates.includes(item.plate))
         || item.scope !== '办公设备'
@@ -516,7 +555,7 @@ export default function ScrapPrototypeAssetTable({
       message.error('只能添加所选公司及板块范围内的待处置办公资产');
       return false;
     }
-    if (type === 'accounting' && (!sourceCompany || selected.some((item) => item.company !== sourceCompany))) {
+    if (type === 'accounting' && (!sourceCompany || selectedForAdd.some((item) => item.company !== sourceCompany))) {
       message.error('请先选择公司，只能添加该公司的资产');
       return false;
     }
@@ -524,7 +563,7 @@ export default function ScrapPrototypeAssetTable({
     const existing = new Set(assets.map((item) => item.id));
     const selectedScopes = new Set([
       ...assets.map((item) => item.scope),
-      ...selected.map((item) => item.scope),
+      ...selectedForAdd.map((item) => item.scope),
     ].filter(Boolean));
 
     if (type !== 'accounting' && selectedScopes.size > 1) {
@@ -532,7 +571,7 @@ export default function ScrapPrototypeAssetTable({
       return false;
     }
 
-    const officePaths = new Set([...assets, ...selected]
+    const officePaths = new Set([...assets, ...selectedForAdd]
       .filter((item) => item.scope === '办公设备')
       .map((item) => ['PC', 'NOTEBOOK'].includes(item.majorCategory)));
     if (type === 'scrap' && officePaths.size > 1) {
@@ -543,7 +582,7 @@ export default function ScrapPrototypeAssetTable({
     if (type === 'accounting') {
       const methods = new Set([
         ...assets.map((item) => item.scrapMethod),
-        ...selected.map((item) => item.scrapMethod),
+        ...selectedForAdd.map((item) => item.scrapMethod),
       ].filter(Boolean));
       if (methods.size > 1 || (methods.size && !methods.has(accountingMethod))) {
         message.error('同一账面报废单的报废方式必须一致');
@@ -551,11 +590,12 @@ export default function ScrapPrototypeAssetTable({
       }
     }
 
-    const next = selected
+    const next = selectedForAdd
       .filter((item) => !existing.has(item.id))
       .map((item) => {
+        const preparedScrap = type === 'scrap' ? prepareScrapAsset(item) : null;
         const base = {
-          ...item,
+          ...(preparedScrap || item),
           scrapMethod: type === 'crossCompany'
             ? '调账'
             : type === 'accounting' && isLostAsset(item)
@@ -566,7 +606,9 @@ export default function ScrapPrototypeAssetTable({
             : item.detailScrapMethod || '全部报废',
           scrapType: type === 'accounting' && isLostAsset(item) ? '丢失' : item.scrapType || '已到报废期',
           reason: type === 'accounting' && isLostAsset(item) ? '' : item.reason || '',
-          dataCleaning: item.scope === '机房资产' ? item.dataCleaning || '否' : undefined,
+          dataCleaning: type === 'scrap'
+            ? preparedScrap?.dataCleaning
+            : item.scope === '机房资产' ? item.dataCleaning || '否' : undefined,
           newCompany: type === 'crossCompany' ? item.newCompany || item.company || '' : item.newCompany || '',
           newPlate: type === 'crossCompany' ? normalizePlateValue(item.newPlate || item.plate) : item.newPlate || '',
           newCostCenter: type === 'crossCompany' ? item.newCostCenter || item.costCenter || '' : item.newCostCenter || '',
@@ -604,6 +646,18 @@ export default function ScrapPrototypeAssetTable({
       }
     }
 
+    if (type === 'scrap') {
+      const checked = validateScrapAssets(
+        { assetScope, assetCategory },
+        [...assets, ...next],
+        { recordId: businessRecordId, allowIncompleteDetails: true },
+      );
+      if (!checked.valid) {
+        message.error(checked.errors[0].message);
+        return false;
+      }
+    }
+
     onReplace([...assets, ...next]);
     return true;
   };
@@ -611,7 +665,15 @@ export default function ScrapPrototypeAssetTable({
   const deleteSelected = () => {
     if (selectedRowKeys.length === 0) return;
     const selectedSet = new Set(selectedRowKeys);
-    onReplace(assets.filter((item) => !selectedSet.has(item.id)));
+    const selectedMainTags = new Set(
+      assets
+        .filter((item) => selectedSet.has(item.id) && !relatedAssetTag(item))
+        .map((item) => item.tagNo),
+    );
+    onReplace(assets.filter((item) => (
+      !selectedSet.has(item.id)
+      && !selectedMainTags.has(relatedAssetTag(item))
+    )));
     setSelectedRowKeys([]);
   };
 
@@ -620,11 +682,23 @@ export default function ScrapPrototypeAssetTable({
       ? ['录入来源', '资产标签号', '报废类型']
       : type === 'crossCompany'
         ? CROSS_COMPANY_IMPORT_HEADERS
-        : ['资产标签号'];
+        : type === 'scrap'
+          ? [
+              '资产标签号',
+              '报废数量',
+              '报废原因',
+              ...(assetScope === '机房资产' && assetCategory === 'SERVER' ? ['数据清洗'] : []),
+            ]
+          : ['资产标签号'];
     const sheet = XLSX.utils.json_to_sheet([], { header: headers });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, sheet, '资产导入模板');
-    XLSX.writeFile(workbook, type === 'crossCompany' ? '跨公司转移资产导入模板.xlsx' : '资产导入模板.xlsx');
+    XLSX.writeFile(
+      workbook,
+      type === 'crossCompany'
+        ? '跨公司转移资产导入模板.xlsx'
+        : type === 'scrap' ? '资产报废导入模板.xlsx' : '资产导入模板.xlsx',
+    );
   };
 
   const exportAssets = () => exportScrapPrototypeAssets(
@@ -650,7 +724,14 @@ export default function ScrapPrototypeAssetTable({
         ? ['录入来源', '资产标签号', '报废类型']
         : type === 'crossCompany'
           ? CROSS_COMPANY_IMPORT_HEADERS
-          : ['资产标签号'];
+          : type === 'scrap'
+            ? [
+                '资产标签号',
+                '报废数量',
+                '报废原因',
+                ...(assetScope === '机房资产' && assetCategory === 'SERVER' ? ['数据清洗'] : []),
+              ]
+            : ['资产标签号'];
       if (header.length !== expectedHeader.length
         || header.some((value, index) => String(value).trim() !== expectedHeader[index])) {
         message.error('导入表头与下载模板不一致');
@@ -683,6 +764,9 @@ export default function ScrapPrototypeAssetTable({
         const tag = String(row['资产标签号'] || '').trim();
         const source = type === 'accounting' ? String(row['录入来源'] || '').trim() : '';
         const selectedType = type === 'accounting' ? String(row['报废类型'] || '').trim() : '';
+        const scrapQuantity = type === 'scrap' ? Number(row['报废数量']) : null;
+        const scrapReason = type === 'scrap' ? String(row['报废原因'] || '').trim() : '';
+        const dataCleaning = type === 'scrap' ? String(row['数据清洗'] || '').trim() : '';
         const isLost = source === '丢失资产';
         const asset = type === 'accounting'
           ? (isLost ? lostByTag : waitingByTag).get(tag)
@@ -713,6 +797,11 @@ export default function ScrapPrototypeAssetTable({
         else if (type === 'accounting' && isLost && accountingMethod === '调账') error = '调账单不能导入丢失资产';
         else if (!asset) error = '资产不存在或不符合当前资产范围与权限';
         else if (selectedIds.has(asset.id)) error = '资产已在当前单据中';
+        else if (type === 'scrap' && (!Number.isFinite(scrapQuantity) || scrapQuantity <= 0)) error = '报废数量必须大于0';
+        else if (type === 'scrap' && scrapQuantity > Number(asset?.cardQuantity ?? asset?.quantity ?? 0)) error = '报废数量不得大于资产卡片数量';
+        else if (type === 'scrap' && !scrapReason) error = '报废原因不能为空';
+        else if (type === 'scrap' && assetScope === '机房资产' && assetCategory === 'SERVER'
+          && !['是', '否'].includes(dataCleaning)) error = '数据清洗只能填写是或否';
         else if (type === 'accounting' && isLost && selectedType && selectedType !== '丢失') error = '丢失资产报废类型只能为丢失';
         else if (type === 'accounting' && !isLost && selectedType
           && !['已到报废期', '未到报废期'].includes(selectedType)) error = '待报废资产报废类型只能为已到报废期或未到报废期';
@@ -734,6 +823,16 @@ export default function ScrapPrototypeAssetTable({
         )) error = '调账后仓库编码与新公司、City不匹配';
 
         let preparedAsset = asset;
+        if (!error && type === 'scrap') {
+          preparedAsset = prepareScrapAsset({
+            ...asset,
+            quantity: scrapQuantity,
+            requestedScrapQuantity: scrapQuantity,
+            reason: scrapReason,
+            dataCleaning: assetScope === '机房资产' && assetCategory === 'SERVER' ? dataCleaning : undefined,
+          });
+          if (!preparedAsset) error = '报废数量与资产卡片数量不一致';
+        }
         if (!error && type === 'crossCompany') {
           const targetBase = {
             ...asset,
@@ -756,7 +855,7 @@ export default function ScrapPrototypeAssetTable({
 
         seenTags.add(tag);
         if (!error) {
-          matched.push(type === 'crossCompany'
+          matched.push(['crossCompany', 'scrap'].includes(type)
             ? preparedAsset
             : { ...asset, scrapType: isLost ? '丢失' : selectedType || asset.scrapType });
           if (isLost) lostIds.add(asset.id);
@@ -776,7 +875,16 @@ export default function ScrapPrototypeAssetTable({
                 Floor: targetFloor,
                 调账后仓库编码: targetWarehouseCode,
               }
-            : { 错误原因: error, 资产标签号: tag };
+            : type === 'scrap'
+              ? {
+                  行号: index + 2,
+                  错误原因: error,
+                  资产标签号: tag,
+                  报废数量: row['报废数量'],
+                  报废原因: scrapReason,
+                  ...(assetScope === '机房资产' && assetCategory === 'SERVER' ? { 数据清洗: dataCleaning } : {}),
+                }
+              : { 错误原因: error, 资产标签号: tag };
       });
 
       const selectedScopes = new Set([...assets, ...matched].map((item) => item.scope).filter(Boolean));
@@ -808,7 +916,9 @@ export default function ScrapPrototypeAssetTable({
             ? ['行号', '错误原因', '录入来源', '资产标签号', '报废类型']
             : type === 'crossCompany'
               ? ['行号', '错误原因', ...CROSS_COMPANY_IMPORT_HEADERS]
-              : ['错误原因', '资产标签号'],
+              : type === 'scrap'
+                ? ['行号', '错误原因', ...expectedHeader]
+                : ['错误原因', '资产标签号'],
         }), '导入结果');
         XLSX.writeFile(errorBook, '资产导入错误结果.xlsx');
         message.error(`${errorCount} 行校验失败，已下载错误结果，整批未导入`);
@@ -990,8 +1100,15 @@ export default function ScrapPrototypeAssetTable({
     }] : []),
     {
       title: '报废数量', dataIndex: 'quantity', width: 110, fixed: 'right',
-      render: (value, record) => readOnly ? displayValue(value) : (
-        <InputNumber min={1} max={record.quantity || 1} value={value} style={{ width: '100%' }} onChange={(next) => onChange(record.id, 'quantity', next)} />
+      render: (value, record) => readOnly || relatedAssetTag(record) ? displayValue(value) : (
+        <InputNumber
+          min={1}
+          max={Number(record.cardQuantity || record.quantity || 1)}
+          precision={0}
+          value={value}
+          style={{ width: '100%' }}
+          onChange={(next) => updateScrapQuantity(record, next)}
+        />
       ),
     },
     {
@@ -1000,7 +1117,7 @@ export default function ScrapPrototypeAssetTable({
       width: 200,
       fixed: 'right',
       render: (value, record) => (
-        readOnly
+        readOnly || relatedAssetTag(record)
           ? displayValue(value)
           : (
             <Input
@@ -1319,6 +1436,9 @@ export default function ScrapPrototypeAssetTable({
           selectedRowKeys,
           onChange: setSelectedRowKeys,
           fixed: true,
+          getCheckboxProps: (record) => ({
+            disabled: type === 'scrap' && Boolean(relatedAssetTag(record)),
+          }),
         }}
         scroll={{ x: 'max-content' }}
         pagination={false}
