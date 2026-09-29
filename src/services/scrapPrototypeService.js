@@ -188,11 +188,11 @@ export function validateScrapAssets(form, assets, options = {}) {
     }
 
     const relation = relatedAssetTag(asset);
-    if (!relation && !String(asset.reason || '').trim()) {
+    if (!options.allowIncompleteDetails && !relation && !String(asset.reason || '').trim()) {
       errors.push({ code: 'REASON_REQUIRED', index, message: `${prefix}报废原因未填写完整` });
     }
 
-    if (asset.scope === '机房资产' && asset.majorCategory === 'SERVER'
+    if (!options.allowIncompleteDetails && asset.scope === '机房资产' && asset.majorCategory === 'SERVER'
       && !['是', '否'].includes(asset.dataCleaning)) {
       errors.push({ code: 'DATA_CLEANING_REQUIRED', index, message: `${prefix}服务器资产必须选择数据清洗` });
     }
