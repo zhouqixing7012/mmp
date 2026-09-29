@@ -192,3 +192,4 @@
 - 修复提交 `6062f13` 对应 Vercel 新部署 `dpl_EgFG2zBxfm8SURaeNtUGMMWgaNhY` 已为 Ready，生产别名 `mmp-6uby.vercel.app` 指向该部署；仅验证构建及部署状态，未声称业务页面冒烟通过。
 
 - 2026-09-29：盘点新一轮十项需求同步主 PRD 与主要原型：计划盘点中及置灰、员工照片审核中流转、列表平铺、组织部门树与多选、范围资产查询、照片规则空默认、EBS 原值和逐资产人员校验。PC/移动原版迁移首轮核查并回填高确定性遗漏；7 个测试集 12 项通过，`CI=false npm run build` 通过。未声明原版全文迁移完成，详见迁移核查。
+- 2026-09-29：本轮资产盘点变更提交 `main@5142af6`；Vercel `dpl_7naKzgeApNTkbKpBzuqPNuFRb4SP` 返回 Ready，元数据对应此提交，生产别名 `mmp-6uby.vercel.app` 已指向。浏览器页面未验证，环境中 agent-browser 命令及 Playwright 浏览器二进制不可用。

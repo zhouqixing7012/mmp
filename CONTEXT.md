@@ -11,7 +11,7 @@
 
 ## 当前任务与停留位置
 
-- 资产盘点新增十项变更已同步新版 PRD 与主要 PC/移动原型；原版长文迁移不能宣称完整，首轮遗漏回填与后续逐项核查见 `docs/asset-inventory/资产盘点-现状迁移核查.md`、`task_plan.md` #15。计划启动逐资产人员校验保留系统机房初盘免监督人例外。7 个测试集 12 项、本地生产构建通过；待远端提交与预览核对。
+- 资产盘点新增十项变更已同步新版 PRD 与主要 PC/移动原型；原版长文迁移不能宣称完整，首轮遗漏回填与后续逐项核查见 `docs/asset-inventory/资产盘点-现状迁移核查.md`、`task_plan.md` #15。计划启动逐资产人员校验保留系统机房初盘免监督人例外。7 个测试集 12 项、本地生产构建通过；已提交 `main@5142af6`，Vercel 部署 `dpl_7naKzgeApNTkbKpBzuqPNuFRb4SP` Ready 且生产别名已指向该提交；浏览器页面未验证（当前环境缺少可执行浏览器）。
 
 
 - Vercel 原部署 `dpl_HUdzZ8G6W3gHRhMQNtgGq2M4B1kJ` 因 `scrapPrototypeService.js:61` 未定义 `type` 构建失败；已在 `main@6062f13` 修复，报废服务测试及本地构建通过，新部署 `dpl_EgFG2zBxfm8SURaeNtUGMMWgaNhY` 状态 Ready，生产别名已指向它。
