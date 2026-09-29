@@ -947,11 +947,21 @@ export default function ScrapPrototypeEditor({
             </Card>
           ))}
           <Button onClick={addAuditQuote}>新增报价</Button>
+          {auditQuoteRows[0]?.supplier && Number(auditQuoteRows[0]?.amount) > 0 && (
+            <Typography.Text>
+              建议回收商：{auditQuoteRows[0].supplier}，报价 {money(auditQuoteRows[0].amount)}
+            </Typography.Text>
+          )}
         </div>
       )}
 
       {form.currentNode === '采购专员填写回收商报价' && (
         <Descriptions bordered size="small" column={2}>
+          {form.internalAuditRecommendation?.supplier && (
+            <Descriptions.Item label="内审建议回收商" span={2}>
+              {form.internalAuditRecommendation.supplier} / {money(form.internalAuditRecommendation.amount)}
+            </Descriptions.Item>
+          )}
           <Descriptions.Item label="最终回收供应商">
             {effectiveQuoteReceiver === '内审' ? (
               <Select
