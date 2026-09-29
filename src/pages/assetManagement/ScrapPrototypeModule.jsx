@@ -90,6 +90,7 @@ function defaultForm(type) {
     dataCleaningReportAttachments: [],
     addSignPerson: '',
     addSignReturnNode: '',
+    addSignReturnApprover: '',
     recycler1Name: '',
     recycler2Name: '',
     recycler3Name: '',
@@ -522,11 +523,14 @@ export default function ScrapPrototypeModule({
         return;
       }
       const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
+      const returnApprover = record.currentApprover
+        || knownMachineScrapApprover(record.currentNode)
+        || '';
       const history = [
         ...(record.approvalHistory || []),
         {
           node: record.currentNode,
-          person: record.currentApprover || '',
+          person: returnApprover,
           result: '加签',
           opinion: opinion.trim(),
           time: now,
@@ -537,13 +541,16 @@ export default function ScrapPrototypeModule({
         ...record,
         documentStatus: '审批中',
         currentNode: addSignNode,
+        currentApprover: addSignPerson,
         lastModifiedAt: now,
         approvalHistory: history,
         formSnapshot: {
           ...(record.formSnapshot || {}),
           documentStatus: '审批中',
           currentNode: addSignNode,
+          currentApprover: addSignPerson,
           addSignReturnNode: record.currentNode,
+          addSignReturnApprover: returnApprover,
           addSignPerson: '',
           approvalHistory: history,
         },
@@ -561,6 +568,7 @@ export default function ScrapPrototypeModule({
         return;
       }
       const returnNode = String((record.formSnapshot || record).addSignReturnNode || '').trim();
+      const returnApprover = String((record.formSnapshot || record).addSignReturnApprover || '').trim();
       if (!returnNode) {
         message.error('加签返回节点缺失');
         return;
@@ -578,13 +586,16 @@ export default function ScrapPrototypeModule({
         ...record,
         documentStatus: '审批中',
         currentNode: returnNode,
+        currentApprover: returnApprover,
         lastModifiedAt: now,
         approvalHistory: history,
         formSnapshot: {
           ...(record.formSnapshot || {}),
           documentStatus: '审批中',
           currentNode: returnNode,
+          currentApprover: returnApprover,
           addSignReturnNode: '',
+          addSignReturnApprover: '',
           approvalHistory: history,
         },
       };
