@@ -189,3 +189,4 @@
 - 移动端三方复核追加已确认口径：报失通知资产责任人与监督人、公共资产位置可修改、快扫覆盖所有资产类型、报失后不可重盘、未执行在已盘独立分组且不计已盘数、详情扩展字段按资产范围。已同步新版 PRD 和部分原型限制；真实照片与任务流仍列缺口。
 
 - Vercel `dpl_HUdzZ8G6W3gHRhMQNtgGq2M4B1kJ` 日志确认 `main@03c57f4` 构建被 `scrapPrototypeService.js:61` 未定义变量阻断；资产占用查找保留单据类型后修复。报废服务测试 16 项通过，`CI=false npm run build` 通过；CI=true 仍因仓库既有警告视为错误而失败，与 Vercel 的构建命令不同。
+- 修复提交 `6062f13` 对应 Vercel 新部署 `dpl_EgFG2zBxfm8SURaeNtUGMMWgaNhY` 已为 Ready，生产别名 `mmp-6uby.vercel.app` 指向该部署；仅验证构建及部署状态，未声称业务页面冒烟通过。

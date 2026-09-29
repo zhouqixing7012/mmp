@@ -11,7 +11,7 @@
 
 ## 当前任务与停留位置
 
-- Vercel 部署 `dpl_HUdzZ8G6W3gHRhMQNtgGq2M4B1kJ` 对应 `main` 的 `03c57f4`，远端日志确认 `scrapPrototypeService.js:61` 未定义 `type` 阻断构建；已修复并在本地通过 `CI=false npm run build` 与报废服务测试，待提交并核对新部署。
+- Vercel 原部署 `dpl_HUdzZ8G6W3gHRhMQNtgGq2M4B1kJ` 因 `scrapPrototypeService.js:61` 未定义 `type` 构建失败；已在 `main@6062f13` 修复，报废服务测试及本地构建通过，新部署 `dpl_EgFG2zBxfm8SURaeNtUGMMWgaNhY` 状态 Ready，生产别名已指向它。
 - 移动端现状/新版 PRD/原型三方对抗测试已形成报告；PC 范围明细新增净值，复盘按净值排序取前 X% 资产且执行日期同一天。移动端确认报失通知资产责任人和监督人、公共位置可改、全资产类型快扫、报失不可重盘、未执行在已盘页签独立分组、扩展字段按资产范围；扫码照片与真实任务仍未贯通。
 - 已完成：
   - 资产报废来源及明细校验；
