@@ -70,6 +70,17 @@ jest.mock('antd', () => {
       )),
     ),
   );
+  const Tabs = ({ items = [] }) => ReactModule.createElement(
+    'div',
+    null,
+    ...items.map((item) => ReactModule.createElement(
+      'section',
+      { key: item.key },
+      ReactModule.createElement('div', null, item.label),
+      item.children,
+    )),
+  );
+
 
   return {
     Button,
@@ -78,6 +89,7 @@ jest.mock('antd', () => {
     Select,
     Space: ({ children }) => ReactModule.createElement('div', null, children),
     Table,
+    Tabs,
     Upload: ({ children }) => ReactModule.createElement('div', null, children),
     message: { error: jest.fn(), success: jest.fn() },
   };
@@ -113,7 +125,18 @@ jest.mock('../../services/scrapPrototypeService', () => ({
   getAccountingLostCandidates: ({ company }) => require('./scrapPrototypeData').SCRAP_ASSET_POOL
     .filter((item) => item.company === company),
   getDisposalCandidates: () => [],
+  getScrapCandidates: ({ assetScope, assetCategory } = {}) => require('./scrapPrototypeData').SCRAP_ASSET_POOL
+    .filter((item) => !item.parentAssetTag && (!assetScope || item.scope === assetScope)
+      && (!assetCategory || item.majorCategory === assetCategory)),
+  getRelatedScrapAccessories: () => [],
+  prepareScrapAsset: (asset) => ({
+    ...asset,
+    cardQuantity: asset.cardQuantity ?? asset.quantity,
+    requestedScrapQuantity: asset.requestedScrapQuantity ?? asset.quantity,
+    detailScrapMethod: '全部报废',
+  }),
   validateAccountingAssets: () => ({ valid: true, errors: [] }),
+  validateScrapAssets: () => ({ valid: true, errors: [] }),
 }));
 
 test('跨公司转移按所选公司筛选资产，添加时带出当前资产目标字段', () => {
@@ -401,3 +424,36 @@ test('资产处置明细导出包含完整处置字段和三家报价', () => {
   ]);
   expect(XLSX.writeFile.mock.calls[0][1]).toBe('资产处置明细.xlsx');
 });
+
+test('机房报废按报废资产和关联配件分组展示', () => {
+  const main = {
+    ...SCRAP_ASSET_POOL.find((item) => item.scope === '机房资产'),
+    id: 'machine-main-tab',
+    tagNo: 'MACHINE-MAIN-TAB',
+  };
+  const accessory = {
+    ...main,
+    id: 'machine-accessory-tab',
+    tagNo: 'MACHINE-ACCESSORY-TAB',
+    parentAssetTag: main.tagNo,
+    isAccessory: true,
+  };
+
+  render(
+    <ScrapPrototypeAssetTable
+      type="scrap"
+      assetScope="机房资产"
+      assetCategory={main.majorCategory}
+      assets={[main, accessory]}
+      readOnly
+      onChange={jest.fn()}
+      onReplace={jest.fn()}
+    />,
+  );
+
+  expect(screen.getByText('报废资产（1）')).toBeInTheDocument();
+  expect(screen.getByText('关联配件（1）')).toBeInTheDocument();
+  expect(screen.getByText(main.tagNo)).toBeInTheDocument();
+  expect(screen.getByText(accessory.tagNo)).toBeInTheDocument();
+});
+
