@@ -3,9 +3,11 @@ import {
   getAccountingLostCandidates,
   getDisposalCandidates,
   getScrapPrototypeRecords,
+  prepareScrapAsset,
   resetScrapPrototypeMemory,
   saveScrapPrototypeRecords,
   validateAccountingAssets,
+  validateScrapAssets,
 } from './scrapPrototypeService';
 
 const actor = { id: 'verified-accountant' };
@@ -155,19 +157,83 @@ test('legacy browser storage does not override repository mock data', () => {
   expect(records.some((record) => record.id === 'acc-1')).toBe(true);
 });
 
-test('demo pools keep enough unused candidates for manual accounting and disposal flows', () => {
-  saveScrapPrototypeRecords('accounting', []);
+test('demo pools keep source-backed unused candidates for manual accounting and disposal flows', () => {
   const accountingTags = getAccountingCandidates(auth).map((asset) => asset.tagNo);
   expect(accountingTags).toEqual(expect.arrayContaining([
-    'DEMO-FA-000201',
-    'DEMO-FA-000202',
-    'DEMO-SV-000210',
-    'DEMO-NW-000212',
+    'DEMO-FA-000205',
+    'DEMO-FA-000206',
+    'DEMO-FA-000209',
+    'DEMO-NW-000213',
   ]));
-  expect(accountingTags.length).toBeGreaterThanOrEqual(7);
+  expect(accountingTags.length).toBeGreaterThanOrEqual(4);
 
-  const disposalTags = getDisposalCandidates().map((asset) => asset.tagNo);
-  expect(disposalTags.filter((tagNo) => String(tagNo).startsWith('DEMO-')).length)
-    .toBeGreaterThanOrEqual(10);
+  const completedAccountingNos = new Set(
+    getScrapPrototypeRecords('accounting')
+      .filter((record) => record.documentStatus === '已完成')
+      .map((record) => record.applicationNo),
+  );
+  const disposalCandidates = getDisposalCandidates();
+  expect(disposalCandidates.length).toBeGreaterThanOrEqual(3);
+  expect(disposalCandidates.every((asset) => completedAccountingNos.has(asset.sourceAccountingNo))).toBe(true);
+});
+
+test('partial scrap calculation keeps scrap and remaining values in one calculation', () => {
+  const prepared = prepareScrapAsset({
+    tagNo: 'PARTIAL-1',
+    scope: '办公设备',
+    quantity: 2,
+    requestedScrapQuantity: 2,
+    cardQuantity: 5,
+    cardOriginalValue: 1000,
+    cardNetValue: 250,
+  });
+
+  expect(prepared).toMatchObject({
+    quantity: 2,
+    detailScrapMethod: '部分报废',
+    originalValue: 400,
+    netValue: 100,
+    remainingQuantity: 3,
+    remainingOriginalValue: 600,
+    remainingNetValue: 150,
+  });
+});
+
+test('scrap validation rejects orphan accessories without their main asset', () => {
+  const source = require('../pages/assetManagement/scrapPrototypeData').SCRAP_ASSET_POOL[0];
+  const orphan = prepareScrapAsset({
+    ...source,
+    id: 'orphan-accessory',
+    tagNo: source.tagNo,
+    parentAssetTag: 'MISSING-MAIN',
+    reason: '',
+  });
+  saveScrapPrototypeRecords('scrap', []);
+  saveScrapPrototypeRecords('crossCompany', []);
+
+  const result = validateScrapAssets(
+    { assetScope: orphan.scope, assetCategory: orphan.majorCategory },
+    [orphan],
+    {},
+  );
+  expect(result.errors).toEqual(expect.arrayContaining([
+    expect.objectContaining({ code: 'ORPHAN_ACCESSORY' }),
+  ]));
+});
+
+test('disposal candidates require an actually completed accounting source', () => {
+  const completed = getScrapPrototypeRecords('accounting')
+    .filter((record) => record.documentStatus === '已完成');
+  const completedNos = new Set(completed.map((record) => record.applicationNo));
+  const candidates = getDisposalCandidates();
+
+  expect(candidates.length).toBeGreaterThan(0);
+  expect(candidates.every((asset) => completedNos.has(asset.sourceAccountingNo))).toBe(true);
+
+  saveScrapPrototypeRecords('accounting', completed.map((record) => ({
+    ...record,
+    documentStatus: '审批中',
+  })));
+  expect(getDisposalCandidates()).toEqual([]);
 });
 
