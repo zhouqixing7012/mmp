@@ -88,7 +88,6 @@ function defaultForm(type) {
     stampedQuoteAttachments: [],
     handoverSignatureAttachments: [],
     paymentReceiptAttachments: [],
-    dataCleaningReportAttachments: [],
     addSignPerson: '',
     addSignReturnNode: '',
     addSignReturnApprover: '',
