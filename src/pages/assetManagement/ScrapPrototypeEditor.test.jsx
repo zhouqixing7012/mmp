@@ -480,7 +480,7 @@ test('机房资产报废审批单头展示资产大类、所在地和单独一�
         ...accountingForm,
         applicationNo: 'BF-MACHINE-001',
         documentStatus: '审批中',
-        currentNode: '采购专员',
+        currentNode: '采购专员选择报价接收人',
         officeArea: '北京-搜狐媒体大厦',
         assetScope: '机房资产',
         assetCategory: 'SERVER',
@@ -539,3 +539,101 @@ test.each(['非调账', '调账'])('账面报废%s详情与审批显示相同原
   expect(screen.getByRole('button', { name: '导出' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '同意' })).not.toBeInTheDocument();
 });
+
+test('机房报废专家节点支持加签，FS节点使用打回上一步', () => {
+  const baseProps = {
+    type: 'scrap',
+    config: { title: '资产报废', createLabel: '创建资产报废申请单' },
+    initialAssets: [{ id: 'server-1', scope: '机房资产', majorCategory: 'SERVER', quantity: 1 }],
+    readOnly: true,
+    approvalPage: true,
+    onBack: jest.fn(),
+    onSave: jest.fn(),
+    onApprove: jest.fn(),
+  };
+
+  const expert = render(<ScrapPrototypeEditor
+    {...baseProps}
+    initialForm={{
+      ...accountingForm,
+      applicationNo: 'BF-MACHINE-EXPERT',
+      documentStatus: '审批中',
+      assetScope: '机房资产',
+      assetCategory: 'SERVER',
+      assetLocation: '北京',
+      currentNode: '专家评估（杨威220894）',
+    }}
+  />);
+  expect(screen.getByText('办理信息')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '请选择加签人' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '加签' })).toBeInTheDocument();
+  expert.unmount();
+
+  render(<ScrapPrototypeEditor
+    {...baseProps}
+    initialForm={{
+      ...accountingForm,
+      applicationNo: 'BF-MACHINE-FS',
+      documentStatus: '审批中',
+      assetScope: '机房资产',
+      assetCategory: 'SERVER',
+      assetLocation: '北京',
+      currentNode: 'FS审批部门',
+    }}
+  />);
+  expect(screen.getByRole('button', { name: '打回上一步' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '驳回' })).not.toBeInTheDocument();
+});
+
+test('500台机房报废报价接收人固定为内审', () => {
+  render(<ScrapPrototypeEditor
+    type="scrap"
+    config={{ title: '资产报废', createLabel: '创建资产报废申请单' }}
+    initialForm={{
+      ...accountingForm,
+      applicationNo: 'BF-MACHINE-500',
+      documentStatus: '审批中',
+      assetScope: '机房资产',
+      assetCategory: 'SERVER',
+      assetLocation: '北京',
+      currentNode: '采购专员选择报价接收人',
+      quoteReceiver: '采购专员',
+    }}
+    initialAssets={[{ id: 'server-500', scope: '机房资产', majorCategory: 'SERVER', quantity: 500 }]}
+    readOnly
+    approvalPage
+    onBack={jest.fn()}
+    onSave={jest.fn()}
+    onApprove={jest.fn()}
+  />);
+  expect(screen.getByText('本单达到500台及以上，报价接收人固定为内审。')).toBeInTheDocument();
+  const select = screen.getByDisplayValue('内审');
+  expect(select).toBeDisabled();
+});
+
+test('机房处置协办节点展示对应凭证并只提供完成办理', () => {
+  render(<ScrapPrototypeEditor
+    type="disposal"
+    config={{ title: '资产处置' }}
+    initialForm={{
+      ...accountingForm,
+      applicationNo: 'CZ-MACHINE-PAYMENT',
+      documentStatus: '审批中',
+      assetScope: '机房资产',
+      region: '北京',
+      needsCleaning: '否',
+      currentNode: '采购专员协办',
+    }}
+    initialAssets={[{ id: 'machine-pay', scope: '机房资产', majorCategory: 'SERVER', city: '北京', quantity: 1 }]}
+    readOnly
+    approvalPage
+    onBack={jest.fn()}
+    onSave={jest.fn()}
+    onApprove={jest.fn()}
+  />);
+  expect(screen.getByText('到款凭证')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '上传到款凭证' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '完成办理' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '驳回' })).not.toBeInTheDocument();
+});
+
