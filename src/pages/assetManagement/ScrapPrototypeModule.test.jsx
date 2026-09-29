@@ -133,23 +133,17 @@ test('资产处置有多张可查看单据，覆盖不同资产范围、状态�
     .every((row) => !row.recycler1Name && row.assetsSnapshot.every((asset) => asset.recycler1 == null))).toBe(true);
 });
 
-test('旧资产处置办理状态刷新后统一迁移为审批中，保留节点与历史', () => {
+test('报废专项刷新时忽略旧LocalStorage业务缓存并恢复仓库Mock', () => {
   const legacyRows = [
-    { id: 'legacy-disposal-1', documentStatus: '处理中', currentNode: 'ES专员处理',
-      approvalHistory: [{ node: '财务审批', result: '通过' }],
-      formSnapshot: { documentStatus: '待 ES 专员处理', currentNode: 'ES专员处理' } },
-    { id: 'legacy-disposal-2', documentStatus: '办理中', assetScope: '机房资产',
-      assetsSnapshot: [{ scope: '机房资产', dataCleaning: '是' }], currentNode: '采购专员协办',
-      formSnapshot: { documentStatus: '办理中', currentNode: '采购专员协办' } },
+    { id: 'legacy-disposal-1', documentStatus: '处理中', currentNode: 'ES专员处理' },
+    { id: 'legacy-disposal-2', documentStatus: '办理中', currentNode: '采购专员协办' },
   ];
   window.localStorage.setItem('asset-scrap-prototype:v2:disposal', JSON.stringify(legacyRows));
-  const migrated = getScrapPrototypeRecords('disposal');
-  expect(migrated.map((record) => record.documentStatus)).toEqual(['审批中', '审批中']);
-  expect(migrated.map((record) => record.formSnapshot.documentStatus)).toEqual(['审批中', '审批中']);
-  expect(migrated[0].currentNode).toBe('ES专员处理');
-  expect(migrated[0].approvalHistory).toEqual(legacyRows[0].approvalHistory);
-  expect(migrated[1].needsCleaning).toBe('是');
-  expect(JSON.parse(window.localStorage.getItem('asset-scrap-prototype:v2:disposal'))).toEqual(migrated);
+  resetScrapPrototypeMemory();
+
+  const refreshed = getScrapPrototypeRecords('disposal');
+  expect(refreshed.some((record) => String(record.id).startsWith('legacy-disposal-'))).toBe(false);
+  expect(refreshed.some((record) => ['处理中', '办理中', '待 ES 专员处理'].includes(record.documentStatus))).toBe(false);
 });
 
 test('账面报废完成仅自动生成机房实物处置单，软件和丢失直接完成', () => {
