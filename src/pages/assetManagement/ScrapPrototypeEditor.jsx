@@ -25,7 +25,7 @@ import { getScrapPrototypeApprovalRecords } from './scrapPrototypeApproval';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 import { money } from './scrapPrototypeData';
-import { getDisposalCandidates, validateAccountingAssets } from '../../services/scrapPrototypeService';
+import { getDisposalCandidates, validateAccountingAssets, validateScrapAssets } from '../../services/scrapPrototypeService';
 
 const transferCompanyOptions = Array.from(
   [...getAssetMaintenanceRows(), ...warehouseCatalog.map((item) => {
@@ -532,16 +532,13 @@ export default function ScrapPrototypeEditor({
         message.error('请选择资产大类和资产所在地');
         return false;
       }
-      const invalid = assets.find((item) => !String(item.reason || '').trim());
-      if (invalid) {
-        message.error(`资产 ${invalid.tagNo} 的报废原因未填写完整`);
-        return false;
-      }
-      const officePaths = new Set(assets
-        .filter((item) => item.scope === '办公设备')
-        .map((item) => ['PC', 'NOTEBOOK'].includes(item.majorCategory)));
-      if (officePaths.size > 1) {
-        message.error('电脑类与其他办公设备的鉴定流程不同，请分别建单');
+      const checked = validateScrapAssets(
+        { assetScope: form.assetScope, assetCategory: form.assetCategory },
+        assets,
+        { recordId: form.id },
+      );
+      if (!checked.valid) {
+        message.error(checked.errors[0].message);
         return false;
       }
     }
@@ -1454,6 +1451,7 @@ export default function ScrapPrototypeEditor({
           accountingActor={accountingActor}
           accountingAuthorizationScopes={accountingAuthorizationScopes}
           accountingRecordId={form.id}
+          businessRecordId={form.id}
           assets={assets}
           readOnly={readOnly}
           showTransferDiff={approvalView && type === 'crossCompany'}
