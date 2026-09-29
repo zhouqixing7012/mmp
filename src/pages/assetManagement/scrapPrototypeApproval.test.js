@@ -44,3 +44,23 @@ test('账面报废提单人确认仍属于审批中，进度展示待确认节�
   }, 'accounting');
   expect(rows[rows.length - 1]).toMatchObject({ node: '提单人确认', status: '待确认' });
 });
+
+test('机房报废办理节点和机房处置协办节点使用待办理/已办理状态', () => {
+  const scrapPending = getScrapPrototypeApprovalRecords({
+    documentStatus: '审批中',
+    currentNode: '采购专员交接资料',
+    creator: '220784-演示用户',
+    approvalHistory: [{ node: '采购专员填写回收商报价', person: '采购专员', result: '通过', time: '2026-09-29 10:00:00' }],
+  }, 'scrap');
+  expect(scrapPending[0].status).toBe('已办理');
+  expect(scrapPending[scrapPending.length - 1]).toMatchObject({ node: '采购专员交接资料', status: '待办理' });
+
+  const disposalPending = getScrapPrototypeApprovalRecords({
+    documentStatus: '审批中',
+    currentNode: '采购专员协办',
+    creator: '系统自动',
+    approvalHistory: [{ node: '系统发起', person: '系统自动', result: '提交', time: '2026-09-29 10:00:00' }],
+  }, 'disposal');
+  expect(disposalPending[disposalPending.length - 1]).toMatchObject({ node: '采购专员协办', status: '待办理' });
+});
+
