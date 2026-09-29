@@ -429,6 +429,9 @@ export default function ScrapPrototypeAssetTable({
       'originalValue',
       'netValue',
       'accumulatedDepreciation',
+      'remainingQuantity',
+      'remainingOriginalValue',
+      'remainingNetValue',
     ].forEach((field) => onChange(record.id, field, prepared[field]));
   };
 
