@@ -263,7 +263,6 @@ export default function ScrapPrototypeEditor({
       form.stampedQuoteAttachments || [],
       form.handoverSignatureAttachments || [],
       form.paymentReceiptAttachments || [],
-      form.dataCleaningReportAttachments || [],
     ];
     const seen = new Set();
     return groups.flat().filter((file) => {
