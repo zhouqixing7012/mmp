@@ -309,6 +309,13 @@ function AssetCard({ asset, onClick }) {
   );
 }
 
+function AssetGroupHeading({ label, count, collapsed, onToggle }) {
+  return <button type="button" className="inventory-asset-group-heading" aria-label={`${label}—共${count}条`} aria-expanded={!collapsed} onClick={onToggle}>
+    <span>{label}</span>
+    <span className="inventory-asset-group-meta"><span className="inventory-asset-group-count">{count} 条</span>{collapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}</span>
+  </button>;
+}
+
 function DetailRow({ label, value }) {
   return (
     <div className="inventory-detail-row">
@@ -435,10 +442,10 @@ export default function AssetInventoryMobilePrototype() {
   const isQuickAuthorized = (planId) => {
     const scope = planId ? projectAssets.filter((asset) => DEMO_SUPERVISED_PLANS.find((plan) => plan.id === planId)?.assetIds.includes(asset.id)) : projectAssets;
     const machineContext = planId ? scope.length > 0 && scope.every((asset) => asset.area === '机房') : projectRanges.length === 1 && projectRanges[0] === '机房';
-    return machineContext && (currentUser.isESAssetGroup === true || scope.some((asset) => asset.ownerNo === currentUser.employeeNo));
+    return currentUser.isESAssetGroup === true || (machineContext && scope.some((asset) => asset.ownerNo === currentUser.employeeNo));
   };
   const canQuickScan = isQuickAuthorized(view === 'planDetail' ? activePlanId : null);
-  const quickScope = projectAssets.filter((asset) => asset.area === '机房' && (currentUser.isESAssetGroup === true || asset.ownerNo === currentUser.employeeNo) && (!quickPlanId || activePlan?.assetIds.includes(asset.id))).map((asset) => asset.id);
+  const quickScope = projectAssets.filter((asset) => (currentUser.isESAssetGroup === true || (asset.area === '机房' && asset.ownerNo === currentUser.employeeNo)) && (!quickPlanId || activePlan?.assetIds.includes(asset.id))).map((asset) => asset.id);
 
   const openDetail = (asset) => {
     setQuickPhotoMode(false);
@@ -586,14 +593,14 @@ export default function AssetInventoryMobilePrototype() {
   const addQuickScan = (outsideProject = false) => {
     if (projectClosed || !isQuickAuthorized(quickPlanId)) { messageApi.warning('当前身份或盘点范围不可快速扫描'); return; }
     const candidates = projectAssets.filter((asset) => quickScope.includes(asset.id)).map((asset) => asset.tagNo);
-    if (!candidates.length) { messageApi.warning('当前机房盘点范围没有可扫描资产'); return; }
+    if (!candidates.length) { messageApi.warning('当前盘点范围没有可扫描资产'); return; }
     const tagNo = outsideProject ? '114140000999' : candidates[quickScanIndex % candidates.length];
     setQuickScanIndex((index) => index + 1);
     if (!projectAssets.some((asset) => asset.tagNo === tagNo)) {
       messageApi.warning('不在当前盘点项目内');
       return;
     }
-    if (!quickScope.some((id) => assets.find((asset) => asset.id === id)?.tagNo === tagNo)) { messageApi.warning('资产不在当前机房盘点任务范围'); return; }
+    if (!quickScope.some((id) => assets.find((asset) => asset.id === id)?.tagNo === tagNo)) { messageApi.warning('资产不在当前盘点任务范围'); return; }
     setQuickScanned((current) => [...current, tagNo]);
   };
 
@@ -679,10 +686,7 @@ export default function AssetInventoryMobilePrototype() {
             const groupAssets = filteredAssets.filter((asset) => asset.status === group.key);
             return (
               <section key={group.key} className="inventory-status-section">
-                <button type="button" className="inventory-section-title inventory-group-toggle" aria-expanded={!collapsedGroups.includes(group.key)} onClick={() => setCollapsedGroups((current) => current.includes(group.key) ? current.filter((key) => key !== group.key) : [...current, group.key])}>
-                  <span>{group.label}</span>
-                  <span className="inventory-section-count">{groupAssets.length} 条 {collapsedGroups.includes(group.key) ? <ChevronRight size={16} /> : <ChevronDown size={16} />}</span>
-                </button>
+                <AssetGroupHeading label={group.label} count={groupAssets.length} collapsed={collapsedGroups.includes(group.key)} onToggle={() => setCollapsedGroups((current) => current.includes(group.key) ? current.filter((key) => key !== group.key) : [...current, group.key])} />
                 {!collapsedGroups.includes(group.key) && (groupAssets.length ? groupAssets.map((asset) => (
                   <AssetCard key={asset.id} asset={asset} onClick={() => openDetail(asset)} />
                 )) : (
@@ -697,17 +701,14 @@ export default function AssetInventoryMobilePrototype() {
   };
 
   const renderPlanDetail = () => <>
-    <MobileHeader title={activePlan?.name || '盘点计划'} onBack={goBack} onExit={exitPrototype} right={canQuickScan && <Button type="text" aria-label="快速扫描" icon={<ScanLine size={19} />} onClick={() => openQuickScan(activePlanId)} />} />
+    <MobileHeader title={activePlan?.name || '盘点计划'} onBack={goBack} onExit={exitPrototype} right={canQuickScan && <Button type="text" aria-label="快速扫描" icon={<ScanLine size={18} />} onClick={() => openQuickScan(activePlanId)}>快扫</Button>} />
     <div className="inventory-mobile-content inventory-plan-detail">
       {[
         { key: '未盘', rows: activePlanAssets.filter((asset) => asset.status === '未盘') },
         { key: '报失', rows: activePlanAssets.filter((asset) => asset.status === '报失') },
         { key: '已盘', rows: activePlanAssets.filter((asset) => ['已盘', '代盘'].includes(asset.status)) },
       ].map((group) => <section className="inventory-plan-section" key={group.key}>
-        <button type="button" className="inventory-plan-section-heading" aria-expanded={!collapsedPlanSections.includes(group.key)} onClick={() => setCollapsedPlanSections((current) => current.includes(group.key) ? current.filter((item) => item !== group.key) : [...current, group.key])}>
-          <span>{group.key}—共{group.rows.length}条</span>
-          {collapsedPlanSections.includes(group.key) ? <ChevronRight size={17} /> : <ChevronDown size={17} />}
-        </button>
+        <AssetGroupHeading label={group.key} count={group.rows.length} collapsed={collapsedPlanSections.includes(group.key)} onToggle={() => setCollapsedPlanSections((current) => current.includes(group.key) ? current.filter((item) => item !== group.key) : [...current, group.key])} />
         {!collapsedPlanSections.includes(group.key) && <div className="inventory-plan-assets">
           {group.rows.length ? group.rows.map((asset) => <AssetCard key={asset.id} asset={asset} onClick={() => openDetail(asset)} />) : <div className="inventory-empty">暂无{group.key}资产</div>}
         </div>}
@@ -781,7 +782,8 @@ export default function AssetInventoryMobilePrototype() {
               </div>
             </div>
           )}
-          <div className="inventory-detail-actions">
+        </div>
+          {(quickPhotoMode || selectedAsset.status === '未盘') && <div className="inventory-mobile-footer inventory-detail-actions">
             {quickPhotoMode ? <>
               <Button onClick={() => { setQuickPhotoMode(false); setScannedDetail(false); setView('quickList'); }}>返回</Button>
               <Button type="primary" className="inventory-mobile-scan-action" onClick={saveQuickPhotos}>保存图片</Button>
@@ -791,8 +793,7 @@ export default function AssetInventoryMobilePrototype() {
             )}
             {selectedAsset.status === '未盘' && <Button type="primary" className="inventory-mobile-scan-action inventory-mobile-detail-action" icon={<ScanLine size={18} />} disabled={projectClosed} onClick={() => scannedDetail ? handleSubmitScan(selectedAsset.ownerNo === currentUser.employeeNo ? 'mine' : 'proxy') : openScan(selectedAsset.id, detailReturnView === 'planDetail' ? activePlanId : null)}>{scannedDetail ? '提交' : '盘点'}</Button>}
             </>}
-          </div>
-        </div>
+          </div>}
       </>
     );
   };
@@ -898,7 +899,7 @@ export default function AssetInventoryMobilePrototype() {
               title="资产盘点"
               onBack={goBack}
               onExit={exitPrototype}
-              right={<>{canQuickScan && <Button type="text" aria-label="快速扫描" icon={<ScanLine size={19} />} onClick={() => openQuickScan()} />}<Button type="text" shape="circle" aria-label="监督计划" icon={<ListChecks size={19} />} onClick={() => setPlanMenuOpen((current) => !current)} /></>}
+              right={<>{canQuickScan && <Button type="text" aria-label="快速扫描" icon={<ScanLine size={18} />} onClick={() => openQuickScan()}>快扫</Button>}<Button type="text" shape="circle" aria-label="监督计划" icon={<ListChecks size={19} />} onClick={() => setPlanMenuOpen((current) => !current)} /></>}
             />
             {planMenuOpen && <div className="inventory-supervised-plans" role="menu" aria-label="我监督的盘点计划">
               {supervisedPlans.map((plan) => <button type="button" role="menuitem" key={plan.id} onClick={() => { setActivePlanId(plan.id); setCollapsedPlanSections([]); setPlanMenuOpen(false); setView('planDetail'); }}>

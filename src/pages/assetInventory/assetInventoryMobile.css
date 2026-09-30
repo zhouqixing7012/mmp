@@ -371,19 +371,6 @@
 }
 
 .inventory-plan-section { margin-bottom: 14px; }
-.inventory-plan-section-heading {
-  display: flex;
-  width: 100%;
-  justify-content: space-between;
-  align-items: center;
-  border: 0;
-  background: #e8edf2;
-  padding: 10px 12px;
-  color: #334155;
-  font-weight: 650;
-  text-align: left;
-  cursor: pointer;
-}
 .inventory-plan-assets { display: grid; gap: 8px; padding-top: 8px; }
 .inventory-plan-footer > .ant-btn { width: 50%; }
 
@@ -487,7 +474,7 @@
 .inventory-detail-actions {
   display: flex;
   gap: 10px;
-  margin: 16px 0 4px;
+  margin: 0;
 }
 
 .inventory-detail-actions .ant-btn {
@@ -772,11 +759,24 @@
   font-size: 14px;
   font-weight: 600;
 }
-.inventory-group-toggle {
+
+.inventory-asset-group-heading {
+  display: flex;
   width: 100%;
-  border: 0;
-  background: transparent;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #e2e6f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px 12px;
+  color: #2c3038;
+  font-size: 14px;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
 }
-.inventory-group-toggle .inventory-section-count { display: inline-flex; align-items: center; gap: 4px; }
+.inventory-asset-group-heading:focus-visible { outline: 2px solid #145cff; outline-offset: 2px; }
+.inventory-asset-group-meta { display: inline-flex; align-items: center; gap: 8px; color: #848b99; }
+.inventory-asset-group-count { border-radius: 12px; background: #f2f5fa; padding: 2px 8px; font-size: 12px; font-weight: 400; }

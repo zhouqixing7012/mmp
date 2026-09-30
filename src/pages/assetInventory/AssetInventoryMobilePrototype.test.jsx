@@ -33,16 +33,16 @@ describe('AssetInventoryMobilePrototype', () => {
 
   test('各状态分组可折叠，已盘页签隐藏开始盘点', () => {
     render(<AssetInventoryMobilePrototype />);
-    const lossGroup = screen.getByRole('button', { name: '报失 1 条' });
+    const lossGroup = screen.getByRole('button', { name: '报失—共1条' });
     fireEvent.click(lossGroup);
     expect(screen.queryByText('惠普.P221显示器')).not.toBeInTheDocument();
     fireEvent.click(lossGroup);
     expect(screen.getByText('惠普.P221显示器')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /已盘 0/ }));
     expect(screen.queryByRole('button', { name: '开始盘点' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '审核中 0 条' })).toHaveAttribute('aria-expanded', 'true');
-    fireEvent.click(screen.getByRole('button', { name: '审核中 0 条' }));
-    expect(screen.getByRole('button', { name: '审核中 0 条' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', { name: '审核中—共0条' })).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByRole('button', { name: '审核中—共0条' }));
+    expect(screen.getByRole('button', { name: '审核中—共0条' })).toHaveAttribute('aria-expanded', 'false');
   });
 
   test('直接详情无上传区域，扫码详情上传必传照片后提交返回扫码', () => {
@@ -68,7 +68,7 @@ describe('AssetInventoryMobilePrototype', () => {
   test('列表普通扫码进入单资产详情，提交后继续扫码下一资产', () => {
     render(<AssetInventoryMobilePrototype />);
     fireEvent.click(screen.getByRole('button', { name: '开始盘点' }));
-    expect(screen.queryByText('快速扫描')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '模拟扫描标签' })).not.toBeInTheDocument();
     scanMine();
     expect(screen.getByText('资产标签号')).toBeInTheDocument();
     screen.getAllByRole('button', { name: '拍照' }).forEach((button) => fireEvent.click(button));
@@ -126,12 +126,22 @@ describe('AssetInventoryMobilePrototype', () => {
   });
 
   test.each([
-    { scopeRanges: ['员工'], mobileUser: { name: '孙志强', employeeNo: '201132000160', isESAssetGroup: true } },
+    { scopeRanges: ['员工'], mobileUser: { name: '普通员工', employeeNo: 'OTHER', isESAssetGroup: false } },
     { scopeRanges: ['机房'], mobileUser: { name: '财务', employeeNo: 'FINANCE', isESAssetGroup: false } },
-  ])('非机房或无权限身份没有快扫入口', (state) => {
+  ])('普通身份在非机房范围及无权限身份没有快扫入口', (state) => {
     mockLocationState = state;
     render(<AssetInventoryMobilePrototype />);
     expect(screen.queryByRole('button', { name: '快速扫描' })).not.toBeInTheDocument();
+  });
+
+  test('ES资产组在员工盘点也能使用快扫', () => {
+    mockLocationState = { scopeRanges: ['员工'] };
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: '快速扫描' }));
+    fireEvent.click(screen.getByRole('button', { name: '模拟扫描标签' }));
+    expect(screen.getByText(/本次共扫描到资产 1 个/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '结束扫描' }));
+    expect(screen.getByText('114121801802')).toBeInTheDocument();
   });
 
   test('机房责任人可使用独立快扫入口', () => {

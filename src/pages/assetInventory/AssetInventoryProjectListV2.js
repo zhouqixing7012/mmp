@@ -177,15 +177,20 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
     },
   ];
 
+  const mobilePreviewUser = creator === '213852-孙志强' ? { name: '孙志强', employeeNo: '201132000160', isESAssetGroup: true } : { name: creator, employeeNo: '', isESAssetGroup: false };
+
   return <Space direction="vertical" size={16} className="w-full">
     {contextHolder}
     <div className="flex items-center justify-between">
       <Typography.Title level={4} style={{ margin: 0 }}>盘点项目</Typography.Title>
+      <Space>
       <Button icon={<Smartphone size={14} />} onClick={() => {
           if (selectedKeys.length > 1) { messageApi.warning('请选择一个盘点项目进行移动端预览'); return; }
           const selectedProject = rows.find((row) => row.key === selectedKeys[0]);
-          navigate('/asset-inventory/mobile', { state: { projectNo: selectedProject?.projectNo || '', scopeRanges: selectedProject?.scopeRanges, mobileUser: creator === '213852-孙志强' ? { name: '孙志强', employeeNo: '201132000160', isESAssetGroup: true } : { name: creator, employeeNo: '', isESAssetGroup: false } } });
+          navigate('/asset-inventory/mobile', { state: { projectNo: selectedProject?.projectNo || '', scopeRanges: selectedProject?.scopeRanges, mobileUser: mobilePreviewUser } });
         }}>移动端预览</Button>
+      <Button icon={<Smartphone size={14} />} onClick={() => navigate('/asset-inventory/mobile', { state: { scopeRanges: ['机房'], mobileUser: mobilePreviewUser } })}>机房移动端预览</Button>
+      </Space>
     </div>
     <QueryBar onQuery={() => { setAppliedFilters({ ...draftFilters }); setSelectedKeys([]); }} onReset={() => { setDraftFilters(EMPTY_FILTERS); setAppliedFilters(EMPTY_FILTERS); setSelectedKeys([]); }}>
       <QueryItem label="项目编号"><Input value={draftFilters.projectNo} allowClear placeholder="请输入项目编号" onChange={(event) => updateFilter('projectNo', event.target.value)} /></QueryItem>
