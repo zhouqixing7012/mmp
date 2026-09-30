@@ -2,6 +2,12 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import AssetInventoryProjectPageV2 from './AssetInventoryProjectPageV2';
 
+jest.mock('./mockData', () => {
+  const original = jest.requireActual('./mockData');
+  return { ...original, PROJECT_ROWS: original.PROJECT_ROWS.map(row => row.projectType === '复盘'
+    ? { ...row, snapshotAssetKeys:['asset-3'], scopeSnapshotAssetKeys:['asset-3','asset-4'] } : row) };
+});
+
 jest.mock('antd', () => ({
   Card: () => null,
   InputNumber: () => null,
@@ -24,8 +30,9 @@ jest.mock('./AssetInventoryProjectPage', () => ({ onProjectGenerated }) => {
       : <><button onClick={() => { setPage('盘点项目详情'); onProjectGenerated({ projectNo: 'CP-new', projectType: '初盘', status: '快照生成' }); }}>生成快照</button><button onClick={() => setPage('盘点项目')}>返 回</button></>}
   </div>;
 });
-jest.mock('./AssetInventoryPlansV2Refined', () => ({ project, onPlansStarted, onBack }) => <div data-testid="opened-plan-project">
+jest.mock('./AssetInventoryPlansV2Refined', () => ({ project, projectAssets, onPlansStarted, onBack }) => <div data-testid="opened-plan-project">
   {project.projectNo}|{project.projectType}
+  <span data-testid="location-project-assets">{projectAssets.map(asset => asset.assetTag).join(',')}</span>
   <button onClick={() => onPlansStarted({ ...project, status: '盘点中' })}>启动计划</button><button onClick={onBack}>退出计划</button>
 </div>);
 jest.mock('./AssetInventoryCustomPlanBuilder', () => () => null);
@@ -62,4 +69,11 @@ test('计划启动后重新打开项目详情保留盘点中状态', () => {
   fireEvent.click(screen.getByRole('button', { name: '退出计划' }));
   fireEvent.click(screen.getByRole('button', { name: '查看项目' }));
   expect(screen.getByText('盘点中')).toBeInTheDocument();
+});
+
+test('位置新增候选包含项目未执行资产，但不包含范围外资产', () => {
+  render(<AssetInventoryProjectPageV2 />);
+  fireEvent.click(screen.getAllByRole('button', { name:'进入计划' })[0]);
+  expect(screen.getByTestId('location-project-assets')).toHaveTextContent('3103201755,3102200966');
+  expect(screen.getByTestId('location-project-assets')).not.toHaveTextContent('114122102371');
 });

@@ -90,6 +90,10 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const allowedRangeKey = allowedRanges.join('|');
   const availableAssets = ASSET_ROWS.filter((asset) => isInventoryRangeAllowed(asset, allowedRanges)
     && (!planProject?.snapshotAssetKeys || planProject.snapshotAssetKeys.includes(asset.key)));
+  // 地点申请取项目范围母集，不能被执行抽样或计划分配缩小；旧快照只有执行清单时按其明确范围。
+  const locationProjectAssetKeys = planProject.scopeSnapshotAssetKeys ?? planProject.snapshotAssetKeys;
+  const locationProjectAssets = ASSET_ROWS.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)
+    && (!locationProjectAssetKeys || locationProjectAssetKeys.includes(asset.key)));
   const initialPlanRows = INITIAL_PLAN_ROWS.filter((row) => allowedRanges.includes(row.range));
   const variantMenuLabel = menuLabel || `盘点项目（${variantLabel}）`;
   const rootRef = useRef(null);
@@ -507,7 +511,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     />}
 
     {customBuilderOpen && <AssetInventoryCustomPlanBuilder initialAssets={customBuilderSource === 'plans' ? unplannedSnapshotAssets : availableAssets} onBack={closeCustomBuilder} onConfirmPlan={handleCustomPlanConfirm} />}
-    {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} onPlansStarted={(project) => { setPlanProject(project); setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '盘点中' })); }} currentOperator={creator} rows={planRows} setRows={setPlanRows} assetsForPlan={assetsForPlan} canManualCreate={canManualCreate && planProject?.status !== '盘点关闭'} onManualCreate={openManualPlanBuilder} onBack={() => setPlanViewOpen(false)} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}
+    {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} projectAssets={locationProjectAssets} onPlansStarted={(project) => { setPlanProject(project); setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '盘点中' })); }} currentOperator={creator} rows={planRows} setRows={setPlanRows} assetsForPlan={assetsForPlan} canManualCreate={canManualCreate && planProject?.status !== '盘点关闭'} onManualCreate={openManualPlanBuilder} onBack={() => setPlanViewOpen(false)} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}
     {activePlan && <AssetInventoryPlanAssetListV2 plan={activePlan} project={planProject} assets={assetsForPlan(activePlan)} onAssetsChange={(updater) => changePlanAssets(activePlan, updater)} onBack={() => setActivePlan(null)} />}
     {imageReviewOpen && <AssetInventoryImageReviewV2 project={planProject} onBack={() => setImageReviewOpen(false)} />}
     {progressOpen && <AssetInventoryProgressV2 project={planProject} onBack={() => setProgressOpen(false)} />}

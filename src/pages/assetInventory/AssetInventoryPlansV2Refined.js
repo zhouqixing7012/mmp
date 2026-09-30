@@ -37,7 +37,7 @@ function ProjectInfoCard({ project }) {
   );
 }
 
-export default function AssetInventoryPlansV2Refined({ project, currentOperator, onBack, onOpenPlanAssets, rows, setRows, assetsForPlan, canManualCreate, onManualCreate, onPlansStarted }) {
+export default function AssetInventoryPlansV2Refined({ project, currentOperator, onBack, onOpenPlanAssets, rows, setRows, assetsForPlan, canManualCreate, onManualCreate, onPlansStarted, projectAssets = [] }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const projectClosed = project?.status === '盘点关闭';
@@ -150,7 +150,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
 
   if (reviewOpen && submission) return <InventoryReplayReview project={project} plans={submission.plans || visibleRows} assetsForPlan={(row) => submission.assetsByPlan?.[row.planNo] || assetsForPlan(row)} submission={submission} onBack={() => setReviewOpen(false)} />;
 
-  if (locationChangeOpen) return <InventoryLocationChangeFlow project={project} projectAssets={[...new Map(visibleRows.flatMap(assetsForPlan).map(asset => [asset.assetTag, asset])).values()]} currentOperator={currentOperator} initialRequestId={locationRequestId} onBack={() => setLocationChangeOpen(false)} />;
+  if (locationChangeOpen) return <InventoryLocationChangeFlow project={project} projectAssets={projectAssets} currentOperator={currentOperator} initialRequestId={locationRequestId} onBack={() => setLocationChangeOpen(false)} />;
 
   return <Space direction="vertical" size={16} className="w-full">
     {contextHolder}<PageTitle>盘点计划</PageTitle><ProjectInfoCard project={project} />
