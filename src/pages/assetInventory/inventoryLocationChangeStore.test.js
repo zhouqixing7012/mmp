@@ -1,3 +1,4 @@
+import { buildLocationDraft } from './inventoryLocationEdit';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import {
   createInventoryLocationChangeDemo,
@@ -55,7 +56,7 @@ test('多资产申请中第二条地点不完整时不修改任何待发起记�
   expect(() => submitInventoryLocationChangeRequest({
     projectNo, projectType: '复盘', reason: '核对位置', applicant: '冯丽婷',
     draftLocations: {
-      [first.id]: changedAgain,
+      [first.id]: after,
       [second.id]: { city: '北京市', building: '搜狐媒体大厦', floor: '' },
     },
   })).toThrow('新位置不完整');
@@ -122,4 +123,19 @@ test('编辑备注与申请人部门随提交保存，数量取台账，审批�
  expect(saved.quantity).toBe(original.quantity);
  expect(saved.remark).toBe('已上架');
  expect(getAssetMaintenanceRows().find(row=>row.tag===assetTag).remarks).toBe(original.remarks);
+});
+
+
+test('添加资产草稿提交时使用编辑后的新地点，审批前不改台账，审批后更新',()=>{
+ const asset=getAssetMaintenanceRows().find(row=>row.tag===assetTag);
+ const draft=buildLocationDraft(asset);
+ const request=submitInventoryLocationChangeRequest({projectNo,projectType:'复盘',reason:'新增明细核对',applicant:'冯丽婷',addedAssets:[draft],permittedAssetTags:[assetTag],draftLocations:{[draft.id]:after},draftRemarks:{[draft.id]:'新备注'}});
+ const changes=getInventoryLocationChanges(projectNo);expect(changes).toHaveLength(1);expect(changes[0].after).toEqual(after);expect(changes[0].remark).toBe('新备注');expect(getAssetMaintenanceRows().find(row=>row.tag===assetTag).floor).toBe('9层');
+ approveInventoryLocationChangeRequest(request.id,{approver:'206984-何文',decision:'同意'});expect(getAssetMaintenanceRows().find(row=>row.tag===assetTag).floor).toBe('8层');
+});
+test('添加资产越出项目范围或重复时整个提交不落库',()=>{
+ const draft={...buildLocationDraft(getAssetMaintenanceRows().find(row=>row.tag===assetTag)),after};
+ const args={projectNo,projectType:'复盘',reason:'新增核对',applicant:'冯丽婷',addedAssets:[draft],permittedAssetTags:[]};
+ expect(()=>submitInventoryLocationChangeRequest(args)).toThrow('当前复盘项目范围');
+ expect(()=>submitInventoryLocationChangeRequest({...args,addedAssets:[draft,draft],permittedAssetTags:[assetTag]})).toThrow('重复');expect(getInventoryLocationChanges(projectNo)).toHaveLength(0);expect(getInventoryLocationChangeRequests(projectNo)).toHaveLength(0);
 });

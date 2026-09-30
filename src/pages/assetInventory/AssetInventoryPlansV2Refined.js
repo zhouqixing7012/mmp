@@ -13,7 +13,10 @@ import { planPersonnelBlockReason } from './inventoryPlanStartRules';
 import InventoryLocationChangeFlow from './InventoryLocationChangeFlow';
 import InventoryReplayReview from './InventoryReplayReview';
 import { readDemoData, writeDemoData } from '../../services/demoStorage';
-import { getInventoryLocationChangeRequests, getInventoryLocationChanges } from './inventoryLocationChangeStore';
+import { getInventoryLocationChangeRequests } from './inventoryLocationChangeStore';
+import { downloadInventoryPlans } from './inventoryPlanExport';
+import { buildReplayPreparationNotices } from './inventoryReplayPreparation';
+import { schedulePreparationNotices } from './inventoryPreparationNoticeStore';
 
 const EMPTY_PLAN_FILTERS = { planNo: '', planName: '', planStatus: '', organization: '', range: '' };
 const RANGE_OPTIONS = ['员工', '库房', '公共', '机房'];
@@ -52,7 +55,6 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   const [reviewOpen, setReviewOpen] = useState(false);
   const reviewStorageKey = `inventory-replay-review-${project?.projectNo || ''}`;
   const [submission, setSubmission] = useState(() => readDemoData(reviewStorageKey, null));
-  const hasLocationChanges = project?.projectType === '复盘' && getInventoryLocationChanges(project.projectNo).some(change => change.status === '待发起');
   const visibleRows = useMemo(() => rows.filter((row) => allowedRanges.includes(row.range)).map((row) => projectClosed ? { ...row, status: '关闭' } : submission?.plans?.some(plan => plan.planNo === row.planNo) ? { ...row, status: '审核中' } : row), [rows, allowedRanges, projectClosed, submission]);
   const updateFilter = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
   const filteredRows = useMemo(() => visibleRows.filter((row) => includesText(row.planNo, appliedFilters.planNo) && includesText(row.planName, appliedFilters.planName) && includesText(row.status, appliedFilters.planStatus) && matchesQuerySelection(row.organization, appliedFilters.organization) && includesText(row.range, appliedFilters.range)), [visibleRows, appliedFilters]);
@@ -70,11 +72,23 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     if (invalid) { messageApi.warning(invalid); return; }
     const personnelBlock = selectedRows.map((row) => planPersonnelBlockReason(row, assetsForPlan(row), project)).find(Boolean);
     if (personnelBlock) { messageApi.warning(personnelBlock); return; }
+    let notices;
+    try {
+      notices = buildReplayPreparationNotices(project, selectedRows, assetsForPlan, dayjs().format('YYYY-MM-DD'));
+      schedulePreparationNotices(project.projectNo, notices);
+    } catch (error) { messageApi.error(error.message); return; }
     const selected = new Set(selectedKeys);
-    setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '盘点中' } : row));
+    setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '盘点中', preparationNoticeDate: notices.find(notice => notice.planNo === row.planNo)?.scheduledDate || '' } : row));
     onPlansStarted?.({ ...project, status: '盘点中' });
     setSelectedKeys([]);
-    messageApi.success('盘点计划已启动，并发送盘点待办及通知');
+    messageApi.success(notices.length ? `盘点计划已启动，已安排 ${notices.length} 条资产准备通知` : '盘点计划已启动');
+  };
+
+  const exportPlans = () => {
+    const exportRows = selectedKeys.length ? filteredRows.filter(row => selectedKeys.includes(row.key)) : filteredRows;
+    if (!exportRows.length) { messageApi.warning('没有可导出的盘点计划'); return; }
+    try { downloadInventoryPlans(exportRows, assetsForPlan, project.projectNo); }
+    catch (error) { messageApi.error('盘点计划导出失败，请重试'); }
   };
 
   const handleDelete = () => {
@@ -136,7 +150,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
 
   if (reviewOpen && submission) return <InventoryReplayReview project={project} plans={submission.plans || visibleRows} assetsForPlan={(row) => submission.assetsByPlan?.[row.planNo] || assetsForPlan(row)} submission={submission} onBack={() => setReviewOpen(false)} />;
 
-  if (locationChangeOpen) return <InventoryLocationChangeFlow project={project} currentOperator={currentOperator} initialRequestId={locationRequestId} onBack={() => setLocationChangeOpen(false)} />;
+  if (locationChangeOpen) return <InventoryLocationChangeFlow project={project} projectAssets={[...new Map(visibleRows.flatMap(assetsForPlan).map(asset => [asset.assetTag, asset])).values()]} currentOperator={currentOperator} initialRequestId={locationRequestId} onBack={() => setLocationChangeOpen(false)} />;
 
   return <Space direction="vertical" size={16} className="w-full">
     {contextHolder}<PageTitle>盘点计划</PageTitle><ProjectInfoCard project={project} />
@@ -148,7 +162,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
         <QueryItem label="子公司"><AssetValueSelect rows={visibleRows} field="organization" value={draftFilters.organization} onChange={(value) => updateFilter('organization', value)} /></QueryItem>
         <QueryItem label="盘点范围"><Select value={draftFilters.range || undefined} allowClear placeholder="请选择" options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('range', value)} /></QueryItem>
       </QueryBar>
-      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}{!projectClosed && <Button type="primary" icon={<PlayCircle size={14} />} disabled={allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button>}{allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}{!projectClosed && <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />}>导出</Button>{hasLocationChanges && <Button disabled={projectClosed} onClick={openLocationDraft}>发起位置变更</Button>}{Boolean(locationRequests.length) && <Button onClick={() => setLocationRecordsOpen(true)}>位置变更记录</Button>}{!projectClosed && project?.projectType === '复盘' && anyStarted && !submission && <Button type="primary" onClick={submitReview}>提交审批</Button>}{submission && <Button onClick={() => setReviewOpen(true)}>查看审批</Button>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
+      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}<Button type="primary" icon={<PlayCircle size={14} />} disabled={projectClosed || allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button><Button danger icon={<Trash2 size={14} />} disabled={!allSelectedDraft} onClick={handleDelete}>删除盘点计划</Button>{!projectClosed && <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />} onClick={exportPlans}>导出</Button>{project?.projectType === '复盘' && <Button disabled={projectClosed} onClick={openLocationDraft}>发起位置变更</Button>}{Boolean(locationRequests.length) && <Button onClick={() => setLocationRecordsOpen(true)}>位置变更记录</Button>}{!projectClosed && project?.projectType === '复盘' && anyStarted && !submission && <Button type="primary" onClick={submitReview}>提交审批</Button>}{submission && <Button onClick={() => setReviewOpen(true)}>查看审批</Button>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
       <Table rowKey="key" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true, getCheckboxProps: () => ({ disabled: projectClosed }) }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
     </Card>
     <div className="flex justify-center pb-2"><Button onClick={onBack}>返回</Button></div>

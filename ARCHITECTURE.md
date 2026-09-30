@@ -225,7 +225,20 @@ Vercel Preview
 
 ## 盘点复盘地点变更
 
-移动端与台账共用 `src/mock/inventoryMobileMock.js` 中既有演示标签。`inventoryMobileResultStore` 与 `inventoryPhotoReviewStore` 保存项目内盘点结果及照片审核记录；`inventoryLocationChangeStore` 只记录扫描成功提交的复盘地点差异并维护位置申请状态。PC 盘点计划通过 `InventoryLocationChangeFlow` 汇总、编辑并整批发起，演示审批身份显式切换到何文；`assetManagementService.applyInventoryLocationApproval` 在审批通过时更新统一台账，追加位置变更事务供资产操作历史查看。普通机房位置变更原页保留其独立入口。
+移动端与台账共用 `src/mock/inventoryMobileMock.js` 中既有演示标签。`inventoryMobileResultStore` 与 `inventoryPhotoReviewStore` 保存项目内盘点结果及照片审核记录；`inventoryLocationChangeStore` 记录扫描地点差异及PC编辑提交的新明细，统一校验后维护位置申请状态。PC 盘点计划通过 `InventoryLocationChangeFlow` 汇总、编辑并整批发起，演示审批身份显式切换到何文；`assetManagementService.applyInventoryLocationApproval` 在审批通过时更新统一台账，追加位置变更事务供资产操作历史查看。普通机房位置变更原页保留其独立入口。
 
 - 创建范围通过V3范围组件显式传入创建页；`scopeSnapshotAssetKeys`保存范围母集，`snapshotAssetKeys`保存执行抽样，`mandatoryAssetKeys`保存必盘并集。`inventoryReplaySampling`先选必盘、再从剩余资产抽样；`inventorySnapshotAssets`划分执行及未执行。计划仅从执行快照分配资产。
 - `InventoryReplayReview`展示复盘计划汇总、九项查询及审批记录。提交记录和当时的计划/资产数据按项目存为演示数据，可返回或刷新查看；未补齐的真实审批人/后端流程继续在待完成任务维护。
+
+## 盘点查询、导出和准备通知
+
+| 模块 | 职责 |
+|---|---|
+| `inventoryOrganizationQuery` | 根据现有资产构建公司/部门树，按公司隔离并包含所选父部门下级。 |
+| `inventoryLocationEdit` | 位置导入模板、项目内资产草稿和三级地点整批校验。 |
+| `inventoryPlanExport` | 合并移动结果、独立盘点备注与资产备注，生成计划及资产XLSX。 |
+| `inventoryProgressModel` | 现有库房/公共演示样本叠加本项目移动结果并计算同源汇总/详情。 |
+| `inventoryReplayPreparation` | 计算每计划准备通知日及员工责任人收件人。 |
+| `inventoryPreparationNoticeStore` | 按项目保存、按计划去重待发送通知安排，不冒充真实投递。 |
+
+Refined启动校验后调用准备通知模型/安排存储，再改变计划状态；ProjectPageV2通过结果store向计划清单/导出提供当前项目结果。位置编辑添加/导入仅保存页内草稿，提交store整批验证后审批，批准由统一台账服务写入。

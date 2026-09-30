@@ -4,6 +4,7 @@ import AssetInventoryMobilePrototype from './AssetInventoryMobilePrototype';
 import { getInventoryLocationChanges } from './inventoryLocationChangeStore';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import { savePhotoReviewResult } from './inventoryPhotoReviewStore';
+import { getMobileInventoryResults } from './inventoryMobileResultStore';
 
 let mockLocationState = {};
 const mockWarning = jest.fn();
@@ -33,6 +34,27 @@ describe('AssetInventoryMobilePrototype', () => {
     fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
     fireEvent.click(screen.getByRole('button', { name: '扫描本人资产' }));
   };
+
+  test('模拟本人和他人资产按责任人身份选择，不交换结果', () => {
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: '开始盘点' }));
+    scanMine();
+    expect(screen.getAllByText('戴尔.Latitude E7280').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: '返回' }));
+    fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
+    fireEvent.click(screen.getByRole('button', { name: '扫描他人资产' }));
+    expect(screen.queryByText('戴尔.Latitude E7280')).not.toBeInTheDocument();
+    expect(screen.getAllByText(/机房管理员/).length).toBeGreaterThan(0);
+  });
+
+  test('从指定本人资产进入扫码时不能选择相反身份的模拟项', () => {
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: /戴尔.Latitude E7280/ }));
+    fireEvent.click(screen.getByRole('button', { name: '盘点' }));
+    fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
+    expect(screen.getByRole('button', { name: '扫描本人资产' })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: '扫描他人资产' })).toBeDisabled();
+  });
 
   test('各状态分组可折叠，已盘页签隐藏开始盘点', () => {
     render(<AssetInventoryMobilePrototype />);
@@ -166,6 +188,7 @@ describe('AssetInventoryMobilePrototype', () => {
     expect(screen.getByText('扫码盘点')).toBeInTheDocument();
     window.sessionStorage.clear();
     expect(JSON.parse(window.localStorage.getItem('assetInventoryPhotoReview:demo')).find((row) => row.assetTag === '1141100548').status).toBe('审核中');
+    expect(getMobileInventoryResults('')['1141100548']).toMatchObject({ lossReason: '未在工位找到，已联系部门确认', inventoryRemark: '未在工位找到，已联系部门确认' });
     savePhotoReviewResult('', { assetTag: '1141100548', status: '未盘' });
     unmount();
     render(<AssetInventoryMobilePrototype />);

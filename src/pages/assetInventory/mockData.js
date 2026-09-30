@@ -315,6 +315,8 @@ export const ASSET_ROWS = [
     useStatus: '在用-使用中',
     noLocation: '-',
     inventoryNote: '员工反馈设备遗失',
+    inventoryRemark: '员工反馈设备遗失',
+    lossReason: '员工反馈设备遗失',
     useDescription: '员工用机',
     remark: '-',
     owner: '苏伟',

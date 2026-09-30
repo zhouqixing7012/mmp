@@ -29,6 +29,7 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import { EMPLOYEE_ROWS, INITIAL_PLAN_ROWS } from './mockData';
+import { downloadInventoryPlanAssets } from './inventoryPlanExport';
 
 const EMPTY_PLAN_FILTERS = {
   planNo: '',
@@ -56,7 +57,6 @@ const EMPTY_ASSET_FILTERS = {
   enableTo: '',
   inventoryStatus: '',
   costCenter: '',
-  noStatus: '',
 };
 
 const RANGE_OPTIONS = ['员工', '库房', '公共', '机房'];
@@ -67,7 +67,7 @@ function includesText(value, query) {
 }
 
 function inDateRange(value, from, to) {
-  if (!value) return true;
+  if (!value) return !from && !to;
   if (from && value < from) return false;
   if (to && value > to) return false;
   return true;
@@ -106,17 +106,6 @@ function ProjectInfoCard({ project }) {
   );
 }
 
-function DateFilter({ value, onChange, placeholder }) {
-  return (
-    <DatePicker
-      value={value ? dayjs(value) : null}
-      format="YYYY-MM-DD"
-      placeholder={placeholder}
-      style={{ width: '100%' }}
-      onChange={(date) => onChange(date ? date.format('YYYY-MM-DD') : '')}
-    />
-  );
-}
 
 function PersonnelInput({ value, onClick, disabled = false }) {
   if (disabled) return <Typography.Text>{value || '-'}</Typography.Text>;
@@ -365,7 +354,7 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
             {!anyStarted && <Button icon={<Plus size={14} />} onClick={() => setCustomPlanOpen(true)}>手工创建计划</Button>}
             {!anyStarted && <Button disabled={!allSelectedDraft} onClick={openBatchDate}>批量编辑盘点日期</Button>}
             <Button type="primary" icon={<PlayCircle size={14} />} disabled={!allSelectedDraft} onClick={handleStart}>启动盘点计划</Button>
-            {allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}
+            <Button danger icon={<Trash2 size={14} />} disabled={!allSelectedDraft} onClick={handleDelete}>删除盘点计划</Button>
             <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>
             <Button icon={<Download size={14} />}>导出</Button>
             {project?.projectType === '复盘' && anyStarted && <Button type="primary">提交审核</Button>}
@@ -447,6 +436,7 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
 }
 
 export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, onAssetsChange }) {
+  const [messageApi, contextHolder] = antdMessage.useMessage();
   const rows = assets;
   const setRows = onAssetsChange;
   const [draftFilters, setDraftFilters] = useState(EMPTY_ASSET_FILTERS);
@@ -471,7 +461,6 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, o
     && matchesQuerySelection(row.building, filters.building)
     && includesText(row.inventoryStatus, filters.inventoryStatus)
     && includesText(row.costCenter, filters.costCenter)
-    && matchesQuerySelection(row.noStatus, filters.noStatus)
     && inDateRange(row.enableDate, filters.enableFrom, filters.enableTo)
   )), [rows, filters]);
 
@@ -511,7 +500,6 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, o
     { title: '是否上传图片', dataIndex: 'needPhoto', width: 120, render: (value) => <StatusTag value={value ? '是' : '否'} /> },
     { title: '现资产责任人', dataIndex: 'currentOwner', width: 150 },
     { title: '现资产责任人部门', dataIndex: 'currentOwnerDept', width: 200 },
-    { title: '计划负责人', dataIndex: 'planManager', width: 140 },
     { title: 'City', dataIndex: 'city', width: 110 },
     { title: 'Building', dataIndex: 'building', width: 170 },
     { title: 'Floor', dataIndex: 'floor', width: 90 },
@@ -537,6 +525,7 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, o
 
   return (
     <Space direction="vertical" size={16} className="w-full">
+      {contextHolder}
       <PageTitle>盘点计划资产清单</PageTitle>
 
       <QueryBar
@@ -558,14 +547,12 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, o
         <QueryItem label="盘点执行人"><Input value={draftFilters.executor} allowClear onChange={(event) => updateDraft('executor', event.target.value)} /></QueryItem>
         <QueryItem label="City"><AssetValueSelect rows={rows} field="city" value={draftFilters.city} onChange={(value) => updateDraft('city', value)} /></QueryItem>
         <QueryItem label="Building"><AssetValueSelect rows={rows} field="building" value={draftFilters.building} onChange={(value) => updateDraft('building', value)} /></QueryItem>
-        <QueryItem label="启用日期从"><DateFilter value={draftFilters.enableFrom} onChange={(value) => updateDraft('enableFrom', value)} /></QueryItem>
-        <QueryItem label="启用日期至"><DateFilter value={draftFilters.enableTo} onChange={(value) => updateDraft('enableTo', value)} /></QueryItem>
+        <QueryItem label="启用日期"><DatePicker.RangePicker className="w-full" value={draftFilters.enableFrom && draftFilters.enableTo ? [dayjs(draftFilters.enableFrom), dayjs(draftFilters.enableTo)] : null} onChange={(dates) => setDraftFilters((current) => ({ ...current, enableFrom: dates?.[0]?.format('YYYY-MM-DD') || '', enableTo: dates?.[1]?.format('YYYY-MM-DD') || '' }))} /></QueryItem>
         <QueryItem label="盘点状态"><Select value={draftFilters.inventoryStatus || undefined} allowClear options={['未盘', '审核中', '已盘', '代盘', '报失'].map((value) => ({ label: value, value }))} onChange={(value) => updateDraft('inventoryStatus', value)} /></QueryItem>
         <QueryItem label="成本中心"><Input value={draftFilters.costCenter} allowClear onChange={(event) => updateDraft('costCenter', event.target.value)} /></QueryItem>
-        <QueryItem label="NO状态"><AssetValueSelect rows={rows} field="noStatus" value={draftFilters.noStatus} onChange={(value) => updateDraft('noStatus', value)} /></QueryItem>
       </QueryBar>
 
-      <Card size="small" title={<CardTitle>资产清单</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
+      <Card size="small" title={<CardTitle>资产清单</CardTitle>} extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => { try { downloadInventoryPlanAssets(filteredRows, plan.planNo); } catch (error) { messageApi.error('盘点资产导出失败，请重试'); } }}>导出</Button></Space>}>
         <Table
           rowKey="key"
           size="small"

@@ -67,6 +67,8 @@ export const INVENTORY_MOBILE_ASSETS = [
     usageNote: '',
     remark: '',
     inventoryNote: '未在工位找到，已联系部门确认',
+    lossReason: '未在工位找到，已联系部门确认',
+    inventoryRemark: '未在工位找到，已联系部门确认',
   },
   {
     id: 'asset-004',

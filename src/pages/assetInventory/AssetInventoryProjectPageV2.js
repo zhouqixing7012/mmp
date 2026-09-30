@@ -12,6 +12,8 @@ import AssetInventoryProgressV2 from './AssetInventoryProgressV2';
 import AssetInventorySnapshotDetailV2 from './AssetInventorySnapshotDetailV2';
 import { AssetInventoryPlanAssetListV2 } from './AssetInventoryPlanViewsV2';
 import { ASSET_ROWS, IMAGE_RULE_ROWS, INITIAL_PLAN_ROWS, PROJECT_INFO, PROJECT_ROWS } from './mockData';
+import { getMobileInventoryResults } from './inventoryMobileResultStore';
+import { mergePlanInventoryResult } from './inventoryPlanExport';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 
 function CardTitle({ children }) {
@@ -118,7 +120,11 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
   const [assetPlanMap, setAssetPlanMap] = useState(() => Object.fromEntries(availableAssets.map((asset) => [asset.key, initialPlanRows.some((plan) => plan.planNo === asset.planNo) ? asset.planNo : ''])));
   const [planAssets, setPlanAssets] = useState(() => ASSET_ROWS.map((asset) => ({ ...asset })));
-  const assetsForPlan = (plan) => planAssets.filter((asset) => assetPlanMap[asset.key] === plan.planNo);
+  const assetsForPlan = (plan) => {
+    const results = getMobileInventoryResults(planProject.projectNo);
+    return planAssets.filter((asset) => assetPlanMap[asset.key] === plan.planNo)
+      .map(asset => mergePlanInventoryResult(asset, results[asset.assetTag]));
+  };
   const changePlanAssets = (plan, updater) => setPlanAssets((current) => {
     const currentRows = current.filter((asset) => assetPlanMap[asset.key] === plan.planNo);
     const updated = typeof updater === 'function' ? updater(currentRows) : updater;

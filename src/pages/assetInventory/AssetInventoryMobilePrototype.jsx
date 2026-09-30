@@ -211,13 +211,13 @@ function PhotoSlot({ label, added, onAdd, onRemove }) {
   );
 }
 
-function ScanPicker({ onSelect }) {
+function ScanPicker({ onSelect, canScanMine, canScanProxy }) {
   return (
     <div className="inventory-scan-picker">
       <div className="inventory-section-title">模拟扫码结果</div>
       <div className="inventory-scan-picker-grid">
-        <Button onClick={() => onSelect('mine')}>扫描本人资产</Button>
-        <Button onClick={() => onSelect('proxy')}>扫描他人资产</Button>
+        <Button disabled={!canScanMine} onClick={() => onSelect('mine')}>扫描本人资产</Button>
+        <Button disabled={!canScanProxy} onClick={() => onSelect('proxy')}>扫描他人资产</Button>
         <Button onClick={() => onSelect('scanned')}>扫描已盘资产</Button>
         <Button onClick={() => onSelect('outOfScope')}>扫描范围外资产</Button>
         <Button onClick={() => onSelect('network')}>模拟网络失败</Button>
@@ -385,6 +385,10 @@ export default function AssetInventoryMobilePrototype() {
     setView('scan');
   };
 
+  const simulationAssets = projectAssets.filter((asset) => (!scanPlanId || activePlan?.assetIds.includes(asset.id)) && (!scanTargetId || asset.id === scanTargetId) && (Boolean(scanTargetId) || canInventory(asset)));
+  const canScanMine = simulationAssets.some((asset) => asset.ownerNo === currentUser.employeeNo);
+  const canScanProxy = simulationAssets.some((asset) => asset.ownerNo !== currentUser.employeeNo);
+
   const handleScanPick = (kind) => {
     if (projectClosed) { messageApi.info('项目已关闭，不能继续盘点'); return; }
     setScanPickerOpen(false);
@@ -392,8 +396,8 @@ export default function AssetInventoryMobilePrototype() {
     const scope = projectAssets.filter((asset) => !scanPlanId || activePlan?.assetIds.includes(asset.id));
     const asset = scanTargetId ? scope.find((item) => item.id === scanTargetId)
       : scope.find((item) => canInventory(item) && (kind === 'mine' ? item.ownerNo === currentUser.employeeNo : item.ownerNo !== currentUser.employeeNo));
-    if (!asset) { setScanModal({ kind: 'outOfScope' }); return; }
-    if ((kind === 'mine') !== (asset.ownerNo === currentUser.employeeNo)) { setScanModal({ kind: 'outOfScope' }); return; }
+    if (!asset) { messageApi.info(kind === 'mine' ? '当前任务没有本人待盘资产' : '当前任务没有他人待盘资产'); return; }
+    if ((kind === 'mine') !== (asset.ownerNo === currentUser.employeeNo)) { messageApi.info('模拟选项与当前资产责任人不符'); return; }
     if (!canInventory(asset)) { setScanModal({ kind: 'scanned' }); return; }
     setSelectedAssetId(asset.id);
     setScannedDetail(true);
@@ -447,6 +451,7 @@ export default function AssetInventoryMobilePrototype() {
       inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }),
       inventoryBy: currentUser.name,
       lossReported: scanAsset.lossReported,
+      ...(scanAsset.lossReason ? { lossReason: scanAsset.lossReason, inventoryRemark: scanAsset.inventoryRemark } : {}),
     });
     if (scanAsset && ['mine', 'proxy'].includes(kind)) {
       setSelectedAssetId(scanAsset.id);
@@ -488,10 +493,10 @@ export default function AssetInventoryMobilePrototype() {
   const confirmReportLoss = () => {
     if (projectClosed) { messageApi.info('项目已关闭，不能提交报失'); return; }
     if (!selectedAsset || selectedAsset.status !== '未盘' || selectedAsset.lossReported) { messageApi.warning('该资产不能重复报失'); return; }
-    saveMobileInventoryResult(previewProjectNo, selectedAsset.tagNo, { status: '报失', lossReported: true, inventoryNote: reportReason.trim(), inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name });
+    saveMobileInventoryResult(previewProjectNo, selectedAsset.tagNo, { status: '报失', lossReported: true, inventoryNote: reportReason.trim(), inventoryRemark: reportReason.trim(), lossReason: reportReason.trim(), inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name });
     setAssets((current) => current.map((asset) => (
       asset.id === selectedAsset.id
-        ? { ...asset, status: '报失', lossReported: true, inventoryNote: reportReason.trim(), inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name }
+        ? { ...asset, status: '报失', lossReported: true, inventoryNote: reportReason.trim(), inventoryRemark: reportReason.trim(), lossReason: reportReason.trim(), inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name }
         : asset
     )));
     setConfirmLossOpen(false);
@@ -552,7 +557,7 @@ export default function AssetInventoryMobilePrototype() {
       success.forEach((tagNo) => {
         const asset = assets.find((item) => item.tagNo === tagNo);
         if (asset?.area === '员工' && asset.photoRequired) savePhotoReviewResult(previewProjectNo, { assetTag: tagNo, status: '审核中', owner: asset.owner, description: asset.assetDesc, inventoryDate: new Date().toISOString() });
-        saveMobileInventoryResult(previewProjectNo, tagNo, { status: asset.area === '员工' && asset.photoRequired ? '审核中' : asset.ownerNo === currentUser.employeeNo ? '已盘' : '代盘', inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name, lossReported: asset.lossReported });
+        saveMobileInventoryResult(previewProjectNo, tagNo, { status: asset.area === '员工' && asset.photoRequired ? '审核中' : asset.ownerNo === currentUser.employeeNo ? '已盘' : '代盘', inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name, lossReported: asset.lossReported, ...(asset.lossReason ? { lossReason: asset.lossReason, inventoryRemark: asset.inventoryRemark } : {}) });
       });
       setAssets((current) => current.map((asset) => (
         success.includes(asset.tagNo)
@@ -723,7 +728,7 @@ export default function AssetInventoryMobilePrototype() {
             模拟扫码
           </Button>
         </div>
-        {scanPickerOpen && <ScanPicker onSelect={handleScanPick} />}
+        {scanPickerOpen && <ScanPicker onSelect={handleScanPick} canScanMine={canScanMine} canScanProxy={canScanProxy} />}
       </div>
       <ScanResultModal
         scanModal={scanModal}

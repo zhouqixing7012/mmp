@@ -6,6 +6,8 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import { PROGRESS_DETAIL_ROWS, PROGRESS_ROWS } from './mockData';
 import { useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import SectionCardTitle from './SectionCardTitle';
+import { buildSupplementalProgress, serializeProgressExport } from './inventoryProgressModel';
+import { getMobileInventoryResults } from './inventoryMobileResultStore';
 
 function formatCount(value) {
   return Number(value || 0).toLocaleString('zh-CN');
@@ -30,8 +32,20 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [detailRange, setDetailRange] = useState('');
-  const progressRows = PROGRESS_ROWS.filter((row) => allowedRanges.includes(row.range));
-  const detailRows = PROGRESS_DETAIL_ROWS.filter((row) => allowedRanges.includes(row.range) && row.range === detailRange);
+  const scopeRanges = project?.scopeRanges?.length ? allowedRanges.filter((range) => project.scopeRanges.includes(range)) : allowedRanges;
+  const supplemental = buildSupplementalProgress(project, scopeRanges, undefined, new Date(), getMobileInventoryResults(project?.projectNo));
+  const progressRows = [...PROGRESS_ROWS.filter((row) => !['库房', '公共'].includes(row.range) && scopeRanges.includes(row.range)), ...supplemental.summary];
+  const detailRows = [...PROGRESS_DETAIL_ROWS.filter((row) => !['库房', '公共'].includes(row.range)), ...supplemental.details].filter((row) => scopeRanges.includes(row.range) && row.range === detailRange);
+  const downloadProgress = (rows, columns, name) => {
+    const csv = serializeProgressExport(rows, columns.filter((column) => column.dataIndex).map((column) => [column.title, column.dataIndex]));
+    const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${project?.projectNo || '盘点项目'}-${name}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    messageApi.success('已导出当前进度数据');
+  };
 
   useEffect(() => {
     const items = detailRange
@@ -90,7 +104,7 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
         {contextHolder}
         <Typography.Title level={4} style={{ margin: 0 }}>进度详情</Typography.Title>
         <ProjectInfoCard project={project} />
-        <Card size="small" title={<SectionCardTitle>进度详情</SectionCardTitle>}>
+        <Card size="small" title={<SectionCardTitle>进度详情</SectionCardTitle>} extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(detailRows, detailColumns, `${detailRange}进度详情`)}>导出</Button>}>
           <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={detailRows} pagination={false} scroll={{ x: 1350 }} locale={{ emptyText: '暂无该盘点范围的进度详情数据' }} />
         </Card>
         <div className="flex justify-center pb-2">
@@ -108,7 +122,7 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
       <Card
         size="small"
         title={<SectionCardTitle>项目进度</SectionCardTitle>}
-        extra={<Button icon={<Download size={14} />} onClick={() => messageApi.success('项目进度导出已触发')}>导出</Button>}
+        extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(progressRows, progressColumns, '项目进度')}>导出</Button>}
       >
         <Table rowKey="key" size="small" bordered columns={progressColumns} dataSource={progressRows} pagination={false} scroll={{ x: 1250 }} />
       </Card>

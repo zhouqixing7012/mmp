@@ -1,4 +1,6 @@
 import dayjs from 'dayjs';
+import { buildLocationDraft, validateLocation } from './inventoryLocationEdit';
+import { getInventoryLocationOptions } from './inventoryMobileLocationService';
 import { CURRENT_BORROWER } from '../../mock/assetBorrowingMock';
 import { INVENTORY_LOCATION_CHANGE_DEMO } from '../../mock/inventoryLocationChangeMock';
 import { writeDemoData } from '../../services/demoStorage';
@@ -94,17 +96,29 @@ export function recordInventoryLocationChange({ projectNo, projectType, planNo =
   return change;
 }
 
-export function submitInventoryLocationChangeRequest({ projectNo, projectType, reason, applicant, applicantDepartment = '', draftLocations = {}, draftRemarks = {} }) {
+export function submitInventoryLocationChangeRequest({ projectNo, projectType, reason, applicant, applicantDepartment = '', draftLocations = {}, draftRemarks = {}, addedAssets = [], permittedAssetTags = [] }) {
   if (projectType !== '复盘') throw new Error('只有复盘项目可以发起位置变更');
   if (!text(projectNo)) throw new Error('缺少盘点项目编号');
   if (!text(reason)) throw new Error('请填写变更原因');
   if (!text(applicant)) throw new Error('缺少申请人');
   const state = readState();
-  const changes = state.changes.filter((change) => change.projectNo === projectNo && change.status === '待发起');
+  const pending = state.changes.filter((change) => change.projectNo === projectNo && change.status === '待发起');
+  const tags = new Set(pending.map(change => change.assetTag));
+  const additions = addedAssets.map(change => {
+    if (!permittedAssetTags.includes(change.assetTag)) throw new Error('添加资产不在当前复盘项目范围');
+    if (tags.has(change.assetTag) || state.changes.some(item => item.projectNo === projectNo && item.assetTag === change.assetTag && item.status === '待审批')) throw new Error('添加资产重复或已提交审批');
+    tags.add(change.assetTag);
+    const asset = requireLedgerAsset(change.assetTag);
+    const draft = buildLocationDraft(asset);
+    if (!sameLocation(change.before, draft.before)) throw new Error(change.assetTag + ' 的台账位置已变化，请重新添加');
+    return {...draft, after:draftLocations[change.id] || change.after, remark:draftRemarks[change.id] ?? change.remark, projectNo, projectType, operator:applicant, recordedAt:currentTime(), id:'inventory-location-' + Date.now() + '-' + Math.random().toString(36).slice(2,8)};
+  });
+  const changes = [...pending, ...additions];
   if (!changes.length) throw new Error('当前项目没有待发起的位置变更');
   const prepared = changes.map((change) => {
     const target = location(draftLocations[change.id] || change.after);
     if (FIELDS.some((field) => !target[field])) throw new Error(`${change.assetTag} 的新位置不完整`);
+    validateLocation(target, getInventoryLocationOptions);
     const asset = requireLedgerAsset(change.assetTag);
     if (!sameLocation(asset, change.before)) throw new Error(`${change.assetTag} 的台账位置已变化，请核对后再发起`);
     const remark = text(draftRemarks[change.id] ?? change.remark ?? asset.remarks ?? '');
@@ -130,7 +144,7 @@ export function submitInventoryLocationChangeRequest({ projectNo, projectType, r
   const revertedIds = new Set(changes.filter((change) => !preparedById.has(change.id)).map((change) => change.id));
   writeState({
     requests: [...state.requests, request],
-    changes: state.changes.filter((change) => !revertedIds.has(change.id)).map((change) => preparedById.has(change.id)
+    changes: [...state.changes, ...additions].filter((change) => !revertedIds.has(change.id)).map((change) => preparedById.has(change.id)
       ? { ...preparedById.get(change.id), status: '待审批', requestId: request.id }
       : change),
   });
