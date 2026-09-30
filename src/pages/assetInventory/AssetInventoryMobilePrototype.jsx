@@ -714,7 +714,7 @@ export default function AssetInventoryMobilePrototype() {
       </section>)}
     </div>
     <div className="inventory-mobile-footer inventory-plan-footer">
-      <Button disabled={projectClosed} onClick={() => openQuickScan(activePlanId)}>盘点</Button>
+      <Button className="inventory-mobile-scan-action" icon={<ScanLine size={18} />} disabled={projectClosed} onClick={() => openQuickScan(activePlanId)}>盘点</Button>
       <Button type="primary" disabled={projectClosed || !(quickBatches[activePlanId] || []).length} onClick={() => { setQuickPlanId(activePlanId); setView('quickList'); }}>提交</Button>
     </div>
   </>;
@@ -786,7 +786,7 @@ export default function AssetInventoryMobilePrototype() {
             {selectedAsset.status === '未盘' && (
               <Button danger icon={<AlertTriangle size={16} />} disabled={projectClosed} onClick={() => setReportLossOpen(true)}>报失</Button>
             )}
-            {selectedAsset.status === '未盘' && <Button type="primary" icon={<ScanLine size={16} />} disabled={projectClosed} onClick={() => openScan(selectedAsset.id)}>盘点</Button>}
+            {selectedAsset.status === '未盘' && <Button type="primary" className="inventory-mobile-scan-action" icon={<ScanLine size={18} />} disabled={projectClosed} onClick={() => openScan(selectedAsset.id)}>盘点</Button>}
           </div>
         </div>
       </>
@@ -863,7 +863,7 @@ export default function AssetInventoryMobilePrototype() {
         <div className="inventory-quick-list">{quickScanned.map((tagNo, index) => <div className="inventory-quick-row" key={`${tagNo}-${index}`}><span>{index + 1}</span><span>{tagNo}</span></div>)}</div>
       </div>
       <div className="inventory-mobile-footer inventory-plan-footer">
-        <Button onClick={() => setView('quickScan')}>盘点</Button>
+        <Button className="inventory-mobile-scan-action" icon={<ScanLine size={18} />} onClick={() => setView('quickScan')}>盘点</Button>
         <Button type="primary" disabled={projectClosed || !quickScanned.length} onClick={submitQuickScan}>提交</Button>
       </div>
       <Modal open={Boolean(quickResult)} title="快速扫描结果" wrapClassName="inventory-mobile-modal" footer={null} centered onCancel={() => { setQuickResult(null); setView(scanReturnView); }}>
@@ -905,9 +905,9 @@ export default function AssetInventoryMobilePrototype() {
             <div className="inventory-mobile-content">
               {renderWorkBench()}
             </div>
-            <div className="inventory-mobile-footer">
-              <Button type="primary" block icon={<ScanLine size={17} />} disabled={projectClosed} onClick={() => openQuickScan()}>开始盘点</Button>
-            </div>
+            {activeTab === 'unscanned' && <div className="inventory-mobile-footer">
+              <Button type="primary" block className="inventory-mobile-scan-action" icon={<ScanLine size={18} />} disabled={projectClosed} onClick={() => openQuickScan()}>开始盘点</Button>
+            </div>}
           </>
         )}
         {view === 'planDetail' && renderPlanDetail()}

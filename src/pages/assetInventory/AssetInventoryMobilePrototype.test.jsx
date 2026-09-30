@@ -30,6 +30,11 @@ describe('AssetInventoryMobilePrototype', () => {
     expect(screen.queryByText('2025 年度资产盘点')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '开始盘点' })).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole('button', { name: /已盘 0/ }));
+    expect(screen.queryByRole('button', { name: '开始盘点' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /未盘 2/ }));
+    expect(screen.getByRole('button', { name: '开始盘点' })).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: /戴尔\.Latitude E7280/ }));
 
     expect(screen.getByText('资产标签号')).toBeInTheDocument();
