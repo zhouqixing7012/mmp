@@ -203,6 +203,8 @@ npm test
 - [lessons.md](lessons.md)：可复用纠错经验，业务规则回到对应正式 PRD。
 - [迁移与历史索引](docs/archive/2026-09-24-workflow/README.md)：本次规则整理的完整来源及冲突处理。
 
+资产盘点查询复用公共人员弹窗、责任人职级多选、资产类别树与可搜索下拉；启动后三类项目资产清单增加完整查询条件。职级正式来源为 PS，当前原型使用已有演示记录，未接入真实 PS。
+
 ## 搜索记录
 
 - 后台页面继续复用项目现有 QueryBar、Ant Design Table、StatusTag、SelectModal 等能力，没有为常规页面引入新依赖。

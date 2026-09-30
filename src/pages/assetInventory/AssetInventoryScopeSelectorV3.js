@@ -1,25 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, DatePicker, InputNumber, Modal, Select, Space, Table, TreeSelect, Typography, message as antdMessage } from 'antd';
+import { Button, Card, DatePicker, InputNumber, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import { Eye, Search, Trash2 } from 'lucide-react';
 import {
   mockBuildings,
   mockCities,
-  mockDepartments,
   mockLocationBasicDataData,
-  mockMaterialCategories,
-  mockRealAdmins,
-  mockVirtualAdmins,
   mockWarehouseInfoData,
-  mockWarehousePermissionData,
   mockWarehouses,
 } from '../../mock/businessRulesMock';
-import { ASSET_ROWS, EMPLOYEE_ROWS, SCOPE_ROWS } from './mockData';
+import { ASSET_ROWS, SCOPE_ROWS } from './mockData';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import SectionCardTitle from './SectionCardTitle';
+import { AssetCategorySelect, AssetPersonSelect, AssetValueSelect, OwnerLevelSelect } from '../../components/AssetQueryControls';
 import { selectScopeAssets } from './inventoryScopeQuery';
-
-const SUBSIDIARY_OPTIONS = ['集团', '搜狐媒体', '焦点', '视频'];
 
 function unique(values) {
   return [...new Set(values.flatMap((value) => Array.isArray(value) ? value : [value]).filter(Boolean).map((value) => String(value).trim()).filter(Boolean))];
@@ -41,25 +35,8 @@ export function getScheme3InventoryDemoOptions(allowedRanges) {
   const assets = ASSET_ROWS.filter((row) => isInventoryRangeAllowed(row, allowedRanges));
   const locationCities = mockLocationBasicDataData.filter((row) => row.enabled).map((row) => row.cityName);
   const locationBuildings = mockLocationBasicDataData.flatMap((row) => (row.children || []).filter((child) => child.enabled).map((child) => child.buildingName));
-  const people = [
-    ...mockWarehouseInfoData.map((row) => row.admin),
-    ...mockWarehousePermissionData.map((row) => row.operator),
-    ...mockVirtualAdmins.map((row) => row.desc),
-    ...mockRealAdmins.map((row) => row.desc),
-    ...EMPLOYEE_ROWS.map((row) => row.employeeName),
-    ...assets.map((row) => row.owner),
-  ];
 
   return {
-    organization: SUBSIDIARY_OPTIONS,
-    department: withAll([
-      ...mockDepartments.map((row) => `${row.code}.${row.desc}`),
-      ...assets.map((row) => row.ownerDept),
-    ]),
-    assetCategory: withAll([
-      ...mockMaterialCategories.map((row) => row.desc),
-      ...assets.map((row) => row.category),
-    ]),
     assetStatus: withAll([
       ...SCOPE_ROWS.flatMap((row) => splitText(row.assetStatus)),
       ...assets.map((row) => String(row.useStatus || '').split('-')[0]),
@@ -79,11 +56,7 @@ export function getScheme3InventoryDemoOptions(allowedRanges) {
       ...assets.map((row) => row.building),
     ]),
     floor: withAll(assets.map((row) => row.floor)),
-    owner: withAll(people),
-    ownerLevel: withAll([
-      ...assets.map((row) => row.ownerLevel),
-      '1', '5', '实习生', '公共',
-    ]),
+
   };
 }
 
@@ -91,13 +64,8 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
   const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const options = useMemo(() => getScheme3InventoryDemoOptions(allowedRanges), [allowedRanges]);
-  const organizationTree = useMemo(() => unique(ASSET_ROWS.map((asset) => asset.organization)).map((organization) => ({
-    title: organization, value: `org:${organization}`,
-    children: unique(ASSET_ROWS.filter((asset) => asset.organization === organization).map((asset) => asset.ownerDept))
-      .map((department) => ({ title: department, value: `dept:${organization}::${department}` })),
-  })), []);
   const [filters, setFilters] = useState({
-    organizationDepartments: [], assetCategory: [], assetStatus: [], warehouse: [],
+    organization: [], department: [], assetCategory: [], assetStatus: [], warehouse: [],
     city: [], building: [], floor: [], owner: [], ownerLevel: [], enableFrom: '', enableTo: '', ratio: 100, netValueTopPercent: null,
   });
   const [rows, setRows] = useState(() => SCOPE_ROWS.map((row) => ({ ...row })));
@@ -131,9 +99,9 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
     if (!matches.length) { messageApi.warning('当前条件下没有可纳入的资产'); return; }
     updateRows((current) => [...current, {
       key: `scope-v3-${Date.now()}`,
-      organization: filters.organizationDepartments.length ? filters.organizationDepartments.join('、') : '全部',
-      department: filters.organizationDepartments.length ? filters.organizationDepartments.join('、') : '全部',
-      assetCategory: filters.assetCategory.join('、') || '全部',
+      organization: filters.organization.join('、') || '全部',
+      department: filters.department.join('、') || '全部',
+      assetCategory: filters.assetCategory.map((value) => value.startsWith('minor:') ? value.slice(6).replace('|', '.') : value.replace('major:', '')).join('、') || '全部',
       assetStatus: filters.assetStatus.join('、') || '全部',
       warehouse: filters.warehouse.join('、') || '全部',
       city: filters.city.join('、') || '全部',
@@ -154,27 +122,24 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
       {contextHolder}
       <div className="grid grid-cols-3 gap-x-6 gap-y-3">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="w-24 shrink-0 text-right text-sm text-gray-600">子公司/部门:</span>
-          <TreeSelect treeData={organizationTree} treeCheckable showSearch allowClear value={filters.organizationDepartments} placeholder="请选择子公司或部门" className="flex-1" onChange={(value) => setFilters((current) => ({ ...current, organizationDepartments: value || [] }))} />
+          <span className="w-28 shrink-0 text-right text-sm text-gray-600">子公司:</span>
+          <AssetValueSelect rows={ASSET_ROWS} field="organization" multiple value={filters.organization} onChange={(value) => setFilters((current) => ({ ...current, organization: value }))} />
+        </div>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-28 shrink-0 text-right text-sm text-gray-600">部门:</span>
+          <AssetValueSelect rows={ASSET_ROWS} field="ownerDept" multiple value={filters.department} onChange={(value) => setFilters((current) => ({ ...current, department: value }))} />
         </div>
         {fields.map(([label, field]) => (
           <div key={field} className="flex items-center gap-2 min-w-0">
-            <span className="w-24 shrink-0 text-right text-sm text-gray-600">{label}:</span>
-            <Select
-              mode="multiple"
-              showSearch
-              allowClear
-              optionFilterProp="label"
-              value={filters[field]}
-              placeholder={`请选择${label}`}
-              className="flex-1"
-              options={toOptions(options[field] || ['全部'])}
-              onChange={(value) => setFilters((current) => ({ ...current, [field]: value || [] }))}
-            />
+            <span className="w-28 shrink-0 text-right text-sm text-gray-600">{label}:</span>
+            {field === 'owner' ? <AssetPersonSelect rows={ASSET_ROWS} value={filters.owner} onChange={(value) => setFilters((current) => ({ ...current, owner: value }))} />
+              : field === 'ownerLevel' ? <OwnerLevelSelect rows={ASSET_ROWS} value={filters.ownerLevel} onChange={(value) => setFilters((current) => ({ ...current, ownerLevel: value }))} />
+                : field === 'assetCategory' ? <AssetCategorySelect rows={ASSET_ROWS} value={filters.assetCategory} onChange={(value) => setFilters((current) => ({ ...current, assetCategory: value }))} />
+                  : <Select mode="multiple" showSearch allowClear optionFilterProp="label" value={filters[field]} placeholder={`请选择${label}`} className="flex-1 min-w-0" options={toOptions(options[field])} onChange={(value) => setFilters((current) => ({ ...current, [field]: value || [] }))} />}
           </div>
         ))}
-        <div className="flex items-center gap-2 min-w-0 col-span-2">
-          <span className="w-24 shrink-0 text-right text-sm text-gray-600">启用日期:</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-28 shrink-0 text-right text-sm text-gray-600">启用日期:</span>
           <DatePicker.RangePicker
             className="flex-1"
             value={filters.enableFrom && filters.enableTo ? [dayjs(filters.enableFrom), dayjs(filters.enableTo)] : null}
@@ -187,13 +152,13 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
         </div>
         {projectType === '复盘' && (
           <div className="flex items-center gap-2 min-w-0">
-            <span className="w-24 shrink-0 text-right text-sm text-gray-600">净值前:</span>
+            <span className="w-28 shrink-0 text-right text-sm text-gray-600">净值前:</span>
             <InputNumber min={1} max={100} precision={0} value={filters.netValueTopPercent} placeholder="不限制" className="flex-1" addonAfter="%" onChange={(value) => setFilters((current) => ({ ...current, netValueTopPercent: value }))} />
           </div>
         )}
         {projectType === '复盘' && (
           <div className="flex items-center gap-2 min-w-0">
-            <span className="w-24 shrink-0 text-right text-sm text-gray-600">比例:</span>
+            <span className="w-28 shrink-0 text-right text-sm text-gray-600">比例:</span>
             <InputNumber min={1} max={100} value={filters.ratio} className="flex-1" addonAfter="%" onChange={(value) => setFilters((current) => ({ ...current, ratio: value || 100 }))} />
           </div>
         )}

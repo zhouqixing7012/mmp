@@ -23,6 +23,8 @@
 | `src/App.js` | 应用路由入口；普通路由统一通过 `PageMotionBoundary` 处理路由和同 URL 内语义视图切换，并挂载原型标注层。 |
 | `src/index.css` | 全局样式以及统一 B 端动效 Token、弹窗/页面/菜单/路由/查询结果/表格反馈样式。 |
 | `src/components/` | QueryBar、DetailGrid、SelectModal、StatusTag、PageMotionBoundary、PageViewMotion 等公共组件。 |
+| `src/components/AssetQueryControls.jsx` | 公共资产查询控件：复用 LookupInput/SelectModal 的人员弹窗、责任人职级多选、类别树和可搜索下拉；由调用页传入数据范围。 |
+| `src/components/assetQueryModel.js` | 资产类别格式与父子匹配、枚举精确多选规则；查询和导出共用。 |
 | `src/components/SelectModal.jsx` | 通用列表选择弹窗；基于 Ant Design Modal，统一查询区、Table 单选/多选、`max-content` 横向滚动和 Footer。 |
 | `src/components/QueryBar.jsx` | 查询条件公共容器；按自身实际可用宽度自动切换 1 / 2 / 3 列，并自动识别“查询 / 重置”动作，给同一作用域内后续首个 Table/List（或 `data-mmp-query-result`）触发短结果刷新反馈。 |
 | `src/components/PageMotionBoundary.jsx` | 页面动效统一出口：初次进入播放页面动效；根据页面标题/主要 Card 标题变化，或页面出口第一层 Card/Table/Form/Descriptions 等主要业务区块替换，自动识别同 URL 内列表/详情/编辑/创建切换；支持 `data-page-view-key` 显式视图标识，并通过 `data-mmp-page-motion-boundary` 为查询等局部交互提供稳定页面作用域。 |
@@ -47,6 +49,8 @@
 | `docs/移库移动端/README.md` | 移库移动端原型入口和现状页面截图索引。 |
 | `src/pages/inventoryManagement/TransferPage.js` | 库存转移单列表、创建页和添加转移物资弹窗。 |
 | `src/pages/assetInventory/` | 资产盘点 PC 页面、移动端原型及相关样式。 |
+| `src/pages/assetInventory/InventoryAssetQuery.jsx` | 项目三类资产清单的启动前/启动后查询字段，调用公共查询控件及 QueryBar。 |
+| `src/pages/assetInventory/inventoryAssetQuery.js` | 三类资产清单的组合筛选，独立于UI。 |
 | `src/pages/assetInventory/AssetInventoryProjectListV2.js` | 盘点项目列表和移动端预览入口。 |
 | `src/pages/assetInventory/AssetInventoryMobilePrototype.jsx` | 移动端资产盘点工作台、详情、普通扫码、快速扫描、照片模拟和报失确认的本地演示状态。 |
 | `src/pages/assetInventory/assetInventoryMobile.css` | 移动端资产盘点原型的移动端容器、卡片、扫码区、弹窗和响应式样式。 |

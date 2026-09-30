@@ -3,6 +3,7 @@ import { Button, Card, DatePicker, Input, Modal, Radio, Select, Space, Statistic
 import dayjs from 'dayjs';
 import { ChevronLeft, ChevronRight, Download, Maximize2, MousePointer2, ZoomIn, ZoomOut } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
+import { AssetCategorySelect, AssetPersonSelect, AssetValueSelect, formatAssetCategory, matchesAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
 import StatusTag from '../../components/StatusTag';
 import { ASSET_ROWS, IMAGE_REVIEW_ROWS } from './mockData';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
@@ -13,7 +14,7 @@ import overallPhoto from './images/inventory-review-overall.webp';
 import partialPhoto from './images/inventory-review-partial.webp';
 
 const EMPTY_FILTERS = {
-  assetTag: '', description: '', reviewStatus: '', owner: '', company: '', department: '', category: '',
+  assetTag: '', description: '', reviewStatus: '', owner: [], company: '', department: '', category: [],
   startDate: '', endDate: '', inventoryStatus: '', city: '', building: '',
 };
 
@@ -484,6 +485,7 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
     setPreviewOpen(true);
   };
 
+  const queryAssets = useMemo(() => rows.map((row) => row.asset), [rows]);
   const pendingCount = rows.filter((row) => row.reviewStatus === '待审核').length;
   const approvedCount = rows.filter((row) => row.reviewStatus === '审核通过').length;
   const rejectedCount = rows.filter((row) => row.reviewStatus === '审核不通过').length;
@@ -491,15 +493,15 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
     const asset = row.asset;
     return includesText(asset.assetTag, filters.assetTag)
       && includesText(asset.description, filters.description)
-      && includesText(row.reviewStatus, filters.reviewStatus)
-      && includesText(asset.owner, filters.owner)
-      && includesText(asset.organization, filters.company)
-      && includesText(asset.ownerDept, filters.department)
-      && includesText(`${asset.category} ${asset.subCategory}`, filters.category)
+      && matchesQuerySelection(row.reviewStatus, filters.reviewStatus)
+      && matchesQuerySelection(asset.owner, filters.owner)
+      && matchesQuerySelection(asset.organization, filters.company)
+      && matchesQuerySelection(asset.ownerDept, filters.department)
+      && matchesAssetCategory(asset, filters.category)
       && inDateRange(asset.inventoryDate, filters.startDate, filters.endDate)
-      && includesText(asset.inventoryStatus, filters.inventoryStatus)
-      && includesText(asset.city, filters.city)
-      && includesText(asset.building, filters.building);
+      && matchesQuerySelection(asset.inventoryStatus, filters.inventoryStatus)
+      && matchesQuerySelection(asset.city, filters.city)
+      && matchesQuerySelection(asset.building, filters.building);
   }), [rows, filters]);
 
   const updateDraft = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
@@ -535,8 +537,7 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
       render: (_, row) => <div className="text-sm leading-6">
         <div><span className="text-gray-500">资产标签号：</span>{row.asset.assetTag}</div>
         <div><span className="text-gray-500">序列号：</span>{row.asset.serialNo}</div>
-        <div><span className="text-gray-500">资产大类：</span>{row.asset.category}</div>
-        <div><span className="text-gray-500">资产小类：</span>{row.asset.subCategory}</div>
+        <div><span className="text-gray-500">资产类别：</span>{formatAssetCategory(row.asset) || '-'}</div>
         <div><span className="text-gray-500">资产说明：</span>{row.asset.description}</div>
         <div><span className="text-gray-500">使用说明：</span>{row.asset.useDescription}</div>
         <div><span className="text-gray-500">备注：</span>{row.asset.remark}</div>
@@ -595,15 +596,15 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
       <QueryItem label="资产标签号"><Input value={draftFilters.assetTag} allowClear onChange={(event) => updateDraft('assetTag', event.target.value)} /></QueryItem>
       <QueryItem label="资产说明"><Input value={draftFilters.description} allowClear onChange={(event) => updateDraft('description', event.target.value)} /></QueryItem>
       <QueryItem label="图片审核状态"><Select value={draftFilters.reviewStatus || undefined} allowClear options={['待审核', '审核不通过', '审核通过'].map((value) => ({ label: value, value }))} onChange={(value) => updateDraft('reviewStatus', value)} /></QueryItem>
-      <QueryItem label="资产责任人"><Input value={draftFilters.owner} allowClear onChange={(event) => updateDraft('owner', event.target.value)} /></QueryItem>
-      <QueryItem label="公司"><Input value={draftFilters.company} allowClear onChange={(event) => updateDraft('company', event.target.value)} /></QueryItem>
-      <QueryItem label="部门"><Input value={draftFilters.department} allowClear onChange={(event) => updateDraft('department', event.target.value)} /></QueryItem>
-      <QueryItem label="资产类别"><Input value={draftFilters.category} allowClear onChange={(event) => updateDraft('category', event.target.value)} /></QueryItem>
+      <QueryItem label="资产责任人"><AssetPersonSelect rows={queryAssets} value={draftFilters.owner} onChange={(value) => updateDraft('owner', value)} /></QueryItem>
+      <QueryItem label="公司"><AssetValueSelect rows={queryAssets} field="organization" value={draftFilters.company} onChange={(value) => updateDraft('company', value)} /></QueryItem>
+      <QueryItem label="部门"><AssetValueSelect rows={queryAssets} field="ownerDept" value={draftFilters.department} onChange={(value) => updateDraft('department', value)} /></QueryItem>
+      <QueryItem label="资产类别"><AssetCategorySelect rows={queryAssets} value={draftFilters.category} onChange={(value) => updateDraft('category', value)} /></QueryItem>
       <QueryItem label="盘点开始时间"><DateFilter value={draftFilters.startDate} onChange={(value) => updateDraft('startDate', value)} /></QueryItem>
       <QueryItem label="盘点结束时间"><DateFilter value={draftFilters.endDate} onChange={(value) => updateDraft('endDate', value)} /></QueryItem>
       <QueryItem label="盘点状态"><Select value={draftFilters.inventoryStatus || undefined} allowClear options={['未盘', '审核中', '已盘', '代盘', '报失'].map((value) => ({ label: value, value }))} onChange={(value) => updateDraft('inventoryStatus', value)} /></QueryItem>
-      <QueryItem label="City"><Input value={draftFilters.city} allowClear onChange={(event) => updateDraft('city', event.target.value)} /></QueryItem>
-      <QueryItem label="Building"><Input value={draftFilters.building} allowClear onChange={(event) => updateDraft('building', event.target.value)} /></QueryItem>
+      <QueryItem label="City"><AssetValueSelect rows={queryAssets} field="city" value={draftFilters.city} onChange={(value) => updateDraft('city', value)} /></QueryItem>
+      <QueryItem label="Building"><AssetValueSelect rows={queryAssets} field="building" value={draftFilters.building} onChange={(value) => updateDraft('building', value)} /></QueryItem>
     </QueryBar>
 
     <Card

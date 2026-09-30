@@ -1,3 +1,4 @@
+import { AssetValueSelect, matchesQuerySelection } from '../../components/AssetQueryControls';
 import React, { useMemo, useState } from 'react';
 import { Alert, Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
@@ -33,7 +34,7 @@ function ProjectInfoCard({ project }) {
   );
 }
 
-export default function AssetInventoryPlansV2Refined({ project, currentOperator, onBack, onOpenPlanAssets, rows, setRows, assetsForPlan, canManualCreate, onManualCreate }) {
+export default function AssetInventoryPlansV2Refined({ project, currentOperator, onBack, onOpenPlanAssets, rows, setRows, assetsForPlan, canManualCreate, onManualCreate, onPlansStarted }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const projectClosed = project?.status === '盘点关闭';
@@ -54,7 +55,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   const hasLocationChanges = project?.projectType === '复盘' && getInventoryLocationChanges(project.projectNo).some(change => change.status === '待发起');
   const visibleRows = useMemo(() => rows.filter((row) => allowedRanges.includes(row.range)).map((row) => projectClosed ? { ...row, status: '关闭' } : submission?.plans?.some(plan => plan.planNo === row.planNo) ? { ...row, status: '审核中' } : row), [rows, allowedRanges, projectClosed, submission]);
   const updateFilter = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
-  const filteredRows = useMemo(() => visibleRows.filter((row) => includesText(row.planNo, appliedFilters.planNo) && includesText(row.planName, appliedFilters.planName) && includesText(row.status, appliedFilters.planStatus) && includesText(row.organization, appliedFilters.organization) && includesText(row.range, appliedFilters.range)), [visibleRows, appliedFilters]);
+  const filteredRows = useMemo(() => visibleRows.filter((row) => includesText(row.planNo, appliedFilters.planNo) && includesText(row.planName, appliedFilters.planName) && includesText(row.status, appliedFilters.planStatus) && matchesQuerySelection(row.organization, appliedFilters.organization) && includesText(row.range, appliedFilters.range)), [visibleRows, appliedFilters]);
   const editable = (row) => !projectClosed && row.status === '草稿';
   const selectedRows = visibleRows.filter((row) => selectedKeys.includes(row.key));
   const allSelectedDraft = !projectClosed && selectedRows.length > 0 && selectedRows.every((row) => row.status === '草稿');
@@ -71,6 +72,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     if (personnelBlock) { messageApi.warning(personnelBlock); return; }
     const selected = new Set(selectedKeys);
     setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '盘点中' } : row));
+    onPlansStarted?.({ ...project, status: '盘点中' });
     setSelectedKeys([]);
     messageApi.success('盘点计划已启动，并发送盘点待办及通知');
   };
@@ -143,7 +145,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
         <QueryItem label="计划编码"><Input value={draftFilters.planNo} allowClear placeholder="请输入计划编码" onChange={(event) => updateFilter('planNo', event.target.value)} /></QueryItem>
         <QueryItem label="计划名称"><Input value={draftFilters.planName} allowClear placeholder="请输入计划名称" onChange={(event) => updateFilter('planName', event.target.value)} /></QueryItem>
         <QueryItem label="计划状态"><Select value={draftFilters.planStatus || undefined} allowClear placeholder="请选择" options={['草稿', '盘点中', '审核中', '已审核', '关闭'].map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('planStatus', value)} /></QueryItem>
-        <QueryItem label="子公司"><Input value={draftFilters.organization} allowClear placeholder="请输入子公司" onChange={(event) => updateFilter('organization', event.target.value)} /></QueryItem>
+        <QueryItem label="子公司"><AssetValueSelect rows={visibleRows} field="organization" value={draftFilters.organization} onChange={(value) => updateFilter('organization', value)} /></QueryItem>
         <QueryItem label="盘点范围"><Select value={draftFilters.range || undefined} allowClear placeholder="请选择" options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('range', value)} /></QueryItem>
       </QueryBar>
       <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}{!projectClosed && <Button type="primary" icon={<PlayCircle size={14} />} disabled={allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button>}{allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}{!projectClosed && <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />}>导出</Button>{hasLocationChanges && <Button disabled={projectClosed} onClick={openLocationDraft}>发起位置变更</Button>}{Boolean(locationRequests.length) && <Button onClick={() => setLocationRecordsOpen(true)}>位置变更记录</Button>}{!projectClosed && project?.projectType === '复盘' && anyStarted && !submission && <Button type="primary" onClick={submitReview}>提交审批</Button>}{submission && <Button onClick={() => setReviewOpen(true)}>查看审批</Button>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>

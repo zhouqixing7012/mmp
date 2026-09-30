@@ -1,3 +1,4 @@
+import { formatAssetCategory } from '../../components/AssetQueryControls';
 import React from 'react';
 import { Card, Typography } from 'antd';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
@@ -23,8 +24,7 @@ export function ProjectInfoCard({ project }) {
   </DetailGrid></Card>;
 }
 export const assetColumns = [
-  { title: '资产标签号', dataIndex: 'assetTag', width: 150, fixed: 'left' }, { title: '序列号', dataIndex: 'serialNo', width: 140 }, { title: '资产大类', dataIndex: 'category', width: 110 },
-  { title: '资产小类', dataIndex: 'subCategory', width: 180 }, { title: '资产说明', dataIndex: 'description', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 70 }, { title: '原值', dataIndex: 'originalValue', width: 110 },
+  { title: '资产标签号', dataIndex: 'assetTag', width: 150, fixed: 'left' }, { title: '序列号', dataIndex: 'serialNo', width: 140 }, { title: '资产类别', key: 'assetCategory', width: 240, render: (_, row) => formatAssetCategory(row) }, { title: '资产说明', dataIndex: 'description', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 70 }, { title: '原值', dataIndex: 'originalValue', width: 110 },
   { title: '使用状态', dataIndex: 'useStatus', width: 140, render: (value) => <StatusTag value={value} /> }, { title: '资产责任人', dataIndex: 'owner', width: 150 }, { title: '责任人部门', dataIndex: 'ownerDept', width: 200 },
   { title: 'City', dataIndex: 'city', width: 110 }, { title: 'Building', dataIndex: 'building', width: 170 }, { title: 'Floor', dataIndex: 'floor', width: 90 }, { title: '盘点组织', dataIndex: 'organization', width: 120 },
   { title: '成本中心', dataIndex: 'costCenter', width: 180 }, { title: '启用日期', dataIndex: 'enableDate', width: 120 },

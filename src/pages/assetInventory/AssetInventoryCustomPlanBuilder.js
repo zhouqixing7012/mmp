@@ -1,3 +1,4 @@
+import { AssetCategorySelect, AssetPersonSelect, AssetValueSelect, OwnerLevelSelect, formatAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
 import React, { useMemo, useState } from 'react';
 import {
   Button,
@@ -22,7 +23,7 @@ import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInvent
 
 const RANGE_OPTIONS = ['机房', '公共', '员工', '库房'];
 const PLAN_RANGE_OPTIONS = ['员工', '库房', '公共', '机房'];
-const EMPTY_ASSET_FILTERS = { assetTag: '', owner: '', ownerLevel: '' };
+const EMPTY_ASSET_FILTERS = { assetTag: '', owner: [], ownerLevel: [] };
 
 function CardTitle({ children }) {
   return (
@@ -90,7 +91,7 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
   const { allowedRanges } = useAssetInventoryVariant();
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [filters, setFilters] = useState({ company: '', department: '', plate: '', assetTag: '', category: '', serialNo: '', description: '', status: '', owner: '', ownerLevel: '', costCenter: '', enableFrom: '', enableTo: '', warehouse: '', city: '', building: '', floor: '', ratio: 100, methods: [] });
+  const [filters, setFilters] = useState({ company: '', department: '', plate: '', assetTag: '', category: [], serialNo: '', description: '', status: '', owner: [], ownerLevel: [], costCenter: '', enableFrom: '', enableTo: '', warehouse: '', city: '', building: '', floor: '', ratio: 100, methods: [] });
   const [scopeRows, setScopeRows] = useState(() => INITIAL_SCOPE_ROWS.map((row) => ({ ...row, methods: row.methods.filter((range) => allowedRanges.includes(range)) })).filter((row) => row.methods.length));
   const [assetRows, setAssetRows] = useState(() => initialAssets.filter((row) => isInventoryRangeAllowed(row, allowedRanges)).map((row) => ({ ...row })));
   const [selectedAssetKeys, setSelectedAssetKeys] = useState([]);
@@ -108,13 +109,13 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
       department: filters.department || '-',
       plate: filters.plate || '-',
       assetTag: filters.assetTag || '-',
-      category: filters.category || '全部',
+      category: filters.category.map((value) => value.startsWith('minor:') ? value.slice(6).replace('|', '.') : value.replace('major:', '')).join('、') || '全部',
       serialNo: filters.serialNo || '-',
       printNo: '-',
       description: filters.description || '-',
       status: filters.status || '全部',
-      owner: filters.owner || '-',
-      ownerLevel: filters.ownerLevel || '全部',
+      owner: filters.owner.join('、') || '-',
+      ownerLevel: filters.ownerLevel.join('、') || '全部',
       costCenter: filters.costCenter || '-',
       enableFrom: filters.enableFrom || '-',
       enableTo: filters.enableTo || '-',
@@ -131,8 +132,8 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
 
   const filteredAssets = useMemo(() => assetRows.filter((row) => (
     (!assetFilters.assetTag || String(row.assetTag || '').includes(assetFilters.assetTag))
-    && (!assetFilters.owner || String(row.owner || '').includes(assetFilters.owner))
-    && (!assetFilters.ownerLevel || String(row.ownerLevel || '').includes(assetFilters.ownerLevel))
+    && matchesQuerySelection(row.owner, assetFilters.owner)
+    && matchesQuerySelection(row.ownerLevel, assetFilters.ownerLevel)
   )), [assetRows, assetFilters]);
 
   const scopeColumns = [
@@ -142,7 +143,7 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
   ];
 
   const assetColumns = [
-    { title: '资产标签号', dataIndex: 'assetTag', width: 140, fixed: 'left' }, { title: '序列号', dataIndex: 'serialNo', width: 130 }, { title: '资产大类', dataIndex: 'category', width: 110 }, { title: '资产小类', dataIndex: 'subCategory', width: 170 }, { title: '资产说明', dataIndex: 'description', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 70, align: 'right' }, { title: '原值', dataIndex: 'originalValue', width: 100, align: 'right' }, { title: '使用状态', dataIndex: 'useStatus', width: 130, render: (value) => <StatusTag value={value} /> }, { title: 'NO位置', dataIndex: 'noLocation', width: 120 }, { title: 'NO状态', width: 100, render: () => '-' }, { title: '备注', dataIndex: 'remark', width: 130 }, { title: '资产责任人', dataIndex: 'owner', width: 140 }, { title: '责任人部门', dataIndex: 'ownerDept', width: 200 }, { title: '责任人级别', dataIndex: 'ownerLevel', width: 110 }, { title: 'City', dataIndex: 'city', width: 110 }, { title: 'Building', dataIndex: 'building', width: 160 }, { title: 'Floor', dataIndex: 'floor', width: 90 }, { title: '账套', dataIndex: 'organization', width: 120 }, { title: '成本中心', dataIndex: 'costCenter', width: 160 }, { title: '启用日期', dataIndex: 'enableDate', width: 120 },
+    { title: '资产标签号', dataIndex: 'assetTag', width: 140, fixed: 'left' }, { title: '序列号', dataIndex: 'serialNo', width: 130 }, { title: '资产类别', key: 'assetCategory', width: 240, render: (_, row) => formatAssetCategory(row) }, { title: '资产说明', dataIndex: 'description', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 70, align: 'right' }, { title: '原值', dataIndex: 'originalValue', width: 100, align: 'right' }, { title: '使用状态', dataIndex: 'useStatus', width: 130, render: (value) => <StatusTag value={value} /> }, { title: 'NO位置', dataIndex: 'noLocation', width: 120 }, { title: 'NO状态', width: 100, render: () => '-' }, { title: '备注', dataIndex: 'remark', width: 130 }, { title: '资产责任人', dataIndex: 'owner', width: 140 }, { title: '责任人部门', dataIndex: 'ownerDept', width: 200 }, { title: '责任人级别', dataIndex: 'ownerLevel', width: 110 }, { title: 'City', dataIndex: 'city', width: 110 }, { title: 'Building', dataIndex: 'building', width: 160 }, { title: 'Floor', dataIndex: 'floor', width: 90 }, { title: '账套', dataIndex: 'organization', width: 120 }, { title: '成本中心', dataIndex: 'costCenter', width: 160 }, { title: '启用日期', dataIndex: 'enableDate', width: 120 },
   ];
 
   const queryFields = [['公司', 'company'], ['部门', 'department'], ['板块', 'plate'], ['标签号', 'assetTag'], ['资产类别', 'category'], ['资产序列号', 'serialNo'], ['资产说明', 'description'], ['资产状态', 'status'], ['资产责任人', 'owner'], ['资产责任人职级', 'ownerLevel'], ['成本中心', 'costCenter'], ['仓库', 'warehouse'], ['City', 'city'], ['Building', 'building'], ['Floor', 'floor']];
@@ -163,7 +164,13 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
 
     <Card size="small" title={<CardTitle>盘点范围筛选</CardTitle>}>
       <div className="grid grid-cols-3 gap-x-6 gap-y-3">
-        {queryFields.map(([label, field]) => <div key={field} className="flex items-center gap-2 min-w-0"><span className="w-24 shrink-0 text-right text-sm text-gray-600">{label}:</span><Input value={filters[field]} placeholder={`请输入${label}`} onChange={(event) => setFilter(field, event.target.value)} /></div>)}
+        {queryFields.map(([label, field]) => <div key={field} className="flex items-center gap-2 min-w-0"><span className="w-28 shrink-0 text-right text-sm text-gray-600">{label}:</span>
+          {field === 'owner' ? <AssetPersonSelect rows={initialAssets} value={filters.owner} onChange={(value) => setFilter('owner', value)} />
+            : field === 'ownerLevel' ? <OwnerLevelSelect rows={initialAssets} value={filters.ownerLevel} onChange={(value) => setFilter('ownerLevel', value)} />
+              : field === 'category' ? <AssetCategorySelect rows={initialAssets} value={filters.category} onChange={(value) => setFilter('category', value)} />
+                : ['company', 'department', 'city', 'building', 'floor', 'warehouse', 'status'].includes(field) ? <AssetValueSelect rows={initialAssets} field={{ company: 'organization', department: 'ownerDept', status: 'useStatus' }[field] || field} value={filters[field]} onChange={(value) => setFilter(field, value || '')} />
+                  : <Input value={filters[field]} placeholder={`请输入${label}`} onChange={(event) => setFilter(field, event.target.value)} />}
+        </div>)}
         <div className="flex items-center gap-2 min-w-0"><span className="w-24 shrink-0 text-right text-sm text-gray-600">启用日期从:</span><DatePicker className="flex-1" value={filters.enableFrom ? dayjs(filters.enableFrom) : null} onChange={(date) => setFilter('enableFrom', date ? date.format('YYYY-MM-DD') : '')} /></div>
         <div className="flex items-center gap-2 min-w-0"><span className="w-24 shrink-0 text-right text-sm text-gray-600">启用日期至:</span><DatePicker className="flex-1" value={filters.enableTo ? dayjs(filters.enableTo) : null} onChange={(date) => setFilter('enableTo', date ? date.format('YYYY-MM-DD') : '')} /></div>
         <div className="flex items-center gap-2 min-w-0"><span className="w-24 shrink-0 text-right text-sm text-gray-600">比例:</span><InputNumber min={1} max={100} value={filters.ratio} addonAfter="%" className="flex-1" onChange={(value) => setFilter('ratio', value || 100)} /></div>
@@ -180,8 +187,8 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
     <Card size="small" title={<CardTitle>资产明细</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredAssets.length} 条</Typography.Text>}>
       <QueryBar onQuery={() => setAssetFilters({ ...assetDraftFilters })} onReset={() => { setAssetDraftFilters(EMPTY_ASSET_FILTERS); setAssetFilters(EMPTY_ASSET_FILTERS); }}>
         <QueryItem label="资产标签号"><Input value={assetDraftFilters.assetTag} allowClear placeholder="请输入资产标签号" onChange={(event) => setAssetDraftFilters((current) => ({ ...current, assetTag: event.target.value }))} /></QueryItem>
-        <QueryItem label="资产责任人"><Input value={assetDraftFilters.owner} allowClear placeholder="请输入资产责任人" onChange={(event) => setAssetDraftFilters((current) => ({ ...current, owner: event.target.value }))} /></QueryItem>
-        <QueryItem label="责任人职级"><Input value={assetDraftFilters.ownerLevel} allowClear placeholder="请输入责任人职级" onChange={(event) => setAssetDraftFilters((current) => ({ ...current, ownerLevel: event.target.value }))} /></QueryItem>
+        <QueryItem label="资产责任人"><AssetPersonSelect rows={initialAssets} value={assetDraftFilters.owner} onChange={(value) => setAssetDraftFilters((current) => ({ ...current, owner: value }))} /></QueryItem>
+        <QueryItem label="责任人职级"><OwnerLevelSelect rows={initialAssets} value={assetDraftFilters.ownerLevel} onChange={(value) => setAssetDraftFilters((current) => ({ ...current, ownerLevel: value }))} /></QueryItem>
       </QueryBar>
       <div className="mb-3 flex justify-end pr-[2px]"><Space><Button icon={<Download size={14} />} onClick={() => messageApi.success('已导出当前资产清册')}>导出清册</Button><Button danger icon={<Trash2 size={14} />} onClick={handleDeleteAssets}>删除</Button></Space></div>
       <Table rowKey="key" size="small" bordered columns={assetColumns} dataSource={filteredAssets} rowSelection={{ selectedRowKeys: selectedAssetKeys, onChange: setSelectedAssetKeys }} scroll={{ x: 2450 }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />

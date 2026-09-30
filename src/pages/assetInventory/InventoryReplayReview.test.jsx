@@ -5,6 +5,7 @@ import AssetInventoryPlansV2Refined from './AssetInventoryPlansV2Refined';
 jest.mock('antd',()=>({
  Alert:()=>null, DatePicker:()=>null, Modal:Object.assign(()=>null,{confirm:jest.fn()}), message:{useMessage:()=>[{warning:jest.fn(),success:jest.fn()},null]},
  Button:({children,onClick})=><button onClick={onClick}>{children}</button>,Card:({children,title})=><section>{title}{children}</section>,Space:({children})=><div>{children}</div>,Typography:{Title:({children})=><h1>{children}</h1>,Text:({children})=><span>{children}</span>},
+ TreeSelect:Object.assign(()=>null,{SHOW_PARENT:'SHOW_PARENT'}),
  Input:({value,onChange})=><input value={value} onChange={onChange}/>,Select:({value,options,onChange})=><select value={value} onChange={e=>onChange(e.target.value)}><option value=""/>{options.map(o=><option key={o.value}>{o.value}</option>)}</select>,
  Table:({columns,dataSource})=><table><thead><tr>{columns.map(c=><th key={c.title}>{c.title}</th>)}</tr></thead><tbody>{dataSource.map((r,i)=><tr key={i}>{columns.map(c=><td key={c.title}>{c.render?c.render(r[c.dataIndex],r):r[c.dataIndex]}</td>)}</tr>)}</tbody></table>
 }));

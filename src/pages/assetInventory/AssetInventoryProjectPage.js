@@ -1,3 +1,4 @@
+import { AssetPersonSelect, OwnerLevelSelect, formatAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
@@ -159,8 +160,7 @@ function makeAssetColumns({ includeNo = true, includePlan = false, includeCurren
     { title: '盘点日期', dataIndex: 'inventoryDate', width: 120 },
     { title: '资产标签号', dataIndex: 'assetTag', width: 150 },
     { title: '序列号', dataIndex: 'serialNo', width: 140 },
-    { title: '资产大类', dataIndex: 'category', width: 110 },
-    { title: '资产小类', dataIndex: 'subCategory', width: 180 },
+    { title: '资产类别', key: 'assetCategory', width: 240, render: (_, row) => formatAssetCategory(row) },
     { title: '资产说明', dataIndex: 'description', width: 180 },
     { title: '数量', dataIndex: 'quantity', width: 70, align: 'right' },
     { title: '原值', dataIndex: 'originalValue', width: 110, align: 'right', render: formatMoney },
@@ -225,8 +225,7 @@ function makeAssetColumns({ includeNo = true, includePlan = false, includeCurren
 const SCOPE_ASSET_COLUMNS = [
   { title: '资产标签号', dataIndex: 'assetTag', width: 150, fixed: 'left' },
   { title: '序列号', dataIndex: 'serialNo', width: 140 },
-  { title: '资产大类', dataIndex: 'category', width: 110 },
-  { title: '资产小类', dataIndex: 'subCategory', width: 180 },
+  { title: '资产类别', key: 'assetCategory', width: 240, render: (_, row) => formatAssetCategory(row) },
   { title: '资产说明', dataIndex: 'description', width: 180 },
   { title: '数量', dataIndex: 'quantity', width: 70, align: 'right' },
   { title: '原值', dataIndex: 'originalValue', width: 110, align: 'right', render: formatMoney },
@@ -689,7 +688,7 @@ function ImageUploadRuleEditor() {
       fixed: 'left',
       render: (value, row) => <Select value={value} className="w-full" options={RANGE_OPTIONS.map((item) => ({ label: item, value: item }))} onChange={(next) => changeRow(row.key, 'range', next)} />,
     },
-    { title: '资产责任人职级', dataIndex: 'ownerLevel', width: 170, render: (value, row) => <Select mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '1', '5', '实习生', '公共'])} onChange={(next) => changeRow(row.key, 'ownerLevel', next)} /> },
+    { title: '资产责任人职级', dataIndex: 'ownerLevel', width: 170, render: (value, row) => <OwnerLevelSelect rows={ASSET_ROWS} value={value} onChange={(next) => changeRow(row.key, 'ownerLevel', next)} /> },
     { title: '部门', dataIndex: 'department', width: 170, render: (value, row) => <Select mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '集团总部.MIS部', '搜狐媒体.智能平台'])} onChange={(next) => changeRow(row.key, 'department', next)} /> },
     { title: '资产类别', dataIndex: 'category', width: 180, render: (value, row) => <Select mode="multiple" value={value} className="w-full" options={multiOptions(['全部', 'SERVER', 'NET EQUIPMENT', 'NOTEBOOK', 'MONITOR'])} onChange={(next) => changeRow(row.key, 'category', next)} /> },
     { title: '资产状态', dataIndex: 'assetStatus', width: 160, render: (value, row) => <Select mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '在用', '在库'])} onChange={(next) => changeRow(row.key, 'assetStatus', next)} /> },
@@ -915,10 +914,10 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   }));
   const [scopeRows, setScopeRows] = useState(SCOPE_ROWS);
   const [selectedAssets, setSelectedAssets] = useState([]);
-  const [scopeAssetQuery, setScopeAssetQuery] = useState({ assetTag: '', owner: '', ownerLevel: '' });
-  const [scopeAssetFilter, setScopeAssetFilter] = useState({ assetTag: '', owner: '', ownerLevel: '' });
+  const [scopeAssetQuery, setScopeAssetQuery] = useState({ assetTag: '', owner: [], ownerLevel: [] });
+  const [scopeAssetFilter, setScopeAssetFilter] = useState({ assetTag: '', owner: [], ownerLevel: [] });
   const filteredScopeAssets = ASSET_ROWS.filter((asset) =>
-    ['assetTag', 'owner', 'ownerLevel'].every((field) => String(asset[field] || '').includes(scopeAssetFilter[field].trim())));
+    String(asset.assetTag || '').includes(scopeAssetFilter.assetTag.trim()) && matchesQuerySelection(asset.owner, scopeAssetFilter.owner) && matchesQuerySelection(asset.ownerLevel, scopeAssetFilter.ownerLevel));
   const [assetPreviewOpen, setAssetPreviewOpen] = useState(false);
 
   const handleSave = () => {
@@ -987,10 +986,10 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
       />
 
       <Card size="small" title={<CardTitle>盘点资产范围明细</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredScopeAssets.length} 条</Typography.Text>}>
-        <QueryBar onQuery={() => setScopeAssetFilter({ ...scopeAssetQuery })} onReset={() => { setScopeAssetQuery({ assetTag: '', owner: '', ownerLevel: '' }); setScopeAssetFilter({ assetTag: '', owner: '', ownerLevel: '' }); }}>
+        <QueryBar onQuery={() => setScopeAssetFilter({ ...scopeAssetQuery })} onReset={() => { setScopeAssetQuery({ assetTag: '', owner: [], ownerLevel: [] }); setScopeAssetFilter({ assetTag: '', owner: [], ownerLevel: [] }); }}>
           <QueryItem label="资产标签号"><Input value={scopeAssetQuery.assetTag} allowClear onChange={(event) => setScopeAssetQuery((current) => ({ ...current, assetTag: event.target.value }))} /></QueryItem>
-          <QueryItem label="资产责任人"><Input value={scopeAssetQuery.owner} allowClear onChange={(event) => setScopeAssetQuery((current) => ({ ...current, owner: event.target.value }))} /></QueryItem>
-          <QueryItem label="责任人职级"><Input value={scopeAssetQuery.ownerLevel} allowClear onChange={(event) => setScopeAssetQuery((current) => ({ ...current, ownerLevel: event.target.value }))} /></QueryItem>
+          <QueryItem label="资产责任人"><AssetPersonSelect rows={ASSET_ROWS} value={scopeAssetQuery.owner} onChange={(value) => setScopeAssetQuery((current) => ({ ...current, owner: value }))} /></QueryItem>
+          <QueryItem label="责任人职级"><OwnerLevelSelect rows={ASSET_ROWS} value={scopeAssetQuery.ownerLevel} onChange={(value) => setScopeAssetQuery((current) => ({ ...current, ownerLevel: value }))} /></QueryItem>
         </QueryBar>
         <div className="mb-3 flex justify-end">
           <Space>

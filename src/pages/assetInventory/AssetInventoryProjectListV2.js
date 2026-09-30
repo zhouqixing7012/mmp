@@ -144,8 +144,8 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
   };
 
   const columns = [
-    { title: '项目名称', dataIndex: 'projectName', width: 260, fixed: 'left', render: (value, row) => <span className="inline-flex items-center" style={{ paddingLeft: row.groupParent ? 0 : 24 }}>
-      {row.groupParent && row.groupChildren > 0 && <Button type="text" size="small" aria-label={`${collapsedGroups.includes(row.relationGroup) ? '展开' : '折叠'}${normalizeQuarterText(value)}关联项目`} aria-expanded={!collapsedGroups.includes(row.relationGroup)} icon={collapsedGroups.includes(row.relationGroup) ? <ChevronRight size={14} /> : <ChevronDown size={14} />} onClick={() => setCollapsedGroups((current) => current.includes(row.relationGroup) ? current.filter((group) => group !== row.relationGroup) : [...current, row.relationGroup])} />}
+    { title: '项目名称', dataIndex: 'projectName', width: 260, fixed: 'left', render: (value, row) => <span className="inline-flex items-center">
+      {row.groupParent && row.groupChildren > 0 ? <Button type="text" size="small" style={{ width: 24, flexShrink: 0 }} aria-label={`${collapsedGroups.includes(row.relationGroup) ? '展开' : '折叠'}${normalizeQuarterText(value)}关联项目`} aria-expanded={!collapsedGroups.includes(row.relationGroup)} icon={collapsedGroups.includes(row.relationGroup) ? <ChevronRight size={14} /> : <ChevronDown size={14} />} onClick={() => setCollapsedGroups((current) => current.includes(row.relationGroup) ? current.filter((group) => group !== row.relationGroup) : [...current, row.relationGroup])} /> : <span aria-hidden="true" style={{ width: 24, flexShrink: 0 }} />}
       <Button type="link" className="px-0" onClick={() => onOpenProject(row)}>{normalizeQuarterText(value)}</Button>
     </span> },
     { title: '项目编号', dataIndex: 'projectNo', width: 170 },

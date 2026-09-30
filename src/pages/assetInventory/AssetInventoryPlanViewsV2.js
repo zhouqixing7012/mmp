@@ -1,3 +1,4 @@
+import { AssetCategorySelect, AssetPersonSelect, AssetValueSelect, OwnerLevelSelect, formatAssetCategory, matchesAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
@@ -40,13 +41,13 @@ const EMPTY_PLAN_FILTERS = {
 
 const EMPTY_ASSET_FILTERS = {
   assetTag: '',
-  category: '',
+  category: [],
   serialNo: '',
   description: '',
   useStatus: '',
-  owner: '',
+  owner: [],
   ownerDept: '',
-  ownerLevel: '',
+  ownerLevel: [],
   supervisor: '',
   executor: '',
   city: '',
@@ -457,19 +458,20 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, o
 
   const filteredRows = useMemo(() => rows.filter((row) => (
     includesText(row.assetTag, filters.assetTag)
-    && includesText(`${row.category} ${row.subCategory}`, filters.category)
+    && matchesAssetCategory(row, filters.category)
     && includesText(row.serialNo, filters.serialNo)
     && includesText(row.description, filters.description)
-    && includesText(row.useStatus, filters.useStatus)
-    && includesText(row.owner, filters.owner)
-    && includesText(row.ownerDept, filters.ownerDept)
-    && includesText(row.ownerLevel, filters.ownerLevel)
+    && matchesQuerySelection(row.useStatus, filters.useStatus)
+    && matchesQuerySelection(row.owner, filters.owner)
+    && matchesQuerySelection(row.ownerDept, filters.ownerDept)
+    && matchesQuerySelection(row.ownerLevel, filters.ownerLevel)
     && includesText(row.supervisor, filters.supervisor)
     && includesText(row.executor, filters.executor)
-    && includesText(row.city, filters.city)
-    && includesText(row.building, filters.building)
+    && matchesQuerySelection(row.city, filters.city)
+    && matchesQuerySelection(row.building, filters.building)
     && includesText(row.inventoryStatus, filters.inventoryStatus)
     && includesText(row.costCenter, filters.costCenter)
+    && matchesQuerySelection(row.noStatus, filters.noStatus)
     && inDateRange(row.enableDate, filters.enableFrom, filters.enableTo)
   )), [rows, filters]);
 
@@ -490,8 +492,7 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, o
     { title: '盘点日期', dataIndex: 'inventoryDate', width: 120 },
     { title: '资产标签号', dataIndex: 'assetTag', width: 150 },
     { title: '序列号', dataIndex: 'serialNo', width: 140 },
-    { title: '资产大类', dataIndex: 'category', width: 110 },
-    { title: '资产小类', dataIndex: 'subCategory', width: 180 },
+    { title: '资产类别', key: 'assetCategory', width: 240, render: (_, row) => formatAssetCategory(row) },
     { title: '资产说明', dataIndex: 'description', width: 180 },
     { title: '数量', dataIndex: 'quantity', width: 70, align: 'right' },
     { title: '原值', dataIndex: 'originalValue', width: 110, align: 'right', render: formatMoney },
@@ -546,22 +547,22 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, o
         }}
       >
         <QueryItem label="资产标签号"><Input value={draftFilters.assetTag} allowClear onChange={(event) => updateDraft('assetTag', event.target.value)} /></QueryItem>
-        <QueryItem label="资产类别"><Input value={draftFilters.category} allowClear onChange={(event) => updateDraft('category', event.target.value)} /></QueryItem>
+        <QueryItem label="资产类别"><AssetCategorySelect rows={rows} value={draftFilters.category} onChange={(value) => updateDraft('category', value)} /></QueryItem>
         <QueryItem label="序列号"><Input value={draftFilters.serialNo} allowClear onChange={(event) => updateDraft('serialNo', event.target.value)} /></QueryItem>
         <QueryItem label="资产说明"><Input value={draftFilters.description} allowClear onChange={(event) => updateDraft('description', event.target.value)} /></QueryItem>
-        <QueryItem label="使用状态"><Input value={draftFilters.useStatus} allowClear onChange={(event) => updateDraft('useStatus', event.target.value)} /></QueryItem>
-        <QueryItem label="资产责任人"><Input value={draftFilters.owner} allowClear onChange={(event) => updateDraft('owner', event.target.value)} /></QueryItem>
-        <QueryItem label="责任人部门"><Input value={draftFilters.ownerDept} allowClear onChange={(event) => updateDraft('ownerDept', event.target.value)} /></QueryItem>
-        <QueryItem label="责任人职级"><Input value={draftFilters.ownerLevel} allowClear onChange={(event) => updateDraft('ownerLevel', event.target.value)} /></QueryItem>
+        <QueryItem label="使用状态"><AssetValueSelect rows={rows} field="useStatus" value={draftFilters.useStatus} onChange={(value) => updateDraft('useStatus', value)} /></QueryItem>
+        <QueryItem label="资产责任人"><AssetPersonSelect rows={rows} value={draftFilters.owner} onChange={(value) => updateDraft('owner', value)} /></QueryItem>
+        <QueryItem label="责任人部门"><AssetValueSelect rows={rows} field="ownerDept" value={draftFilters.ownerDept} onChange={(value) => updateDraft('ownerDept', value)} /></QueryItem>
+        <QueryItem label="责任人职级"><OwnerLevelSelect rows={rows} value={draftFilters.ownerLevel} onChange={(value) => updateDraft('ownerLevel', value)} /></QueryItem>
         <QueryItem label="盘点监督人"><Input value={draftFilters.supervisor} allowClear onChange={(event) => updateDraft('supervisor', event.target.value)} /></QueryItem>
         <QueryItem label="盘点执行人"><Input value={draftFilters.executor} allowClear onChange={(event) => updateDraft('executor', event.target.value)} /></QueryItem>
-        <QueryItem label="City"><Input value={draftFilters.city} allowClear onChange={(event) => updateDraft('city', event.target.value)} /></QueryItem>
-        <QueryItem label="Building"><Input value={draftFilters.building} allowClear onChange={(event) => updateDraft('building', event.target.value)} /></QueryItem>
+        <QueryItem label="City"><AssetValueSelect rows={rows} field="city" value={draftFilters.city} onChange={(value) => updateDraft('city', value)} /></QueryItem>
+        <QueryItem label="Building"><AssetValueSelect rows={rows} field="building" value={draftFilters.building} onChange={(value) => updateDraft('building', value)} /></QueryItem>
         <QueryItem label="启用日期从"><DateFilter value={draftFilters.enableFrom} onChange={(value) => updateDraft('enableFrom', value)} /></QueryItem>
         <QueryItem label="启用日期至"><DateFilter value={draftFilters.enableTo} onChange={(value) => updateDraft('enableTo', value)} /></QueryItem>
         <QueryItem label="盘点状态"><Select value={draftFilters.inventoryStatus || undefined} allowClear options={['未盘', '审核中', '已盘', '代盘', '报失'].map((value) => ({ label: value, value }))} onChange={(value) => updateDraft('inventoryStatus', value)} /></QueryItem>
         <QueryItem label="成本中心"><Input value={draftFilters.costCenter} allowClear onChange={(event) => updateDraft('costCenter', event.target.value)} /></QueryItem>
-        <QueryItem label="NO状态"><Input value={draftFilters.noStatus} allowClear onChange={(event) => updateDraft('noStatus', event.target.value)} /></QueryItem>
+        <QueryItem label="NO状态"><AssetValueSelect rows={rows} field="noStatus" value={draftFilters.noStatus} onChange={(value) => updateDraft('noStatus', value)} /></QueryItem>
       </QueryBar>
 
       <Card size="small" title={<CardTitle>资产清单</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>

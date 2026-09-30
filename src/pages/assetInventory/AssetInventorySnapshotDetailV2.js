@@ -3,9 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Card,
-  Input,
   Modal,
-  Select,
   Space,
   Statistic,
   Table,
@@ -17,7 +15,9 @@ import dayjs from 'dayjs';
 import { serializeInventoryAssetExport } from './inventoryAssetExport';
 import { replayCloseBlockReason } from './inventoryCloseRules';
 import { CheckCircle2, Download, PlayCircle, ScanLine, Trash2, Upload, XCircle } from 'lucide-react';
-import QueryBar, { QueryItem } from '../../components/QueryBar';
+import InventoryAssetQuery from './InventoryAssetQuery';
+import { EMPTY_INVENTORY_ASSET_QUERY, filterInventoryAssets } from './inventoryAssetQuery';
+import { formatAssetCategory } from '../../components/AssetQueryControls';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { ASSET_ROWS, UNINCLUDED_ASSET_ROWS } from './mockData';
@@ -25,13 +25,8 @@ import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInvent
 import { importInventoryPhotoFiles } from './inventoryPhotoImportStore';
 
 const RANGE_OPTIONS = ['库房', '公共', '机房', '员工'];
-const EMPTY_FILTERS = { assetTag: '', category: '', status: '', owner: '', city: '', range: '' };
+const EMPTY_FILTERS = EMPTY_INVENTORY_ASSET_QUERY;
 const PRE_INVENTORY_STATUSES = new Set(['快照生成', '生成盘点计划']);
-
-function includesText(value, query) {
-  if (!query) return true;
-  return String(value || '').toLowerCase().includes(String(query).trim().toLowerCase());
-}
 
 function formatMoney(value) {
   const numeric = Number(value || 0);
@@ -90,8 +85,7 @@ function makeAssetColumns({ includeNo = true } = {}) {
     { title: '盘点日期', dataIndex: 'inventoryDate', width: 120 },
     { title: '资产标签号', dataIndex: 'assetTag', width: 150 },
     { title: '序列号', dataIndex: 'serialNo', width: 140 },
-    { title: '资产大类', dataIndex: 'category', width: 110 },
-    { title: '资产小类', dataIndex: 'subCategory', width: 180 },
+    { title: '资产类别', key: 'assetCategory', width: 240, render: (_, row) => formatAssetCategory(row) },
     { title: '资产说明', dataIndex: 'description', width: 180 },
     { title: '数量', dataIndex: 'quantity', width: 70, align: 'right' },
     { title: '原值', dataIndex: 'originalValue', width: 110, align: 'right', render: formatMoney },
@@ -128,38 +122,18 @@ function makeAssetColumns({ includeNo = true } = {}) {
   return columns;
 }
 
-function SnapshotQuery({ filters, setFilters, onQuery, rangeOptions }) {
-  const update = (field, value) => setFilters((current) => ({ ...current, [field]: value || '' }));
-  return (
-    <QueryBar onQuery={onQuery} onReset={() => { setFilters(EMPTY_FILTERS); onQuery(); }}>
-      <QueryItem label="资产标签号"><Input value={filters.assetTag} allowClear placeholder="请输入资产标签号" onChange={(event) => update('assetTag', event.target.value)} /></QueryItem>
-      <QueryItem label="资产类别"><Select value={filters.category || undefined} allowClear placeholder="请选择" options={['SERVER', 'NET EQUIPMENT', 'NOTEBOOK', 'MONITOR'].map((value) => ({ label: value, value }))} onChange={(value) => update('category', value)} /></QueryItem>
-      <QueryItem label="盘点状态"><Select value={filters.status || undefined} allowClear placeholder="请选择" options={['未盘', '已盘', '代盘', '报失', '盘亏'].map((value) => ({ label: value, value }))} onChange={(value) => update('status', value)} /></QueryItem>
-      <QueryItem label="资产责任人"><Input value={filters.owner} allowClear placeholder="请输入资产责任人" onChange={(event) => update('owner', event.target.value)} /></QueryItem>
-      <QueryItem label="City"><Input value={filters.city} allowClear placeholder="请输入City" onChange={(event) => update('city', event.target.value)} /></QueryItem>
-      <QueryItem label="盘点范围"><Select value={filters.range || undefined} allowClear placeholder="请选择" options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => update('range', value)} /></QueryItem>
-    </QueryBar>
-  );
-}
-
 function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOtherRows, messageApi }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const showMachineRoomFeatures = allowedRanges.includes('机房');
   const photoInputRef = useRef(null);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const filteredRows = useMemo(() => rows.filter((row) => (
-    includesText(row.assetTag, filters.assetTag)
-    && includesText(row.category, filters.category)
-    && includesText(row.inventoryStatus, filters.status)
-    && includesText(row.owner, filters.owner)
-    && includesText(row.city, filters.city)
-    && includesText(row.inventoryRange, filters.range)
-  )), [rows, filters]);
+  const filteredRows = useMemo(() => filterInventoryAssets(rows, filters), [rows, filters]);
 
   const exportFilteredRows = () => {
     const { csv, missingFields } = serializeInventoryAssetExport(filteredRows);
@@ -310,7 +284,7 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
       {type === 'execution' && during && (
         <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoImport} />
       )}
-      <SnapshotQuery filters={filters} setFilters={setFilters} onQuery={() => setCurrentPage(1)} rangeOptions={rangeOptions} />
+      <InventoryAssetQuery rows={rows} filters={draftFilters} onChange={setDraftFilters} started={!PRE_INVENTORY_STATUSES.has(projectStatus)} onQuery={() => { setFilters({ ...draftFilters }); setSelectedKeys([]); setCurrentPage(1); }} onReset={() => { setDraftFilters(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setSelectedKeys([]); setCurrentPage(1); }} rangeOptions={rangeOptions} />
       <div className="mb-3 flex justify-end"><Space wrap>{operations}</Space></div>
       <Table
         rowKey="key"

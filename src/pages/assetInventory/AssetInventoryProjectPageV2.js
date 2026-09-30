@@ -1,3 +1,4 @@
+import { OwnerLevelSelect } from '../../components/AssetQueryControls';
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, InputNumber, Modal, Select, Switch, Table, Typography } from 'antd';
 import { createPortal } from 'react-dom';
@@ -24,7 +25,7 @@ function ImageUploadRuleEditorV2() {
   const changeRow = (key, field, value) => setRows((current) => current.map((row) => row.key === key ? { ...row, [field]: value } : row));
   const columns = [
     { title: '盘点范围', dataIndex: 'range', width: 100, fixed: 'left', render: (value) => <Typography.Text>{value || '-'}</Typography.Text> },
-    { title: '资产责任人职级', dataIndex: 'ownerLevel', width: 170, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '1', '5', '实习生', '公共'])} onChange={(next) => changeRow(row.key, 'ownerLevel', next)} /> },
+    { title: '资产责任人职级', dataIndex: 'ownerLevel', width: 170, render: (value, row) => <OwnerLevelSelect rows={ASSET_ROWS} disabled={!row.uploadEnabled} value={value} onChange={(next) => changeRow(row.key, 'ownerLevel', next)} /> },
     { title: '部门', dataIndex: 'department', width: 170, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '集团总部.MIS部', '搜狐媒体.智能平台'])} onChange={(next) => changeRow(row.key, 'department', next)} /> },
     { title: '资产类别', dataIndex: 'category', width: 180, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', 'SERVER', 'NET EQUIPMENT', 'NOTEBOOK', 'MONITOR'])} onChange={(next) => changeRow(row.key, 'category', next)} /> },
     { title: '资产状态', dataIndex: 'assetStatus', width: 160, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '在用', '在库'])} onChange={(next) => changeRow(row.key, 'assetStatus', next)} /> },
@@ -474,7 +475,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const showBaseSnapshotV2 = !nonSnapshotOverlayOpen && !snapshotOpen && basePageTitle === '盘点项目详情';
   const overlayOpen = nonSnapshotOverlayOpen || snapshotOpen || showBaseSnapshotV2;
   const showProjectListV2 = !overlayOpen && basePageTitle === '盘点项目';
-  const snapshotProject = snapshotOpen ? planProject : resolveProjectFromDetail(baseContainerRef.current);
+  const snapshotSource = snapshotOpen ? planProject : resolveProjectFromDetail(baseContainerRef.current);
+  const snapshotProject = { ...snapshotSource, status: projectStatusOverrides[snapshotSource.projectNo] || snapshotSource.status };
 
   return <div ref={rootRef} className="w-full" onClickCapture={interceptNavigation}>
     {showProjectListV2 && <AssetInventoryProjectListV2
@@ -492,14 +494,14 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     {!customBuilderOpen && (snapshotOpen || showBaseSnapshotV2) && <AssetInventorySnapshotDetailV2
       project={snapshotProject}
       onCloseProject={handleProjectClose}
-      onBack={() => { if (snapshotOpen) setSnapshotOpen(false); else returnToProjectList(); }}
+      onBack={returnToProjectList}
       onOpenPlans={() => openPlanViewByProject(snapshotProject)}
       onGenerateDefault={() => openPlanViewByProject(snapshotProject, true)}
       onGenerateCustom={() => openSnapshotPlanBuilder(snapshotProject)}
     />}
 
     {customBuilderOpen && <AssetInventoryCustomPlanBuilder initialAssets={customBuilderSource === 'plans' ? unplannedSnapshotAssets : availableAssets} onBack={closeCustomBuilder} onConfirmPlan={handleCustomPlanConfirm} />}
-    {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} currentOperator={creator} rows={planRows} setRows={setPlanRows} assetsForPlan={assetsForPlan} canManualCreate={canManualCreate && planProject?.status !== '盘点关闭'} onManualCreate={openManualPlanBuilder} onBack={() => setPlanViewOpen(false)} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}
+    {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} onPlansStarted={(project) => { setPlanProject(project); setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '盘点中' })); }} currentOperator={creator} rows={planRows} setRows={setPlanRows} assetsForPlan={assetsForPlan} canManualCreate={canManualCreate && planProject?.status !== '盘点关闭'} onManualCreate={openManualPlanBuilder} onBack={() => setPlanViewOpen(false)} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}
     {activePlan && <AssetInventoryPlanAssetListV2 plan={activePlan} project={planProject} assets={assetsForPlan(activePlan)} onAssetsChange={(updater) => changePlanAssets(activePlan, updater)} onBack={() => setActivePlan(null)} />}
     {imageReviewOpen && <AssetInventoryImageReviewV2 project={planProject} onBack={() => setImageReviewOpen(false)} />}
     {progressOpen && <AssetInventoryProgressV2 project={planProject} onBack={() => setProgressOpen(false)} />}
