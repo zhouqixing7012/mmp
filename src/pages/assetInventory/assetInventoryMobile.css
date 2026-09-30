@@ -762,3 +762,21 @@
     transition: none;
   }
 }
+
+.inventory-detail-actions .ant-btn {
+  flex: 1 1 0;
+  width: 0;
+  height: 48px;
+  min-height: 48px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.inventory-group-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.inventory-group-toggle .inventory-section-count { display: inline-flex; align-items: center; gap: 4px; }

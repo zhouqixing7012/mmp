@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Button, Card, DatePicker, Input, Modal, Progress, Radio, Select, Space, Statistic, Table, Tooltip, Typography, message as antdMessage } from 'antd';
+import { Button, Card, DatePicker, Input, Modal, Radio, Select, Space, Statistic, Table, Tooltip, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import { ChevronLeft, ChevronRight, Download, Maximize2, MousePointer2, ZoomIn, ZoomOut } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
@@ -155,6 +155,7 @@ function ViewerToolButton({ title, icon, active = false, disabled = false, onCli
 
 function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose }) {
   const viewportRef = useRef(null);
+  const imageRef = useRef(null);
   const scaleRef = useRef(1);
   const positionRef = useRef({ x: 0, y: 0 });
   const selectionStartRef = useRef(null);
@@ -191,8 +192,10 @@ function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose }) {
     panStartRef.current = null;
   };
 
-  const resetScale = () => {
-    setViewerScale(1);
+  const showOriginalSize = () => {
+    const image = imageRef.current;
+    if (!image?.clientWidth || !image?.naturalWidth) return;
+    setViewerScale(image.naturalWidth / image.clientWidth);
     setViewerPosition({ x: 0, y: 0 });
     setSelectionRect(null);
   };
@@ -209,7 +212,7 @@ function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose }) {
     if (!viewport) return;
     const rect = viewport.getBoundingClientRect();
     const oldScale = scaleRef.current;
-    const nextScale = clamp(targetScale, MIN_SCALE, MAX_SCALE);
+    const nextScale = clamp(targetScale, MIN_SCALE, Math.max(MAX_SCALE, imageRef.current?.naturalWidth / (imageRef.current?.clientWidth || 1) || 1));
     if (Math.abs(nextScale - oldScale) < 0.001) return;
 
     const pointX = clientX - rect.left - rect.width / 2;
@@ -383,6 +386,7 @@ function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose }) {
 
           {photo && (
             <img
+              ref={imageRef}
               src={photo.src}
               alt={photo.label}
               draggable={false}
@@ -445,7 +449,7 @@ function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose }) {
             <ViewerToolButton title="选择" icon={<MousePointer2 size={15} />} active={selecting || Boolean(selectionRect)} onClick={toggleSelection} />
             <ViewerToolButton title="局部放大" icon={<ZoomIn size={15} />} onClick={localZoom} />
             <ViewerToolButton title="缩小" icon={<ZoomOut size={15} />} disabled={scale <= MIN_SCALE} onClick={() => zoomAtCenter(1 / 1.25)} />
-            <ViewerToolButton title="1:1" icon={<Maximize2 size={15} />} onClick={resetScale} />
+            <ViewerToolButton title="原图 1:1" icon={<Maximize2 size={15} />} onClick={showOriginalSize} />
             <span className="mx-1 h-5 w-px bg-white/15" />
             <ViewerToolButton title="镜像" active={flipX === -1} onClick={() => setFlipX((value) => value * -1)} />
             <ViewerToolButton title="翻转" active={flipY === -1} onClick={() => setFlipY((value) => value * -1)} />
@@ -481,8 +485,8 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
   };
 
   const pendingCount = rows.filter((row) => row.reviewStatus === '待审核').length;
-  const reviewedCount = rows.length - pendingCount;
-  const reviewedPercent = rows.length ? Math.round((reviewedCount / rows.length) * 100) : 0;
+  const approvedCount = rows.filter((row) => row.reviewStatus === '审核通过').length;
+  const rejectedCount = rows.filter((row) => row.reviewStatus === '审核不通过').length;
   const filteredRows = useMemo(() => rows.filter((row) => {
     const asset = row.asset;
     return includesText(asset.assetTag, filters.assetTag)
@@ -579,11 +583,10 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
           <Statistic title="待审核" value={pendingCount} suffix="条" />
         </div>
         <div className="min-w-0">
-          <Statistic title="已审核" value={reviewedCount} suffix="条" />
+          <Statistic title="审核通过" value={approvedCount} suffix="条" />
         </div>
         <div className="min-w-0">
-          <Typography.Text type="secondary">已审核百分比</Typography.Text>
-          <Progress percent={reviewedPercent} className="mt-3" />
+          <Statistic title="审核不通过" value={rejectedCount} suffix="条" />
         </div>
       </div>
     </Card>

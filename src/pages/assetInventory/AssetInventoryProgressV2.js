@@ -60,20 +60,19 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
     { title: '报失数量', dataIndex: 'lost', width: 110, align: 'right', render: formatCount },
     { title: '未盘数量', dataIndex: 'uncounted', width: 110, align: 'right', render: formatCount },
     { title: '数量进度', dataIndex: 'progress', width: 180, render: (value) => <Progress percent={value} size="small" /> },
-    { title: '备注', dataIndex: 'remark', width: 220 },
     {
       title: '进度详情',
       width: 100,
       fixed: 'right',
-      render: (_, row) => row.range === '员工'
-        ? <Button type="link" className="px-0" onClick={() => setDetailRange('员工')}>查看详情</Button>
+      render: (_, row) => ['员工', '库房', '公共'].includes(row.range)
+        ? <Button type="link" className="px-0" onClick={() => setDetailRange(row.range)}>查看详情</Button>
         : '-',
     },
   ];
 
   const detailColumns = [
     { title: '子公司', dataIndex: 'organization', width: 140, fixed: 'left' },
-    { title: '部门', dataIndex: 'department', width: 220 },
+    { title: '一级部门', dataIndex: 'department', width: 220 },
     { title: 'City', dataIndex: 'city', width: 110 },
     { title: '应盘数量', dataIndex: 'expected', width: 110, align: 'right', render: formatCount },
     { title: '已盘数量', dataIndex: 'counted', width: 110, align: 'right', render: formatCount },
@@ -92,7 +91,7 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
         <Typography.Title level={4} style={{ margin: 0 }}>进度详情</Typography.Title>
         <ProjectInfoCard project={project} />
         <Card size="small" title={<SectionCardTitle>进度详情</SectionCardTitle>}>
-          <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={detailRows} pagination={false} scroll={{ x: 1350 }} />
+          <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={detailRows} pagination={false} scroll={{ x: 1350 }} locale={{ emptyText: '暂无该盘点范围的进度详情数据' }} />
         </Card>
         <div className="flex justify-center pb-2">
           <Button onClick={() => setDetailRange('')}>返回</Button>

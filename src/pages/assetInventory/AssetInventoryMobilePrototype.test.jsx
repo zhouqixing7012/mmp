@@ -2,9 +2,12 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import AssetInventoryMobilePrototype from './AssetInventoryMobilePrototype';
 
+let mockLocationState = {};
+const mockWarning = jest.fn();
+
 jest.mock('react-router-dom', () => ({
   useNavigate: () => jest.fn(),
-  useLocation: () => ({ state: {}, key: 'mobile-test' }),
+  useLocation: () => ({ state: mockLocationState, key: 'mobile-test' }),
 }), { virtual: true });
 
 jest.mock('antd', () => {
@@ -16,120 +19,124 @@ jest.mock('antd', () => {
   Input.TextArea = ({ value, onChange, showCount: _showCount, ...props }) => <textarea value={value || ''} onChange={onChange} {...props} />;
   const Modal = ({ open, title, children }) => open ? <div role="dialog"><h2>{title}</h2>{children}</div> : null;
   const Tag = ({ children }) => <span>{children}</span>;
-  const message = { useMessage: () => [{ warning: jest.fn(), success: jest.fn() }, null] };
+  const message = { useMessage: () => [{ warning: mockWarning, info: jest.fn(), success: jest.fn() }, null] };
   return { Button, Input, Modal, Tag, message };
 });
 
 describe('AssetInventoryMobilePrototype', () => {
-  beforeEach(() => window.sessionStorage.clear());
-  test('工作台按状态分组并可进入资产详情', () => {
-    render(<AssetInventoryMobilePrototype />);
+  beforeEach(() => { window.sessionStorage.clear(); mockLocationState = {}; mockWarning.mockClear(); });
 
-    expect(screen.getAllByText('未盘').length).toBeGreaterThan(0);
-    expect(screen.queryByText('报失')).not.toBeInTheDocument();
-    expect(screen.queryByText('2025 年度资产盘点')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '开始盘点' })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /已盘 0/ }));
-    expect(screen.queryByRole('button', { name: '开始盘点' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /未盘 2/ }));
-    expect(screen.getByRole('button', { name: '开始盘点' })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /戴尔\.Latitude E7280/ }));
-
-    expect(screen.getByText('资产标签号')).toBeInTheDocument();
-    expect(screen.getByText('114121801802')).toBeInTheDocument();
-  });
-
-  test('搜索会同步过滤资产和分组数量', () => {
-    render(<AssetInventoryMobilePrototype />);
-
-    fireEvent.change(screen.getByLabelText('搜索资产'), { target: { value: 'iphone' } });
-
-    expect(screen.getByText('苹果.iphone 17')).toBeInTheDocument();
-    expect(screen.queryByText('戴尔.Latitude E7280')).not.toBeInTheDocument();
-    expect(screen.getByText('1 条')).toBeInTheDocument();
-  });
-
-  test('员工上传必需照片后进入审核中', () => {
-    render(<AssetInventoryMobilePrototype />);
-
-    fireEvent.click(screen.getByRole('button', { name: /戴尔\.Latitude E7280/ }));
-    screen.getAllByRole('button', { name: '拍照' }).forEach((button) => fireEvent.click(button));
-    fireEvent.click(screen.getByRole('button', { name: '盘点' }));
+  const scanMine = () => {
     fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
     fireEvent.click(screen.getByRole('button', { name: '扫描本人资产' }));
-    fireEvent.click(screen.getByRole('button', { name: '提交' }));
-    fireEvent.click(screen.getByRole('button', { name: '再接再厉' }));
-    fireEvent.click(screen.getByRole('button', { name: '返回' }));
-    fireEvent.click(screen.getByRole('button', { name: '返回' }));
+  };
 
+  test('各状态分组可折叠，已盘页签隐藏开始盘点', () => {
+    render(<AssetInventoryMobilePrototype />);
+    const lossGroup = screen.getByRole('button', { name: '报失 1 条' });
+    fireEvent.click(lossGroup);
+    expect(screen.queryByText('惠普.P221显示器')).not.toBeInTheDocument();
+    fireEvent.click(lossGroup);
+    expect(screen.getByText('惠普.P221显示器')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /已盘 0/ }));
-    fireEvent.click(screen.getByRole('button', { name: /戴尔\.Latitude E7280/ }));
-    expect(screen.getAllByText('审核中').length).toBeGreaterThan(0);
-    expect(JSON.parse(window.sessionStorage.getItem('assetInventoryPhotoReview:demo'))[0].status).toBe('审核中');
+    expect(screen.queryByRole('button', { name: '开始盘点' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '审核中 0 条' })).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByRole('button', { name: '审核中 0 条' }));
+    expect(screen.getByRole('button', { name: '审核中 0 条' })).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('监督计划入口、折叠分组与资产详情返回', () => {
+  test('直接详情无上传区域，扫码详情上传必传照片后提交返回扫码', () => {
     render(<AssetInventoryMobilePrototype />);
-    fireEvent.click(screen.getByRole('button', { name: '监督计划' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /北京市盘点计划-员工盘点/ }));
-    expect(screen.getByRole('button', { name: /未盘—共2条/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /已盘—共1条/ })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /未盘—共2条/ }));
-    expect(screen.queryByRole('button', { name: /戴尔\.Latitude E7280/ })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /未盘—共2条/ }));
-    fireEvent.click(screen.getByRole('button', { name: /戴尔\.Latitude E7280/ }));
-    expect(screen.getByRole('button', { name: '报失' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '盘点' })).toBeInTheDocument();
-  });
-
-  test('报失必须填写原因并经过二次确认', () => {
-    render(<AssetInventoryMobilePrototype />);
-
-    fireEvent.click(screen.getByRole('button', { name: /苹果\.iphone 17/ }));
-    fireEvent.click(screen.getByRole('button', { name: '报失' }));
-    fireEvent.click(screen.getByRole('button', { name: '提交' }));
-
-    expect(screen.queryByText('确认提交报失')).not.toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText('报失原因'), { target: { value: '未在工位找到' } });
-    fireEvent.click(screen.getByRole('button', { name: '提交' }));
-    expect(screen.getByText('资产丢失需履行赔偿责任哟！确定不再继续寻找了吗？')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: '确定报失' }));
-
-    expect(screen.getAllByText('报失').length).toBeGreaterThan(0);
-  });
-
-  test('快速扫描提交显示成功和失败数量', () => {
-    render(<AssetInventoryMobilePrototype />);
-
-    fireEvent.click(screen.getByRole('button', { name: '开始盘点' }));
-    fireEvent.click(screen.getByRole('button', { name: '模拟扫描标签' }));
-    fireEvent.click(screen.getByRole('button', { name: '模拟扫描标签' }));
-    expect(screen.getByRole('img', { name: '资产标签二维码样例' })).toBeInTheDocument();
-    expect(screen.getByText(/本次共扫描到资产 2 个/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '结束扫描' }));
-    fireEvent.click(screen.getByRole('button', { name: '提交' }));
-
-    expect(screen.getByText('快速扫描结果')).toBeInTheDocument();
-    expect(screen.getByText(/其中1条资产信息错误/)).toBeInTheDocument();
-  });
-
-  test('个人与监督计划的待提交扫描记录彼此独立', () => {
-    render(<AssetInventoryMobilePrototype />);
-    fireEvent.click(screen.getByRole('button', { name: '开始盘点' }));
-    fireEvent.click(screen.getByRole('button', { name: '模拟扫描标签' }));
-    fireEvent.click(screen.getByRole('button', { name: '返回' }));
-    fireEvent.click(screen.getByRole('button', { name: '监督计划' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /北京市盘点计划-库房盘点/ }));
-    expect(screen.getByRole('button', { name: '提交' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /戴尔.Latitude E7280/ }));
+    expect(screen.queryByText('上传图片')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '报失' })).toHaveClass('inventory-mobile-detail-action');
+    expect(screen.getByRole('button', { name: '盘点' })).toHaveClass('inventory-mobile-detail-action');
     fireEvent.click(screen.getByRole('button', { name: '盘点' }));
-    expect(screen.getByText(/本次共扫描到资产 0 个/)).toBeInTheDocument();
+    scanMine();
+    expect(screen.getByText('上传图片')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(mockWarning).toHaveBeenCalledWith('请先拍摄并上传必需的照片，再提交盘点');
+    expect(screen.getByText('上传图片')).toBeInTheDocument();
+    screen.getAllByRole('button', { name: '拍照' }).forEach((button) => fireEvent.click(button));
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(screen.getByText('扫码盘点')).toBeInTheDocument();
+    expect(JSON.parse(window.sessionStorage.getItem('assetInventoryPhotoReview:demo'))[0].status).toBe('审核中');
+    scanMine();
+    expect(screen.getByText('资产已完成盘点')).toBeInTheDocument();
+  });
+
+  test('列表普通扫码进入单资产详情，提交后继续扫码下一资产', () => {
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: '开始盘点' }));
+    expect(screen.queryByText('快速扫描')).not.toBeInTheDocument();
+    scanMine();
+    expect(screen.getByText('资产标签号')).toBeInTheDocument();
+    screen.getAllByRole('button', { name: '拍照' }).forEach((button) => fireEvent.click(button));
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    scanMine();
+    expect(screen.getByText('114130000019')).toBeInTheDocument();
+    expect(screen.queryByText('上传图片')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(screen.getByText('扫码盘点')).toBeInTheDocument();
+  });
+
+  test('监督计划包含报失分组，去除提交，盘点仍为普通扫描', () => {
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: '监督计划' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /员工盘点/ }));
+    expect(screen.getByRole('button', { name: '报失—共1条' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '提交' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '报失—共1条' }));
+    expect(screen.queryByText('惠普.P221显示器')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '盘点' }));
+    expect(screen.getByText('扫码盘点')).toBeInTheDocument();
+  });
+
+  test('快扫仅在机房及符合角色时展示，范围外标签不进入待提交列表', () => {
+    mockLocationState = { scopeRanges: ['机房'] };
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: '快速扫描' }));
     fireEvent.click(screen.getByRole('button', { name: '模拟扫描标签' }));
+    fireEvent.click(screen.getByRole('button', { name: '模拟扫描项目外资产' }));
+    expect(mockWarning).toHaveBeenCalledWith('不在当前盘点项目内');
+    expect(screen.getByText(/本次共扫描到资产 1 个/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '结束扫描' }));
     expect(screen.getByText('本次扫描标签号—共1条')).toBeInTheDocument();
-    expect(screen.queryByText('114130000019')).not.toBeInTheDocument();
+    expect(screen.queryByText('114140000999')).not.toBeInTheDocument();
+  });
+
+  test('机房快扫补拍照片后返回标签列表并批量提交', () => {
+    mockLocationState = { scopeRanges: ['机房'] };
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: '快速扫描' }));
+    fireEvent.click(screen.getByRole('button', { name: '模拟扫描标签' }));
+    fireEvent.click(screen.getByRole('button', { name: '结束扫描' }));
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(mockWarning).toHaveBeenCalledWith('请先补拍必需照片，再批量提交');
+    expect(screen.getByText('本次扫描标签号—共1条')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '补拍照片114140000031' }));
+    expect(screen.getByText('上传图片')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '保存图片' }));
+    expect(mockWarning).toHaveBeenCalledWith('请拍摄全部必需照片');
+    screen.getAllByRole('button', { name: '拍照' }).forEach((button) => fireEvent.click(button));
+    fireEvent.click(screen.getByRole('button', { name: '保存图片' }));
+    expect(screen.getByText('待提交标签')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(screen.getByText(/其中0条资产信息错误/)).toBeInTheDocument();
+  });
+
+  test.each([
+    { scopeRanges: ['员工'], mobileUser: { name: '孙志强', employeeNo: '201132000160', isESAssetGroup: true } },
+    { scopeRanges: ['机房'], mobileUser: { name: '财务', employeeNo: 'FINANCE', isESAssetGroup: false } },
+  ])('非机房或无权限身份没有快扫入口', (state) => {
+    mockLocationState = state;
+    render(<AssetInventoryMobilePrototype />);
+    expect(screen.queryByRole('button', { name: '快速扫描' })).not.toBeInTheDocument();
+  });
+
+  test('机房责任人可使用独立快扫入口', () => {
+    mockLocationState = { scopeRanges: ['机房'], mobileUser: { name: '机房管理员', employeeNo: 'SERVER-ADMIN', isESAssetGroup: false } };
+    render(<AssetInventoryMobilePrototype />);
+    expect(screen.getByRole('button', { name: '快速扫描' })).toBeInTheDocument();
   });
 });

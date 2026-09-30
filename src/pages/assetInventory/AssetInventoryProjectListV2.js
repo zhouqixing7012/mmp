@@ -184,7 +184,7 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
       <Button icon={<Smartphone size={14} />} onClick={() => {
           if (selectedKeys.length > 1) { messageApi.warning('请选择一个盘点项目进行移动端预览'); return; }
           const selectedProject = rows.find((row) => row.key === selectedKeys[0]);
-          navigate('/asset-inventory/mobile', { state: { projectNo: selectedProject?.projectNo || '' } });
+          navigate('/asset-inventory/mobile', { state: { projectNo: selectedProject?.projectNo || '', scopeRanges: selectedProject?.scopeRanges, mobileUser: creator === '213852-孙志强' ? { name: '孙志强', employeeNo: '201132000160', isESAssetGroup: true } : { name: creator, employeeNo: '', isESAssetGroup: false } } });
         }}>移动端预览</Button>
     </div>
     <QueryBar onQuery={() => { setAppliedFilters({ ...draftFilters }); setSelectedKeys([]); }} onReset={() => { setDraftFilters(EMPTY_FILTERS); setAppliedFilters(EMPTY_FILTERS); setSelectedKeys([]); }}>
