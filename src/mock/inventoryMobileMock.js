@@ -1,3 +1,5 @@
+import { ASSET_ROWS } from '../pages/assetInventory/mockData';
+
 // 原有移动端盘点演示资产，移动端与资产台账共用同一标签记录。
 export const INVENTORY_MOBILE_ASSETS = [
   {
@@ -158,3 +160,19 @@ export const INVENTORY_MOBILE_ASSETS = [
     inventoryNote: '',
   },
 ];
+
+// 公共资产沿用项目原型中已有的公共资产样本；原清单标为未执行，这里仅供独立移动演示计划体验扫码与地点调整。
+const publicSource = ASSET_ROWS.find((asset) => asset.assetTag === '3102200966');
+export const INVENTORY_MOBILE_PUBLIC_SAMPLE = {
+  id: 'asset-public-demo', status: '未盘', assetDesc: publicSource.description,
+  tagNo: publicSource.assetTag, serialNo: publicSource.serialNo,
+  quantity: publicSource.quantity, usageStatus: publicSource.useStatus,
+  owner: publicSource.owner.split('-').slice(1).join('-'), ownerNo: publicSource.owner.split('-')[0],
+  address: [publicSource.city, publicSource.building, publicSource.floor].join('-'),
+  category: publicSource.subCategory, area: '公共', photoRequired: publicSource.needPhoto,
+  lastPhoto: null, purpose: publicSource.useDescription, company: publicSource.organization,
+  usageNote: publicSource.useDescription, remark: publicSource.remark === '-' ? '' : publicSource.remark,
+  inventoryNote: '',
+};
+
+INVENTORY_MOBILE_ASSETS.push(INVENTORY_MOBILE_PUBLIC_SAMPLE);

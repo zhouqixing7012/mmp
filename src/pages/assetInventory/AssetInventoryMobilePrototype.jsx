@@ -30,13 +30,19 @@ const CURRENT_USER = {
   isESAssetGroup: true,
 };
 
-
+const DEMO_CONTEXTS = [
+  { id: 'initial', label: '初盘演示', projectNo: '', projectType: '初盘', scopeRanges: ['员工', '库房', '机房'] },
+  { id: 'public', label: '公共地点演示', projectNo: 'CP-202608180002', projectType: '初盘', scopeRanges: ['公共'] },
+  { id: 'review', label: '复盘地点演示', projectNo: 'RCP-202608180001', projectType: '复盘', scopeRanges: ['员工', '公共', '库房'] },
+];
 
 // 原型演示计划与资产关联，仅用于展示当前用户作为监督人的计划入口。
 const DEMO_SUPERVISED_PLANS = [
-  { id: 'employee-plan', name: '北京市盘点计划-员工盘点', supervisor: CURRENT_USER.name, assetIds: ['asset-001', 'asset-002', 'asset-003', 'asset-004'] },
-  { id: 'warehouse-plan', name: '北京市盘点计划-库房盘点', supervisor: CURRENT_USER.name, assetIds: ['asset-005'] },
-  { id: 'machine-plan', name: '北京市盘点计划-机房盘点', supervisor: null, assetIds: ['asset-006', 'asset-007'] },
+  { id: 'employee-plan', name: '北京市盘点计划-员工盘点', projectType: '初盘', supervisor: CURRENT_USER.name, assetIds: ['asset-001', 'asset-002', 'asset-003', 'asset-004'] },
+  { id: 'warehouse-plan', name: '北京市盘点计划-库房盘点', projectType: '初盘', supervisor: CURRENT_USER.name, assetIds: ['asset-005'] },
+  { id: 'machine-plan', name: '北京市盘点计划-机房盘点', projectType: '初盘', supervisor: null, assetIds: ['asset-006', 'asset-007'] },
+  { id: 'public-plan-demo', name: '公共资产演示计划', projectType: '初盘', supervisor: CURRENT_USER.name, assetIds: ['asset-public-demo'] },
+  { id: 'review-plan-demo', name: '复盘地点演示计划', projectType: '复盘', supervisor: CURRENT_USER.name, assetIds: ['asset-001', 'asset-002', 'asset-003', 'asset-004', 'asset-public-demo'] },
 ];
 
 const TAB_GROUPS = {
@@ -106,6 +112,15 @@ function canInventory(asset) {
 function assetLocation(asset) {
   const [city = '', building = '', floor = ''] = String(asset?.address || '').split('-');
   return { city, building, floor };
+}
+
+function loadProjectAssets(projectNo) {
+  const ledger = new Map(getAssetMaintenanceRows().map((asset) => [asset.tag, asset]));
+  const results = getMobileInventoryResults(projectNo);
+  return DEMO_ASSETS.map((asset) => {
+    const row = ledger.get(asset.tagNo);
+    return { ...asset, lossReported: asset.status === '报失', ...results[asset.tagNo], address: row ? [row.city, row.building, row.floor].join('-') : asset.address };
+  });
 }
 
 function MobileHeader({ title, onBack, onExit, right }) {
@@ -236,10 +251,13 @@ function ScanResultModal({ scanModal, onClose }) {
 export default function AssetInventoryMobilePrototype() {
   const navigate = useNavigate();
   const location = useLocation();
-  const previewProjectNo = location.state?.projectNo || '';
-  const projectType = location.state?.projectType || '初盘';
+  const [demoContextId, setDemoContextId] = useState('initial');
+  const demoContext = DEMO_CONTEXTS.find((context) => context.id === demoContextId) || DEMO_CONTEXTS[0];
+  const hasRouteProject = Boolean(location.state?.projectNo);
+  const previewProjectNo = hasRouteProject ? location.state.projectNo : demoContext.projectNo;
+  const projectType = hasRouteProject ? (location.state.projectType || '初盘') : demoContext.projectType;
   const currentUser = location.state?.mobileUser || CURRENT_USER;
-  const projectRanges = location.state?.scopeRanges || ['员工', '公共', '库房', '机房'];
+  const projectRanges = location.state?.scopeRanges || (hasRouteProject ? ['员工', '公共', '库房', '机房'] : demoContext.scopeRanges);
   const [projectClosed, setProjectClosed] = useState(() => {
     if (typeof window === 'undefined' || !previewProjectNo) return false;
     return JSON.parse(window.sessionStorage.getItem('assetInventoryClosedProjectNos') || '[]').includes(previewProjectNo);
@@ -262,14 +280,7 @@ export default function AssetInventoryMobilePrototype() {
   const [collapsedPlanSections, setCollapsedPlanSections] = useState([]);
   const [detailReturnView, setDetailReturnView] = useState('workbench');
   const [quickPlanId, setQuickPlanId] = useState(null);
-  const [assets, setAssets] = useState(() => {
-    const ledger = new Map(getAssetMaintenanceRows().map((asset) => [asset.tag, asset]));
-    const results = getMobileInventoryResults(previewProjectNo);
-    return DEMO_ASSETS.map((asset) => {
-      const row = ledger.get(asset.tagNo);
-      return { ...asset, lossReported: asset.status === '报失', ...results[asset.tagNo], address: row ? [row.city, row.building, row.floor].join('-') : asset.address };
-    });
-  });
+  const [assets, setAssets] = useState(() => loadProjectAssets(previewProjectNo));
   useEffect(() => {
     const results = new Map(getPhotoReviewResults(previewProjectNo).map((entry) => [entry.assetTag, entry]));
     setAssets((current) => current.map((asset) => results.has(asset.tagNo)
@@ -294,7 +305,7 @@ export default function AssetInventoryMobilePrototype() {
   const selectedAsset = assets.find((asset) => asset.id === selectedAssetId) || null;
   const projectAssets = assets.filter((asset) => projectRanges.includes(asset.area));
   const filteredAssets = projectAssets.filter((asset) => asset.ownerNo === currentUser.employeeNo && includesQuery(asset, query));
-  const supervisedPlans = DEMO_SUPERVISED_PLANS.filter((plan) => plan.supervisor === currentUser.name && projectAssets.some((asset) => plan.assetIds.includes(asset.id)));
+  const supervisedPlans = DEMO_SUPERVISED_PLANS.filter((plan) => plan.projectType === projectType && plan.supervisor === currentUser.name && projectAssets.some((asset) => plan.assetIds.includes(asset.id)));
   const activePlan = supervisedPlans.find((plan) => plan.id === activePlanId);
   const activePlanAssets = projectAssets.filter((asset) => activePlan?.assetIds.includes(asset.id));
   const quickBatchKey = quickPlanId || 'personal';
@@ -311,6 +322,26 @@ export default function AssetInventoryMobilePrototype() {
   };
   const canQuickScan = isQuickAuthorized(view === 'planDetail' ? activePlanId : null);
   const quickScope = projectAssets.filter((asset) => (currentUser.isESAssetGroup === true || (asset.area === '机房' && asset.ownerNo === currentUser.employeeNo)) && (!quickPlanId || activePlan?.assetIds.includes(asset.id))).map((asset) => asset.id);
+
+  const switchDemoContext = (context) => {
+    if (context.id === demoContextId) return;
+    setDemoContextId(context.id);
+    setAssets(loadProjectAssets(context.projectNo));
+    setView('workbench');
+    setActiveTab('unscanned');
+    setCollapsedGroups([]);
+    setCollapsedPlanSections([]);
+    setQuery('');
+    setPlanMenuOpen(false);
+    setActivePlanId(null);
+    setSelectedAssetId(null);
+    setScanPlanId(null);
+    setScanTargetId(null);
+    setScannedDetail(false);
+    setPhotoState({});
+    setQuickBatches({});
+    setQuickLocations({});
+  };
 
   const openDetail = (asset) => {
     setQuickPhotoMode(false);
@@ -556,6 +587,12 @@ export default function AssetInventoryMobilePrototype() {
     const groups = TAB_GROUPS[activeTab];
     return (
       <>
+        {!hasRouteProject && <div className="inventory-demo-context" aria-label="演示项目">
+          <div className="inventory-demo-context-title">演示计划</div>
+          <div className="inventory-demo-context-options">{DEMO_CONTEXTS.map((context) => <button key={context.id} type="button" className={demoContextId === context.id ? 'is-active' : ''} aria-pressed={demoContextId === context.id} onClick={() => switchDemoContext(context)}>{context.label}</button>)}</div>
+          {demoContext.projectNo && <div className="inventory-demo-context-note">当前项目：{demoContext.projectNo} · {demoContext.projectType}</div>}
+          {demoContextId === 'public' && <div className="inventory-demo-context-note">公共资产沿用原项目清单样本，仅供本页扫码演示</div>}
+        </div>}
         <div className="inventory-search-wrap">
           <Search size={17} />
           <Input
@@ -619,32 +656,28 @@ export default function AssetInventoryMobilePrototype() {
     const canSubmit = canInventory(selectedAsset);
     const editLocation = scannedDetail && !projectClosed && canSubmit && (projectType === '复盘' || selectedAsset.area === '公共');
     const locationOptions = editLocation ? getInventoryLocationOptions(locationDraft) : {};
-    const hasInventoryRecord = selectedAsset.inventoryBy || selectedAsset.inventoryDate || selectedAsset.inventoryNote;
     return <>
-      <MobileHeader title={scannedDetail ? '盘点确认' : '资产详情'} onBack={goBack} onExit={exitPrototype} />
+      <MobileHeader title={selectedAsset.assetDesc} onBack={goBack} onExit={exitPrototype} />
       <div className="inventory-mobile-content inventory-detail-content">
-        <div className="inventory-detail-summary">
-          <div className="inventory-detail-header"><span className="inventory-detail-category">{selectedAsset.category}</span><StatusBadge status={selectedAsset.status} /></div>
-          <h1>{selectedAsset.assetDesc}</h1>
+        <div className="inventory-detail-header"><span className="inventory-detail-category">{selectedAsset.category}</span><StatusBadge status={selectedAsset.status} /></div>
+        <div className="inventory-detail-card">
+          <DetailRow label="资产标签号" value={selectedAsset.tagNo} />
+          <DetailRow label="序列号" value={selectedAsset.serialNo} />
+          <DetailRow label="数量" value={String(selectedAsset.quantity)} />
+          <DetailRow label="使用状态" value={selectedAsset.usageStatus} />
+          <DetailRow label="资产说明" value={selectedAsset.assetDesc} />
+          <DetailRow label="责任人" value={`${selectedAsset.owner}（${selectedAsset.ownerNo}）`} />
+          <DetailRow label="资产地址" value={selectedAsset.address} />
+          {selectedAsset.area !== '员工' && <DetailRow label="盘点范围" value={selectedAsset.area} />}
+          <DetailRow label="盘点人" value={selectedAsset.inventoryBy} />
+          <DetailRow label="盘点日期" value={selectedAsset.inventoryDate} />
+          <DetailRow label="盘点说明" value={selectedAsset.inventoryNote} />
+          {selectedAsset.area !== '员工' && <>
+            <DetailRow label="用途" value={selectedAsset.purpose} /><DetailRow label="公司" value={selectedAsset.company} />
+            <DetailRow label="使用说明" value={selectedAsset.usageNote} /><DetailRow label="备注" value={selectedAsset.remark} />
+          </>}
         </div>
-        <section className="inventory-detail-section">
-          <h2>资产信息</h2>
-          <div className="inventory-detail-card">
-            <DetailRow label="资产标签号" value={selectedAsset.tagNo} />
-            <DetailRow label="序列号" value={selectedAsset.serialNo} />
-            <DetailRow label="数量" value={String(selectedAsset.quantity)} />
-            <DetailRow label="使用状态" value={selectedAsset.usageStatus} />
-            {selectedAsset.area !== '员工' && <DetailRow label="盘点范围" value={selectedAsset.area} />}
-          </div>
-        </section>
-        <section className="inventory-detail-section">
-          <h2>责任与地点</h2>
-          <div className="inventory-detail-card">
-            <DetailRow label="责任人" value={selectedAsset.owner} />
-            <DetailRow label="责任人编号" value={selectedAsset.ownerNo} />
-            <DetailRow label="资产地址" value={selectedAsset.address} />
-          </div>
-          {editLocation && <div className="inventory-location-card">
+        {editLocation && <div className="inventory-location-card">
             <div className="inventory-section-title">本次地点<span className="inventory-location-optional">可修改</span></div>
             {['city', 'building', 'floor'].map((field) => <label className="inventory-location-field" key={field}>
               <span>{field === 'city' ? '城市' : field === 'building' ? '建筑物' : '楼层 / 机房'}</span>
@@ -654,16 +687,6 @@ export default function AssetInventoryMobilePrototype() {
               }}><option value="">请选择</option>{locationOptions[field].map((value) => <option key={value} value={value}>{value}</option>)}</select><ChevronDown size={16} /></div>
             </label>)}
           </div>}
-        </section>
-        {selectedAsset.area !== '员工' && <section className="inventory-detail-section"><h2>使用信息</h2><div className="inventory-detail-card">
-          <DetailRow label="用途" value={selectedAsset.purpose} /><DetailRow label="公司" value={selectedAsset.company} />
-          <DetailRow label="使用说明" value={selectedAsset.usageNote} /><DetailRow label="备注" value={selectedAsset.remark} />
-        </div></section>}
-        {hasInventoryRecord && <section className="inventory-detail-section"><h2>盘点记录</h2><div className="inventory-detail-card">
-          {selectedAsset.inventoryBy && <DetailRow label="盘点人" value={selectedAsset.inventoryBy} />}
-          {selectedAsset.inventoryDate && <DetailRow label="盘点日期" value={selectedAsset.inventoryDate} />}
-          {selectedAsset.inventoryNote && <DetailRow label="盘点说明" value={selectedAsset.inventoryNote} />}
-        </div></section>}
         {scannedDetail && canSubmit && selectedAsset.photoRequired && <div className="inventory-photo-card">
           <div className="inventory-section-title">上传图片</div>
           <div className="inventory-photo-tip">请拍摄清晰的资产照片和标签</div>

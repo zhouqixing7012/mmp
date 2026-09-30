@@ -1,3 +1,4 @@
+import { isSnapshotExecutionAsset, isSnapshotNonExecutionAsset } from './inventorySnapshotAssets';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
@@ -74,6 +75,7 @@ function ProjectInfoCard({ project }) {
         {showSamplingFields && <DetailItem label="初盘项目">{project?.initialProjectNo || '-'}</DetailItem>}
         {showSamplingFields && <DetailItem label="抽样方式">{project?.samplingMode || '-'}</DetailItem>}
         {showSamplingFields && <DetailItem label="比例">{project?.samplingRatio || '-'}</DetailItem>}
+        {project?.projectType === '复盘' && project?.samplingMode === '百分比' && <><DetailItem label="净值大于多少元必盘">{project.mandatoryNetValueAbove ?? '-'}</DetailItem><DetailItem label="净值前多少百分比必盘">{project.mandatoryNetValueTopPercent == null ? '-' : `${project.mandatoryNetValueTopPercent}%`}</DetailItem></>}
         <DetailItem label="盘点说明" span={3}>{project?.description || '-'}</DetailItem>
       </DetailGrid>
     </Card>
@@ -410,10 +412,10 @@ export default function AssetInventorySnapshotDetailV2({
     messageApi.success('机房初盘进度达到100%，项目已自动关闭，并通过服务号通知财务人员');
   }, [isSystemRoomInitial, projectStatus, project?.progress, onCloseProject, project]);
   const [executionRows, setExecutionRows] = useState(() => ASSET_ROWS
-    .filter((row) => row.executeInventory && isInventoryRangeAllowed(row, allowedRanges))
+    .filter((row) => isInventoryRangeAllowed(row, allowedRanges) && isSnapshotExecutionAsset(row, project))
     .map((row) => normalizeAssetForProjectStage(row, initialProjectStatus)));
   const [notExecutionRows, setNotExecutionRows] = useState(() => ASSET_ROWS
-    .filter((row) => !row.executeInventory && isInventoryRangeAllowed(row, allowedRanges))
+    .filter((row) => isInventoryRangeAllowed(row, allowedRanges) && isSnapshotNonExecutionAsset(row, project))
     .map((row) => normalizeAssetForProjectStage(row, initialProjectStatus)));
   const [excludedRows, setExcludedRows] = useState(() => UNINCLUDED_ASSET_ROWS
     .filter((row) => isInventoryRangeAllowed(row, allowedRanges))

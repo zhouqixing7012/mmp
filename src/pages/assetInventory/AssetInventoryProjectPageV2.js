@@ -81,10 +81,12 @@ function resolveProject(root, sourceElement) {
   return current ? resolveProjectFromRow(current) : resolveProjectFromDetail(root);
 }
 
-export default function AssetInventoryProjectPageV2({ variantLabel = '方案二', menuLabel } = {}) {
+export default function AssetInventoryProjectPageV2({ variantLabel = '方案二', menuLabel, scopeAssetKeys } = {}) {
   const { allowedRanges } = useAssetInventoryVariant();
+  const [planProject, setPlanProject] = useState(PROJECT_INFO);
   const allowedRangeKey = allowedRanges.join('|');
-  const availableAssets = ASSET_ROWS.filter((asset) => isInventoryRangeAllowed(asset, allowedRanges));
+  const availableAssets = ASSET_ROWS.filter((asset) => isInventoryRangeAllowed(asset, allowedRanges)
+    && (!planProject?.snapshotAssetKeys || planProject.snapshotAssetKeys.includes(asset.key)));
   const initialPlanRows = INITIAL_PLAN_ROWS.filter((row) => allowedRanges.includes(row.range));
   const variantMenuLabel = menuLabel || `盘点项目（${variantLabel}）`;
   const rootRef = useRef(null);
@@ -99,7 +101,6 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const [activePlan, setActivePlan] = useState(null);
   const [imageReviewOpen, setImageReviewOpen] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
-  const [planProject, setPlanProject] = useState(PROJECT_INFO);
   const [planRows, setPlanRows] = useState(() => initialPlanRows.map((row) => ({ ...row, status: row.status === '暂存' ? '草稿' : row.status })));
   const [projectStatusOverrides, setProjectStatusOverrides] = useState(() => {
     if (typeof window === 'undefined') return {};
@@ -146,6 +147,26 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const openPlanViewByProject = (project, forceGeneratedStatus = false) => {
     const resolvedProject = resolveProjectFromRow(project);
     const nextProject = { ...resolvedProject, status: projectStatusOverrides[resolvedProject.projectNo] || resolvedProject.status };
+    if (nextProject.snapshotAssetKeys && forceGeneratedStatus && !planRows.length) {
+      const selectedAssets = ASSET_ROWS.filter((asset) => nextProject.snapshotAssetKeys.includes(asset.key) && isInventoryRangeAllowed(asset, allowedRanges));
+      const ranges = [...new Set(selectedAssets.map((asset) => asset.inventoryRange || '员工'))];
+      const generated = ranges.map((range, index) => {
+        const rangeAssets = selectedAssets.filter((asset) => (asset.inventoryRange || '员工') === range);
+        const planNo = `PLAN-${String(nextProject.projectNo).replace(/\D/g, '').slice(0, 8) || '20260818'}-${String(index + 1).padStart(4, '0')}`;
+        return {
+          key: `generated-${nextProject.projectNo}-${range}`, planNo,
+          planName: `${nextProject.projectName}-${range}`, status: '草稿',
+          organization: rangeAssets[0]?.organization || '集团', city: rangeAssets[0]?.city || '-', range,
+          assetCount: rangeAssets.length, uncountedCount: rangeAssets.length, countedCount: 0,
+          startDate: nextProject.startDate, endDate: nextProject.projectType === '复盘' ? nextProject.startDate : nextProject.endDate,
+          manager: '-', supervisor: '-', executor: '-', financialSupervisor: '徐博', auditSupervisor: '-',
+        };
+      });
+      setPlanRows(generated);
+      setAssetPlanMap(Object.fromEntries(selectedAssets.map((asset) => [asset.key, generated.find((plan) => plan.range === (asset.inventoryRange || '员工'))?.planNo || ''])));
+    } else if (nextProject.projectType === '复盘') {
+      setPlanRows((current) => current.map((row) => ({ ...row, endDate: row.startDate, financialSupervisor: '徐博' })));
+    }
     resetOverlays();
     setPlanProject(nextProject.status === '盘点关闭' ? nextProject : forceGeneratedStatus ? { ...nextProject, status: '生成盘点计划' } : nextProject);
     setPlanViewOpen(true);
@@ -248,11 +269,11 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
         uncountedCount: rangeAssets.length,
         countedCount: 0,
         startDate: planProject.startDate || PROJECT_INFO.startDate,
-        endDate: planProject.endDate || PROJECT_INFO.endDate,
+        endDate: planProject.projectType === '复盘' ? (planProject.startDate || PROJECT_INFO.startDate) : (planProject.endDate || PROJECT_INFO.endDate),
         manager: '-',
         supervisor: personnel.supervisor || '-',
         executor: personnel.executor || '-',
-        financialSupervisor: '-',
+        financialSupervisor: planProject.projectType === '复盘' ? '徐博' : '-',
         assets: rangeAssets,
       };
     });
@@ -267,6 +288,13 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
 
   const handleCustomPlanConfirm = (draft) => {
     if (planProject?.status === '盘点关闭') { setCustomBuilderOpen(false); return; }
+    if (customBuilderSource === 'snapshot' && planProject?.snapshotAssetKeys && !planRows.length) {
+      createManualPlans(draft);
+      resetOverlays();
+      setPlanProject((current) => ({ ...current, status: '生成盘点计划' }));
+      setPlanViewOpen(true);
+      return;
+    }
     if (customBuilderSource === 'plans') {
       createManualPlans(draft);
       setCustomBuilderOpen(false);
@@ -475,7 +503,17 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     {activePlan && <AssetInventoryPlanAssetListV2 plan={activePlan} project={planProject} assets={assetsForPlan(activePlan)} onAssetsChange={(updater) => changePlanAssets(activePlan, updater)} onBack={() => setActivePlan(null)} />}
     {imageReviewOpen && <AssetInventoryImageReviewV2 project={planProject} onBack={() => setImageReviewOpen(false)} />}
     {progressOpen && <AssetInventoryProgressV2 project={planProject} onBack={() => setProgressOpen(false)} />}
-    <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage creator={creator} /></div>
+    <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage creator={creator} scopeAssetKeys={scopeAssetKeys} onProjectGenerated={(project) => {
+      setPlanProject(project);
+      setPlanRows([]);
+      setAssetPlanMap({});
+      const selected = new Set(project.snapshotAssetKeys || []);
+      setPlanAssets(ASSET_ROWS.map((asset) => selected.has(asset.key) ? {
+        ...asset, inventoryStatus: '未盘', counter: '-', inventoryDate: '-',
+        inventoryNote: '-', importMode: '-',
+      } : { ...asset }));
+      setSnapshotOpen(true);
+    }} /></div>
     {!overlayOpen && imageRuleSlot ? createPortal(<ImageUploadRuleEditorV2 />, imageRuleSlot) : null}
   </div>;
 }

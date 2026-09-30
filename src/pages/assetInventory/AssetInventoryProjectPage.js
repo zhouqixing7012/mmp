@@ -23,7 +23,9 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { allowedProjectTypes } from './inventoryCreatorPermissions';
-import { inventoryDateBlockReason } from './inventoryDateRules';
+import { inventoryProjectDateBlockReason } from './inventoryDateRules';
+import { selectReplaySnapshotAssets } from './inventoryReplaySampling';
+import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import {
   BellRing,
   CheckCircle2,
@@ -511,7 +513,7 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
       projectType: value,
       projectNo: `${prefix}-${dayjs().format('YYYYMMDD')}-0003`,
       initialProjectNo: '-',
-      endDate: value === '复盘' ? current.startDate : current.endDate,
+      endDate: current.endDate,
       samplingMode: value === '初盘' ? '-' : '全盘',
       samplingRatio: value === '初盘' ? '-' : 100,
     }));
@@ -542,14 +544,14 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
         </div>
         <div>
           <Typography.Text type="secondary">盘点开始时间</Typography.Text>
-          <DatePicker value={project.startDate ? dayjs(project.startDate) : null} className="w-full" onChange={(date) => setProject((current) => ({ ...current, startDate: date ? date.format('YYYY-MM-DD') : '', endDate: current.projectType === '复盘' ? (date ? date.format('YYYY-MM-DD') : '') : current.endDate }))} />
+          <DatePicker value={project.startDate ? dayjs(project.startDate) : null} className="w-full" onChange={(date) => setField('startDate', date ? date.format('YYYY-MM-DD') : '')} />
         </div>
         <div>
           <Typography.Text type="secondary">盘点结束时间</Typography.Text>
           <DatePicker
             value={project.endDate ? dayjs(project.endDate) : null}
             className="w-full"
-            disabledDate={(date) => project.startDate && (project.projectType === '复盘' ? !date.isSame(dayjs(project.startDate), 'day') : date.isBefore(dayjs(project.startDate), 'day'))}
+            disabledDate={(date) => project.startDate && date.isBefore(dayjs(project.startDate), 'day')}
             onChange={(date) => setField('endDate', date ? date.format('YYYY-MM-DD') : '')}
           />
         </div>
@@ -583,10 +585,13 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
               <Select value={project.samplingMode === '-' ? '全盘' : project.samplingMode} className="w-full" options={['全盘', '百分比'].map((value) => ({ label: value, value }))} onChange={(value) => setField('samplingMode', value)} />
             </div>
             {project.samplingMode === '百分比' && (
-              <div>
-                <Typography.Text type="secondary">比例（%）</Typography.Text>
-                <InputNumber min={1} max={100} value={Number(project.samplingRatio || 100)} className="w-full" onChange={(value) => setField('samplingRatio', value || 100)} />
-              </div>
+              <>
+                <div><Typography.Text type="secondary">比例（%）</Typography.Text><InputNumber min={1} max={100} value={Number(project.samplingRatio || 100)} className="w-full" onChange={(value) => setField('samplingRatio', value || 100)} /></div>
+                {project.projectType === '复盘' && <>
+                  <div><Typography.Text type="secondary">净值大于多少元必盘（可选）</Typography.Text><InputNumber min={0} value={project.mandatoryNetValueAbove ?? null} className="w-full" onChange={(value) => setField('mandatoryNetValueAbove', value)} /></div>
+                  <div><Typography.Text type="secondary">净值前多少百分比必盘（可选）</Typography.Text><InputNumber min={1} max={100} precision={0} value={project.mandatoryNetValueTopPercent ?? null} className="w-full" onChange={(value) => setField('mandatoryNetValueTopPercent', value)} /></div>
+                </>}
+              </>
             )}
           </>
         )}
@@ -891,7 +896,8 @@ function ScopeSelector({ projectType, scopeRows, setScopeRows, onPreviewAssets, 
   );
 }
 
-function CreateProjectView({ initialProject, onBack, onGenerated, creator }) {
+export function CreateProjectView({ initialProject, onBack, onGenerated, creator, scopeAssetKeys }) {
+  const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const initialInventoryType = initialProject?.inventoryType || '年度';
   const initialPeriod = getPeriodOptions(initialInventoryType).includes(initialProject?.period)
@@ -900,7 +906,7 @@ function CreateProjectView({ initialProject, onBack, onGenerated, creator }) {
     ...PROJECT_INFO,
     ...initialProject,
     projectType: initialProject?.projectType || allowedProjectTypes(creator)[0],
-    endDate: !initialProject && creator === '冯丽婷' ? PROJECT_INFO.startDate : (initialProject?.endDate || PROJECT_INFO.endDate),
+    endDate: initialProject?.endDate || PROJECT_INFO.endDate,
     projectNo: initialProject?.projectNo || `${creator === '冯丽婷' ? 'RCP' : 'CP'}-${dayjs().format('YYYYMMDD')}-0003`,
     projectName: initialProject?.projectName || `${getPeriodOptions('年度')[0]}-年度盘点`,
     period: initialPeriod,
@@ -928,7 +934,7 @@ function CreateProjectView({ initialProject, onBack, onGenerated, creator }) {
       messageApi.warning('请完整填写项目信息');
       return;
     }
-    const dateBlockReason = inventoryDateBlockReason(project.projectType, project.startDate, project.endDate);
+    const dateBlockReason = inventoryProjectDateBlockReason(project.startDate, project.endDate);
     if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
     messageApi.success('盘点项目已保存为暂存状态');
   };
@@ -942,14 +948,20 @@ function CreateProjectView({ initialProject, onBack, onGenerated, creator }) {
       messageApi.warning('请选择已关闭的初盘项目');
       return;
     }
-    const dateBlockReason = inventoryDateBlockReason(project.projectType, project.startDate, project.endDate);
+    const dateBlockReason = inventoryProjectDateBlockReason(project.startDate, project.endDate);
     if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
-    if (!scopeRows.length) {
+    if (scopeAssetKeys != null ? !scopeAssetKeys.length : !scopeRows.length) {
       messageApi.warning('请先生成至少一条盘点范围明细');
       return;
     }
+    const scopeAssets = ASSET_ROWS.filter((asset) => isInventoryRangeAllowed(asset, allowedRanges)
+      && (scopeAssetKeys == null || scopeAssetKeys.includes(asset.key)));
+    const sampled = selectReplaySnapshotAssets(scopeAssets, project);
     const nextProject = {
       ...project,
+      scopeSnapshotAssetKeys: scopeAssets.map((asset) => asset.key),
+      snapshotAssetKeys: sampled.assets.map((asset) => asset.key),
+      mandatoryAssetKeys: sampled.mandatoryAssetKeys,
       status: '快照生成',
       snapshotTime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
     };
@@ -2097,7 +2109,7 @@ function ProgressView({ project, onBack }) {
   );
 }
 
-export default function AssetInventoryProjectPage({ creator = '213852-孙志强' }) {
+export default function AssetInventoryProjectPage({ creator = '213852-孙志强', scopeAssetKeys, onProjectGenerated }) {
   const [view, setView] = useState('list');
   const [activeProject, setActiveProject] = useState(PROJECT_INFO);
   const [activePlan, setActivePlan] = useState(INITIAL_PLAN_ROWS[0]);
@@ -2123,9 +2135,11 @@ export default function AssetInventoryProjectPage({ creator = '213852-孙志强'
     return (
       <CreateProjectView
         creator={creator}
+        scopeAssetKeys={scopeAssetKeys}
         initialProject={activeProject?.status === '暂存' ? activeProject : null}
         onBack={() => setView('list')}
         onGenerated={(project) => {
+          onProjectGenerated?.(project);
           setActiveProject(project);
           setProjectStatus('快照生成');
           setView('snapshot');

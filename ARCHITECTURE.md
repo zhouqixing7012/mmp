@@ -222,3 +222,6 @@ Vercel Preview
 ## 盘点复盘地点变更
 
 移动端与台账共用 `src/mock/inventoryMobileMock.js` 中既有演示标签。`inventoryMobileResultStore` 与 `inventoryPhotoReviewStore` 保存项目内盘点结果及照片审核记录；`inventoryLocationChangeStore` 只记录扫描成功提交的复盘地点差异并维护位置申请状态。PC 盘点计划通过 `InventoryLocationChangeFlow` 汇总、编辑并整批发起，演示审批身份显式切换到何文；`assetManagementService.applyInventoryLocationApproval` 在审批通过时更新统一台账，追加位置变更事务供资产操作历史查看。普通机房位置变更原页保留其独立入口。
+
+- 创建范围通过V3范围组件显式传入创建页；`scopeSnapshotAssetKeys`保存范围母集，`snapshotAssetKeys`保存执行抽样，`mandatoryAssetKeys`保存必盘并集。`inventoryReplaySampling`先选必盘、再从剩余资产抽样；`inventorySnapshotAssets`划分执行及未执行。计划仅从执行快照分配资产。
+- `InventoryReplayReview`展示复盘计划汇总、九项查询及审批记录。提交记录和当时的计划/资产数据按项目存为演示数据，可返回或刷新查看；未补齐的真实审批人/后端流程继续在待完成任务维护。

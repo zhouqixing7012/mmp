@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Card, DatePicker, InputNumber, Modal, Select, Space, Table, TreeSelect, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import { Eye, Search, Trash2 } from 'lucide-react';
@@ -87,7 +87,7 @@ export function getScheme3InventoryDemoOptions(allowedRanges) {
   };
 }
 
-export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }) {
+export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', onScopeAssetsChange }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const options = useMemo(() => getScheme3InventoryDemoOptions(allowedRanges), [allowedRanges]);
@@ -103,6 +103,10 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
   const [rows, setRows] = useState(() => SCOPE_ROWS.map((row) => ({ ...row })));
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [previewKeys, setPreviewKeys] = useState(null);
+  const updateRows = setRows;
+  useEffect(() => {
+    onScopeAssetsChange?.([...new Set(rows.flatMap((row) => row.assetKeys || []))]);
+  }, [rows, onScopeAssetsChange]);
 
   const fields = [
     ['资产类别', 'assetCategory'], ['资产状态', 'assetStatus'], ['仓库', 'warehouse'],
@@ -125,7 +129,7 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
   const generate = () => {
     const matches = selectScopeAssets(ASSET_ROWS.filter((row) => isInventoryRangeAllowed(row, allowedRanges)), filters, projectType);
     if (!matches.length) { messageApi.warning('当前条件下没有可纳入的资产'); return; }
-    setRows((current) => [...current, {
+    updateRows((current) => [...current, {
       key: `scope-v3-${Date.now()}`,
       organization: filters.organizationDepartments.length ? filters.organizationDepartments.join('、') : '全部',
       department: filters.organizationDepartments.length ? filters.organizationDepartments.join('、') : '全部',
@@ -212,13 +216,13 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘' }
                 return;
               }
               const selected = new Set(selectedKeys);
-              setRows((current) => current.filter((row) => !selected.has(row.key)));
+              updateRows((current) => current.filter((row) => !selected.has(row.key)));
               setSelectedKeys([]);
             }}
           >
             删除所选
           </Button>
-          <Button danger onClick={() => { setRows([]); setSelectedKeys([]); }}>删除全部</Button>
+          <Button danger onClick={() => { updateRows(() => []); setSelectedKeys([]); }}>删除全部</Button>
         </Space>
       </div>
 

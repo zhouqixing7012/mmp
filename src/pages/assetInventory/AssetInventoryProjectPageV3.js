@@ -14,6 +14,7 @@ export default function AssetInventoryProjectPageV3() {
   const rootRef = useRef(null);
   const [scopeSlot, setScopeSlot] = useState(null);
   const [projectType, setProjectType] = useState('初盘');
+  const [scopeAssetKeys, setScopeAssetKeys] = useState(null);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -88,8 +89,8 @@ export default function AssetInventoryProjectPageV3() {
   return (
     <AssetInventoryVariantProvider allowedRanges={V3_RANGES}>
       <div ref={rootRef} className="w-full">
-        <AssetInventoryProjectPageV2 menuLabel="盘点项目" />
-        {scopeSlot ? createPortal(<AssetInventoryScopeSelectorV3 projectType={projectType} />, scopeSlot) : null}
+        <AssetInventoryProjectPageV2 menuLabel="盘点项目" scopeAssetKeys={scopeAssetKeys} />
+        {scopeSlot ? createPortal(<AssetInventoryScopeSelectorV3 projectType={projectType} onScopeAssetsChange={setScopeAssetKeys} />, scopeSlot) : null}
       </div>
     </AssetInventoryVariantProvider>
   );

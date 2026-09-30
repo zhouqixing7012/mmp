@@ -1,27 +1,23 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
-import { BellRing, Download, PlayCircle, Plus, Search, Trash2, Upload } from 'lucide-react';
+import { BellRing, Download, PlayCircle, Plus, Trash2, Upload } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
-import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
-import { EMPLOYEE_ROWS } from './mockData';
 import { useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import SectionCardTitle from './SectionCardTitle';
 import { inventoryDateBlockReason } from './inventoryDateRules';
 import { planPersonnelBlockReason } from './inventoryPlanStartRules';
 import InventoryLocationChangeFlow from './InventoryLocationChangeFlow';
+import InventoryReplayReview from './InventoryReplayReview';
+import { readDemoData, writeDemoData } from '../../services/demoStorage';
 import { getInventoryLocationChanges } from './inventoryLocationChangeStore';
 
 const EMPTY_PLAN_FILTERS = { planNo: '', planName: '', planStatus: '', organization: '', range: '' };
 const RANGE_OPTIONS = ['员工', '库房', '公共', '机房'];
 function includesText(value, query) { if (!query) return true; return String(value || '').toLowerCase().includes(String(query).trim().toLowerCase()); }
 function PageTitle({ children }) { return <Typography.Title level={4} style={{ margin: 0 }}>{children}</Typography.Title>; }
-function PersonnelInput({ value, onClick, disabled = false }) {
-  if (disabled) return <Typography.Text>{value || '-'}</Typography.Text>;
-  return <Input value={value === '-' ? '' : (value || '')} readOnly placeholder="请选择" suffix={<Search size={14} className="text-[#1677ff]" />} onClick={onClick} onChange={() => {}} />;
-}
 function ProjectInfoCard({ project }) {
   return (
     <Card size="small" title={<SectionCardTitle>盘点项目信息</SectionCardTitle>}>
@@ -45,12 +41,14 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   const [draftFilters, setDraftFilters] = useState(EMPTY_PLAN_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_PLAN_FILTERS);
   const [selectedKeys, setSelectedKeys] = useState([]);
-  const [personTarget, setPersonTarget] = useState(null);
   const [batchDateOpen, setBatchDateOpen] = useState(false);
   const [batchDates, setBatchDates] = useState({ startDate: '', endDate: '' });
   const [locationChangeOpen, setLocationChangeOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const reviewStorageKey = `inventory-replay-review-${project?.projectNo || ''}`;
+  const [submission, setSubmission] = useState(() => readDemoData(reviewStorageKey, null));
   const hasLocationChanges = project?.projectType === '复盘' && getInventoryLocationChanges(project.projectNo).length > 0;
-  const visibleRows = useMemo(() => rows.filter((row) => allowedRanges.includes(row.range)).map((row) => projectClosed ? { ...row, status: '关闭' } : row), [rows, allowedRanges, projectClosed]);
+  const visibleRows = useMemo(() => rows.filter((row) => allowedRanges.includes(row.range)).map((row) => projectClosed ? { ...row, status: '关闭' } : submission?.plans?.some(plan => plan.planNo === row.planNo) ? { ...row, status: '审核中' } : row), [rows, allowedRanges, projectClosed, submission]);
   const updateFilter = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
   const filteredRows = useMemo(() => visibleRows.filter((row) => includesText(row.planNo, appliedFilters.planNo) && includesText(row.planName, appliedFilters.planName) && includesText(row.status, appliedFilters.planStatus) && includesText(row.organization, appliedFilters.organization) && includesText(row.range, appliedFilters.range)), [visibleRows, appliedFilters]);
   const editable = (row) => !projectClosed && row.status === '草稿';
@@ -58,7 +56,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   const allSelectedDraft = !projectClosed && selectedRows.length > 0 && selectedRows.every((row) => row.status === '草稿');
   const anyStarted = visibleRows.some((row) => row.status === '盘点中');
   const allStarted = visibleRows.length > 0 && visibleRows.every((row) => row.status === '盘点中' || row.status === '关闭');
-  const applyPersonnel = (record) => { if (!personTarget || projectClosed) return; setRows((current) => current.map((row) => row.key === personTarget.rowKey ? { ...row, [personTarget.field]: record.employeeName } : row)); setPersonTarget(null); };
+
 
   const handleStart = () => {
     if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
@@ -99,20 +97,38 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     messageApi.success(`已统一更新全部 ${visibleRows.length} 个盘点计划的盘点日期`);
   };
 
+  const submitReview = () => {
+    if (projectClosed || !visibleRows.length || visibleRows.some(row => row.status !== '盘点中')) { messageApi.warning('全部复盘计划启动后才能提交审批'); return; }
+    const perform = () => {
+      const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
+      const nextSubmission = {plans:visibleRows.map(row=>({...row,status:'审核中'})),assetsByPlan:Object.fromEntries(visibleRows.map(row=>[row.planNo,assetsForPlan(row)])),records:[{key:'start',node:'开始',person:currentOperator,status:'已提交',time:now}, {key:'review',node:visibleRows.every(row=>row.range==='机房') ? 'NO领导审批' : 'ES主管审批',person:'',status:'待审批'}]};
+      try { writeDemoData(reviewStorageKey,nextSubmission); } catch (error) { messageApi.error('审批记录保存失败，请重试'); return; }
+      setSubmission(nextSubmission);
+      setRows(current=>current.map(row=>allowedRanges.includes(row.range) ? {...row,status:'审核中',financialSupervisor:'徐博'} : row));
+      setReviewOpen(true);
+    };
+    const assets = visibleRows.flatMap(assetsForPlan);
+    const ratio = assets.length ? assets.filter(asset=>['已盘','代盘'].includes(asset.inventoryStatus)).length / assets.length * 100 : 0;
+    if (ratio < Number(project.samplingRatio || 100)) Modal.confirm({title:'盘点比例未达到设定比例',content:'是否继续提交复盘结果审批？',okText:'继续提交',cancelText:'取消',onOk:perform});
+    else perform();
+  };
+
   const columns = [
     { title: '计划编号', dataIndex: 'planNo', width: 170, fixed: 'left' },
     { title: '计划名称', dataIndex: 'planName', width: 190 },
     { title: '计划状态', dataIndex: 'status', width: 100, render: (value) => <StatusTag value={value} /> },
     { title: '子公司', dataIndex: 'organization', width: 140 },
-    ...(project?.projectType === '复盘' ? [{ title: '财务监督人', dataIndex: 'financialSupervisor', width: 130, render: (value, row) => <PersonnelInput disabled={!editable(row)} value={value} onClick={() => setPersonTarget({ rowKey: row.key, field: 'financialSupervisor' })} /> }] : []),
     { title: '盘点范围', dataIndex: 'range', width: 100 },
     { title: '资产总量', dataIndex: 'assetCount', width: 100, align: 'right' },
     { title: '未盘数量', dataIndex: 'uncountedCount', width: 100, align: 'right' },
     { title: '已盘数量', dataIndex: 'countedCount', width: 100, align: 'right' },
     { title: '盘点开始日期', dataIndex: 'startDate', width: 145, render: (value, row) => editable(row) ? <DatePicker value={value ? dayjs(value) : null} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, startDate: date ? date.format('YYYY-MM-DD') : '', endDate: project?.projectType === '复盘' ? (date ? date.format('YYYY-MM-DD') : '') : item.endDate } : item))} /> : value },
     { title: '盘点结束日期', dataIndex: 'endDate', width: 145, render: (value, row) => editable(row) ? <DatePicker value={value ? dayjs(value) : null} disabledDate={(date) => project?.projectType === '复盘' && row.startDate && !date.isSame(dayjs(row.startDate), 'day')} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, endDate: date ? date.format('YYYY-MM-DD') : '' } : item))} /> : value },
+    ...(project?.projectType === '复盘' ? [{ title: '财务监督人', width: 130, render: () => <Typography.Text>徐博</Typography.Text> }] : []),
     { title: '资产清单', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => onOpenPlanAssets(row)}>查看</Button> },
   ];
+
+  if (reviewOpen && submission) return <InventoryReplayReview project={project} plans={submission.plans || visibleRows} assetsForPlan={(row) => submission.assetsByPlan?.[row.planNo] || assetsForPlan(row)} submission={submission} onBack={() => setReviewOpen(false)} />;
 
   if (locationChangeOpen) return <InventoryLocationChangeFlow project={project} currentOperator={currentOperator} onBack={() => setLocationChangeOpen(false)} />;
 
@@ -122,11 +138,11 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
       <QueryBar onQuery={() => { setAppliedFilters({ ...draftFilters }); setSelectedKeys([]); }} onReset={() => { setDraftFilters(EMPTY_PLAN_FILTERS); setAppliedFilters(EMPTY_PLAN_FILTERS); setSelectedKeys([]); }}>
         <QueryItem label="计划编码"><Input value={draftFilters.planNo} allowClear placeholder="请输入计划编码" onChange={(event) => updateFilter('planNo', event.target.value)} /></QueryItem>
         <QueryItem label="计划名称"><Input value={draftFilters.planName} allowClear placeholder="请输入计划名称" onChange={(event) => updateFilter('planName', event.target.value)} /></QueryItem>
-        <QueryItem label="计划状态"><Select value={draftFilters.planStatus || undefined} allowClear placeholder="请选择" options={['草稿', '盘点中', '关闭'].map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('planStatus', value)} /></QueryItem>
+        <QueryItem label="计划状态"><Select value={draftFilters.planStatus || undefined} allowClear placeholder="请选择" options={['草稿', '盘点中', '审核中', '已审核', '关闭'].map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('planStatus', value)} /></QueryItem>
         <QueryItem label="子公司"><Input value={draftFilters.organization} allowClear placeholder="请输入子公司" onChange={(event) => updateFilter('organization', event.target.value)} /></QueryItem>
         <QueryItem label="盘点范围"><Select value={draftFilters.range || undefined} allowClear placeholder="请选择" options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('range', value)} /></QueryItem>
       </QueryBar>
-      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}{!projectClosed && <Button type="primary" icon={<PlayCircle size={14} />} disabled={allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button>}{allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}{!projectClosed && <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />}>导出</Button>{hasLocationChanges && <Button disabled={projectClosed} onClick={() => setLocationChangeOpen(true)}>发起位置变更</Button>}{!projectClosed && project?.projectType === '复盘' && anyStarted && <Button type="primary">提交审核</Button>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
+      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}{!projectClosed && <Button type="primary" icon={<PlayCircle size={14} />} disabled={allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button>}{allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}{!projectClosed && <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />}>导出</Button>{hasLocationChanges && <Button disabled={projectClosed} onClick={() => setLocationChangeOpen(true)}>发起位置变更</Button>}{!projectClosed && project?.projectType === '复盘' && anyStarted && !submission && <Button type="primary" onClick={submitReview}>提交审批</Button>}{submission && <Button onClick={() => setReviewOpen(true)}>查看审批</Button>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
       <Table rowKey="key" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true, getCheckboxProps: () => ({ disabled: projectClosed }) }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
     </Card>
     <div className="flex justify-center pb-2"><Button onClick={onBack}>返回</Button></div>
@@ -134,6 +150,6 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
       <Alert type="info" showIcon className="mb-4" message="保存后将统一修改当前全部盘点计划的盘点开始日期和盘点结束日期。" />
       <div className="grid grid-cols-2 gap-4 py-2"><div><Typography.Text type="secondary">盘点开始日期</Typography.Text><DatePicker className="w-full" value={batchDates.startDate ? dayjs(batchDates.startDate) : null} onChange={(date) => setBatchDates((current) => ({ ...current, startDate: date ? date.format('YYYY-MM-DD') : '', endDate: project?.projectType === '复盘' ? (date ? date.format('YYYY-MM-DD') : '') : current.endDate }))} /></div><div><Typography.Text type="secondary">盘点结束日期</Typography.Text><DatePicker className="w-full" value={batchDates.endDate ? dayjs(batchDates.endDate) : null} disabledDate={(date) => batchDates.startDate && (project?.projectType === '复盘' ? !date.isSame(dayjs(batchDates.startDate), 'day') : date.isBefore(dayjs(batchDates.startDate), 'day'))} onChange={(date) => setBatchDates((current) => ({ ...current, endDate: date ? date.format('YYYY-MM-DD') : '' }))} /></div></div>
     </Modal>
-    <SelectModal open={Boolean(personTarget)} title="用户列表" rowKey="id" dataSource={EMPLOYEE_ROWS} searchFields={[{ label: '员工编号', name: 'employeeNo', dataIndex: 'employeeNo' }, { label: '员工姓名', name: 'employeeName', dataIndex: 'employeeName' }, { label: '部门名称', name: 'department', dataIndex: 'department' }]} columns={[{ title: '员工编号', dataIndex: 'employeeNo' }, { title: '员工姓名', dataIndex: 'employeeName' }, { title: '部门名称', dataIndex: 'department' }]} onCancel={() => setPersonTarget(null)} onConfirm={applyPersonnel} />
+
   </Space>;
 }

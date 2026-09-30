@@ -200,7 +200,7 @@ describe('AssetInventoryMobilePrototype', () => {
     expect(screen.getByText('扫码盘点')).toBeInTheDocument();
     expect(getInventoryLocationChanges('RCP-202608180001')).toHaveLength(0);
     fireEvent.click(screen.getByRole('button', { name: '返回' }));
-    expect(screen.getByText('资产详情')).toBeInTheDocument();
+    expect(screen.getByText('资产地址')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '返回' }));
     expect(screen.getByRole('button', { name: '开始盘点' })).toBeInTheDocument();
   });
@@ -219,5 +219,37 @@ describe('AssetInventoryMobilePrototype', () => {
     fireEvent.click(screen.getByRole('button', { name: '提交' }));
     expect(getInventoryLocationChanges('RCP-202608180001')[0].after.floor).toBe('8层');
     expect(getAssetMaintenanceRows().find((row) => row.tag === '114140000031').floor).toBe('机房');
+  });
+
+  test('移动入口可切公共演示计划，扫码修改地点并写入现有公共资产台账', () => {
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: '公共地点演示' }));
+    expect(screen.getByText('公共资产沿用原项目清单样本，仅供本页扫码演示')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '监督计划' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /公共资产演示计划/ }));
+    expect(screen.getByText('戴尔.24寸显示器')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '盘点' }));
+    fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
+    fireEvent.click(screen.getByRole('button', { name: '扫描他人资产' }));
+    expect(screen.getByRole('combobox', { name: '城市' })).toHaveValue('北京市');
+    fireEvent.change(screen.getByRole('combobox', { name: '楼层 / 机房' }), { target: { value: '8层' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(getAssetMaintenanceRows().find((row) => row.tag === '3102200966').floor).toBe('8层');
+  });
+
+  test('移动入口可切复盘演示计划，位置记录按复盘项目隔离', () => {
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: '复盘地点演示' }));
+    fireEvent.click(screen.getByRole('button', { name: '监督计划' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /复盘地点演示计划/ }));
+    fireEvent.click(screen.getByRole('button', { name: '盘点' }));
+    fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
+    fireEvent.click(screen.getByRole('button', { name: '扫描本人资产' }));
+    expect(screen.getByRole('combobox', { name: '楼层 / 机房' })).toBeInTheDocument();
+    screen.getAllByRole('button', { name: '拍照' }).forEach((button) => fireEvent.click(button));
+    fireEvent.change(screen.getByRole('combobox', { name: '楼层 / 机房' }), { target: { value: '8层' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(getInventoryLocationChanges('RCP-202608180001')).toHaveLength(1);
+    expect(getInventoryLocationChanges('CP-202608180002')).toHaveLength(0);
   });
 });
