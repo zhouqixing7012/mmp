@@ -83,6 +83,7 @@ export default function InventoryLocationChangeFlow({ project, currentOperator, 
     { title: '资产标签号', dataIndex: 'assetTag', width: 170 },
     { title: '序列号', dataIndex: 'serialNumber', width: 160 },
     { title: '资产说明', dataIndex: 'assetDesc', width: 210 },
+    { title: '盘点人', dataIndex: 'operator', width: 150 },
     ...fields.map((field) => ({
       title: FIELD_NAMES[field],
       key: field,
