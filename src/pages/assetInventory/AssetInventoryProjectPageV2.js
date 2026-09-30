@@ -209,7 +209,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     const base = baseContainerRef.current;
     const pageTitle = base?.querySelector('h4.ant-typography')?.textContent?.trim() || '';
     if (!base || pageTitle === '盘点项目') return;
-    const returnButton = Array.from(base.querySelectorAll('button')).find((button) => button.textContent?.trim() === '返回');
+    const returnButton = Array.from(base.querySelectorAll('button')).find((button) => button.textContent?.replace(/\s/g, '') === '返回');
     returnButton?.click();
   };
 

@@ -21,7 +21,7 @@ jest.mock('./AssetInventoryProjectPage', () => ({ onProjectGenerated }) => {
   const [page, setPage] = React.useState('盘点项目');
   return <div><h4 className="ant-typography">{page}</h4>
     {page === '盘点项目' ? <button onClick={() => setPage('创建盘点项目')}>创建项目</button>
-      : <><button onClick={() => { setPage('盘点项目详情'); onProjectGenerated({ projectNo: 'CP-new', projectType: '初盘', status: '快照生成' }); }}>生成快照</button><button onClick={() => setPage('盘点项目')}>返回</button></>}
+      : <><button onClick={() => { setPage('盘点项目详情'); onProjectGenerated({ projectNo: 'CP-new', projectType: '初盘', status: '快照生成' }); }}>生成快照</button><button onClick={() => setPage('盘点项目')}>返 回</button></>}
   </div>;
 });
 jest.mock('./AssetInventoryPlansV2Refined', () => ({ project, onPlansStarted, onBack }) => <div data-testid="opened-plan-project">
