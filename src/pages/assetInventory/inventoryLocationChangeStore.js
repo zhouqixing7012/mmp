@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+import { CURRENT_BORROWER } from '../../mock/assetBorrowingMock';
 import { INVENTORY_LOCATION_CHANGE_DEMO } from '../../mock/inventoryLocationChangeMock';
 import { writeDemoData } from '../../services/demoStorage';
 import { applyInventoryLocationApproval, getAssetMaintenanceRows } from '../../services/assetManagementService';
@@ -18,7 +20,14 @@ const writeState = (state) => writeDemoData(STORAGE_KEY, state);
 const text = (value) => String(value ?? '').trim();
 const location = (value) => Object.fromEntries(FIELDS.map((field) => [field, text(value?.[field])]));
 const sameLocation = (left, right) => FIELDS.every((field) => text(left?.[field]) === text(right?.[field]));
-const currentTime = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
+const currentTime = () => dayjs().format('YYYY-MM-DD HH:mm:ss');
+
+export function getInventoryLocationApplicant(operator) {
+  const value = text(operator);
+  const [id, ...parts] = value.split('-');
+  const name = parts.join('-');
+  return {value, displayName:name ? `${name} (${id})` : value || '-', department:value === `${CURRENT_BORROWER.id}-${CURRENT_BORROWER.name}` ? CURRENT_BORROWER.department : ''};
+}
 
 function requireLedgerAsset(assetTag) {
   const matches = getAssetMaintenanceRows().filter((row) => text(row.tag) === text(assetTag));
@@ -72,6 +81,8 @@ export function recordInventoryLocationChange({ projectNo, projectType, planNo =
     assetTag,
     assetDesc: asset.assetDesc || '',
     serialNumber: asset.serialNumber || '',
+    quantity: asset.quantity,
+    remark: asset.remarks || '',
     before: original,
     after: target,
     operator,
@@ -83,7 +94,7 @@ export function recordInventoryLocationChange({ projectNo, projectType, planNo =
   return change;
 }
 
-export function submitInventoryLocationChangeRequest({ projectNo, projectType, reason, applicant, draftLocations = {} }) {
+export function submitInventoryLocationChangeRequest({ projectNo, projectType, reason, applicant, applicantDepartment = '', draftLocations = {}, draftRemarks = {} }) {
   if (projectType !== '复盘') throw new Error('只有复盘项目可以发起位置变更');
   if (!text(projectNo)) throw new Error('缺少盘点项目编号');
   if (!text(reason)) throw new Error('请填写变更原因');
@@ -96,7 +107,9 @@ export function submitInventoryLocationChangeRequest({ projectNo, projectType, r
     if (FIELDS.some((field) => !target[field])) throw new Error(`${change.assetTag} 的新位置不完整`);
     const asset = requireLedgerAsset(change.assetTag);
     if (!sameLocation(asset, change.before)) throw new Error(`${change.assetTag} 的台账位置已变化，请核对后再发起`);
-    return { ...change, after: target };
+    const remark = text(draftRemarks[change.id] ?? change.remark ?? asset.remarks ?? '');
+    if (Array.from(remark).length > 150) throw new Error(`${change.assetTag} 的备注最多150个字符`);
+    return { ...change, quantity:change.quantity ?? asset.quantity, remark, after: target };
   }).filter((change) => !sameLocation(change.before, change.after));
   if (!prepared.length) throw new Error('当前项目没有待发起的位置变更');
   const request = {
@@ -105,6 +118,7 @@ export function submitInventoryLocationChangeRequest({ projectNo, projectType, r
     projectType,
     reason: text(reason),
     applicant: text(applicant),
+    applicantDepartment: text(applicantDepartment),
     appliedAt: currentTime(),
     approver: APPROVER,
     status: '待审批',

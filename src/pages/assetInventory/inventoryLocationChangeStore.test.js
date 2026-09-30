@@ -112,3 +112,14 @@ test('PC位置变更演示复用待发起记录，提交给何文前不改台账
   expect(request.status).toBe('待审批');
   expect(getAssetMaintenanceRows().find(row=>row.tag===assetTag).floor).toBe(oldFloor);
 });
+
+test('编辑备注与申请人部门随提交保存，数量取台账，审批前不更新台账备注', () => {
+ const change=record();
+ const original=getAssetMaintenanceRows().find(row=>row.tag===assetTag);
+ const request=submitInventoryLocationChangeRequest({projectNo,projectType:'复盘',reason:'地点核对',applicant:'213852-孙志强',applicantDepartment:'集团 / 资产管理部 / 员工服务中心',draftRemarks:{[change.id]:'已上架'}});
+ expect(request.applicantDepartment).toContain('员工服务中心');
+ const saved=getInventoryLocationChanges(projectNo)[0];
+ expect(saved.quantity).toBe(original.quantity);
+ expect(saved.remark).toBe('已上架');
+ expect(getAssetMaintenanceRows().find(row=>row.tag===assetTag).remarks).toBe(original.remarks);
+});

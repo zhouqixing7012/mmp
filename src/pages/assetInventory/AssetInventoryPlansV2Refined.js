@@ -12,7 +12,7 @@ import { planPersonnelBlockReason } from './inventoryPlanStartRules';
 import InventoryLocationChangeFlow from './InventoryLocationChangeFlow';
 import InventoryReplayReview from './InventoryReplayReview';
 import { readDemoData, writeDemoData } from '../../services/demoStorage';
-import { createInventoryLocationChangeDemo, getInventoryLocationChanges } from './inventoryLocationChangeStore';
+import { createInventoryLocationChangeDemo, getInventoryLocationChangeRequests, getInventoryLocationChanges } from './inventoryLocationChangeStore';
 
 const EMPTY_PLAN_FILTERS = { planNo: '', planName: '', planStatus: '', organization: '', range: '' };
 const RANGE_OPTIONS = ['员工', '库房', '公共', '机房'];
@@ -44,10 +44,14 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   const [batchDateOpen, setBatchDateOpen] = useState(false);
   const [batchDates, setBatchDates] = useState({ startDate: '', endDate: '' });
   const [locationChangeOpen, setLocationChangeOpen] = useState(false);
+  const [locationRequestId, setLocationRequestId] = useState(null);
+  const [locationRecordsOpen, setLocationRecordsOpen] = useState(false);
+  const locationRequests = project?.projectType === '复盘' ? getInventoryLocationChangeRequests(project.projectNo) : [];
+  const openLocationDraft = () => { setLocationRequestId(null); setLocationChangeOpen(true); };
   const [reviewOpen, setReviewOpen] = useState(false);
   const reviewStorageKey = `inventory-replay-review-${project?.projectNo || ''}`;
   const [submission, setSubmission] = useState(() => readDemoData(reviewStorageKey, null));
-  const hasLocationChanges = project?.projectType === '复盘' && getInventoryLocationChanges(project.projectNo).length > 0;
+  const hasLocationChanges = project?.projectType === '复盘' && getInventoryLocationChanges(project.projectNo).some(change => change.status === '待发起');
   const visibleRows = useMemo(() => rows.filter((row) => allowedRanges.includes(row.range)).map((row) => projectClosed ? { ...row, status: '关闭' } : submission?.plans?.some(plan => plan.planNo === row.planNo) ? { ...row, status: '审核中' } : row), [rows, allowedRanges, projectClosed, submission]);
   const updateFilter = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
   const filteredRows = useMemo(() => visibleRows.filter((row) => includesText(row.planNo, appliedFilters.planNo) && includesText(row.planName, appliedFilters.planName) && includesText(row.status, appliedFilters.planStatus) && includesText(row.organization, appliedFilters.organization) && includesText(row.range, appliedFilters.range)), [visibleRows, appliedFilters]);
@@ -130,7 +134,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
 
   if (reviewOpen && submission) return <InventoryReplayReview project={project} plans={submission.plans || visibleRows} assetsForPlan={(row) => submission.assetsByPlan?.[row.planNo] || assetsForPlan(row)} submission={submission} onBack={() => setReviewOpen(false)} />;
 
-  if (locationChangeOpen) return <InventoryLocationChangeFlow project={project} currentOperator={currentOperator} onBack={() => setLocationChangeOpen(false)} />;
+  if (locationChangeOpen) return <InventoryLocationChangeFlow project={project} currentOperator={currentOperator} initialRequestId={locationRequestId} onBack={() => setLocationChangeOpen(false)} />;
 
   return <Space direction="vertical" size={16} className="w-full">
     {contextHolder}<PageTitle>盘点计划</PageTitle><ProjectInfoCard project={project} />
@@ -142,10 +146,16 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
         <QueryItem label="子公司"><Input value={draftFilters.organization} allowClear placeholder="请输入子公司" onChange={(event) => updateFilter('organization', event.target.value)} /></QueryItem>
         <QueryItem label="盘点范围"><Select value={draftFilters.range || undefined} allowClear placeholder="请选择" options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('range', value)} /></QueryItem>
       </QueryBar>
-      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}{!projectClosed && <Button type="primary" icon={<PlayCircle size={14} />} disabled={allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button>}{allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}{!projectClosed && <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />}>导出</Button>{project?.projectNo === 'RCP-202608180001' && <Button onClick={() => { try { createInventoryLocationChangeDemo(project); setLocationChangeOpen(true); } catch(error) { messageApi.error(error.message); } }}>位置变更演示</Button>}{hasLocationChanges && <Button disabled={projectClosed} onClick={() => setLocationChangeOpen(true)}>发起位置变更</Button>}{!projectClosed && project?.projectType === '复盘' && anyStarted && !submission && <Button type="primary" onClick={submitReview}>提交审批</Button>}{submission && <Button onClick={() => setReviewOpen(true)}>查看审批</Button>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
+      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}{!projectClosed && <Button type="primary" icon={<PlayCircle size={14} />} disabled={allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button>}{allSelectedDraft && <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>删除盘点计划</Button>}{!projectClosed && <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />}>导出</Button>{project?.projectNo === 'RCP-202608180001' && <Button onClick={() => { try { const change = createInventoryLocationChangeDemo(project); setLocationRequestId(change.status === '待审批' ? change.requestId : null); setLocationChangeOpen(true); } catch(error) { messageApi.error(error.message); } }}>位置变更演示</Button>}{hasLocationChanges && <Button disabled={projectClosed} onClick={openLocationDraft}>发起位置变更</Button>}{Boolean(locationRequests.length) && <Button onClick={() => setLocationRecordsOpen(true)}>位置变更记录</Button>}{!projectClosed && project?.projectType === '复盘' && anyStarted && !submission && <Button type="primary" onClick={submitReview}>提交审批</Button>}{submission && <Button onClick={() => setReviewOpen(true)}>查看审批</Button>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
       <Table rowKey="key" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true, getCheckboxProps: () => ({ disabled: projectClosed }) }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
     </Card>
     <div className="flex justify-center pb-2"><Button onClick={onBack}>返回</Button></div>
+    <Modal open={locationRecordsOpen} title="位置变更记录" width={960} footer={null} onCancel={() => setLocationRecordsOpen(false)}>
+      <Table rowKey="id" size="small" pagination={false} dataSource={locationRequests} columns={[
+        {title:'申请单号',dataIndex:'id'}, {title:'申请人',dataIndex:'applicant'}, {title:'申请时间',dataIndex:'appliedAt'}, {title:'审批状态',dataIndex:'status'},
+        {title:'操作',render:(_,row)=><Button type="link" onClick={() => {setLocationRequestId(row.id);setLocationRecordsOpen(false);setLocationChangeOpen(true);}}>查看</Button>},
+      ]}/>
+    </Modal>
     <Modal open={batchDateOpen} title="批量编辑盘点日期" width={560} okText="确定" cancelText="取消" onCancel={() => setBatchDateOpen(false)} onOk={saveBatchDates}>
       <Alert type="info" showIcon className="mb-4" message="保存后将统一修改当前全部盘点计划的盘点开始日期和盘点结束日期。" />
       <div className="grid grid-cols-2 gap-4 py-2"><div><Typography.Text type="secondary">盘点开始日期</Typography.Text><DatePicker className="w-full" value={batchDates.startDate ? dayjs(batchDates.startDate) : null} onChange={(date) => setBatchDates((current) => ({ ...current, startDate: date ? date.format('YYYY-MM-DD') : '', endDate: project?.projectType === '复盘' ? (date ? date.format('YYYY-MM-DD') : '') : current.endDate }))} /></div><div><Typography.Text type="secondary">盘点结束日期</Typography.Text><DatePicker className="w-full" value={batchDates.endDate ? dayjs(batchDates.endDate) : null} disabledDate={(date) => batchDates.startDate && (project?.projectType === '复盘' ? !date.isSame(dayjs(batchDates.startDate), 'day') : date.isBefore(dayjs(batchDates.startDate), 'day'))} onChange={(date) => setBatchDates((current) => ({ ...current, endDate: date ? date.format('YYYY-MM-DD') : '' }))} /></div></div>
