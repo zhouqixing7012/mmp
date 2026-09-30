@@ -7,6 +7,7 @@ import {
   DEFAULT_CONSUMABLE_MAINTENANCE_ROWS,
 } from '../mock/consumableMaintenanceMock';
 import { readDemoData, writeDemoData } from './demoStorage';
+import { INVENTORY_MOBILE_ASSETS } from '../mock/inventoryMobileMock';
 
 const ASSET_MAINTENANCE_EDIT_FIELDS = [
   'costCenter', 'city', 'building', 'floor', 'status', 'serialNumber', 'remarks', 'assetMark', 'usageDescription', 'purpose',
@@ -54,6 +55,32 @@ const INVENTORY_IMPORT_WAY_MAP = {
 const DEFAULT_ASSET_ROW_MAP = new Map(
   DEFAULT_ASSET_MAINTENANCE_ROWS.map((row) => [String(row.id), row]),
 );
+const INVENTORY_MOBILE_LEDGER_ROWS = INVENTORY_MOBILE_ASSETS.map((asset) => {
+  const parts = String(asset.address || '').split('-');
+  if (parts.length !== 3 || parts.some((part) => !part.trim())) {
+    throw new Error(`移动端演示资产 ${asset.tagNo} 缺少完整位置`);
+  }
+  return {
+    id: `inventory-mobile-${asset.tagNo}`,
+    tag: asset.tagNo,
+    serialNumber: asset.serialNo,
+    quantity: asset.quantity,
+    assetDesc: asset.assetDesc,
+    ownerId: asset.ownerNo,
+    ownerName: asset.owner,
+    company: asset.company,
+    city: parts[0],
+    building: parts[1],
+    floor: parts[2],
+    status: asset.usageStatus,
+    purpose: asset.purpose,
+    usageDescription: asset.usageNote,
+    remarks: asset.remark,
+    isMachineRoom: asset.area === '机房',
+    inventoryRecords: [],
+    transactionHistory: [],
+  };
+});
 const DEFAULT_CONSUMABLE_ROW_MAP = new Map(
   DEFAULT_CONSUMABLE_MAINTENANCE_ROWS.map((row) => [String(row.id), row]),
 );
@@ -339,8 +366,67 @@ function buildCanonicalConsumablePatch(row, patch, rows) {
 }
 
 export function getAssetMaintenanceRows() {
-  return readDemoData(ASSET_MAINTENANCE_STORAGE_KEY, DEFAULT_ASSET_MAINTENANCE_ROWS)
+  const rows = readDemoData(ASSET_MAINTENANCE_STORAGE_KEY, DEFAULT_ASSET_MAINTENANCE_ROWS);
+  const tags = new Set(rows.map((row) => String(row.tag)));
+  return [...rows, ...INVENTORY_MOBILE_LEDGER_ROWS.filter((row) => !tags.has(String(row.tag)))]
     .map(normalizeAssetMaintenanceRow);
+}
+
+export function applyInventoryLocationApproval({ requestId, changes, approver }) {
+  if (!requestId || !approver || !Array.isArray(changes) || !changes.length) {
+    throw new Error('位置变更审批资料不完整');
+  }
+  const rows = getAssetMaintenanceRows();
+  const alreadyApplied = changes.map((change) => {
+    const matches = rows.filter((row) => String(row.tag) === String(change.assetTag));
+    if (matches.length !== 1) throw new Error(`${change.assetTag} 在台账中不存在或不唯一`);
+    return (matches[0].transactionHistory || []).some((item) => item.operationType === '位置变更' && item.documentNo === requestId);
+  });
+  if (alreadyApplied.every(Boolean)) return rows;
+  if (alreadyApplied.some(Boolean)) throw new Error('位置变更台账存在部分提交，请核对数据');
+
+  changes.forEach((change) => {
+    const row = rows.find((item) => String(item.tag) === String(change.assetTag));
+    if (['city', 'building', 'floor'].some((field) => String(row[field] ?? '') !== String(change.before?.[field] ?? ''))) {
+      throw new Error(`${change.assetTag} 的台账位置已变化，审批未执行`);
+    }
+    if (['city', 'building', 'floor'].some((field) => !String(change.after?.[field] ?? '').trim())) {
+      throw new Error(`${change.assetTag} 的新位置不完整`);
+    }
+  });
+
+  const operationDate = new Date().toISOString().replace('T', ' ').slice(0, 19);
+  const byTag = new Map(changes.map((change) => [String(change.assetTag), change]));
+  const nextRows = rows.map((row) => {
+    const change = byTag.get(String(row.tag));
+    if (!change) return row;
+    const nextRow = { ...row, ...change.after, updatedAt: operationDate };
+    const changedFields = ['city', 'building', 'floor'].filter((field) => String(change.before[field]) !== String(change.after[field]));
+    const transaction = {
+      id: `inventory-location-${requestId}-${row.id}`,
+      operationType: '位置变更',
+      operationDate,
+      operator: approver,
+      documentNo: requestId,
+      applicationNo: '',
+      tag: row.tag,
+      serialNumber: row.serialNumber || '',
+      assetDesc: row.assetDesc || '',
+      owner: [row.ownerId, row.ownerName].filter(Boolean).join('-'),
+      company: row.company || '',
+      location: [nextRow.city, nextRow.building, nextRow.floor].filter(Boolean).join('.'),
+      status: row.status || '',
+      changedFields,
+      beforeValues: change.before,
+      afterValues: change.after,
+    };
+    return {
+      ...nextRow,
+      transactionHistory: normalizeTransactionHistory([transaction, ...(row.transactionHistory || [])]),
+    };
+  });
+  writeDemoData(ASSET_MAINTENANCE_STORAGE_KEY, nextRows);
+  return nextRows;
 }
 
 export function updateAssetMaintenanceRow(id, patch) {

@@ -1,6 +1,9 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import AssetInventoryMobilePrototype from './AssetInventoryMobilePrototype';
+import { getInventoryLocationChanges } from './inventoryLocationChangeStore';
+import { getAssetMaintenanceRows } from '../../services/assetManagementService';
+import { savePhotoReviewResult } from './inventoryPhotoReviewStore';
 
 let mockLocationState = {};
 const mockWarning = jest.fn();
@@ -24,7 +27,7 @@ jest.mock('antd', () => {
 });
 
 describe('AssetInventoryMobilePrototype', () => {
-  beforeEach(() => { window.sessionStorage.clear(); mockLocationState = {}; mockWarning.mockClear(); });
+  beforeEach(() => { window.sessionStorage.clear(); window.localStorage.clear(); mockLocationState = {}; mockWarning.mockClear(); });
 
   const scanMine = () => {
     fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
@@ -60,7 +63,7 @@ describe('AssetInventoryMobilePrototype', () => {
     screen.getAllByRole('button', { name: '拍照' }).forEach((button) => fireEvent.click(button));
     fireEvent.click(screen.getByRole('button', { name: '提交' }));
     expect(screen.getByText('扫码盘点')).toBeInTheDocument();
-    expect(JSON.parse(window.sessionStorage.getItem('assetInventoryPhotoReview:demo'))[0].status).toBe('审核中');
+    expect(JSON.parse(window.localStorage.getItem('assetInventoryPhotoReview:demo'))[0].status).toBe('审核中');
     scanMine();
     expect(screen.getByText('资产已完成盘点')).toBeInTheDocument();
   });
@@ -148,5 +151,69 @@ describe('AssetInventoryMobilePrototype', () => {
     mockLocationState = { scopeRanges: ['机房'], mobileUser: { name: '机房管理员', employeeNo: 'SERVER-ADMIN', isESAssetGroup: false } };
     render(<AssetInventoryMobilePrototype />);
     expect(screen.getByRole('button', { name: '快速扫描' })).toBeInTheDocument();
+  });
+
+  test('报失资产可继续盘点，图片审核驳回和重新进入后仍不能二次报失', () => {
+    const { unmount } = render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: /惠普.P221显示器/ }));
+    expect(screen.getByRole('button', { name: '盘点' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '报失' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '盘点' }));
+    expect(screen.queryByText('扫码后系统会根据盘点任务自动校验资产范围和盘点状态')).not.toBeInTheDocument();
+    scanMine();
+    screen.getAllByRole('button', { name: '拍照' }).forEach((button) => fireEvent.click(button));
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(screen.getByText('扫码盘点')).toBeInTheDocument();
+    window.sessionStorage.clear();
+    expect(JSON.parse(window.localStorage.getItem('assetInventoryPhotoReview:demo')).find((row) => row.assetTag === '1141100548').status).toBe('审核中');
+    savePhotoReviewResult('', { assetTag: '1141100548', status: '未盘' });
+    unmount();
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: /惠普.P221显示器/ }));
+    expect(screen.getByRole('button', { name: '盘点' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '报失' })).not.toBeInTheDocument();
+  });
+
+  test('复盘仅扫描后可以改地点，提交记录差异但审批前台账保持原位置', () => {
+    mockLocationState = { projectNo: 'RCP-202608180001', projectType: '复盘' };
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: /苹果.iphone 17/ }));
+    expect(screen.queryByRole('combobox', { name: '城市' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '盘点' }));
+    scanMine();
+    expect(screen.getByRole('combobox', { name: '城市' })).toHaveValue('北京市');
+    fireEvent.change(screen.getByRole('combobox', { name: '楼层 / 机房' }), { target: { value: '8层' } });
+    expect(getInventoryLocationChanges('RCP-202608180001')).toHaveLength(0);
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(getInventoryLocationChanges('RCP-202608180001')[0].after.floor).toBe('8层');
+    expect(getAssetMaintenanceRows().find((row) => row.tag === '114130000019').floor).toBe('9层');
+    expect(screen.getByText('扫码盘点')).toBeInTheDocument();
+  });
+
+  test('复盘不修改地点可直接提交，不生成位置变更明细', () => {
+    mockLocationState = { projectNo: 'RCP-202608180001', projectType: '复盘' };
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: /苹果.iphone 17/ }));
+    fireEvent.click(screen.getByRole('button', { name: '盘点' }));
+    scanMine();
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(screen.getByText('扫码盘点')).toBeInTheDocument();
+    expect(getInventoryLocationChanges('RCP-202608180001')).toHaveLength(0);
+  });
+
+  test('复盘快扫地点输入在批量提交前不形成位置变更记录', () => {
+    mockLocationState = { projectNo: 'RCP-202608180001', projectType: '复盘', scopeRanges: ['机房'] };
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: '快速扫描' }));
+    fireEvent.click(screen.getByRole('button', { name: '模拟扫描标签' }));
+    fireEvent.click(screen.getByRole('button', { name: '结束扫描' }));
+    fireEvent.click(screen.getByRole('button', { name: '查看资产114140000031' }));
+    screen.getAllByRole('button', { name: '拍照' }).forEach((button) => fireEvent.click(button));
+    fireEvent.change(screen.getByRole('combobox', { name: '楼层 / 机房' }), { target: { value: '8层' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    expect(getInventoryLocationChanges('RCP-202608180001')).toHaveLength(0);
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    expect(getInventoryLocationChanges('RCP-202608180001')[0].after.floor).toBe('8层');
+    expect(getAssetMaintenanceRows().find((row) => row.tag === '114140000031').floor).toBe('机房');
   });
 });

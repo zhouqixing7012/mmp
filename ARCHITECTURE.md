@@ -218,3 +218,7 @@ Vercel Preview
 
 `ScrapPrototypeModule` 负责跨公司转移、资产报废、账面报废和处置的单据状态及保存；`ScrapPrototypeList` 负责各菜单的查询列表与审批记录弹窗；`ScrapPrototypeEditor` 负责单头、详情及审批展示；`ScrapPrototypeAssetTable` 根据单据类型和调账方式渲染不同的明细、选择弹窗及导入导出。`scrapPrototypeService` 负责候选来源、公司/板块校验、已有演示单据的存储迁移；账面报废演示身份在菜单入口显式传入，不代表正式登录人员权限。
 账面报废的提单人确认是审批中最后一个节点。执行时仅机房实物资产自动生成处置申请单；软件与丢失资产直接标为已报废-已处置，办公设备留在待处置池供手动选择。处置审批明细按 City 和资产大类汇总，资产选择受单头公司限制。
+
+## 盘点复盘地点变更
+
+移动端与台账共用 `src/mock/inventoryMobileMock.js` 中既有演示标签。`inventoryMobileResultStore` 与 `inventoryPhotoReviewStore` 保存项目内盘点结果及照片审核记录；`inventoryLocationChangeStore` 只记录扫描成功提交的复盘地点差异并维护位置申请状态。PC 盘点计划通过 `InventoryLocationChangeFlow` 汇总、编辑并整批发起，演示审批身份显式切换到何文；`assetManagementService.applyInventoryLocationApproval` 在审批通过时更新统一台账，追加位置变更事务供资产操作历史查看。普通机房位置变更原页保留其独立入口。

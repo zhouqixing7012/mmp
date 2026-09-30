@@ -10,8 +10,8 @@
 .inventory-mobile-shell {
   position: relative;
   width: min(100%, 410px);
-  min-height: 720px;
-  max-height: calc(100vh - 48px);
+  height: min(860px, calc(100dvh - 48px));
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -45,10 +45,13 @@
 }
 
 .inventory-mobile-title {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 15px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  margin: 0 8px;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: 16px;
   font-weight: 650;
   color: #0f172a;
   white-space: nowrap;
@@ -58,11 +61,12 @@
   min-height: 0;
   flex: 1;
   overflow: auto;
-  padding: 14px;
+  padding: 16px;
+  overscroll-behavior: contain;
 }
 
 .inventory-mobile-content::-webkit-scrollbar {
-  width: 6px;
+  width: 0;
 }
 
 .inventory-mobile-content::-webkit-scrollbar-thumb {
@@ -301,7 +305,7 @@
   gap: 8px;
   border-top: 1px solid #e8edf2;
   background: white;
-  padding: 10px 12px;
+  padding: 12px 16px max(12px, env(safe-area-inset-bottom));
 }
 
 .inventory-mobile-footer > .ant-btn {
@@ -388,9 +392,9 @@
 
 .inventory-detail-card,
 .inventory-photo-card {
-  border-radius: 14px;
+  border: 1px solid #e8ecf1;
+  border-radius: 12px;
   background: white;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.045);
 }
 
 .inventory-detail-card {
@@ -400,10 +404,11 @@
 .inventory-detail-row {
   display: grid;
   grid-template-columns: 86px minmax(0, 1fr);
-  gap: 10px;
+  gap: 12px;
   border-bottom: 1px solid #eef2f6;
-  padding: 11px 0;
-  font-size: 12px;
+  padding: 14px 0;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .inventory-detail-row:last-child {
@@ -411,14 +416,14 @@
 }
 
 .inventory-detail-label {
-  color: #94a3b8;
+  color: #757e8c;
 }
 
 .inventory-detail-value {
   overflow-wrap: anywhere;
   color: #334155;
-  font-weight: 520;
-  text-align: right;
+  font-weight: 500;
+  text-align: left;
 }
 
 .inventory-photo-card {
@@ -491,7 +496,8 @@
 .inventory-scan-stage {
   position: relative;
   display: flex;
-  min-height: 330px;
+  min-height: 280px;
+  flex-shrink: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -724,14 +730,15 @@
 
 @media (max-width: 560px) {
   .inventory-mobile-page {
-    min-height: 100%;
+    height: 100dvh;
+    min-height: 0;
     padding: 0;
   }
 
   .inventory-mobile-shell {
     width: 100%;
-    min-height: calc(100vh - 68px);
-    max-height: none;
+    height: 100dvh;
+    min-height: 0;
     border: 0;
     border-radius: 0;
     box-shadow: none;
@@ -780,3 +787,34 @@
 .inventory-asset-group-heading:focus-visible { outline: 2px solid #145cff; outline-offset: 2px; }
 .inventory-asset-group-meta { display: inline-flex; align-items: center; gap: 8px; color: #848b99; }
 .inventory-asset-group-count { border-radius: 12px; background: #f2f5fa; padding: 2px 8px; font-size: 12px; font-weight: 400; }
+
+.inventory-detail-content { background: #f5f6f8; }
+.inventory-detail-summary { margin-bottom: 20px; }
+.inventory-detail-summary h1 { margin: 8px 0; color: #202733; font-size: 22px; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
+.inventory-detail-summary .inventory-detail-header { margin: 0; }
+.inventory-detail-summary .ant-tag { margin-inline-end: 0; }
+.inventory-detail-tag { color: #6a7483; font-size: 14px; font-variant-numeric: tabular-nums; }
+.inventory-detail-section { margin-bottom: 16px; }
+.inventory-detail-section h2 { margin: 0 0 8px 2px; color: #5e6877; font-size: 13px; font-weight: 600; }
+.inventory-location-card { margin-top: 12px; border: 1px solid #e8ecf1; border-radius: 12px; background: #fff; padding: 16px; }
+.inventory-location-card .inventory-section-title { font-size: 15px; }
+.inventory-location-optional { color: #838b98; font-size: 12px; font-weight: 400; }
+.inventory-location-field { display: grid; grid-template-columns: 82px minmax(0, 1fr); align-items: center; gap: 8px; margin-top: 14px; color: #667180; font-size: 14px; }
+.inventory-location-select { position: relative; min-width: 0; }
+.inventory-location-select select { appearance: none; width: 100%; height: 44px; border: 1px solid #dce1e8; border-radius: 8px; padding: 0 30px 0 12px; background: #fff; color: #263140; font: inherit; text-overflow: ellipsis; }
+.inventory-location-select select:focus-visible { outline: 2px solid #145cff; outline-offset: 2px; }
+.inventory-location-select > svg { position: absolute; right: 10px; top: 14px; pointer-events: none; color: #7b8593; }
+.inventory-photo-tip { color: #757e8c; font-size: 13px; line-height: 1.5; }
+.inventory-photo-label { font-size: 13px; }
+.inventory-photo-slot .ant-btn { min-height: 40px; font-size: 14px; }
+.inventory-mobile-header .ant-btn { min-width: 36px; min-height: 44px; }
+.inventory-mobile-header-right { flex: none; }
+.inventory-mobile-title { line-height: 1.4; }
+.inventory-search-wrap { min-height: 44px; margin-top: 0; }
+.inventory-search-wrap .ant-input { font-size: 13px; }
+.inventory-mobile-tabs button { min-height: 44px; font-size: 15px; }
+.inventory-asset-card { border-radius: 12px; box-shadow: none; padding: 14px 12px; }
+.inventory-asset-card-title { font-size: 15px; }
+.inventory-asset-card-meta { margin-top: 6px; font-size: 12px; }
+.inventory-asset-card-line { margin-top: 4px; font-size: 12px; color: #7b8593; }
+.inventory-modal-actions .ant-btn, .inventory-scan-controls .ant-btn { min-height: 44px; }

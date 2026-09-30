@@ -187,7 +187,7 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
       <Button icon={<Smartphone size={14} />} onClick={() => {
           if (selectedKeys.length > 1) { messageApi.warning('请选择一个盘点项目进行移动端预览'); return; }
           const selectedProject = rows.find((row) => row.key === selectedKeys[0]);
-          navigate('/asset-inventory/mobile', { state: { projectNo: selectedProject?.projectNo || '', scopeRanges: selectedProject?.scopeRanges, mobileUser: mobilePreviewUser } });
+          navigate('/asset-inventory/mobile', { state: { projectNo: selectedProject?.projectNo || '', projectType: selectedProject?.projectType || '初盘', scopeRanges: selectedProject?.scopeRanges, mobileUser: mobilePreviewUser } });
         }}>移动端预览</Button>
       <Button icon={<Smartphone size={14} />} onClick={() => navigate('/asset-inventory/mobile', { state: { scopeRanges: ['机房'], mobileUser: mobilePreviewUser } })}>机房移动端预览</Button>
       </Space>
