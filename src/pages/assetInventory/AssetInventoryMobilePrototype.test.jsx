@@ -250,4 +250,19 @@ describe('AssetInventoryMobilePrototype', () => {
     expect(getInventoryLocationChanges('RCP-202608180001')).toHaveLength(1);
     expect(getInventoryLocationChanges('CP-202608180002')).toHaveLength(0);
   });
+  test('公共资产扫码页返回原详情后可继续返回计划，不循环进入扫码', () => {
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', {name:'监督计划'}));
+    fireEvent.click(screen.getByRole('menuitem', {name:/北京市盘点计划-公共盘点/}));
+    fireEvent.click(screen.getByRole('button', {name:/戴尔.24寸显示器 未盘/}));
+    fireEvent.click(screen.getByRole('button', {name:'盘点'}));
+    fireEvent.click(screen.getByRole('button', {name:'模拟扫码'}));
+    fireEvent.click(screen.getByRole('button', {name:'扫描他人资产'}));
+    fireEvent.click(screen.getByRole('button', {name:'返回'}));
+    fireEvent.click(screen.getByRole('button', {name:'返回'}));
+    expect(screen.queryByRole('combobox', {name:'城市'})).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name:'返回'}));
+    expect(screen.getByText('北京市盘点计划-公共盘点')).toBeInTheDocument();
+  });
+
 });

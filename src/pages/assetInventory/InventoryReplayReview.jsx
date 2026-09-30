@@ -16,7 +16,7 @@ export default function InventoryReplayReview({ project, plans, assetsForPlan, s
     const list = assetsForPlan(row); const counted = list.filter((asset) => asset.inventoryStatus === '已盘' || asset.inventoryStatus === '代盘').length;
     return {...row, period: project.period, financialSupervisor:'徐博', assetCount:list.length, countedCount:counted, uncountedCount:list.length-counted, ratio:list.length ? `${(counted/list.length*100).toFixed(2)}%` : '0.00%'};
   });
-  return <Space direction="vertical" size={16} className="w-full">
+  return <div data-inventory-review><Space direction="vertical" size={16} className="w-full">
     <Typography.Title level={4} style={{margin:0}}>复盘结果审核</Typography.Title>
     <Card size="small" title={<SectionCardTitle>复盘信息</SectionCardTitle>}><Table size="small" bordered pagination={false} rowKey="planNo" scroll={{x:'max-content'}} dataSource={summary} columns={[
       {title:'计划编号',dataIndex:'planNo',render:(value)=><Button type="link" onClick={()=>{setPlanNo(value);setDraft(EMPTY);setFilters(EMPTY);}}>{value}</Button>},
@@ -29,5 +29,5 @@ export default function InventoryReplayReview({ project, plans, assetsForPlan, s
     </Card>
     <Card size="small" title={<SectionCardTitle>审批信息</SectionCardTitle>}><Table size="small" bordered pagination={false} rowKey="key" dataSource={submission.records} columns={[['审批环节','node'],['审批人','person'],['代理人','proxy'],['审批状态','status'],['审批时间','time'],['审批意见','opinion']].map(([title,dataIndex])=>({title,dataIndex,render:value=>value || '-'}))}/></Card>
     <div className="flex justify-center"><Button onClick={onBack}>返回</Button></div>
-  </Space>;
+  </Space></div>;
 }

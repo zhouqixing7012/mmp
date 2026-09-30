@@ -365,6 +365,7 @@ export default function AssetInventoryMobilePrototype() {
       returnToProjectList();
       return;
     }
+    if (view === 'scan' && scanReturnView === 'detail') setScannedDetail(false);
     setView(view === 'detail' ? (quickPhotoMode ? 'quickList' : scannedDetail ? 'scan' : detailReturnView) : view === 'planDetail' ? 'workbench' : view === 'quickList' ? 'quickScan' : scanReturnView);
     setScanPickerOpen(false);
     setScanModal(null);

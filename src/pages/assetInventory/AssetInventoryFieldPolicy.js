@@ -198,7 +198,7 @@ function applyFieldPolicy(root) {
   if (!root) return;
 
   root.querySelectorAll('th').forEach((header) => {
-    if (header.textContent?.trim() === REMOVED_FIELD) hideTableColumn(header);
+    if (header.textContent?.trim() === REMOVED_FIELD && !header.closest('[data-inventory-review]')) hideTableColumn(header);
   });
 
   applyPlanDetailPolicy(root);
@@ -217,6 +217,7 @@ function applyFieldPolicy(root) {
     const parent = textNode.parentElement;
     const original = textNode.nodeValue || '';
     if (!parent) return;
+    if (parent.closest('[data-inventory-review]') && original.includes(REMOVED_FIELD)) return;
     if (original.trim() === REMOVED_FIELD || original.trim() === `${REMOVED_FIELD}：`) {
       removeStandaloneField(parent);
       return;
