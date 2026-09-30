@@ -586,7 +586,7 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
             </div>
             {project.samplingMode === '百分比' && (
               <>
-                <div><Typography.Text type="secondary">比例（%）</Typography.Text><InputNumber min={1} max={100} value={Number(project.samplingRatio || 100)} className="w-full" onChange={(value) => setField('samplingRatio', value || 100)} /></div>
+                <div><Typography.Text type="secondary">比例（%）</Typography.Text><InputNumber min={0} max={100} value={Number(project.samplingRatio ?? 100)} className="w-full" onChange={(value) => setField('samplingRatio', value ?? 100)} /></div>
                 {project.projectType === '复盘' && <>
                   <div><Typography.Text type="secondary">净值大于多少元必盘（可选）</Typography.Text><InputNumber min={0} value={project.mandatoryNetValueAbove ?? null} className="w-full" onChange={(value) => setField('mandatoryNetValueAbove', value)} /></div>
                   <div><Typography.Text type="secondary">净值前多少百分比必盘（可选）</Typography.Text><InputNumber min={1} max={100} precision={0} value={project.mandatoryNetValueTopPercent ?? null} className="w-full" onChange={(value) => setField('mandatoryNetValueTopPercent', value)} /></div>

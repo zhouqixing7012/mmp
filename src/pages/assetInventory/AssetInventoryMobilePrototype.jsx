@@ -41,8 +41,8 @@ const DEMO_SUPERVISED_PLANS = [
   { id: 'employee-plan', name: '北京市盘点计划-员工盘点', projectType: '初盘', supervisor: CURRENT_USER.name, assetIds: ['asset-001', 'asset-002', 'asset-003', 'asset-004'] },
   { id: 'warehouse-plan', name: '北京市盘点计划-库房盘点', projectType: '初盘', supervisor: CURRENT_USER.name, assetIds: ['asset-005'] },
   { id: 'machine-plan', name: '北京市盘点计划-机房盘点', projectType: '初盘', supervisor: null, assetIds: ['asset-006', 'asset-007'] },
-  { id: 'public-plan-demo', name: '公共资产演示计划', projectType: '初盘', supervisor: CURRENT_USER.name, assetIds: ['asset-public-demo'] },
-  { id: 'review-plan-demo', name: '复盘地点演示计划', projectType: '复盘', supervisor: CURRENT_USER.name, assetIds: ['asset-001', 'asset-002', 'asset-003', 'asset-004', 'asset-public-demo'] },
+  { id: 'public-plan-demo', name: '北京市盘点计划-公共盘点', contextId: 'public', projectType: '初盘', supervisor: CURRENT_USER.name, assetIds: ['asset-public-demo'] },
+  { id: 'review-plan-demo', name: '北京市复盘计划', contextId: 'review', projectType: '复盘', supervisor: CURRENT_USER.name, assetIds: ['asset-001', 'asset-002', 'asset-003', 'asset-004', 'asset-public-demo'] },
 ];
 
 const TAB_GROUPS = {
@@ -305,7 +305,7 @@ export default function AssetInventoryMobilePrototype() {
   const selectedAsset = assets.find((asset) => asset.id === selectedAssetId) || null;
   const projectAssets = assets.filter((asset) => projectRanges.includes(asset.area));
   const filteredAssets = projectAssets.filter((asset) => asset.ownerNo === currentUser.employeeNo && includesQuery(asset, query));
-  const supervisedPlans = DEMO_SUPERVISED_PLANS.filter((plan) => plan.projectType === projectType && plan.supervisor === currentUser.name && projectAssets.some((asset) => plan.assetIds.includes(asset.id)));
+  const supervisedPlans = DEMO_SUPERVISED_PLANS.filter((plan) => plan.supervisor === currentUser.name && (!hasRouteProject || (plan.projectType === projectType && projectAssets.some((asset) => plan.assetIds.includes(asset.id)))));
   const activePlan = supervisedPlans.find((plan) => plan.id === activePlanId);
   const activePlanAssets = projectAssets.filter((asset) => activePlan?.assetIds.includes(asset.id));
   const quickBatchKey = quickPlanId || 'personal';
@@ -587,12 +587,6 @@ export default function AssetInventoryMobilePrototype() {
     const groups = TAB_GROUPS[activeTab];
     return (
       <>
-        {!hasRouteProject && <div className="inventory-demo-context" aria-label="演示项目">
-          <div className="inventory-demo-context-title">演示计划</div>
-          <div className="inventory-demo-context-options">{DEMO_CONTEXTS.map((context) => <button key={context.id} type="button" className={demoContextId === context.id ? 'is-active' : ''} aria-pressed={demoContextId === context.id} onClick={() => switchDemoContext(context)}>{context.label}</button>)}</div>
-          {demoContext.projectNo && <div className="inventory-demo-context-note">当前项目：{demoContext.projectNo} · {demoContext.projectType}</div>}
-          {demoContextId === 'public' && <div className="inventory-demo-context-note">公共资产沿用原项目清单样本，仅供本页扫码演示</div>}
-        </div>}
         <div className="inventory-search-wrap">
           <Search size={17} />
           <Input
@@ -808,7 +802,7 @@ export default function AssetInventoryMobilePrototype() {
               right={<>{canQuickScan && <Button type="text" aria-label="快速扫描" icon={<ScanLine size={18} />} onClick={() => openQuickScan()}>快扫</Button>}<Button type="text" shape="circle" aria-label="监督计划" icon={<ListChecks size={19} />} onClick={() => setPlanMenuOpen((current) => !current)} /></>}
             />
             {planMenuOpen && <div className="inventory-supervised-plans" role="menu" aria-label="我监督的盘点计划">
-              {supervisedPlans.map((plan) => <button type="button" role="menuitem" key={plan.id} onClick={() => { setActivePlanId(plan.id); setCollapsedPlanSections([]); setPlanMenuOpen(false); setView('planDetail'); }}>
+              {supervisedPlans.map((plan) => <button type="button" role="menuitem" key={plan.id} onClick={() => { if (!hasRouteProject) switchDemoContext(DEMO_CONTEXTS.find(context => context.id === (plan.contextId || 'initial'))); setActivePlanId(plan.id); setCollapsedPlanSections([]); setPlanMenuOpen(false); setView('planDetail'); }}>
                 {plan.name}<span className="inventory-plan-dot" />
               </button>)}
             </div>}

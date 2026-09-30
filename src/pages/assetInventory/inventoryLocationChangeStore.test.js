@@ -1,5 +1,6 @@
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import {
+  createInventoryLocationChangeDemo,
   approveInventoryLocationChangeRequest,
   getInventoryLocationChanges,
   getInventoryLocationChangeRequest,
@@ -98,4 +99,16 @@ test('申请状态写入失败后重试审批不重复记台账事务', () => {
   approveInventoryLocationChangeRequest(request.id, { approver: '206984-何文', decision: '同意' });
   const asset = getAssetMaintenanceRows().find((row) => row.tag === assetTag);
   expect(asset.transactionHistory.filter((entry) => entry.operationType === '位置变更' && entry.documentNo === request.id)).toHaveLength(1);
+});
+
+test('PC位置变更演示复用待发起记录，提交给何文前不改台账', () => {
+  const project = {projectNo:'RCP-202608180001', projectType:'复盘'};
+  const oldFloor = getAssetMaintenanceRows().find(row=>row.tag===assetTag).floor;
+  const change = createInventoryLocationChangeDemo(project);
+  expect(createInventoryLocationChangeDemo(project).id).toBe(change.id);
+  expect(change.after.floor).not.toBe(oldFloor);
+  const request = submitInventoryLocationChangeRequest({...project, reason:'演示现场位置核对', applicant:'冯丽婷'});
+  expect(request.approver).toBe('206984-何文');
+  expect(request.status).toBe('待审批');
+  expect(getAssetMaintenanceRows().find(row=>row.tag===assetTag).floor).toBe(oldFloor);
 });

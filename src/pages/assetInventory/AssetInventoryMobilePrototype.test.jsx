@@ -223,10 +223,9 @@ describe('AssetInventoryMobilePrototype', () => {
 
   test('移动入口可切公共演示计划，扫码修改地点并写入现有公共资产台账', () => {
     render(<AssetInventoryMobilePrototype />);
-    fireEvent.click(screen.getByRole('button', { name: '公共地点演示' }));
-    expect(screen.getByText('公共资产沿用原项目清单样本，仅供本页扫码演示')).toBeInTheDocument();
+    expect(screen.queryByText('演示计划')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '监督计划' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /公共资产演示计划/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /北京市盘点计划-公共盘点/ }));
     expect(screen.getByText('戴尔.24寸显示器')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '盘点' }));
     fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
@@ -239,9 +238,8 @@ describe('AssetInventoryMobilePrototype', () => {
 
   test('移动入口可切复盘演示计划，位置记录按复盘项目隔离', () => {
     render(<AssetInventoryMobilePrototype />);
-    fireEvent.click(screen.getByRole('button', { name: '复盘地点演示' }));
     fireEvent.click(screen.getByRole('button', { name: '监督计划' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /复盘地点演示计划/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /北京市复盘计划/ }));
     fireEvent.click(screen.getByRole('button', { name: '盘点' }));
     fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
     fireEvent.click(screen.getByRole('button', { name: '扫描本人资产' }));

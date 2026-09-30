@@ -1,3 +1,4 @@
+import { INVENTORY_LOCATION_CHANGE_DEMO } from '../../mock/inventoryLocationChangeMock';
 import { writeDemoData } from '../../services/demoStorage';
 import { applyInventoryLocationApproval, getAssetMaintenanceRows } from '../../services/assetManagementService';
 
@@ -143,4 +144,15 @@ export function approveInventoryLocationChangeRequest(id, { approver, decision, 
   };
   writeState(next);
   return next.requests.find((item) => item.id === id);
+}
+
+// 演示入口显式创建待发起记录，继续复用正常提交与审批链路。
+export function createInventoryLocationChangeDemo(project) {
+  if (project?.projectNo !== INVENTORY_LOCATION_CHANGE_DEMO.projectNo || project.projectType !== '复盘') throw new Error('该项目没有位置变更演示数据');
+  const existing = getInventoryLocationChanges(project.projectNo).find(change => change.assetTag === INVENTORY_LOCATION_CHANGE_DEMO.assetTag && ['待发起', '待审批'].includes(change.status));
+  if (existing) return existing;
+  const asset = requireLedgerAsset(INVENTORY_LOCATION_CHANGE_DEMO.assetTag);
+  const target = getAssetMaintenanceRows().find(row => row.city === asset.city && row.building === asset.building && row.floor && row.floor !== asset.floor);
+  if (!target) throw new Error('当前台账没有可用于演示的同建筑其他楼层');
+  return recordInventoryLocationChange({ ...INVENTORY_LOCATION_CHANGE_DEMO, projectType:'复盘', before:asset, after:target });
 }
