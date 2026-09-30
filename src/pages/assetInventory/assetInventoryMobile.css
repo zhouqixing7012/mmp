@@ -8,6 +8,7 @@
 }
 
 .inventory-mobile-shell {
+  position: relative;
   width: min(100%, 410px);
   min-height: 720px;
   max-height: calc(100vh - 48px);
@@ -303,6 +304,66 @@
   padding: 10px 12px;
 }
 
+.inventory-mobile-footer > .ant-btn {
+  flex: 1;
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.inventory-supervised-plans {
+  position: absolute;
+  z-index: 5;
+  top: 56px;
+  right: 8px;
+  width: min(300px, calc(100% - 16px));
+  max-height: 60%;
+  overflow-y: auto;
+  border: 1px solid #dce4ec;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, .18);
+}
+
+.inventory-supervised-plans button {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0;
+  border-bottom: 1px solid #eef1f5;
+  background: #fff;
+  padding: 12px;
+  color: #1677ff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.inventory-plan-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  align-self: center;
+  border-radius: 50%;
+  background: #f5222d;
+}
+
+.inventory-plan-section { margin-bottom: 14px; }
+.inventory-plan-section-heading {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  border: 0;
+  background: #e8edf2;
+  padding: 10px 12px;
+  color: #334155;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+.inventory-plan-assets { display: grid; gap: 8px; padding-top: 8px; }
+.inventory-plan-footer > .ant-btn { width: 50%; }
+
 .inventory-mobile-footer span {
   display: flex;
   align-items: center;
@@ -480,6 +541,31 @@
   line-height: 1.6;
   text-align: center;
 }
+
+.inventory-scan-example {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: #64748b;
+  font-size: 13px;
+}
+.inventory-scan-example-label {
+  width: 252px;
+  height: 84px;
+  background-repeat: no-repeat;
+  background-size: 661px 1434px;
+  background-position: -204px -1013px;
+}
+.inventory-quick-recent { color: #475569; font-size: 12px; line-height: 1.6; }
+.inventory-quick-recent div { overflow-wrap: anywhere; }
+.inventory-quick-error { margin: 5px 0; color: #cf1322; font-size: 12px; overflow-wrap: anywhere; }
+.inventory-mobile-modal .ant-modal {
+  width: min(360px, calc(100vw - 32px)) !important;
+  max-width: min(360px, calc(100vw - 32px));
+}
+.inventory-mobile-modal .ant-modal-content { max-height: min(75vh, 560px); overflow-y: auto; }
+.inventory-mobile-modal .inventory-modal-actions .ant-btn { min-width: 0; white-space: normal; }
 
 .inventory-scan-controls,
 .inventory-scan-picker-grid,

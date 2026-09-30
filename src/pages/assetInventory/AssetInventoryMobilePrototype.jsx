@@ -5,12 +5,11 @@ import {
   ArrowLeft,
   Camera,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
-  ClipboardCheck,
   Flashlight,
   ImagePlus,
   ListChecks,
-  LogOut,
   ScanLine,
   Search,
   Trash2,
@@ -19,6 +18,7 @@ import {
 import { Button, Input, Modal, Tag, message as antdMessage } from 'antd';
 import './assetInventoryMobile.css';
 import { getPhotoReviewResults, savePhotoReviewResult } from './inventoryPhotoReviewStore';
+import mobileScanReference from './images/mobile-scan-reference.png';
 
 const CURRENT_USER = {
   name: '孙志强',
@@ -185,10 +185,16 @@ const DEMO_ASSETS = [
   },
 ];
 
+// 原型演示计划与资产关联，仅用于展示当前用户作为监督人的计划入口。
+const DEMO_SUPERVISED_PLANS = [
+  { id: 'employee-plan', name: '北京市盘点计划-员工盘点', supervisor: CURRENT_USER.name, assetIds: ['asset-001', 'asset-002', 'asset-003', 'asset-004'] },
+  { id: 'warehouse-plan', name: '北京市盘点计划-库房盘点', supervisor: CURRENT_USER.name, assetIds: ['asset-005'] },
+  { id: 'machine-plan', name: '北京市盘点计划-机房盘点', supervisor: CURRENT_USER.name, assetIds: ['asset-006', 'asset-007'] },
+];
+
 const TAB_GROUPS = {
   unscanned: [
     { key: '未盘', label: '未盘' },
-    { key: '报失', label: '报失' },
   ],
   scanned: [
     { key: '审核中', label: '审核中' },
@@ -235,10 +241,10 @@ const SCAN_COPY = {
 };
 
 const QUICK_SCAN_TAGS = [
+  '114130000019',
   '114121801802',
   '1141300083-P',
   '114140000999',
-  '1141300083-P',
 ];
 
 function includesQuery(asset, query) {
@@ -355,6 +361,7 @@ function ScanResultModal({ scanModal, onClose, onSubmit, onReject }) {
   return (
     <Modal
       open
+      wrapClassName="inventory-mobile-modal"
       title={copy.title}
       footer={null}
       centered
@@ -376,7 +383,7 @@ function ResultNotice({ notice, onContinue, onClose }) {
   if (!notice) return null;
   const isNetwork = notice.kind === 'network';
   return (
-    <Modal open title={notice.title} footer={null} centered onCancel={onClose} destroyOnClose>
+    <Modal open title={notice.title} wrapClassName="inventory-mobile-modal" footer={null} centered onCancel={onClose} destroyOnClose>
       <p className="inventory-modal-message">{notice.message}</p>
       <div className="inventory-modal-actions">
         <Button type="primary" onClick={onContinue}>{isNetwork ? '好的' : '再接再厉'}</Button>
@@ -402,6 +409,11 @@ export default function AssetInventoryMobilePrototype() {
   const [view, setView] = useState('workbench');
   const [scanReturnView, setScanReturnView] = useState('workbench');
   const [activeTab, setActiveTab] = useState('unscanned');
+  const [planMenuOpen, setPlanMenuOpen] = useState(false);
+  const [activePlanId, setActivePlanId] = useState(null);
+  const [collapsedPlanSections, setCollapsedPlanSections] = useState([]);
+  const [detailReturnView, setDetailReturnView] = useState('workbench');
+  const [quickPlanId, setQuickPlanId] = useState(null);
   const [assets, setAssets] = useState(() => DEMO_ASSETS.map((asset) => ({ ...asset })));
   useEffect(() => {
     const results = new Map(getPhotoReviewResults(previewProjectNo).map((entry) => [entry.assetTag, entry]));
@@ -420,13 +432,24 @@ export default function AssetInventoryMobilePrototype() {
   const [reportLossOpen, setReportLossOpen] = useState(false);
   const [confirmLossOpen, setConfirmLossOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
-  const [quickScanned, setQuickScanned] = useState([]);
+  const [quickBatches, setQuickBatches] = useState({});
   const [quickResult, setQuickResult] = useState(null);
 
   const selectedAsset = assets.find((asset) => asset.id === selectedAssetId) || null;
-  const filteredAssets = useMemo(() => assets.filter((asset) => includesQuery(asset, query)), [assets, query]);
+  const filteredAssets = useMemo(() => assets.filter((asset) => asset.owner === CURRENT_USER.name && includesQuery(asset, query)), [assets, query]);
+  const supervisedPlans = DEMO_SUPERVISED_PLANS.filter((plan) => plan.supervisor === CURRENT_USER.name);
+  const activePlan = supervisedPlans.find((plan) => plan.id === activePlanId);
+  const activePlanAssets = assets.filter((asset) => activePlan?.assetIds.includes(asset.id));
+  const quickBatchKey = quickPlanId || 'personal';
+  const quickScanned = quickBatches[quickBatchKey] || [];
+  const setQuickScanned = (update) => setQuickBatches((current) => {
+    const previous = current[quickBatchKey] || [];
+    return { ...current, [quickBatchKey]: typeof update === 'function' ? update(previous) : update };
+  });
+  const quickScope = quickPlanId ? supervisedPlans.find((plan) => plan.id === quickPlanId)?.assetIds || [] : assets.filter((asset) => asset.owner === CURRENT_USER.name).map((asset) => asset.id);
 
   const openDetail = (asset) => {
+    setDetailReturnView(view === 'planDetail' ? 'planDetail' : 'workbench');
     setSelectedAssetId(asset.id);
     const [city = '', building = '', floor = ''] = asset.address.split('-');
     setLocationDraft({ city, building, floor });
@@ -458,7 +481,7 @@ export default function AssetInventoryMobilePrototype() {
       returnToProjectList();
       return;
     }
-    setView(view === 'detail' ? 'workbench' : scanReturnView);
+    setView(view === 'detail' ? detailReturnView : view === 'planDetail' ? 'workbench' : view === 'quickList' ? 'quickScan' : scanReturnView);
     setScanPickerOpen(false);
     setScanModal(null);
     setResultNotice(null);
@@ -479,13 +502,13 @@ export default function AssetInventoryMobilePrototype() {
     if (projectClosed) { messageApi.info('项目已关闭，不能继续盘点'); return; }
     setScanPickerOpen(false);
     if (kind === 'mine') {
-      const asset = assets.find((item) => item.status === '未盘' && item.owner === CURRENT_USER.name);
-      setScanModal({ kind, assetId: asset?.id || null });
+      const asset = assets.find((item) => item.id === selectedAssetId);
+      setScanModal(asset?.status === '未盘' && asset.owner === CURRENT_USER.name ? { kind, assetId: asset.id } : { kind: asset?.status === '已盘' ? 'scanned' : 'outOfScope', assetId: selectedAssetId });
       return;
     }
     if (kind === 'proxy') {
-      const asset = assets.find((item) => item.status === '未盘' && item.owner !== CURRENT_USER.name);
-      setScanModal({ kind, assetId: asset?.id || null });
+      const asset = assets.find((item) => item.id === selectedAssetId);
+      setScanModal(asset?.status === '未盘' && asset.owner !== CURRENT_USER.name ? { kind, assetId: asset.id } : { kind: 'outOfScope', assetId: selectedAssetId });
       return;
     }
     setScanModal({ kind, assetId: selectedAssetId });
@@ -586,8 +609,18 @@ export default function AssetInventoryMobilePrototype() {
 
   const addQuickScan = () => {
     if (projectClosed) { messageApi.info('项目已关闭，不能继续扫描'); return; }
-    const next = QUICK_SCAN_TAGS[quickScanned.length % QUICK_SCAN_TAGS.length];
+    const scopedTags = assets.filter((asset) => quickScope.includes(asset.id)).map((asset) => asset.tagNo);
+    const candidates = quickPlanId ? scopedTags : QUICK_SCAN_TAGS;
+    if (!candidates.length) { messageApi.info('当前计划没有可扫描资产'); return; }
+    const next = candidates[quickScanned.length % candidates.length];
     setQuickScanned((current) => [...current, next]);
+  };
+
+  const openQuickScan = (planId = null) => {
+    if (projectClosed) { messageApi.info('项目已关闭，盘点待办已结束'); return; }
+    setQuickPlanId(planId);
+    setScanReturnView(planId ? 'planDetail' : 'workbench');
+    setView('quickScan');
   };
 
   const submitQuickScan = () => {
@@ -596,20 +629,26 @@ export default function AssetInventoryMobilePrototype() {
     const failed = [];
     quickScanned.forEach((tagNo) => {
       const asset = assets.find((item) => item.tagNo === tagNo);
-      if (asset && asset.status === '未盘' && !success.includes(tagNo)) {
+      const requiredSlots = asset?.area === '机房' ? ['二维码标签照片', '序列号照片'] : ['资产整体照片', '二维码标签照片'];
+      const missingPhoto = asset?.photoRequired && requiredSlots.some((slot) => !photoState[`${asset.id}::${slot}`]);
+      if (asset && quickScope.includes(asset.id) && asset.status === '未盘' && !success.includes(tagNo) && !missingPhoto) {
         success.push(tagNo);
       } else {
-        failed.push(tagNo);
+        failed.push({ tagNo, reason: !asset || !quickScope.includes(asset.id) ? '不在当前任务范围' : asset.status !== '未盘' ? '资产已盘点或不可盘点' : success.includes(tagNo) ? '重复扫描' : '需先在资产详情拍摄必需照片' });
       }
     });
     if (success.length) {
+      success.forEach((tagNo) => {
+        const asset = assets.find((item) => item.tagNo === tagNo);
+        if (asset?.area === '员工' && asset.photoRequired) savePhotoReviewResult(previewProjectNo, { assetTag: tagNo, status: '审核中', owner: asset.owner, description: asset.assetDesc, inventoryDate: new Date().toISOString() });
+      });
       setAssets((current) => current.map((asset) => (
         success.includes(asset.tagNo)
-          ? { ...asset, status: '已盘', inventoryDate: '2025-12-15 10:13', inventoryBy: CURRENT_USER.name }
+          ? { ...asset, status: asset.area === '员工' && asset.photoRequired ? '审核中' : asset.owner === CURRENT_USER.name ? '已盘' : '代盘', inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: CURRENT_USER.name }
           : asset
       )));
     }
-    setQuickResult({ total: quickScanned.length, success: success.length, failed: failed.length });
+    setQuickResult({ total: quickScanned.length, success: success.length, failed });
     setQuickScanned([]);
   };
 
@@ -617,16 +656,6 @@ export default function AssetInventoryMobilePrototype() {
     const groups = TAB_GROUPS[activeTab];
     return (
       <>
-        <div className="inventory-mobile-hero">
-          <div>
-            <div className="inventory-eyebrow">2025 年度资产盘点</div>
-            <div className="inventory-hero-title">我的盘点任务</div>
-          </div>
-          <div className="inventory-hero-stat">
-          <span>{formatStatusCount(filteredAssets, '未盘')}</span>
-            <small>待盘</small>
-          </div>
-        </div>
         <div className="inventory-search-wrap">
           <Search size={17} />
           <Input
@@ -640,10 +669,10 @@ export default function AssetInventoryMobilePrototype() {
         </div>
         <div className="inventory-mobile-tabs">
           <button type="button" className={activeTab === 'unscanned' ? 'is-active' : ''} onClick={() => setActiveTab('unscanned')}>
-            未盘 <span>{formatStatusCount(filteredAssets, '未盘') + formatStatusCount(filteredAssets, '报失')}</span>
+            未盘 <span>{formatStatusCount(filteredAssets, '未盘')}</span>
           </button>
           <button type="button" className={activeTab === 'scanned' ? 'is-active' : ''} onClick={() => setActiveTab('scanned')}>
-            已盘 <span>{formatStatusCount(filteredAssets, '审核中') + formatStatusCount(filteredAssets, '已盘') + formatStatusCount(filteredAssets, '代盘')}</span>
+            已盘 <span>{formatStatusCount(filteredAssets, '已盘') + formatStatusCount(filteredAssets, '代盘')}</span>
           </button>
         </div>
         <div className="inventory-mobile-content-list">
@@ -667,6 +696,28 @@ export default function AssetInventoryMobilePrototype() {
       </>
     );
   };
+
+  const renderPlanDetail = () => <>
+    <MobileHeader title={activePlan?.name || '盘点计划'} onBack={goBack} onExit={exitPrototype} />
+    <div className="inventory-mobile-content inventory-plan-detail">
+      {[
+        { key: '未盘', rows: activePlanAssets.filter((asset) => asset.status === '未盘') },
+        { key: '已盘', rows: activePlanAssets.filter((asset) => ['已盘', '代盘'].includes(asset.status)) },
+      ].map((group) => <section className="inventory-plan-section" key={group.key}>
+        <button type="button" className="inventory-plan-section-heading" aria-expanded={!collapsedPlanSections.includes(group.key)} onClick={() => setCollapsedPlanSections((current) => current.includes(group.key) ? current.filter((item) => item !== group.key) : [...current, group.key])}>
+          <span>{group.key}—共{group.rows.length}条</span>
+          {collapsedPlanSections.includes(group.key) ? <ChevronRight size={17} /> : <ChevronDown size={17} />}
+        </button>
+        {!collapsedPlanSections.includes(group.key) && <div className="inventory-plan-assets">
+          {group.rows.length ? group.rows.map((asset) => <AssetCard key={asset.id} asset={asset} onClick={() => openDetail(asset)} />) : <div className="inventory-empty">暂无{group.key}资产</div>}
+        </div>}
+      </section>)}
+    </div>
+    <div className="inventory-mobile-footer inventory-plan-footer">
+      <Button disabled={projectClosed} onClick={() => openQuickScan(activePlanId)}>盘点</Button>
+      <Button type="primary" disabled={projectClosed || !(quickBatches[activePlanId] || []).length} onClick={() => { setQuickPlanId(activePlanId); setView('quickList'); }}>提交</Button>
+    </div>
+  </>;
 
   const renderDetail = () => {
     if (!selectedAsset) return null;
@@ -753,6 +804,10 @@ export default function AssetInventoryMobilePrototype() {
           <ScanLine size={42} />
           <div className="inventory-scan-stage-label">将扫描区域对准资产标签号二维码</div>
         </div>
+        <div className="inventory-scan-example">
+          <span>参考如下样例，找到标签扫描</span>
+          <div className="inventory-scan-example-label" role="img" aria-label="资产标签二维码样例" style={{ backgroundImage: `url(${mobileScanReference})` }} />
+        </div>
         <div className="inventory-scan-help">扫码后系统会根据盘点任务自动校验资产范围和盘点状态</div>
         <div className="inventory-scan-controls">
           <Button disabled={projectClosed} icon={<Flashlight size={17} />} onClick={() => setFlashlightOn((current) => !current)}>
@@ -781,54 +836,49 @@ export default function AssetInventoryMobilePrototype() {
   const renderQuickScan = () => (
     <>
       <MobileHeader title="快速扫描" onBack={goBack} onExit={exitPrototype} />
-      <div className="inventory-mobile-content inventory-quick-scan-page">
-        <div className="inventory-quick-scan-banner">
-          <ClipboardCheck size={24} />
-          <div>
-            <strong>快速盲扫</strong>
-            <span>只记录资产标签号，提交时统一校验</span>
-          </div>
+      <div className={`inventory-mobile-content inventory-quick-scan-page ${flashlightOn ? 'is-lit' : ''}`}>
+        <div className={`inventory-scan-stage ${flashlightOn ? 'is-lit' : ''}`}>
+          <div className="inventory-scan-corners"><span /><span /><span /><span /></div>
+          <ScanLine size={42} />
         </div>
-        <div className="inventory-quick-scan-actions">
-          <Button type="primary" disabled={projectClosed} icon={<ScanLine size={17} />} onClick={addQuickScan}>模拟扫描标签</Button>
-          <Button icon={<Trash2 size={16} />} disabled={projectClosed} onClick={() => setQuickScanned([])}>清空</Button>
+        <div className="inventory-scan-example">
+          <span>参考如下样例，找到标签扫描</span>
+          <div className="inventory-scan-example-label" role="img" aria-label="资产标签二维码样例" style={{ backgroundImage: `url(${mobileScanReference})` }} />
         </div>
-        <div className="inventory-section-title">
-          <span>已扫描标签</span>
-          <span className="inventory-section-count">{quickScanned.length} 条</span>
+        <div className="inventory-quick-recent">本次共扫描到资产 {quickScanned.length} 个，最近5个标签号：
+          <div>{quickScanned.slice(-5).reverse().join('、') || '暂无'}</div>
         </div>
-        <div className="inventory-quick-list">
-          {quickScanned.length ? quickScanned.map((tagNo, index) => (
-            <div className="inventory-quick-row" key={`${tagNo}-${index}`}>
-              <span>{index + 1}</span>
-              <span>{tagNo}</span>
-              <Tag color={assets.some((asset) => asset.tagNo === tagNo) ? 'blue' : 'red'}>
-                {assets.some((asset) => asset.tagNo === tagNo) ? '待校验' : '范围外'}
-              </Tag>
-            </div>
-          )) : <div className="inventory-empty">点击“模拟扫描标签”添加待提交资产</div>}
-        </div>
-        <Button
-          type="primary"
-          block
-          disabled={projectClosed || !quickScanned.length}
-          onClick={submitQuickScan}
-        >
-          提交盘点结果
-        </Button>
+        <Button type="primary" disabled={projectClosed} onClick={addQuickScan}>模拟扫描标签</Button>
+        <Button disabled={!quickScanned.length} onClick={() => setView('quickList')}>结束扫描</Button>
+        <Button icon={<Flashlight size={17} />} onClick={() => setFlashlightOn((current) => !current)}>{flashlightOn ? '已开启手电筒' : '开灯'}</Button>
       </div>
-      <Modal open={Boolean(quickResult)} title="快速扫描结果" footer={null} centered onCancel={() => setQuickResult(null)}>
+    </>
+  );
+
+  const renderQuickList = () => (
+    <>
+      <MobileHeader title="待提交标签" onBack={goBack} onExit={exitPrototype} />
+      <div className="inventory-mobile-content inventory-quick-scan-page">
+        <div className="inventory-section-title">本次扫描标签号—共{quickScanned.length}条</div>
+        <div className="inventory-quick-list">{quickScanned.map((tagNo, index) => <div className="inventory-quick-row" key={`${tagNo}-${index}`}><span>{index + 1}</span><span>{tagNo}</span></div>)}</div>
+      </div>
+      <div className="inventory-mobile-footer inventory-plan-footer">
+        <Button onClick={() => setView('quickScan')}>盘点</Button>
+        <Button type="primary" disabled={projectClosed || !quickScanned.length} onClick={submitQuickScan}>提交</Button>
+      </div>
+      <Modal open={Boolean(quickResult)} title="快速扫描结果" wrapClassName="inventory-mobile-modal" footer={null} centered onCancel={() => { setQuickResult(null); setView(scanReturnView); }}>
         {quickResult && (
           <>
             <div className="inventory-quick-result">
               <div><strong>{quickResult.total}</strong><span>扫描总数</span></div>
               <div><strong className="is-success">{quickResult.success}</strong><span>成功上传</span></div>
-              <div><strong className="is-error">{quickResult.failed}</strong><span>信息错误</span></div>
+              <div><strong className="is-error">{quickResult.failed.length}</strong><span>信息错误</span></div>
             </div>
             <p className="inventory-modal-message">
-              您本次共提交{quickResult.total}条资产，其中{quickResult.failed}条资产信息错误。
+              您本次共提交{quickResult.total}条资产，其中{quickResult.failed.length}条资产信息错误。
             </p>
-            <Button type="primary" block onClick={() => setQuickResult(null)}>确定</Button>
+            {quickResult.failed.map((item, index) => <div className="inventory-quick-error" key={`${item.tagNo}-${index}`}>{item.tagNo}：{item.reason}</div>)}
+            <Button type="primary" block onClick={() => { setQuickResult(null); setView(scanReturnView); }}>确定</Button>
           </>
         )}
       </Modal>
@@ -845,30 +895,28 @@ export default function AssetInventoryMobilePrototype() {
               title="资产盘点"
               onBack={goBack}
               onExit={exitPrototype}
-              right={(
-                <Button
-                  type="text"
-                  shape="circle"
-                  aria-label="快速扫描"
-                  icon={<ListChecks size={19} />}
-                  disabled={projectClosed} onClick={() => { setScanReturnView('workbench'); setView('quickScan'); }}
-                />
-              )}
+              right={<Button type="text" shape="circle" aria-label="监督计划" icon={<ListChecks size={19} />} onClick={() => setPlanMenuOpen((current) => !current)} />}
             />
+            {planMenuOpen && <div className="inventory-supervised-plans" role="menu" aria-label="我监督的盘点计划">
+              {supervisedPlans.map((plan) => <button type="button" role="menuitem" key={plan.id} onClick={() => { setActivePlanId(plan.id); setCollapsedPlanSections([]); setPlanMenuOpen(false); setView('planDetail'); }}>
+                {plan.name}<span className="inventory-plan-dot" />
+              </button>)}
+            </div>}
             <div className="inventory-mobile-content">
               {renderWorkBench()}
             </div>
             <div className="inventory-mobile-footer">
-              <Button type="primary" icon={<ScanLine size={17} />} disabled={projectClosed} onClick={() => openScan()}>开始盘点</Button>
-              <span><LogOut size={14} /> 盘点计划：2025 年度员工盘点</span>
+              <Button type="primary" block icon={<ScanLine size={17} />} disabled={projectClosed} onClick={() => openQuickScan()}>开始盘点</Button>
             </div>
           </>
         )}
+        {view === 'planDetail' && renderPlanDetail()}
         {view === 'detail' && renderDetail()}
         {view === 'scan' && renderScan()}
         {view === 'quickScan' && renderQuickScan()}
+        {view === 'quickList' && renderQuickList()}
       </div>
-      <Modal open={reportLossOpen} title="填写报失原因" centered footer={null} onCancel={() => setReportLossOpen(false)} destroyOnClose>
+      <Modal open={reportLossOpen} title="填写报失原因" wrapClassName="inventory-mobile-modal" centered footer={null} onCancel={() => setReportLossOpen(false)} destroyOnClose>
         <Input.TextArea
           value={reportReason}
           onChange={(event) => setReportReason(event.target.value)}
@@ -883,7 +931,7 @@ export default function AssetInventoryMobilePrototype() {
           <Button type="primary" onClick={submitReportLoss}>提交</Button>
         </div>
       </Modal>
-      <Modal open={confirmLossOpen} title="确认提交报失" centered footer={null} onCancel={() => setConfirmLossOpen(false)} destroyOnClose>
+      <Modal open={confirmLossOpen} title="确认提交报失" wrapClassName="inventory-mobile-modal" centered footer={null} onCancel={() => setConfirmLossOpen(false)} destroyOnClose>
         <p className="inventory-modal-message">资产丢失需履行赔偿责任哟！确定不再继续寻找了吗？</p>
         <div className="inventory-modal-actions">
           <Button onClick={() => setConfirmLossOpen(false)}>继续寻找</Button>

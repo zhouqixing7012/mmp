@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
-import { Smartphone } from 'lucide-react';
+import { ChevronDown, ChevronRight, Smartphone } from 'lucide-react';
 import { Plus, Trash2, XCircle } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
@@ -78,6 +78,7 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [selectedKeys, setSelectedKeys] = useState([]);
+  const [collapsedGroups, setCollapsedGroups] = useState([]);
 
   const filteredRows = useMemo(() => rows.filter((row) => (
     includesText(row.projectNo, appliedFilters.projectNo)
@@ -88,6 +89,17 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
     && inDateRange(row.startDate, appliedFilters.startFrom, appliedFilters.startTo)
     && inDateRange(row.createdAt, appliedFilters.createdFrom, appliedFilters.createdTo)
   )), [rows, appliedFilters]);
+
+  const groupedRows = useMemo(() => {
+    const groups = new Map();
+    filteredRows.forEach((row) => groups.set(row.relationGroup, [...(groups.get(row.relationGroup) || []), row]));
+    return [...groups.entries()].flatMap(([group, members]) => {
+      const parent = members.find((row) => row.projectType === '初盘') || members[0];
+      const children = members.filter((row) => row.key !== parent.key);
+      return [{ ...parent, groupChildren: children.length, groupParent: true },
+        ...(collapsedGroups.includes(group) ? [] : children.map((row) => ({ ...row, groupParent: false })))];
+    });
+  }, [filteredRows, collapsedGroups]);
 
   const updateFilter = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
   const handleDelete = () => {
@@ -132,7 +144,10 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
   };
 
   const columns = [
-    { title: '项目名称', dataIndex: 'projectName', width: 220, fixed: 'left', render: (value, row) => <Button type="link" className="px-0" onClick={() => onOpenProject(row)}>{normalizeQuarterText(value)}</Button> },
+    { title: '项目名称', dataIndex: 'projectName', width: 260, fixed: 'left', render: (value, row) => <span className="inline-flex items-center" style={{ paddingLeft: row.groupParent ? 0 : 24 }}>
+      {row.groupParent && row.groupChildren > 0 && <Button type="text" size="small" aria-label={`${collapsedGroups.includes(row.relationGroup) ? '展开' : '折叠'}${normalizeQuarterText(value)}关联项目`} aria-expanded={!collapsedGroups.includes(row.relationGroup)} icon={collapsedGroups.includes(row.relationGroup) ? <ChevronRight size={14} /> : <ChevronDown size={14} />} onClick={() => setCollapsedGroups((current) => current.includes(row.relationGroup) ? current.filter((group) => group !== row.relationGroup) : [...current, row.relationGroup])} />}
+      <Button type="link" className="px-0" onClick={() => onOpenProject(row)}>{normalizeQuarterText(value)}</Button>
+    </span> },
     { title: '项目编号', dataIndex: 'projectNo', width: 170 },
     { title: '项目类型', dataIndex: 'projectType', width: 90 },
     { title: '项目状态', dataIndex: 'status', width: 120, render: (value) => <StatusTag value={value} /> },
@@ -188,7 +203,7 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
         size="small"
         bordered
         columns={columns}
-        dataSource={filteredRows}
+        dataSource={groupedRows}
         rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true }}
         scroll={{ x: 1810 }}
         pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
