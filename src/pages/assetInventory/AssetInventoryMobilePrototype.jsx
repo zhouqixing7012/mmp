@@ -347,6 +347,7 @@ export default function AssetInventoryMobilePrototype() {
     setScanTargetId(assetId);
     setScanPlanId(planId);
     setScanReturnView(view === 'detail' ? 'detail' : planId ? 'planDetail' : 'workbench');
+    if (view !== 'detail') setDetailReturnView(planId ? 'planDetail' : 'workbench');
     setScanPickerOpen(false);
     setScanModal(null);
     setView('scan');
@@ -364,7 +365,6 @@ export default function AssetInventoryMobilePrototype() {
     if (!canInventory(asset)) { setScanModal({ kind: 'scanned' }); return; }
     setSelectedAssetId(asset.id);
     setScannedDetail(true);
-    setDetailReturnView('scan');
     setLocationDraft(assetLocation(asset));
     setView('detail');
   };

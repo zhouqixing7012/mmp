@@ -199,6 +199,10 @@ describe('AssetInventoryMobilePrototype', () => {
     fireEvent.click(screen.getByRole('button', { name: '提交' }));
     expect(screen.getByText('扫码盘点')).toBeInTheDocument();
     expect(getInventoryLocationChanges('RCP-202608180001')).toHaveLength(0);
+    fireEvent.click(screen.getByRole('button', { name: '返回' }));
+    expect(screen.getByText('资产详情')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '返回' }));
+    expect(screen.getByRole('button', { name: '开始盘点' })).toBeInTheDocument();
   });
 
   test('复盘快扫地点输入在批量提交前不形成位置变更记录', () => {

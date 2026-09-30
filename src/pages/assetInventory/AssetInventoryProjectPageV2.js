@@ -289,6 +289,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     if (snapshotOpen || customBuilderOpen || planViewOpen || activePlan || imageReviewOpen || progressOpen) return;
     const button = event.target.closest?.('button');
     if (!button) return;
+    if (!baseContainerRef.current?.contains(button)) return;
     const text = button.textContent?.trim() || '';
     const pageTitle = baseContainerRef.current?.querySelector('h4.ant-typography')?.textContent?.trim() || '';
     if (text === '生成盘点计划' && pageTitle === '盘点项目详情') {
