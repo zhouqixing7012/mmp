@@ -315,12 +315,11 @@
 .move-mobile-asset-detail { padding-bottom: 0; }
 
 .move-mobile-sticky-actions {
-  position: sticky;
-  bottom: 0;
+  z-index: 2;
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 9px;
-  margin: 12px -14px 0;
   border-top: 1px solid #edf0f3;
   background: rgba(255, 255, 255, 0.97);
   padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
@@ -330,13 +329,16 @@
 .move-mobile-sticky-actions.is-single { grid-template-columns: 1fr; }
 .move-mobile-hint { margin: 8px 0 0; color: #848b99; font-size: 11px; line-height: 1.5; }
 
+.move-mobile-footer-quick-scan {
+  z-index: 2;
+  flex: 0 0 auto;
+  background: #f6f7f9;
+  padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
+}
+
 .move-mobile-quick-scan.ant-btn {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-  flex: 0 0 48px;
+  width: 100%;
   height: 48px;
-  margin-top: auto;
   border-color: #145cff;
   border-radius: 8px;
   background: #145cff;
