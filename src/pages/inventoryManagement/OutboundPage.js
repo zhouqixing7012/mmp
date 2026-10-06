@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Card,
@@ -158,7 +158,7 @@ function includesText(value, query) {
 }
 
 function PageTitle({ children }) {
-  return <Typography.Title level={3} className="mb-0">{children}</Typography.Title>;
+  return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;
 }
 
 function Readonly({ children }) {
@@ -766,7 +766,7 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
   return (
     <Space direction="vertical" size={16} className="w-full" data-page-view-key={`outbound-${status}-${outboundType}`}>
       {contextHolder}
-      <PageTitle>出库单</PageTitle>
+      <PageTitle>{!source ? '创建出库单' : editable ? '编辑出库单' : '出库单详情'}</PageTitle>
       <Card size="small" title="出库单信息" extra={<Space><Typography.Text type="secondary">当前仓库</Typography.Text>{editable ? <Select className="w-[280px]" value={warehouse} options={WAREHOUSES.filter((v) => !v.includes('耗材库')).map((v) => ({ label: v, value: v }))} onChange={changeWarehouse} /> : <Typography.Text>{warehouse}</Typography.Text>}</Space>}>
         <DetailGrid columns={3} labelWidth={112}>
           <EditorField label="出库单号"><Readonly>{documentNo}</Readonly></EditorField>
@@ -780,7 +780,7 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
         </DetailGrid>
       </Card>
 
-      <Card size="small" title="出库物资" extra={<Space><Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>{editable && <Button type="primary" icon={<Plus size={14} />} onClick={() => { setEditingLine(null); setLineModalOpen(true); }}>添加物资</Button>}{editable && lines.length > 0 && <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>}{editable && <Button icon={<Download size={14} />} onClick={() => messageApi.success('手工领用出库模板已生成')}>模板下载</Button>}{editable && <Button icon={<Upload size={14} />} onClick={() => setImportOpen(true)}>Excel导入</Button>}</Space>}>
+      <Card size="small" title="出库物资" extra={<Space><Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>{editable && <Button type="primary" icon={<Plus size={14} />} onClick={() => { setEditingLine(null); setLineModalOpen(true); }}>添加物资</Button>}{editable && lines.length > 0 && <Button danger icon={<Trash2 size={14} />} disabled={!selectedKeys.length} onClick={deleteLines}>删除物资</Button>}{editable && <Button icon={<Download size={14} />} onClick={() => messageApi.success('手工领用出库模板已生成')}>模板下载</Button>}{editable && <Button icon={<Upload size={14} />} onClick={() => setImportOpen(true)}>Excel导入</Button>}</Space>}>
         <Table rowKey="id" size="small" bordered columns={outboundType === '借用出库' ? borrowColumns : issueColumns} dataSource={lines} rowSelection={editable ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true } : undefined} scroll={{ x: 'max-content' }} pagination={false} />
       </Card>
 
@@ -825,7 +825,28 @@ export default function OutboundPage() {
   const [draft, setDraft] = useState(emptyFilters);
   const [filters, setFilters] = useState(emptyFilters);
   const [selectedKeys, setSelectedKeys] = useState([]);
+  const [responsibleSelectorOpen, setResponsibleSelectorOpen] = useState(false);
   const update = (field, value) => setDraft((current) => ({ ...current, [field]: value || '' }));
+
+  useEffect(() => {
+    const editorTitle = !activeRow ? '创建出库单' : activeRow.status === '草稿' ? '编辑出库单' : '出库单详情';
+    const items = view === 'list'
+      ? [{ label: '首页' }, { label: '库存管理' }, { label: '出库' }]
+      : view === 'approval'
+        ? [
+            { label: '首页' },
+            { label: '库存管理' },
+            { label: '出库', onClick: () => { setView('list'); setActiveRow(null); } },
+            { label: '物资出库申请' },
+          ]
+        : [
+            { label: '首页' },
+            { label: '库存管理' },
+            { label: '出库', onClick: () => { setView('list'); setActiveRow(null); } },
+            { label: editorTitle },
+          ];
+    window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', { detail: { items } }));
+  }, [view, activeRow]);
 
   const filteredRows = useMemo(() => rows.filter((row) => (
     includesText(row.documentNo, filters.documentNo)
@@ -1038,7 +1059,7 @@ export default function OutboundPage() {
         <QueryItem label="标签号"><Input value={draft.tag} allowClear placeholder="请输入资产/耗材标签号" onChange={(e) => update('tag', e.target.value)} /></QueryItem>
         <QueryItem label="制单人"><Input value={draft.creator} allowClear placeholder="请输入制单人" onChange={(e) => update('creator', e.target.value)} /></QueryItem>
         <QueryItem label="制单日期"><RangePicker className="w-full" value={[draft.createdFrom ? dayjs(draft.createdFrom) : null, draft.createdTo ? dayjs(draft.createdTo) : null]} onChange={(dates) => { update('createdFrom', dates?.[0]?.format('YYYY-MM-DD') || ''); update('createdTo', dates?.[1]?.format('YYYY-MM-DD') || ''); }} /></QueryItem>
-        <QueryItem label="资产责任人"><Input value={draft.responsiblePerson} allowClear placeholder="请输入资产责任人" onChange={(e) => update('responsiblePerson', e.target.value)} /></QueryItem>
+        <QueryItem label="资产责任人"><LookupInput value={draft.responsiblePerson} placeholder="请选择资产责任人" onClick={() => setResponsibleSelectorOpen(true)} /></QueryItem>
       </QueryBar>
 
       <Card
@@ -1048,9 +1069,9 @@ export default function OutboundPage() {
           <Space>
             <Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>
             <Button type="primary" icon={<Plus size={14} />} onClick={() => openEditor()}>创建</Button>
-            <Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button>
-            <Button icon={<Printer size={14} />} onClick={() => printRows('出库打印')}>出库打印</Button>
-            <Button icon={<Printer size={14} />} onClick={() => printRows('领用打印')}>领用打印</Button>
+            <Button danger icon={<Trash2 size={14} />} disabled={!selectedKeys.length || rows.filter((row) => selectedKeys.includes(row.id)).some((row) => row.status !== '草稿')} onClick={deleteRows}>删除</Button>
+            <Button icon={<Printer size={14} />} disabled={!selectedKeys.length || rows.filter((row) => selectedKeys.includes(row.id)).some((row) => row.status !== '已完成')} onClick={() => printRows('出库打印')}>出库打印</Button>
+            <Button icon={<Printer size={14} />} disabled={!selectedKeys.length || rows.filter((row) => selectedKeys.includes(row.id)).some((row) => row.status !== '已完成')} onClick={() => printRows('领用打印')}>领用打印</Button>
           </Space>
         )}
       >
@@ -1066,6 +1087,24 @@ export default function OutboundPage() {
           pagination={{ current: page, pageSize, showSizeChanger: true, onChange: (nextPage, nextSize) => { if (nextSize !== pageSize) { setPageSize(nextSize); setPage(1); } else setPage(nextPage); } }}
         />
       </Card>
+      <SelectModal
+        open={responsibleSelectorOpen}
+        title="选择资产责任人"
+        dataSource={EMPLOYEES}
+        columns={[
+          { title: '工号', dataIndex: 'employeeNo', width: 120 },
+          { title: '姓名', dataIndex: 'name', width: 120 },
+          { title: '部门', dataIndex: 'department', width: 220 },
+          { title: '公司', dataIndex: 'company', width: 160 },
+        ]}
+        searchFields={[
+          { label: '工号', name: 'employeeNo', dataIndex: 'employeeNo' },
+          { label: '姓名', name: 'name', dataIndex: 'name' },
+          { label: '部门', name: 'department', dataIndex: 'department' },
+        ]}
+        onCancel={() => setResponsibleSelectorOpen(false)}
+        onConfirm={(record) => { update('responsiblePerson', record.value); setResponsibleSelectorOpen(false); }}
+      />
       <Modal
         open={Boolean(approvalHistoryRow)}
         title="审批记录"
