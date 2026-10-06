@@ -565,6 +565,19 @@ export function updateConsumableMaintenanceRow(id, patch) {
   return nextRows;
 }
 
+export function validateConsumableMaintenanceBatchUpdates(updates = []) {
+  let workingRows = getConsumableMaintenanceRows();
+  updates.forEach(({ id, patch }) => {
+    const target = workingRows.find((row) => row.id === id);
+    if (!target) throw new Error('耗材标签号不存在');
+    const canonicalPatch = buildCanonicalConsumablePatch(target, patch, workingRows);
+    workingRows = workingRows.map((row) => row.id === id
+      ? normalizeConsumableMaintenanceRow({ ...row, ...canonicalPatch })
+      : row);
+  });
+  return workingRows;
+}
+
 export function batchUpdateConsumableMaintenanceRows(updates = []) {
   const snapshot = getConsumableMaintenanceRows();
   try {
