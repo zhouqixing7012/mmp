@@ -106,27 +106,28 @@ export default function AssetReturnConfirmPage() {
           />
         </Card>
 
-        <Card size="small" title={<SectionTitle>刷卡/扫码确认</SectionTitle>}>
+        <Card size="small" title={<SectionTitle>刷卡 / 扫码 / 库管员代确认</SectionTitle>}>
           <Typography.Paragraph type="danger" strong className="mb-4">
-            提示：请核对以上退库资产信息，确认无误后通过刷卡或狐小 e 扫码完成退库确认。
+            提示：请核对以上退库资产信息，确认无误后通过刷卡、狐小 e 扫码或库管员代确认完成退库确认。
           </Typography.Paragraph>
 
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center">
             <div>
               <Typography.Text strong>刷卡退库确认</Typography.Text>
               <Typography.Paragraph type="secondary" className="mt-1 mb-3">
-                请刷员工卡，或由管理员录入申请人员工工号后确认。
+                原型中输入申请人员工工号模拟刷卡识别；无法由员工本人完成确认时，可由库管员代确认。
               </Typography.Paragraph>
               <Space.Compact className="w-full max-w-xl">
                 <Input
                   value={employeeId}
                   disabled={confirmed}
                   placeholder="请输入员工工号"
-                  onPressEnter={() => confirm('刷卡/工号确认')}
+                  onPressEnter={() => confirm('刷卡')}
                   onChange={(event) => setEmployeeId(event.target.value)}
                 />
-                <Button type="primary" disabled={confirmed} onClick={() => confirm('刷卡/工号确认')}>确认退库</Button>
+                <Button type="primary" disabled={confirmed} onClick={() => confirm('刷卡')}>刷卡确认</Button>
               </Space.Compact>
+              <Button className="mt-3" disabled={confirmed} onClick={() => confirm('库管员代确认', application.applicant.id)}>库管员代确认</Button>
             </div>
 
             <div className="flex flex-col items-center justify-center">
@@ -135,7 +136,7 @@ export default function AssetReturnConfirmPage() {
               <Button
                 className="mt-3"
                 disabled={confirmed}
-                onClick={() => confirm('狐小 e 扫码确认', application.applicant.id)}
+                onClick={() => confirm('扫码', application.applicant.id)}
               >
                 模拟扫码确认
               </Button>
