@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   Button,
   Card,
-  Checkbox,
+  Radio,
   DatePicker,
   Input,
   Modal,
@@ -775,7 +775,7 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
           <EditorField label="制单人"><Readonly>{creator}</Readonly></EditorField>
           <EditorField label="制单时间"><Readonly>{createdDate}</Readonly></EditorField>
           <EditorField label="是否刷卡领用"><Readonly>{cardClaim}</Readonly></EditorField>
-          <EditorField label="是否自购出库">{editable ? <Checkbox checked={isSelfPurchase} onChange={(event) => setIsSelfPurchase(event.target.checked)}>是</Checkbox> : <Readonly>{isSelfPurchase ? '是' : '否'}</Readonly>}</EditorField>
+          <EditorField label="是否自购出库">{editable ? <Radio.Group value={isSelfPurchase ? '是' : '否'} options={[{ label: '否', value: '否' }, { label: '是', value: '是' }]} onChange={(event) => setIsSelfPurchase(event.target.value === '是')} /> : <Readonly>{isSelfPurchase ? '是' : '否'}</Readonly>}</EditorField>
           <EditorField label="备注" span={3}>{editable ? <TextArea autoSize={{ minRows: 2, maxRows: 4 }} value={remark} onChange={(e) => setRemark(e.target.value)} /> : <Readonly>{remark}</Readonly>}</EditorField>
         </DetailGrid>
       </Card>
