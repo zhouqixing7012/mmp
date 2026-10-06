@@ -52,7 +52,9 @@ test('员工退库自动入库改为打印资产退库审批记录', () => {
   expect(printSource).toContain("'审批备注'");
   expect(printSource).toContain("key: 'assetReturnApproval'");
   expect(printSource).not.toContain("title: '员工退库确认信息'");
-  expect(assetReturnServiceSource).toContain("history: appendHistory(application, '员工退库确认', '已确认', `确认方式：${confirmationMethod}`)");
+  expect(assetReturnServiceSource).toContain("'员工退库确认'");
+  expect(assetReturnServiceSource).toContain("`确认方式：${confirmationMethod}`");
+  expect(assetReturnServiceSource).toContain("confirmationMethod === '库管员代确认'");
   expect(assetReturnConfirmSource).toContain("confirm('刷卡')");
   expect(assetReturnConfirmSource).toContain("confirm('扫码', application.applicant.id)");
   expect(assetReturnConfirmSource).toContain("confirm('库管员代确认', application.applicant.id)");
@@ -258,7 +260,8 @@ test('出库单仓库位于信息Card右上角，自购为是才进入审批且�
   expect(source).toContain('extra={<Space>');
   expect(source).not.toContain('<EditorField label="当前仓库">');
   expect(outboundSource).toContain('<EditorField label="是否刷卡领用"><Readonly>{cardClaim}</Readonly></EditorField>');
-  expect(outboundSource).toContain('checked={isSelfPurchase}');
+  expect(outboundSource).toContain("<Radio.Group value={isSelfPurchase ? '是' : '否'}");
+  expect(outboundSource).not.toContain('<Checkbox checked={isSelfPurchase}');
   expect(outboundSource).toContain("if (!payload.isSelfPurchase)");
   expect(outboundSource).not.toContain('label="Room"');
   expect(outboundSource).not.toContain('const exportRows = () =>');
