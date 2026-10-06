@@ -367,6 +367,37 @@ test('资产和耗材PO行仅有剩余可接收数量时展示编辑且草稿引
   expect(consumableReceiptSource).toContain("editingPoItemLocked\n                  ? <div className=\"mt-1\"><Readonly>{editDraft.config}</Readonly></div>");
 });
 
+test('资产和耗材接收页面遵循统一UI层级与操作状态', () => {
+  expect(assetReceiptSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
+  expect(assetReceiptSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
+  expect(assetReceiptSource).toContain("<PageTitle>PO单详情</PageTitle>");
+  expect(assetReceiptSource).toContain("<PageTitle>接收单列表</PageTitle>");
+  expect(assetReceiptSource).toContain("<PageTitle>接收单详情</PageTitle>");
+  expect(assetReceiptSource).toContain("title=\"PO资产明细\"");
+  expect(assetReceiptSource).toContain("title=\"接收资产明细\"");
+  expect(assetReceiptSource).toContain("{ title: '资产总类', dataIndex: 'materialGroup'");
+  expect(assetReceiptSource).not.toContain("title=\"PO物资明细\"");
+  expect(assetReceiptSource).not.toContain("title=\"接收物资明细\"");
+  expect(assetReceiptSource).not.toContain("{ title: '物资总类', dataIndex: 'materialGroup'");
+  expect(assetReceiptSource).toContain("plate: { title: '选择板块'");
+  expect(assetReceiptSource).toContain("detailPlate: { title: '选择板块'");
+  expect(assetReceiptSource).toContain("disabled={!selectedReceiptKeys.length}");
+  expect(assetReceiptSource).toContain("disabled={!selectedReceiptLineKeys.length}");
+  expect(assetReceiptSource).not.toContain('text-[#1677ff]');
+
+  expect(consumableReceiptSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
+  expect(consumableReceiptSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
+  expect(consumableReceiptSource).toContain("<PageTitle>PO单详情</PageTitle>");
+  expect(consumableReceiptSource).toContain("<PageTitle>接收单列表</PageTitle>");
+  expect(consumableReceiptSource).toContain("<PageTitle>接收单详情</PageTitle>");
+  expect(consumableReceiptSource).toContain('title="PO耗材明细"');
+  expect(consumableReceiptSource).toContain('title="接收耗材明细"');
+  expect(consumableReceiptSource).toContain("disabled={!selectedReceipts.length}");
+  expect(consumableReceiptSource).toContain("disabled={!selectedLines.length}");
+  expect(consumableReceiptSource).not.toContain('text-[#1677ff]');
+});
+
+
 test('电子设备和低值耐用品维护操作常显不可用时置灰', () => {
   expect(assetReceiptSource).toContain("disabled={!isDraft || !selectedMaintenanceKeys.length}");
   expect(assetReceiptSource).toContain("disabled={!isDraft || !maintenanceRows.length || !hasBlankMaintenanceTags}");
