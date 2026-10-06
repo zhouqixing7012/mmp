@@ -1235,16 +1235,16 @@ export default function AssetMaintenancePage() {
           <Alert
             type="warning"
             showIcon
-            message="批量修改采用覆盖式更新"
+            message="批量修改空白表示保留原值"
             description="任一行校验失败时，本次文件全部不保存。"
           />
           <div className="text-sm text-gray-600">
             <Typography.Text strong>批量修改规则：</Typography.Text>
             <ul className="mb-0 mt-2 list-disc space-y-1 pl-5">
-              <li>资产标签号、成本中心、City、Building、资产状态为必填，任一必填单元格为空时整批校验失败。</li>
+              <li>资产标签号必填并用于定位既有资产；除资产标签号外，其余可修改字段不填表示不变，填写后覆盖原值。</li>
               <li>成本中心按“编码.名称”填写并按编码识别；City、Building、Floor 按名称填写。</li>
+              <li>保存前先将模板非空字段与当前资产卡片合并，再校验合并后的成本中心、City、Building、资产状态等必填结果。</li>
               <li>资产标签号、资产序列号按文本处理，避免科学计数法或前导零丢失。</li>
-              <li>Floor、资产序列号、备注、资产标记、使用说明、资产用途为空时会将原字段覆盖为空。</li>
             </ul>
           </div>
           <Button
