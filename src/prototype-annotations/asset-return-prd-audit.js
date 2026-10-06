@@ -284,12 +284,12 @@ const annotations = {
       pageKey: ASSET_RETURN_SCOPES.handling,
       target: scopeTarget(ASSET_RETURN_SCOPES.handling, 'button', '确认'),
       kind: 'action-rule',
-      title: '确认动作需区分“发起员工确认”和“执行入库”阶段',
+      title: '员工退库确认完成后由系统自动生成入库结果',
       priority: 'P0',
       rules: [
-        '员工确认未发起时，先保存ES维护字段并生成员工退库确认待办。',
-        '待确认阶段不得执行入库；确认完成后按最终产品口径自动入库或由库管员执行入库。',
-        'PRD同时出现“员工确认成功后系统自动执行入库”和“由库管员执行入库”两种描述，需要统一最终时点。',
+        '员工确认未发起时，先保存ES维护字段并生成唯一“员工退库确认”待办。',
+        '员工确认节点只保留一条记录，由待确认更新为已确认，不拆分申请人退库确认和员工退库确认。',
+        '确认成功后系统自动生成入库结果，不再要求库管员返回办理页再次执行入库。',
       ],
     }),
     note({
@@ -372,11 +372,11 @@ const annotations = {
       id: 'asset-return-audit-confirm-inbound-timing',
       pageKey: ASSET_RETURN_SCOPES.confirm,
       target: scopeTarget(ASSET_RETURN_SCOPES.confirm, 'card', '刷卡/扫码确认'),
-      title: '员工确认后的入库执行时点需统一PRD口径',
+      title: '员工确认后系统自动生成入库结果',
       priority: 'P0',
       rules: [
-        '建设目标写“员工确认后由库管员执行入库”，4.6又写“员工确认成功后系统自动执行入库”。',
-        '最终实现必须只保留一种口径，并确保不会出现重复入库或确认成功但长期未入库。',
+        '员工退库确认成功后系统自动生成入库结果。',
+        '系统自动入库不作为审批节点，审批记录只保留真实审批/确认节点。',
       ],
     }),
   ],
@@ -482,7 +482,7 @@ const coverage = {
     review('RT2-HD-015', '9.4/9.5', '查看员工名下资产', '办理页提供员工名下资产查询与总量/借用数概览。', '当前页面没有“查看员工名下资产”入口。', 'asset-return-audit-handling-tools'),
     bound('RT2-HD-016', '4.6/9.4', '发起员工确认', '未发起时可进入员工退库确认。', 'asset-return-audit-handling-confirm', '::button::'),
     bound('RT2-HD-017', '4.6/9.4', '待确认阻断', '员工未确认前禁止完成入库。', 'asset-return-audit-handling-confirm'),
-    review('RT2-HD-018', '4.6/9.4', '确认后执行时点', '员工确认后自动入库或由库管员执行需统一口径。', 'PRD内部存在两种描述；当前实现需要库管员再次点击确认后 completeAssetReturn。', 'asset-return-audit-handling-confirm'),
+    bound('RT2-HD-018', '4.6/9.4', '确认后执行时点', '员工退库确认完成后系统自动生成入库结果，不需要库管员再次执行。', 'asset-return-audit-handling-confirm'),
     review('RT2-HD-019', '4.7/9', '21天自动驳回', 'ES确认待办满21天系统自动驳回并解锁。', '当前 service 没有进入节点时间、定时任务或超期处理。', 'asset-return-audit-handling-timeout'),
     review('RT2-HD-020', '4.7/9.4', 'ES驳回真实解锁', '驳回不生成入库单并显式释放主资产/耗材锁。', 'finishAssetReturn会改已驳回，但没有真实锁对象或显式耗材解锁。', 'asset-return-audit-handling-reject'),
     review('RT2-HD-021', '4.8/11', '真实核心入库单', '生成退库入库单并记录源申请单号、制单人、制单时间。', 'completeAssetReturn只生成 RK-* 字符串写回退库申请，没有创建核心入库单对象。', 'asset-return-audit-handling-inbound'),
@@ -504,7 +504,7 @@ const coverage = {
     review('RT2-CF-007', '4.6/10', '狐小e真实扫码身份', '取得真实扫码账号并与申请人一致。', '点击“模拟扫码确认”直接传 application.applicant.id，无法验证实际扫码人。', 'asset-return-audit-confirm-identity'),
     bound('RT2-CF-008', '4.6/10', '一次确认', '每张退库单只确认一次。', 'asset-return-audit-confirm-record'),
     bound('RT2-CF-009', '4.6/10', '确认记录', '记录确认方式、确认工号、确认时间和结果。', 'asset-return-audit-confirm-record'),
-    review('RT2-CF-010', '4.6', '确认后入库时点', '自动执行入库或由库管员执行需保持唯一口径。', 'PRD内部冲突；当前实现采用“回到ES办理再点确认执行入库”。', 'asset-return-audit-confirm-inbound-timing'),
+    bound('RT2-CF-010', '4.6', '确认后入库时点', '员工退库确认完成后系统自动生成入库结果。', 'asset-return-audit-confirm-inbound-timing'),
     skip('RT2-CF-011', '4.6/10', 'Pad签字', '下线Pad手写签字和签名图片保存。', '明确下线能力，无需恢复。'),
   ],
 
@@ -528,10 +528,10 @@ const STATUS_OVERRIDES = new Map([
   ['RT-MI-001', { status: 'review', reason: 'MIS路由当前由固定资产小类数组模拟物料配置，且页面没有独立鉴定结果控件，不能整体判定bound。' }],
   ['RT-MI-004', { status: 'review', reason: '驳回会改终态，但当前资产锁是处理中单动态推导，没有主资产/耗材显式锁释放。' }],
   ['RT-HD-001', { status: 'review', reason: '仓库字段存在，但固定列表未实现组织映射和当前库管员动态入库权限。' }],
-  ['RT-HD-004', { status: 'review', reason: '员工确认阶段存在，但最终仅生成RK字符串并写退库申请，不是真实核心入库/台账闭环，且PRD入库时点口径冲突。' }],
+  ['RT-HD-004', { status: 'review', reason: '员工确认后已自动生成入库结果，但当前仍只生成RK字符串写入退库申请，不是真实核心入库单/台账闭环。' }],
   ['RT-HD-005', { status: 'review', reason: 'ES驳回能改单据状态，但没有真实资产/耗材锁对象的显式释放。' }],
   ['RT-CF-001', { status: 'review', reason: '刷卡/手工工号能校验，但狐小e直接用申请人工号模拟成功，不能整体判定三种方式都真实校验。' }],
-  ['RT-CF-002', { status: 'review', reason: '确认后当前并不会自动完成真实核心入库、台账和事务更新；仍需库管员再次操作且service只写演示单号。' }],
+  ['RT-CF-002', { status: 'review', reason: '确认后已自动生成入库结果且无需库管员再次操作，但service仍只写演示单号，尚未完成真实核心入库、台账和事务更新。' }],
 ]);
 
 function cloneMap(map = {}) {
