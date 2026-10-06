@@ -44,7 +44,7 @@ function PrintCopy({ document, copyName }) {
   const updatedAt = document?.lastUpdatedAt || document?.updatedAt || '';
   return (
     <section className="move-print-sheet">
-      <div className="move-print-title">物资移库单</div>
+      <div className="move-print-title">资产移库单</div>
       <div className="move-print-rule" />
       <div className="move-print-meta">
         <div><strong>移库单号：</strong><b>{document?.documentNo || ''}</b></div>
@@ -60,7 +60,7 @@ function PrintCopy({ document, copyName }) {
           <col style={{ width: '16%' }} /><col style={{ width: '18.5%' }} />
         </colgroup>
         <thead><tr>
-          <th>序号</th><th>资产大类</th><th>品名（物资说明）<small>含：物资类别子目录、品牌、规格型号</small></th>
+          <th>序号</th><th>资产大类</th><th>品名（资产说明）<small>含：资产类别子目录、品牌、规格型号</small></th>
           <th>资产标签号</th><th>SN号</th><th>数量</th><th>详细配置</th><th>移库说明<small>含：移库原因</small></th>
         </tr></thead>
         <tbody>
