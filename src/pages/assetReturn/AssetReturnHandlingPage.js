@@ -16,7 +16,6 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { RETURN_WAREHOUSES } from '../../mock/assetReturnMock';
 import {
-  completeAssetReturn,
   finishAssetReturn,
   getAssetReturnApplications,
   requestAssetReturnConfirmation,
@@ -78,7 +77,7 @@ export default function AssetReturnHandlingPage() {
     try {
       if (selected.handling.confirmationStatus === '未发起') {
         requestAssetReturnConfirmation(selected.id, handlingValues());
-        messageApi.success('已发起员工退库确认，请在“员工退库确认”完成确认后再次提交');
+        messageApi.success('已发起员工退库确认，确认完成后系统将自动生成入库结果');
         refresh();
         return;
       }
@@ -86,9 +85,7 @@ export default function AssetReturnHandlingPage() {
         messageApi.warning('员工退库确认尚未完成');
         return;
       }
-      completeAssetReturn(selected.id, handlingValues());
-      messageApi.success('退库确认完成，已生成入库单并更新资产台账');
-      setOpinion('');
+      messageApi.success('员工退库确认已完成，系统已自动生成入库结果');
       refresh();
     } catch (error) {
       messageApi.error(error.message);
