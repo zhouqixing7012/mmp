@@ -224,7 +224,7 @@ export function requestAssetReturnConfirmation(id, handlingValues = {}) {
     ...application,
     currentNode: '员工退库确认',
     handling: { ...application.handling, ...handlingValues, confirmationStatus: '待确认' },
-    history: appendHistory(application, '申请人退库确认', '待确认', '已发起扫码、刷卡或库管员代确认', '119039-刘建'),
+    history: appendHistory(application, '员工退库确认', '待确认', '已发起扫码、刷卡或库管员代确认', '119039-刘建'),
   }));
   return writeDemoData(RETURN_CONFIRMATION_KEY, { kind: 'asset', applicationId: id });
 }
@@ -245,15 +245,29 @@ export function confirmReturnEmployee(employeeId, method) {
         confirmationEmployeeId: employeeId,
         confirmationTime: nowText(),
       },
-      history: appendHistory(
-        application,
-        '员工退库确认',
-        '已确认',
-        `确认方式：${confirmationMethod}`,
-        confirmationMethod === '库管员代确认'
-          ? '119039-刘建'
-          : `${CURRENT_REPLACEMENT_APPLICANT.id}-${CURRENT_REPLACEMENT_APPLICANT.name}`
-      ),
+      history: (application.history || []).some((row) => row.node === '员工退库确认' && row.status === '待确认')
+        ? (application.history || []).map((row) => (
+            row.node === '员工退库确认' && row.status === '待确认'
+              ? {
+                  ...row,
+                  status: '已确认',
+                  comment: `确认方式：${confirmationMethod}`,
+                  person: confirmationMethod === '库管员代确认'
+                    ? '119039-刘建'
+                    : `${CURRENT_REPLACEMENT_APPLICANT.id}-${CURRENT_REPLACEMENT_APPLICANT.name}`,
+                  time: nowText(),
+                }
+              : row
+          ))
+        : appendHistory(
+            application,
+            '员工退库确认',
+            '已确认',
+            `确认方式：${confirmationMethod}`,
+            confirmationMethod === '库管员代确认'
+              ? '119039-刘建'
+              : `${CURRENT_REPLACEMENT_APPLICANT.id}-${CURRENT_REPLACEMENT_APPLICANT.name}`
+          ),
     }));
   } else {
     updateCollection(CONTRACT_RETURN_STORAGE_KEY, DEFAULT_CONTRACT_RETURN_APPLICATIONS, target.applicationId, (application) => ({
@@ -289,7 +303,7 @@ export function completeAssetReturn(id, handlingValues) {
       result: '正常退库',
       currentNode: '流程结束',
       handling: { ...application.handling, ...handlingValues, inboundOrderNo },
-      history: appendHistory(application, '执行入库', '已完成', `入库单号：${inboundOrderNo}`, '119039-刘建'),
+      history: application.history || [],
     };
   });
 }
