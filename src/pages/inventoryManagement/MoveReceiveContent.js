@@ -13,6 +13,17 @@ const { TextArea } = Input;
 const TRANSIT_WAREHOUSE = 'V00001.集团在途总库';
 const CURRENT_RECEIVER = '114111-杨芊';
 const RECEIVE_STATUSES = ['出库待接收', '已完成', '已驳回'];
+const MOVE_RECEIVE_LIST_STATE_KEY = 'mmp.inventory.move.receive-list-state.v1';
+
+function readReceiveListState() {
+  if (typeof window === 'undefined') return null;
+  try {
+    return JSON.parse(window.sessionStorage.getItem(MOVE_RECEIVE_LIST_STATE_KEY) || 'null');
+  } catch (error) {
+    return null;
+  }
+}
+
 const EMPTY_FILTERS = {
   documentNo: '', status: '', creator: '', createdFrom: '', createdTo: '', assetScan: '',
 };
@@ -484,12 +495,18 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
 
 export default function MoveReceiveContent({ documents, setDocuments, onDetailChange }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [draft, setDraft] = useState(EMPTY_FILTERS);
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const restoredListState = useMemo(() => readReceiveListState(), []);
+  const [draft, setDraft] = useState(() => restoredListState?.draft || EMPTY_FILTERS);
+  const [filters, setFilters] = useState(() => restoredListState?.filters || EMPTY_FILTERS);
   const [creatorModalOpen, setCreatorModalOpen] = useState(false);
   const [activeRowId, setActiveRowId] = useState(null);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(() => restoredListState?.page || 1);
+  const [pageSize, setPageSize] = useState(() => restoredListState?.pageSize || 10);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.sessionStorage.setItem(MOVE_RECEIVE_LIST_STATE_KEY, JSON.stringify({ draft, filters, page, pageSize }));
+  }, [draft, filters, page, pageSize]);
 
   const receiveRows = useMemo(() => documents.filter((row) => row.status !== '草稿'), [documents]);
   const creators = useMemo(
