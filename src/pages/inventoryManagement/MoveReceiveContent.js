@@ -73,7 +73,7 @@ function ReceiveAssetDetailModal({ open, document, asset, onCancel }) {
   if (!document || !asset) return null;
   const snapshot = asset.snapshot || asset;
   return (
-    <Modal open={open} title="移库物资信息" width={960} footer={null} onCancel={onCancel} destroyOnHidden>
+    <Modal open={open} title="移库资产信息" width={960} footer={null} onCancel={onCancel} destroyOnHidden>
       <Space direction="vertical" size={16} className="w-full">
         <Card size="small" title="移库单信息">
           <DetailGrid columns={3} labelWidth={110}>
@@ -89,7 +89,7 @@ function ReceiveAssetDetailModal({ open, document, asset, onCancel }) {
           <DetailGrid columns={3} labelWidth={110}>
             <DetailItem label="标签号"><Readonly>{snapshot.assetTag}</Readonly></DetailItem>
             <DetailItem label="SN"><Readonly>{snapshot.sn}</Readonly></DetailItem>
-            <DetailItem label="物资总类"><Readonly>{snapshot.materialGroup}</Readonly></DetailItem>
+            <DetailItem label="资产总类"><Readonly>{snapshot.materialGroup}</Readonly></DetailItem>
             <DetailItem label="原值"><Readonly>{Number(snapshot.originalValue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Readonly></DetailItem>
             <DetailItem label="净值"><Readonly>{Number(snapshot.netValue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Readonly></DetailItem>
             <DetailItem label="资产状态"><Readonly>{snapshot.assetStatus}</Readonly></DetailItem>
@@ -166,7 +166,7 @@ function RejectModal({ open, onCancel, onConfirm }) {
       onOk={() => onConfirm(reason)}
       destroyOnHidden
     >
-      <Typography.Text>驳回后，该条物资变为“已驳回”，系统自动生成反向移库单。</Typography.Text>
+      <Typography.Text>驳回后，该条资产变为“已驳回”，系统自动生成反向移库单。</Typography.Text>
       <div className="mt-3">
         <Typography.Text>驳回原因：</Typography.Text>
         <TextArea maxLength={200} showCount value={reason} onChange={(event) => setReason(event.target.value)} autoSize={{ minRows: 3, maxRows: 5 }} placeholder="必填，最多200字" />
@@ -253,14 +253,14 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
   };
 
   const receive = () => {
-    if (!selectedKeys.length) return messageApi.warning('请先选择需要处理的物资');
+    if (!selectedKeys.length) return messageApi.warning('请先选择需要处理的资产');
     const selected = lines.filter((line) => selectedKeys.includes(line.id));
     if (!selected.length || selected.some((line) => line.moveStatus !== '待接收' || line.verification !== '已验证')) {
       return messageApi.warning('无已验证待接收的资产');
     }
     Modal.confirm({
       title: '是否确定执行移库接收？',
-      content: `本次将接收 ${selected.length} 条物资。`,
+      content: `本次将接收 ${selected.length} 条资产。`,
       okText: '确定',
       cancelText: '取消',
       onOk: () => {
@@ -276,7 +276,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
         } : line);
         const nextStatus = syncLines(nextLines, nextLines.every((line) => line.moveStatus !== '待接收') ? { notificationStatus: '已结束', reminderStatus: '已结束' } : {});
         setSelectedKeys([]);
-        messageApi.success(nextStatus === '出库待接收' ? '所选物资已接收，单据仍有待接收物资' : `移库单已更新为${nextStatus}`);
+        messageApi.success(nextStatus === '出库待接收' ? '所选资产已接收，单据仍有待接收资产' : `移库单已更新为${nextStatus}`);
       },
     });
     return undefined;
@@ -287,7 +287,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
     const trimmed = reason.trim();
     if (!trimmed) return messageApi.warning('请填写驳回原因');
     if (trimmed.length > 200) return messageApi.warning('驳回原因最多允许填写200个字');
-    if (rejectAsset.moveStatus !== '待接收') return messageApi.warning('仅待接收物资允许驳回');
+    if (rejectAsset.moveStatus !== '待接收') return messageApi.warning('仅待接收资产允许驳回');
 
     const selected = [rejectAsset];
     const nextLines = lines.map((line) => line.id === rejectAsset.id ? {
@@ -353,7 +353,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
     setLines(nextLines);
     setSelectedKeys((current) => current.filter((key) => key !== rejectAsset.id));
     setRejectAsset(null);
-    messageApi.success(`该物资已驳回，已生成反向移库单；原单状态为${nextStatus}`);
+    messageApi.success(`该资产已驳回，已生成反向移库单；原单状态为${nextStatus}`);
     return undefined;
   };
 
@@ -366,8 +366,8 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
       render: (value, asset) => <Button type="link" className="px-0 select-text" onClick={() => setDetailAsset(asset)}>{value}</Button>,
     },
     { title: 'SN', dataIndex: 'sn', width: 150 },
-    { title: '物资说明', dataIndex: 'materialDesc', width: 220 },
-    { title: '物资总类', dataIndex: 'materialGroup', width: 130 },
+    { title: '资产说明', dataIndex: 'materialDesc', width: 220 },
+    { title: '资产总类', dataIndex: 'materialGroup', width: 130 },
     { title: '数量', dataIndex: 'quantity', width: 80, align: 'right', render: (value) => value ?? 0 },
     { title: '公司', dataIndex: 'company', width: 150 },
     { title: '板块', dataIndex: 'plate', width: 110 },
@@ -425,7 +425,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
           </DetailGrid>
         </Card>
 
-        <Card size="small" title="接收物资" extra={<Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>}>
+        <Card size="small" title="接收资产" extra={<Typography.Text type="secondary">共 {lines.length} 条</Typography.Text>}>
           {waiting && (
             <div className="mb-3 rounded-md bg-slate-50 p-3">
               <div className="flex items-center gap-2">
@@ -523,7 +523,7 @@ export default function MoveReceiveContent({ documents, setDocuments, onDetailCh
     { title: '移入仓库', dataIndex: 'toWarehouse', width: 320 },
     { title: '制单日期', dataIndex: 'createdDate', width: 130 },
     { title: '制单人', dataIndex: 'creator', width: 170 },
-    { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right', render: (value) => value ?? 0 },
+    { title: '资产数量', dataIndex: 'quantity', width: 110, align: 'right', render: (value) => value ?? 0 },
   ];
 
   return (
