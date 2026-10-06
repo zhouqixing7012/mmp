@@ -215,6 +215,11 @@ export default function ConsumableReceiptPage() {
   const [maintenancePage, setMaintenancePage] = useState(1);
   const [maintenancePageSize, setMaintenancePageSize] = useState(10);
 
+  const activeReceipt = useMemo(
+    () => receipts.find((item) => item.receiptNo === activeReceiptNo) || null,
+    [receipts, activeReceiptNo],
+  );
+
   useEffect(() => {
     const moduleItem = { label: '耗材接收', onClick: () => setView('poList') };
     const itemsByView = {
@@ -239,11 +244,6 @@ export default function ConsumableReceiptPage() {
     };
     window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', { detail: { items: itemsByView[view] || itemsByView.poList } }));
   }, [view, activeReceipt?.status]);
-
-  const activeReceipt = useMemo(
-    () => receipts.find((item) => item.receiptNo === activeReceiptNo) || null,
-    [receipts, activeReceiptNo],
-  );
   const activeItems = activePO ? (poItems[activePO.poNo] || []) : [];
   const companies = useMemo(() => selectorData(poRows.map((item) => item.company)), [poRows]);
   const plates = useMemo(() => selectorData(poRows.map((item) => item.plate)), [poRows]);
