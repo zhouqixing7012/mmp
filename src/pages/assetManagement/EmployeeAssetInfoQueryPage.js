@@ -15,6 +15,7 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
+import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 
 const EMPLOYEE_OPTIONS = [
   { id: '220784', name: '周琦星', department: 'D3520.集团总部.ERP部.业务产品二组.运营产品组' },
@@ -352,6 +353,31 @@ function documentBelongsToEmployee(row, employeeId) {
   return false;
 }
 
+function approvalRowsFor(record) {
+  const applicant = record?.applicant && record.applicant !== '-' ? record.applicant : '系统';
+  const rows = [
+    { id: 'submit', node: '提交申请', person: applicant, status: '已提交', time: record?.createdAt || record?.applyDate || '-', opinion: '-' },
+  ];
+  if (record?.documentStatus === '处理中') {
+    rows.push({ id: 'current', node: record.approvalNode || '当前审批', person: record.approver || '-', status: '待审批', time: '-', opinion: '-' });
+  } else if (record?.documentStatus === '已驳回') {
+    rows.push({ id: 'result', node: record.approvalNode || '审批', person: record.approver || '-', status: '已驳回', time: record?.createdAt || record?.applyDate || '-', opinion: '审批驳回' });
+  } else if (record?.documentStatus === '已完成') {
+    rows.push({ id: 'result', node: record.approvalNode && record.approvalNode !== '-' ? record.approvalNode : '流程完成', person: record.approver || '系统', status: '已完成', time: record?.createdAt || record?.applyDate || '-', opinion: '-' });
+  }
+  return rows;
+}
+
+function sameMaintenanceScope(row, scopes) {
+  if (!row?.company) return false;
+  const company = String(row.company || '');
+  const plate = String(row.plate || '');
+  return scopes.some((scope) => (
+    String(scope.company || '') === company
+    && (!plate || !scope.plate || String(scope.plate) === plate)
+  ));
+}
+
 function LookupInput({ value, placeholder, onOpen, onClear }) {
   const handleOpen = (event) => {
     if (event?.target?.closest?.('.ant-input-clear-icon')) return;
@@ -475,6 +501,8 @@ export default function EmployeeAssetInfoQueryPage() {
   const [appliedFilters, setAppliedFilters] = useState(() => copy(EMPTY_TAB_FILTERS));
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
   const [detail, setDetail] = useState(null);
+  const [approvalRecord, setApprovalRecord] = useState(null);
+  const maintenanceScopes = useMemo(() => getAssetMaintenanceRows().map((row) => ({ company: row.company, plate: row.plate })), []);
 
   const updateFilter = (field, value) => {
     setDraftFilters((current) => ({
@@ -550,53 +578,57 @@ export default function EmployeeAssetInfoQueryPage() {
     const filter = appliedFilters.asset;
     return ASSET_ROWS
       .filter((row) => (
-        String(row.ownerId) === String(employeeId || '')
+        sameMaintenanceScope(row, maintenanceScopes)
+        && String(row.ownerId) === String(employeeId || '')
         && ['3', '6'].includes(String(row.statusCode))
         && row.materialType === '资产'
         && includesText(row.tag, filter.assetTag)
       ))
       .sort(compareSpPoPutinDescThenTagAsc)
       .map((row, index) => ({ ...row, rowNo: index + 1 }));
-  }, [appliedEmployee, appliedFilters.asset]);
+  }, [appliedEmployee, appliedFilters.asset, maintenanceScopes]);
 
   const filteredConsumableRows = useMemo(() => {
     const employeeId = appliedEmployee?.id;
     const filter = appliedFilters.consumable;
     return CONSUMABLE_ROWS
       .filter((row) => (
-        String(row.ownerId) === String(employeeId || '')
+        sameMaintenanceScope(row, maintenanceScopes)
+        && String(row.ownerId) === String(employeeId || '')
         && row.materialType === '耗材'
         && includesText(row.tag, filter.assetTag)
       ))
       .sort(compareSpPoPutinDescThenTagAsc)
       .map((row, index) => ({ ...row, rowNo: index + 1 }));
-  }, [appliedEmployee, appliedFilters.consumable]);
+  }, [appliedEmployee, appliedFilters.consumable, maintenanceScopes]);
 
   const filteredContractRows = useMemo(() => {
     const employeeId = appliedEmployee?.id;
     const filter = appliedFilters.contract;
     return CONTRACT_NUMBER_ROWS
       .filter((row) => (
-        String(row.ownerId) === String(employeeId || '')
+        maintenanceScopes.some((scope) => String(scope.company || '') === String(row.company || ''))
+        && String(row.ownerId) === String(employeeId || '')
         && row.status === '在用-使用中'
         && includesText(row.contractNumber, filter.contractNumber)
       ))
       .sort(compareSpPoPutinDescThenTagAsc)
       .map((row, index) => ({ ...row, rowNo: index + 1 }));
-  }, [appliedEmployee, appliedFilters.contract]);
+  }, [appliedEmployee, appliedFilters.contract, maintenanceScopes]);
 
   const filteredDocumentRows = useMemo(() => {
     const employeeId = appliedEmployee?.id;
     const filter = appliedFilters.document;
     return DOCUMENT_ROWS
       .filter((row) => (
-        documentBelongsToEmployee(row, employeeId)
+        sameMaintenanceScope(row, maintenanceScopes)
+        && documentBelongsToEmployee(row, employeeId)
         && (includesText(row.applicationNo, filter.documentNo) || includesText(row.coreDocument, filter.documentNo))
         && includesText(row.documentStatus, filter.documentStatus)
       ))
       .sort((a, b) => String(b.applyDate).localeCompare(String(a.applyDate)))
       .map((row, index) => ({ ...row, rowNo: index + 1 }));
-  }, [appliedEmployee, appliedFilters.document]);
+  }, [appliedEmployee, appliedFilters.document, maintenanceScopes]);
 
   const openDocumentDetail = (documentNo) => {
     if (!documentNo || documentNo === '-') return;
@@ -620,6 +652,17 @@ export default function EmployeeAssetInfoQueryPage() {
     setDetail({ kind: 'document', record });
   };
 
+  const openApprovalRecord = (recordOrNo) => {
+    const record = typeof recordOrNo === 'string'
+      ? DOCUMENT_ROWS.find((row) => row.applicationNo === recordOrNo || row.coreDocument === recordOrNo)
+      : recordOrNo;
+    if (!record || !record.documentStatus || record.documentStatus === '-') {
+      messageApi.info('当前资产暂无可查看的单据审批记录');
+      return;
+    }
+    setApprovalRecord(record);
+  };
+
   const assetColumns = [
     { title: '行号', dataIndex: 'rowNo', width: 70, fixed: 'left' },
     {
@@ -634,7 +677,6 @@ export default function EmployeeAssetInfoQueryPage() {
     { title: '资产说明', dataIndex: 'description', width: 220, render: displayText },
     { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value) => <StatusTag value={value} type="business" /> },
     { title: '资产责任人', width: 170, render: (_, record) => `${record.ownerId}-${record.ownerName}` },
-    { title: '单据申请人', dataIndex: 'applicant', width: 150, render: displayText },
     {
       title: '所在单据编号',
       dataIndex: 'documentNo',
@@ -645,7 +687,14 @@ export default function EmployeeAssetInfoQueryPage() {
     },
     { title: '单据类型', dataIndex: 'documentType', width: 130, render: displayText },
     { title: '单据业务类型', dataIndex: 'businessType', width: 140, render: displayText },
-    { title: '单据状态', dataIndex: 'documentStatus', width: 120, render: displayText },
+    {
+      title: '单据状态',
+      dataIndex: 'documentStatus',
+      width: 120,
+      render: (value, record) => value && value !== '-'
+        ? <Button type="link" size="small" className="px-0" onClick={() => openApprovalRecord(record.documentNo)}><StatusTag value={value} type="business" /></Button>
+        : '-',
+    },
     { title: '单据审批环节', dataIndex: 'approvalNode', width: 160, render: displayText },
     { title: '单据审批人', dataIndex: 'approver', width: 150, render: displayText },
     { title: '公司', dataIndex: 'company', width: 130, render: displayText },
@@ -717,7 +766,7 @@ export default function EmployeeAssetInfoQueryPage() {
     },
     { title: '单据类型', dataIndex: 'documentType', width: 130, render: displayText },
     { title: '业务类型', dataIndex: 'businessType', width: 130, render: displayText },
-    { title: '单据状态', dataIndex: 'documentStatus', width: 120, render: (value) => <StatusTag value={value} type="business" /> },
+    { title: '单据状态', dataIndex: 'documentStatus', width: 120, render: (value, record) => <Button type="link" size="small" className="px-0" onClick={() => openApprovalRecord(record)}><StatusTag value={value} type="business" /></Button> },
     { title: '申请人', dataIndex: 'applicant', width: 150, render: displayText },
     { title: '申请时间', dataIndex: 'applyDate', width: 120, render: displayText },
     {
@@ -730,19 +779,6 @@ export default function EmployeeAssetInfoQueryPage() {
     },
     { title: '公司', dataIndex: 'company', width: 130, render: displayText },
     { title: '板块', dataIndex: 'plate', width: 130, render: displayText },
-    { title: '部门', dataIndex: 'department', width: 360, render: displayText },
-    {
-      title: '操作',
-      key: 'operation',
-      width: 100,
-      fixed: 'right',
-      render: (_, record) => {
-        const detailNo = record.applicationNo || record.coreDocument;
-        return detailNo
-          ? <Button type="link" size="small" onClick={() => openDocumentDetail(detailNo)}>查看流程</Button>
-          : '-';
-      },
-    },
   ];
 
   const tabConfig = {
@@ -902,6 +938,31 @@ export default function EmployeeAssetInfoQueryPage() {
       />
 
       <RecordDetailModal detail={detail} onClose={() => setDetail(null)} />
+      <Modal
+        open={Boolean(approvalRecord)}
+        title="审批记录"
+        footer={null}
+        width={860}
+        onCancel={() => setApprovalRecord(null)}
+        destroyOnHidden
+      >
+        <Table
+          rowKey="id"
+          size="small"
+          bordered
+          pagination={false}
+          dataSource={approvalRecord ? approvalRowsFor(approvalRecord) : []}
+          columns={[
+            { title: '序号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
+            { title: '审批环节', dataIndex: 'node', width: 180, render: displayText },
+            { title: '申请人 / 审批人', dataIndex: 'person', width: 180, render: displayText },
+            { title: '审批状态', dataIndex: 'status', width: 120, render: (value) => <StatusTag value={value} type="business" /> },
+            { title: '审批时间', dataIndex: 'time', width: 170, render: displayText },
+            { title: '审批意见', dataIndex: 'opinion', render: displayText },
+          ]}
+        />
+      </Modal>
+
     </>
   );
 }
