@@ -47,6 +47,14 @@ function appendHistory(application, node, status, comment, person = '213852-孙�
   ];
 }
 
+function normalizeReturnConfirmationMethod(method) {
+  const text = String(method || '');
+  if (text.includes('代确认') || text.includes('工号')) return '库管员代确认';
+  if (text.includes('扫码')) return '扫码';
+  if (text.includes('刷卡')) return '刷卡';
+  return text || '-';
+}
+
 function assetConsumables(asset) {
   if (!asset.consumables || asset.consumables === '无') return [];
   return [{
@@ -216,13 +224,14 @@ export function requestAssetReturnConfirmation(id, handlingValues = {}) {
     ...application,
     currentNode: '员工退库确认',
     handling: { ...application.handling, ...handlingValues, confirmationStatus: '待确认' },
-    history: appendHistory(application, '申请人退库确认', '待确认', '已发起扫码、刷卡或工号确认', '119039-刘建'),
+    history: appendHistory(application, '申请人退库确认', '待确认', '已发起扫码、刷卡或库管员代确认', '119039-刘建'),
   }));
   return writeDemoData(RETURN_CONFIRMATION_KEY, { kind: 'asset', applicationId: id });
 }
 
 export function confirmReturnEmployee(employeeId, method) {
   const target = readDemoData(RETURN_CONFIRMATION_KEY, null);
+  const confirmationMethod = normalizeReturnConfirmationMethod(method);
   if (!target) throw new Error('暂无待确认退库单');
   if (employeeId !== CURRENT_REPLACEMENT_APPLICANT.id) throw new Error('员工工号不匹配！');
   if (target.kind === 'asset') {
@@ -232,11 +241,11 @@ export function confirmReturnEmployee(employeeId, method) {
       handling: {
         ...application.handling,
         confirmationStatus: '已确认',
-        confirmationMethod: method,
+        confirmationMethod,
         confirmationEmployeeId: employeeId,
         confirmationTime: nowText(),
       },
-      history: appendHistory(application, '员工退库确认', '已确认', `${method}确认成功`),
+      history: appendHistory(application, '员工退库确认', '已确认', `确认方式：${confirmationMethod}`),
     }));
   } else {
     updateCollection(CONTRACT_RETURN_STORAGE_KEY, DEFAULT_CONTRACT_RETURN_APPLICATIONS, target.applicationId, (application) => ({
