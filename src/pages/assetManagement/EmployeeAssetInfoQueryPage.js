@@ -368,13 +368,19 @@ function approvalRowsFor(record) {
   return rows;
 }
 
+function scopeValue(value) {
+  const text = String(value || '').trim();
+  const parts = text.split('.');
+  return /^\d+$/.test(parts[0] || '') && parts.length > 1 ? parts.slice(1).join('.') : text;
+}
+
 function sameMaintenanceScope(row, scopes) {
   if (!row?.company) return false;
-  const company = String(row.company || '');
-  const plate = String(row.plate || '');
+  const company = scopeValue(row.company);
+  const plate = scopeValue(row.plate);
   return scopes.some((scope) => (
-    String(scope.company || '') === company
-    && (!plate || !scope.plate || String(scope.plate) === plate)
+    scopeValue(scope.company) === company
+    && (!plate || !scope.plate || scopeValue(scope.plate) === plate)
   ));
 }
 
@@ -607,7 +613,7 @@ export default function EmployeeAssetInfoQueryPage() {
     const filter = appliedFilters.contract;
     return CONTRACT_NUMBER_ROWS
       .filter((row) => (
-        maintenanceScopes.some((scope) => String(scope.company || '') === String(row.company || ''))
+        maintenanceScopes.some((scope) => scopeValue(scope.company) === scopeValue(row.company))
         && String(row.ownerId) === String(employeeId || '')
         && row.status === '在用-使用中'
         && includesText(row.contractNumber, filter.contractNumber)
