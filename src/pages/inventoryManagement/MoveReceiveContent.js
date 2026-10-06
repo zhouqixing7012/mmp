@@ -166,7 +166,7 @@ function RejectModal({ open, onCancel, onConfirm }) {
       onOk={() => onConfirm(reason)}
       destroyOnHidden
     >
-      <Typography.Text>驳回后，该条资产变为“已驳回”，系统自动生成反向移库单。</Typography.Text>
+      <Typography.Text>驳回后，本次选择的资产变为“已驳回”，系统自动生成反向移库单；未勾选行时默认驳回当前单据全部未接收资产。</Typography.Text>
       <div className="mt-3">
         <Typography.Text>驳回原因：</Typography.Text>
         <TextArea maxLength={200} showCount value={reason} onChange={(event) => setReason(event.target.value)} autoSize={{ minRows: 3, maxRows: 5 }} placeholder="必填，最多200字" />
@@ -287,10 +287,16 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
     const trimmed = reason.trim();
     if (!trimmed) return messageApi.warning('请填写驳回原因');
     if (trimmed.length > 200) return messageApi.warning('驳回原因最多允许填写200个字');
-    if (rejectAsset.moveStatus !== '待接收') return messageApi.warning('仅待接收资产允许驳回');
 
-    const selected = [rejectAsset];
-    const nextLines = lines.map((line) => line.id === rejectAsset.id ? {
+    const targetIds = rejectAsset.bulk
+      ? (selectedKeys.length
+        ? selectedKeys
+        : lines.filter((line) => line.moveStatus === '待接收').map((line) => line.id))
+      : [rejectAsset.id];
+    const selected = lines.filter((line) => targetIds.includes(line.id) && line.moveStatus === '待接收');
+    if (!selected.length) return messageApi.warning('当前没有可驳回的待接收资产');
+    const selectedSet = new Set(selected.map((line) => line.id));
+    const nextLines = lines.map((line) => selectedSet.has(line.id) ? {
       ...line,
       moveStatus: '已驳回',
       rejectReason: trimmed,
@@ -351,9 +357,9 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
     });
 
     setLines(nextLines);
-    setSelectedKeys((current) => current.filter((key) => key !== rejectAsset.id));
+    setSelectedKeys((current) => current.filter((key) => !selected.some((line) => line.id === key)));
     setRejectAsset(null);
-    messageApi.success(`该资产已驳回，已生成反向移库单；原单状态为${nextStatus}`);
+    messageApi.success(`已驳回 ${selected.length} 件资产并生成反向移库单；原单状态为${nextStatus}`);
     return undefined;
   };
 
@@ -461,6 +467,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
 
         <div className="flex justify-center gap-3">
           {waiting && <Button type="primary" onClick={receive}>移库接收确认</Button>}
+          {waiting && <Button danger onClick={() => setRejectAsset({ bulk: true })}>移库驳回</Button>}
           {row.status === '已完成' && <Button onClick={() => setPrintOpen(true)}>打印</Button>}
           {!waiting && <Button onClick={() => messageApi.success('移库明细已导出')}>导出</Button>}
           <Button onClick={onBack}>返回</Button>
