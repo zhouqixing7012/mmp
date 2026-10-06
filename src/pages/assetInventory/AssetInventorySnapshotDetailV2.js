@@ -12,7 +12,8 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
-import { serializeInventoryAssetExport } from './inventoryAssetExport';
+import { calculateInventorySnapshotStats } from './inventorySnapshotStats';
+import { serializeInventoryAssetExport, serializeInventorySnapshotExport } from './inventoryAssetExport';
 import { replayCloseBlockReason } from './inventoryCloseRules';
 import { CheckCircle2, Download, PlayCircle, ScanLine, Trash2, Upload, XCircle } from 'lucide-react';
 import InventoryAssetQuery from './InventoryAssetQuery';
@@ -122,7 +123,7 @@ function makeAssetColumns({ includeNo = true } = {}) {
   return columns;
 }
 
-function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOtherRows, messageApi }) {
+function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOtherRows, onMoveRows, onConfirmRows, messageApi }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const showMachineRoomFeatures = allowedRanges.includes('机房');
@@ -159,8 +160,11 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
     }
     const selected = new Set(selectedKeys);
     const moved = rows.filter((row) => selected.has(row.key)).map((row) => ({ ...row, executeInventory: targetExecute }));
-    setRows((current) => current.filter((row) => !selected.has(row.key)));
-    if (setOtherRows) setOtherRows((current) => [...current, ...moved]);
+    if (onMoveRows) onMoveRows(selected, moved);
+    else {
+      setRows((current) => current.filter((row) => !selected.has(row.key)));
+      if (setOtherRows) setOtherRows((current) => [...current, ...moved]);
+    }
     setSelectedKeys([]);
     messageApi.success(`已转移 ${moved.length} 条资产`);
   };
@@ -172,12 +176,14 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
       return;
     }
     const selected = new Set(selectedKeys);
-    setRows((current) => current.map((row) => selected.has(row.key) ? {
+    const updated = rows.map((row) => selected.has(row.key) ? {
       ...row,
       inventoryStatus: '已盘',
       counter: '系统管理员',
       inventoryDate: dayjs().format('YYYY-MM-DD'),
-    } : row));
+    } : row);
+    setRows(updated);
+    onConfirmRows?.(updated);
     setSelectedKeys([]);
     messageApi.success('已批量确认盘点结果');
   };
@@ -309,18 +315,8 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
   );
 }
 
-function SnapshotStats({ projectStatus, onOpenPlans }) {
-  const { allowedRanges } = useAssetInventoryVariant();
-  const assets = ASSET_ROWS
-    .filter((row) => isInventoryRangeAllowed(row, allowedRanges))
-    .map((row) => normalizeAssetForProjectStage(row, projectStatus));
-  const total = assets.reduce((sum, row) => sum + row.quantity, 0);
-  const execution = assets.filter((row) => row.executeInventory).reduce((sum, row) => sum + row.quantity, 0);
-  const notExecution = total - execution;
-  const counted = assets.filter((row) => ['已盘', '代盘'].includes(row.inventoryStatus)).reduce((sum, row) => sum + row.quantity, 0);
-  const uncounted = assets.filter((row) => row.executeInventory && ['未盘', '报失', '盘亏'].includes(row.inventoryStatus)).reduce((sum, row) => sum + row.quantity, 0);
-  const lost = assets.filter((row) => row.inventoryStatus === '盘亏').reduce((sum, row) => sum + row.quantity, 0);
-  const rate = execution ? Number(((counted / execution) * 100).toFixed(1)) : 0;
+function SnapshotStats({ projectStatus, onOpenPlans, executionRows, notExecutionRows }) {
+  const { total, execution, notExecution, counted, uncounted, lost, rate } = calculateInventorySnapshotStats(executionRows, notExecutionRows);
   const generatedPlan = ['生成盘点计划', '盘点中', '盘点关闭'].includes(projectStatus);
 
   return (
@@ -346,6 +342,9 @@ export default function AssetInventorySnapshotDetailV2({
   onGenerateDefault,
   onGenerateCustom,
   onCloseProject,
+  onDeleteSnapshot,
+  assets = ASSET_ROWS,
+  onSnapshotRowsChange,
 }) {
   const { allowedRanges: configuredRanges } = useAssetInventoryVariant();
   const allowedRanges = project?.scopeRanges?.length ? project.scopeRanges : configuredRanges;
@@ -380,15 +379,15 @@ export default function AssetInventorySnapshotDetailV2({
     });
   };
   useEffect(() => {
-    if (!isSystemRoomInitial || projectStatus !== '盘点中' || Number(project?.progress) < 100) return;
+    if (!isSystemRoomInitial || projectStatus !== '盘点中' || !(Number(project?.progress) >= 100)) return;
     setProjectStatus('盘点关闭');
     onCloseProject?.({ ...project, status: '盘点关闭', closedBy: '系统' });
     messageApi.success('机房初盘进度达到100%，项目已自动关闭，并通过服务号通知财务人员');
   }, [isSystemRoomInitial, projectStatus, project?.progress, onCloseProject, project]);
-  const [executionRows, setExecutionRows] = useState(() => ASSET_ROWS
+  const [executionRows, setExecutionRows] = useState(() => assets
     .filter((row) => isInventoryRangeAllowed(row, allowedRanges) && isSnapshotExecutionAsset(row, project))
     .map((row) => normalizeAssetForProjectStage(row, initialProjectStatus)));
-  const [notExecutionRows, setNotExecutionRows] = useState(() => ASSET_ROWS
+  const [notExecutionRows, setNotExecutionRows] = useState(() => assets
     .filter((row) => isInventoryRangeAllowed(row, allowedRanges) && isSnapshotNonExecutionAsset(row, project))
     .map((row) => normalizeAssetForProjectStage(row, initialProjectStatus)));
   const [excludedRows, setExcludedRows] = useState(() => UNINCLUDED_ASSET_ROWS
@@ -410,31 +409,55 @@ export default function AssetInventorySnapshotDetailV2({
     });
   };
 
+  const exportSnapshot = () => {
+    const rows = [...executionRows.map((asset) => ({ ...asset, executeInventory: true })), ...notExecutionRows.map((asset) => ({ ...asset, executeInventory: false }))];
+    const { csv, missingFields } = serializeInventorySnapshotExport(rows);
+    if (missingFields.length) messageApi.warning(`演示数据缺少${missingFields.join('、')}，对应单元格为空`);
+    const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${project.projectNo}-快照.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleDeleteSnapshot = () => {
+    if (!['快照生成', '生成盘点计划'].includes(projectStatus)) return;
+    if (!onDeleteSnapshot) return;
     Modal.confirm({
       title: '删除快照',
-      content: '删除快照后项目状态将恢复为草稿，并返回生成快照之前的状态。',
+      content: '删除快照并撤销未启动的草稿计划，项目恢复为草稿编辑状态。',
       okText: '删除快照',
       okButtonProps: { danger: true },
       cancelText: '取消',
       onOk: () => {
-        messageApi.success('快照已删除，项目已恢复为草稿状态');
-        onBack?.();
+        if (onDeleteSnapshot({ ...project, status: projectStatus }) === false) {
+          messageApi.warning('计划已启动或已有后续结果，不能删除快照');
+          return;
+        }
+        messageApi.success('快照已撤销，项目已恢复为草稿状态');
       },
     });
   };
 
+  const moveSnapshotRows = (fromExecution, selected, moved) => {
+    const nextExecution = fromExecution ? executionRows.filter(row => !selected.has(row.key)) : [...executionRows, ...moved];
+    const nextNotExecution = fromExecution ? [...notExecutionRows, ...moved] : notExecutionRows.filter(row => !selected.has(row.key));
+    setExecutionRows(nextExecution); setNotExecutionRows(nextNotExecution);
+    onSnapshotRowsChange?.(nextExecution, nextNotExecution);
+  };
+
   const tabItems = [
-    { key: 'summary', label: '快照清单统计', children: <SnapshotStats projectStatus={projectStatus} onOpenPlans={onOpenPlans} /> },
+    { key: 'summary', label: '快照清单统计', children: <SnapshotStats projectStatus={projectStatus} onOpenPlans={onOpenPlans} executionRows={executionRows} notExecutionRows={notExecutionRows} /> },
     {
       key: 'execution',
       label: '执行盘点资产清单',
-      children: <SnapshotAssetTab type="execution" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={executionRows} setRows={setExecutionRows} setOtherRows={setNotExecutionRows} messageApi={messageApi} />,
+      children: <SnapshotAssetTab type="execution" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={executionRows} setRows={setExecutionRows} setOtherRows={setNotExecutionRows} onMoveRows={(selected, moved) => moveSnapshotRows(true, selected, moved)} messageApi={messageApi} />,
     },
     {
       key: 'notExecution',
       label: '未执行盘点资产清单',
-      children: <SnapshotAssetTab type="notExecution" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={notExecutionRows} setRows={setNotExecutionRows} setOtherRows={setExecutionRows} messageApi={messageApi} />,
+      children: <SnapshotAssetTab type="notExecution" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={notExecutionRows} setRows={setNotExecutionRows} setOtherRows={setExecutionRows} onMoveRows={(selected, moved) => moveSnapshotRows(false, selected, moved)} onConfirmRows={(updated) => onSnapshotRowsChange?.(executionRows, updated)} messageApi={messageApi} />,
     },
     {
       key: 'excluded',
@@ -454,7 +477,7 @@ export default function AssetInventorySnapshotDetailV2({
         <Space wrap>
           {projectStatus === '快照生成' && <Button type="primary" icon={<PlayCircle size={14} />} onClick={generatePlans}>生成盘点计划</Button>}
           {['快照生成', '生成盘点计划'].includes(projectStatus) && <Button danger icon={<Trash2 size={14} />} onClick={handleDeleteSnapshot}>删除快照</Button>}
-          <Button icon={<Download size={14} />} onClick={() => messageApi.success('快照导出已触发，导出模板包含“是否执行盘点”字段')}>快照导出</Button>
+          <Button icon={<Download size={14} />} onClick={exportSnapshot}>快照导出</Button>
           {canManuallyClose && <Button danger icon={<XCircle size={14} />} onClick={handleCloseProject}>关闭项目</Button>}
           <Button onClick={onBack}>返回</Button>
         </Space>

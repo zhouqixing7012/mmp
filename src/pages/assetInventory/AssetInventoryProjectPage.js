@@ -1,5 +1,5 @@
 import { AssetPersonSelect, OwnerLevelSelect, formatAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -26,6 +26,8 @@ import dayjs from 'dayjs';
 import { allowedProjectTypes } from './inventoryCreatorPermissions';
 import { inventoryProjectDateBlockReason } from './inventoryDateRules';
 import { selectReplaySnapshotAssets } from './inventoryReplaySampling';
+import { selectScopeAssets } from './inventoryScopeQuery';
+import { serializeInventoryAssetExport } from './inventoryAssetExport';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import {
   BellRing,
@@ -738,6 +740,7 @@ function ImageUploadRuleEditor() {
 }
 
 function ScopeSelector({ projectType, scopeRows, setScopeRows, onPreviewAssets, messageApi }) {
+  const { allowedRanges } = useAssetInventoryVariant();
   const [filters, setFilters] = useState({
     organization: '',
     department: '',
@@ -781,8 +784,11 @@ function ScopeSelector({ projectType, scopeRows, setScopeRows, onPreviewAssets, 
   ];
 
   const handleGenerate = () => {
+    const matches = selectScopeAssets(ASSET_ROWS.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)), filters, projectType);
+    if (!matches.length) { messageApi.warning('当前条件下没有可纳入的资产'); return; }
     const next = {
       key: `scope-${Date.now()}`,
+      assetKeys: matches.map(asset => asset.key),
       organization: filters.organization || '集团',
       department: filters.department || '-',
       assetCategory: filters.assetCategory || 'SERVER、NOTEBOOK',
@@ -912,11 +918,14 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     status: '暂存',
     snapshotTime: initialProject?.snapshotTime || '-',
   }));
-  const [scopeRows, setScopeRows] = useState(SCOPE_ROWS);
+  const [scopeRows, setScopeRows] = useState(() => SCOPE_ROWS.map(row => ({ ...row, assetKeys: initialProject?.scopeSnapshotAssetKeys || ASSET_ROWS.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)).map(asset => asset.key) })));
+  const [removedAssetKeys, setRemovedAssetKeys] = useState(initialProject?.scopeRemovedAssetKeys || []);
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [scopeAssetQuery, setScopeAssetQuery] = useState({ assetTag: '', owner: [], ownerLevel: [] });
   const [scopeAssetFilter, setScopeAssetFilter] = useState({ assetTag: '', owner: [], ownerLevel: [] });
-  const filteredScopeAssets = ASSET_ROWS.filter((asset) =>
+  const scopeKeys = scopeAssetKeys ?? [...new Set(scopeRows.flatMap(row => row.assetKeys))];
+  const scopeAssets = ASSET_ROWS.filter(asset => isInventoryRangeAllowed(asset, allowedRanges) && scopeKeys.includes(asset.key) && !removedAssetKeys.includes(asset.key));
+  const filteredScopeAssets = scopeAssets.filter((asset) =>
     String(asset.assetTag || '').includes(scopeAssetFilter.assetTag.trim()) && matchesQuerySelection(asset.owner, scopeAssetFilter.owner) && matchesQuerySelection(asset.ownerLevel, scopeAssetFilter.ownerLevel));
   const [assetPreviewOpen, setAssetPreviewOpen] = useState(false);
 
@@ -949,16 +958,15 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     }
     const dateBlockReason = inventoryProjectDateBlockReason(project.startDate, project.endDate);
     if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
-    if (scopeAssetKeys != null ? !scopeAssetKeys.length : !scopeRows.length) {
+    if (!scopeAssets.length) {
       messageApi.warning('请先生成至少一条盘点范围明细');
       return;
     }
-    const scopeAssets = ASSET_ROWS.filter((asset) => isInventoryRangeAllowed(asset, allowedRanges)
-      && (scopeAssetKeys == null || scopeAssetKeys.includes(asset.key)));
-    const sampled = selectReplaySnapshotAssets(scopeAssets, project);
+    const sampled = selectReplaySnapshotAssets(scopeAssets.filter(asset => asset.executeInventory), project);
     const nextProject = {
       ...project,
       scopeSnapshotAssetKeys: scopeAssets.map((asset) => asset.key),
+      scopeRemovedAssetKeys: removedAssetKeys,
       snapshotAssetKeys: sampled.assets.map((asset) => asset.key),
       mandatoryAssetKeys: sampled.mandatoryAssetKeys,
       status: '快照生成',
@@ -993,7 +1001,12 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
         </QueryBar>
         <div className="mb-3 flex justify-end">
           <Space>
-            <Button icon={<Download size={14} />} onClick={() => messageApi.success('已导出当前盘点范围资产清单')}>导出清单</Button>
+            <Button icon={<Download size={14} />} onClick={() => {
+              const { csv } = serializeInventoryAssetExport(filteredScopeAssets);
+              const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
+              const link = document.createElement('a');
+              link.href = url; link.download = `${project.projectNo}-盘点范围资产清单.csv`; link.click(); URL.revokeObjectURL(url);
+            }}>导出清单</Button>
             <Button icon={<Upload size={14} />} onClick={() => messageApi.info('请按资产清单模板导入')}>导入清单</Button>
             <Button
               danger
@@ -1004,6 +1017,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
                   return;
                 }
                 messageApi.success(`已从本次盘点范围移除 ${selectedAssets.length} 条资产`);
+                setRemovedAssetKeys(current => [...new Set([...current, ...selectedAssets])]);
                 setSelectedAssets([]);
               }}
             >
@@ -2108,11 +2122,17 @@ function ProgressView({ project, onBack }) {
   );
 }
 
-export default function AssetInventoryProjectPage({ creator = '213852-孙志强', scopeAssetKeys, onProjectGenerated }) {
+export default function AssetInventoryProjectPage({ creator = '213852-孙志强', scopeAssetKeys, snapshotEditRequest, onProjectGenerated }) {
   const [view, setView] = useState('list');
   const [activeProject, setActiveProject] = useState(PROJECT_INFO);
   const [activePlan, setActivePlan] = useState(INITIAL_PLAN_ROWS[0]);
   const [projectStatus, setProjectStatus] = useState(PROJECT_INFO.status);
+  useEffect(() => {
+    if (!snapshotEditRequest) return;
+    setActiveProject({ ...snapshotEditRequest.project, status: '暂存', snapshotTime: '-' });
+    setProjectStatus('暂存');
+    setView('create');
+  }, [snapshotEditRequest]);
 
   const openProject = (row) => {
     const next = {
@@ -2134,7 +2154,7 @@ export default function AssetInventoryProjectPage({ creator = '213852-孙志强'
     return (
       <CreateProjectView
         creator={creator}
-        scopeAssetKeys={scopeAssetKeys}
+        scopeAssetKeys={activeProject?.scopeSnapshotAssetKeys ?? scopeAssetKeys}
         initialProject={activeProject?.status === '暂存' ? activeProject : null}
         onBack={() => setView('list')}
         onGenerated={(project) => {

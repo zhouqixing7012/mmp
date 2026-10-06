@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Progress, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Button, Card, Progress, Space, Table, Typography } from 'antd';
+import * as XLSX from 'xlsx';
 import { Download } from 'lucide-react';
 import StatusTag from '../../components/StatusTag';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
-import { PROGRESS_DETAIL_ROWS, PROGRESS_ROWS } from './mockData';
+import { EMPLOYEE_ROWS } from './mockData';
 import { useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import SectionCardTitle from './SectionCardTitle';
-import { buildSupplementalProgress, serializeProgressExport } from './inventoryProgressModel';
-import { getMobileInventoryResults } from './inventoryMobileResultStore';
+import { buildInventoryProgress, createProgressWorkbook, filterProgressRows, isUncountedProgressAsset } from './inventoryProgressModel';
+import InventoryProgressAssetsModal from './InventoryProgressAssetsModal';
 
 function formatCount(value) {
   return Number(value || 0).toLocaleString('zh-CN');
@@ -28,24 +29,29 @@ function ProjectInfoCard({ project }) {
   );
 }
 
-export default function AssetInventoryProgressV2({ project, onBack }) {
+export default function AssetInventoryProgressV2({ project, plans, assetsForPlan, onBack }) {
   const { allowedRanges } = useAssetInventoryVariant();
-  const [messageApi, contextHolder] = antdMessage.useMessage();
   const [detailRange, setDetailRange] = useState('');
+  const [detailFilters, setDetailFilters] = useState({});
+  const [detailPage, setDetailPage] = useState(1);
+  const [assetView, setAssetView] = useState(null);
   const scopeRanges = project?.scopeRanges?.length ? allowedRanges.filter((range) => project.scopeRanges.includes(range)) : allowedRanges;
-  const supplemental = buildSupplementalProgress(project, scopeRanges, undefined, new Date(), getMobileInventoryResults(project?.projectNo));
-  const progressRows = [...PROGRESS_ROWS.filter((row) => !['库房', '公共'].includes(row.range) && scopeRanges.includes(row.range)), ...supplemental.summary];
-  const detailRows = [...PROGRESS_DETAIL_ROWS.filter((row) => !['库房', '公共'].includes(row.range)), ...supplemental.details].filter((row) => scopeRanges.includes(row.range) && row.range === detailRange);
-  const downloadProgress = (rows, columns, name) => {
-    const csv = serializeProgressExport(rows, columns.filter((column) => column.dataIndex).map((column) => [column.title, column.dataIndex]));
-    const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${project?.projectNo || '盘点项目'}-${name}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    messageApi.success('已导出当前进度数据');
+  const progress = buildInventoryProgress(project, scopeRanges, plans, assetsForPlan, EMPLOYEE_ROWS);
+  const progressRows = progress.summary;
+  const detailRows = progress.details.filter((row) => row.range === detailRange);
+  const filteredDetailRows = filterProgressRows(detailRows, detailFilters);
+  const downloadProgress = (rows, columns, name) => XLSX.writeFile(
+    createProgressWorkbook(rows, columns.filter((column) => column.dataIndex).map((column) => [column.title, column.dataIndex]), name),
+    (project?.projectNo || '盘点项目') + '-' + name + '.xlsx');
+  const openAssetView = (uncounted) => {
+    const scoped = detailRange ? filteredDetailRows.flatMap((row) => row.assets) : progress.assets;
+    setAssetView({ title: uncounted ? '未盘资产' : '盘点全量资产', assets: uncounted ? scoped.filter(isUncountedProgressAsset) : scoped });
   };
+  const assetTools = <Space>
+    <Button onClick={() => openAssetView(false)}>查看盘点全量资产</Button>
+    <Button onClick={() => openAssetView(true)}>查看未盘资产</Button>
+  </Space>;
+  const assetModal = assetView && <InventoryProgressAssetsModal title={assetView.title} assets={assetView.assets} projectNo={project.projectNo} onClose={() => setAssetView(null)} />;
 
   useEffect(() => {
     const items = detailRange
@@ -79,12 +85,16 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
       width: 100,
       fixed: 'right',
       render: (_, row) => ['员工', '库房', '公共'].includes(row.range)
-        ? <Button type="link" className="px-0" onClick={() => setDetailRange(row.range)}>查看详情</Button>
+        ? <Button type="link" className="px-0" onClick={() => { setDetailRange(row.range); setDetailFilters({}); setDetailPage(1); }}>查看详情</Button>
         : '-',
     },
   ];
 
+  const roleColumns = project?.projectType === '复盘'
+    ? [{ title: '财务监督人', dataIndex: 'financialSupervisor', width: 130 }, { title: '内审监督人', dataIndex: 'auditSupervisor', width: 130 }]
+    : [{ title: '计划监督人', dataIndex: 'supervisor', width: 130 }];
   const detailColumns = [
+    { title: '盘点范围', dataIndex: 'range', width: 100 },
     { title: '子公司', dataIndex: 'organization', width: 140, fixed: 'left' },
     { title: '一级部门', dataIndex: 'department', width: 220 },
     { title: 'City', dataIndex: 'city', width: 110 },
@@ -94,18 +104,22 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
     { title: '未盘数量', dataIndex: 'uncounted', width: 110, align: 'right', render: formatCount },
     { title: '数量进度', dataIndex: 'progress', width: 180, render: (value) => <Progress percent={value} size="small" /> },
     { title: '剩余天数', dataIndex: 'remainingDays', width: 100 },
-    { title: '计划监督人', dataIndex: 'supervisor', width: 130 },
-    { title: '财务监督人', dataIndex: 'financialSupervisor', width: 130 },
-  ];
+    ...roleColumns,
+  ].map((column) => ({ ...column,
+    filters: [...new Set(detailRows.map((row) => row[column.dataIndex] ?? '-'))].map((value) => ({ text: String(value), value })),
+    filteredValue: detailFilters[column.dataIndex] || null, filterSearch: true,
+    onFilter: (value, row) => String(row[column.dataIndex] ?? '-') === String(value),
+  }));
 
   if (detailRange) {
     return (
       <Space direction="vertical" size={16} className="w-full">
-        {contextHolder}
+        {assetModal}
         <Typography.Title level={4} style={{ margin: 0 }}>进度详情</Typography.Title>
         <ProjectInfoCard project={project} />
-        <Card size="small" title={<SectionCardTitle>进度详情</SectionCardTitle>} extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(detailRows, detailColumns, `${detailRange}进度详情`)}>导出</Button>}>
-          <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={detailRows} pagination={false} scroll={{ x: 1350 }} locale={{ emptyText: '暂无该盘点范围的进度详情数据' }} />
+        <Space>{assetTools}<Button onClick={() => { setDetailFilters({}); setDetailPage(1); }}>重置筛选</Button></Space>
+        <Card size="small" title={<SectionCardTitle>进度详情</SectionCardTitle>} extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(filteredDetailRows, detailColumns, `${detailRange}进度详情`)}>导出</Button>}>
+          <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={filteredDetailRows} pagination={{ current: detailPage, defaultPageSize: 10, showSizeChanger: true, showTotal: (total) => '共 ' + total + ' 条' }} onChange={(pagination, filters, sorter, extra) => { setDetailFilters(filters); setDetailPage(extra.action === 'filter' ? 1 : pagination.current); }} scroll={{ x: 1350 }} locale={{ emptyText: '暂无该盘点范围的进度详情数据' }} />
         </Card>
         <div className="flex justify-center pb-2">
           <Button onClick={() => setDetailRange('')}>返回</Button>
@@ -116,9 +130,10 @@ export default function AssetInventoryProgressV2({ project, onBack }) {
 
   return (
     <Space direction="vertical" size={16} className="w-full">
-      {contextHolder}
+      {assetModal}
       <Typography.Title level={4} style={{ margin: 0 }}>盘点进度</Typography.Title>
       <ProjectInfoCard project={project} />
+      {assetTools}
       <Card
         size="small"
         title={<SectionCardTitle>项目进度</SectionCardTitle>}

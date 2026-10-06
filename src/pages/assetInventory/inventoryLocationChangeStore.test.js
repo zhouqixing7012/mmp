@@ -1,3 +1,4 @@
+import { savePhotoReviewResult } from './inventoryPhotoReviewStore';
 import { buildLocationDraft } from './inventoryLocationEdit';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import {
@@ -7,9 +8,11 @@ import {
   getInventoryLocationChangeRequest,
   getInventoryLocationChangeRequests,
   recordInventoryLocationChange,
-  submitInventoryLocationChangeRequest,
+  submitInventoryLocationChangeRequest as submitRequest,
 } from './inventoryLocationChangeStore';
 
+const sourceAssets = [{ assetTag: '114121801802', inventoryRange: '员工', needPhoto: true }, { assetTag: '114130000019', inventoryRange: '员工', needPhoto: false }, { assetTag: '114140000031', inventoryRange: '机房', needPhoto: true }];
+const submitInventoryLocationChangeRequest = (args) => submitRequest({ projectAssets: sourceAssets, ...args });
 const assetTag = '114121801802';
 const projectNo = 'RCP-202609300001';
 const before = { city: '北京市', building: '搜狐媒体大厦', floor: '9层' };
@@ -22,7 +25,7 @@ const submit = () => submitInventoryLocationChangeRequest({
   projectNo, projectType: '复盘', reason: '复盘现场核对位置变化', applicant: '201132000160-孙志强',
 });
 
-beforeEach(() => window.localStorage.clear());
+beforeEach(() => { window.localStorage.clear(); window.sessionStorage.clear(); [projectNo, 'RCP-202608180001'].forEach((number) => savePhotoReviewResult(number, { assetTag, status: '已盘' })); });
 
 test('审批前台账不变，何文审批后更新台账和位置变更事务且不能重复审批', () => {
   record();
@@ -138,4 +141,46 @@ test('添加资产越出项目范围或重复时整个提交不落库',()=>{
  const args={projectNo,projectType:'复盘',reason:'新增核对',applicant:'冯丽婷',addedAssets:[draft],permittedAssetTags:[]};
  expect(()=>submitInventoryLocationChangeRequest(args)).toThrow('当前复盘项目范围');
  expect(()=>submitInventoryLocationChangeRequest({...args,addedAssets:[draft,draft],permittedAssetTags:[assetTag]})).toThrow('重复');expect(getInventoryLocationChanges(projectNo)).toHaveLength(0);expect(getInventoryLocationChangeRequests(projectNo)).toHaveLength(0);
+});
+
+
+test.each(['审核中', '未盘'])('需照片的拟变更可保存，但%s不能越过提交服务发起审批', (status) => {
+  savePhotoReviewResult(projectNo, { assetTag, status });
+  record();
+  const beforeSubmit = getInventoryLocationChanges(projectNo);
+  expect(() => submit()).toThrow('照片须审核通过');
+  expect(getInventoryLocationChangeRequests(projectNo)).toHaveLength(0);
+  expect(getInventoryLocationChanges(projectNo)).toEqual(beforeSubmit);
+  savePhotoReviewResult(projectNo, { assetTag, status: '已盘' });
+  expect(submit().status).toBe('待审批');
+});
+
+test('别的项目审核通过不能放行本项目；手工添加未审核资产整批拒绝', () => {
+  window.localStorage.clear(); window.sessionStorage.clear();
+  savePhotoReviewResult('other-project', { assetTag, status: '已盘' });
+  const draft = { ...buildLocationDraft(getAssetMaintenanceRows().find((asset) => asset.tag === assetTag)), after };
+  expect(() => submitInventoryLocationChangeRequest({ projectNo, projectType: '复盘', reason: '手工准备', applicant: '冯丽婷', addedAssets: [draft], permittedAssetTags: [assetTag] })).toThrow('照片须审核通过');
+  expect(getInventoryLocationChangeRequests(projectNo)).toHaveLength(0);
+  expect(getInventoryLocationChanges(projectNo)).toHaveLength(0);
+});
+
+test('照片未就绪的移动拟变更保留待发起，其余就绪变更可发起且机房免照片审核', () => {
+  savePhotoReviewResult(projectNo, { assetTag, status: '审核中' });
+  record();
+  const second = recordInventoryLocationChange({ projectNo, projectType: '复盘', assetTag: '114130000019', before, after, operator: '冯丽婷' });
+  const request = submit();
+  expect(request.changeIds).toEqual([second.id]);
+  expect(getInventoryLocationChanges(projectNo).find((item) => item.assetTag === assetTag).status).toBe('待发起');
+  const machine = getAssetMaintenanceRows().find((asset) => asset.tag === '114140000031');
+  const machineDraft = buildLocationDraft(machine);
+  const machineAfter = { ...machineDraft.before, floor: '8层' };
+  expect(submitInventoryLocationChangeRequest({ projectNo, projectType: '复盘', reason: '机房现场核对', applicant: '冯丽婷', addedAssets: [machineDraft], permittedAssetTags: [machine.tag], draftLocations: { [machineDraft.id]: machineAfter } }).status).toBe('待审批');
+});
+
+
+test('绕过页面直接发起时仍必须提供本项目照片规则，不能因缺数据免审', () => {
+  record();
+  expect(() => submitRequest({ projectNo, projectType: '复盘', reason: '直接调用', applicant: '冯丽婷' })).toThrow('当前复盘项目资产范围');
+  expect(getInventoryLocationChangeRequests(projectNo)).toHaveLength(0);
+  expect(getInventoryLocationChanges(projectNo)[0].status).toBe('待发起');
 });

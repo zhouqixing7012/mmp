@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { inventoryLocationPhotoBlockReason } from './inventoryLocationPhotoRules';
 import { buildLocationDraft, validateLocation } from './inventoryLocationEdit';
 import { getInventoryLocationOptions } from './inventoryMobileLocationService';
 import { CURRENT_BORROWER } from '../../mock/assetBorrowingMock';
@@ -96,14 +97,15 @@ export function recordInventoryLocationChange({ projectNo, projectType, planNo =
   return change;
 }
 
-export function submitInventoryLocationChangeRequest({ projectNo, projectType, reason, applicant, applicantDepartment = '', draftLocations = {}, draftRemarks = {}, addedAssets = [], permittedAssetTags = [] }) {
+export function submitInventoryLocationChangeRequest({ projectNo, projectType, reason, applicant, applicantDepartment = '', draftLocations = {}, draftRemarks = {}, addedAssets = [], permittedAssetTags = [], projectAssets = [] }) {
   if (projectType !== '复盘') throw new Error('只有复盘项目可以发起位置变更');
   if (!text(projectNo)) throw new Error('缺少盘点项目编号');
   if (!text(reason)) throw new Error('请填写变更原因');
   if (!text(applicant)) throw new Error('缺少申请人');
   const state = readState();
-  const pending = state.changes.filter((change) => change.projectNo === projectNo && change.status === '待发起');
-  const tags = new Set(pending.map(change => change.assetTag));
+  const waiting = state.changes.filter((change) => change.projectNo === projectNo && change.status === '待发起');
+  const pending = waiting.filter((change) => !inventoryLocationPhotoBlockReason(projectNo, change.assetTag, projectAssets));
+  const tags = new Set(waiting.map(change => change.assetTag));
   const additions = addedAssets.map(change => {
     if (!permittedAssetTags.includes(change.assetTag)) throw new Error('添加资产不在当前复盘项目范围');
     if (tags.has(change.assetTag) || state.changes.some(item => item.projectNo === projectNo && item.assetTag === change.assetTag && item.status === '待审批')) throw new Error('添加资产重复或已提交审批');
@@ -114,8 +116,10 @@ export function submitInventoryLocationChangeRequest({ projectNo, projectType, r
     return {...draft, after:draftLocations[change.id] || change.after, remark:draftRemarks[change.id] ?? change.remark, projectNo, projectType, operator:applicant, recordedAt:currentTime(), id:'inventory-location-' + Date.now() + '-' + Math.random().toString(36).slice(2,8)};
   });
   const changes = [...pending, ...additions];
-  if (!changes.length) throw new Error('当前项目没有待发起的位置变更');
+  if (!changes.length) throw new Error(waiting.length ? inventoryLocationPhotoBlockReason(projectNo, waiting[0].assetTag, projectAssets) : '当前项目没有待发起的位置变更');
   const prepared = changes.map((change) => {
+    const photoBlockReason = inventoryLocationPhotoBlockReason(projectNo, change.assetTag, projectAssets);
+    if (photoBlockReason) throw new Error(photoBlockReason);
     const target = location(draftLocations[change.id] || change.after);
     if (FIELDS.some((field) => !target[field])) throw new Error(`${change.assetTag} 的新位置不完整`);
     validateLocation(target, getInventoryLocationOptions);

@@ -61,9 +61,9 @@ function toImportedPhoto(record) {
   };
 }
 
-function buildReviewRows(projectNo, allowedRanges) {
+export function buildReviewRows(projectNo, allowedRanges) {
   const rows = IMAGE_REVIEW_ROWS
-    .filter((row) => isInventoryRangeAllowed(row.asset, allowedRanges))
+    .filter((row) => row.asset.inventoryRange !== '机房' && isInventoryRangeAllowed(row.asset, allowedRanges))
     .map((row) => ({
       ...row,
       photos: {
@@ -84,7 +84,7 @@ function buildReviewRows(projectNo, allowedRanges) {
   importedByTag.forEach((records, assetTag) => {
     const existing = rowByTag.get(assetTag);
     const asset = existing?.asset || ASSET_ROWS.find((row) => String(row.assetTag || '') === assetTag);
-    if (!asset || !isInventoryRangeAllowed(asset, allowedRanges)) return;
+    if (!asset || asset.inventoryRange === '机房' || !isInventoryRangeAllowed(asset, allowedRanges)) return;
 
     const overall = toImportedPhoto(records.find((record) => record.photoType === 'overall'));
     const partial = toImportedPhoto(records.find((record) => record.photoType === 'partial'));
@@ -111,12 +111,22 @@ function buildReviewRows(projectNo, allowedRanges) {
     rowByTag.set(assetTag, reviewRow);
   });
 
-  getPhotoReviewResults(projectNo).filter((entry) => entry.status === '审核中').forEach((entry) => {
-    if (rowByTag.has(entry.assetTag) || !allowedRanges.includes('员工')) return;
-    const asset = { key: `mobile-${entry.assetTag}`, assetTag: entry.assetTag, description: entry.description,
-      owner: entry.owner, inventoryRange: '员工', inventoryStatus: '审核中', inventoryDate: entry.inventoryDate,
-      organization: '-', ownerDept: '-', category: '-', subCategory: '-', city: '-', building: '-' };
-    rows.push({ key: `mobile-review-${entry.assetTag}`, asset, reviewStatus: '待审核', decision: '',
+  getPhotoReviewResults(projectNo).forEach((entry) => {
+    const reviewStatus = { 审核中: '待审核', 已盘: '审核通过', 未盘: '审核不通过' }[entry.status];
+    if (!reviewStatus) return;
+    const sourceAsset = ASSET_ROWS.find((asset) => asset.assetTag === entry.assetTag);
+    const range = entry.inventoryRange ?? sourceAsset?.inventoryRange;
+    if (!range || range === '机房' || !allowedRanges.includes(range)) return;
+    const existing = rowByTag.get(entry.assetTag);
+    if (existing) {
+      existing.asset = { ...existing.asset, inventoryStatus: entry.status };
+      existing.reviewStatus = reviewStatus;
+      existing.decision = entry.status === '已盘' ? 'pass' : entry.status === '未盘' ? 'fail' : '';
+      return;
+    }
+    const asset = { ...sourceAsset, key: `mobile-${entry.assetTag}`, assetTag: entry.assetTag, description: entry.description,
+      owner: entry.owner, inventoryRange: range, inventoryStatus: entry.status, inventoryDate: entry.inventoryDate };
+    rows.push({ key: `mobile-review-${entry.assetTag}`, asset, reviewStatus, decision: entry.status === '已盘' ? 'pass' : entry.status === '未盘' ? 'fail' : '',
       photos: { overall: DEFAULT_REVIEW_PHOTOS[0], partial: DEFAULT_REVIEW_PHOTOS[1], gallery: DEFAULT_REVIEW_PHOTOS } });
   });
 
@@ -517,11 +527,9 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
     const pendingSelected = rows.filter((row) => selected.has(row.key) && row.reviewStatus === '待审核');
     if (pendingSelected.find((row) => !row.decision)) { messageApi.warning('所选待审核资产中存在未选择审核结果的分录'); return; }
     pendingSelected.forEach((row) => {
-      if (getPhotoReviewResults(project?.projectNo).some((entry) => entry.assetTag === row.asset.assetTag)) {
-        savePhotoReviewResult(project?.projectNo, { assetTag: row.asset.assetTag,
-          status: row.decision === 'pass' ? '已盘' : '未盘', owner: row.asset.owner,
-          description: row.asset.description, inventoryDate: row.asset.inventoryDate });
-      }
+      savePhotoReviewResult(project?.projectNo, { assetTag: row.asset.assetTag,
+        status: row.decision === 'pass' ? '已盘' : '未盘', inventoryRange: row.asset.inventoryRange, owner: row.asset.owner,
+        description: row.asset.description, inventoryDate: row.asset.inventoryDate });
     });
     setRows((current) => current.map((row) => {
       if (!selected.has(row.key) || row.reviewStatus !== '待审核') return row;

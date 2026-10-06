@@ -105,6 +105,11 @@ function formatStatusCount(assets, status) {
   return assets.filter((asset) => asset.status === status).length;
 }
 
+// 机房照片只留存，其他范围要求上传的照片需人工审核。
+function needsPhotoReview(asset) {
+  return asset.area !== '机房' && asset.photoRequired;
+}
+
 function canInventory(asset) {
   return ['未盘', '报失'].includes(asset?.status);
 }
@@ -211,7 +216,7 @@ function PhotoSlot({ label, added, onAdd, onRemove }) {
   );
 }
 
-function ScanPicker({ onSelect, canScanMine, canScanProxy }) {
+function ScanPicker({ onSelect, canScanMine, canScanProxy, canSimulateNetwork }) {
   return (
     <div className="inventory-scan-picker">
       <div className="inventory-section-title">模拟扫码结果</div>
@@ -220,13 +225,13 @@ function ScanPicker({ onSelect, canScanMine, canScanProxy }) {
         <Button disabled={!canScanProxy} onClick={() => onSelect('proxy')}>扫描他人资产</Button>
         <Button onClick={() => onSelect('scanned')}>扫描已盘资产</Button>
         <Button onClick={() => onSelect('outOfScope')}>扫描范围外资产</Button>
-        <Button onClick={() => onSelect('network')}>模拟网络失败</Button>
+        <Button disabled={!canSimulateNetwork} onClick={() => onSelect('network')}>模拟网络失败</Button>
       </div>
     </div>
   );
 }
 
-function ScanResultModal({ scanModal, onClose }) {
+function ScanResultModal({ scanModal, onClose, onRest, onNetworkFailure }) {
   if (!scanModal) return null;
   const copy = SCAN_COPY[scanModal.kind];
   return (
@@ -241,8 +246,8 @@ function ScanResultModal({ scanModal, onClose }) {
     >
       <p className="inventory-modal-message">{copy.message}</p>
       <div className="inventory-modal-actions">
-        <Button type="primary" onClick={onClose}>{copy.confirm || '再接再厉'}</Button>
-        {['scanned', 'outOfScope'].includes(scanModal.kind) && <Button onClick={onClose}>休息一下</Button>}
+        <Button type="primary" onClick={scanModal.kind === 'network' ? onNetworkFailure : onClose}>{copy.confirm || '再接再厉'}</Button>
+        {['scanned', 'outOfScope'].includes(scanModal.kind) && <Button onClick={onRest}>休息一下</Button>}
       </div>
     </Modal>
   );
@@ -429,7 +434,7 @@ export default function AssetInventoryMobilePrototype() {
       messageApi.warning('请先拍摄并上传必需的照片，再提交盘点');
       return;
     }
-    const reviewPending = scanAsset.area === '员工' && scanAsset.photoRequired;
+    const reviewPending = needsPhotoReview(scanAsset);
     try {
       if (locationChanged && projectType === '复盘') {
         recordInventoryLocationChange({ projectNo: previewProjectNo, projectType, assetTag: scanAsset.tagNo, before: beforeLocation, after: locationDraft, operator: currentUser.name });
@@ -443,7 +448,7 @@ export default function AssetInventoryMobilePrototype() {
       return;
     }
     if (reviewPending) savePhotoReviewResult(previewProjectNo, {
-      assetTag: scanAsset.tagNo, status: '审核中', owner: scanAsset.owner,
+      assetTag: scanAsset.tagNo, status: '审核中', inventoryRange: scanAsset.area, owner: scanAsset.owner,
       description: scanAsset.assetDesc, inventoryDate: new Date().toISOString(),
     });
     saveMobileInventoryResult(previewProjectNo, scanAsset.tagNo, {
@@ -556,12 +561,12 @@ export default function AssetInventoryMobilePrototype() {
     if (success.length) {
       success.forEach((tagNo) => {
         const asset = assets.find((item) => item.tagNo === tagNo);
-        if (asset?.area === '员工' && asset.photoRequired) savePhotoReviewResult(previewProjectNo, { assetTag: tagNo, status: '审核中', owner: asset.owner, description: asset.assetDesc, inventoryDate: new Date().toISOString() });
-        saveMobileInventoryResult(previewProjectNo, tagNo, { status: asset.area === '员工' && asset.photoRequired ? '审核中' : asset.ownerNo === currentUser.employeeNo ? '已盘' : '代盘', inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name, lossReported: asset.lossReported, ...(asset.lossReason ? { lossReason: asset.lossReason, inventoryRemark: asset.inventoryRemark } : {}) });
+        if (needsPhotoReview(asset)) savePhotoReviewResult(previewProjectNo, { assetTag: tagNo, status: '审核中', inventoryRange: asset.area, owner: asset.owner, description: asset.assetDesc, inventoryDate: new Date().toISOString() });
+        saveMobileInventoryResult(previewProjectNo, tagNo, { status: needsPhotoReview(asset) ? '审核中' : asset.ownerNo === currentUser.employeeNo ? '已盘' : '代盘', inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name, lossReported: asset.lossReported, ...(asset.lossReason ? { lossReason: asset.lossReason, inventoryRemark: asset.inventoryRemark } : {}) });
       });
       setAssets((current) => current.map((asset) => (
         success.includes(asset.tagNo)
-          ? { ...asset, status: asset.area === '员工' && asset.photoRequired ? '审核中' : asset.ownerNo === currentUser.employeeNo ? '已盘' : '代盘', inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name, ...(asset.area === '公共' && projectType !== '复盘' && batchLocations[asset.tagNo] ? { address: Object.values(batchLocations[asset.tagNo]).join('-') } : {}) }
+          ? { ...asset, status: needsPhotoReview(asset) ? '审核中' : asset.ownerNo === currentUser.employeeNo ? '已盘' : '代盘', inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name, ...(asset.area === '公共' && projectType !== '复盘' && batchLocations[asset.tagNo] ? { address: Object.values(batchLocations[asset.tagNo]).join('-') } : {}) }
           : asset
       )));
     }
@@ -728,11 +733,13 @@ export default function AssetInventoryMobilePrototype() {
             模拟扫码
           </Button>
         </div>
-        {scanPickerOpen && <ScanPicker onSelect={handleScanPick} canScanMine={canScanMine} canScanProxy={canScanProxy} />}
+        {scanPickerOpen && <ScanPicker onSelect={handleScanPick} canScanMine={canScanMine} canScanProxy={canScanProxy} canSimulateNetwork={Boolean(selectedAsset && canInventory(selectedAsset) && simulationAssets.some((asset) => asset.id === selectedAsset.id))} />}
       </div>
       <ScanResultModal
         scanModal={scanModal}
         onClose={() => setScanModal(null)}
+        onRest={() => { setScanModal(null); setScannedDetail(false); setView(scanReturnView); }}
+        onNetworkFailure={() => { setScanModal(null); setScannedDetail(true); setView('detail'); }}
       />
     </>
   );

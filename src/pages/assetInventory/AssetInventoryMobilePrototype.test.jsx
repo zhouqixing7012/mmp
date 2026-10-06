@@ -5,6 +5,8 @@ import { getInventoryLocationChanges } from './inventoryLocationChangeStore';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import { savePhotoReviewResult } from './inventoryPhotoReviewStore';
 import { getMobileInventoryResults } from './inventoryMobileResultStore';
+import { INVENTORY_MOBILE_ASSETS } from '../../mock/inventoryMobileMock';
+import { getPhotoReviewResults } from './inventoryPhotoReviewStore';
 
 let mockLocationState = {};
 const mockWarning = jest.fn();
@@ -54,6 +56,75 @@ describe('AssetInventoryMobilePrototype', () => {
     fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
     expect(screen.getByRole('button', { name: '扫描本人资产' })).not.toBeDisabled();
     expect(screen.getByRole('button', { name: '扫描他人资产' })).toBeDisabled();
+  });
+
+  test('扫码异常继续留在扫码，休息退出原扫码入口', () => {
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: '开始盘点' }));
+    fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
+    fireEvent.click(screen.getByRole('button', { name: '扫描已盘资产' }));
+    fireEvent.click(screen.getByRole('button', { name: '再接再厉' }));
+    expect(screen.getByText('扫码盘点')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
+    fireEvent.click(screen.getByRole('button', { name: '扫描范围外资产' }));
+    fireEvent.click(screen.getByRole('button', { name: '休息一下' }));
+    expect(screen.getByRole('button', { name: '开始盘点' })).toBeInTheDocument();
+    expect(screen.queryByText('扫码盘点')).not.toBeInTheDocument();
+  });
+
+  test('模拟提交网络失败返回原资产详情且保留照片，不保存结果', () => {
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: '开始盘点' }));
+    scanMine();
+    screen.getAllByRole('button', { name: '拍照' }).forEach((button) => fireEvent.click(button));
+    fireEvent.click(screen.getByRole('button', { name: '返回' }));
+    fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
+    fireEvent.click(screen.getByRole('button', { name: '模拟网络失败' }));
+    fireEvent.click(screen.getByRole('button', { name: '好的' }));
+    expect(screen.getAllByText('戴尔.Latitude E7280').length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: '删除' })).toHaveLength(2);
+    expect(screen.getByRole('button', { name: '提交' })).toBeInTheDocument();
+    expect(getMobileInventoryResults('')).toEqual({});
+  });
+
+
+  test.each(['公共', '库房', '机房'])('%s需照片普通扫码按范围进入审核或完成', (area) => {
+    const asset = INVENTORY_MOBILE_ASSETS.find(row => row.area === area);
+    const original = { status: asset.status, photoRequired: asset.photoRequired };
+    asset.status = '未盘';
+    asset.photoRequired = true;
+    mockLocationState = { scopeRanges: [area] };
+    try {
+      render(<AssetInventoryMobilePrototype />);
+      fireEvent.click(screen.getByRole('button', { name: '开始盘点' }));
+      fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
+      fireEvent.click(screen.getByRole('button', { name: '扫描他人资产' }));
+      screen.getAllByRole('button', { name: '拍照' }).forEach(button => fireEvent.click(button));
+      fireEvent.click(screen.getByRole('button', { name: '提交' }));
+      expect(getMobileInventoryResults('')[asset.tagNo].status).toBe(area === '机房' ? '代盘' : '审核中');
+      expect(getPhotoReviewResults('')).toHaveLength(area === '机房' ? 0 : 1);
+      if (area !== '机房') expect(getPhotoReviewResults('')[0].inventoryRange).toBe(area);
+    } finally { Object.assign(asset, original); }
+  });
+
+  test.each(['公共', '库房', '机房'])('%s需照片快扫按范围进入审核或完成', (area) => {
+    const asset = INVENTORY_MOBILE_ASSETS.find(row => row.area === area);
+    const original = { status: asset.status, photoRequired: asset.photoRequired };
+    asset.status = '未盘';
+    asset.photoRequired = true;
+    mockLocationState = { scopeRanges: [area] };
+    try {
+      render(<AssetInventoryMobilePrototype />);
+      fireEvent.click(screen.getByRole('button', { name: '快速扫描' }));
+      fireEvent.click(screen.getByRole('button', { name: '模拟扫描标签' }));
+      fireEvent.click(screen.getByRole('button', { name: '结束扫描' }));
+      fireEvent.click(screen.getByRole('button', { name: (area === '公共' ? '查看资产' : '补拍照片') + asset.tagNo }));
+      screen.getAllByRole('button', { name: '拍照' }).forEach(button => fireEvent.click(button));
+      fireEvent.click(screen.getByRole('button', { name: area === '公共' ? '保存' : '保存图片' }));
+      fireEvent.click(screen.getByRole('button', { name: '提交' }));
+      expect(getMobileInventoryResults('')[asset.tagNo].status).toBe(area === '机房' ? '代盘' : '审核中');
+      expect(getPhotoReviewResults('')).toHaveLength(area === '机房' ? 0 : 1);
+    } finally { Object.assign(asset, original); }
   });
 
   test('各状态分组可折叠，已盘页签隐藏开始盘点', () => {

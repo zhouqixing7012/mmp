@@ -10,6 +10,7 @@ import { useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import SectionCardTitle from './SectionCardTitle';
 import { inventoryDateBlockReason } from './inventoryDateRules';
 import { planPersonnelBlockReason } from './inventoryPlanStartRules';
+import { calculateInventorySnapshotStats } from './inventorySnapshotStats';
 import InventoryLocationChangeFlow from './InventoryLocationChangeFlow';
 import InventoryReplayReview from './InventoryReplayReview';
 import { readDemoData, writeDemoData } from '../../services/demoStorage';
@@ -37,7 +38,7 @@ function ProjectInfoCard({ project }) {
   );
 }
 
-export default function AssetInventoryPlansV2Refined({ project, currentOperator, onBack, onOpenPlanAssets, rows, setRows, assetsForPlan, canManualCreate, onManualCreate, onPlansStarted, projectAssets = [] }) {
+export default function AssetInventoryPlansV2Refined({ project, currentOperator, onBack, onOpenPlanAssets, rows, setRows, assetsForPlan, canManualCreate, onManualCreate, onGenerateRemainingDefault, onPlansStarted, projectAssets = [] }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const projectClosed = project?.status === '盘点关闭';
@@ -55,7 +56,11 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   const [reviewOpen, setReviewOpen] = useState(false);
   const reviewStorageKey = `inventory-replay-review-${project?.projectNo || ''}`;
   const [submission, setSubmission] = useState(() => readDemoData(reviewStorageKey, null));
-  const visibleRows = useMemo(() => rows.filter((row) => allowedRanges.includes(row.range)).map((row) => projectClosed ? { ...row, status: '关闭' } : submission?.plans?.some(plan => plan.planNo === row.planNo) ? { ...row, status: '审核中' } : row), [rows, allowedRanges, projectClosed, submission]);
+  const visibleRows = rows.filter(row => allowedRanges.includes(row.range)).map(row => {
+    const stats = calculateInventorySnapshotStats(assetsForPlan(row), []);
+    return { ...row, assetCount: stats.execution, countedCount: stats.counted, uncountedCount: stats.uncounted,
+      status: projectClosed ? '关闭' : submission?.plans?.some(plan => plan.planNo === row.planNo) ? '审核中' : row.status };
+  });
   const updateFilter = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
   const filteredRows = useMemo(() => visibleRows.filter((row) => includesText(row.planNo, appliedFilters.planNo) && includesText(row.planName, appliedFilters.planName) && includesText(row.status, appliedFilters.planStatus) && matchesQuerySelection(row.organization, appliedFilters.organization) && includesText(row.range, appliedFilters.range)), [visibleRows, appliedFilters]);
   const editable = (row) => !projectClosed && row.status === '草稿';
@@ -68,6 +73,11 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   const handleStart = () => {
     if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
     if (!selectedKeys.length) { messageApi.warning('请先选择需要启动的盘点计划'); return; }
+    if (canManualCreate) {
+      Modal.confirm({ title: '有资产未生成盘点计划，是否按默认方式生成？', okText: '默认生成', cancelText: '手工创建',
+        onOk: onGenerateRemainingDefault, onCancel: onManualCreate });
+      return;
+    }
     const invalid = selectedRows.map((row) => inventoryDateBlockReason(project?.projectType, row.startDate, row.endDate)).find(Boolean);
     if (invalid) { messageApi.warning(invalid); return; }
     const personnelBlock = selectedRows.map((row) => planPersonnelBlockReason(row, assetsForPlan(row), project)).find(Boolean);
@@ -112,9 +122,9 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
     const dateBlockReason = inventoryDateBlockReason(project?.projectType, batchDates.startDate, batchDates.endDate);
     if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
-    setRows((current) => current.map((row) => allowedRanges.includes(row.range) ? { ...row, startDate: batchDates.startDate, endDate: batchDates.endDate } : row));
+    setRows((current) => current.map((row) => allowedRanges.includes(row.range) && row.status === '草稿' ? { ...row, startDate: batchDates.startDate, endDate: batchDates.endDate } : row));
     setBatchDateOpen(false);
-    messageApi.success(`已统一更新全部 ${visibleRows.length} 个盘点计划的盘点日期`);
+    messageApi.success(`已统一更新 ${visibleRows.filter(row => row.status === '草稿').length} 个草稿盘点计划的盘点日期`);
   };
 
   const submitReview = () => {
@@ -138,6 +148,8 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     { title: '计划名称', dataIndex: 'planName', width: 190 },
     { title: '计划状态', dataIndex: 'status', width: 100, render: (value) => <StatusTag value={value} /> },
     { title: '子公司', dataIndex: 'organization', width: 140 },
+    { title: '一级部门', dataIndex: 'department', width: 140 },
+    { title: 'City', dataIndex: 'city', width: 120 },
     { title: '盘点范围', dataIndex: 'range', width: 100 },
     { title: '资产总量', dataIndex: 'assetCount', width: 100, align: 'right' },
     { title: '未盘数量', dataIndex: 'uncountedCount', width: 100, align: 'right' },

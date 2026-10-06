@@ -37,12 +37,21 @@ export const INVENTORY_ASSET_EXPORT_FIELDS = [
   ['NO扫描位置', 'noScanLocation'],
 ];
 
-export function serializeInventoryAssetExport(rows) {
+function serializeRows(rows, fields) {
   const cell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
-  const lines = [INVENTORY_ASSET_EXPORT_FIELDS.map(([label]) => cell(label)).join(',')];
-  rows.forEach((row) => lines.push(INVENTORY_ASSET_EXPORT_FIELDS.map(([, key]) => cell(key === 'assetCategory' ? formatAssetCategory(row) : row[key])).join(',')));
-  const missingFields = INVENTORY_ASSET_EXPORT_FIELDS
+  const lines = [fields.map(([label]) => cell(label)).join(',')];
+  rows.forEach((row) => lines.push(fields.map(([, key]) => cell(key === 'assetCategory' ? formatAssetCategory(row) : key === 'executeInventory' ? (row.executeInventory ? '是' : '否') : row[key])).join(',')));
+  const missingFields = fields
     .filter(([, key]) => rows.some((row) => key === 'assetCategory' ? !row.category || !row.subCategory : !Object.prototype.hasOwnProperty.call(row, key)))
     .map(([label]) => label);
   return { csv: lines.join('\r\n'), missingFields };
+}
+
+export function serializeInventoryAssetExport(rows) {
+  return serializeRows(rows, INVENTORY_ASSET_EXPORT_FIELDS);
+}
+
+// 快照包含执行及未执行两类资产，额外保留明确的执行标识。
+export function serializeInventorySnapshotExport(rows) {
+  return serializeRows(rows, [...INVENTORY_ASSET_EXPORT_FIELDS, ['是否执行盘点', 'executeInventory']]);
 }

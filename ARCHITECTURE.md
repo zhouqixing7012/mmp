@@ -242,3 +242,6 @@ Vercel Preview
 | `inventoryPreparationNoticeStore` | 按项目保存、按计划去重待发送通知安排，不冒充真实投递。 |
 
 Refined启动校验后调用准备通知模型/安排存储，再改变计划状态；ProjectPageV2通过结果store向计划清单/导出提供当前项目结果。位置编辑添加/导入仅保存页内草稿，提交store整批验证后审批，批准由统一台账服务写入。
+
+
+盘点 DOCX 三方复核入口：[2026-10-06 报告](docs/asset-inventory/资产盘点-DOCX三方对抗测试-20261006.md)。`inventoryProjectPlanMock` 明确项目样本归属；`inventoryDefaultPlans` 管理默认分组；`inventoryProgressModel` 统一进度统计；`inventoryLocationPhotoRules` 统一位置变更照片前置条件。

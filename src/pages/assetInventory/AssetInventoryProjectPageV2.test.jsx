@@ -20,25 +20,27 @@ jest.mock('antd', () => ({
 jest.mock('./AssetInventoryProjectListV2', () => ({ onOpenPlans, onCreate, onOpenProject }) => {
   const { PROJECT_ROWS } = require('./mockData');
   const review = PROJECT_ROWS.find((row) => row.projectType === '复盘');
-  return <><button onClick={() => onOpenPlans(review)}>进入计划</button><button onClick={onCreate}>新建项目</button><button onClick={() => onOpenProject(review)}>查看项目</button></>;
+  return <><button onClick={() => onOpenPlans(review)}>进入计划</button><button onClick={() => onOpenPlans(PROJECT_ROWS.find(row => row.projectNo === 'CP-202608180001'))}>进入初盘</button><button onClick={onCreate}>新建项目</button><button onClick={() => onOpenProject(review)}>查看项目</button></>;
 });
-jest.mock('./AssetInventoryProjectPage', () => ({ onProjectGenerated }) => {
+jest.mock('./AssetInventoryProjectPage', () => ({ onProjectGenerated, snapshotEditRequest }) => {
   const React = require('react');
   const [page, setPage] = React.useState('盘点项目');
+  React.useEffect(() => { if (snapshotEditRequest) setPage('编辑盘点项目'); }, [snapshotEditRequest]);
   return <div><h4 className="ant-typography">{page}</h4>
     {page === '盘点项目' ? <button onClick={() => setPage('创建盘点项目')}>创建项目</button>
-      : <><button onClick={() => { setPage('盘点项目详情'); onProjectGenerated({ projectNo: 'CP-new', projectType: '初盘', status: '快照生成' }); }}>生成快照</button><button onClick={() => setPage('盘点项目')}>返 回</button></>}
+      : <><button onClick={() => { setPage('盘点项目详情'); onProjectGenerated({ projectNo: 'CP-new', projectType: '初盘', status: '快照生成', snapshotAssetKeys: ['asset-3'], scopeSnapshotAssetKeys: ['asset-3','asset-4'] }); }}>生成快照</button><button onClick={() => setPage('盘点项目')}>返 回</button></>}
   </div>;
 });
-jest.mock('./AssetInventoryPlansV2Refined', () => ({ project, projectAssets, onPlansStarted, onBack }) => <div data-testid="opened-plan-project">
+jest.mock('./AssetInventoryPlansV2Refined', () => ({ project, projectAssets, rows, onPlansStarted, onBack }) => <div data-testid="opened-plan-project">
   {project.projectNo}|{project.projectType}
+  <span data-testid="plan-rows">{rows.map(row => `${row.planNo}:${row.status}`).join(",")}</span>
   <span data-testid="location-project-assets">{projectAssets.map(asset => asset.assetTag).join(',')}</span>
   <button onClick={() => onPlansStarted({ ...project, status: '盘点中' })}>启动计划</button><button onClick={onBack}>退出计划</button>
 </div>);
 jest.mock('./AssetInventoryCustomPlanBuilder', () => () => null);
 jest.mock('./AssetInventoryImageReviewV2', () => () => null);
 jest.mock('./AssetInventoryProgressV2', () => () => null);
-jest.mock('./AssetInventorySnapshotDetailV2', () => ({ onBack, project }) => <section><h1>快照详情</h1><span>{project.status}</span><button onClick={onBack}>返回列表</button></section>);
+jest.mock('./AssetInventorySnapshotDetailV2', () => ({ onBack, onDeleteSnapshot, onGenerateDefault, project, assets, onSnapshotRowsChange }) => <section><h1>快照详情</h1><span>{project.status}</span><button onClick={onBack}>返回列表</button><button onClick={() => onDeleteSnapshot(project)}>撤销快照</button><button onClick={onGenerateDefault}>生成默认计划</button><button onClick={() => onSnapshotRowsChange([], assets.filter(asset => project.scopeSnapshotAssetKeys.includes(asset.key)).map(asset => ({ ...asset, executeInventory: false })))}>转移执行资产</button></section>);
 jest.mock('./AssetInventoryPlanViewsV2', () => ({ AssetInventoryPlanAssetListV2: () => null }));
 
 test('新版列表点击复盘进入计划时父级旧版点击捕获不会改选 CP 项目', () => {
@@ -76,4 +78,48 @@ test('位置新增候选包含项目未执行资产，但不包含范围外资�
   fireEvent.click(screen.getAllByRole('button', { name:'进入计划' })[0]);
   expect(screen.getByTestId('location-project-assets')).toHaveTextContent('3103201755,3102200966');
   expect(screen.getByTestId('location-project-assets')).not.toHaveTextContent('114122102371');
+});
+
+test('无计划结果快照撤销后回到可编辑草稿，并能重新生成', async () => {
+  render(<AssetInventoryProjectPageV2 />);
+  fireEvent.click(screen.getByRole('button', { name: '新建项目' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: '生成快照' })).toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
+  fireEvent.click(screen.getByRole('button', { name: '撤销快照' }));
+  await waitFor(() => expect(screen.queryByRole('heading', { name: '快照详情' })).not.toBeInTheDocument());
+  expect(screen.getByText('编辑盘点项目')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
+  expect(screen.getByRole('heading', { name: '快照详情' })).toBeInTheDocument();
+  expect(screen.getByText('快照生成')).toBeInTheDocument();
+});
+
+test('不同项目计划相互隔离，重新进入保留当前项目状态', () => {
+  render(<AssetInventoryProjectPageV2 />);
+  fireEvent.click(screen.getByRole('button', { name: '进入计划' }));
+  expect(screen.getByTestId('plan-rows')).toHaveTextContent('PLAN-20260818-0002:草稿');
+  fireEvent.click(screen.getByRole('button', { name: '启动计划' }));
+  fireEvent.click(screen.getByRole('button', { name: '退出计划' }));
+  fireEvent.click(screen.getByRole('button', { name: '进入初盘' }));
+  expect(screen.getByTestId('opened-plan-project')).toHaveTextContent('CP-202608180001');
+  expect(screen.getByTestId('plan-rows')).toHaveTextContent('PLAN-20260818-0003:关闭');
+  fireEvent.click(screen.getByRole('button', { name: '退出计划' }));
+  fireEvent.click(screen.getByRole('button', { name: '进入计划' }));
+  expect(screen.getByTestId('opened-plan-project')).toHaveTextContent('RCP-202608180001');
+  expect(screen.getByTestId('opened-plan-project')).not.toHaveTextContent('PLAN-20260818-0004');
+});
+
+test('生成未启动计划后撤销快照，同时撤销草稿计划，可重新生成', async () => {
+  render(<AssetInventoryProjectPageV2 />);
+  fireEvent.click(screen.getByRole('button', { name: '新建项目' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: '生成快照' })).toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
+  fireEvent.click(screen.getByRole('button', { name: '生成默认计划' }));
+  expect(screen.getByTestId('plan-rows').textContent).toMatch(/PLAN-\d{8}-0001:草稿/);
+  fireEvent.click(screen.getByRole('button', { name: '退出计划' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: '撤销快照' })).toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: '撤销快照' }));
+  await waitFor(() => expect(screen.getByText('编辑盘点项目')).toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
+  fireEvent.click(screen.getByRole('button', { name: '生成默认计划' }));
+  expect(screen.getByTestId('plan-rows').textContent).toMatch(/PLAN-\d{8}-0001:草稿/);
 });

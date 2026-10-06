@@ -13,8 +13,11 @@ const PLAN_FIELDS = [
   ['盘点结束日期', 'endDate'], ['计划负责人', 'manager'],
 ];
 
-export function mergePlanInventoryResult(asset, result) {
-  if (!result) return asset;
+export function mergePlanInventoryResult(asset, result, photoReview) {
+  if (!result && !photoReview) return asset;
+  // 审核记录 status 保存盘点结论（审核中/已盘/未盘），不是页面上的图片审核状态文案。
+  const reviewStatus = photoReview?.status;
+  result = result || {};
   return {
     ...asset,
     ...(result.status !== undefined ? { inventoryStatus: result.status } : {}),
@@ -23,6 +26,7 @@ export function mergePlanInventoryResult(asset, result) {
     ...(result.inventoryNote !== undefined ? { inventoryNote: result.inventoryNote } : {}),
     ...(result.inventoryRemark !== undefined ? { inventoryRemark: result.inventoryRemark } : {}),
     ...(result.lossReason !== undefined ? { lossReason: result.lossReason } : {}),
+    ...(reviewStatus !== undefined ? { inventoryStatus: reviewStatus } : {}),
   };
 }
 

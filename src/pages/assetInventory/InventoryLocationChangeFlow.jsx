@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Card, Input, Modal, Space, Table, Typography, Upload, message as antdMessage } from 'antd';
+import { Alert, Button, Card, Input, Modal, Space, Table, Typography, Upload, message as antdMessage } from 'antd';
 import * as XLSX from 'xlsx';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import { buildLocationDraft, LOCATION_IMPORT_HEADERS, parseLocationImport, validateLocation } from './inventoryLocationEdit';
@@ -12,6 +12,7 @@ import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import { getInventoryLocationOptions } from './inventoryMobileLocationService';
 import { approveInventoryLocationChangeRequest, getInventoryLocationApplicant, getInventoryLocationChangeRequest, getInventoryLocationChanges, submitInventoryLocationChangeRequest } from './inventoryLocationChangeStore';
 import './inventoryLocationChange.css';
+import { inventoryLocationPhotoBlockReason } from './inventoryLocationPhotoRules';
 
 const FIELD_NAMES = { city: '城市', building: '建筑物', floor: '楼层/机房' };
 const fields = Object.keys(FIELD_NAMES);
@@ -40,7 +41,9 @@ export default function InventoryLocationChangeFlow({ project, currentOperator, 
   const [entryTime] = useState(() => dayjs().format('YYYY-MM-DD HH:mm:ss'));
   const [applicant] = useState(() => getInventoryLocationApplicant(currentOperator));
   const ledger = useMemo(() => new Map(getAssetMaintenanceRows().map(row => [row.tag, row])), []);
-  const pending = [...changes.filter(change => change.status === '待发起'), ...addedAssets];
+  const waiting = changes.filter(change => change.status === '待发起');
+  const held = waiting.filter(change => inventoryLocationPhotoBlockReason(project.projectNo, change.assetTag, projectAssets));
+  const pending = [...waiting.filter(change => !inventoryLocationPhotoBlockReason(project.projectNo, change.assetTag, projectAssets)), ...addedAssets];
   const permittedTags = [...new Set(projectAssets.map(asset => String(asset.assetTag || asset.tag || '')).filter(Boolean))];
   const availableAssets = [...ledger.values()].filter(asset => permittedTags.includes(asset.tag));
   const blockedTags = changes.filter(change => ['待发起','待审批'].includes(change.status)).map(change => change.assetTag).concat(addedAssets.map(change => change.assetTag));
@@ -82,7 +85,7 @@ export default function InventoryLocationChangeFlow({ project, currentOperator, 
   const submit = () => {
     if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
     try {
-      const next = submitInventoryLocationChangeRequest({projectNo:project.projectNo, projectType:project.projectType, reason, applicant:applicant.value, applicantDepartment:applicant.department, draftLocations:drafts, draftRemarks:remarks, addedAssets, permittedAssetTags:permittedTags});
+      const next = submitInventoryLocationChangeRequest({projectNo:project.projectNo, projectType:project.projectType, reason, applicant:applicant.value, applicantDepartment:applicant.department, draftLocations:drafts, draftRemarks:remarks, addedAssets, permittedAssetTags:permittedTags, projectAssets});
       setChanges(getInventoryLocationChanges(project.projectNo));
       setAddedAssets([]); setSelectedKeys([]);
       setActiveRequestId(next.id);
@@ -125,6 +128,7 @@ export default function InventoryLocationChangeFlow({ project, currentOperator, 
       </DetailGrid>
     </Card>
     <Card size="small" title={<SectionCardTitle>资产明细</SectionCardTitle>} extra={<Typography.Text type="secondary">共计资产 {rows.length} 项，总计明细 {rows.length} 条</Typography.Text>}>
+      {!readOnly && held.length > 0 && <Alert className="mb-3" type="info" showIcon message={held.map(change => inventoryLocationPhotoBlockReason(project.projectNo, change.assetTag, projectAssets)).join("；")} />}
       {!readOnly && <Space className="mb-3" wrap>
         <Button disabled={importing || !availableAssets.some(asset => !blockedTags.includes(asset.tag))} onClick={()=>setAssetPickerOpen(true)}>添加资产</Button>
         <Upload accept=".xlsx,.xls,.csv" showUploadList={false} multiple={false} disabled={importing} beforeUpload={importFile}><Button loading={importing}>批量导入</Button></Upload>
