@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Checkbox, Drawer, Empty, Input, Modal, message } from 'antd';
+import { Badge, Button, Checkbox, Drawer, Empty, Input, Modal, message } from 'antd';
 import { ArrowLeft, ArrowRight, ChevronRight, Clock3, Flashlight, FlashlightOff, PackagePlus, Plus, QrCode, Search, Smartphone, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getEnabledWarehouses } from '../../mock/reference/warehouseCatalog';
@@ -15,7 +15,7 @@ const EMPTY_LINES = [];
 const WAITING_STATUSES = new Set(['出库待接收', '待接收']);
 const formatWarehouse = (row) => `${row.warehouseCode}.${row.warehouseDescription}`;
 const eligibleAssets = (warehouse) => INVENTORY_ASSET_POOL.filter((asset) => (
-  ['1.资产', '2.低值耐用品'].includes(asset.materialGroup)
+  asset.materialGroup === '1.资产'
   && asset.warehouse === warehouse
   && !asset.locked
   && Number(asset.availableQty || 0) > 0
@@ -49,7 +49,7 @@ const INITIAL_DOCUMENTS = [
     id: 'move-rejected-1', documentNo: 'TS-202609220012', status: '已驳回',
     fromWarehouse: warehouseName('I0013'), toWarehouse: warehouseName('I0001'),
     createdDate: '2026-09-22', creator: '206984-何文', remark: '前台设备移库',
-    lines: [{ ...seedAsset, id: 'line-rejected-1', warehouse: TRANSIT_WAREHOUSE, moveStatus: '已驳回', verified: false, rejectReason: '物资标签与实物不一致', moveDesc: '' }],
+    lines: [{ ...seedAsset, id: 'line-rejected-1', warehouse: TRANSIT_WAREHOUSE, moveStatus: '已驳回', verified: false, rejectReason: '资产标签与实物不一致', moveDesc: '' }],
   },
 ];
 
@@ -223,8 +223,8 @@ function AssetPicker({ open, assets, onClose, onChoose }) {
   const [query, setQuery] = useState('');
   const results = assets.filter((asset) => `${asset.assetTag} ${asset.sn} ${asset.materialDesc}`.toLowerCase().includes(query.trim().toLowerCase()));
   return (
-    <Drawer open={open} title="选择移库物资" placement="bottom" height="82vh" onClose={() => { setQuery(''); onClose(); }} className="move-mobile-drawer" rootClassName="move-mobile-drawer-root">
-      <Input allowClear prefix={<Search size={16} />} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索标签号、SN或物资说明" />
+    <Drawer open={open} title="选择移库资产" placement="bottom" height="82vh" onClose={() => { setQuery(''); onClose(); }} className="move-mobile-drawer" rootClassName="move-mobile-drawer-root">
+      <Input allowClear prefix={<Search size={16} />} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索标签号、SN或资产说明" />
       <div className="move-mobile-option-list">
         {results.map((asset) => (
           <Button type="text" htmlType="button" block key={asset.id} className="move-mobile-asset-option" onClick={() => { onChoose(asset); setQuery(''); }}>
@@ -233,7 +233,7 @@ function AssetPicker({ open, assets, onClose, onChoose }) {
             <Plus size={18} />
           </Button>
         ))}
-        {!results.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="没有可添加的移库物资" />}
+        {!results.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="没有可添加的移库资产" />}
       </div>
     </Drawer>
   );
@@ -309,17 +309,17 @@ export default function MoveMobilePrototype() {
 
   const addAsset = (asset) => {
     if (!fromWarehouse) return message.warning('请先选择移出仓库');
-    if (!['1.资产', '2.低值耐用品'].includes(asset.materialGroup)) return message.warning('当前物资类型暂不支持移库');
-    if (asset.warehouse !== fromWarehouse) return message.warning('物资不在移出仓库内');
-    if (Number(asset.availableQty || 0) <= 0) return message.warning('物资不在库');
-    if (asset.locked) return message.warning('当前物资已被其他业务锁定，无法移库');
+    if (asset.materialGroup !== '1.资产') return message.warning('仅资产支持移库');
+    if (asset.warehouse !== fromWarehouse) return message.warning('资产不在移出仓库内');
+    if (Number(asset.availableQty || 0) <= 0) return message.warning('资产不在库');
+    if (asset.locked) return message.warning('当前资产已被其他业务锁定，无法移库');
     const lockedByAnotherMove = documents.some((doc) => (
       doc.id !== activeDocumentId
       && doc.lines.some((line) => line.assetTag === asset.assetTag && ['草稿', '待接收'].includes(line.moveStatus))
     ));
-    if (lockedByAnotherMove) return message.warning('当前物资已被其他业务锁定，无法移库');
+    if (lockedByAnotherMove) return message.warning('当前资产已被其他业务锁定，无法移库');
     const alreadyUsed = documents.some((doc) => doc.id === activeDocumentId && doc.lines.some((line) => line.assetTag === asset.assetTag));
-    if (alreadyUsed) return message.warning('该物资已添加，请选择其他物资');
+    if (alreadyUsed) return message.warning('该资产已添加，请选择其他资产');
     const line = { ...asset, id: `line-${Date.now()}`, moveStatus: '草稿', moveDesc: '' };
     if (activeDocumentId) {
       const doc = documents.find((item) => item.id === activeDocumentId);
@@ -342,7 +342,7 @@ export default function MoveMobilePrototype() {
     if (!value) return;
     if (!fromWarehouse) { message.warning('请先选择移出仓库'); setScanValue(''); return; }
     const asset = INVENTORY_ASSET_POOL.find((item) => item.assetTag === value);
-    if (!asset) { message.warning('物资不存在或不在移出仓库内！'); setScanValue(''); return; }
+    if (!asset) { message.warning('资产不存在或不在移出仓库内！'); setScanValue(''); return; }
     addAsset(asset);
   };
 
@@ -358,12 +358,12 @@ export default function MoveMobilePrototype() {
     if (!fromWarehouse) return message.warning('请选择移出仓库');
     if (!toWarehouse) return message.warning('请选择移入仓库');
     if (fromWarehouse === toWarehouse) return message.warning('移入仓库不能与移出仓库相同');
-    if (!doc?.lines.length) return message.warning('请先添加移库物资');
+    if (!doc?.lines.length) return message.warning('请先添加移库资产');
     const fromRecord = byCode.get(fromWarehouse.slice(0, 5));
     const toRecord = byCode.get(toWarehouse.slice(0, 5));
     if (!fromRecord || fromRecord.status !== '启用' || !OUTBOUND_WAREHOUSE_CODES.has(fromRecord.warehouseCode)) return message.warning('当前用户没有该移出仓库的出库权限');
     if (!toRecord || toRecord.status !== '启用' || fromRecord.company !== toRecord.company) return message.warning('请选择同一财务公司的有效移入仓库');
-    if (doc.lines.some((line) => line.warehouse !== fromWarehouse || line.locked || Number(line.availableQty || 0) <= 0)) return message.warning('移库物资已不在移出仓库或不可用，请重新核对');
+    if (doc.lines.some((line) => line.warehouse !== fromWarehouse || line.locked || Number(line.availableQty || 0) <= 0)) return message.warning('移库资产已不在移出仓库或不可用，请重新核对');
     updateDocument(doc.id, { fromWarehouse, toWarehouse, remark, status: '出库待接收', lines: doc.lines.map((line) => ({ ...line, moveStatus: '待接收', verified: false, warehouse: TRANSIT_WAREHOUSE })) });
     message.success(`移库单 ${doc.documentNo} 已调出，等待移入仓库接收`);
     setPage('home');
@@ -375,7 +375,7 @@ export default function MoveMobilePrototype() {
     if (!value) return;
     if (!activeDocument) return;
     const line = activeDocument.lines.find((item) => item.assetTag === value && item.moveStatus === '待接收');
-    if (!line) return message.warning('当前单据没有匹配的待接收物资');
+    if (!line) return message.warning('当前单据没有匹配的待接收资产');
     updateDocument(activeDocument.id, { lines: activeDocument.lines.map((item) => item.id === line.id ? { ...item, verified: true, verificationDesc: '扫码验证通过' } : item) });
     message.success('验证成功');
   };
@@ -414,20 +414,20 @@ export default function MoveMobilePrototype() {
   };
 
   const receiveSelected = () => {
-    if (!activeDocument || !selectedLineIds.length) return message.warning('请选择待接收物资');
+    if (!activeDocument || !selectedLineIds.length) return message.warning('请选择待接收资产');
     const selected = activeDocument.lines.filter((line) => selectedLineIds.includes(line.id));
-    if (selected.some((line) => line.moveStatus !== '待接收' || !line.verified)) return message.warning('未验证物资需填写验证原因');
+    if (selected.some((line) => line.moveStatus !== '待接收' || !line.verified)) return message.warning('未验证资产需填写验证原因');
     const lines = activeDocument.lines.map((line) => selectedLineIds.includes(line.id) ? { ...line, moveStatus: '已接收', warehouse: activeDocument.toWarehouse, receiver: USER, receiveTime: new Date().toLocaleString('zh-CN', { hour12: false }) } : line);
     updateDocument(activeDocument.id, { lines, status: deriveStatus(lines) });
     setSelectedLineIds([]);
-    message.success(`已接收 ${selected.length} 件物资`);
+    message.success(`已接收 ${selected.length} 件资产`);
   };
 
   const rejectSelected = () => {
-    if (!activeDocument || !selectedLineIds.length) return message.warning('请选择需要驳回的待接收物资');
+    if (!activeDocument || !selectedLineIds.length) return message.warning('请选择需要驳回的待接收资产');
     if (!rejectReason.trim()) return message.warning('请填写驳回原因');
     const selected = activeDocument.lines.filter((line) => selectedLineIds.includes(line.id) && line.moveStatus === '待接收');
-    if (!selected.length) return message.warning('当前勾选中没有待接收物资');
+    if (!selected.length) return message.warning('当前勾选中没有待接收资产');
     const reverseId = `move-reverse-${Date.now()}`;
     const reverseDocument = {
       id: reverseId, documentNo: `TS-R${Date.now()}`, status: '出库待接收',
@@ -475,7 +475,7 @@ export default function MoveMobilePrototype() {
   };
 
   const removeDraftLine = (lineId) => {
-    Modal.confirm({ title: '删除这条移库物资？', content: '删除后会释放该物资的本流程锁。', okText: '删除', cancelText: '取消', okButtonProps: { danger: true }, onOk: () => {
+    Modal.confirm({ title: '删除这条移库资产？', content: '删除后会释放该资产的本流程锁。', okText: '删除', cancelText: '取消', okButtonProps: { danger: true }, onOk: () => {
       const doc = documents.find((row) => row.id === activeDocumentId);
       if (!doc) return;
       const lines = doc.lines.filter((line) => line.id !== lineId);
@@ -530,7 +530,7 @@ export default function MoveMobilePrototype() {
           <div className="move-mobile-content move-mobile-editor">
             <div className="move-mobile-summary-card">
               <div className="move-mobile-summary-title"><span>单据状态</span><MobileStatus value={activeDocument?.status || '草稿'} /></div>
-              <div className="move-mobile-docno">{activeDocument?.documentNo || '添加物资后自动生成单号'}</div>
+              <div className="move-mobile-docno">{activeDocument?.documentNo || '添加资产后自动生成单号'}</div>
             </div>
             <section className="move-mobile-card">
               <div className="move-mobile-card-title">移库信息</div>
@@ -539,20 +539,20 @@ export default function MoveMobilePrototype() {
               <div className="move-mobile-textarea"><label htmlFor="move-mobile-remark">备注</label><Input.TextArea id="move-mobile-remark" maxLength={60} showCount value={remark} onChange={(event) => saveDraftFields('remark', event.target.value)} placeholder="请输入备注" autoSize={{ minRows: 2, maxRows: 3 }} /></div>
             </section>
             <section className="move-mobile-card">
-              <div className="move-mobile-card-title move-mobile-card-title-row"><span>移库物资</span><span>{activeDocument?.lines.length || 0} 件</span></div>
+              <div className="move-mobile-card-title move-mobile-card-title-row"><span>移库资产</span><span>{activeDocument?.lines.length || 0} 件</span></div>
               <div className="move-mobile-add-methods">
                 <Button type="primary" icon={<QrCode size={16} />} onClick={() => fromWarehouse ? openScanner('create') : message.warning('请先选择移出仓库')}>扫描添加</Button>
-                <Button className="move-mobile-add" icon={<Plus size={16} />} onClick={() => fromWarehouse ? setAssetPickerOpen(true) : message.warning('请先选择移出仓库')}>手动选择物资</Button>
+                <Button className="move-mobile-add" icon={<Plus size={16} />} onClick={() => fromWarehouse ? setAssetPickerOpen(true) : message.warning('请先选择移出仓库')}>手动选择资产</Button>
               </div>
               {(activeDocument?.lines || EMPTY_LINES).map((line) => (
                 <div className="move-mobile-asset-card" key={line.id}>
-                  <div className="move-mobile-asset-card-top"><strong>{line.materialDesc}</strong><Button type="text" danger aria-label="删除移库物资" icon={<Trash2 size={15} />} onClick={() => removeDraftLine(line.id)} /></div>
+                  <div className="move-mobile-asset-card-top"><strong>{line.materialDesc}</strong><Button type="text" danger aria-label="删除移库资产" icon={<Trash2 size={15} />} onClick={() => removeDraftLine(line.id)} /></div>
                   <div className="move-mobile-asset-meta">标签号：{line.assetTag}</div>
                   <div className="move-mobile-asset-meta">SN：{line.sn || '-'}</div>
                   <div className="move-mobile-asset-meta">{line.materialGroup} · {line.assetStatus}</div>
                 </div>
               ))}
-              {!activeDocument?.lines.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="还没有添加移库物资" />}
+              {!activeDocument?.lines.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="还没有添加移库资产" />}
             </section>
             <div className="move-mobile-sticky-actions"><Button type="primary" block onClick={submitMove}>移库提交</Button><Button block onClick={() => setPage('home')}>返回</Button></div>
           </div>
@@ -571,7 +571,7 @@ export default function MoveMobilePrototype() {
             </div>
             {activeDocument.status === '出库待接收' && (
               <section className="move-mobile-card">
-                <div className="move-mobile-card-title">验证移库物资</div>
+                <div className="move-mobile-card-title">验证移库资产</div>
                 <Button type="primary" block className="move-mobile-scan-verify" icon={<QrCode size={16} />} onClick={() => openScanner('verify')}>扫描二维码验证</Button>
               </section>
             )}
@@ -678,8 +678,8 @@ export default function MoveMobilePrototype() {
             />
           </div>
         </Modal>
-        <Modal open={rejectOpen} title="驳回移库物资" okText="确认驳回" cancelText="取消" okButtonProps={{ danger: true }} onOk={rejectSelected} onCancel={() => setRejectOpen(false)}>
-          <p>将驳回当前勾选的 {selectedLineIds.length} 件物资，并为本次勾选内容生成一张反向移库单。</p>
+        <Modal open={rejectOpen} title="驳回移库资产" okText="确认驳回" cancelText="取消" okButtonProps={{ danger: true }} onOk={rejectSelected} onCancel={() => setRejectOpen(false)}>
+          <p>将驳回当前勾选的 {selectedLineIds.length} 件资产，并为本次勾选内容生成一张反向移库单。</p>
           <Input.TextArea maxLength={200} showCount value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} placeholder="请填写驳回原因" autoSize={{ minRows: 3, maxRows: 5 }} />
         </Modal>
           <Modal open={quickMatches.length > 1} title="选择待接收移库单" footer={null} onCancel={() => setQuickMatches([])}>
