@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -102,13 +102,13 @@ function SelectorInput({ value, placeholder, onOpen }) {
       onClick={onOpen}
       onKeyDown={handleKeyDown}
     >
-      <Input value={value} readOnly placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} className="text-[#1677ff]" />} />
+      <Input value={value} readOnly placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} className="text-primary" />} />
     </div>
   );
 }
 
-function PageTitle() {
-  return <Typography.Title level={3} className="mb-0">耗材接收</Typography.Title>;
+function PageTitle({ children = '耗材接收' }) {
+  return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;
 }
 
 function Readonly({ children }) {
@@ -214,6 +214,31 @@ export default function ConsumableReceiptPage() {
   const [receiptPageSize, setReceiptPageSize] = useState(10);
   const [maintenancePage, setMaintenancePage] = useState(1);
   const [maintenancePageSize, setMaintenancePageSize] = useState(10);
+
+  useEffect(() => {
+    const moduleItem = { label: '耗材接收', onClick: () => setView('poList') };
+    const itemsByView = {
+      poList: [{ label: '首页' }, { label: '库存管理' }, { label: '耗材接收' }],
+      poDetail: [{ label: '首页' }, { label: '库存管理' }, moduleItem, { label: 'PO单详情' }],
+      receiptList: [{ label: '首页' }, { label: '库存管理' }, moduleItem, { label: '接收单列表' }],
+      receiptDetail: [
+        { label: '首页' },
+        { label: '库存管理' },
+        moduleItem,
+        { label: '接收单列表', onClick: () => setView('receiptList') },
+        { label: '接收单详情' },
+      ],
+      maintenance: [
+        { label: '首页' },
+        { label: '库存管理' },
+        moduleItem,
+        { label: '接收单列表', onClick: () => setView('receiptList') },
+        { label: '接收单详情', onClick: () => setView('receiptDetail') },
+        { label: activeReceipt?.status === '草稿' ? '维护接收明细' : '查看接收明细' },
+      ],
+    };
+    window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', { detail: { items: itemsByView[view] || itemsByView.poList } }));
+  }, [view, activeReceipt?.status]);
 
   const activeReceipt = useMemo(
     () => receipts.find((item) => item.receiptNo === activeReceiptNo) || null,
@@ -1011,7 +1036,7 @@ export default function ConsumableReceiptPage() {
     return (
       <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-po-detail">
         {contextHolder}
-        <PageTitle />
+        <PageTitle>PO单详情</PageTitle>
         <Alert type="info" showIcon message="默认为全量接收，可点击编辑按钮修改接收数量！" />
         <Card size="small" title="PO基础信息">
           <DetailGrid columns={3} labelWidth={112}>
@@ -1038,7 +1063,7 @@ export default function ConsumableReceiptPage() {
         </Card>
         <Card
           size="small"
-          title="采购明细"
+          title="PO耗材明细"
           extra={(
             <Space>
               <Typography.Text type="secondary">共 {activeItems.length} 条</Typography.Text>
@@ -1087,7 +1112,7 @@ export default function ConsumableReceiptPage() {
                   className={`mt-1 ${editingPoItemLocked ? '' : 'pointer-events-none'}`}
                   readOnly
                   value={`${editDraft.materialCode} / ${editDraft.materialDesc}`}
-                  suffix={editingPoItemLocked ? null : <Search size={14} className="text-[#1677ff]" />}
+                  suffix={editingPoItemLocked ? null : <Search size={14} className="text-primary" />}
                 />
               </div>
               <div>
@@ -1115,7 +1140,7 @@ export default function ConsumableReceiptPage() {
     return (
       <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-receipt-list">
         {contextHolder}
-        <PageTitle />
+        <PageTitle>接收单列表</PageTitle>
         <QueryBar
           onQuery={() => { setReceiptFilters({ ...receiptDraft }); setSelectedReceipts([]); setReceiptPage(1); }}
           onReset={() => {
@@ -1147,7 +1172,7 @@ export default function ConsumableReceiptPage() {
           extra={(
             <Space>
               <Typography.Text type="secondary">共 {filteredReceipts.length} 条</Typography.Text>
-              <Button danger icon={<Trash2 size={14} />} onClick={deleteReceipts}>删除接收单</Button>
+              <Button danger icon={<Trash2 size={14} />} disabled={!selectedReceipts.length} onClick={deleteReceipts}>删除接收单</Button>
             </Space>
           )}
         >
@@ -1187,15 +1212,15 @@ export default function ConsumableReceiptPage() {
     return (
       <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-receipt-detail">
         {contextHolder}
-        <PageTitle />
+        <PageTitle>接收单详情</PageTitle>
         <ReceiptInfoCard receipt={activeReceipt} />
         <Card
           size="small"
-          title="接收行明细"
+          title="接收耗材明细"
           extra={(
             <Space>
               <Typography.Text type="secondary">共 {activeReceipt.lines.length} 条</Typography.Text>
-              {isDraft && <Button danger icon={<Trash2 size={14} />} onClick={deleteReceiptLines}>删除接收行</Button>}
+              {isDraft && <Button danger icon={<Trash2 size={14} />} disabled={!selectedLines.length} onClick={deleteReceiptLines}>删除接收行</Button>}
             </Space>
           )}
         >
@@ -1231,7 +1256,7 @@ export default function ConsumableReceiptPage() {
     return (
       <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-maintenance">
         {contextHolder}
-        <PageTitle />
+        <PageTitle>{isDraft ? '维护接收明细' : '查看接收明细'}</PageTitle>
         <ReceiptInfoCard receipt={activeReceipt} />
         {isDraft && (
           <Card size="small">
@@ -1258,7 +1283,7 @@ export default function ConsumableReceiptPage() {
         )}
         <Card
           size="small"
-          title="接收明细"
+          title="接收耗材明细"
           extra={(
             <Space>
               <Typography.Text type="secondary">共 {visibleDetails.length} 条</Typography.Text>
