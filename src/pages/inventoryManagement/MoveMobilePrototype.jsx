@@ -453,7 +453,8 @@ export default function MoveMobilePrototype() {
       sourceDocumentNo: activeDocument.documentNo,
       lines: selected.map((line) => ({ ...line, id: `${line.id}-reverse`, moveStatus: '待接收', verified: false, rejectReason: rejectReason.trim(), warehouse: TRANSIT_WAREHOUSE })),
     };
-    const lines = activeDocument.lines.map((line) => selectedLineIds.includes(line.id) ? { ...line, moveStatus: '已驳回', rejectReason: rejectReason.trim() } : line);
+    const selectedSet = new Set(selected.map((line) => line.id));
+    const lines = activeDocument.lines.map((line) => selectedSet.has(line.id) ? { ...line, moveStatus: '已驳回', rejectReason: rejectReason.trim() } : line);
     updateDocument(activeDocument.id, { lines, status: deriveStatus(lines) });
     setDocuments((current) => [reverseDocument, ...current]);
     setSelectedLineIds([]);
