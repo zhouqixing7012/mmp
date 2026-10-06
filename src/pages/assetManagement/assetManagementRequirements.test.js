@@ -73,6 +73,12 @@ test('资产手动维护同步关联耗材位置成本中心和状态', () => {
 test('三类维护批量模板统一为空白不变非空覆盖', () => {
   expect(assetMaintenanceSource).toContain('资产标签号必填并用于定位既有资产；除资产标签号外，其余可修改字段不填表示不变，填写后覆盖原值。');
   expect(assetMaintenanceSource).not.toContain('为空时会将原字段覆盖为空');
+  expect(assetMaintenanceSource).toContain('async function readAssetBatchFile(file)');
+  expect(assetMaintenanceSource).toContain('batchUpdateAssetMaintenanceRows(updates)');
   expect(consumableMaintenanceSource).toContain('耗材标签号必填并用于定位既有卡片；其余可修改字段不填表示不变，填写后覆盖原值。');
+  expect(consumableMaintenanceSource).toContain('async function readConsumableBatchFile(file)');
+  expect(consumableMaintenanceSource).toContain('batchUpdateConsumableMaintenanceRows(batchValidation.updates || [])');
+  expect(consumableMaintenanceSource).not.toContain("'板块', 'City'");
+  expect(consumableMaintenanceSource).not.toContain("'耗材说明',");
   expect(contractMaintenanceSource).toContain('除标签号外，其余模板字段空白表示保留原值，不进行覆盖。');
 });
