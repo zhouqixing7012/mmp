@@ -17,6 +17,7 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
+import * as XLSX from 'xlsx';
 import {
   ChevronDown,
   ChevronUp,
@@ -30,8 +31,10 @@ import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import {
+  batchUpdateConsumableMaintenanceRows,
   getConsumableMaintenanceRows,
   updateConsumableMaintenanceRow,
+  validateConsumableMaintenanceBatchUpdates,
 } from '../../services/assetManagementService';
 
 const { RangePicker } = DatePicker;
@@ -97,9 +100,37 @@ const EMPTY_FILTERS = {
 };
 
 const BATCH_TEMPLATE_FIELDS = [
-  '耗材标签号', '公司', '板块', 'City', 'Building', 'Floor', '耗材说明',
-  '主资产标签号', '数量', '耗材责任人工号', '耗材状态', '仓库', '启用日期',
+  '耗材标签号', '公司', 'City', 'Building', 'Floor',
+  '主资产标签号', '耗材责任人工号', '耗材状态', '仓库', '启用日期',
 ];
+const BATCH_FIELD_KEY_MAP = {
+  公司: 'company',
+  City: 'city',
+  Building: 'building',
+  Floor: 'floor',
+  主资产标签号: 'mainTag',
+  耗材责任人工号: 'ownerId',
+  耗材状态: 'status',
+  仓库: 'warehouse',
+  启用日期: 'enabledDate',
+};
+
+async function readConsumableBatchFile(file) {
+  const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: false });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  if (!sheet) throw new Error('Excel 文件没有可读取的工作表');
+  const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+  const headers = (matrix[0] || []).map((value) => String(value || '').trim());
+  if (headers.length !== BATCH_TEMPLATE_FIELDS.length || BATCH_TEMPLATE_FIELDS.some((header, index) => headers[index] !== header)) {
+    throw new Error('导入的EXCEL和系统要求的模板不一致，请核查');
+  }
+  return matrix.slice(1)
+    .filter((row) => row.some((value) => String(value ?? '').trim()))
+    .map((row, index) => ({
+      rowNo: index + 2,
+      values: Object.fromEntries(BATCH_TEMPLATE_FIELDS.map((header, cellIndex) => [header, row[cellIndex] ?? ''])),
+    }));
+}
 
 const EDITABLE_FIELDS = [
   'company', 'serialNumber', 'status', 'ownerId', 'ownerName', 'city', 'building', 'floor',
@@ -229,20 +260,6 @@ function SectionTitle({ children }) {
       <span>{children}</span>
     </div>
   );
-}
-
-function buildPrototypeBatchValidation(file) {
-  const name = String(file?.name || '');
-  if (/校验失败|invalid/i.test(name)) {
-    return {
-      status: 'failed',
-      errors: [
-        { id: 'batch-error-1', rowNo: 3, tag: 'QT-254523', reason: '板块与系统当前卡片值不一致' },
-        { id: 'batch-error-2', rowNo: 5, tag: 'QT-244520', reason: 'Building 不属于当前 City' },
-      ],
-    };
-  }
-  return { status: 'passed', errors: [] };
 }
 
 export default function ConsumableMaintenancePage() {
@@ -633,7 +650,11 @@ export default function ConsumableMaintenancePage() {
   };
 
   const handleTemplateDownload = () => {
-    messageApi.success(`已发起下载：耗材批量修改模板.xlsx（${BATCH_TEMPLATE_FIELDS.length}列，原型）`);
+    const worksheet = XLSX.utils.aoa_to_sheet([BATCH_TEMPLATE_FIELDS]);
+    worksheet['!cols'] = BATCH_TEMPLATE_FIELDS.map((header) => ({ wch: Math.max(14, header.length * 2 + 4) }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, '批量修改');
+    XLSX.writeFile(workbook, '耗材批量修改模板.xlsx');
   };
 
   const resetBatchState = () => {
@@ -641,26 +662,80 @@ export default function ConsumableMaintenancePage() {
     setBatchValidation(null);
   };
 
-  const handleBatchAction = () => {
+  const handleBatchAction = async () => {
     if (!batchFiles.length) {
       messageApi.warning('请先选择需要上传的 Excel 文件');
       return;
     }
 
     if (batchValidation?.status === 'passed') {
-      setRows(getConsumableMaintenanceRows());
-      setBatchOpen(false);
-      resetBatchState();
-      messageApi.success('校验及保存流程演示完成（原型未解析实际 Excel 数据）');
+      try {
+        const nextRows = batchUpdateConsumableMaintenanceRows(batchValidation.updates || []);
+        setRows(nextRows);
+        setBatchOpen(false);
+        resetBatchState();
+        setSelectedRowKeys([]);
+        setPage(1);
+        messageApi.success('修改成功！');
+      } catch (error) {
+        messageApi.error(error.message || '批量修改失败');
+      }
       return;
     }
 
-    const result = buildPrototypeBatchValidation(batchFiles[0]);
-    setBatchValidation(result);
-    if (result.status === 'failed') {
-      messageApi.error('文件校验失败，本次文件未保存');
-    } else {
+    try {
+      const batchRows = await readConsumableBatchFile(batchFiles[0]?.originFileObj || batchFiles[0]);
+      if (!batchRows.length) throw new Error('模板中没有可处理的数据');
+      const rowByTag = new Map(rows.map((row) => [String(row.tag || '').trim(), row]));
+      const seenTags = new Set();
+      const updates = [];
+      const errors = [];
+
+      batchRows.forEach(({ rowNo, values }) => {
+        const tag = String(values['耗材标签号'] || '').trim();
+        if (!tag) {
+          errors.push({ id: `batch-${rowNo}`, rowNo, tag: '', reason: '耗材标签号不能为空' });
+          return;
+        }
+        if (seenTags.has(tag)) {
+          errors.push({ id: `batch-${rowNo}`, rowNo, tag, reason: '同一文件耗材标签号不得重复' });
+          return;
+        }
+        seenTags.add(tag);
+        const target = rowByTag.get(tag);
+        if (!target) {
+          errors.push({ id: `batch-${rowNo}`, rowNo, tag, reason: '耗材标签号不存在' });
+          return;
+        }
+        const patch = Object.entries(BATCH_FIELD_KEY_MAP).reduce((result, [header, key]) => {
+          let value = String(values[header] ?? '').trim();
+          if (!value) return result;
+          if (key === 'enabledDate') value = value.replaceAll('/', '-');
+          return { ...result, [key]: value };
+        }, {});
+        if (patch.status === '已报废' && target.status !== '已报废') {
+          errors.push({ id: `batch-${rowNo}`, rowNo, tag, reason: '批量修改不能将耗材状态改为已报废' });
+          return;
+        }
+        const candidate = { id: target.id, patch };
+        try {
+          validateConsumableMaintenanceBatchUpdates([...updates, candidate]);
+          updates.push(candidate);
+        } catch (error) {
+          errors.push({ id: `batch-${rowNo}`, rowNo, tag, reason: error.message || '校验失败' });
+        }
+      });
+
+      if (errors.length) {
+        setBatchValidation({ status: 'failed', errors });
+        messageApi.error('文件校验失败，本次文件未保存');
+        return;
+      }
+      setBatchValidation({ status: 'passed', errors: [], updates });
       messageApi.success('文件校验通过，请确认保存');
+    } catch (error) {
+      setBatchValidation({ status: 'failed', errors: [{ id: 'batch-file', rowNo: '-', tag: '-', reason: error.message || '文件读取失败' }] });
+      messageApi.error(error.message || '文件校验失败');
     }
   };
 
@@ -1131,7 +1206,7 @@ export default function ConsumableMaintenancePage() {
           </div>
           <Button icon={<Download size={14} />} onClick={handleTemplateDownload}>下载模板</Button>
           <Dragger
-            accept=".xlsx"
+            accept=".xls,.xlsx"
             maxCount={1}
             beforeUpload={() => false}
             fileList={batchFiles}
@@ -1142,12 +1217,9 @@ export default function ConsumableMaintenancePage() {
           >
             <p className="ant-upload-drag-icon"><UploadCloud size={36} /></p>
             <p className="ant-upload-text">点击或拖拽 Excel 文件到此区域上传</p>
-            <p className="ant-upload-hint">仅支持耗材批量修改模板 .xlsx 文件；先校验全部行，通过后才能保存</p>
+            <p className="ant-upload-hint">支持耗材批量修改模板 .xls / .xlsx 文件；先校验全部行，通过后才能保存</p>
           </Dragger>
 
-          <Typography.Text type="secondary">
-            原型演示说明：当前不解析真实 Excel；文件名包含“校验失败”时可演示逐行错误结果，其余文件演示校验通过流程。正式实现按 PRD 读取模板并执行真实逐行校验。
-          </Typography.Text>
 
           {batchValidation?.status === 'passed' ? (
             <Alert
