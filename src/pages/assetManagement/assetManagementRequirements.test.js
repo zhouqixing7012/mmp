@@ -39,8 +39,8 @@ test('员工资产信息查询按资产维护权限过滤并用状态打开审�
   expect(assetColumns).not.toContain("title: '单据申请人'");
   expect(assetColumns).toContain('onClick={() => openApprovalRecord(record)}');
   const documentColumnsStart = employeeQuerySource.indexOf('const documentColumns = [');
-  const renderTabStart = employeeQuerySource.indexOf('const renderTabContent', documentColumnsStart);
-  const documentColumns = employeeQuerySource.slice(documentColumnsStart, renderTabStart);
+  const documentColumnsEnd = employeeQuerySource.indexOf('const tabConfig = {', documentColumnsStart);
+  const documentColumns = employeeQuerySource.slice(documentColumnsStart, documentColumnsEnd);
   expect(documentColumns).not.toContain("title: '部门'");
   expect(documentColumns).not.toContain("title: '操作'");
   expect(documentColumns).toContain('onClick={() => openApprovalRecord(record)}');
