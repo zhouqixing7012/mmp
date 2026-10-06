@@ -115,7 +115,7 @@ const INITIAL_DOCUMENTS = [
     createdDate: '2026-09-11',
     creator: '114111-杨芊',
     quantity: 1,
-    remark: '低值耐用品移库演示',
+    remark: '资产移库演示',
     lines: [cloneLine(ASSET_POOL[4], { id: 'draft-2', lineNo: 1, moveDesc: 'MIS备货' })],
   },
   {
@@ -503,7 +503,7 @@ function MoveImportModal({ open, currentWarehouse, existingTags, onCancel, onSuc
   const importValid = () => {
     const picked = validAssets.slice(0, 2).map((item, index) => ({ ...item, id: `import-${Date.now()}-${index}`, moveDesc: 'Excel导入', moveStatus: '草稿', verification: '未验证', originalLockStatus: false }));
     if (!picked.length) {
-      setErrors([{ row: 2, field: '标签号', reason: '当前仓库没有可导入的资产/低值耐用品' }]);
+      setErrors([{ row: 2, field: '标签号', reason: '当前仓库没有可导入的资产' }]);
       return;
     }
     onSuccess(picked);
