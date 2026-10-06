@@ -429,35 +429,86 @@ export function applyInventoryLocationApproval({ requestId, changes, approver })
   return nextRows;
 }
 
-export function updateAssetMaintenanceRow(id, patch) {
-  const rows = getAssetMaintenanceRows();
-  const nextRows = rows.map((row) => {
-    if (row.id !== id) return row;
-    const hasMaintenanceChange = ASSET_MAINTENANCE_EDIT_FIELDS.some((field) => (
-      Object.prototype.hasOwnProperty.call(patch, field)
-      && String(row[field] ?? '') !== String(patch[field] ?? '')
-    ));
-    if (!hasMaintenanceChange) return normalizeAssetMaintenanceRow(row);
+function mapAssetStatusToConsumableStatus(status) {
+  const value = String(status || '');
+  if (value === '在用-借用中') return '借用中';
+  if (value.startsWith('在用-')) return '在用';
+  if (value === '在库-修理') return '维修';
+  if (value === '在库-待处理') return '待处理';
+  if (value.startsWith('在库-')) return '在库';
+  if (value.startsWith('再利用-')) return '再利用';
+  if (value.startsWith('已报废-')) return '已报废';
+  return '';
+}
 
-    const serial = String(patch.serialNumber ?? row.serialNumber ?? '').trim();
-    if (Array.from(serial).length > 35) throw new Error('资产序列号最多 35 个字符');
-    if (Array.from(String(patch.remarks ?? row.remarks ?? '')).length > 150) throw new Error('备注最多 150 个字符');
-    if (Array.from(String(patch.usageDescription ?? row.usageDescription ?? '')).length > 150) throw new Error('使用说明最多 150 个字符');
-    if (serial && serial !== '缺省' && rows.some((item) => (
-      item.id !== row.id
-      && String(item.serialNumber || '').trim() !== '缺省'
-      && String(item.serialNumber || '').trim().toLowerCase() === serial.toLowerCase()
-    ))) throw new Error('当前资产序列号不唯一！');
+function syncConsumablesFromAsset(beforeAsset, afterAsset, consumableRows, operationDate) {
+  const changedAssetFields = new Set(ASSET_MAINTENANCE_EDIT_FIELDS.filter((field) => (
+    String(beforeAsset?.[field] ?? '') !== String(afterAsset?.[field] ?? '')
+  )));
+  const syncFields = ['costCenter', 'city', 'building', 'floor'].filter((field) => changedAssetFields.has(field));
+  const shouldSyncStatus = changedAssetFields.has('status');
+  if (!syncFields.length && !shouldSyncStatus) return consumableRows;
 
-    const nextRow = normalizeAssetMaintenanceRow({ ...row, ...patch, serialNumber: serial });
-    const operationDate = patch.updatedAt || new Date().toISOString().replace('T', ' ').slice(0, 19);
-    const transaction = buildAssetMaintenanceTransaction(nextRow, operationDate, row);
+  return consumableRows.map((row) => {
+    if (String(row.mainTag || '') !== String(afterAsset.tag || '')) return row;
+    const patch = syncFields.reduce((result, field) => ({ ...result, [field]: afterAsset[field] ?? '' }), {});
+    if (shouldSyncStatus) {
+      const nextStatus = mapAssetStatusToConsumableStatus(afterAsset.status);
+      if (nextStatus) patch.status = nextStatus;
+    }
+    const changes = Object.entries(patch)
+      .filter(([field, value]) => String(row[field] ?? '') !== String(value ?? ''))
+      .map(([field, value]) => ({ field, before: row[field] ?? '', after: value ?? '' }));
+    if (!changes.length) return row;
+    const nextRow = normalizeConsumableMaintenanceRow({ ...row, ...patch, updatedAt: operationDate });
+    const transaction = buildConsumableMaintenanceTransaction(nextRow, operationDate, changes);
     return {
       ...nextRow,
-      transactionHistory: normalizeTransactionHistory([transaction, ...(nextRow.transactionHistory || [])]),
+      transactionHistory: [...(row.transactionHistory || []), transaction],
     };
   });
-  writeDemoData(ASSET_MAINTENANCE_STORAGE_KEY, nextRows);
+}
+
+export function updateAssetMaintenanceRow(id, patch) {
+  const rows = getAssetMaintenanceRows();
+  const target = rows.find((row) => row.id === id);
+  if (!target) throw new Error('资产标签号不存在');
+
+  const hasMaintenanceChange = ASSET_MAINTENANCE_EDIT_FIELDS.some((field) => (
+    Object.prototype.hasOwnProperty.call(patch, field)
+    && String(target[field] ?? '') !== String(patch[field] ?? '')
+  ));
+  if (!hasMaintenanceChange) return rows.map(normalizeAssetMaintenanceRow);
+
+  const serial = String(patch.serialNumber ?? target.serialNumber ?? '').trim();
+  if (Array.from(serial).length > 35) throw new Error('资产序列号最多 35 个字符');
+  if (Array.from(String(patch.remarks ?? target.remarks ?? '')).length > 150) throw new Error('备注最多 150 个字符');
+  if (Array.from(String(patch.usageDescription ?? target.usageDescription ?? '')).length > 150) throw new Error('使用说明最多 150 个字符');
+  if (serial && serial !== '缺省' && rows.some((item) => (
+    item.id !== target.id
+    && String(item.serialNumber || '').trim() !== '缺省'
+    && String(item.serialNumber || '').trim().toLowerCase() === serial.toLowerCase()
+  ))) throw new Error('当前资产序列号不唯一！');
+
+  const operationDate = patch.updatedAt || new Date().toISOString().replace('T', ' ').slice(0, 19);
+  const nextTarget = normalizeAssetMaintenanceRow({ ...target, ...patch, serialNumber: serial });
+  const transaction = buildAssetMaintenanceTransaction(nextTarget, operationDate, target);
+  const nextRows = rows.map((row) => row.id === id ? {
+    ...nextTarget,
+    transactionHistory: normalizeTransactionHistory([transaction, ...(nextTarget.transactionHistory || [])]),
+  } : row);
+
+  const consumableRows = getConsumableMaintenanceRows();
+  const nextConsumableRows = syncConsumablesFromAsset(target, nextTarget, consumableRows, operationDate);
+
+  try {
+    writeDemoData(CONSUMABLE_MAINTENANCE_STORAGE_KEY, nextConsumableRows);
+    writeDemoData(ASSET_MAINTENANCE_STORAGE_KEY, nextRows);
+  } catch (error) {
+    writeDemoData(CONSUMABLE_MAINTENANCE_STORAGE_KEY, consumableRows);
+    writeDemoData(ASSET_MAINTENANCE_STORAGE_KEY, rows);
+    throw error;
+  }
   return nextRows;
 }
 
