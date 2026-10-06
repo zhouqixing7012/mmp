@@ -427,6 +427,8 @@ test('移库未勾选时默认驳回全部未接收资产', () => {
   expect(moveReceiveSource).toContain("lines.filter((line) => line.moveStatus === '待接收').map((line) => line.id)");
   expect(moveReceiveSource).toContain('onClick={() => setRejectAsset({ bulk: true })}>移库驳回</Button>');
   expect(moveMobileSource).toContain("&& (!selectedLineIds.length || selectedLineIds.includes(line.id))");
+  expect(moveMobileSource).toContain('const selectedSet = new Set(selected.map((line) => line.id))');
+  expect(moveMobileSource).toContain('selectedSet.has(line.id)');
   expect(moveMobileSource).toContain('当前未勾选资产，将默认驳回整单剩余');
 });
 
