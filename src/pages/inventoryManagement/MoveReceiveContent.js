@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
-import { Download, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
@@ -591,7 +591,7 @@ export default function MoveReceiveContent({ documents, setDocuments, onDetailCh
       <Card
         size="small"
         title="接收单列表"
-        extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => messageApi.success('当前查询结果已导出')}>导出</Button></Space>}
+        extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}
       >
         <Table
           rowKey="id"
