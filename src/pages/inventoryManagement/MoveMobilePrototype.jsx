@@ -263,6 +263,7 @@ export default function MoveMobilePrototype() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerPurpose, setScannerPurpose] = useState('receive');
   const [activeLineId, setActiveLineId] = useState(null);
+  const assetCardRefs = useRef(new Map());
 
   const activeDocument = documents.find((doc) => doc.id === activeDocumentId) || null;
   const activeLine = activeDocument?.lines.find((line) => line.id === activeLineId) || null;
@@ -273,6 +274,12 @@ export default function MoveMobilePrototype() {
     && doc.id !== activeDocumentId
   )));
 
+  const pendingReceiveDocumentCount = useMemo(() => documents.filter((doc) => (
+    INBOUND_WAREHOUSE_CODES.has(doc.toWarehouse?.slice(0, 5))
+    && doc.status === '出库待接收'
+    && doc.lines.some((line) => line.moveStatus === '待接收')
+  )).length, [documents]);
+
   const filteredDocuments = useMemo(() => documents.filter((doc) => {
     const belongs = tab === 'initiated'
       ? Boolean(outgoingWarehouses.some((row) => row.name === doc.fromWarehouse))
@@ -280,6 +287,12 @@ export default function MoveMobilePrototype() {
     const matches = !searchQuery || [doc.documentNo, doc.creator, doc.fromWarehouse, doc.toWarehouse, ...doc.lines.flatMap((line) => [line.assetTag, line.sn])].join(' ').toLowerCase().includes(searchQuery.toLowerCase());
     return belongs && matches && (tab !== 'received' || doc.status !== '草稿');
   }).sort((a, b) => Number(WAITING_STATUSES.has(b.status)) - Number(WAITING_STATUSES.has(a.status)) || b.createdDate.localeCompare(a.createdDate)), [documents, outgoingWarehouses, searchQuery, tab]);
+
+  const scrollToAssetCard = (lineId) => {
+    window.setTimeout(() => {
+      assetCardRefs.current.get(lineId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  };
 
   const openDocument = (doc) => {
     setActiveDocumentId(doc.id);
@@ -377,7 +390,8 @@ export default function MoveMobilePrototype() {
     const line = activeDocument.lines.find((item) => item.assetTag === value && item.moveStatus === '待接收');
     if (!line) return message.warning('当前单据没有匹配的待接收资产');
     updateDocument(activeDocument.id, { lines: activeDocument.lines.map((item) => item.id === line.id ? { ...item, verified: true, verificationDesc: '扫码验证通过' } : item) });
-    message.success('验证成功');
+    scrollToAssetCard(line.id);
+    message.success('验证成功，已定位到对应移库资产');
   };
 
   const toggleSelectedLine = (line, checked) => {
@@ -424,10 +438,13 @@ export default function MoveMobilePrototype() {
   };
 
   const rejectSelected = () => {
-    if (!activeDocument || !selectedLineIds.length) return message.warning('请选择需要驳回的待接收资产');
+    if (!activeDocument) return;
     if (!rejectReason.trim()) return message.warning('请填写驳回原因');
-    const selected = activeDocument.lines.filter((line) => selectedLineIds.includes(line.id) && line.moveStatus === '待接收');
-    if (!selected.length) return message.warning('当前勾选中没有待接收资产');
+    const selected = activeDocument.lines.filter((line) => (
+      line.moveStatus === '待接收'
+      && (!selectedLineIds.length || selectedLineIds.includes(line.id))
+    ));
+    if (!selected.length) return message.warning('当前没有可驳回的待接收资产');
     const reverseId = `move-reverse-${Date.now()}`;
     const reverseDocument = {
       id: reverseId, documentNo: `TS-R${Date.now()}`, status: '出库待接收',
@@ -457,7 +474,8 @@ export default function MoveMobilePrototype() {
       setSelectedLineIds([]);
       updateDocument(doc.id, { lines: doc.lines.map((item) => item.id === line.id ? { ...item, verified: true, verificationDesc: '扫码验证通过' } : item) });
       setPage('detail');
-      message.success('验证成功，已打开对应移库单');
+      scrollToAssetCard(line.id);
+      message.success('验证成功，已打开对应移库单并定位到资产');
       return;
     }
     setQuickMatches(matches);
@@ -495,7 +513,7 @@ export default function MoveMobilePrototype() {
         <header className="move-mobile-header">
           <Button type="text" aria-label="返回" icon={<ArrowLeft size={19} />} onClick={back} />
           <strong>{page === 'home' ? '移库' : page === 'editor' ? (activeDocument ? '编辑移库单' : '创建移库单') : page === 'asset-detail' ? '资产详情' : '移库接收'}</strong>
-          <Button type="text" aria-label="关闭移动端预览" icon={<X size={18} />} onClick={() => navigate('/yewurules')} />
+          <Button type="text" aria-label="关闭移动端预览" icon={<X size={18} />} onClick={() => navigate(-1)} />
         </header>
 
         {page === 'home' && (
@@ -504,7 +522,9 @@ export default function MoveMobilePrototype() {
               <Button type="primary" icon={<PackagePlus size={17} />} onClick={startCreate}>创建移库</Button>
             </div>
             <div className="move-mobile-tabs" role="tablist">
-              <Button type="text" htmlType="button" className={tab === 'received' ? 'is-active' : ''} onClick={() => { setTab('received'); setSearchDraft(''); setSearchQuery(''); }}>我接收的</Button>
+              <Button type="text" htmlType="button" className={tab === 'received' ? 'is-active' : ''} onClick={() => { setTab('received'); setSearchDraft(''); setSearchQuery(''); }}>
+                <span className="inline-flex items-center gap-1.5">我接收的<Badge count={pendingReceiveDocumentCount} size="small" /></span>
+              </Button>
               <Button type="text" htmlType="button" className={tab === 'initiated' ? 'is-active' : ''} onClick={() => { setTab('initiated'); setSearchDraft(''); setSearchQuery(''); }}>我发起的</Button>
             </div>
             <div className="move-mobile-search">
@@ -580,7 +600,14 @@ export default function MoveMobilePrototype() {
               {activeDocument.lines.map((line) => {
                 const selectable = activeDocument.status === '出库待接收' && line.moveStatus === '待接收';
                 return (
-                  <div className={`move-mobile-asset-card${selectedLineIds.includes(line.id) ? ' is-selected' : ''}`} key={line.id}>
+                  <div
+                    ref={(node) => {
+                      if (node) assetCardRefs.current.set(line.id, node);
+                      else assetCardRefs.current.delete(line.id);
+                    }}
+                    className={`move-mobile-asset-card${selectedLineIds.includes(line.id) ? ' is-selected' : ''}`}
+                    key={line.id}
+                  >
                     <div className="move-mobile-asset-card-top">
                       {selectable && <Checkbox checked={selectedLineIds.includes(line.id)} onChange={(event) => toggleSelectedLine(line, event.target.checked)} />}
                       <strong>{line.materialDesc}</strong><MobileStatus value={line.moveStatus} />
@@ -596,7 +623,7 @@ export default function MoveMobilePrototype() {
                 );
               })}
             </section>
-            {activeDocument.status === '出库待接收' && <div className="move-mobile-sticky-actions"><Button type="primary" block onClick={receiveSelected}>接收所选（{selectedLineIds.filter((id) => activeDocument.lines.some((line) => line.id === id && line.moveStatus === '待接收' && line.verified)).length}）</Button><Button danger block onClick={() => setRejectOpen(true)}>驳回所选</Button></div>}
+            {activeDocument.status === '出库待接收' && <div className="move-mobile-sticky-actions"><Button type="primary" block onClick={receiveSelected}>接收所选（{selectedLineIds.filter((id) => activeDocument.lines.some((line) => line.id === id && line.moveStatus === '待接收' && line.verified)).length}）</Button><Button danger block onClick={() => setRejectOpen(true)}>移库驳回</Button></div>}
             {activeDocument.status === '已完成' && <div className="move-mobile-sticky-actions is-single"><Button block onClick={() => setPage('home')}>返回</Button></div>}
             {activeDocument.status === '已驳回' && <div className="move-mobile-sticky-actions is-single"><Button block onClick={() => setPage('home')}>返回</Button></div>}
           </div>
@@ -679,7 +706,9 @@ export default function MoveMobilePrototype() {
           </div>
         </Modal>
         <Modal open={rejectOpen} title="驳回移库资产" okText="确认驳回" cancelText="取消" okButtonProps={{ danger: true }} onOk={rejectSelected} onCancel={() => setRejectOpen(false)}>
-          <p>将驳回当前勾选的 {selectedLineIds.length} 件资产，并为本次勾选内容生成一张反向移库单。</p>
+          <p>{selectedLineIds.length
+            ? `将驳回当前勾选的 ${selectedLineIds.length} 件资产，并为本次内容生成一张反向移库单。`
+            : `当前未勾选资产，将默认驳回整单剩余 ${activeDocument?.lines.filter((line) => line.moveStatus === '待接收').length || 0} 件待接收资产，并生成一张反向移库单。`}</p>
           <Input.TextArea maxLength={200} showCount value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} placeholder="请填写驳回原因" autoSize={{ minRows: 3, maxRows: 5 }} />
         </Modal>
           <Modal open={quickMatches.length > 1} title="选择待接收移库单" footer={null} onCancel={() => setQuickMatches([])}>
@@ -692,7 +721,8 @@ export default function MoveMobilePrototype() {
               setToWarehouse(doc.toWarehouse);
               updateDocument(doc.id, { lines: doc.lines.map((item) => item.id === line.id ? { ...item, verified: true, verificationDesc: '扫码验证通过' } : item) });
               setPage('detail');
-              message.success('验证成功，已打开对应移库单');
+              scrollToAssetCard(line.id);
+              message.success('验证成功，已打开对应移库单并定位到资产');
             }
             setQuickMatches([]);
           }}>{doc.documentNo}<ChevronRight size={17} /></Button>)}</div>
