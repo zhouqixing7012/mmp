@@ -387,8 +387,7 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
         { title: 'SN号', dataIndex: 'sn', width: 150, render: (value) => value || '-' },
         { title: '公司', dataIndex: 'company', width: 130 },
         { title: '板块', dataIndex: 'plate', width: 120, render: (value) => value || '-' },
-        { title: '资产大类', dataIndex: 'assetClass', width: 130, render: (value) => value || '-' },
-        { title: '资产小类', dataIndex: 'assetSubClass', width: 150, render: (value) => value || '-' },
+        { title: '资产类别', key: 'assetCategory', width: 200, render: (_, row) => [row.assetClass, row.assetSubClass].filter(Boolean).join('.') || '-' },
         { title: '资产说明', dataIndex: 'materialDesc', width: 220 },
         { title: '品牌', dataIndex: 'brand', width: 100, render: (value) => value || '-' },
         { title: '数量', dataIndex: 'quantity', width: 90, align: 'right' },
@@ -469,7 +468,7 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
     if (companyMismatch || plateMismatch) {
       Modal.confirm({
         title: '确认保存转移明细？',
-        content: '待转移物资公司或板块同转入人信息不一致，是否确认？',
+        content: '待转移资产公司或板块同转入人信息不一致，是否确认？',
         okText: '确认',
         cancelText: '取消',
         onOk: commit,
@@ -483,7 +482,7 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
 
   return (
     <>
-      <Modal open={open && !selectorType} title="添加转移物资" width={960} rootClassName="mmp-transfer-item-modal" onCancel={onCancel} destroyOnHidden footer={[
+      <Modal open={open && !selectorType} title="添加转移资产" width={960} rootClassName="mmp-transfer-item-modal" onCancel={onCancel} destroyOnHidden footer={[
       <Button key="cancel" onClick={onCancel}>取消</Button>,
       <Button key="continue" onClick={() => submit(true)}>添加并继续</Button>,
       <Button key="close" type="primary" onClick={() => submit(false)}>添加并关闭</Button>,
@@ -496,15 +495,14 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
             <DetailItem label="转移资产"><LookupInput value={asset?.assetTag || ''} placeholder="请选择转移资产" onOpen={() => setSelectorType('asset')} /></DetailItem>
           </DetailGrid>
         </Card>
-        <Card size="small" title="物资信息">
+        <Card size="small" title="资产信息">
           <DetailGrid columns={3} labelWidth={96}>
             <DetailItem label="资产标签号"><Readonly>{asset?.assetTag}</Readonly></DetailItem>
             <DetailItem label="SN号"><Readonly>{asset?.sn}</Readonly></DetailItem>
-            <DetailItem label="物资说明"><Readonly>{asset?.materialDesc}</Readonly></DetailItem>
+            <DetailItem label="资产说明"><Readonly>{asset?.materialDesc}</Readonly></DetailItem>
             <DetailItem label="可用数量"><Readonly>{asset?.availableQty}</Readonly></DetailItem>
-            <DetailItem label="物资总类"><Readonly>{asset?.materialGroup}</Readonly></DetailItem>
-            <DetailItem label="物资大类"><Readonly>{asset?.assetClass}</Readonly></DetailItem>
-            <DetailItem label="物资小类"><Readonly>{asset?.assetSubClass}</Readonly></DetailItem>
+            <DetailItem label="资产总类"><Readonly>{asset?.materialGroup}</Readonly></DetailItem>
+            <DetailItem label="资产类别"><Readonly>{[asset?.assetClass, asset?.assetSubClass].filter(Boolean).join('.') || '-'}</Readonly></DetailItem>
             <DetailItem label="资产数量"><Readonly>{asset?.assetQty}</Readonly></DetailItem>
             <DetailItem label="品牌"><Readonly>{asset?.brand}</Readonly></DetailItem>
             <DetailItem label="规格/型号"><Readonly>{asset?.model}</Readonly></DetailItem>
@@ -637,7 +635,7 @@ function TransferImportModal({ open, company, sourceAssets, existingLines, onCan
   return (
     <Modal
       open={open}
-      title="Excel导入转移物资"
+      title="Excel导入转移资产"
       width={960}
       onCancel={handleCancel}
       destroyOnHidden
@@ -748,7 +746,7 @@ function openTransferPrint(transferDocument) {
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
-<title>${escapePrintHtml(transferDocument.documentNo || '物资转移单')}</title>
+<title>${escapePrintHtml(transferDocument.documentNo || '资产转移单')}</title>
 <style>
   @page { size: A4 landscape; margin: 10mm; }
   * { box-sizing: border-box; }
@@ -858,7 +856,7 @@ function openTransferPrint(transferDocument) {
   <div class="sheet">
     <div class="title-row">
       <div class="logo"><strong>搜狐</strong><span>SOHU.COM</span></div>
-      <h1>物资转移单</h1>
+      <h1>资产转移单</h1>
       <div></div>
     </div>
 
@@ -934,7 +932,7 @@ function openTransferPrint(transferDocument) {
 }
 
 function exportTransferDetail(transferDocument) {
-  const headers = ['行号', '资产标签号', 'SN号', '物资说明', '转移数量', '转出人', '转出成本中心', '转入人', '转入成本中心', 'City', 'Building', 'Floor', 'Room', '转移日期', '用途', '使用说明'];
+  const headers = ['行号', '资产标签号', 'SN号', '资产说明', '转移数量', '转出人', '转出成本中心', '转入人', '转入成本中心', 'City', 'Building', 'Floor', 'Room', '转移日期', '用途', '使用说明'];
   const rows = (transferDocument.lines || []).map((line, index) => [
     index + 1,
     line.assetTag,
@@ -965,7 +963,7 @@ function TransferDetail({ document: transferDocument, onBack }) {
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
     { title: '资产标签号', dataIndex: 'assetTag', width: 160 },
     { title: 'SN号', dataIndex: 'sn', width: 160, render: (value) => value || '-' },
-    { title: '物资说明', dataIndex: 'materialDesc', width: 260 },
+    { title: '资产说明', dataIndex: 'materialDesc', width: 260 },
     { title: '转移数量', dataIndex: 'transferQty', width: 100, align: 'right' },
     { title: '转出人', dataIndex: 'outPerson', width: 160, render: (value) => value || '-' },
     { title: '转出成本中心', dataIndex: 'outCostCenter', width: 180, render: (value) => value || '-' },
@@ -992,7 +990,7 @@ function TransferDetail({ document: transferDocument, onBack }) {
           <DetailItem label="备注" span={3}><Readonly>{transferDocument.remark}</Readonly></DetailItem>
         </DetailGrid>
       </Card>
-      <Card size="small" title="转移物资" extra={<Typography.Text type="secondary">共 {(transferDocument.lines || []).length} 条</Typography.Text>}>
+      <Card size="small" title="转移资产" extra={<Typography.Text type="secondary">共 {(transferDocument.lines || []).length} 条</Typography.Text>}>
         <Table
           rowKey={(record) => record.id || record.assetTag}
           size="small"
@@ -1001,7 +999,7 @@ function TransferDetail({ document: transferDocument, onBack }) {
           dataSource={transferDocument.lines || []}
           scroll={{ x: 'max-content' }}
           pagination={false}
-          locale={{ emptyText: '暂无转移物资明细' }}
+          locale={{ emptyText: '暂无转移资产明细' }}
         />
       </Card>
       <div className="flex justify-center gap-3">
@@ -1033,9 +1031,9 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
   const columns = [
     { title: '行号', width: 70, align: 'center', render: (_, __, index) => index + 1 },
     { title: '资产标签号', dataIndex: 'assetTag', width: 160 },
-    { title: '物资说明', dataIndex: 'materialDesc', width: 300 },
-    { title: '物资总类', dataIndex: 'materialGroup', width: 120, render: (value) => value || '-' },
-    { title: '物资大类.小类', key: 'assetClass', width: 180, render: (_, row) => [row.assetClass, row.assetSubClass].filter(Boolean).join(' / ') || '-' },
+    { title: '资产说明', dataIndex: 'materialDesc', width: 300 },
+    { title: '资产总类', dataIndex: 'materialGroup', width: 120, render: (value) => value || '-' },
+    { title: '资产类别', key: 'assetClass', width: 180, render: (_, row) => [row.assetClass, row.assetSubClass].filter(Boolean).join('.') || '-' },
     { title: '转移数量', dataIndex: 'transferQty', width: 100, align: 'right' },
     { title: '转出人', dataIndex: 'outPerson', width: 150, render: (value) => value || '-' },
     { title: '转出成本中心', dataIndex: 'outCostCenter', width: 180, render: (value) => value || '-' },
@@ -1053,7 +1051,7 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
           <Button type="link" className="px-0" onClick={() => { setEditingLine(row); setLineModalOpen(true); }}>编辑</Button>
           <Button type="link" danger className="px-0" onClick={() => {
             Modal.confirm({
-              title: '确认删除该转移物资？',
+              title: '确认删除该转移资产？',
               content: `资产 ${row.assetTag} 将从当前草稿中移除并释放本次转移占用。`,
               okText: '删除',
               cancelText: '取消',
@@ -1157,7 +1155,7 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
     const saved = persistDraft(lines);
     if (!saved) return undefined;
     if (!lines.length) {
-      messageApi.warning('请先添加转移物资');
+      messageApi.warning('请先添加转移资产');
       return undefined;
     }
 
@@ -1167,7 +1165,7 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
       return undefined;
     }
     if (lines.some((line) => !line.transferDate)) {
-      messageApi.warning('存在未维护转移日期的物资');
+      messageApi.warning('存在未维护转移日期的资产');
       return undefined;
     }
     const incompleteReceiver = lines.find((line) => !line.inPerson || !line.inCostCenter);
@@ -1193,7 +1191,7 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
 
     Modal.confirm({
       title: '确认执行转移？',
-      content: `转移单 ${saved.documentNo} 共 ${lines.length} 条物资，确认后单据将更新为已完成，不能继续编辑。`,
+      content: `转移单 ${saved.documentNo} 共 ${lines.length} 条资产，确认后单据将更新为已完成，不能继续编辑。`,
       okText: '转移确认',
       cancelText: '取消',
       onOk: () => {
@@ -1236,8 +1234,8 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
           <DetailItem label="备注" span={3}>{lines.length > 0 ? <Readonly>{remark}</Readonly> : <TextArea autoSize={{ minRows: 3, maxRows: 6 }} value={remark} onChange={(event) => setRemark(event.target.value)} />}</DetailItem>
         </DetailGrid>
       </Card>
-      <Card size="small" title="转移物资" extra={<Space>
-        <Button type="primary" icon={<Plus size={14} />} onClick={openAddMaterial}>添加物资</Button>
+      <Card size="small" title="转移资产" extra={<Space>
+        <Button type="primary" icon={<Plus size={14} />} onClick={openAddMaterial}>添加资产</Button>
         <Button icon={<Download size={14} />} onClick={downloadTransferImportTemplate}>模板下载</Button>
         <Button icon={<Upload size={14} />} onClick={openImport}>Excel导入</Button>
       </Space>}>
@@ -1421,7 +1419,7 @@ export default function TransferPage() {
     { title: '公司', dataIndex: 'company', width: 180, sorter: (a, b) => compareText(a.company, b.company) },
     { title: '制单日期', dataIndex: 'createdDate', width: 130, sorter: (a, b) => compareText(a.createdDate, b.createdDate), defaultSortOrder: 'descend' },
     { title: '制单人', dataIndex: 'creator', width: 180, sorter: (a, b) => compareText(a.creator, b.creator) },
-    { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right', sorter: (a, b) => Number(a.quantity || 0) - Number(b.quantity || 0) },
+    { title: '资产数量', dataIndex: 'quantity', width: 110, align: 'right', sorter: (a, b) => Number(a.quantity || 0) - Number(b.quantity || 0) },
   ];
   return (
     <Space direction="vertical" size={16} className="w-full">
