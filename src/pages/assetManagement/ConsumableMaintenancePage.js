@@ -1112,14 +1112,15 @@ export default function ConsumableMaintenancePage() {
           <Alert
             type="warning"
             showIcon
-            message="批量修改采用覆盖策略"
+            message="批量修改空白表示保留原值"
             description="任一行校验失败时，本次文件全部不保存。"
           />
           <div className="text-sm text-gray-600">
             <Typography.Text strong>批量修改规则：</Typography.Text>
             <ul className="mb-0 mt-2 list-disc space-y-1 pl-5">
               <li>耗材标签号用于定位既有卡片；板块、耗材说明、数量为只读核对列，必须与系统当前值一致且不会写回。</li>
-              <li>公司、City、Building、主资产标签号、责任人、耗材状态、仓库、启用日期按模板值覆盖；公司、责任人、City、Building 为空时校验失败。</li>
+              <li>耗材标签号必填并用于定位既有卡片；其余可修改字段不填表示不变，填写后覆盖原值。</li>
+              <li>保存前先将模板非空字段与当前耗材卡片合并，再校验合并后的公司、责任人、City、Building 等必填结果。</li>
               <li>Floor 从全部启用 Floor 中校验；仓库必须启用、属于当前公司，且仓库用途为 IU0001（耗材库）或 IU0003（资产高耗库）。</li>
               <li>启用日期有值时按 yyyy/MM/dd 读取。</li>
             </ul>
