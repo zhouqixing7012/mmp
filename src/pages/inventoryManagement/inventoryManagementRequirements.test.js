@@ -8,6 +8,9 @@ const outboundApprovalHistorySource = fs.readFileSync(path.join(__dirname, 'Outb
 const printSource = fs.readFileSync(path.join(__dirname, 'InventoryPrintPreview.jsx'), 'utf8');
 const transferSource = fs.readFileSync(path.join(__dirname, 'TransferPage.js'), 'utf8');
 const moveReceiveSource = fs.readFileSync(path.join(__dirname, 'MoveReceiveContent.js'), 'utf8');
+const moveSource = fs.readFileSync(path.join(__dirname, 'MovePage.js'), 'utf8');
+const moveMobileSource = fs.readFileSync(path.join(__dirname, 'MoveMobilePrototype.jsx'), 'utf8');
+const movePrintSource = fs.readFileSync(path.join(__dirname, 'MovePrintPreview.jsx'), 'utf8');
 const assetReceiptSource = fs.readFileSync(path.join(__dirname, 'AssetReceiptPage.js'), 'utf8');
 const consumableReceiptSource = fs.readFileSync(path.join(__dirname, 'ConsumableReceiptPage.js'), 'utf8');
 const consumableReceiptMockSource = fs.readFileSync(path.join(__dirname, 'consumableReceiptMock.js'), 'utf8');
@@ -400,6 +403,39 @@ test('耗材接收 activeReceipt 在面包屑 effect 前初始化避免白屏', 
   expect(activeReceiptIndex).toBeGreaterThan(-1);
   expect(breadcrumbEffectIndex).toBeGreaterThan(-1);
   expect(activeReceiptIndex).toBeLessThan(breadcrumbEffectIndex);
+});
+
+
+test('移库仅支持资产并统一资产命名', () => {
+  expect(moveSource).toContain("const SUPPORTED_MATERIAL_GROUPS = new Set(['1.资产']);");
+  expect(moveMobileSource).toContain("asset.materialGroup === '1.资产'");
+  [moveSource, moveReceiveSource, moveMobileSource, movePrintSource].forEach((source) => {
+    expect(source).not.toContain('物资');
+    expect(source).not.toContain('2.低值耐用品');
+  });
+});
+
+test('移库跨页面返回保留查询条件', () => {
+  expect(moveSource).toContain("const MOVE_LIST_STATE_KEY = 'mmp.inventory.move.list-state.v1'");
+  expect(moveSource).toContain('window.sessionStorage.setItem(MOVE_LIST_STATE_KEY');
+  expect(moveReceiveSource).toContain("const MOVE_RECEIVE_LIST_STATE_KEY = 'mmp.inventory.move.receive-list-state.v1'");
+  expect(moveReceiveSource).toContain('window.sessionStorage.setItem(MOVE_RECEIVE_LIST_STATE_KEY');
+  expect(moveMobileSource).toContain("onClick={() => navigate(-1)}");
+});
+
+test('移库未勾选时默认驳回全部未接收资产', () => {
+  expect(moveReceiveSource).toContain("lines.filter((line) => line.moveStatus === '待接收').map((line) => line.id)");
+  expect(moveReceiveSource).toContain('onClick={() => setRejectAsset({ bulk: true })}>移库驳回</Button>');
+  expect(moveMobileSource).toContain("&& (!selectedLineIds.length || selectedLineIds.includes(line.id))");
+  expect(moveMobileSource).toContain('当前未勾选资产，将默认驳回整单剩余');
+});
+
+test('移动端我的接收展示待接收数量且扫码后定位资产卡片', () => {
+  expect(moveMobileSource).toContain('const pendingReceiveDocumentCount = useMemo(');
+  expect(moveMobileSource).toContain('<Badge count={pendingReceiveDocumentCount} size="small" />');
+  expect(moveMobileSource).toContain("scrollIntoView({ behavior: 'smooth', block: 'center' })");
+  expect(moveMobileSource).toContain('scrollToAssetCard(line.id)');
+  expect(moveMobileSource).toContain('验证成功，已定位到对应移库资产');
 });
 
 
