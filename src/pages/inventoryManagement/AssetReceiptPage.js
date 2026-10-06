@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -232,13 +232,13 @@ function SelectorInput({ value, placeholder, onOpen }) {
       onClick={onOpen}
       onKeyDown={handleKeyDown}
     >
-      <Input value={value} readOnly allowClear={false} placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} className="text-[#1677ff]" />} />
+      <Input value={value} readOnly allowClear={false} placeholder={placeholder} className="pointer-events-none" suffix={<Search size={14} className="text-primary" />} />
     </div>
   );
 }
 
 function PageTitle({ children }) {
-  return <Typography.Title level={3} className="mb-0">{children}</Typography.Title>;
+  return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;
 }
 
 function Readonly({ children }) {
@@ -266,7 +266,7 @@ function ReceiptLineMaintenanceModal({ open, asset, readOnly, onCancel, onSave }
   return (
     <Modal
       open={open}
-      title="明细信息维护"
+      title={readOnly ? '查看接收明细' : '编辑接收明细'}
       width={720}
       okText="保存"
       cancelText="取消"
@@ -329,6 +329,31 @@ export default function AssetReceiptPage() {
   const [receiptPage, setReceiptPage] = useState(1);
   const [receiptPageSize, setReceiptPageSize] = useState(10);
 
+  useEffect(() => {
+    const moduleItem = { label: '资产接收', onClick: () => setView('poList') };
+    const itemsByView = {
+      poList: [{ label: '首页' }, { label: '库存管理' }, { label: '资产接收' }],
+      poDetail: [{ label: '首页' }, { label: '库存管理' }, moduleItem, { label: 'PO单详情' }],
+      receiptList: [{ label: '首页' }, { label: '库存管理' }, moduleItem, { label: '接收单列表' }],
+      receiptDetail: [
+        { label: '首页' },
+        { label: '库存管理' },
+        moduleItem,
+        { label: '接收单列表', onClick: () => setView('receiptList') },
+        { label: '接收单详情' },
+      ],
+      receiptMaintenance: [
+        { label: '首页' },
+        { label: '库存管理' },
+        moduleItem,
+        { label: '接收单列表', onClick: () => setView('receiptList') },
+        { label: '接收单详情', onClick: () => setView('receiptDetail') },
+        { label: activeReceipt?.status === '草稿' ? '维护接收明细' : '查看接收明细' },
+      ],
+    };
+    window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', { detail: { items: itemsByView[view] || itemsByView.poList } }));
+  }, [view, activeReceipt?.status]);
+
   const maintenanceRows = maintenanceSession.rows;
   const hasBlankMaintenanceTags = maintenanceRows.some((row) => !String(row.assetTag || '').trim());
   const allMaintenanceTagsReady = maintenanceRows.length > 0 && !hasBlankMaintenanceTags;
@@ -360,6 +385,7 @@ export default function AssetReceiptPage() {
   }), [poItemOverrides, poReceiptDefaults]);
 
   const companyData = useMemo(() => toSelectData(effectivePoRows.map((item) => item.company)), [effectivePoRows]);
+  const plateData = useMemo(() => PLATE_OPTIONS.map((option, index) => ({ id: index + 1, name: option.value })), []);
   const supplierData = useMemo(() => toSelectData(effectivePoRows.map((item) => item.supplier)), [effectivePoRows]);
   const receiptSupplierData = useMemo(() => toSelectData(receiptRows.map((item) => item.supplier)), [receiptRows]);
 
@@ -613,7 +639,7 @@ export default function AssetReceiptPage() {
       const qty = Math.min(Number(item.currentReceiptQty || 0), maxQty);
       return { ...item, currentReceiptQty: qty };
     }).filter((item) => Number(item.currentReceiptQty || 0) > 0);
-    if (!receiptItems.length) return messageApi.warning('所选物资当前没有可接收数量');
+    if (!receiptItems.length) return messageApi.warning('所选资产当前没有可接收数量');
 
     const nextId = receiptRows.reduce((max, row) => Math.max(max, row.id), 0) + 1;
     const nextReceipt = {
@@ -669,7 +695,7 @@ export default function AssetReceiptPage() {
       .filter((item) => selectedItemKeys.includes(item.id))
       .map((item) => ({ ...item, currentReceiptQty: Math.min(Number(item.currentReceiptQty || 0), availableQty(item)) }))
       .filter((item) => Number(item.currentReceiptQty || 0) > 0);
-    if (!selectedItems.length) return messageApi.warning('当前没有可接收确认的物资');
+    if (!selectedItems.length) return messageApi.warning('当前没有可接收确认的资产');
 
     const nextReceiptId = receiptRows.reduce((max, row) => Math.max(max, row.id), 0) + 1;
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
@@ -1113,6 +1139,8 @@ export default function AssetReceiptPage() {
 
   const selectorConfig = {
     company: { title: '选择公司', dataSource: companyData, onConfirm: (record) => updatePoFilter('company', record.name) },
+    plate: { title: '选择板块', dataSource: plateData, onConfirm: (record) => updatePoFilter('plate', record.name) },
+    detailPlate: { title: '选择板块', dataSource: plateData, onConfirm: (record) => { setDetailPlate(record.name); updatePoReceiptDefault('plate', record.name); } },
     supplier: { title: '选择供应商', dataSource: supplierData, onConfirm: (record) => updatePoFilter('supplier', record.name) },
     receiptSupplier: { title: '选择供应商', dataSource: receiptSupplierData, onConfirm: (record) => { updateReceiptFilter('supplier', record.name); setSelectorType(''); } },
     material: {
@@ -1179,7 +1207,7 @@ export default function AssetReceiptPage() {
         : '-'
     ) },
     { title: '接收状态', dataIndex: 'receiptStatus', width: 120, render: (value) => value ? <StatusTag value={value} /> : '-' },
-    { title: '物资总类', dataIndex: 'materialGroup', width: 120 },
+    { title: '资产总类', dataIndex: 'materialGroup', width: 120 },
     { title: '资产大类', dataIndex: 'assetClass', width: 180 },
     { title: '物料编码', dataIndex: 'materialCode', width: 170 },
     { title: '资产说明', dataIndex: 'materialDesc', width: 230 },
@@ -1240,13 +1268,13 @@ export default function AssetReceiptPage() {
     return (
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
-        <PageTitle>资产接收</PageTitle>
+        <PageTitle>PO单详情</PageTitle>
         <Alert
           type="info"
           showIcon
           message={isDirectInbound ? '本次接收数量由 NO/MIS 数据决定，不支持人工修改。' : '默认为全量接收，可点击编辑按钮修改接收数量！'}
         />
-        <Card size="small" title="PO单信息">
+        <Card size="small" title="PO基础信息">
           <DetailGrid columns={3} labelWidth={112}>
             <DetailItem label="PO单号"><Readonly>{currentPO.poNo}</Readonly></DetailItem>
             <DetailItem label="供应商"><Readonly>{currentPO.supplier}</Readonly></DetailItem>
@@ -1264,12 +1292,7 @@ export default function AssetReceiptPage() {
               {hasReceipt ? (
                 <Readonly>{detailPlate}</Readonly>
               ) : (
-                <Select
-                  value={detailPlate || undefined}
-                  placeholder="请选择板块"
-                  options={PLATE_OPTIONS}
-                  onChange={(value) => { setDetailPlate(value); updatePoReceiptDefault('plate', value); }}
-                />
+                <SelectorInput value={detailPlate} placeholder="请选择板块" onOpen={() => setSelectorType('detailPlate')} />
               )}
             </DetailItem>
             <DetailItem label="申请批次">
@@ -1281,7 +1304,7 @@ export default function AssetReceiptPage() {
             </DetailItem>
           </DetailGrid>
         </Card>
-        <Card size="small" title="PO物资明细" extra={(
+        <Card size="small" title="PO资产明细" extra={(
           <Space>
             <Typography.Text type="secondary">共 {itemRows.length} 条</Typography.Text>
             {canCreateReceipt && <Button type="primary" onClick={createReceipt}>创建接收单</Button>}
@@ -1330,7 +1353,7 @@ export default function AssetReceiptPage() {
                   className={`mt-1 ${editingPoItemLocked ? '' : 'pointer-events-none'}`}
                   readOnly
                   value={`${editDraft.materialCode} / ${editDraft.materialDesc}`}
-                  suffix={editingPoItemLocked ? null : <Search size={14} className="text-[#1677ff]" />}
+                  suffix={editingPoItemLocked ? null : <Search size={14} className="text-primary" />}
                 />
               </div>
               <div>
@@ -1414,7 +1437,7 @@ export default function AssetReceiptPage() {
       { title: '行号', dataIndex: 'lineNo', width: 70, align: 'center' },
       { title: '资产标签号', dataIndex: 'assetTag', width: 160, render: (value) => value || '-' },
       { title: 'SN号', dataIndex: 'sn', width: 130, render: (value) => value || '-' },
-      { title: '物资总类', dataIndex: 'materialGroup', width: 110 },
+      { title: '资产总类', dataIndex: 'materialGroup', width: 110 },
       { title: '资产大类', dataIndex: 'assetClass', width: 180 },
       { title: '资产说明', dataIndex: 'materialDesc', width: 220 },
       { title: '配置', dataIndex: 'config', width: 120 },
@@ -1435,9 +1458,9 @@ export default function AssetReceiptPage() {
     return (
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
-        <PageTitle>接收单明细</PageTitle>
+        <PageTitle>{isDraft ? '维护接收明细' : '查看接收明细'}</PageTitle>
         <Card size="small" title="接收单信息">
-          <DetailGrid columns={3} labelWidth={118}>
+          <DetailGrid columns={3} labelWidth={112}>
             <DetailItem label="接收单号"><Readonly>{activeReceipt.receiptNo}</Readonly></DetailItem>
             <DetailItem label="接收人"><Readonly>{activeReceipt.receiver}</Readonly></DetailItem>
             <DetailItem label="接收时间"><Readonly>{activeReceipt.receiptAt}</Readonly></DetailItem>
@@ -1521,9 +1544,9 @@ export default function AssetReceiptPage() {
     return (
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
-        <PageTitle>资产接收</PageTitle>
+        <PageTitle>接收单详情</PageTitle>
         <Card size="small" title="接收单信息">
-          <DetailGrid columns={3} labelWidth={120}>
+          <DetailGrid columns={3} labelWidth={112}>
             <DetailItem label="采购接收单号"><Readonly>{activeReceipt.receiptNo}</Readonly></DetailItem>
             <DetailItem label="PO单号"><Readonly>{activeReceipt.poNo}</Readonly></DetailItem>
             <DetailItem label="PO单说明"><Readonly>{receiptPO?.poName}</Readonly></DetailItem>
@@ -1541,10 +1564,10 @@ export default function AssetReceiptPage() {
             <DetailItem label="申请批次"><Readonly>{activeReceipt.applicationBatch}</Readonly></DetailItem>
           </DetailGrid>
         </Card>
-        <Card size="small" title="接收物资明细" extra={(
+        <Card size="small" title="接收资产明细" extra={(
           <Space>
             <Typography.Text type="secondary">共 {visibleReceiptItems.length} 条</Typography.Text>
-            {canOperateReceipt && <Button danger icon={<Trash2 size={14} />} onClick={() => deleteReceiptLines(visibleReceiptItems)}>删除接收行</Button>}
+            {canOperateReceipt && <Button danger icon={<Trash2 size={14} />} disabled={!selectedReceiptLineKeys.length} onClick={() => deleteReceiptLines(visibleReceiptItems)}>删除接收行</Button>}
           </Space>
         )}>
           <Table rowKey="id" size="small" bordered columns={receiptDetailColumns} dataSource={visibleReceiptItems} rowSelection={canOperateReceipt ? { type: 'checkbox', selectedRowKeys: selectedReceiptLineKeys, onChange: setSelectedReceiptLineKeys, fixed: true, columnTitle: '选择', columnWidth: 64 } : undefined} scroll={{ x: 'max-content' }} pagination={false} />
@@ -1568,7 +1591,7 @@ export default function AssetReceiptPage() {
     return (
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
-        <PageTitle>资产接收</PageTitle>
+        <PageTitle>接收单列表</PageTitle>
         <QueryBar onQuery={() => { setReceiptAppliedFilters({ ...receiptDraftFilters }); setSelectedReceiptKeys([]); setReceiptPage(1); }} onReset={() => {
           setReceiptDraftFilters(EMPTY_RECEIPT_FILTERS);
           setReceiptAppliedFilters(EMPTY_RECEIPT_FILTERS);
@@ -1585,7 +1608,7 @@ export default function AssetReceiptPage() {
         <Card size="small" title="接收单列表" extra={(
           <Space>
             <Typography.Text type="secondary">共 {filteredReceiptRows.length} 条</Typography.Text>
-            <Button danger icon={<Trash2 size={14} />} onClick={deleteSelectedReceipts}>删除接收单</Button>
+            <Button danger icon={<Trash2 size={14} />} disabled={!selectedReceiptKeys.length} onClick={deleteSelectedReceipts}>删除接收单</Button>
           </Space>
         )}>
           <Table
@@ -1624,7 +1647,7 @@ export default function AssetReceiptPage() {
       <PageTitle>资产接收</PageTitle>
       <QueryBar onQuery={() => { setPoAppliedFilters({ ...poDraftFilters }); setPoPage(1); }} onReset={() => { setPoDraftFilters(EMPTY_PO_FILTERS); setPoAppliedFilters(EMPTY_PO_FILTERS); setPoPage(1); }}>
         <QueryItem label="公司"><SelectorInput value={poDraftFilters.company} placeholder="请选择公司" onOpen={() => setSelectorType('company')} /></QueryItem>
-        <QueryItem label="板块"><Select value={poDraftFilters.plate || undefined} allowClear placeholder="请选择板块" options={PLATE_OPTIONS} onChange={(value) => updatePoFilter('plate', value)} /></QueryItem>
+        <QueryItem label="板块"><SelectorInput value={poDraftFilters.plate} placeholder="请选择板块" onOpen={() => setSelectorType('plate')} /></QueryItem>
         <QueryItem label="PO单号"><Input value={poDraftFilters.poNo} allowClear placeholder="请输入PO单号" onChange={(event) => updatePoFilter('poNo', event.target.value)} /></QueryItem>
         <QueryItem label="供应商"><SelectorInput value={poDraftFilters.supplier} placeholder="请选择供应商" onOpen={() => setSelectorType('supplier')} /></QueryItem>
         <QueryItem label="接收状态"><Select value={poDraftFilters.receiptStatus || undefined} allowClear placeholder="全部" options={['待接收', '已接收', '已入库'].map((value) => ({ label: value, value }))} onChange={(value) => updatePoFilter('receiptStatus', value)} /></QueryItem>
