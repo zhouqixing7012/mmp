@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Button, Modal, Space, message as antdMessage } from 'antd';
 import { Printer } from 'lucide-react';
+import { getAssetReturnApplications } from '../../services/assetReturnService';
 
 const RESPONSIBILITY_TEXT = '领用人确认已收到上述资产及相关配件，认同公司资产仅作为工作用途使用。如无使用需要，应置于公司办公场所保存。领用人应承担妥善保管资产的责任，除自然损耗外，不得人为损坏或者疏于维护，否则承担相应的赔偿责任。应公司需要，领用人应当配合及时调换或归还领用资产。如领用人延迟甚至拒绝交还公司资产，公司保留采取进一步手段的权利，包括但不限于留置领用人工资、奖金或者其他个人资产。';
 
@@ -76,13 +77,16 @@ const SAMPLE_DATA = {
     method: '刷卡',
     time: '2026-08-07 10:26:38',
   },
-  employeeReturnInfo: {
-    title: '员工退库确认信息',
-    type: 'return',
-    employee: 'CW013157-胡艺凡',
-    department: '搜狐媒体.内容中心.四象工作室',
-    method: '扫码',
-    time: '2026-08-07 18:42:15',
+  assetReturnApproval: {
+    title: '资产退库审批记录',
+    applicationNo: 'ERA-202608070021',
+    rows: [
+      { node: '员工提交', person: 'CW013157-胡艺凡', status: '已提交', time: '2026-08-07 17:55:12', comment: '离职退库' },
+      { node: 'MIS鉴定', person: 'CW003379-李木勇', status: '已同意', time: '2026-08-07 18:12:24', comment: '鉴定通过' },
+      { node: '申请人退库确认', person: '119039-刘建', status: '待确认', time: '2026-08-07 18:40:09', comment: '已发起扫码、刷卡或库管员代确认' },
+      { node: '员工退库确认', person: 'CW013157-胡艺凡', status: '已确认', time: '2026-08-07 18:42:15', comment: '确认方式：扫码' },
+      { node: '执行入库', person: '119039-刘建', status: '已完成', time: '2026-08-07 18:45:03', comment: '已完成退库入库' },
+    ],
   },
 };
 
@@ -247,19 +251,12 @@ function BorrowSheet({ data }) {
 }
 
 function EmployeeUsageInfoSheet({ data }) {
-  const fields = data.type === 'return'
-    ? [
-        ['退库人（工号-姓名）', data.employee],
-        ['退库人部门（全称）', data.department],
-        ['退库确认方式', data.method],
-        ['退库确认时间', data.time],
-      ]
-    : [
-        ['领用人（工号-姓名）', data.employee],
-        ['领用人部门（全称）', data.department],
-        ['领用方式', data.method],
-        ['领用时间', data.time],
-      ];
+  const fields = [
+    ['领用人（工号-姓名）', data.employee],
+    ['领用人部门（全称）', data.department],
+    ['领用方式', data.method],
+    ['领用时间', data.time],
+  ];
   return (
     <div style={pageStyle}>
       <LogoTitle title={data.title || '员工领用信息'} />
@@ -283,6 +280,60 @@ function EmployeeUsageInfoSheet({ data }) {
     </div>
   );
 }
+
+function normalizeReturnConfirmationMethod(method) {
+  const text = String(method || '');
+  if (text.includes('代确认') || text.includes('工号')) return '库管员代确认';
+  if (text.includes('扫码')) return '扫码';
+  if (text.includes('刷卡')) return '刷卡';
+  return text || '-';
+}
+
+function AssetReturnApprovalSheet({ data }) {
+  return (
+    <div style={pageStyle}>
+      <LogoTitle title={data.title || '资产退库审批记录'} />
+      <MetaGrid items={[[ '申请单号', data.applicationNo || '-' ]]} columns={1} />
+      <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+        <thead>
+          <tr>{['序号', '审批节点', '审批人', '审批结果', '审批时间', '审批备注'].map((title) => <th key={title} style={thStyle}>{title}</th>)}</tr>
+        </thead>
+        <tbody>
+          {(data.rows || []).map((row, index) => (
+            <tr key={`${row.node}-${index}`}>
+              <td style={{ ...cellStyle, textAlign: 'center' }}>{index + 1}</td>
+              <td style={cellStyle}>{row.node || '-'}</td>
+              <td style={cellStyle}>{row.person || '-'}</td>
+              <td style={cellStyle}>{row.status || '-'}</td>
+              <td style={cellStyle}>{row.time || '-'}</td>
+              <td style={cellStyle}>{row.comment || '-'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function buildAssetReturnApprovalData(applicationNo) {
+  const application = getAssetReturnApplications().find((item) => item.id === applicationNo);
+  if (!application) return { ...SAMPLE_DATA.assetReturnApproval, applicationNo: applicationNo || SAMPLE_DATA.assetReturnApproval.applicationNo };
+  const confirmationMethod = normalizeReturnConfirmationMethod(application.handling?.confirmationMethod);
+  return {
+    title: '资产退库审批记录',
+    applicationNo: application.id,
+    rows: (application.history || []).map((row) => ({
+      node: row.node,
+      person: row.person,
+      status: row.status,
+      time: row.time,
+      comment: row.node === '员工退库确认' && row.status === '已确认'
+        ? `确认方式：${confirmationMethod}`
+        : (row.comment || '-'),
+    })),
+  };
+}
+
 
 function replaceDocumentNo(data, docNo) {
   if (!docNo) return data;
@@ -308,6 +359,10 @@ function readBusinessType(row, activeSubMenu) {
   return '';
 }
 
+function inferApplicationNo(text) {
+  return String(text || '').match(/\b(?:ERA|TK)-\d+\b/i)?.[0] || '';
+}
+
 function inferDocNo(text, activeSubMenu) {
   const patterns = activeSubMenu === '资产接收' || activeSubMenu === '耗材接收'
     ? [/REC-?\d+/i]
@@ -317,7 +372,7 @@ function inferDocNo(text, activeSubMenu) {
 
 function isEmployeeGeneratedContext(text, activeSubMenu, businessType) {
   if (activeSubMenu === '出库' && businessType === '领用出库') return /EUA-\d+/i.test(text);
-  if (activeSubMenu === '入库' && businessType === '退库入库') return /ERA-\d+/i.test(text);
+  if (activeSubMenu === '入库' && businessType === '退库入库') return /(?:ERA|TK)-\d+/i.test(text);
   return false;
 }
 
@@ -332,7 +387,7 @@ function buildPreviewDocs(activeSubMenu, printAction, contexts) {
       const key = INBOUND_TYPE_TO_KEY[businessType] || 'inboundNew';
       const docs = [{ key, data: replaceDocumentNo(SAMPLE_DATA[key], docNo) }];
       if (isEmployeeGeneratedContext(text, activeSubMenu, businessType)) {
-        docs.push({ key: 'employeeUsageInfo', data: SAMPLE_DATA.employeeReturnInfo });
+        docs.push({ key: 'assetReturnApproval', data: buildAssetReturnApprovalData(inferApplicationNo(text)) });
       }
       return docs;
     }
@@ -363,6 +418,7 @@ function PrintSheet({ doc }) {
   if (doc.key === 'claim') return <ClaimSheet data={doc.data}/>;
   if (doc.key === 'borrow') return <BorrowSheet data={doc.data}/>;
   if (doc.key === 'employeeUsageInfo') return <EmployeeUsageInfoSheet data={doc.data}/>;
+  if (doc.key === 'assetReturnApproval') return <AssetReturnApprovalSheet data={doc.data}/>;
   return null;
 }
 
