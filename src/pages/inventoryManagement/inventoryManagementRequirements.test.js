@@ -394,6 +394,15 @@ test('资产和耗材PO行仅有剩余可接收数量时展示编辑且草稿引
   expect(consumableReceiptSource).toContain("editingPoItemLocked\n                  ? <div className=\"mt-1\"><Readonly>{editDraft.config}</Readonly></div>");
 });
 
+test('耗材接收 activeReceipt 在面包屑 effect 前初始化避免白屏', () => {
+  const activeReceiptIndex = consumableReceiptSource.indexOf('const activeReceipt = useMemo(');
+  const breadcrumbEffectIndex = consumableReceiptSource.indexOf("const moduleItem = { label: '耗材接收'");
+  expect(activeReceiptIndex).toBeGreaterThan(-1);
+  expect(breadcrumbEffectIndex).toBeGreaterThan(-1);
+  expect(activeReceiptIndex).toBeLessThan(breadcrumbEffectIndex);
+});
+
+
 test('资产和耗材接收页面遵循统一UI层级与操作状态', () => {
   expect(assetReceiptSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
   expect(assetReceiptSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
