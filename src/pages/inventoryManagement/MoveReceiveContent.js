@@ -163,7 +163,7 @@ function VerificationModal({ open, asset, onCancel, onConfirm }) {
   );
 }
 
-function RejectModal({ open, onCancel, onConfirm }) {
+function RejectModal({ open, onCancel, onConfirm, bulk = false, selectedCount = 0, pendingCount = 0 }) {
   const [reason, setReason] = useState('');
   useEffect(() => setReason(''), [open]);
   return (
@@ -177,7 +177,13 @@ function RejectModal({ open, onCancel, onConfirm }) {
       onOk={() => onConfirm(reason)}
       destroyOnHidden
     >
-      <Typography.Text>驳回后，本次选择的资产变为“已驳回”，系统自动生成反向移库单；未勾选行时默认驳回当前单据全部未接收资产。</Typography.Text>
+      <Typography.Text>
+        {bulk
+          ? (selectedCount
+            ? `本次将驳回已勾选的 ${selectedCount} 件待接收资产，并自动生成反向移库单。`
+            : `当前未勾选资产，将默认驳回整单剩余 ${pendingCount} 件待接收资产，并自动生成反向移库单。`)
+          : '驳回后，该条资产变为“已驳回”，系统自动生成反向移库单。'}
+      </Typography.Text>
       <div className="mt-3">
         <Typography.Text>驳回原因：</Typography.Text>
         <TextArea maxLength={200} showCount value={reason} onChange={(event) => setReason(event.target.value)} autoSize={{ minRows: 3, maxRows: 5 }} placeholder="必填，最多200字" />
@@ -486,7 +492,14 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
 
         <ReceiveAssetDetailModal open={Boolean(detailAsset)} document={row} asset={detailAsset} onCancel={() => setDetailAsset(null)} />
         <VerificationModal open={Boolean(verificationAsset)} asset={verificationAsset} onCancel={() => setVerificationAsset(null)} onConfirm={manualVerify} />
-        <RejectModal open={Boolean(rejectAsset)} onCancel={() => setRejectAsset(null)} onConfirm={reject} />
+        <RejectModal
+          open={Boolean(rejectAsset)}
+          bulk={Boolean(rejectAsset?.bulk)}
+          selectedCount={selectedKeys.length}
+          pendingCount={lines.filter((line) => line.moveStatus === '待接收').length}
+          onCancel={() => setRejectAsset(null)}
+          onConfirm={reject}
+        />
         <MovePrintPreview open={printOpen} documentNo={row.documentNo} documents={documents} onCancel={() => setPrintOpen(false)} />
       </Space>
     </div>
