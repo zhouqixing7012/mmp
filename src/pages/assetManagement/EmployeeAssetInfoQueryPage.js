@@ -698,7 +698,7 @@ export default function EmployeeAssetInfoQueryPage() {
       dataIndex: 'documentStatus',
       width: 120,
       render: (value, record) => value && value !== '-'
-        ? <Button type="link" size="small" className="px-0" onClick={() => openApprovalRecord(record.documentNo)}><StatusTag value={value} type="business" /></Button>
+        ? <Button type="link" size="small" className="px-0" onClick={() => openApprovalRecord(record)}><StatusTag value={value} type="business" /></Button>
         : '-',
     },
     { title: '单据审批环节', dataIndex: 'approvalNode', width: 160, render: displayText },
