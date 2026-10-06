@@ -12,16 +12,19 @@ import {
   Space,
   Table,
   Typography,
+  Upload,
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
-import { Download, Printer, Search, Tags } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { Download, Printer, Search, Tags, UploadCloud } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import './TagPrintingPage.css';
 
 const { RangePicker } = DatePicker;
+const { Dragger } = Upload;
 
 const CURRENT_USER = '系统管理员';
 const CURRENT_IP = '10.2.156.220';
@@ -285,6 +288,23 @@ function LookupInput({ value, placeholder, onOpen, onClear }) {
       }}
     />
   );
+}
+
+async function readBatchPrintTags(file) {
+  const fileName = String(file?.name || '');
+  if (!/\.(xls|xlsx)$/i.test(fileName)) throw new Error('仅支持 .xls 或 .xlsx 文件');
+  const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: false });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  if (!sheet) throw new Error('Excel 文件没有可读取的工作表');
+  const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+  if (!matrix.length || String(matrix[0]?.[0] || '').trim() !== '资产标签号') {
+    throw new Error('模板第一列必须为“资产标签号”');
+  }
+  const tags = matrix.slice(1).map((row) => String(row?.[0] || '').trim()).filter(Boolean);
+  if (!tags.length) throw new Error('模板中没有可打印的资产标签号');
+  const duplicated = tags.find((tag, index) => tags.indexOf(tag) !== index);
+  if (duplicated) throw new Error(`模板内资产标签号重复：${duplicated}`);
+  return tags;
 }
 
 function PrintCopiesModal({ open, copies, targetCount, onChange, onConfirm, onCancel, confirmLoading }) {
@@ -694,6 +714,10 @@ export default function TagPrintingPage() {
   const [printCopies, setPrintCopies] = useState(1);
   const [printSubmitting, setPrintSubmitting] = useState(false);
   const printSubmittingRef = useRef(false);
+  const [batchPrintOpen, setBatchPrintOpen] = useState(false);
+  const [batchPrintFiles, setBatchPrintFiles] = useState([]);
+  const [batchPrintCopies, setBatchPrintCopies] = useState(1);
+  const [batchPrintSubmitting, setBatchPrintSubmitting] = useState(false);
   const [sequencePool, setSequencePool] = useState(INITIAL_SEQUENCE_POOL);
 
   const filteredRows = useMemo(() => rows.filter((row) => (
@@ -788,6 +812,54 @@ export default function TagPrintingPage() {
     }
     setPrintCopies(1);
     setPrintTask({ type: 'asset', ids: targetIds, actionName, source: '标签打印', printTaskId: makePrintTaskId() });
+  };
+
+  const downloadBatchPrintTemplate = () => {
+    const worksheet = XLSX.utils.aoa_to_sheet([['资产标签号']]);
+    worksheet['!cols'] = [{ wch: 24 }];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, '批量打印');
+    XLSX.writeFile(workbook, '标签批量打印模板.xlsx');
+    messageApi.success('标签批量打印模板已下载');
+  };
+
+  const confirmBatchPrint = async () => {
+    if (!batchPrintFiles.length || batchPrintSubmitting) {
+      if (!batchPrintFiles.length) messageApi.warning('请先上传批量打印模板');
+      return;
+    }
+    const copies = Number(batchPrintCopies || 0);
+    if (!Number.isInteger(copies) || copies < 1 || copies > 99) {
+      messageApi.error('打印份数必须为1～99的整数');
+      return;
+    }
+    setBatchPrintSubmitting(true);
+    try {
+      const tags = await readBatchPrintTags(batchPrintFiles[0]?.originFileObj || batchPrintFiles[0]);
+      const rowByTag = new Map(rows.map((row) => [String(row.assetTag), row]));
+      const missingTags = tags.filter((tag) => !rowByTag.has(tag));
+      if (missingTags.length) {
+        throw new Error(`以下资产标签号不存在或无权打印：${missingTags.slice(0, 10).join('、')}${missingTags.length > 10 ? '等' : ''}`);
+      }
+      const targets = tags.map((tag) => rowByTag.get(tag));
+      const validationError = validateAssetPrintRows(targets);
+      if (validationError) throw new Error(validationError);
+      const tagSet = new Set(tags);
+      setRows((current) => current.map((row) => (
+        tagSet.has(String(row.assetTag))
+          ? { ...row, printCount: Number(row.printCount || 0) + copies }
+          : row
+      )));
+      setSelectedRowKeys([]);
+      setBatchPrintOpen(false);
+      setBatchPrintFiles([]);
+      setBatchPrintCopies(1);
+      messageApi.success(`批量打印成功，共 ${tags.length} 个标签，每个打印 ${copies} 份`);
+    } catch (error) {
+      messageApi.error(error.message || '批量打印失败');
+    } finally {
+      setBatchPrintSubmitting(false);
+    }
   };
 
   const requestLabelPrint = (targetIds, actionName, batch) => {
@@ -1242,6 +1314,7 @@ export default function TagPrintingPage() {
               打印所选（{selectedRowKeys.length}）
             </Button>
             <Button icon={<Printer size={14} />} onClick={() => requestAssetPrint(filteredRows.map((row) => row.id), '打印全部')}>打印全部</Button>
+            <Button icon={<UploadCloud size={14} />} onClick={() => setBatchPrintOpen(true)}>批量打印</Button>
             <Button icon={<Download size={14} />} onClick={handleExport}>导出</Button>
             <Button icon={<Tags size={14} />} onClick={() => setPreviewMode(true)}>预打印</Button>
           </Space>
@@ -1259,6 +1332,48 @@ export default function TagPrintingPage() {
           onChange={(_, __, ___, extra) => { if (extra?.action === 'sort') setSelectedRowKeys([]); }}
         />
       </Card>
+
+      <Modal
+        title="标签批量打印"
+        open={batchPrintOpen}
+        width={560}
+        okText="确认打印"
+        cancelText="取消"
+        confirmLoading={batchPrintSubmitting}
+        onOk={confirmBatchPrint}
+        onCancel={() => {
+          if (batchPrintSubmitting) return;
+          setBatchPrintOpen(false);
+          setBatchPrintFiles([]);
+          setBatchPrintCopies(1);
+        }}
+        destroyOnHidden
+      >
+        <Space direction="vertical" size={16} className="w-full">
+          <Alert
+            type="info"
+            showIcon
+            message="上传资产标签号模板后批量打印"
+            description="模板仅填写资产标签号；系统按标签号定位当前有权限打印的资产，空白行忽略。"
+          />
+          <Button icon={<Download size={14} />} onClick={downloadBatchPrintTemplate}>下载模板</Button>
+          <Dragger
+            accept=".xls,.xlsx"
+            maxCount={1}
+            beforeUpload={() => false}
+            fileList={batchPrintFiles}
+            onChange={({ fileList }) => setBatchPrintFiles(fileList.slice(-1))}
+          >
+            <p className="ant-upload-drag-icon"><UploadCloud size={36} /></p>
+            <p className="ant-upload-text">点击或拖拽标签批量打印模板到此区域</p>
+            <p className="ant-upload-hint">第一列固定为“资产标签号”</p>
+          </Dragger>
+          <div className="flex items-center justify-between">
+            <Typography.Text>打印份数</Typography.Text>
+            <InputNumber min={1} max={99} precision={0} value={batchPrintCopies} onChange={(value) => setBatchPrintCopies(value || 1)} />
+          </div>
+        </Space>
+      </Modal>
 
       <SelectModal
         open={Boolean(activeLookup)}
