@@ -28,7 +28,7 @@ const { RangePicker } = DatePicker;
 const TRANSIT_WAREHOUSE = 'V00001.集团在途总库';
 const CURRENT_USER = 'admin-系统管理员';
 const DOCUMENT_STATUSES = ['草稿', '出库待接收', '已完成', '已驳回'];
-const SUPPORTED_MATERIAL_GROUPS = new Set(['1.资产', '2.低值耐用品']);
+const SUPPORTED_MATERIAL_GROUPS = new Set(['1.资产']);
 
 const WAREHOUSE_OPTIONS = [
   { id: 1, name: 'I0001.资产集团总库（新媒体）', financeCompany: '114.新媒体', city: '010.北京市', building: '129753.搜狐媒体大厦', floor: 'B2', keeper: 'SOHU05-库房管理员' },
@@ -105,7 +105,7 @@ const INITIAL_DOCUMENTS = [
     creator: '114111-杨芊',
     quantity: 1,
     remark: '低值耐用品移库演示',
-    lines: [cloneLine(ASSET_POOL[2], { id: 'draft-2', lineNo: 1, moveDesc: 'MIS备货' })],
+    lines: [cloneLine(ASSET_POOL[4], { id: 'draft-2', lineNo: 1, moveDesc: 'MIS备货' })],
   },
   {
     id: 3,
@@ -121,7 +121,7 @@ const INITIAL_DOCUMENTS = [
     reminderStatus: '未超期',
     lines: [
       cloneLine(HISTORICAL_ASSET, { id: 'receive-1', lineNo: 1, warehouse: TRANSIT_WAREHOUSE, moveStatus: '待接收', verification: '已验证', verificationDesc: '扫码验证通过', verificationMethod: '扫码', verificationTime: '2026-09-09 10:20', transactionOut: '24', snapshot: { ...HISTORICAL_ASSET } }),
-      cloneLine({ ...ASSET_POOL[2], assetTag: 'CON-26070019', sn: 'MXK-0019' }, { id: 'receive-2', lineNo: 2, warehouse: TRANSIT_WAREHOUSE, moveStatus: '待接收', verification: '未验证', transactionOut: '24', snapshot: { ...ASSET_POOL[2], assetTag: 'CON-26070019', sn: 'MXK-0019' } }),
+      cloneLine({ ...ASSET_POOL[4], assetTag: 'CON-26070019', sn: 'MXK-0019' }, { id: 'receive-2', lineNo: 2, warehouse: TRANSIT_WAREHOUSE, moveStatus: '待接收', verification: '未验证', transactionOut: '24', snapshot: { ...ASSET_POOL[4], assetTag: 'CON-26070019', sn: 'MXK-0019' } }),
     ],
   },
   {
@@ -277,7 +277,7 @@ function MoveAssetDetailModal({ open, document, asset, onCancel }) {
   if (!asset) return null;
   const snapshot = asset.snapshot || asset;
   return (
-    <Modal open={open} title="移库物资信息" width={960} footer={null} onCancel={onCancel} destroyOnHidden>
+    <Modal open={open} title="移库资产信息" width={960} footer={null} onCancel={onCancel} destroyOnHidden>
       <Space direction="vertical" size={16} className="w-full">
         <Card size="small" title="移库单信息">
           <DetailGrid columns={3} labelWidth={110}>
@@ -292,7 +292,7 @@ function MoveAssetDetailModal({ open, document, asset, onCancel }) {
           <DetailGrid columns={3} labelWidth={110}>
             <DetailItem label="标签号"><Readonly>{snapshot.assetTag}</Readonly></DetailItem>
             <DetailItem label="SN"><Readonly>{snapshot.sn}</Readonly></DetailItem>
-            <DetailItem label="物资总类"><Readonly>{snapshot.materialGroup}</Readonly></DetailItem>
+            <DetailItem label="资产总类"><Readonly>{snapshot.materialGroup}</Readonly></DetailItem>
             <DetailItem label="原值"><Readonly>{formatMoney(snapshot.originalValue)}</Readonly></DetailItem>
             <DetailItem label="净值"><Readonly>{formatMoney(snapshot.netValue)}</Readonly></DetailItem>
             <DetailItem label="资产状态"><Readonly>{snapshot.assetStatus}</Readonly></DetailItem>
@@ -355,7 +355,7 @@ function MoveItemModal({ open, currentWarehouse, initialLine, existingTags, onCa
     : '';
 
   const submit = (keepOpen) => {
-    if (!selectedAssets.length) return messageApi.warning('请选择需要移库的物资');
+    if (!selectedAssets.length) return messageApi.warning('请选择需要移库的资产');
     const payloads = selectedAssets.map((item) => ({
       ...item,
       warehouse: currentWarehouse,
@@ -379,7 +379,7 @@ function MoveItemModal({ open, currentWarehouse, initialLine, existingTags, onCa
       {contextHolder}
       <Modal
         open={open && !selectorOpen}
-        title={initialLine ? '编辑移库物资' : '添加移库物资'}
+        title={initialLine ? '编辑移库资产' : '添加移库资产'}
         width={960}
         onCancel={onCancel}
         destroyOnHidden
@@ -391,12 +391,12 @@ function MoveItemModal({ open, currentWarehouse, initialLine, existingTags, onCa
       >
         <Space direction="vertical" size={16} className="w-full">
           <Typography.Text>当前仓库：{currentWarehouse}</Typography.Text>
-          <Card size="small" title="选择物资">
+          <Card size="small" title="选择资产">
             <DetailGrid columns={3} labelWidth={96}>
-              <DetailItem label="移库物资" span={3}>
+              <DetailItem label="移库资产" span={3}>
                 <LookupInput
                   value={selectedAssetDisplay}
-                  placeholder="请选择移库物资"
+                  placeholder="请选择移库资产"
                   onOpen={() => setSelectorOpen(true)}
                   disabled={Boolean(initialLine)}
                 />
@@ -404,15 +404,15 @@ function MoveItemModal({ open, currentWarehouse, initialLine, existingTags, onCa
             </DetailGrid>
           </Card>
 
-          <Card size="small" title="物资信息">
+          <Card size="small" title="资产信息">
             <DetailGrid columns={3} labelWidth={100}>
               <DetailItem label="标签号"><Readonly>{displayAsset?.assetTag}</Readonly></DetailItem>
               <DetailItem label="SN号"><Readonly>{displayAsset?.sn}</Readonly></DetailItem>
               <DetailItem label="资产说明"><Readonly>{displayAsset?.materialDesc}</Readonly></DetailItem>
               <DetailItem label="可用数量"><Readonly>{displayAsset?.availableQty}</Readonly></DetailItem>
-              <DetailItem label="物资总类"><Readonly>{displayAsset?.materialGroup}</Readonly></DetailItem>
-              <DetailItem label="物资大类"><Readonly>{displayAsset?.assetClass}</Readonly></DetailItem>
-              <DetailItem label="物资小类"><Readonly>{displayAsset?.assetSubClass}</Readonly></DetailItem>
+              <DetailItem label="资产总类"><Readonly>{displayAsset?.materialGroup}</Readonly></DetailItem>
+              <DetailItem label="资产大类"><Readonly>{displayAsset?.assetClass}</Readonly></DetailItem>
+              <DetailItem label="资产小类"><Readonly>{displayAsset?.assetSubClass}</Readonly></DetailItem>
               <DetailItem label="数量"><Readonly>{displayAsset?.quantity}</Readonly></DetailItem>
               <DetailItem label="仓库"><Readonly>{currentWarehouse}</Readonly></DetailItem>
               <DetailItem label="申请批次"><Readonly>{displayAsset?.applicationBatch}</Readonly></DetailItem>
@@ -450,7 +450,7 @@ function MoveItemModal({ open, currentWarehouse, initialLine, existingTags, onCa
 
       <SelectModal
         open={selectorOpen}
-        title="选择移库物资"
+        title="选择移库资产"
         width={960}
         dataSource={selectorAssets}
         initialSelectedKeys={displayAsset ? [displayAsset.id] : []}
@@ -501,7 +501,7 @@ function MoveImportModal({ open, currentWarehouse, existingTags, onCancel, onSuc
   };
 
   return (
-    <Modal open={open} title="Excel导入移库物资" width={720} onCancel={onCancel} footer={<Button onClick={onCancel}>关闭</Button>} destroyOnHidden>
+    <Modal open={open} title="Excel导入移库资产" width={720} onCancel={onCancel} footer={<Button onClick={onCancel}>关闭</Button>} destroyOnHidden>
       <Space direction="vertical" size={16} className="w-full">
         <Typography.Text>仅支持 .xls / .xlsx。标签号与SN至少填写一项；任一行校验失败时，本次导入整体不保存。</Typography.Text>
         <Space>
@@ -585,7 +585,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
       return false;
     }
     if (rows.some((row) => !SUPPORTED_MATERIAL_GROUPS.has(row.materialGroup))) {
-      messageApi.warning('当前物资类型暂不支持移库');
+      messageApi.warning('当前资产类型暂不支持移库');
       return false;
     }
 
@@ -593,7 +593,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
       setLines((current) => current.map((item) => item.id === editingLine.id ? { ...rows[0], id: editingLine.id, lineNo: item.lineNo } : item));
       setEditingLine(null);
       setLineModalOpen(false);
-      messageApi.success('移库物资已更新');
+      messageApi.success('移库资产已更新');
       return true;
     }
 
@@ -602,7 +602,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
       return [...current, ...rows.map((row, index) => ({ ...row, id: `${Date.now()}-${start + index}`, lineNo: start + index + 1 }))];
     });
     if (!keepOpen) setLineModalOpen(false);
-    messageApi.success(keepOpen ? '物资已添加，可继续选择' : `已添加 ${rows.length} 条物资`);
+    messageApi.success(keepOpen ? '资产已添加，可继续选择' : `已添加 ${rows.length} 条资产`);
     return true;
   };
 
@@ -642,7 +642,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
     }
     if (!SUPPORTED_MATERIAL_GROUPS.has(matched.materialGroup)) {
       setLineScanDraft('');
-      messageApi.warning('当前物资类型暂不支持移库');
+      messageApi.warning('当前资产类型暂不支持移库');
       return undefined;
     }
 
@@ -660,9 +660,9 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
   };
 
   const deleteLines = () => {
-    if (!selectedLineKeys.length) return messageApi.warning('请选中要删除的物资行！');
+    if (!selectedLineKeys.length) return messageApi.warning('请选中要删除的资产行！');
     Modal.confirm({
-      title: '确认删除所选移库物资？',
+      title: '确认删除所选移库资产？',
       content: '删除草稿明细后，将同步释放本移库流程产生的资产锁。',
       okText: '删除',
       cancelText: '取消',
@@ -671,7 +671,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
         const selected = new Set(selectedLineKeys);
         setLines((current) => current.filter((line) => !selected.has(line.id)).map((line, index) => ({ ...line, lineNo: index + 1 })));
         setSelectedLineKeys([]);
-        messageApi.success('已删除所选物资并释放当前移库占用');
+        messageApi.success('已删除所选资产并释放当前移库占用');
       },
     });
     return undefined;
@@ -711,7 +711,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
     if (new Set(tags).size !== tags.length) return '以下资产标签号重复，请先删除';
     if (lines.some((line) => line.warehouse !== currentWarehouse)) return '该资产不在当前仓库！';
     if (lines.some((line) => line.locked)) return '当前资产已被其他业务锁定，无法移库';
-    if (lines.some((line) => !SUPPORTED_MATERIAL_GROUPS.has(line.materialGroup))) return '当前物资类型暂不支持移库';
+    if (lines.some((line) => !SUPPORTED_MATERIAL_GROUPS.has(line.materialGroup))) return '当前资产类型暂不支持移库';
     return '';
   };
 
@@ -729,7 +729,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
     if (error) return messageApi.warning(error);
     Modal.confirm({
       title: '确认执行移库调出？',
-      content: `提交后 ${lines.length} 条物资将进入 ${TRANSIT_WAREHOUSE}，单据状态变为“出库待接收”。`,
+      content: `提交后 ${lines.length} 条资产将进入 ${TRANSIT_WAREHOUSE}，单据状态变为“出库待接收”。`,
       okText: '移库提交',
       cancelText: '取消',
       onOk: () => onSubmit(payload()),
@@ -761,8 +761,8 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
       ),
     },
     { title: 'SN', dataIndex: 'sn', width: 150 },
-    { title: '物资说明', dataIndex: 'materialDesc', width: 220 },
-    { title: '物资总类', dataIndex: 'materialGroup', width: 130 },
+    { title: '资产说明', dataIndex: 'materialDesc', width: 220 },
+    { title: '资产总类', dataIndex: 'materialGroup', width: 130 },
     { title: '数量', dataIndex: 'quantity', width: 90, align: 'right', render: (value) => Number(value || 0) },
     { title: '公司', dataIndex: 'company', width: 160 },
     { title: '板块', dataIndex: 'plate', width: 120 },
@@ -776,8 +776,8 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
 
   const toolbar = editable ? (
     <Space>
-      <Button type="primary" icon={<Plus size={14} />} onClick={openAdd}>添加物资</Button>
-      <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除物资</Button>
+      <Button type="primary" icon={<Plus size={14} />} onClick={openAdd}>添加资产</Button>
+      <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除资产</Button>
       <Button icon={<Download size={14} />} onClick={() => messageApi.success('移库导入模板已准备')}>模板下载</Button>
       <Button icon={<Upload size={14} />} onClick={() => {
         if (!currentWarehouse) return messageApi.warning('请先选择当前仓库');
@@ -819,7 +819,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
           </DetailGrid>
         </Card>
 
-        <Card size="small" title="移库物资" extra={<Typography.Text type="secondary">共 {visibleLines.length} 条</Typography.Text>}>
+        <Card size="small" title="移库资产" extra={<Typography.Text type="secondary">共 {visibleLines.length} 条</Typography.Text>}>
           {(editable || toolbar) && (
             <div className="mb-3 flex flex-wrap items-center gap-3">
               {editable && (
@@ -1054,7 +1054,7 @@ export default function MovePage() {
     { title: '移入仓库', dataIndex: 'toWarehouse', width: 320 },
     { title: '制单日期', dataIndex: 'createdDate', width: 130 },
     { title: '制单人', dataIndex: 'creator', width: 170 },
-    { title: '物资数量', dataIndex: 'quantity', width: 110, align: 'right', render: (value) => Number(value || 0) },
+    { title: '资产数量', dataIndex: 'quantity', width: 110, align: 'right', render: (value) => Number(value || 0) },
   ];
 
   return (
