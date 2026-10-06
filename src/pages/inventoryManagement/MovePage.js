@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Card,
@@ -29,6 +29,17 @@ const TRANSIT_WAREHOUSE = 'V00001.集团在途总库';
 const CURRENT_USER = 'admin-系统管理员';
 const DOCUMENT_STATUSES = ['草稿', '出库待接收', '已完成', '已驳回'];
 const SUPPORTED_MATERIAL_GROUPS = new Set(['1.资产']);
+const MOVE_LIST_STATE_KEY = 'mmp.inventory.move.list-state.v1';
+
+function readMoveListState() {
+  if (typeof window === 'undefined') return null;
+  try {
+    return JSON.parse(window.sessionStorage.getItem(MOVE_LIST_STATE_KEY) || 'null');
+  } catch (error) {
+    return null;
+  }
+}
+
 
 const WAREHOUSE_OPTIONS = [
   { id: 1, name: 'I0001.资产集团总库（新媒体）', financeCompany: '114.新媒体', city: '010.北京市', building: '129753.搜狐媒体大厦', floor: 'B2', keeper: 'SOHU05-库房管理员' },
@@ -901,17 +912,23 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
 export default function MovePage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
+  const restoredListState = useMemo(() => readMoveListState(), []);
   const [documents, setDocuments] = useState(INITIAL_DOCUMENTS);
-  const [draft, setDraft] = useState(EMPTY_FILTERS);
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [draft, setDraft] = useState(() => restoredListState?.draft || EMPTY_FILTERS);
+  const [filters, setFilters] = useState(() => restoredListState?.filters || EMPTY_FILTERS);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [activeTab, setActiveTab] = useState('initiated');
+  const [activeTab, setActiveTab] = useState(() => restoredListState?.activeTab || 'initiated');
   const [view, setView] = useState('list');
   const [activeRow, setActiveRow] = useState(null);
   const [creatorModalOpen, setCreatorModalOpen] = useState(false);
   const [receiveDetailOpen, setReceiveDetailOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(() => restoredListState?.page || 1);
+  const [pageSize, setPageSize] = useState(() => restoredListState?.pageSize || 10);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.sessionStorage.setItem(MOVE_LIST_STATE_KEY, JSON.stringify({ draft, filters, activeTab, page, pageSize }));
+  }, [draft, filters, activeTab, page, pageSize]);
 
   const creators = useMemo(
     () => [...new Set(documents.map((row) => row.creator))].map((name, index) => ({ id: index + 1, name })),
