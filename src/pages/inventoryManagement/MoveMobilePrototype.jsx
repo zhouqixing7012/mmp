@@ -543,7 +543,6 @@ export default function MoveMobilePrototype() {
               ))}
               {!filteredDocuments.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={tab === 'initiated' ? '暂无发起单据' : '暂无接收单据'} />}
             </div>
-            {tab === 'received' && <Button className="move-mobile-quick-scan" block icon={<QrCode size={18} />} onClick={() => openScanner('receive')}>快捷扫描资产</Button>}
           </div>
         )}
 
@@ -575,7 +574,6 @@ export default function MoveMobilePrototype() {
               ))}
               {!activeDocument?.lines.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="还没有添加移库资产" />}
             </section>
-            <div className="move-mobile-sticky-actions"><Button type="primary" block onClick={submitMove}>移库提交</Button><Button block onClick={() => setPage('home')}>返回</Button></div>
           </div>
         )}
 
@@ -624,9 +622,6 @@ export default function MoveMobilePrototype() {
                 );
               })}
             </section>
-            {activeDocument.status === '出库待接收' && <div className="move-mobile-sticky-actions"><Button type="primary" block onClick={receiveSelected}>接收所选（{selectedLineIds.filter((id) => activeDocument.lines.some((line) => line.id === id && line.moveStatus === '待接收' && line.verified)).length}）</Button><Button danger block onClick={() => setRejectOpen(true)}>移库驳回</Button></div>}
-            {activeDocument.status === '已完成' && <div className="move-mobile-sticky-actions is-single"><Button block onClick={() => setPage('home')}>返回</Button></div>}
-            {activeDocument.status === '已驳回' && <div className="move-mobile-sticky-actions is-single"><Button block onClick={() => setPage('home')}>返回</Button></div>}
           </div>
         )}
 
@@ -659,8 +654,25 @@ export default function MoveMobilePrototype() {
               {activeLine.receiver && <div className="move-mobile-info-row"><span>接收仓管员</span><strong>{activeLine.receiver}</strong></div>}
               {activeLine.rejectReason && <div className="move-mobile-info-row"><span>驳回原因</span><strong>{activeLine.rejectReason}</strong></div>}
             </section>
-            <div className="move-mobile-sticky-actions is-single"><Button block onClick={() => setPage('detail')}>返回</Button></div>
           </div>
+        )}
+
+        {page === 'home' && tab === 'received' && (
+          <div className="move-mobile-footer-quick-scan">
+            <Button className="move-mobile-quick-scan" block icon={<QrCode size={18} />} onClick={() => openScanner('receive')}>快捷扫描资产</Button>
+          </div>
+        )}
+        {page === 'editor' && (
+          <div className="move-mobile-sticky-actions"><Button type="primary" block onClick={submitMove}>移库提交</Button><Button block onClick={() => setPage('home')}>返回</Button></div>
+        )}
+        {page === 'detail' && activeDocument?.status === '出库待接收' && (
+          <div className="move-mobile-sticky-actions"><Button type="primary" block onClick={receiveSelected}>接收所选（{selectedLineIds.filter((id) => activeDocument.lines.some((line) => line.id === id && line.moveStatus === '待接收' && line.verified)).length}）</Button><Button danger block onClick={() => setRejectOpen(true)}>移库驳回</Button></div>
+        )}
+        {page === 'detail' && activeDocument && ['已完成', '已驳回'].includes(activeDocument.status) && (
+          <div className="move-mobile-sticky-actions is-single"><Button block onClick={() => setPage('home')}>返回</Button></div>
+        )}
+        {page === 'asset-detail' && activeDocument && activeLine && (
+          <div className="move-mobile-sticky-actions is-single"><Button block onClick={() => setPage('detail')}>返回</Button></div>
         )}
 
         <WarehousePicker
