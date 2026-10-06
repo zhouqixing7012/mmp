@@ -735,6 +735,7 @@ export default function AssetMaintenancePage() {
         }, {});
         const merged = { ...target, ...patch };
         if (!merged.costCenter || !merged.city || !merged.building || !merged.status) throw new Error(`第 ${rowNo} 行：合并后的成本中心、City、Building、资产状态不能为空`);
+        if (!uniqueValues(rows, 'costCenter').includes(merged.costCenter)) throw new Error(`第 ${rowNo} 行：成本中心无效`);
         if (!(BUILDING_BY_CITY[merged.city] || []).includes(merged.building)) throw new Error(`第 ${rowNo} 行：Building 与 City 关系无效`);
         if (merged.floor && !FLOOR_OPTIONS.includes(merged.floor)) throw new Error(`第 ${rowNo} 行：Floor 无效`);
         if (!STATUS_OPTIONS.includes(merged.status)) throw new Error(`第 ${rowNo} 行：资产状态无效`);
