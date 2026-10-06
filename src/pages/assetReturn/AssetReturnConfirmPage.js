@@ -43,7 +43,7 @@ export default function AssetReturnConfirmPage() {
     try {
       confirmReturnEmployee(targetEmployeeId, method);
       setEmployeeId('');
-      messageApi.success('员工退库确认成功，库管员可继续执行入库');
+      messageApi.success('员工退库确认成功，系统已自动生成入库结果');
       setVersion((value) => value + 1);
     } catch (error) {
       messageApi.error(error.message);
@@ -153,7 +153,7 @@ export default function AssetReturnConfirmPage() {
                   <StatusTag value="已确认" type="business" />
                 </DetailItem>
               </DetailGrid>
-              <Alert className="mt-4" type="success" showIcon message="确认成功，库管员可继续执行资产入库" />
+              <Alert className="mt-4" type="success" showIcon message="确认成功，系统已自动生成入库结果" />
             </div>
           )}
         </Card>
