@@ -16,6 +16,7 @@ const warehouseWorkbenchSource = fs.readFileSync(path.join(__dirname, 'Warehouse
 const warehouseWorkbenchMockSource = fs.readFileSync(path.join(__dirname, '../../mock/warehouseWorkbenchMock.js'), 'utf8');
 const assetReturnServiceSource = fs.readFileSync(path.join(__dirname, '../../services/assetReturnService.js'), 'utf8');
 const assetReturnConfirmSource = fs.readFileSync(path.join(__dirname, '../assetReturn/AssetReturnConfirmPage.js'), 'utf8');
+const assetReturnHandlingSource = fs.readFileSync(path.join(__dirname, '../assetReturn/AssetReturnHandlingPage.js'), 'utf8');
 
 test('新增入库的资产标签号和 SN 号必须填写', () => {
   expect(inboundSource).toContain('<EditorField label="资产标签号" required>');
@@ -52,12 +53,21 @@ test('员工退库自动入库改为打印资产退库审批记录', () => {
   expect(printSource).toContain("'审批备注'");
   expect(printSource).toContain("key: 'assetReturnApproval'");
   expect(printSource).not.toContain("title: '员工退库确认信息'");
-  expect(assetReturnServiceSource).toContain("'员工退库确认'");
+  expect(assetReturnServiceSource).toContain("appendHistory(application, '员工退库确认', '待确认'");
+  expect(assetReturnServiceSource).toContain("row.node === '员工退库确认' && row.status === '待确认'");
   expect(assetReturnServiceSource).toContain("`确认方式：${confirmationMethod}`");
   expect(assetReturnServiceSource).toContain("confirmationMethod === '库管员代确认'");
+  expect(assetReturnServiceSource).toContain("const inboundOrderNo = buildNo('RK')");
+  expect(printSource).toContain(".filter((row) => row.node !== '执行入库')");
+  expect(printSource).toContain("row.node === '申请人退库确认' ? '员工退库确认' : row.node");
+  expect(printSource).not.toContain("{ node: '执行入库'");
+  expect(printSource).not.toContain("{ node: '申请人退库确认'");
   expect(assetReturnConfirmSource).toContain("confirm('刷卡')");
   expect(assetReturnConfirmSource).toContain("confirm('扫码', application.applicant.id)");
   expect(assetReturnConfirmSource).toContain("confirm('库管员代确认', application.applicant.id)");
+  expect(assetReturnConfirmSource).toContain('系统已自动生成入库结果');
+  expect(assetReturnHandlingSource).not.toContain('completeAssetReturn(');
+  expect(assetReturnHandlingSource).toContain('确认完成后系统将自动生成入库结果');
 });
 
 test('出库是否自购出库使用是否单选且默认否', () => {
