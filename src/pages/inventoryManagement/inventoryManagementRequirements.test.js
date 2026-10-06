@@ -562,3 +562,19 @@ test('库管员工作台员工页面按业务场景展示保管职责或退回�
   expect(warehouseWorkbenchMockSource).toContain("task?.documentType === '员工退库'");
   expect(warehouseWorkbenchMockSource).toContain("title: '退回确认说明'");
 });
+
+
+test('PC移库列表不提供导出按钮，接收详情保留明细导出', () => {
+  expect(moveSource).not.toContain("当前查询结果已导出");
+  expect(moveReceiveSource).not.toContain("当前查询结果已导出");
+  expect(moveReceiveSource).toContain("移库明细已导出");
+});
+
+test('转移手工创建仅使用资产命名并统一资产类别', () => {
+  expect(transferSource).toContain(".filter((item) => item.materialGroup === '1.资产')");
+  expect(transferSource).not.toContain('转移物资');
+  expect(transferSource).not.toContain('物资大类');
+  expect(transferSource).not.toContain('物资小类');
+  expect(transferSource).toContain("title: '资产类别'");
+  expect(transferSource).toContain('title="添加转移资产"');
+});
