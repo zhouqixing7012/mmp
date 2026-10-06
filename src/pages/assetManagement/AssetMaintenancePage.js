@@ -17,6 +17,7 @@ import {
   message as antdMessage,
 } from 'antd';
 import dayjs from 'dayjs';
+import * as XLSX from 'xlsx';
 import {
   ChevronDown,
   ChevronUp,
@@ -31,6 +32,7 @@ import SelectModal from '../../components/SelectModal';
 import LookupInput from '../../components/LookupInput';
 import StatusTag from '../../components/StatusTag';
 import {
+  batchUpdateAssetMaintenanceRows,
   getAssetMaintenanceRows,
   updateAssetMaintenanceRow,
 } from '../../services/assetManagementService';
@@ -69,6 +71,38 @@ const BUILDING_BY_CITY = {
   天津: ['天津飞狐办公区'],
 };
 const FLOOR_OPTIONS = ['B1', '1F', '2F', '3F', '5F', '6F', '7F', '8F', '9F', '10F', '12F', '15F', '18F'];
+const ASSET_BATCH_FIELDS = [
+  { header: '资产标签号', key: 'tag', locate: true },
+  { header: '成本中心', key: 'costCenter' },
+  { header: 'City', key: 'city' },
+  { header: 'Building', key: 'building' },
+  { header: 'Floor', key: 'floor' },
+  { header: '资产状态', key: 'status' },
+  { header: '资产序列号', key: 'serialNumber' },
+  { header: '备注', key: 'remarks' },
+  { header: '资产标记', key: 'assetMark' },
+  { header: '使用说明', key: 'usageDescription' },
+  { header: '资产用途', key: 'purpose' },
+];
+
+async function readAssetBatchFile(file) {
+  const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: false });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  if (!sheet) throw new Error('Excel 文件没有可读取的工作表');
+  const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+  const expectedHeaders = ASSET_BATCH_FIELDS.map((field) => field.header);
+  const headers = (matrix[0] || []).map((value) => String(value || '').trim());
+  if (headers.length !== expectedHeaders.length || expectedHeaders.some((header, index) => headers[index] !== header)) {
+    throw new Error('导入的EXCEL和系统要求的模板不一致，请核查');
+  }
+  return matrix.slice(1)
+    .filter((row) => row.some((value) => String(value ?? '').trim()))
+    .map((row, index) => ({
+      rowNo: index + 2,
+      values: Object.fromEntries(expectedHeaders.map((header, cellIndex) => [header, row[cellIndex] ?? ''])),
+    }));
+}
+
 
 const EMPTY_FILTERS = {
   tag: '',
@@ -651,6 +685,14 @@ export default function AssetMaintenancePage() {
     messageApi.success('保存成功！');
   };
 
+  const handleBatchTemplateDownload = () => {
+    const worksheet = XLSX.utils.aoa_to_sheet([ASSET_BATCH_FIELDS.map((field) => field.header)]);
+    worksheet['!cols'] = ASSET_BATCH_FIELDS.map((field) => ({ wch: Math.max(14, field.header.length * 2 + 4) }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, '批量修改');
+    XLSX.writeFile(workbook, '资产批量修改模板.xlsx');
+  };
+
   const handleExport = () => {
     if (!filteredRows.length) {
       messageApi.warning('当前没有可导出的数据');
@@ -669,14 +711,63 @@ export default function AssetMaintenancePage() {
     });
   };
 
-  const handleBatchSave = () => {
+  const handleBatchSave = async () => {
     if (!batchFiles.length) {
       messageApi.warning('请先选择需要上传的 Excel 文件');
       return;
     }
-    setBatchOpen(false);
-    setBatchFiles([]);
-    messageApi.success('修改成功！');
+    try {
+      const batchRows = await readAssetBatchFile(batchFiles[0]?.originFileObj || batchFiles[0]);
+      if (!batchRows.length) throw new Error('模板中没有可处理的数据');
+      const rowByTag = new Map(rows.map((row) => [String(row.tag || '').trim(), row]));
+      const seenTags = new Set();
+      const updates = batchRows.map(({ rowNo, values }) => {
+        const tag = String(values['资产标签号'] || '').trim();
+        if (!tag) throw new Error(`第 ${rowNo} 行：资产标签号不能为空`);
+        if (seenTags.has(tag)) throw new Error(`第 ${rowNo} 行：同一文件资产标签号不得重复`);
+        seenTags.add(tag);
+        const target = rowByTag.get(tag);
+        if (!target) throw new Error(`第 ${rowNo} 行：资产标签号不存在`);
+        const patch = ASSET_BATCH_FIELDS.reduce((result, field) => {
+          if (field.locate) return result;
+          const value = String(values[field.header] ?? '').trim();
+          return value === '' ? result : { ...result, [field.key]: value };
+        }, {});
+        const merged = { ...target, ...patch };
+        if (!merged.costCenter || !merged.city || !merged.building || !merged.status) throw new Error(`第 ${rowNo} 行：合并后的成本中心、City、Building、资产状态不能为空`);
+        if (!(BUILDING_BY_CITY[merged.city] || []).includes(merged.building)) throw new Error(`第 ${rowNo} 行：Building 与 City 关系无效`);
+        if (merged.floor && !FLOOR_OPTIONS.includes(merged.floor)) throw new Error(`第 ${rowNo} 行：Floor 无效`);
+        if (!STATUS_OPTIONS.includes(merged.status)) throw new Error(`第 ${rowNo} 行：资产状态无效`);
+        if (merged.assetMark && !ASSET_MARK_OPTIONS.includes(merged.assetMark)) throw new Error(`第 ${rowNo} 行：资产标记无效`);
+        if (merged.purpose && !PURPOSE_OPTIONS.includes(merged.purpose)) throw new Error(`第 ${rowNo} 行：资产用途无效`);
+        if (FORMAL_SCRAP_STATUSES.has(target.status) && merged.status !== target.status) throw new Error(`第 ${rowNo} 行：已报废资产状态不允许通过资产维护修改`);
+        if (!FORMAL_SCRAP_STATUSES.has(target.status) && FORMAL_SCRAP_STATUSES.has(merged.status)) throw new Error(`第 ${rowNo} 行：报废状态必须通过资产报废功能处理`);
+        return { id: target.id, patch };
+      });
+
+      const mergedRows = rows.map((row) => {
+        const update = updates.find((item) => item.id === row.id);
+        return update ? { ...row, ...update.patch } : row;
+      });
+      const serialMap = new Map();
+      mergedRows.forEach((row) => {
+        const serial = normalizeSerial(row.serialNumber);
+        if (!serial || isPlaceholderSerial(serial)) return;
+        const key = serial.toLowerCase();
+        if (serialMap.has(key)) throw new Error(`资产序列号不唯一：${serial}`);
+        serialMap.set(key, row.tag);
+      });
+
+      const nextRows = batchUpdateAssetMaintenanceRows(updates);
+      setRows(nextRows);
+      setBatchOpen(false);
+      setBatchFiles([]);
+      setSelectedRowKeys([]);
+      setPage(1);
+      messageApi.success('修改成功！');
+    } catch (error) {
+      messageApi.error(error.message || '批量修改失败');
+    }
   };
 
   const renderLookup = (field, placeholder) => (
@@ -1150,7 +1241,7 @@ export default function AssetMaintenancePage() {
         <div className="mb-3 flex justify-end">
           <Space>
             <Button icon={<FileSpreadsheet size={14} />} onClick={() => setBatchOpen(true)}>批量修改</Button>
-            <Button icon={<Download size={14} />} onClick={() => messageApi.success('已发起下载：资产批量修改模板.xlsx')}>模板下载</Button>
+            <Button icon={<Download size={14} />} onClick={handleBatchTemplateDownload}>模板下载</Button>
             <Button icon={<Download size={14} />} onClick={handleExport}>导出</Button>
           </Space>
         </div>
@@ -1249,12 +1340,12 @@ export default function AssetMaintenancePage() {
           </div>
           <Button
             icon={<Download size={14} />}
-            onClick={() => messageApi.success('已发起下载：资产批量修改模板.xlsx（原型）')}
+            onClick={handleBatchTemplateDownload}
           >
             下载模板
           </Button>
           <Dragger
-            accept=".xlsx"
+            accept=".xls,.xlsx"
             maxCount={1}
             beforeUpload={() => false}
             fileList={batchFiles}
@@ -1262,7 +1353,7 @@ export default function AssetMaintenancePage() {
           >
             <p className="ant-upload-drag-icon"><UploadCloud size={36} /></p>
             <p className="ant-upload-text">点击或拖拽 Excel 文件到此区域上传</p>
-            <p className="ant-upload-hint">仅支持资产批量修改模板 .xlsx 文件</p>
+            <p className="ant-upload-hint">支持资产批量修改模板 .xls / .xlsx 文件</p>
           </Dragger>
         </Space>
       </Modal>
