@@ -14,6 +14,8 @@ const consumableReceiptMockSource = fs.readFileSync(path.join(__dirname, 'consum
 const inboundImportSource = fs.readFileSync(path.join(__dirname, 'inboundImport.js'), 'utf8');
 const warehouseWorkbenchSource = fs.readFileSync(path.join(__dirname, 'WarehouseWorkbenchPage.js'), 'utf8');
 const warehouseWorkbenchMockSource = fs.readFileSync(path.join(__dirname, '../../mock/warehouseWorkbenchMock.js'), 'utf8');
+const assetReturnServiceSource = fs.readFileSync(path.join(__dirname, '../../services/assetReturnService.js'), 'utf8');
+const assetReturnConfirmSource = fs.readFileSync(path.join(__dirname, '../assetReturn/AssetReturnConfirmPage.js'), 'utf8');
 
 test('新增入库的资产标签号和 SN 号必须填写', () => {
   expect(inboundSource).toContain('<EditorField label="资产标签号" required>');
@@ -43,12 +45,24 @@ test('出库物资新增编辑和只读详情使用相同字段布局', () => {
   expect(outboundSource).toContain('<EditorField label="税金"><Readonly>{money(row.tax)}</Readonly></EditorField>\n            <EditorField label="主资产标签号">');
 });
 
-test('员工退库自动入库打印本次退库确认信息', () => {
-  expect(printSource).toContain("title: '员工退库确认信息'");
-  expect(printSource).toContain("type: 'return'");
-  expect(printSource).toContain("['退库人（工号-姓名）', data.employee]");
-  expect(printSource).toContain("['退库确认方式', data.method]");
-  expect(printSource).toContain("['退库确认时间', data.time]");
+test('员工退库自动入库改为打印资产退库审批记录', () => {
+  expect(printSource).toContain("title: '资产退库审批记录'");
+  expect(printSource).toContain("'申请单号'");
+  expect(printSource).toContain("'审批节点'");
+  expect(printSource).toContain("'审批备注'");
+  expect(printSource).toContain("key: 'assetReturnApproval'");
+  expect(printSource).not.toContain("title: '员工退库确认信息'");
+  expect(assetReturnServiceSource).toContain("history: appendHistory(application, '员工退库确认', '已确认', `确认方式：${confirmationMethod}`)");
+  expect(assetReturnConfirmSource).toContain("confirm('刷卡')");
+  expect(assetReturnConfirmSource).toContain("confirm('扫码', application.applicant.id)");
+  expect(assetReturnConfirmSource).toContain("confirm('库管员代确认', application.applicant.id)");
+});
+
+test('出库是否自购出库使用是否单选且默认否', () => {
+  expect(outboundSource).toContain('<Radio.Group value={isSelfPurchase ? \'是\' : \'否\'}');
+  expect(outboundSource).toContain("{ label: '否', value: '否' }");
+  expect(outboundSource).toContain("{ label: '是', value: '是' }");
+  expect(outboundSource).not.toContain('<Checkbox checked={isSelfPurchase}');
 });
 
 test('员工来源转移单显示申请人为制单人', () => {
