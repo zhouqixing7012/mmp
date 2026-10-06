@@ -245,7 +245,15 @@ export function confirmReturnEmployee(employeeId, method) {
         confirmationEmployeeId: employeeId,
         confirmationTime: nowText(),
       },
-      history: appendHistory(application, '员工退库确认', '已确认', `确认方式：${confirmationMethod}`),
+      history: appendHistory(
+        application,
+        '员工退库确认',
+        '已确认',
+        `确认方式：${confirmationMethod}`,
+        confirmationMethod === '库管员代确认'
+          ? '119039-刘建'
+          : `${CURRENT_REPLACEMENT_APPLICANT.id}-${CURRENT_REPLACEMENT_APPLICANT.name}`
+      ),
     }));
   } else {
     updateCollection(CONTRACT_RETURN_STORAGE_KEY, DEFAULT_CONTRACT_RETURN_APPLICATIONS, target.applicationId, (application) => ({
