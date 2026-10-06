@@ -235,15 +235,19 @@ export function confirmReturnEmployee(employeeId, method) {
   if (!target) throw new Error('暂无待确认退库单');
   if (employeeId !== CURRENT_REPLACEMENT_APPLICANT.id) throw new Error('员工工号不匹配！');
   if (target.kind === 'asset') {
+    const inboundOrderNo = buildNo('RK');
     updateCollection(ASSET_RETURN_STORAGE_KEY, DEFAULT_ASSET_RETURN_APPLICATIONS, target.applicationId, (application) => ({
       ...application,
-      currentNode: 'ES退库办理',
+      status: '已处理',
+      result: '正常退库',
+      currentNode: '流程结束',
       handling: {
         ...application.handling,
         confirmationStatus: '已确认',
         confirmationMethod,
         confirmationEmployeeId: employeeId,
         confirmationTime: nowText(),
+        inboundOrderNo,
       },
       history: (application.history || []).some((row) => row.node === '员工退库确认' && row.status === '待确认')
         ? (application.history || []).map((row) => (
