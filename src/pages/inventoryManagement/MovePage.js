@@ -1123,7 +1123,7 @@ export default function MovePage() {
           <Card
             size="small"
             title="移库单列表"
-            extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button type="primary" icon={<Plus size={14} />} onClick={() => openEditor()}>创建</Button><Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button><Button icon={<Download size={14} />} onClick={() => messageApi.success('当前查询结果已导出')}>导出</Button></Space>}
+            extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button type="primary" icon={<Plus size={14} />} onClick={() => openEditor()}>创建</Button><Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button></Space>}
           >
             <Table
               rowKey="id"
