@@ -433,8 +433,27 @@ test('入库单当前仓库位于入库单信息Card右上角', () => {
   const source = inboundSource.slice(start, end);
   expect(source).toContain('extra={(');
   expect(source).toContain('当前仓库</Typography.Text>');
-  expect(source).toContain('style={{ width: 240 }}');
+  expect(source).toContain('style={{ width: 280 }}');
   expect(source).not.toContain('<EditorField label="当前仓库">');
+});
+
+
+test('入库和出库页面遵循统一层级、面包屑和勾选操作状态', () => {
+  expect(inboundSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
+  expect(inboundSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
+  expect(inboundSource).toContain("!source ? '创建入库单' : editable ? '编辑入库单' : '入库单详情'");
+  expect(inboundSource).toContain("disabled={!selectedKeys.length} onClick={deleteLines}");
+  expect(inboundSource).toContain("disabled={!selectedKeys.length || rows.filter((row) => selectedKeys.includes(row.id)).some((row) => row.status !== '草稿')}");
+  expect(inboundSource).toContain("disabled={!selectedKeys.length || rows.filter((row) => selectedKeys.includes(row.id)).some((row) => row.status !== '已完成')} onClick={batchPrint}");
+
+  expect(outboundSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
+  expect(outboundSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
+  expect(outboundSource).toContain("!source ? '创建出库单' : editable ? '编辑出库单' : '出库单详情'");
+  expect(outboundSource).toContain("disabled={!selectedKeys.length} onClick={deleteLines}");
+  expect(outboundSource).toContain('title="选择资产责任人"');
+  expect(outboundSource).toContain('placeholder="请选择资产责任人"');
+  expect(outboundSource).toContain("disabled={!selectedKeys.length || rows.filter((row) => selectedKeys.includes(row.id)).some((row) => row.status !== '草稿')}");
+  expect(outboundSource.match(/row\.status !== '已完成'/g) || []).toHaveLength(3);
 });
 
 
