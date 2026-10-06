@@ -512,6 +512,19 @@ export function updateAssetMaintenanceRow(id, patch) {
   return nextRows;
 }
 
+export function batchUpdateAssetMaintenanceRows(updates = []) {
+  const assetSnapshot = getAssetMaintenanceRows();
+  const consumableSnapshot = getConsumableMaintenanceRows();
+  try {
+    updates.forEach(({ id, patch }) => updateAssetMaintenanceRow(id, patch));
+    return getAssetMaintenanceRows();
+  } catch (error) {
+    writeDemoData(ASSET_MAINTENANCE_STORAGE_KEY, assetSnapshot);
+    writeDemoData(CONSUMABLE_MAINTENANCE_STORAGE_KEY, consumableSnapshot);
+    throw error;
+  }
+}
+
 export function getConsumableMaintenanceRows() {
   return readDemoData(CONSUMABLE_MAINTENANCE_STORAGE_KEY, DEFAULT_CONSUMABLE_MAINTENANCE_ROWS)
     .map(normalizeConsumableMaintenanceRow);
@@ -550,6 +563,17 @@ export function updateConsumableMaintenanceRow(id, patch) {
   if (!targetFound) throw new Error('耗材标签号不存在');
   writeDemoData(CONSUMABLE_MAINTENANCE_STORAGE_KEY, nextRows);
   return nextRows;
+}
+
+export function batchUpdateConsumableMaintenanceRows(updates = []) {
+  const snapshot = getConsumableMaintenanceRows();
+  try {
+    updates.forEach(({ id, patch }) => updateConsumableMaintenanceRow(id, patch));
+    return getConsumableMaintenanceRows();
+  } catch (error) {
+    writeDemoData(CONSUMABLE_MAINTENANCE_STORAGE_KEY, snapshot);
+    throw error;
+  }
 }
 
 export {
