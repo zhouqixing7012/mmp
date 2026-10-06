@@ -83,9 +83,7 @@ const SAMPLE_DATA = {
     rows: [
       { node: '员工提交', person: 'CW013157-胡艺凡', status: '已提交', time: '2026-08-07 17:55:12', comment: '离职退库' },
       { node: 'MIS鉴定', person: 'CW003379-李木勇', status: '已同意', time: '2026-08-07 18:12:24', comment: '鉴定通过' },
-      { node: '申请人退库确认', person: '119039-刘建', status: '待确认', time: '2026-08-07 18:40:09', comment: '已发起扫码、刷卡或库管员代确认' },
       { node: '员工退库确认', person: 'CW013157-胡艺凡', status: '已确认', time: '2026-08-07 18:42:15', comment: '确认方式：扫码' },
-      { node: '执行入库', person: '119039-刘建', status: '已完成', time: '2026-08-07 18:45:03', comment: '已完成退库入库' },
     ],
   },
 };
@@ -319,18 +317,27 @@ function buildAssetReturnApprovalData(applicationNo) {
   const application = getAssetReturnApplications().find((item) => item.id === applicationNo);
   if (!application) return { ...SAMPLE_DATA.assetReturnApproval, applicationNo: applicationNo || SAMPLE_DATA.assetReturnApproval.applicationNo };
   const confirmationMethod = normalizeReturnConfirmationMethod(application.handling?.confirmationMethod);
+  const history = application.history || [];
+  const hasConfirmedReturn = history.some((row) => row.node === '员工退库确认' && row.status === '已确认');
+  const rows = history
+    .filter((row) => row.node !== '执行入库')
+    .filter((row) => !(row.node === '申请人退库确认' && hasConfirmedReturn))
+    .map((row) => {
+      const node = row.node === '申请人退库确认' ? '员工退库确认' : row.node;
+      return {
+        node,
+        person: row.person,
+        status: row.status,
+        time: row.time,
+        comment: node === '员工退库确认' && row.status === '已确认'
+          ? `确认方式：${confirmationMethod}`
+          : (row.comment || '-'),
+      };
+    });
   return {
     title: '资产退库审批记录',
     applicationNo: application.id,
-    rows: (application.history || []).map((row) => ({
-      node: row.node,
-      person: row.person,
-      status: row.status,
-      time: row.time,
-      comment: row.node === '员工退库确认' && row.status === '已确认'
-        ? `确认方式：${confirmationMethod}`
-        : (row.comment || '-'),
-    })),
+    rows,
   };
 }
 
