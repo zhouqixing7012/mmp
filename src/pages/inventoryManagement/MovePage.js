@@ -559,7 +559,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
   const [editingLine, setEditingLine] = useState(null);
   const [detailAsset, setDetailAsset] = useState(null);
   const [printOpen, setPrintOpen] = useState(false);
-  const documentNo = source?.documentNo || '保存后自动生成';
+  const documentNo = source?.documentNo || '添加资产后自动生成';
   const status = source?.status || '草稿';
   const createdDate = source?.createdDate || dayjs().format('YYYY-MM-DD');
   const existingTags = useMemo(() => new Set(lines.map((item) => item.assetTag)), [lines]);
