@@ -706,7 +706,7 @@ export default function AssetMaintenancePage() {
       cancelText: '取消',
       onOk: () => {
         const size = selectedCount || filteredRows.length;
-        messageApi.success(`已生成导出资产卡片信息-${dayjs().format('YYYYMMDD')}.xlsx，共 ${size} 条（原型）`);
+        messageApi.success(`已生成导出资产卡片信息-${dayjs().format('YYYYMMDD')}.xlsx，共 ${size} 条`);
       },
     });
   };
