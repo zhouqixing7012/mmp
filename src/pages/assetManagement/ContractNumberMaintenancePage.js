@@ -726,7 +726,7 @@ export default function ContractNumberMaintenancePage() {
       width: 90,
       fixed: 'right',
       align: 'center',
-      render: (_, row) => <Button type="link" onClick={() => openCard(row, 'edit')}>编辑</Button>,
+      render: (_, row) => <Button type="link" style={{ padding: 0 }} onClick={() => openCard(row, 'edit')}>编辑</Button>,
     },
   ];
 
