@@ -430,7 +430,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
     <div data-page-view-key={`move-receive-${row.id}`}>
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
-        <Typography.Title level={3} className="mb-0">移库接收</Typography.Title>
+        <Typography.Title level={4} className="mb-0">移库接收</Typography.Title>
 
         <Card size="small" title="移库单信息">
           <DetailGrid columns={3} labelWidth={100}>
@@ -438,7 +438,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
             <DetailItem label="单据类型"><Readonly>移库单</Readonly></DetailItem>
             <DetailItem label="单据状态"><StatusTag value={row.status} /></DetailItem>
             <DetailItem label="移出仓库"><Readonly>{row.fromWarehouse}</Readonly></DetailItem>
-            <DetailItem label="接收仓库"><Readonly>{row.toWarehouse}</Readonly></DetailItem>
+            <DetailItem label="移入仓库"><Readonly>{row.toWarehouse}</Readonly></DetailItem>
             <DetailItem label="制单人"><Readonly>{row.creator}</Readonly></DetailItem>
             <DetailItem label="制单日期"><Readonly>{row.createdDate}</Readonly></DetailItem>
             {row.sourceDocumentNo && <DetailItem label="来源移库单号"><Readonly>{row.sourceDocumentNo}</Readonly></DetailItem>}
@@ -483,7 +483,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
         </Card>
 
         <div className="flex justify-center gap-3">
-          {waiting && <Button type="primary" onClick={receive}>移库接收确认</Button>}
+          {waiting && <Button type="primary" disabled={!selectedKeys.length} onClick={receive}>移库接收确认</Button>}
           {waiting && <Button danger onClick={() => setRejectAsset({ bulk: true })}>移库驳回</Button>}
           {row.status === '已完成' && <Button onClick={() => setPrintOpen(true)}>打印</Button>}
           {!waiting && <Button onClick={() => messageApi.success('移库明细已导出')}>导出</Button>}
