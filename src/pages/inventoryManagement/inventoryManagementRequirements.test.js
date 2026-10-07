@@ -578,3 +578,42 @@ test('转移手工创建仅使用资产命名并统一资产类别', () => {
   expect(transferSource).toContain("title: '资产类别'");
   expect(transferSource).toContain('title="添加转移资产"');
 });
+
+
+test('库存管理剩余页面遵循统一UI层级与已确认字段口径', () => {
+  expect(moveSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
+  expect(moveSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
+  expect(moveSource).toContain("!source ? '创建移库单' : editable ? '编辑移库单' : '移库单详情'");
+  expect(moveSource).not.toContain('>保存草稿</Button>');
+  expect(moveSource).toContain('const persistDraftState = (overrides = {}) =>');
+  expect(moveSource).toContain('persistDraftState({ lines: nextLines })');
+  expect(moveSource).toContain('label={<RequiredLabel>移出仓库</RequiredLabel>}');
+  expect(moveSource).toContain('label={<RequiredLabel>移入仓库</RequiredLabel>}');
+  expect(moveSource).not.toContain('label={<RequiredLabel>当前仓库</RequiredLabel>}');
+  expect(moveSource).not.toContain('label={<RequiredLabel>对方仓库</RequiredLabel>}');
+  expect(moveSource).toContain('disabled={!selectedLineKeys.length} onClick={deleteLines}');
+  expect(moveSource).toContain('disabled={!selectedRowKeys.length} onClick={deleteRows}');
+  expect(moveSource).toContain("getCheckboxProps: (record) => ({ disabled: record.status !== '草稿' })");
+
+  expect(moveReceiveSource).toContain('<Typography.Title level={4} className="mb-0">移库接收</Typography.Title>');
+  expect(moveReceiveSource).toContain('<DetailItem label="移入仓库"><Readonly>{row.toWarehouse}</Readonly></DetailItem>');
+  expect(moveReceiveSource).toContain("title: '接收说明'");
+  expect(moveReceiveSource).toContain("title: '接收仓管员'");
+  expect(moveReceiveSource).toContain("title: '接收时间'");
+  expect(moveReceiveSource).toContain("updateReceiveField(asset.id, 'assetMark'");
+  expect(moveReceiveSource).toContain("updateReceiveField(asset.id, 'receiveDesc'");
+  expect(moveReceiveSource).toContain('disabled={!selectedKeys.length} onClick={receive}');
+
+  expect(transferSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
+  expect(transferSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
+  expect(transferSource).toContain("<PageTitle>{initialDocument ? '编辑转移单' : '创建转移单'}</PageTitle>");
+  expect(transferSource).not.toContain('财务公司');
+  expect(transferSource).toContain('<Button onClick={saveDraft}>保存草稿</Button>');
+  expect(transferSource).toContain('disabled={!selectedRowKeys.length} onClick={deleteRows}');
+  expect(transferSource).toContain("getCheckboxProps: (record) => ({ disabled: record.status !== '草稿' })");
+
+  expect(warehouseWorkbenchSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
+  expect(warehouseWorkbenchSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
+  expect(warehouseWorkbenchSource).toContain('data-page-view-key="warehouse-workbench"');
+  expect(warehouseWorkbenchSource).not.toContain('bg-[#1677ff]');
+});
