@@ -11,7 +11,6 @@ import {
   Collapse,
   Typography,
   Space,
-  Steps,
   Upload,
   message,
 } from 'antd';
@@ -151,7 +150,7 @@ export default function ScrapPrototypeEditor({
   const [assets, setAssets] = useState(initialAssets);
   const [companyPickerOpen, setCompanyPickerOpen] = useState(false);
   const [employeePickerField, setEmployeePickerField] = useState('');
-  const [approvalOpinion, setApprovalOpinion] = useState('同意');
+  const [approvalOpinion, setApprovalOpinion] = useState('');
   const [accountingPreview, setAccountingPreview] = useState(false);
   const [disposalPreview, setDisposalPreview] = useState(false);
   const [accountingNameTouched, setAccountingNameTouched] = useState(Boolean(initialForm.scrapFormNameManual));
@@ -338,7 +337,7 @@ export default function ScrapPrototypeEditor({
         approvalHistory: updated.approvalHistory || [],
       }));
     }
-    setApprovalOpinion('同意');
+    setApprovalOpinion('');
   };
 
   const renderSelect = (value, selectOptions, onChange, disabled = false) => (
@@ -1251,16 +1250,6 @@ export default function ScrapPrototypeEditor({
             ? `${config.title}预览`
             : approvalView ? `${config.title}审批` : readOnly ? `${config.title}详情` : config.createLabel}
         </h3>
-        {!previewView
-          && (type === 'accounting' || (type === 'disposal' && form.assetScope === '办公设备'))
-          && (!readOnly || approvalPage) && (
-          <Steps
-            className="max-w-[420px]"
-            size="small"
-            current={previewView ? 1 : approvalView ? 2 : 0}
-            items={[{ title: '编辑' }, { title: '预览' }, { title: '发起审批' }]}
-          />
-        )}
         {(approvalView || previewView || showPageExport) && (
           <div className="flex items-center gap-3">
             {(approvalView || previewView) && form.applicationNo && <span className="text-gray-500">申请单号：{form.applicationNo}</span>}
