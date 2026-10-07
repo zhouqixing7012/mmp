@@ -488,7 +488,7 @@ export default function ScrapPrototypeList({
           title="审批记录"
           width={960}
           onCancel={() => setApprovalRecord(null)}
-          footer={<Button onClick={() => setApprovalRecord(null)}>关闭</Button>}
+          footer={null}
           destroyOnHidden
         >
           <OutboundApprovalHistoryPage outbound={{ approvalHistory: getScrapPrototypeApprovalRecords(approvalRecord || {}, type).map((item) => ({
