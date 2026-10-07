@@ -1226,7 +1226,7 @@ export default function ConsumableMaintenancePage() {
               type="success"
               showIcon
               message="文件校验通过"
-              description="当前文件全部行校验通过，可点击“保存”完成原型流程；正式落数需接入 Excel 解析。"
+              description="当前文件全部行校验通过，可点击“保存”完成批量修改。"
             />
           ) : null}
 
