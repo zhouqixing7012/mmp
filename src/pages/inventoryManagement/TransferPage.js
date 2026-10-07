@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -302,7 +302,7 @@ function toSelectData(values) {
 }
 
 function PageTitle({ children }) {
-  return <Typography.Title level={3} className="mb-0">{children}</Typography.Title>;
+  return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;
 }
 
 function Readonly({ children }) {
@@ -984,7 +984,7 @@ function TransferDetail({ document: transferDocument, onBack }) {
           <DetailItem label="转移单号"><Readonly>{transferDocument.documentNo}</Readonly></DetailItem>
           <DetailItem label="申请单号"><Readonly>{transferDocument.applicationNo}</Readonly></DetailItem>
           <DetailItem label="单据状态"><StatusTag value={transferDocument.status} /></DetailItem>
-          <DetailItem label="财务公司"><Readonly>{transferDocument.company}</Readonly></DetailItem>
+          <DetailItem label="公司"><Readonly>{transferDocument.company}</Readonly></DetailItem>
           <DetailItem label="制单人"><Readonly>{transferDocument.creator}</Readonly></DetailItem>
           <DetailItem label="制单日期"><Readonly>{transferDocument.createdDate}</Readonly></DetailItem>
           <DetailItem label="备注" span={3}><Readonly>{transferDocument.remark}</Readonly></DetailItem>
@@ -1222,13 +1222,13 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
   return (
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
-      <PageTitle>转移单</PageTitle>
+      <PageTitle>{initialDocument ? '编辑转移单' : '创建转移单'}</PageTitle>
       <Card size="small" title="转移单信息">
         <DetailGrid columns={3} labelWidth={96}>
           <DetailItem label="转移单号"><Readonly>{documentNo || '自动生成'}</Readonly></DetailItem>
           <DetailItem label="单据类型"><Readonly>转移单</Readonly></DetailItem>
           <DetailItem label="单据状态"><StatusTag value="草稿" /></DetailItem>
-          <DetailItem label="财务公司">{lines.length > 0 ? <Readonly>{company}</Readonly> : <LookupInput value={company} placeholder="请选择财务公司" onOpen={() => setCompanyModalOpen(true)} />}</DetailItem>
+          <DetailItem label="公司">{lines.length > 0 ? <Readonly>{company}</Readonly> : <LookupInput value={company} placeholder="请选择公司" onOpen={() => setCompanyModalOpen(true)} />}</DetailItem>
           <DetailItem label="制单人"><Readonly>{initialDocument?.creator || CURRENT_LOGIN_USER}</Readonly></DetailItem>
           <DetailItem label="制单时间"><Readonly>{createdDate}</Readonly></DetailItem>
           <DetailItem label="备注" span={3}>{lines.length > 0 ? <Readonly>{remark}</Readonly> : <TextArea autoSize={{ minRows: 3, maxRows: 6 }} value={remark} onChange={(event) => setRemark(event.target.value)} />}</DetailItem>
@@ -1254,7 +1254,7 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
         {documentNo && lines.length > 0 && <Button type="primary" onClick={confirmTransfer}>转移确认</Button>}
         <Button onClick={onBack}>返回</Button>
       </div>
-      <SelectModal open={companyModalOpen} title="选择财务公司" dataSource={COMPANY_OPTIONS.map((name, index) => ({ id: index + 1, name }))} columns={[{ title: '财务公司', dataIndex: 'name' }]} searchFields={[{ label: '财务公司', name: 'name', dataIndex: 'name' }]} onCancel={() => setCompanyModalOpen(false)} onConfirm={(record) => { setCompany(record.name); setCompanyModalOpen(false); }} />
+      <SelectModal open={companyModalOpen} title="选择公司" dataSource={COMPANY_OPTIONS.map((name, index) => ({ id: index + 1, name }))} columns={[{ title: '公司', dataIndex: 'name' }]} searchFields={[{ label: '公司', name: 'name', dataIndex: 'name' }]} onCancel={() => setCompanyModalOpen(false)} onConfirm={(record) => { setCompany(record.name); setCompanyModalOpen(false); }} />
       <TransferItemModal key={`${lineModalOpen}-${editingLine?.id || 'new'}-${company}`} open={lineModalOpen} currentCompany={company} availableAssets={availableAssets} initialLine={editingLine} onCancel={() => { setLineModalOpen(false); setEditingLine(null); }} onConfirm={saveLine} />
       <TransferImportModal open={importOpen} company={company} sourceAssets={SOURCE_ASSETS} existingLines={lines} onCancel={() => setImportOpen(false)} onImported={importLines} />
     </Space>
@@ -1293,6 +1293,26 @@ export default function TransferPage() {
       .filter(Boolean)
   ), [rows]);
   const activeDocument = rows.find((row) => row.id === activeDocumentId) || null;
+
+  useEffect(() => {
+    const pageTitle = view === 'create'
+      ? '创建转移单'
+      : view === 'edit'
+        ? '编辑转移单'
+        : view === 'view'
+          ? '转移单详情'
+          : '';
+    const items = view === 'list'
+      ? [{ label: '首页' }, { label: '库存管理' }, { label: '转移' }]
+      : [
+          { label: '首页' },
+          { label: '库存管理' },
+          { label: '转移', onClick: () => { setView('list'); setActiveDocumentId(null); } },
+          { label: pageTitle },
+        ];
+    window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', { detail: { items } }));
+  }, [view]);
+
   const filteredRows = useMemo(() => rows.filter((row) => (
     includesText(row.documentNo, filters.documentNo)
     && includesText(row.reason, filters.reason)
@@ -1469,12 +1489,19 @@ export default function TransferPage() {
           <Space>
             <Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>
             <Button type="primary" icon={<Plus size={14} />} onClick={() => { setActiveDocumentId(null); setView('create'); }}>创建</Button>
-            <Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button>
+            <Button danger icon={<Trash2 size={14} />} disabled={!selectedRowKeys.length} onClick={deleteRows}>删除</Button>
           </Space>
         )}
       >
 
-        <Table rowKey="id" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys, fixed: true, columnTitle: '选择', columnWidth: 64 }} scroll={{ x: 'max-content' }} pagination={{ current: page, pageSize, showSizeChanger: true, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); } }} />
+        <Table rowKey="id" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
+          fixed: true,
+          columnTitle: '选择',
+          columnWidth: 64,
+          getCheckboxProps: (record) => ({ disabled: record.status !== '草稿' }),
+        }} scroll={{ x: 'max-content' }} pagination={{ current: page, pageSize, showSizeChanger: true, onChange: (nextPage, nextPageSize) => { setPage(nextPage); setPageSize(nextPageSize); } }} />
       </Card>
       <SelectorModal config={selectorConfig} onClose={() => setSelectorType('')} />
     </Space>
