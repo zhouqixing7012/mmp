@@ -87,6 +87,12 @@ const ACCOUNTING_SUMMARY_PROJECTS = [
   'VEHICLE',
 ];
 
+const ACCOUNTING_REASON_DEFAULTS = {
+  已到报废期: '已到报废年限，无法使用，申请报废',
+  未到报废期: '实物损坏，不可修复，申请报废',
+  丢失: '丢失（已赔偿）',
+};
+
 function accountingCompanyDisplayName(company) {
   const text = String(company || '').trim();
   const [code, ...parts] = text.split('.');
@@ -624,10 +630,7 @@ export default function ScrapPrototypeEditor({
   const getAccountingReasonText = (kind) => {
     const reasons = form.scrapReasons || {};
     if (Object.prototype.hasOwnProperty.call(reasons, kind)) return reasons[kind] || '';
-    return [...new Set(assets
-      .filter((item) => item.scrapType === kind)
-      .map((item) => String(item.reason || '').trim())
-      .filter(Boolean))].join('、');
+    return ACCOUNTING_REASON_DEFAULTS[kind] || '';
   };
 
   const prepareSavePayload = () => {
@@ -824,8 +827,19 @@ export default function ScrapPrototypeEditor({
     { title: '丢失资产', children: accountingSummaryGroupColumns('lost', '丢失') },
   ];
 
+  const accountingTotal = (rows) => ({
+    quantity: rows.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+    originalValue: rows.reduce((sum, item) => sum + Number(item.originalValue || 0), 0),
+    depreciation: rows.reduce((sum, item) => sum + Number(
+      item.accumulatedDepreciation ?? Math.max(0, Number(item.originalValue || 0) - Number(item.netValue || 0)),
+    ), 0),
+    netValue: rows.reduce((sum, item) => sum + Number(item.netValue || 0), 0),
+  });
+  const accountingAllTotal = accountingTotal(assets);
+
   const accountingDetailTab = (kind) => {
     const subset = assets.filter((asset) => asset.scrapType === kind);
+    const total = accountingTotal(subset);
     const grouped = Array.from(subset.reduce((groups, asset) => {
       const category = asset.majorCategory || '其他';
       if (!groups.has(category)) groups.set(category, []);
@@ -837,16 +851,18 @@ export default function ScrapPrototypeEditor({
     }
     return (
       <>
-        <div className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-md bg-gray-50 px-3 py-2">
-          <div className="min-w-[240px] flex-1 text-center">
+        <div className="mb-3 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md bg-gray-50 px-3 py-2">
+          <span />
+          <div className="min-w-[240px] text-center">
             <Typography.Text strong>{kind}报废原因：</Typography.Text>{' '}
             <span className="whitespace-pre-wrap break-words">{showValue(getAccountingReasonText(kind))}</span>
           </div>
-          <Space size={18} wrap>
-            <Typography.Text>明细数量：{subset.length}</Typography.Text>
-            <Typography.Text>报废数量：{subset.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}</Typography.Text>
-            <Typography.Text>原值合计：{money(subset.reduce((sum, item) => sum + Number(item.originalValue || 0), 0))}</Typography.Text>
-            <Typography.Text>净值合计：{money(subset.reduce((sum, item) => sum + Number(item.netValue || 0), 0))}</Typography.Text>
+          <Space size={16} wrap className="justify-self-end">
+            <Typography.Text strong>Total：</Typography.Text>
+            <Typography.Text>报废数量：{total.quantity}</Typography.Text>
+            <Typography.Text>原值合计：{money(total.originalValue)}</Typography.Text>
+            <Typography.Text>折旧合计：{money(total.depreciation)}</Typography.Text>
+            <Typography.Text>净值合计：{money(total.netValue)}</Typography.Text>
           </Space>
         </div>
         <Collapse items={grouped.map(([category, rows]) => ({
@@ -871,15 +887,25 @@ export default function ScrapPrototypeEditor({
       key: 'summary',
       label: `汇总（${assets.length}）`,
       children: (
-        <Table
-          rowKey="key"
-          size="small"
-          bordered
-          pagination={false}
-          dataSource={accountingSummaryRows}
-          columns={accountingSummaryColumns}
-          scroll={{ x: 'max-content' }}
-        />
+        <>
+          <div className="mb-3 flex justify-end">
+            <Space size={16} wrap>
+              <Typography.Text strong>Total：</Typography.Text>
+              <Typography.Text>报废数量：{accountingAllTotal.quantity}</Typography.Text>
+              <Typography.Text>原值合计：{money(accountingAllTotal.originalValue)}</Typography.Text>
+              <Typography.Text>净值合计：{money(accountingAllTotal.netValue)}</Typography.Text>
+            </Space>
+          </div>
+          <Table
+            rowKey="key"
+            size="small"
+            bordered
+            pagination={false}
+            dataSource={accountingSummaryRows}
+            columns={accountingSummaryColumns}
+            scroll={{ x: 'max-content' }}
+          />
+        </>
       ),
     },
     ...['已到报废期', '未到报废期', '丢失'].map((kind) => ({
@@ -1185,7 +1211,21 @@ export default function ScrapPrototypeEditor({
       )}
 
       <Card size="small" title={approvalView || previewView ? '申请人信息' : '基本信息'}>
-        {approvalView || previewView ? (
+        {type === 'accounting' && previewView ? (
+          <DetailGrid>
+            <DetailItem label="申请人">{showValue(form.creator)}</DetailItem>
+            <DetailItem label="申请时间">{showValue(form.applicationDate)}</DetailItem>
+            <DetailItem label="联系电话">{showValue(form.contactPhone)}</DetailItem>
+            <DetailItem label="邮箱">{showValue(form.email)}</DetailItem>
+            <DetailItem label="公司">{showValue(form.company)}</DetailItem>
+            <DetailItem label="部门">{showValue(form.department)}</DetailItem>
+            <DetailItem label="报废单名称" span={2}>{showValue(form.scrapFormName || accountingFormName)}</DetailItem>
+            <DetailItem label="报废方式">{showValue(form.scrapMethod)}</DetailItem>
+            <DetailItem label="报废期间">{showValue(form.scrapPeriod || accountingScrapPeriod)}</DetailItem>
+            <DetailItem label="备注" span={2}>{showValue(form.remark)}</DetailItem>
+            <DetailItem label="附件" span={3}>{showValue(attachmentSummary)}</DetailItem>
+          </DetailGrid>
+        ) : approvalView || previewView ? (
           <DetailGrid>
             <DetailItem label="申请人">{showValue(form.creator)}</DetailItem>
             <DetailItem label={type === 'accounting' ? '创建时间' : '申请日期'}>{showValue(form.applicationDate)}</DetailItem>
