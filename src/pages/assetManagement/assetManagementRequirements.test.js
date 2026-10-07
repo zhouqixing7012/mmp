@@ -11,6 +11,8 @@ const employeeQuerySource = fs.readFileSync(path.join(__dirname, 'EmployeeAssetI
 const assetMaintenanceSource = fs.readFileSync(path.join(__dirname, 'AssetMaintenancePage.js'), 'utf8');
 const consumableMaintenanceSource = fs.readFileSync(path.join(__dirname, 'ConsumableMaintenancePage.js'), 'utf8');
 const contractMaintenanceSource = fs.readFileSync(path.join(__dirname, 'ContractNumberMaintenancePage.js'), 'utf8');
+const scrapListSource = fs.readFileSync(path.join(__dirname, 'ScrapPrototypeList.jsx'), 'utf8');
+const scrapEditorSource = fs.readFileSync(path.join(__dirname, 'ScrapPrototypeEditor.jsx'), 'utf8');
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -81,4 +83,35 @@ test('三类维护批量模板统一为空白不变非空覆盖', () => {
   expect(consumableMaintenanceSource).not.toContain("'板块', 'City'");
   expect(consumableMaintenanceSource).not.toContain("'耗材说明',");
   expect(contractMaintenanceSource).toContain('除标签号外，其余模板字段空白表示保留原值，不进行覆盖。');
+});
+
+
+test('资产管理菜单UI一致性关键规则保持统一', () => {
+  expect(scrapListSource).toContain('<Title level={4} className="!mb-0">{config.title}</Title>');
+  expect(scrapListSource).not.toContain('rowSelection={{');
+  expect(scrapListSource).not.toContain('确认删除所选草稿');
+  expect(scrapListSource).toContain('placeholder="请选择制单人"');
+  expect(scrapListSource).toContain('placeholder="请选择公司"');
+  expect(scrapListSource).toContain('footer={null}');
+
+  expect(scrapEditorSource).not.toContain('<Steps');
+  expect(scrapEditorSource).toContain("const [approvalOpinion, setApprovalOpinion] = useState('');");
+  expect(scrapEditorSource).toContain("setApprovalOpinion('');");
+
+  expect(employeeQuerySource).toContain('title={current.title}');
+  expect(employeeQuerySource).toContain('extra={<Typography.Text type="secondary">共 {current.rows.length} 条</Typography.Text>}');
+  expect(employeeQuerySource).not.toContain('请联系维护人员添加');
+
+  expect(consumableMaintenanceSource).not.toContain('正式落数需接入 Excel 解析');
+  expect(consumableMaintenanceSource).not.toContain('（原型）');
+  expect(assetMaintenanceSource).not.toContain('（原型）');
+
+  const batchPrintIndex = tagPrintingSource.indexOf('>批量打印</Button>');
+  const previewIndex = tagPrintingSource.indexOf('>预打印</Button>');
+  const exportIndex = tagPrintingSource.indexOf('>导出</Button>');
+  expect(batchPrintIndex).toBeGreaterThan(-1);
+  expect(previewIndex).toBeGreaterThan(batchPrintIndex);
+  expect(exportIndex).toBeGreaterThan(previewIndex);
+  expect(tagPrintingSource).toContain('disabled={filteredRows.length === 0}');
+  expect(tagPrintingSource).toContain('disabled={selectedRowKeys.length === 0 && filteredRows.length === 0}');
 });
