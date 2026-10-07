@@ -632,7 +632,7 @@ test('机房处置协办节点展示对应凭证并只提供完成办理', () =>
 
 
 
-test('账面报废预览只保留指定申请人信息并展示页签Total', () => {
+test('账面报废预览使用三列申请人信息且汇总值不展示Total文案', () => {
   resetScrapPrototypeMemory();
   const accountingActor = { id: 'preview-accountant' };
   const accountingAuthorizationScopes = [{ company: '114.新媒体', plates: '*' }];
@@ -665,11 +665,20 @@ test('账面报废预览只保留指定申请人信息并展示页签Total', () 
 
   fireEvent.click(screen.getByRole('button', { name: '预览' }));
   expect(screen.getByRole('heading', { name: '账面报废预览' })).toBeInTheDocument();
-  ['申请人', '申请时间', '联系电话', '邮箱', '公司', '部门', '报废单名称', '报废方式', '报废期间', '备注', '附件']
+  ['申请人', '申请时间', '联系电话', '邮箱', '部门', '报废单名称', '公司', '报废方式', '报废期间', '备注', '附件']
     .forEach((label) => expect(screen.getByText(label)).toBeInTheDocument());
+  const accountingApplicantGrid = screen.getByText('申请人').closest('dl');
+  expect((accountingApplicantGrid?.style.gridTemplateColumns.match(/96px/g) || []).length).toBe(3);
+  const accountingHeaderLabels = Array.from(accountingApplicantGrid?.querySelectorAll('[data-prototype-label]') || [])
+    .map((node) => node.getAttribute('data-prototype-label'));
+  expect(accountingHeaderLabels.slice(0, 9)).toEqual([
+    '申请人', '申请时间', '联系电话',
+    '邮箱', '部门', '报废单名称',
+    '公司', '报废方式', '报废期间',
+  ]);
   expect(screen.queryByText('办公区')).not.toBeInTheDocument();
   expect(screen.queryByText('申请单号')).not.toBeInTheDocument();
-  expect(screen.getAllByText('Total：').length).toBeGreaterThanOrEqual(4);
+  expect(screen.queryByText('Total：')).not.toBeInTheDocument();
   expect(screen.getAllByText(/报废数量：/).length).toBeGreaterThanOrEqual(4);
   expect(screen.getAllByText(/原值合计：/).length).toBeGreaterThanOrEqual(4);
   expect(screen.getAllByText(/折旧合计：/).length).toBeGreaterThanOrEqual(3);
