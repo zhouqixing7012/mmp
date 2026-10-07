@@ -223,10 +223,20 @@ test('资产处置办公设备提交前进入预览并自动生成可编辑处�
   expect(screen.queryByText('审批记录')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: '返回' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '提交' })).toBeInTheDocument();
+
+  ['申请人', '申请日期', '部门', '联系电话', '邮箱', '公司', '板块', '处置说明', '备注', '附件']
+    .forEach((label) => expect(view.container.querySelector(`[data-prototype-label="${label}"]`)).not.toBeNull());
+  expect(view.container.querySelector('[data-prototype-label="办公区"]')).toBeNull();
+  expect(view.container.querySelector('[data-prototype-label="回收商一"]')).toBeNull();
+  expect(screen.getByText('汇总')).toBeInTheDocument();
+  expect(screen.getByText('明细')).toBeInTheDocument();
+  expect(screen.getByTestId('asset-table')).toBeInTheDocument();
   expect(view.container.querySelector('td[rowspan="2"]')).not.toBeNull();
+
   const totalQuantity = assets.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
   const description = screen.getByDisplayValue(new RegExp(`按照报废计划，ES拟对${totalQuantity}台库存老旧办公资产进行变卖处置`));
   expect(description.value).toContain('回收商“回收商甲”总价最高');
+  expect(description.value).not.toContain('\n\n');
   expect(onSave).not.toHaveBeenCalled();
 
   fireEvent.change(description, { target: { value: '人工调整后的处置说明' } });
@@ -661,4 +671,35 @@ test('账面报废预览只保留指定申请人信息并展示页签Total', () 
   expect(screen.getAllByText(/原值合计：/).length).toBeGreaterThanOrEqual(4);
   expect(screen.getAllByText(/折旧合计：/).length).toBeGreaterThanOrEqual(3);
   expect(screen.getAllByText(/净值合计：/).length).toBeGreaterThanOrEqual(4);
+});
+
+
+test('资产处置预览明细页签复用编辑页处置资产表格', () => {
+  const [candidate] = availableOfficeDisposalAssets();
+  expect(candidate).toBeDefined();
+  const view = render(
+    <ScrapPrototypeEditor
+      type="disposal"
+      config={{ title: '资产处置', createLabel: '创建资产处置申请单' }}
+      initialForm={{
+        ...accountingForm,
+        company: candidate.company,
+        companies: [candidate.company],
+        plates: [],
+        assetScope: '办公设备',
+        recycler1Name: '回收商甲',
+      }}
+      initialAssets={[{ ...candidate, recycler1: 100 }]}
+      readOnly={false}
+      approvalPage={false}
+      onBack={jest.fn()}
+      onSave={jest.fn()}
+      onApprove={jest.fn()}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '预览' }));
+  expect(screen.getByText('汇总')).toBeInTheDocument();
+  expect(screen.getByText('明细')).toBeInTheDocument();
+  expect(view.container.querySelector('[data-testid="asset-table"]')).not.toBeNull();
 });
