@@ -106,9 +106,9 @@ test('资产管理菜单UI一致性关键规则保持统一', () => {
   expect(consumableMaintenanceSource).not.toContain('（原型）');
   expect(assetMaintenanceSource).not.toContain('（原型）');
 
-  const batchPrintIndex = tagPrintingSource.indexOf('>批量打印</Button>');
-  const previewIndex = tagPrintingSource.indexOf('>预打印</Button>');
-  const exportIndex = tagPrintingSource.indexOf('>导出</Button>');
+  const batchPrintIndex = tagPrintingSource.indexOf("onClick={() => setBatchPrintOpen(true)}");
+  const previewIndex = tagPrintingSource.indexOf("onClick={() => setPreviewMode(true)}");
+  const exportIndex = tagPrintingSource.indexOf('onClick={handleExport}');
   expect(batchPrintIndex).toBeGreaterThan(-1);
   expect(previewIndex).toBeGreaterThan(batchPrintIndex);
   expect(exportIndex).toBeGreaterThan(previewIndex);
