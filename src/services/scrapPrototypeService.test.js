@@ -36,9 +36,10 @@ test('accounting candidates fail closed without explicit actor authorization', (
   expect(validateAccountingAssets({ company: '114.新媒体' }, [{ company: '114.新媒体' }]).valid).toBe(false);
 });
 
-test('authorized user can save an empty draft, but cannot submit it', () => {
-  expect(validateAccountingAssets({ company: '' }, [], { ...auth, draft: true }).valid).toBe(true);
-  expect(validateAccountingAssets({ company: '' }, [], auth).valid).toBe(false);
+test('authorized user can save an empty draft only after selecting company', () => {
+  expect(validateAccountingAssets({ company: '' }, [], { ...auth, draft: true }).valid).toBe(false);
+  expect(validateAccountingAssets({ company: '114.新媒体' }, [], { ...auth, draft: true }).valid).toBe(true);
+  expect(validateAccountingAssets({ company: '114.新媒体' }, [], auth).valid).toBe(false);
 });
 
 test('asset-scrap quantity derives all/partial and prorated accounting values', () => {
