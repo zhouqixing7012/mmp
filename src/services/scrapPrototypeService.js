@@ -341,7 +341,7 @@ export function validateAccountingAssets(form, assets, options = {}) {
   const errors = [];
   const scopes = normalizedScopes(options);
   if (!scopes.length) errors.push({ code: 'ACCOUNTING_PERMISSION_REQUIRED', message: '当前账号未配置账面报废公司及板块权限' });
-  if (!form?.company && (assets?.length || !options.draft)) errors.push({ code: 'COMPANY_REQUIRED', message: '请选择公司' });
+  if (!form?.company) errors.push({ code: 'COMPANY_REQUIRED', message: '请选择公司' });
   if (!assets?.length && !options.draft) errors.push({ code: 'ASSETS_REQUIRED', message: '请至少添加一条资产明细' });
   const tags = new Set();
   (assets || []).forEach((asset, index) => {
