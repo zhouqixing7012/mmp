@@ -286,3 +286,21 @@ test('disposal validation rejects invalid accounting source and cross-order occu
     expect.objectContaining({ code: 'INVALID_ACCOUNTING_SOURCE' }),
   ]));
 });
+
+
+test('手动添加资产默认丢失但可改为其他报废类型并通过校验', () => {
+  saveScrapPrototypeRecords('accounting', []);
+  const candidate = getAccountingLostCandidates(auth)[0];
+  expect(candidate).toEqual(expect.objectContaining({
+    sourceBusinessType: '手动添加资产',
+    scrapMethod: '非调账',
+    scrapType: '丢失',
+  }));
+
+  const changed = { ...candidate, scrapType: '未到报废期' };
+  expect(validateAccountingAssets(
+    { company: changed.company, scrapMethod: '非调账' },
+    [changed],
+    auth,
+  )).toEqual({ valid: true, errors: [] });
+});
