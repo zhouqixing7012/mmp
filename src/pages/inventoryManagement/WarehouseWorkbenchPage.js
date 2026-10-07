@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Card, Input, Result, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import { RefreshCcw, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -138,6 +138,12 @@ export default function WarehouseWorkbenchPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', {
+      detail: { items: [{ label: '首页' }, { label: '库存管理' }, { label: '库管员工作台' }] },
+    }));
+  }, []);
+
   const canUseWorkbench = WAREHOUSE_WORKBENCH_USERS.includes(CURRENT_WAREHOUSE_OPERATOR);
 
   const updateFilter = (field, value) => {
@@ -248,7 +254,7 @@ export default function WarehouseWorkbenchPage() {
       dataIndex: 'applicationNo',
       width: 220,
       sorter: (a, b) => String(a.applicationNo).localeCompare(String(b.applicationNo)),
-      render: (value, row) => <Button type="link" className="px-0" onClick={() => handleTask(row)}>{value}</Button>,
+      render: (value, row) => <Button type="link" className="px-0 select-text" onClick={() => handleTask(row)}>{value}</Button>,
     },
     { title: '单据类型', dataIndex: 'documentType', width: 160 },
     { title: '审批环节', dataIndex: 'approvalNode', width: 180 },
@@ -277,7 +283,7 @@ export default function WarehouseWorkbenchPage() {
   }
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-page-view-key="warehouse-workbench">
       {contextHolder}
       <PageTitle>库管员工作台</PageTitle>
 
