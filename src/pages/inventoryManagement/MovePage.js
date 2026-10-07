@@ -293,8 +293,8 @@ function MoveAssetDetailModal({ open, document, asset, onCancel }) {
         <Card size="small" title="移库单信息">
           <DetailGrid columns={3} labelWidth={110}>
             <DetailItem label="移库单号"><Readonly>{document?.documentNo}</Readonly></DetailItem>
-            <DetailItem label="当前仓库"><Readonly>{document?.fromWarehouse}</Readonly></DetailItem>
-            <DetailItem label="对方仓库"><Readonly>{document?.toWarehouse}</Readonly></DetailItem>
+            <DetailItem label="移出仓库"><Readonly>{document?.fromWarehouse}</Readonly></DetailItem>
+            <DetailItem label="移入仓库"><Readonly>{document?.toWarehouse}</Readonly></DetailItem>
             <DetailItem label="来源移库单号"><Readonly>{document?.sourceDocumentNo}</Readonly></DetailItem>
             <DetailItem label="出库仓库管理员"><Readonly>{document?.creator}</Readonly></DetailItem>
           </DetailGrid>
@@ -401,7 +401,7 @@ function MoveItemModal({ open, currentWarehouse, initialLine, existingTags, onCa
         ].filter(Boolean)}
       >
         <Space direction="vertical" size={16} className="w-full">
-          <Typography.Text>当前仓库：{currentWarehouse}</Typography.Text>
+          <Typography.Text>移出仓库：{currentWarehouse}</Typography.Text>
           <Card size="small" title="选择资产">
             <DetailGrid columns={3} labelWidth={96}>
               <DetailItem label="移库资产" span={3}>
@@ -503,7 +503,7 @@ function MoveImportModal({ open, currentWarehouse, existingTags, onCancel, onSuc
   const importValid = () => {
     const picked = validAssets.slice(0, 2).map((item, index) => ({ ...item, id: `import-${Date.now()}-${index}`, moveDesc: 'Excel导入', moveStatus: '草稿', verification: '未验证', originalLockStatus: false }));
     if (!picked.length) {
-      setErrors([{ row: 2, field: '标签号', reason: '当前仓库没有可导入的资产' }]);
+      setErrors([{ row: 2, field: '标签号', reason: '移出仓库没有可导入的资产' }]);
       return;
     }
     onSuccess(picked);
