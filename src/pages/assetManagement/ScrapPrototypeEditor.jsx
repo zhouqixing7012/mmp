@@ -62,6 +62,10 @@ function options(values) {
   return values.map((value) => ({ label: value, value }));
 }
 
+function normalizeDisposalDescription(value) {
+  return String(value || '').replace(/\n[ \t]*\n+/g, '\n').trim();
+}
+
 function sectionTitle(title) {
   return (
     <div className="flex items-center gap-2.5 py-0.5">
@@ -386,11 +390,11 @@ export default function ScrapPrototypeEditor({
   const disposalAutoDescription = type === 'disposal'
     && form.assetScope === '办公设备'
     && !disposalRecyclerInfoEmpty
-    ? `按照报废计划，ES拟对${disposalQuantityTotal}台库存老旧办公资产进行变卖处置，预计回收总价约${disposalRecoveryWan}万元，处置方案如下，请您审批。\n\n(一)  处置数量：共${disposalQuantityTotal}台，资产原值${money(disposalOriginalValueTotal)}元，净值${money(disposalNetValueTotal)}元，已完成账面报废。（注：电脑类资产配置经MIS确认不再满足员工办公需求）\n\n(二) 处置方式：\n\n- 由${disposalRecyclerCountText}家采购回收商分别进行评估报价，其中回收商“${disposalHighestRecyclerName}”总价最高，约${disposalRecoveryWan}万元，建议与其合作（下附比价表）；\n- 待您及集团财务领导审批后，ES将联系回收商打款并完成实物交接。`
+    ? `按照报废计划，ES拟对${disposalQuantityTotal}台库存老旧办公资产进行变卖处置，预计回收总价约${disposalRecoveryWan}万元，处置方案如下，请您审批。\n(一) 处置数量：共${disposalQuantityTotal}台，资产原值${money(disposalOriginalValueTotal)}元，净值${money(disposalNetValueTotal)}元，已完成账面报废。（注：电脑类资产配置经MIS确认不再满足员工办公需求）\n(二) 处置方式：\n- 由${disposalRecyclerCountText}家采购回收商分别进行评估报价，其中回收商“${disposalHighestRecyclerName}”总价最高，约${disposalRecoveryWan}万元，建议与其合作（下附比价表）；\n- 待您及集团财务领导审批后，ES将联系回收商打款并完成实物交接。`
     : '';
-  const disposalDescription = disposalDescriptionTouched
-    ? form.disposalDescription || ''
-    : disposalAutoDescription;
+  const disposalDescription = normalizeDisposalDescription(
+    disposalDescriptionTouched ? form.disposalDescription || '' : disposalAutoDescription,
+  );
 
   const effectiveNeedsCleaning = type === 'disposal'
     && form.assetScope === '机房资产'
@@ -748,6 +752,70 @@ export default function ScrapPrototypeEditor({
       }
       return { ...row, cityRowSpan };
     });
+
+  const disposalSummaryHeader = (
+    <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm">
+      {form.assetScope === '办公设备' && [1, 2, 3].map((index) => (
+        <span key={`recycler${index}Total`}>
+          <span className="text-gray-500">{`回收商${['一', '二', '三'][index - 1]}报价合计：`}</span>
+          <span className="font-semibold text-gray-900">{money(disposalQuoteTotals[index - 1])}</span>
+        </span>
+      ))}
+      <span className="text-gray-500">共 {assets.length} 条</span>
+    </div>
+  );
+
+  const disposalSummaryTable = (
+    <Table rowKey="key" size="small" bordered pagination={false} dataSource={disposalSummaryWithCitySpan}
+      scroll={{ x: 'max-content' }}
+      columns={[
+        {
+          title: 'City',
+          dataIndex: 'city',
+          width: 150,
+          onCell: (row) => ({ rowSpan: row.cityRowSpan }),
+        },
+        { title: '资产大类', dataIndex: 'majorCategory', width: 170 },
+        { title: '数量', dataIndex: 'quantity', width: 95, align: 'right' },
+        { title: '原值', dataIndex: 'originalValue', width: 140, align: 'right', render: money },
+        { title: '净值', dataIndex: 'netValue', width: 140, align: 'right', render: money },
+        ...(form.assetScope === '办公设备' ? [1, 2, 3].map((index) => ({
+          title: `${String(form[`recycler${index}Name`] || `回收商${['一', '二', '三'][index - 1]}`).trim() || `回收商${['一', '二', '三'][index - 1]}`}报价`,
+          dataIndex: `recycler${index}`, width: 165, fixed: 'right', align: 'right',
+          render: (values) => values.map((value) => money(value)).join('、') || '-',
+        })) : []),
+      ]} />
+  );
+
+  const disposalPreviewTabs = [
+    {
+      key: 'summary',
+      label: '汇总',
+      children: (
+        <>
+          <div className="mb-3">{disposalSummaryHeader}</div>
+          {disposalSummaryTable}
+        </>
+      ),
+    },
+    {
+      key: 'detail',
+      label: '明细',
+      children: (
+        <ScrapPrototypeAssetTable
+          type="disposal"
+          assetScope={form.assetScope}
+          sourceCompanies={disposalSelectedCompanies}
+          sourcePlates={disposalSelectedPlates}
+          assets={assets}
+          readOnly
+          onChange={updateAsset}
+          onReplace={handleAssetReplace}
+          disposalSuppliers={form}
+        />
+      ),
+    },
+  ];
 
   const updateAccountingReason = (kind, value) => updateForm('scrapReasons', {
     ...(form.scrapReasons || {}),
@@ -1164,11 +1232,13 @@ export default function ScrapPrototypeEditor({
       ? '公司间转移明细'
       : type === 'scrap'
         ? '报废资产明细'
-        : type === 'disposal' && (approvalPage || previewView)
-          ? '处置资产汇总'
-          : type === 'disposal'
-            ? '处置资产明细'
-            : '资产明细';
+        : type === 'disposal' && previewView
+          ? '处置资产'
+          : type === 'disposal' && approvalPage
+            ? '处置资产汇总'
+            : type === 'disposal'
+              ? '处置资产明细'
+              : '资产明细';
   const useScrapApprovalCardStyle = (approvalView || previewView) && ['scrap', 'accounting'].includes(type);
 
   return (
@@ -1215,7 +1285,29 @@ export default function ScrapPrototypeEditor({
       )}
 
       <Card size="small" title={approvalView || previewView ? '申请人信息' : '基本信息'}>
-        {type === 'accounting' && previewView ? (
+        {type === 'disposal' && previewView ? (
+          <DetailGrid columns={2}>
+            <DetailItem label="申请人">{showValue(form.creator)}</DetailItem>
+            <DetailItem label="申请日期">{showValue(form.applicationDate)}</DetailItem>
+            <DetailItem label="部门">{showValue(form.department)}</DetailItem>
+            <DetailItem label="联系电话">{showValue(form.contactPhone)}</DetailItem>
+            <DetailItem label="邮箱" span={2}>{showValue(form.email)}</DetailItem>
+            <DetailItem label="公司">{showValue(form.company)}</DetailItem>
+            <DetailItem label="板块">{showValue(disposalPlateDisplay)}</DetailItem>
+            <DetailItem label="处置说明" span={2}>
+              <Input.TextArea
+                value={disposalDescription}
+                autoSize={{ minRows: 6, maxRows: 12 }}
+                onChange={(event) => {
+                  setDisposalDescriptionTouched(true);
+                  updateForm('disposalDescription', normalizeDisposalDescription(event.target.value));
+                }}
+              />
+            </DetailItem>
+            <DetailItem label="备注" span={2}>{showValue(form.remark)}</DetailItem>
+            <DetailItem label="附件" span={2}>{showValue(attachmentSummary)}</DetailItem>
+          </DetailGrid>
+        ) : type === 'accounting' && previewView ? (
           <DetailGrid>
             <DetailItem label="申请人">{showValue(form.creator)}</DetailItem>
             <DetailItem label="申请时间">{showValue(form.applicationDate)}</DetailItem>
@@ -1477,38 +1569,16 @@ export default function ScrapPrototypeEditor({
         size="small"
         title={useScrapApprovalCardStyle ? sectionTitle(assetDetailsTitle) : assetDetailsTitle}
         className={useScrapApprovalCardStyle ? 'shadow-sm' : undefined}
-        extra={type === 'disposal' && form.assetScope === '办公设备' ? (
-          <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm">
-            {[1, 2, 3].map((index) => (
-              <span key={`recycler${index}Total`}>
-                <span className="text-gray-500">{`回收商${['一', '二', '三'][index - 1]}报价合计：`}</span>
-                <span className="font-semibold text-gray-900">{money(disposalQuoteTotals[index - 1])}</span>
-              </span>
-            ))}
-            <span className="text-gray-500">共 {assets.length} 条</span>
-          </div>
-        ) : <span className="text-sm text-gray-500">共 {assets.length} 条</span>}
+        extra={type === 'disposal' && previewView
+          ? null
+          : type === 'disposal'
+            ? disposalSummaryHeader
+            : <span className="text-sm text-gray-500">共 {assets.length} 条</span>}
       >
-        {type === 'disposal' && (approvalPage || previewView) ? (
-          <Table rowKey="key" size="small" bordered pagination={false} dataSource={disposalSummaryWithCitySpan}
-            scroll={{ x: 'max-content' }}
-            columns={[
-              {
-                title: 'City',
-                dataIndex: 'city',
-                width: 150,
-                onCell: (row) => ({ rowSpan: row.cityRowSpan }),
-              },
-              { title: '资产大类', dataIndex: 'majorCategory', width: 170 },
-              { title: '数量', dataIndex: 'quantity', width: 95, align: 'right' },
-              { title: '原值', dataIndex: 'originalValue', width: 140, align: 'right', render: money },
-              { title: '净值', dataIndex: 'netValue', width: 140, align: 'right', render: money },
-              ...(form.assetScope === '办公设备' ? [1, 2, 3].map((index) => ({
-                title: `${String(form[`recycler${index}Name`] || `回收商${['一', '二', '三'][index - 1]}`).trim() || `回收商${['一', '二', '三'][index - 1]}`}报价`,
-                dataIndex: `recycler${index}`, width: 165, fixed: 'right', align: 'right',
-                render: (values) => values.map((value) => money(value)).join('、') || '-',
-              })) : []),
-            ]} />
+        {type === 'disposal' && previewView ? (
+          <Tabs defaultActiveKey="summary" items={disposalPreviewTabs} />
+        ) : type === 'disposal' && approvalPage ? (
+          disposalSummaryTable
         ) : type === 'accounting' && (approvalView || previewView) ? (
           <Tabs defaultActiveKey="summary" items={accountingPreviewTabs} />
         ) : <ScrapPrototypeAssetTable
