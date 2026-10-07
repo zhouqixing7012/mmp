@@ -228,8 +228,11 @@ test('资产处置办公设备提交前进入预览并自动生成可编辑处�
     .forEach((label) => expect(view.container.querySelector(`[data-prototype-label="${label}"]`)).not.toBeNull());
   expect(view.container.querySelector('[data-prototype-label="办公区"]')).toBeNull();
   expect(view.container.querySelector('[data-prototype-label="回收商一"]')).toBeNull();
-  expect(screen.getByText('汇总')).toBeInTheDocument();
-  expect(screen.getByText('明细')).toBeInTheDocument();
+  expect(screen.getByText('处置资产明细')).toBeInTheDocument();
+  expect(screen.getByText(`汇总（${assets.length}）`)).toBeInTheDocument();
+  expect(screen.getByText(`明细（${assets.length}）`)).toBeInTheDocument();
+  const disposalApplicantGrid = view.container.querySelector('[data-prototype-label="申请人"]')?.closest('dl');
+  expect((disposalApplicantGrid?.style.gridTemplateColumns.match(/96px/g) || []).length).toBe(3);
   expect(screen.getByTestId('asset-table')).toBeInTheDocument();
   expect(view.container.querySelector('td[rowspan="2"]')).not.toBeNull();
 
