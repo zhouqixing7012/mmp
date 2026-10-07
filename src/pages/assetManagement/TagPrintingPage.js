@@ -669,7 +669,6 @@ function GenerateLabelsPage({
           </Descriptions.Item>
           <Descriptions.Item label="操作员">{CURRENT_USER}</Descriptions.Item>
           <Descriptions.Item label="当前日期">{dayjs().format('YYYY-MM-DD')}</Descriptions.Item>
-          <Descriptions.Item label="" />
           <Descriptions.Item label="备注说明" span={3}>
             <Input.TextArea value={remark} onChange={(event) => setRemark(event.target.value)} autoSize={{ minRows: 3, maxRows: 6 }} placeholder="请输入备注说明" style={{ maxWidth: 760 }} />
           </Descriptions.Item>
