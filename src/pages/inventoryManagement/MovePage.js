@@ -579,6 +579,16 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
     return undefined;
   };
 
+  const persistDraftState = (overrides = {}) => {
+    onSave({
+      currentWarehouse,
+      receiveWarehouse,
+      remark,
+      lines,
+      ...overrides,
+    }, { silent: true });
+  };
+
   const saveLines = (payloads, keepOpen) => {
     const rows = Array.isArray(payloads) ? payloads : [payloads];
     const duplicateInBatch = rows.some((row, index) => rows.findIndex((item) => item.assetTag === row.assetTag) !== index);
@@ -601,17 +611,25 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
     }
 
     if (editingLine) {
-      setLines((current) => current.map((item) => item.id === editingLine.id ? { ...rows[0], id: editingLine.id, lineNo: item.lineNo } : item));
+      const nextLines = lines.map((item) => (
+        item.id === editingLine.id ? { ...rows[0], id: editingLine.id, lineNo: item.lineNo } : item
+      ));
+      setLines(nextLines);
+      persistDraftState({ lines: nextLines });
       setEditingLine(null);
       setLineModalOpen(false);
       messageApi.success('移库资产已更新');
       return true;
     }
 
-    setLines((current) => {
-      const start = current.length;
-      return [...current, ...rows.map((row, index) => ({ ...row, id: `${Date.now()}-${start + index}`, lineNo: start + index + 1 }))];
-    });
+    const start = lines.length;
+    const nextLines = [...lines, ...rows.map((row, index) => ({
+      ...row,
+      id: `${Date.now()}-${start + index}`,
+      lineNo: start + index + 1,
+    }))];
+    setLines(nextLines);
+    persistDraftState({ lines: nextLines });
     if (!keepOpen) setLineModalOpen(false);
     messageApi.success(keepOpen ? '资产已添加，可继续选择' : `已添加 ${rows.length} 条资产`);
     return true;
@@ -680,7 +698,11 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
       okButtonProps: { danger: true },
       onOk: () => {
         const selected = new Set(selectedLineKeys);
-        setLines((current) => current.filter((line) => !selected.has(line.id)).map((line, index) => ({ ...line, lineNo: index + 1 })));
+        const nextLines = lines
+          .filter((line) => !selected.has(line.id))
+          .map((line, index) => ({ ...line, lineNo: index + 1 }));
+        setLines(nextLines);
+        persistDraftState({ lines: nextLines });
         setSelectedLineKeys([]);
         messageApi.success('已删除所选资产并释放当前移库占用');
       },
@@ -690,8 +712,15 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
 
   const changeCurrentWarehouse = (value) => {
     if (!lines.length) {
+      const nextReceiveWarehouse = receiveWarehouse === value ? '' : receiveWarehouse;
       setCurrentWarehouse(value);
       if (receiveWarehouse === value) setReceiveWarehouse('');
+      if (source) {
+        persistDraftState({
+          currentWarehouse: value,
+          receiveWarehouse: nextReceiveWarehouse,
+        });
+      }
       return;
     }
     Modal.confirm({
@@ -703,6 +732,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
         setCurrentWarehouse(value);
         setReceiveWarehouse('');
         setLines([]);
+        persistDraftState({ currentWarehouse: value, receiveWarehouse: '', lines: [] });
         setSelectedLineKeys([]);
         messageApi.success('移出仓库已修改，原移库明细及本流程占用已清空');
       },
@@ -727,13 +757,6 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
   };
 
   const payload = () => ({ currentWarehouse, receiveWarehouse, remark, lines });
-
-  const saveDraft = () => {
-    const error = validate(false);
-    if (error) return messageApi.warning(error);
-    onSave(payload());
-    return undefined;
-  };
 
   const submitMove = () => {
     const error = validate(true);
@@ -826,7 +849,17 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
             <DetailItem label="制单人"><Readonly>{source?.creator || CURRENT_USER}</Readonly></DetailItem>
             <DetailItem label="制单日期"><Readonly>{createdDate}</Readonly></DetailItem>
             {source?.sourceDocumentNo && <DetailItem label="来源移库单号"><Readonly>{source.sourceDocumentNo}</Readonly></DetailItem>}
-            <DetailItem label="备注" span={3}>{editable ? <TextArea maxLength={60} showCount autoSize={{ minRows: 3, maxRows: 5 }} value={remark} onChange={(event) => setRemark(event.target.value)} /> : <Readonly>{remark}</Readonly>}</DetailItem>
+            <DetailItem label="备注" span={3}>{editable ? <TextArea
+              maxLength={60}
+              showCount
+              autoSize={{ minRows: 3, maxRows: 5 }}
+              value={remark}
+              onChange={(event) => {
+                const value = event.target.value;
+                setRemark(value);
+                if (source || lines.length) persistDraftState({ remark: value });
+              }}
+            /> : <Readonly>{remark}</Readonly>}</DetailItem>
           </DetailGrid>
         </Card>
 
@@ -863,7 +896,6 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
         </Card>
 
         <div className="flex justify-center gap-3">
-          {editable && <Button onClick={saveDraft}>保存草稿</Button>}
           {editable && <Button type="primary" onClick={submitMove}>移库提交</Button>}
           {!editable && status === '已完成' && <Button onClick={() => setPrintOpen(true)}>打印</Button>}
           {!editable && ['已完成', '已驳回'].includes(status) && <Button onClick={() => messageApi.success('移库明细已导出')}>导出</Button>}
@@ -877,7 +909,11 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
           columns={[{ title: '仓库', dataIndex: 'name' }, { title: '财务公司', dataIndex: 'financeCompany' }]}
           searchFields={[{ label: '仓库', name: 'name', dataIndex: 'name' }, { label: '财务公司', name: 'financeCompany', dataIndex: 'financeCompany' }]}
           onCancel={() => setWarehouseModalOpen(false)}
-          onConfirm={(record) => { setReceiveWarehouse(record.name); setWarehouseModalOpen(false); }}
+          onConfirm={(record) => {
+            setReceiveWarehouse(record.name);
+            if (source || lines.length) persistDraftState({ receiveWarehouse: record.name });
+            setWarehouseModalOpen(false);
+          }}
         />
 
         <MoveItemModal
@@ -990,7 +1026,7 @@ export default function MovePage() {
     setView('editor');
   };
 
-  const saveDraft = ({ currentWarehouse, receiveWarehouse, remark, lines }) => {
+  const saveDraft = ({ currentWarehouse, receiveWarehouse, remark, lines }, options = {}) => {
     if (activeRow) {
       const next = {
         ...activeRow,
@@ -1004,7 +1040,7 @@ export default function MovePage() {
       };
       setDocuments((current) => current.map((row) => row.id === activeRow.id ? next : row));
       setActiveRow(next);
-      messageApi.success('移库单草稿已保存');
+      if (!options.silent) messageApi.success('移库单草稿已保存');
       return;
     }
     const id = Math.max(0, ...documents.map((row) => Number(row.id) || 0)) + 1;
