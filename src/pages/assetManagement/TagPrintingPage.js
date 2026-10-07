@@ -1314,10 +1314,16 @@ export default function TagPrintingPage() {
             >
               打印所选（{selectedRowKeys.length}）
             </Button>
-            <Button icon={<Printer size={14} />} onClick={() => requestAssetPrint(filteredRows.map((row) => row.id), '打印全部')}>打印全部</Button>
+            <Button icon={<Printer size={14} />} disabled={filteredRows.length === 0} onClick={() => requestAssetPrint(filteredRows.map((row) => row.id), '打印全部')}>打印全部</Button>
             <Button icon={<UploadCloud size={14} />} onClick={() => setBatchPrintOpen(true)}>批量打印</Button>
-            <Button icon={<Download size={14} />} onClick={handleExport}>导出</Button>
             <Button icon={<Tags size={14} />} onClick={() => setPreviewMode(true)}>预打印</Button>
+            <Button
+              icon={<Download size={14} />}
+              disabled={selectedRowKeys.length === 0 && filteredRows.length === 0}
+              onClick={handleExport}
+            >
+              导出
+            </Button>
           </Space>
         </div>
 
