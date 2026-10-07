@@ -89,8 +89,8 @@ function ReceiveAssetDetailModal({ open, document, asset, onCancel }) {
         <Card size="small" title="移库单信息">
           <DetailGrid columns={3} labelWidth={110}>
             <DetailItem label="移库单号"><Readonly>{document.documentNo}</Readonly></DetailItem>
-            <DetailItem label="当前仓库"><Readonly>{document.fromWarehouse}</Readonly></DetailItem>
-            <DetailItem label="对方仓库"><Readonly>{document.toWarehouse}</Readonly></DetailItem>
+            <DetailItem label="移出仓库"><Readonly>{document.fromWarehouse}</Readonly></DetailItem>
+            <DetailItem label="移入仓库"><Readonly>{document.toWarehouse}</Readonly></DetailItem>
             <DetailItem label="来源移库单号"><Readonly>{document.sourceDocumentNo}</Readonly></DetailItem>
             <DetailItem label="出库仓库管理员"><Readonly>{document.creator}</Readonly></DetailItem>
           </DetailGrid>
