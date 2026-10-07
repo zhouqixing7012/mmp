@@ -1069,7 +1069,7 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
   ];
   const persistDraft = (nextLines = lines) => {
     if (!company) {
-      messageApi.warning('请选择财务公司');
+      messageApi.warning('请选择公司');
       return null;
     }
     const saved = onPersist({
@@ -1432,7 +1432,7 @@ export default function TransferPage() {
       dataIndex: 'documentNo',
       width: 190,
       sorter: (a, b) => compareText(a.documentNo, b.documentNo),
-      render: (value, row) => <Button type="link" className="px-0" onClick={() => openDocument(row)}>{value}</Button>,
+      render: (value, row) => <Button type="link" className="px-0 select-text" onClick={() => openDocument(row)}>{value}</Button>,
     },
     { title: '申请单号', dataIndex: 'applicationNo', width: 220, sorter: (a, b) => compareText(a.applicationNo, b.applicationNo), render: (value) => value || '-' },
     { title: '单据状态', dataIndex: 'status', width: 120, sorter: (a, b) => compareText(a.status, b.status), render: (value) => <StatusTag value={value} /> },
