@@ -123,7 +123,18 @@ jest.mock('../../services/scrapPrototypeService', () => ({
   getScrapPrototypeRecords: () => [],
   getAccountingCandidates: () => [],
   getAccountingLostCandidates: ({ company }) => require('./scrapPrototypeData').SCRAP_ASSET_POOL
-    .filter((item) => item.company === company),
+    .filter((item) => item.company === company)
+    .map((item) => ({
+      ...item,
+      scrapMethod: '非调账',
+      detailScrapMethod: '全部报废',
+      scrapType: '丢失',
+      sourceBusinessType: '手动添加资产',
+      sourceBusinessNo: '-',
+      cardQuantity: item.quantity || 1,
+      cardOriginalValue: item.originalValue || 0,
+      cardNetValue: item.netValue || 0,
+    })),
   getDisposalCandidates: () => [],
   getScrapCandidates: ({ assetScope, assetCategory } = {}) => require('./scrapPrototypeData').SCRAP_ASSET_POOL
     .filter((item) => !item.parentAssetTag && (!assetScope || item.scope === assetScope)
@@ -258,6 +269,7 @@ test('账面报废分别从审批通过待报废资产和不限范围的丢失�
 
   const [addedAsset] = onReplace.mock.calls[0][0];
   expect(addedAsset.scrapType).toBe('丢失');
+  expect(addedAsset.sourceBusinessType).toBe('手动添加资产');
   expect(addedAsset.scrapMethod).toBe('非调账');
   expect(addedAsset.detailScrapMethod).toBe('全部报废');
   expect(addedAsset.reason).toBe('');
@@ -457,3 +469,37 @@ test('机房报废按报废资产和关联配件分组展示', () => {
   expect(screen.getByText(accessory.tagNo)).toBeInTheDocument();
 });
 
+
+
+test('账面报废手动添加资产默认丢失但报废类型可选三类', () => {
+  const source = SCRAP_ASSET_POOL.find((asset) => asset.company === '114.新媒体');
+  const onChange = jest.fn();
+  render(
+    <ScrapPrototypeAssetTable
+      type="accounting"
+      assetScope="混合"
+      accountingMethod="非调账"
+      sourceCompany="114.新媒体"
+      accountingActor={{ id: 'test-accountant' }}
+      accountingAuthorizationScopes={[{ company: '114.新媒体', plates: '*' }]}
+      assets={[{
+        ...source,
+        id: 'manual-accounting-asset',
+        scrapMethod: '非调账',
+        detailScrapMethod: '全部报废',
+        scrapType: '丢失',
+        sourceBusinessType: '手动添加资产',
+        cardQuantity: source.quantity || 1,
+      }]}
+      readOnly={false}
+      onChange={onChange}
+      onReplace={jest.fn()}
+    />,
+  );
+
+  const typeSelect = screen.getByRole('combobox');
+  expect(typeSelect).toHaveValue('丢失');
+  expect(screen.getByRole('option', { name: '已到报废期' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: '未到报废期' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: '丢失' })).toBeInTheDocument();
+});
