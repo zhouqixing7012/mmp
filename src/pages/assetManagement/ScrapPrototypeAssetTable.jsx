@@ -609,7 +609,7 @@ export default function ScrapPrototypeAssetTable({
             ? '全部报废'
             : item.detailScrapMethod || '全部报废',
           scrapType: type === 'accounting' && isLostAsset(item) ? '丢失' : item.scrapType || '已到报废期',
-          reason: type === 'accounting' && isLostAsset(item) ? '' : item.reason || '',
+          reason: item.reason || '',
           dataCleaning: type === 'scrap'
             ? preparedScrap?.dataCleaning
             : item.scope === '机房资产' ? item.dataCleaning || '否' : undefined,
@@ -776,7 +776,7 @@ export default function ScrapPrototypeAssetTable({
         const scrapQuantity = type === 'scrap' ? Number(row['报废数量']) : null;
         const scrapReason = type === 'scrap' ? String(row['报废原因'] || '').trim() : '';
         const dataCleaning = type === 'scrap' ? String(row['数据清洗'] || '').trim() : '';
-        const isLost = source === '丢失资产';
+        const isLost = source === '手动添加资产';
         const asset = type === 'accounting'
           ? (isLost ? lostByTag : waitingByTag).get(tag)
           : waitingByTag.get(tag);
@@ -800,10 +800,10 @@ export default function ScrapPrototypeAssetTable({
           : null;
 
         let error = '';
-        if (type === 'accounting' && !['待报废资产', '丢失资产'].includes(source)) error = '录入来源只能是待报废资产或丢失资产';
+        if (type === 'accounting' && !['待报废资产', '手动添加资产'].includes(source)) error = '录入来源只能是待报废资产或手动添加资产';
         else if (!tag) error = '资产标签号不能为空';
         else if (seenTags.has(tag)) error = '导入文件中的资产标签号重复';
-        else if (type === 'accounting' && isLost && accountingMethod === '调账') error = '调账单不能导入丢失资产';
+        else if (type === 'accounting' && isLost && accountingMethod === '调账') error = '调账单不能导入手动添加资产';
         else if (!asset) error = '资产不存在或不符合当前资产范围与权限';
         else if (selectedIds.has(asset.id)) error = '资产已在当前单据中';
         else if (type === 'scrap' && (!Number.isFinite(scrapQuantity) || scrapQuantity <= 0)) error = '报废数量必须大于0';
@@ -811,7 +811,8 @@ export default function ScrapPrototypeAssetTable({
         else if (type === 'scrap' && !scrapReason) error = '报废原因不能为空';
         else if (type === 'scrap' && assetScope === '机房资产' && assetCategory === 'SERVER'
           && !['是', '否'].includes(dataCleaning)) error = '数据清洗只能填写是或否';
-        else if (type === 'accounting' && isLost && selectedType && selectedType !== '丢失') error = '丢失资产报废类型只能为丢失';
+        else if (type === 'accounting' && isLost && selectedType
+          && !['已到报废期', '未到报废期', '丢失'].includes(selectedType)) error = '手动添加资产报废类型仅允许已到报废期、未到报废期或丢失';
         else if (type === 'accounting' && !isLost && selectedType
           && !['已到报废期', '未到报废期'].includes(selectedType)) error = '待报废资产报废类型只能为已到报废期或未到报废期';
         else if (type === 'crossCompany' && !targetCompanyCode) error = '新公司编码不能为空';
@@ -1151,7 +1152,7 @@ export default function ScrapPrototypeAssetTable({
       width: 110,
       align: 'right',
       render: (value, record) => (
-        readOnly || record.sourceBusinessType !== '丢失资产'
+        readOnly || record.sourceBusinessType !== '手动添加资产'
           ? displayValue(value)
           : (
             <InputNumber
@@ -1178,12 +1179,14 @@ export default function ScrapPrototypeAssetTable({
     { title: '报废方式', dataIndex: 'detailScrapMethod', width: 120, render: displayValue },
     {
       title: '报废类型', dataIndex: 'scrapType', width: 150,
-      render: (value, record) => readOnly || value === '丢失'
+      render: (value, record) => readOnly
         ? displayValue(value)
         : <Select
           value={value}
           className="w-full"
-          options={SCRAP_TYPE_OPTIONS.filter((option) => option.value !== '丢失')}
+          options={record.sourceBusinessType === '手动添加资产'
+            ? SCRAP_TYPE_OPTIONS
+            : SCRAP_TYPE_OPTIONS.filter((option) => option.value !== '丢失')}
           onChange={(nextValue) => onChange(record.id, 'scrapType', nextValue)}
         />,
     },
@@ -1483,7 +1486,7 @@ export default function ScrapPrototypeAssetTable({
 
       <SelectModal
         open={pickerOpen}
-        title={type === 'accounting' ? pickerMode === 'lost' ? '选择丢失资产' : '选择待报废资产' : '选择资产'}
+        title={type === 'accounting' ? pickerMode === 'lost' ? '选择资产' : '选择待报废资产' : '选择资产'}
         width={960}
         multiple
         dataSource={pickerAssets}
