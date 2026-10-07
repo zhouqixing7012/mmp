@@ -846,9 +846,6 @@ export default function ScrapPrototypeEditor({
       groups.get(category).push(asset);
       return groups;
     }, new Map()).entries());
-    if (subset.length === 0) {
-      return <div className="py-10 text-center text-gray-400">暂无{kind}明细</div>;
-    }
     return (
       <>
         <div className="mb-3 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md bg-gray-50 px-3 py-2">
@@ -865,19 +862,26 @@ export default function ScrapPrototypeEditor({
             <Typography.Text>净值合计：{money(total.netValue)}</Typography.Text>
           </Space>
         </div>
-        <Collapse items={grouped.map(([category, rows]) => ({
-          key: category,
-          label: `${category}（${rows.length}）`,
-          extra: (
-            <Space size={18} wrap>
-              <Typography.Text>报废数量：{rows.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}</Typography.Text>
-              <Typography.Text>原值合计：{money(rows.reduce((sum, item) => sum + Number(item.originalValue || 0), 0))}</Typography.Text>
-              <Typography.Text>折旧合计：{money(rows.reduce((sum, item) => sum + Number(item.accumulatedDepreciation || 0), 0))}</Typography.Text>
-              <Typography.Text>净值合计：{money(rows.reduce((sum, item) => sum + Number(item.netValue || 0), 0))}</Typography.Text>
-            </Space>
-          ),
-          children: approvalTable(rows),
-        }))} />
+        {subset.length === 0 ? (
+          <div className="py-10 text-center text-gray-400">暂无{kind}明细</div>
+        ) : (
+          <Collapse items={grouped.map(([category, rows]) => {
+            const groupTotal = accountingTotal(rows);
+            return {
+              key: category,
+              label: `${category}（${rows.length}）`,
+              extra: (
+                <Space size={18} wrap>
+                  <Typography.Text>报废数量：{groupTotal.quantity}</Typography.Text>
+                  <Typography.Text>原值合计：{money(groupTotal.originalValue)}</Typography.Text>
+                  <Typography.Text>折旧合计：{money(groupTotal.depreciation)}</Typography.Text>
+                  <Typography.Text>净值合计：{money(groupTotal.netValue)}</Typography.Text>
+                </Space>
+              ),
+              children: approvalTable(rows),
+            };
+          })} />
+        )}
       </>
     );
   };
