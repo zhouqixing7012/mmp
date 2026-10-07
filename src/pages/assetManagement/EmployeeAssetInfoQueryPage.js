@@ -651,7 +651,7 @@ export default function EmployeeAssetInfoQueryPage() {
     }
 
     if (!record.detailAvailable) {
-      messageApi.warning('暂无明细展示页面！请联系维护人员添加。');
+      messageApi.warning('当前单据暂无可查看详情。');
       return;
     }
 
