@@ -489,7 +489,7 @@ function TransferItemModal({ open, currentCompany, availableAssets, initialLine,
     ]}>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <Typography.Text>当前财务公司：{currentCompany || '-'}</Typography.Text>
+        <Typography.Text>当前公司：{currentCompany || '-'}</Typography.Text>
         <Card size="small" title="选择转移资产">
           <DetailGrid columns={1} labelWidth={96}>
             <DetailItem label="转移资产"><LookupInput value={asset?.assetTag || ''} placeholder="请选择转移资产" onOpen={() => setSelectorType('asset')} /></DetailItem>
@@ -1250,7 +1250,7 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
         />
       </Card>
       <div className="flex justify-center gap-3">
-        <Button type="primary" onClick={saveDraft}>保存草稿</Button>
+        <Button onClick={saveDraft}>保存草稿</Button>
         {documentNo && lines.length > 0 && <Button type="primary" onClick={confirmTransfer}>转移确认</Button>}
         <Button onClick={onBack}>返回</Button>
       </div>
