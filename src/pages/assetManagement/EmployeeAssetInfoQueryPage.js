@@ -641,7 +641,7 @@ export default function EmployeeAssetInfoQueryPage() {
     const record = DOCUMENT_ROWS.find((row) => row.applicationNo === documentNo || row.coreDocument === documentNo);
 
     if (!record) {
-      messageApi.warning('暂无明细展示页面！请联系维护人员添加。');
+      messageApi.warning('当前单据暂无可查看详情。');
       return;
     }
 
@@ -903,12 +903,11 @@ export default function EmployeeAssetInfoQueryPage() {
           )}
         </QueryBar>
 
-        <Card size="small">
-          <div className="mb-3 flex items-center justify-between">
-            <Typography.Text strong>{current.title}</Typography.Text>
-            <Typography.Text type="secondary">共 {current.rows.length} 条</Typography.Text>
-          </div>
-
+        <Card
+          size="small"
+          title={current.title}
+          extra={<Typography.Text type="secondary">共 {current.rows.length} 条</Typography.Text>}
+        >
           <Table
             rowKey="id"
             size="small"
