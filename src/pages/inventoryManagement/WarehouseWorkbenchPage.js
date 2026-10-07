@@ -26,12 +26,7 @@ const EMPTY_FILTERS = {
 };
 
 function PageTitle({ children }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div className="h-8 w-1.5 rounded bg-[#1677ff]" />
-      <Typography.Title level={3} className="mb-0">{children}</Typography.Title>
-    </div>
-  );
+  return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;
 }
 
 function includesText(value, query) {
