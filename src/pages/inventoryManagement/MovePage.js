@@ -250,7 +250,7 @@ function formatMoney(value) {
 }
 
 function PageTitle({ children }) {
-  return <Typography.Title level={3} className="mb-0">{children}</Typography.Title>;
+  return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;
 }
 
 function Readonly({ children }) {
@@ -573,7 +573,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
   }, [currentWarehouse]);
 
   const openAdd = () => {
-    if (!currentWarehouse) return messageApi.warning('请先选择当前仓库');
+    if (!currentWarehouse) return messageApi.warning('请先选择移出仓库');
     setEditingLine(null);
     setLineModalOpen(true);
     return undefined;
@@ -621,7 +621,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
     const scanValue = String(lineScanDraft || '').trim();
     if (!scanValue) return undefined;
     if (!currentWarehouse) {
-      messageApi.warning('请先选择当前仓库');
+      messageApi.warning('请先选择移出仓库');
       return undefined;
     }
 
@@ -633,7 +633,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
 
     if (!matched || matched.warehouse !== currentWarehouse) {
       setLineScanDraft('');
-      messageApi.warning('资产不存在或不在当前库内！');
+      messageApi.warning('资产不存在或不在移出仓库内！');
       return undefined;
     }
     if (lines.some((item) => item.assetTag === matched.assetTag)) {
@@ -695,8 +695,8 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
       return;
     }
     Modal.confirm({
-      title: '修改当前仓库？',
-      content: '修改当前仓库后将清空当前移库明细，是否继续？',
+      title: '修改移出仓库？',
+      content: '修改移出仓库后将清空当前移库明细，是否继续？',
       okText: '确认修改',
       cancelText: '取消',
       onOk: () => {
@@ -704,23 +704,23 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
         setReceiveWarehouse('');
         setLines([]);
         setSelectedLineKeys([]);
-        messageApi.success('当前仓库已修改，原移库明细及本流程占用已清空');
+        messageApi.success('移出仓库已修改，原移库明细及本流程占用已清空');
       },
     });
   };
 
   const validate = (requireLines = false) => {
-    if (!currentWarehouse) return '当前仓库必须选择';
-    if (!receiveWarehouse) return '对方仓库必须选择';
-    if (currentWarehouse === receiveWarehouse) return '当前仓库和对方仓库不能相同';
+    if (!currentWarehouse) return '移出仓库必须选择';
+    if (!receiveWarehouse) return '移入仓库必须选择';
+    if (currentWarehouse === receiveWarehouse) return '移出仓库和移入仓库不能相同';
     const from = getWarehouse(currentWarehouse);
     const to = getWarehouse(receiveWarehouse);
-    if (!from || !to || from.financeCompany !== to.financeCompany) return '对方仓库必须与当前仓库属于同一财务公司';
+    if (!from || !to || from.financeCompany !== to.financeCompany) return '移入仓库必须与移出仓库属于同一财务公司';
     if (remark.length > 60) return '备注最多允许填写60个字';
     if (requireLines && !lines.length) return '移库单还没有添加资产信息';
     const tags = lines.map((line) => line.assetTag);
     if (new Set(tags).size !== tags.length) return '以下资产标签号重复，请先删除';
-    if (lines.some((line) => line.warehouse !== currentWarehouse)) return '该资产不在当前仓库！';
+    if (lines.some((line) => line.warehouse !== currentWarehouse)) return '该资产不在移出仓库！';
     if (lines.some((line) => line.locked)) return '当前资产已被其他业务锁定，无法移库';
     if (lines.some((line) => !SUPPORTED_MATERIAL_GROUPS.has(line.materialGroup))) return '当前资产类型暂不支持移库';
     return '';
@@ -788,10 +788,10 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
   const toolbar = editable ? (
     <Space>
       <Button type="primary" icon={<Plus size={14} />} onClick={openAdd}>添加资产</Button>
-      <Button danger icon={<Trash2 size={14} />} onClick={deleteLines}>删除资产</Button>
+      <Button danger icon={<Trash2 size={14} />} disabled={!selectedLineKeys.length} onClick={deleteLines}>删除资产</Button>
       <Button icon={<Download size={14} />} onClick={() => messageApi.success('移库导入模板已准备')}>模板下载</Button>
       <Button icon={<Upload size={14} />} onClick={() => {
-        if (!currentWarehouse) return messageApi.warning('请先选择当前仓库');
+        if (!currentWarehouse) return messageApi.warning('请先选择移出仓库');
         setImportOpen(true);
         return undefined;
       }}>Excel导入</Button>
@@ -802,26 +802,26 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
     <div data-page-view-key={`move-editor-${status}`}>
       <Space direction="vertical" size={16} className="w-full">
         {contextHolder}
-        <PageTitle>移库单</PageTitle>
+        <PageTitle>{!source ? '创建移库单' : editable ? '编辑移库单' : '移库单详情'}</PageTitle>
 
         <Card size="small" title="移库单信息">
           <DetailGrid columns={3} labelWidth={96}>
             <DetailItem label="移库单号"><Readonly>{documentNo}</Readonly></DetailItem>
             <DetailItem label="单据类型"><Readonly>移库单</Readonly></DetailItem>
             <DetailItem label="单据状态"><StatusTag value={status} /></DetailItem>
-            <DetailItem label={<RequiredLabel>当前仓库</RequiredLabel>}>
+            <DetailItem label={<RequiredLabel>移出仓库</RequiredLabel>}>
               {editable ? (
                 <Select
                   className="w-full"
                   value={currentWarehouse || undefined}
-                  placeholder="请选择当前仓库"
+                  placeholder="请选择移出仓库"
                   options={WAREHOUSE_OPTIONS.filter((item) => OUTBOUND_WAREHOUSE_NAMES.includes(item.name)).map((item) => ({ label: item.name, value: item.name }))}
                   onChange={changeCurrentWarehouse}
                 />
               ) : <Readonly>{currentWarehouse}</Readonly>}
             </DetailItem>
-            <DetailItem label={<RequiredLabel>对方仓库</RequiredLabel>}>
-              <LookupInput value={receiveWarehouse} placeholder="请选择对方仓库" disabled={!editable || !currentWarehouse} onOpen={() => setWarehouseModalOpen(true)} />
+            <DetailItem label={<RequiredLabel>移入仓库</RequiredLabel>}>
+              <LookupInput value={receiveWarehouse} placeholder="请选择移入仓库" disabled={!editable || !currentWarehouse} onOpen={() => setWarehouseModalOpen(true)} />
             </DetailItem>
             <DetailItem label="制单人"><Readonly>{source?.creator || CURRENT_USER}</Readonly></DetailItem>
             <DetailItem label="制单日期"><Readonly>{createdDate}</Readonly></DetailItem>
@@ -872,7 +872,7 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
 
         <SelectModal
           open={warehouseModalOpen}
-          title="选择对方仓库"
+          title="选择移入仓库"
           dataSource={receiveWarehouseOptions}
           columns={[{ title: '仓库', dataIndex: 'name' }, { title: '财务公司', dataIndex: 'financeCompany' }]}
           searchFields={[{ label: '仓库', name: 'name', dataIndex: 'name' }, { label: '财务公司', name: 'financeCompany', dataIndex: 'financeCompany' }]}
@@ -929,6 +929,26 @@ export default function MovePage() {
     if (typeof window === 'undefined') return;
     window.sessionStorage.setItem(MOVE_LIST_STATE_KEY, JSON.stringify({ draft, filters, activeTab, page, pageSize }));
   }, [draft, filters, activeTab, page, pageSize]);
+
+  useEffect(() => {
+    const editorTitle = !activeRow ? '创建移库单' : activeRow.status === '草稿' ? '编辑移库单' : '移库单详情';
+    const items = view === 'editor'
+      ? [
+          { label: '首页' },
+          { label: '库存管理' },
+          { label: '移库', onClick: () => { setView('list'); setActiveRow(null); } },
+          { label: editorTitle },
+        ]
+      : receiveDetailOpen
+        ? [
+            { label: '首页' },
+            { label: '库存管理' },
+            { label: '移库' },
+            { label: '移库接收' },
+          ]
+        : [{ label: '首页' }, { label: '库存管理' }, { label: '移库' }];
+    window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', { detail: { items } }));
+  }, [view, activeRow, receiveDetailOpen]);
 
   const creators = useMemo(
     () => [...new Set(documents.map((row) => row.creator))].map((name, index) => ({ id: index + 1, name })),
@@ -1123,7 +1143,7 @@ export default function MovePage() {
           <Card
             size="small"
             title="移库单列表"
-            extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button type="primary" icon={<Plus size={14} />} onClick={() => openEditor()}>创建</Button><Button danger icon={<Trash2 size={14} />} onClick={deleteRows}>删除</Button></Space>}
+            extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button type="primary" icon={<Plus size={14} />} onClick={() => openEditor()}>创建</Button><Button danger icon={<Trash2 size={14} />} disabled={!selectedRowKeys.length} onClick={deleteRows}>删除</Button></Space>}
           >
             <Table
               rowKey="id"
@@ -1131,7 +1151,7 @@ export default function MovePage() {
               bordered
               columns={columns}
               dataSource={filteredRows}
-              rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys, fixed: true }}
+              rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys, fixed: true, getCheckboxProps: (record) => ({ disabled: record.status !== '草稿' }) }}
               scroll={{ x: 'max-content' }}
               pagination={{
                 current: page,
