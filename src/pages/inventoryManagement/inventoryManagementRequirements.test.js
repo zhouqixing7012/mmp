@@ -585,6 +585,7 @@ test('库存管理剩余页面遵循统一UI层级与已确认字段口径', () 
   expect(moveSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
   expect(moveSource).toContain("!source ? '创建移库单' : editable ? '编辑移库单' : '移库单详情'");
   expect(moveSource).not.toContain('>保存草稿</Button>');
+  expect(moveSource).toContain("const documentNo = source?.documentNo || '添加资产后自动生成';");
   expect(moveSource).toContain('const persistDraftState = (overrides = {}) =>');
   expect(moveSource).toContain('persistDraftState({ lines: nextLines })');
   expect(moveSource).toContain('label={<RequiredLabel>移出仓库</RequiredLabel>}');
