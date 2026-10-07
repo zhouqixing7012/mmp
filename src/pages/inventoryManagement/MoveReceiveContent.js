@@ -126,7 +126,10 @@ function ReceiveAssetDetailModal({ open, document, asset, onCancel }) {
             <DetailItem label="数量"><Readonly>{asset.quantity}</Readonly></DetailItem>
             <DetailItem label="资产验证"><Readonly>{asset.verification}</Readonly></DetailItem>
             <DetailItem label="移库状态"><StatusTag value={asset.moveStatus} /></DetailItem>
+            <DetailItem label="接收仓管员"><Readonly>{asset.receiver}</Readonly></DetailItem>
+            <DetailItem label="接收时间"><Readonly>{asset.receiveTime}</Readonly></DetailItem>
             <DetailItem label="移库说明" span={3}><Readonly>{asset.moveDesc}</Readonly></DetailItem>
+            <DetailItem label="接收说明" span={3}><Readonly>{asset.receiveDesc}</Readonly></DetailItem>
             <DetailItem label="验证说明" span={3}><Readonly>{asset.verificationDesc}</Readonly></DetailItem>
           </DetailGrid>
         </Card>
@@ -201,6 +204,12 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
   const [rejectAsset, setRejectAsset] = useState(null);
   const [printOpen, setPrintOpen] = useState(false);
   const [lines, setLines] = useState(row.lines || []);
+  const assetMarkOptions = useMemo(() => Array.from(new Set(
+    documents
+      .flatMap((document) => document.lines || [])
+      .map((line) => String(line.assetMark || '').trim())
+      .filter(Boolean),
+  )).map((value) => ({ label: value, value })), [documents]);
 
   useEffect(() => {
     setLines(row.lines || []);
@@ -211,6 +220,11 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
     setLines(nextLines);
     setDocuments((current) => current.map((document) => document.id === row.id ? { ...document, lines: nextLines, status: nextStatus, lastUpdatedAt: dayjs().format('YYYY-MM-DD HH:mm'), ...extra } : document));
     return nextStatus;
+  };
+
+  const updateReceiveField = (assetId, field, value) => {
+    const nextLines = lines.map((line) => line.id === assetId ? { ...line, [field]: value } : line);
+    syncLines(nextLines);
   };
 
   const handleScan = () => {
@@ -394,10 +408,39 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
     { title: '数量', dataIndex: 'quantity', width: 80, align: 'right', render: (value) => value ?? 0 },
     { title: '公司', dataIndex: 'company', width: 150 },
     { title: '板块', dataIndex: 'plate', width: 110 },
-    { title: '资产标记', dataIndex: 'assetMark', width: 120, render: (value) => value || '-' },
+    {
+      title: '资产标记',
+      dataIndex: 'assetMark',
+      width: 140,
+      render: (value, asset) => waiting && asset.moveStatus === '待接收'
+        ? <Select
+          className="w-full"
+          value={value || undefined}
+          allowClear
+          placeholder="请选择"
+          options={assetMarkOptions}
+          onChange={(nextValue) => updateReceiveField(asset.id, 'assetMark', nextValue || '')}
+        />
+        : value || '-',
+    },
+    {
+      title: '接收说明',
+      dataIndex: 'receiveDesc',
+      width: 190,
+      render: (value, asset) => waiting && asset.moveStatus === '待接收'
+        ? <Input
+          value={value || ''}
+          maxLength={60}
+          placeholder="请输入接收说明"
+          onChange={(event) => updateReceiveField(asset.id, 'receiveDesc', event.target.value)}
+        />
+        : value || '-',
+    },
     { title: '启用日期', dataIndex: 'enabledDate', width: 120, render: (value, asset) => value || asset.snapshot?.enabledDate || '-' },
     { title: '资产状态', dataIndex: 'assetStatus', width: 130, render: (value, asset) => <StatusTag value={value || asset.snapshot?.assetStatus || '-'} /> },
     { title: '验证说明', dataIndex: 'verificationDesc', width: 180, render: (value) => value || '-' },
+    { title: '接收仓管员', dataIndex: 'receiver', width: 150, render: (value) => value || '-' },
+    { title: '接收时间', dataIndex: 'receiveTime', width: 170, render: (value) => value || '-' },
     {
       title: '资产验证',
       dataIndex: 'verification',
