@@ -324,7 +324,7 @@ export function getAccountingLostCandidates(options = {}) {
       cardOriginalValue: Number(asset.cardOriginalValue ?? asset.originalValue ?? 0),
       cardNetValue: Number(asset.cardNetValue ?? asset.netValue ?? 0),
       scrapMethod: '非调账', detailScrapMethod: '全部报废', scrapType: '丢失',
-      sourceBusinessType: '丢失资产', sourceBusinessNo: '-',
+      sourceBusinessType: '手动添加资产', sourceBusinessNo: '-',
     };
   });
 }
@@ -369,14 +369,15 @@ export function validateAccountingAssets(form, assets, options = {}) {
     if (asset.scrapMethod === '调账' && asset.scrapType === '丢失') {
       errors.push({ code: 'TRANSFER_CANNOT_BE_LOST', index, message: `${prefix}调账资产的报废类型不得为丢失` });
     }
-    if (asset.scrapType === '丢失') {
-      if (asset.scrapMethod !== '非调账' || asset.sourceBusinessType !== '丢失资产') {
-        errors.push({ code: 'INVALID_LOST_SOURCE', index, message: `${prefix}丢失资产来源或报废方式无效` });
+    const manualAdded = asset.sourceBusinessType === '手动添加资产';
+    if (manualAdded) {
+      if (asset.scrapMethod !== '非调账') {
+        errors.push({ code: 'INVALID_MANUAL_SOURCE', index, message: `${prefix}手动添加资产仅支持非调账账面报废` });
       }
       const priorRecord = ['crossCompany', 'scrap'].flatMap((sourceType) => getScrapPrototypeRecords(sourceType))
         .find((record) => record.documentStatus !== '已驳回'
           && (record.assetsSnapshot || []).some((item) => item?.tagNo === asset.tagNo));
-      if (priorRecord) errors.push({ code: 'LOST_ASSET_HAS_PRIOR_WORKFLOW', index, message: `${prefix}丢失资产已进入其他前置业务` });
+      if (priorRecord) errors.push({ code: 'MANUAL_ASSET_HAS_PRIOR_WORKFLOW', index, message: `${prefix}手动添加资产已进入其他前置业务` });
       const cardAsset = SCRAP_ASSET_POOL.find((item) => item.tagNo === asset.tagNo);
       const cardQuantity = positive(asset.cardQuantity);
       const requestedQuantity = positive(asset.requestedScrapQuantity ?? asset.quantity);
@@ -391,9 +392,12 @@ export function validateAccountingAssets(form, assets, options = {}) {
         || sourceCardQuantity !== cardQuantity || !requestedQuantity || !cardQuantity
         || requestedQuantity > cardQuantity || asset.detailScrapMethod !== expectedMethod
         || Number(asset.originalValue) !== expectedOriginalValue || Number(asset.netValue) !== expectedNetValue) {
-        errors.push({ code: 'INVALID_LOST_ASSET', index, message: `${prefix}丢失资产报废数量或金额与资产卡片不一致` });
+        errors.push({ code: 'INVALID_MANUAL_ASSET', index, message: `${prefix}手动添加资产报废数量或金额与资产卡片不一致` });
       }
     } else {
+      if (asset.scrapType === '丢失') {
+        errors.push({ code: 'INVALID_LOST_SOURCE', index, message: `${prefix}待报废资产不能选择丢失报废类型` });
+      }
       const sourceRecord = sourceRecordFor(asset);
       if (!sourceRecord) {
         errors.push({ code: 'INVALID_SOURCE_BUSINESS', index, message: `${prefix}来源业务未完成、已失效或不包含该资产` });
