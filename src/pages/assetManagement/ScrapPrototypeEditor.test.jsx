@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import ScrapPrototypeEditor from './ScrapPrototypeEditor';
 import { exportScrapPrototypeAssets } from './ScrapPrototypeAssetTable';
-import { getDisposalCandidates, resetScrapPrototypeMemory } from '../../services/scrapPrototypeService';
+import { getAccountingLostCandidates, getDisposalCandidates, resetScrapPrototypeMemory } from '../../services/scrapPrototypeService';
 
 jest.mock('antd', () => {
   const ReactModule = require('react');
@@ -617,3 +617,48 @@ test('机房处置协办节点展示对应凭证并只提供完成办理', () =>
   expect(screen.queryByRole('button', { name: '驳回' })).not.toBeInTheDocument();
 });
 
+
+
+test('账面报废预览只保留指定申请人信息并展示页签Total', () => {
+  resetScrapPrototypeMemory();
+  const accountingActor = { id: 'preview-accountant' };
+  const accountingAuthorizationScopes = [{ company: '114.新媒体', plates: '*' }];
+  const [asset] = getAccountingLostCandidates({
+    company: '114.新媒体',
+    actor: accountingActor,
+    authorizationScopes: accountingAuthorizationScopes,
+  });
+  expect(asset).toBeDefined();
+
+  render(
+    <ScrapPrototypeEditor
+      type="accounting"
+      config={{ title: '账面报废', createLabel: '创建账面报废申请单' }}
+      initialForm={{ ...accountingForm, remark: '预览备注' }}
+      initialAssets={[{ ...asset, accumulatedDepreciation: 100 }]}
+      readOnly={false}
+      approvalPage={false}
+      accountingActor={accountingActor}
+      accountingAuthorizationScopes={accountingAuthorizationScopes}
+      onBack={jest.fn()}
+      onSave={jest.fn()}
+      onApprove={jest.fn()}
+    />,
+  );
+
+  expect(screen.getByDisplayValue('已到报废年限，无法使用，申请报废')).toBeInTheDocument();
+  expect(screen.getByDisplayValue('实物损坏，不可修复，申请报废')).toBeInTheDocument();
+  expect(screen.getByDisplayValue('丢失（已赔偿）')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: '预览' }));
+  expect(screen.getByRole('heading', { name: '账面报废预览' })).toBeInTheDocument();
+  ['申请人', '申请时间', '联系电话', '邮箱', '公司', '部门', '报废单名称', '报废方式', '报废期间', '备注', '附件']
+    .forEach((label) => expect(screen.getByText(label)).toBeInTheDocument());
+  expect(screen.queryByText('办公区')).not.toBeInTheDocument();
+  expect(screen.queryByText('申请单号')).not.toBeInTheDocument();
+  expect(screen.getAllByText('Total：').length).toBeGreaterThanOrEqual(4);
+  expect(screen.getAllByText(/报废数量：/).length).toBeGreaterThanOrEqual(4);
+  expect(screen.getAllByText(/原值合计：/).length).toBeGreaterThanOrEqual(4);
+  expect(screen.getAllByText(/折旧合计：/).length).toBeGreaterThanOrEqual(3);
+  expect(screen.getAllByText(/净值合计：/).length).toBeGreaterThanOrEqual(4);
+});
