@@ -790,7 +790,7 @@ export default function ScrapPrototypeEditor({
   const disposalPreviewTabs = [
     {
       key: 'summary',
-      label: '汇总',
+      label: `汇总（${assets.length}）`,
       children: (
         <>
           <div className="mb-3">{disposalSummaryHeader}</div>
@@ -800,7 +800,7 @@ export default function ScrapPrototypeEditor({
     },
     {
       key: 'detail',
-      label: '明细',
+      label: `明细（${assets.length}）`,
       children: (
         <ScrapPrototypeAssetTable
           type="disposal"
@@ -923,7 +923,6 @@ export default function ScrapPrototypeEditor({
             <span className="whitespace-pre-wrap break-words">{showValue(getAccountingReasonText(kind))}</span>
           </div>
           <Space size={16} wrap className="justify-self-end">
-            <Typography.Text strong>Total：</Typography.Text>
             <Typography.Text>报废数量：{total.quantity}</Typography.Text>
             <Typography.Text>原值合计：{money(total.originalValue)}</Typography.Text>
             <Typography.Text>折旧合计：{money(total.depreciation)}</Typography.Text>
@@ -962,7 +961,6 @@ export default function ScrapPrototypeEditor({
         <>
           <div className="mb-3 flex justify-end">
             <Space size={16} wrap>
-              <Typography.Text strong>Total：</Typography.Text>
               <Typography.Text>报废数量：{accountingAllTotal.quantity}</Typography.Text>
               <Typography.Text>原值合计：{money(accountingAllTotal.originalValue)}</Typography.Text>
               <Typography.Text>净值合计：{money(accountingAllTotal.netValue)}</Typography.Text>
@@ -1233,13 +1231,14 @@ export default function ScrapPrototypeEditor({
       : type === 'scrap'
         ? '报废资产明细'
         : type === 'disposal' && previewView
-          ? '处置资产'
+          ? '处置资产明细'
           : type === 'disposal' && approvalPage
             ? '处置资产汇总'
             : type === 'disposal'
               ? '处置资产明细'
               : '资产明细';
-  const useScrapApprovalCardStyle = (approvalView || previewView) && ['scrap', 'accounting'].includes(type);
+  const useAssetDetailCardStyle = (approvalView || previewView)
+    && (['scrap', 'accounting'].includes(type) || (type === 'disposal' && previewView));
 
   return (
     <div
@@ -1286,15 +1285,15 @@ export default function ScrapPrototypeEditor({
 
       <Card size="small" title={approvalView || previewView ? '申请人信息' : '基本信息'}>
         {type === 'disposal' && previewView ? (
-          <DetailGrid columns={2}>
+          <DetailGrid columns={3}>
             <DetailItem label="申请人">{showValue(form.creator)}</DetailItem>
             <DetailItem label="申请日期">{showValue(form.applicationDate)}</DetailItem>
             <DetailItem label="部门">{showValue(form.department)}</DetailItem>
             <DetailItem label="联系电话">{showValue(form.contactPhone)}</DetailItem>
             <DetailItem label="邮箱" span={2}>{showValue(form.email)}</DetailItem>
-            <DetailItem label="公司">{showValue(form.company)}</DetailItem>
+            <DetailItem label="公司" span={2}>{showValue(form.company)}</DetailItem>
             <DetailItem label="板块">{showValue(disposalPlateDisplay)}</DetailItem>
-            <DetailItem label="处置说明" span={2}>
+            <DetailItem label="处置说明" span={3}>
               <Input.TextArea
                 value={disposalDescription}
                 autoSize={{ minRows: 6, maxRows: 12 }}
@@ -1304,21 +1303,21 @@ export default function ScrapPrototypeEditor({
                 }}
               />
             </DetailItem>
-            <DetailItem label="备注" span={2}>{showValue(form.remark)}</DetailItem>
-            <DetailItem label="附件" span={2}>{showValue(attachmentSummary)}</DetailItem>
+            <DetailItem label="备注" span={3}>{showValue(form.remark)}</DetailItem>
+            <DetailItem label="附件" span={3}>{showValue(attachmentSummary)}</DetailItem>
           </DetailGrid>
         ) : type === 'accounting' && previewView ? (
-          <DetailGrid>
+          <DetailGrid columns={3}>
             <DetailItem label="申请人">{showValue(form.creator)}</DetailItem>
             <DetailItem label="申请时间">{showValue(form.applicationDate)}</DetailItem>
             <DetailItem label="联系电话">{showValue(form.contactPhone)}</DetailItem>
             <DetailItem label="邮箱">{showValue(form.email)}</DetailItem>
-            <DetailItem label="公司">{showValue(form.company)}</DetailItem>
             <DetailItem label="部门">{showValue(form.department)}</DetailItem>
-            <DetailItem label="报废单名称" span={2}>{showValue(form.scrapFormName || accountingFormName)}</DetailItem>
+            <DetailItem label="报废单名称">{showValue(form.scrapFormName || accountingFormName)}</DetailItem>
+            <DetailItem label="公司">{showValue(form.company)}</DetailItem>
             <DetailItem label="报废方式">{showValue(form.scrapMethod)}</DetailItem>
             <DetailItem label="报废期间">{showValue(form.scrapPeriod || accountingScrapPeriod)}</DetailItem>
-            <DetailItem label="备注" span={2}>{showValue(form.remark)}</DetailItem>
+            <DetailItem label="备注" span={3}>{showValue(form.remark)}</DetailItem>
             <DetailItem label="附件" span={3}>{showValue(attachmentSummary)}</DetailItem>
           </DetailGrid>
         ) : approvalView || previewView ? (
@@ -1567,8 +1566,8 @@ export default function ScrapPrototypeEditor({
 
       <Card
         size="small"
-        title={useScrapApprovalCardStyle ? sectionTitle(assetDetailsTitle) : assetDetailsTitle}
-        className={useScrapApprovalCardStyle ? 'shadow-sm' : undefined}
+        title={useAssetDetailCardStyle ? sectionTitle(assetDetailsTitle) : assetDetailsTitle}
+        className={useAssetDetailCardStyle ? 'shadow-sm' : undefined}
         extra={type === 'disposal' && previewView
           ? null
           : type === 'disposal'
