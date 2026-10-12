@@ -1,3 +1,4 @@
+import { getInventoryPhotoSnapshot } from './inventoryPhotoRules';
 import React, { useMemo, useRef, useState } from 'react';
 import { Button, Card, DatePicker, Input, Modal, Radio, Select, Space, Statistic, Table, Tooltip, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
@@ -62,7 +63,9 @@ function toImportedPhoto(record) {
 }
 
 export function buildReviewRows(projectNo, allowedRanges) {
-  const rows = IMAGE_REVIEW_ROWS
+  const snapshot = getInventoryPhotoSnapshot(projectNo);
+  const sourceAssets = snapshot ? snapshot.assets : ASSET_ROWS;
+  const rows = (snapshot ? [] : IMAGE_REVIEW_ROWS)
     .filter((row) => row.asset.inventoryRange !== '机房' && isInventoryRangeAllowed(row.asset, allowedRanges))
     .map((row) => ({
       ...row,
@@ -83,8 +86,8 @@ export function buildReviewRows(projectNo, allowedRanges) {
 
   importedByTag.forEach((records, assetTag) => {
     const existing = rowByTag.get(assetTag);
-    const asset = existing?.asset || ASSET_ROWS.find((row) => String(row.assetTag || '') === assetTag);
-    if (!asset || asset.inventoryRange === '机房' || !isInventoryRangeAllowed(asset, allowedRanges)) return;
+    const asset = existing?.asset || sourceAssets.find((row) => String(row.assetTag || '') === assetTag);
+    if (!asset || (snapshot && !asset.needPhoto) || asset.inventoryRange === '机房' || !isInventoryRangeAllowed(asset, allowedRanges)) return;
 
     const overall = toImportedPhoto(records.find((record) => record.photoType === 'overall'));
     const partial = toImportedPhoto(records.find((record) => record.photoType === 'partial'));
@@ -114,7 +117,8 @@ export function buildReviewRows(projectNo, allowedRanges) {
   getPhotoReviewResults(projectNo).forEach((entry) => {
     const reviewStatus = { 审核中: '待审核', 已盘: '审核通过', 未盘: '审核不通过' }[entry.status];
     if (!reviewStatus) return;
-    const sourceAsset = ASSET_ROWS.find((asset) => asset.assetTag === entry.assetTag);
+    const sourceAsset = sourceAssets.find((asset) => asset.assetTag === entry.assetTag);
+    if (snapshot && (!sourceAsset || !sourceAsset.needPhoto)) return;
     const range = entry.inventoryRange ?? sourceAsset?.inventoryRange;
     if (!range || range === '机房' || !allowedRanges.includes(range)) return;
     const existing = rowByTag.get(entry.assetTag);

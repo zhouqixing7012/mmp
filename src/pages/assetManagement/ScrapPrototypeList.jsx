@@ -450,7 +450,7 @@ export default function ScrapPrototypeList({
           title={lookupKey === 'company' ? (type === 'crossCompany' ? '选择原公司' : '选择公司') : '选择制单人'}
           dataSource={lookupKey === 'company'
             ? companyLookupRecords
-            : creatorLookupRecords
+            : creatorLookupRecords}
           searchFields={lookupKey === 'company'
             ? [
                 { label: '公司编码', name: 'code', dataIndex: 'code' },

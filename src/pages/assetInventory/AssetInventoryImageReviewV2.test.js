@@ -1,3 +1,4 @@
+import { saveInventoryPhotoSnapshot } from './inventoryPhotoRules';
 jest.mock('antd', () => ({}));
 import { buildReviewRows } from './AssetInventoryImageReviewV2';
 import { savePhotoReviewResult } from './inventoryPhotoReviewStore';
@@ -24,4 +25,13 @@ test('审核完成后再次进入仍显示结论，不重新变成待审核', ()
   const row = buildReviewRows('P1', ['公共']).find(row => row.asset.assetTag === 'TEST-public');
   expect(row.reviewStatus).toBe('审核通过');
   expect(row.asset.inventoryStatus).toBe('已盘');
+});
+
+test('快照项目不混入预置审核记录，非必传与范围外记录不进入审核', () => {
+  saveInventoryPhotoSnapshot({ projectNo: 'PHOTO-REVIEW', photoConfig: { enabled: true, rules: [] } }, [
+    { key: 'need', assetTag: 'NEED', inventoryRange: '公共', needPhoto: true },
+    { key: 'optional', assetTag: 'OPTIONAL', inventoryRange: '公共', needPhoto: false },
+  ]);
+  ['NEED', 'OPTIONAL', 'OUTSIDE'].forEach(assetTag => savePhotoReviewResult('PHOTO-REVIEW', { assetTag, inventoryRange: '公共', status: '审核中' }));
+  expect(buildReviewRows('PHOTO-REVIEW', ['公共']).map(row => row.asset.assetTag)).toEqual(['NEED']);
 });

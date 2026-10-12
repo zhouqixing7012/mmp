@@ -245,3 +245,12 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 
 
 盘点 DOCX 三方复核入口：[2026-10-06 报告](docs/asset-inventory/资产盘点-DOCX三方对抗测试-20261006.md)。`inventoryProjectPlanMock` 明确项目样本归属；`inventoryDefaultPlans` 管理默认分组；`inventoryProgressModel` 统一进度统计；`inventoryLocationPhotoRules` 统一位置变更照片前置条件。
+
+## 资产盘点图片规则（2026-10-12）
+
+| 文件 | 职责 |
+|---|---|
+| `src/pages/assetInventory/InventoryPhotoRuleEditor.jsx` | 编辑项目图片开关、筛选条件与上传百分比 |
+| `src/pages/assetInventory/inventoryPhotoRules.js` | 按规则独立抽取、按标签合并，保存配置与固定快照结果 |
+
+创建项目 → 图片规则编辑 → 生成快照抽取并持久化 → 快照/计划读取统一标记 → 移动端必传校验 → 非机房人工审核；机房仅保存照片、不进入人工审核。

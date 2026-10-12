@@ -239,3 +239,5 @@ PC位置变更：移动端公共/复盘资产扫码提交地点变化后，资�
 
 
 盘点 DOCX 三方复核入口：[2026-10-06 报告](docs/asset-inventory/资产盘点-DOCX三方对抗测试-20261006.md)。`inventoryProjectPlanMock` 明确项目样本归属；`inventoryDefaultPlans` 管理默认分组；`inventoryProgressModel` 统一进度统计；`inventoryLocationPhotoRules` 统一位置变更照片前置条件。
+
+图片上传规则在项目中保存；生成快照时按每条规则分别随机抽取，条数四舍五入，按资产标签号合并去重。快照、计划、移动端和图片审核使用相同标记，重新进入不重新抽取。相机与照片仍为前端演示，不代表真实上传服务已接入。

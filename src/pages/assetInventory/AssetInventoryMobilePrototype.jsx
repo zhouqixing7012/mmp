@@ -1,3 +1,4 @@
+import { getInventoryPhotoSnapshot } from './inventoryPhotoRules';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -122,7 +123,17 @@ function assetLocation(asset) {
 function loadProjectAssets(projectNo) {
   const ledger = new Map(getAssetMaintenanceRows().map((asset) => [asset.tag, asset]));
   const results = getMobileInventoryResults(projectNo);
-  return DEMO_ASSETS.map((asset) => {
+  const photoSnapshot = getInventoryPhotoSnapshot(projectNo);
+  const source = photoSnapshot ? photoSnapshot.assets.map(asset => ({
+    ...DEMO_ASSETS.find(row => row.tagNo === asset.assetTag),
+    id: DEMO_ASSETS.find(row => row.tagNo === asset.assetTag)?.id || asset.key,
+    tagNo: asset.assetTag, assetDesc: asset.description, serialNo: asset.serialNo, quantity: asset.quantity,
+    area: asset.inventoryRange, owner: asset.owner, ownerNo: asset.ownerNo,
+    usageStatus: asset.useStatus, category: asset.subCategory,
+    address: [asset.city, asset.building, asset.floor].join('-'),
+    status: asset.executeInventory ? asset.inventoryStatus : '未执行盘点', photoRequired: asset.needPhoto,
+  })) : DEMO_ASSETS;
+  return source.map((asset) => {
     const row = ledger.get(asset.tagNo);
     return { ...asset, lossReported: asset.status === '报失', ...results[asset.tagNo], address: row ? [row.city, row.building, row.floor].join('-') : asset.address };
   });
@@ -288,7 +299,7 @@ export default function AssetInventoryMobilePrototype() {
   const [assets, setAssets] = useState(() => loadProjectAssets(previewProjectNo));
   useEffect(() => {
     const results = new Map(getPhotoReviewResults(previewProjectNo).map((entry) => [entry.assetTag, entry]));
-    setAssets((current) => current.map((asset) => results.has(asset.tagNo)
+    setAssets(loadProjectAssets(previewProjectNo).map((asset) => results.has(asset.tagNo)
       ? { ...asset, status: results.get(asset.tagNo).status }
       : asset));
   }, [previewProjectNo, location.key]);

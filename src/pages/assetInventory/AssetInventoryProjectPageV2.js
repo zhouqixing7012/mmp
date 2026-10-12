@@ -1,7 +1,6 @@
-import { OwnerLevelSelect } from '../../components/AssetQueryControls';
+import { applyInventoryPhotoSnapshot, saveInventoryPhotoSnapshot } from './inventoryPhotoRules';
 import React, { useEffect, useRef, useState } from 'react';
-import { Card, InputNumber, Modal, Select, Switch, Table, Typography } from 'antd';
-import { createPortal } from 'react-dom';
+import { Modal } from 'antd';
 import AssetInventoryProjectPage from './AssetInventoryProjectPage';
 import AssetInventoryCustomPlanBuilder from './AssetInventoryCustomPlanBuilder';
 import AssetInventoryProjectListV2 from './AssetInventoryProjectListV2';
@@ -11,7 +10,7 @@ import AssetInventoryImageReviewV2 from './AssetInventoryImageReviewV2';
 import AssetInventoryProgressV2 from './AssetInventoryProgressV2';
 import AssetInventorySnapshotDetailV2 from './AssetInventorySnapshotDetailV2';
 import { AssetInventoryPlanAssetListV2 } from './AssetInventoryPlanViewsV2';
-import { ASSET_ROWS, IMAGE_RULE_ROWS, PROJECT_INFO, PROJECT_ROWS } from './mockData';
+import { ASSET_ROWS, PROJECT_INFO, PROJECT_ROWS } from './mockData';
 import { getMobileInventoryResults } from './inventoryMobileResultStore';
 import { getPhotoReviewResults } from './inventoryPhotoReviewStore';
 import { mergePlanInventoryResult } from './inventoryPlanExport';
@@ -22,31 +21,6 @@ import { getInventoryLocationChangeRequests } from './inventoryLocationChangeSto
 import { getImportedInventoryPhotos } from './inventoryPhotoImportStore';
 import { readDemoData } from '../../services/demoStorage';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
-
-function CardTitle({ children }) {
-  return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>;
-}
-
-function ImageUploadRuleEditorV2() {
-  const { allowedRanges } = useAssetInventoryVariant();
-  const [rows, setRows] = useState(() => IMAGE_RULE_ROWS.filter((row) => allowedRanges.includes(row.range)).map((row) => ({ ...row, uploadEnabled: false })));
-  const multiOptions = (values) => values.map((value) => ({ label: value, value }));
-  const changeRow = (key, field, value) => setRows((current) => current.map((row) => row.key === key ? { ...row, [field]: value } : row));
-  const columns = [
-    { title: '盘点范围', dataIndex: 'range', width: 100, fixed: 'left', render: (value) => <Typography.Text>{value || '-'}</Typography.Text> },
-    { title: '资产责任人职级', dataIndex: 'ownerLevel', width: 170, render: (value, row) => <OwnerLevelSelect rows={ASSET_ROWS} disabled={!row.uploadEnabled} value={value} onChange={(next) => changeRow(row.key, 'ownerLevel', next)} /> },
-    { title: '部门', dataIndex: 'department', width: 170, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '集团总部.MIS部', '搜狐媒体.智能平台'])} onChange={(next) => changeRow(row.key, 'department', next)} /> },
-    { title: '资产类别', dataIndex: 'category', width: 180, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', 'SERVER', 'NET EQUIPMENT', 'NOTEBOOK', 'MONITOR'])} onChange={(next) => changeRow(row.key, 'category', next)} /> },
-    { title: '资产状态', dataIndex: 'assetStatus', width: 160, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '在用', '在库'])} onChange={(next) => changeRow(row.key, 'assetStatus', next)} /> },
-    { title: '盘点组织', dataIndex: 'organization', width: 150, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['集团'])} onChange={(next) => changeRow(row.key, 'organization', next)} /> },
-    { title: 'City', dataIndex: 'city', width: 150, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['北京市'])} onChange={(next) => changeRow(row.key, 'city', next)} /> },
-    { title: 'Building', dataIndex: 'building', width: 180, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', '融科资讯中心D座', '搜狐媒体大厦'])} onChange={(next) => changeRow(row.key, 'building', next)} /> },
-    { title: 'Floor', dataIndex: 'floor', width: 150, render: (value, row) => <Select disabled={!row.uploadEnabled} mode="multiple" value={value} className="w-full" options={multiOptions(['全部', 'B2', '6F', '8F'])} onChange={(next) => changeRow(row.key, 'floor', next)} /> },
-    { title: '上传百分比（%）', dataIndex: 'percent', width: 140, render: (value, row) => <InputNumber disabled={!row.uploadEnabled} min={0} max={100} value={value} className="w-full" onChange={(next) => changeRow(row.key, 'percent', next ?? 100)} /> },
-    { title: '是否上传图片', width: 120, fixed: 'right', align: 'center', render: (_, row) => <Switch checked={Boolean(row.uploadEnabled)} onChange={(checked) => changeRow(row.key, 'uploadEnabled', checked)} /> },
-  ];
-  return <Card size="small" title={<CardTitle>图片上传规则配置</CardTitle>}><Table rowKey="key" size="small" bordered columns={columns} dataSource={rows} scroll={{ x: 1800 }} pagination={false} /></Card>;
-}
 
 function getCardTitle(card) {
   return card.querySelector('.ant-card-head-title')?.textContent?.trim() || '';
@@ -101,7 +75,6 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const baseContainerRef = useRef(null);
   const [basePageTitle, setBasePageTitle] = useState('盘点项目');
   const [creator, setCreator] = useState(INVENTORY_CREATORS[0].value);
-  const [imageRuleSlot, setImageRuleSlot] = useState(null);
   const [snapshotOpen, setSnapshotOpen] = useState(false);
   const [snapshotEditRequest, setSnapshotEditRequest] = useState(null);
   const [customBuilderOpen, setCustomBuilderOpen] = useState(false);
@@ -131,7 +104,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     && isSnapshotExecutionAsset(asset, planProject));
   // 地点申请取项目范围母集，不能被执行抽样或计划分配缩小；旧快照只有执行清单时按其明确范围。
   const locationProjectAssetKeys = planProject.scopeSnapshotAssetKeys ?? planProject.snapshotAssetKeys;
-  const locationProjectAssets = ASSET_ROWS.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)
+  const locationProjectAssets = applyInventoryPhotoSnapshot(planProject.projectNo, ASSET_ROWS).filter(asset => isInventoryRangeAllowed(asset, allowedRanges)
     && (!locationProjectAssetKeys || locationProjectAssetKeys.includes(asset.key)));
   const projectSessions = useRef(new Map());
   const switchProjectSession = (project) => {
@@ -143,6 +116,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       session = { project: resolveProjectFromRow(project), rows, assets,
         assetMap: Object.fromEntries(rows.flatMap(row => (row.assetKeys || []).map(key => [key, row.planNo]))) };
     }
+    session.assets = applyInventoryPhotoSnapshot(project.projectNo, session.assets);
     const nextProject = { ...session.project, status: projectStatusOverrides[project.projectNo] || session.project.status };
     setPlanRows(session.rows); setAssetPlanMap(session.assetMap); setPlanAssets(session.assets); setPlanProject(nextProject);
     return { ...session, project: nextProject };
@@ -410,7 +384,6 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     const removeImageRuleSlot = () => {
       const existing = base.querySelector('[data-asset-inventory-v2-image-slot="true"]');
       if (existing) existing.remove();
-      setImageRuleSlot(null);
     };
     const normalizeDraftLabels = () => {
       base.querySelectorAll('.ant-tag, .ant-select-selection-item').forEach((element) => {
@@ -439,7 +412,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       if (isCreateView) {
         baseCards.forEach((card) => {
           const title = getCardTitle(card);
-          if (title !== '盘点规则' && title !== '图片上传规则配置') return;
+          if (title !== '盘点规则') return;
           hideVariantElement(card.closest('.ant-space-item') || card);
         });
         const assetRangeCard = baseCards.find((card) => getCardTitle(card) === '盘点资产范围明细');
@@ -450,15 +423,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
           assetRangeCard.querySelectorAll('tbody tr').forEach((row) => {
             if (disallowedAssetTags.some((tag) => row.textContent?.includes(tag))) hideVariantElement(row);
           });
-          const rangeItem = assetRangeCard.closest('.ant-space-item') || assetRangeCard;
-          let slot = base.querySelector('[data-asset-inventory-v2-image-slot="true"]');
-          if (!slot) {
-            slot = document.createElement('div');
-            slot.className = rangeItem.className || 'ant-space-item';
-            slot.dataset.assetInventoryV2ImageSlot = 'true';
-            rangeItem.parentNode?.insertBefore(slot, rangeItem.nextSibling);
-          }
-          setImageRuleSlot((current) => current === slot ? current : slot);
+
         }
         return;
       }
@@ -544,6 +509,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       project={snapshotProject}
       assets={planAssets.map(asset => mergePlanInventoryResult({ ...asset, planNo: assetPlanMap[asset.key] || '-' }, getMobileInventoryResults(snapshotProject.projectNo)[asset.assetTag], getPhotoReviewResults(snapshotProject.projectNo).find(review => review.assetTag === asset.assetTag)))}
       onSnapshotRowsChange={(execution, notExecution) => {
+        saveInventoryPhotoSnapshot(snapshotProject, [...execution.map(asset => ({ ...asset, executeInventory: true })), ...notExecution.map(asset => ({ ...asset, executeInventory: false }))]);
         const replacements = new Map([...execution, ...notExecution].map(asset => [asset.key, asset]));
         setPlanAssets(current => current.map(asset => replacements.get(asset.key) || asset));
         setPlanProject(current => ({ ...current, snapshotAssetKeys: execution.map(asset => asset.key), scopeSnapshotAssetKeys: [...execution, ...notExecution].map(asset => asset.key) }));
@@ -566,13 +532,11 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       setPlanProject(project);
       setPlanRows([]);
       setAssetPlanMap({});
-      const selected = new Set(project.snapshotAssetKeys || []);
-      setPlanAssets(ASSET_ROWS.map((asset) => selected.has(asset.key) ? {
+      setPlanAssets(applyInventoryPhotoSnapshot(project.projectNo, ASSET_ROWS).map((asset) => ({
         ...asset, inventoryStatus: '未盘', counter: '-', inventoryDate: '-',
         inventoryNote: '-', importMode: '-',
-      } : { ...asset }));
+      })));
       setSnapshotOpen(true);
     }} /></div>
-    {!overlayOpen && imageRuleSlot ? createPortal(<ImageUploadRuleEditorV2 />, imageRuleSlot) : null}
   </div>;
 }

@@ -7,6 +7,8 @@ import { savePhotoReviewResult } from './inventoryPhotoReviewStore';
 import { getMobileInventoryResults } from './inventoryMobileResultStore';
 import { INVENTORY_MOBILE_ASSETS } from '../../mock/inventoryMobileMock';
 import { getPhotoReviewResults } from './inventoryPhotoReviewStore';
+import { saveInventoryPhotoSnapshot } from './inventoryPhotoRules';
+import { buildReviewRows } from './AssetInventoryImageReviewV2';
 
 let mockLocationState = {};
 const mockWarning = jest.fn();
@@ -36,6 +38,30 @@ describe('AssetInventoryMobilePrototype', () => {
     fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
     fireEvent.click(screen.getByRole('button', { name: '扫描本人资产' }));
   };
+
+  test.each([false, true])('移动扫码按快照照片标记提交，并同步人工审核：%s', needPhoto => {
+    const asset = INVENTORY_MOBILE_ASSETS[0];
+    mockLocationState = { projectNo: 'PHOTO-MOBILE', projectType: '初盘', scopeRanges: ['员工'] };
+    saveInventoryPhotoSnapshot({ projectNo: 'PHOTO-MOBILE', photoConfig: { enabled: needPhoto, rules: [] } }, [{
+      key: 'photo-asset', assetTag: asset.tagNo, description: asset.assetDesc, serialNo: asset.serialNo,
+      inventoryRange: '员工', owner: asset.owner, ownerNo: asset.ownerNo, quantity: 1,
+      useStatus: asset.usageStatus, subCategory: asset.category, inventoryStatus: '未盘',
+      city: '北京市', building: '搜狐媒体大厦', floor: '9层', executeInventory: true, needPhoto,
+    }]);
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: '开始盘点' }));
+    scanMine();
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    if (needPhoto) {
+      expect(mockWarning).toHaveBeenCalledWith('请先拍摄并上传必需的照片，再提交盘点');
+      screen.getAllByRole('button', { name: '拍照' }).forEach(button => fireEvent.click(button));
+      fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    } else {
+      expect(screen.queryByText('上传图片')).not.toBeInTheDocument();
+    }
+    expect(getMobileInventoryResults('PHOTO-MOBILE')[asset.tagNo].status).toBe(needPhoto ? '审核中' : '已盘');
+    expect(buildReviewRows('PHOTO-MOBILE', ['员工'])).toHaveLength(needPhoto ? 1 : 0);
+  });
 
   test('模拟本人和他人资产按责任人身份选择，不交换结果', () => {
     render(<AssetInventoryMobilePrototype />);

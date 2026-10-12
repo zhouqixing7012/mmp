@@ -1,3 +1,5 @@
+import InventoryPhotoRuleEditor from './InventoryPhotoRuleEditor';
+import { selectInventoryPhotoAssets, saveInventoryPhotoSnapshot, getInventoryPhotoSnapshot, saveInventoryPhotoConfig, getInventoryPhotoConfig } from './inventoryPhotoRules';
 import { AssetPersonSelect, OwnerLevelSelect, formatAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -928,6 +930,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   const filteredScopeAssets = scopeAssets.filter((asset) =>
     String(asset.assetTag || '').includes(scopeAssetFilter.assetTag.trim()) && matchesQuerySelection(asset.owner, scopeAssetFilter.owner) && matchesQuerySelection(asset.ownerLevel, scopeAssetFilter.ownerLevel));
   const [assetPreviewOpen, setAssetPreviewOpen] = useState(false);
+  const [photoConfig, setPhotoConfig] = useState(() => initialProject?.photoConfig || getInventoryPhotoConfig(project.projectNo) || getInventoryPhotoSnapshot(project.projectNo)?.config || { enabled: false, rules: IMAGE_RULE_ROWS.filter(row => allowedRanges.includes(row.range)).map(row => ({ ...row })) });
 
   const handleSave = () => {
     if (!initialProject && !allowedProjectTypes(creator).includes(project.projectType)) {
@@ -944,6 +947,9 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     }
     const dateBlockReason = inventoryProjectDateBlockReason(project.startDate, project.endDate);
     if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
+    try { saveInventoryPhotoConfig(project.projectNo, photoConfig); }
+    catch (error) { messageApi.warning(error.message); return; }
+    setProject(current => ({ ...current, photoConfig }));
     messageApi.success('盘点项目已保存为暂存状态');
   };
 
@@ -962,6 +968,9 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
       messageApi.warning('请先生成至少一条盘点范围明细');
       return;
     }
+    let photoAssets;
+    try { photoAssets = selectInventoryPhotoAssets(scopeAssets, photoConfig.rules, photoConfig.enabled); }
+    catch (error) { messageApi.warning(error.message); return; }
     const sampled = selectReplaySnapshotAssets(scopeAssets.filter(asset => asset.executeInventory), project);
     const nextProject = {
       ...project,
@@ -969,9 +978,12 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
       scopeRemovedAssetKeys: removedAssetKeys,
       snapshotAssetKeys: sampled.assets.map((asset) => asset.key),
       mandatoryAssetKeys: sampled.mandatoryAssetKeys,
+      photoConfig,
       status: '快照生成',
       snapshotTime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
     };
+    saveInventoryPhotoConfig(project.projectNo, photoConfig);
+    saveInventoryPhotoSnapshot(nextProject, photoAssets.map(asset => ({ ...asset, executeInventory: nextProject.snapshotAssetKeys.includes(asset.key), inventoryStatus: '未盘' })));
     setProject(nextProject);
     messageApi.success('盘点快照已生成');
     onGenerated(nextProject);
@@ -984,7 +996,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
 
       <ProjectBasicInfoEditor project={project} setProject={setProject} creator={creator} isEditing={Boolean(initialProject)} />
       <InventoryRuleEditor messageApi={messageApi} />
-      <ImageUploadRuleEditor />
+      <InventoryPhotoRuleEditor config={photoConfig} onChange={setPhotoConfig} assets={scopeAssets} ranges={allowedRanges} />
       <ScopeSelector
         projectType={project.projectType}
         scopeRows={scopeRows}
