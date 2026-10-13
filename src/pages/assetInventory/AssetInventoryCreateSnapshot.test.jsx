@@ -33,6 +33,7 @@ test('生成快照写入配置抽取标记，关闭上传清除预置标记', ()
   const view = render(<CreateProjectView creator="213852-孙志强"
     initialProject={{ ...PROJECT_INFO, projectNo: 'PHOTO1', photoConfig }}
     scopeAssetKeys={chosen.map(asset => asset.key)} onBack={() => {}} onGenerated={onGenerated} />);
+  expect(screen.getByText('盘点资产范围明细').compareDocumentPosition(screen.getByText('图片上传规则配置')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
   expect(onGenerated.mock.calls[0][0].photoConfig).toEqual(normalizeInventoryPhotoConfig(photoConfig));
   expect(getInventoryPhotoSnapshot('PHOTO1').assets.map(asset => asset.needPhoto)).toEqual(chosen.map(asset => asset.inventoryRange === chosen[0].inventoryRange));

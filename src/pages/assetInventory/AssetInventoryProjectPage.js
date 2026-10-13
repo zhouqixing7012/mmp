@@ -996,7 +996,6 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
 
       <ProjectBasicInfoEditor project={project} setProject={setProject} creator={creator} isEditing={Boolean(initialProject)} />
       <InventoryRuleEditor messageApi={messageApi} />
-      <InventoryPhotoRuleEditor config={photoConfig} onChange={setPhotoConfig} assets={scopeAssets} ranges={allowedRanges} />
       <ScopeSelector
         projectType={project.projectType}
         scopeRows={scopeRows}
@@ -1040,6 +1039,8 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
         </div>
         <AssetTable rows={filteredScopeAssets} rowSelection={{ selectedRowKeys: selectedAssets, onChange: setSelectedAssets }} />
       </Card>
+
+      <InventoryPhotoRuleEditor config={photoConfig} onChange={setPhotoConfig} />
 
       <div className="flex justify-center gap-3 pb-2">
         <Button type="primary" icon={<Save size={14} />} onClick={handleSave}>保存</Button>
