@@ -4,9 +4,17 @@ import { readDemoData, writeDemoData } from '../../services/demoStorage';
 const storageKey = (projectNo) => `asset-inventory-photo-snapshot:${projectNo}`;
 const fields = { ownerLevel: 'ownerLevel', department: 'ownerDept', assetStatus: 'useStatus', organization: 'organization', city: 'city', building: 'building', floor: 'floor' };
 
+// 将旧总开关配置明确迁移为各行开关，不改变已经生成的快照。
+export function normalizeInventoryPhotoConfig(config) {
+  return { rules: config.rules.map(rule => ({
+    ...rule,
+    uploadEnabled: typeof rule.uploadEnabled === 'boolean' ? rule.uploadEnabled : Boolean(config.enabled),
+  })) };
+}
+
 export function validateInventoryPhotoConfig(config) {
-  if (!config.enabled) return;
-  config.rules.forEach(rule => {
+  normalizeInventoryPhotoConfig(config).rules.forEach(rule => {
+    if (!rule.uploadEnabled) return;
     if (rule.percent === null || rule.percent === '' || !Number.isFinite(Number(rule.percent)) || Number(rule.percent) < 0 || Number(rule.percent) > 100) {
       throw new Error('请填写0～100的图片上传百分比');
     }
@@ -15,11 +23,12 @@ export function validateInventoryPhotoConfig(config) {
 
 export function saveInventoryPhotoConfig(projectNo, config) {
   validateInventoryPhotoConfig(config);
-  return writeDemoData(`${storageKey(projectNo)}:config`, config);
+  return writeDemoData(`${storageKey(projectNo)}:config`, normalizeInventoryPhotoConfig(config));
 }
 
 export function getInventoryPhotoConfig(projectNo) {
-  return readDemoData(`${storageKey(projectNo)}:config`, null);
+  const config = readDemoData(`${storageKey(projectNo)}:config`, null);
+  return config ? normalizeInventoryPhotoConfig(config) : null;
 }
 
 export function matchesInventoryPhotoRule(asset, rule) {
@@ -29,12 +38,14 @@ export function matchesInventoryPhotoRule(asset, rule) {
 }
 
 // 每条规则独立使用 Fisher–Yates 抽取，按标签号合并，快照生成后固定结果。
-export function selectInventoryPhotoAssets(assets, rules, enabled, random = Math.random) {
+export function selectInventoryPhotoAssets(assets, rules, legacyEnabled = true, random = Math.random) {
   const unique = [...new Map(assets.map(asset => [asset.assetTag, asset])).values()];
   if (unique.some(asset => !asset.assetTag)) throw new Error('图片规则资产缺少标签号');
-  validateInventoryPhotoConfig({ enabled, rules });
+  const config = normalizeInventoryPhotoConfig({ enabled: legacyEnabled, rules });
+  validateInventoryPhotoConfig(config);
   const selected = new Set();
-  if (enabled) rules.forEach(rule => {
+  config.rules.forEach(rule => {
+    if (!rule.uploadEnabled) return;
     const matches = unique.filter(asset => matchesInventoryPhotoRule(asset, rule));
     const count = Math.round(matches.length * Number(rule.percent) / 100);
     for (let i = 0; i < count; i += 1) {

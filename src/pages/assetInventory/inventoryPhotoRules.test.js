@@ -1,4 +1,4 @@
-import { applyInventoryPhotoSnapshot, getInventoryPhotoConfig, getInventoryPhotoSnapshot, matchesInventoryPhotoRule, saveInventoryPhotoConfig, saveInventoryPhotoSnapshot, selectInventoryPhotoAssets } from './inventoryPhotoRules';
+import { applyInventoryPhotoSnapshot, getInventoryPhotoConfig, getInventoryPhotoSnapshot, matchesInventoryPhotoRule, normalizeInventoryPhotoConfig, saveInventoryPhotoConfig, saveInventoryPhotoSnapshot, selectInventoryPhotoAssets } from './inventoryPhotoRules';
 
 const assets = Array.from({ length: 5 }, (_, i) => ({ key: `a${i}`, assetTag: `T${i}`, inventoryRange: '员工', city: i < 3 ? '北京' : '上海', ownerDept: '产品部', category: 'NOTEBOOK', subCategory: '电脑', useStatus: '在用', quantity: 10, needPhoto: true }));
 const rule = (overrides = {}) => ({ range: '员工', percent: 50, ...overrides });
@@ -43,6 +43,31 @@ test('保存配置可重读，修改配置不改变已有快照的抽取结果',
   const chosen = selectInventoryPhotoAssets(assets, config.rules, true, () => 0);
   saveInventoryPhotoSnapshot({ projectNo: 'CP1', photoConfig: config }, chosen);
   saveInventoryPhotoConfig('CP1', { enabled: false, rules: [] });
-  expect(getInventoryPhotoConfig('CP1')).toEqual({ enabled: false, rules: [] });
+  expect(getInventoryPhotoConfig('CP1')).toEqual({ rules: [] });
   expect(getInventoryPhotoSnapshot('CP1').assets).toEqual(chosen);
+});
+
+test('独立开关只抽开启行，关闭行的空比例不阻断，也不消除其他行结果', () => {
+  const rules = [rule({ key: 'bj', city: ['北京'], uploadEnabled: true, percent: 100 }), rule({ key: 'sh', city: ['上海'], uploadEnabled: false, percent: null })];
+  expect(selectInventoryPhotoAssets(assets, rules).filter(asset => asset.needPhoto).map(asset => asset.assetTag)).toEqual(['T0', 'T1', 'T2']);
+  const next = rules.map(row => ({ ...row, uploadEnabled: !row.uploadEnabled, percent: 100 }));
+  expect(selectInventoryPhotoAssets(assets, next).filter(asset => asset.needPhoto).map(asset => asset.assetTag)).toEqual(['T3', 'T4']);
+  expect(selectInventoryPhotoAssets(assets, next.map(row => ({ ...row, uploadEnabled: false }))).some(asset => asset.needPhoto)).toBe(false);
+  expect(() => selectInventoryPhotoAssets(assets, [{ ...rules[1], uploadEnabled: true }])).toThrow('图片上传百分比');
+});
+
+test('保存重开保留每行开关，已有快照不受后续配置影响', () => {
+  const config = { rules: [rule({ key: 'on', city: ['北京'], uploadEnabled: true, percent: 100 }), rule({ key: 'off', city: ['上海'], uploadEnabled: false, percent: null })] };
+  saveInventoryPhotoConfig('ROWS', config);
+  expect(getInventoryPhotoConfig('ROWS')).toEqual(config);
+  const chosen = selectInventoryPhotoAssets(assets, config.rules);
+  saveInventoryPhotoSnapshot({ projectNo: 'ROWS', photoConfig: config }, chosen);
+  saveInventoryPhotoConfig('ROWS', { rules: config.rules.map(row => ({ ...row, uploadEnabled: false })) });
+  expect(getInventoryPhotoSnapshot('ROWS').assets).toEqual(chosen);
+});
+
+test('旧总开关显式迁移到各行，已有行开关独立生效', () => {
+  expect(normalizeInventoryPhotoConfig({ enabled: true, rules: [rule(), rule()] }).rules.every(row => row.uploadEnabled)).toBe(true);
+  expect(normalizeInventoryPhotoConfig({ enabled: false, rules: [rule(), rule()] }).rules.some(row => row.uploadEnabled)).toBe(false);
+  expect(normalizeInventoryPhotoConfig({ enabled: false, rules: [rule({ uploadEnabled: true })] }).rules[0].uploadEnabled).toBe(true);
 });

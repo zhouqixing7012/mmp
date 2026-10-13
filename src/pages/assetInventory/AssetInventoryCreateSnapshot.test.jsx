@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { CreateProjectView } from './AssetInventoryProjectPage';
 import { ASSET_ROWS, PROJECT_INFO } from './mockData';
-import { getInventoryPhotoSnapshot } from './inventoryPhotoRules';
+import { getInventoryPhotoSnapshot, normalizeInventoryPhotoConfig } from './inventoryPhotoRules';
 
 beforeEach(() => window.localStorage.clear());
 
@@ -34,7 +34,7 @@ test('生成快照写入配置抽取标记，关闭上传清除预置标记', ()
     initialProject={{ ...PROJECT_INFO, projectNo: 'PHOTO1', photoConfig }}
     scopeAssetKeys={chosen.map(asset => asset.key)} onBack={() => {}} onGenerated={onGenerated} />);
   fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
-  expect(onGenerated.mock.calls[0][0].photoConfig).toEqual(photoConfig);
+  expect(onGenerated.mock.calls[0][0].photoConfig).toEqual(normalizeInventoryPhotoConfig(photoConfig));
   expect(getInventoryPhotoSnapshot('PHOTO1').assets.map(asset => asset.needPhoto)).toEqual(chosen.map(asset => asset.inventoryRange === chosen[0].inventoryRange));
   view.unmount();
   render(<CreateProjectView creator="213852-孙志强"

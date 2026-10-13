@@ -1,5 +1,5 @@
 import InventoryPhotoRuleEditor from './InventoryPhotoRuleEditor';
-import { selectInventoryPhotoAssets, saveInventoryPhotoSnapshot, getInventoryPhotoSnapshot, saveInventoryPhotoConfig, getInventoryPhotoConfig } from './inventoryPhotoRules';
+import { selectInventoryPhotoAssets, saveInventoryPhotoSnapshot, getInventoryPhotoSnapshot, saveInventoryPhotoConfig, getInventoryPhotoConfig, normalizeInventoryPhotoConfig } from './inventoryPhotoRules';
 import { AssetPersonSelect, OwnerLevelSelect, formatAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -930,7 +930,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   const filteredScopeAssets = scopeAssets.filter((asset) =>
     String(asset.assetTag || '').includes(scopeAssetFilter.assetTag.trim()) && matchesQuerySelection(asset.owner, scopeAssetFilter.owner) && matchesQuerySelection(asset.ownerLevel, scopeAssetFilter.ownerLevel));
   const [assetPreviewOpen, setAssetPreviewOpen] = useState(false);
-  const [photoConfig, setPhotoConfig] = useState(() => initialProject?.photoConfig || getInventoryPhotoConfig(project.projectNo) || getInventoryPhotoSnapshot(project.projectNo)?.config || { enabled: false, rules: IMAGE_RULE_ROWS.filter(row => allowedRanges.includes(row.range)).map(row => ({ ...row })) });
+  const [photoConfig, setPhotoConfig] = useState(() => normalizeInventoryPhotoConfig(initialProject?.photoConfig || getInventoryPhotoConfig(project.projectNo) || getInventoryPhotoSnapshot(project.projectNo)?.config || { rules: IMAGE_RULE_ROWS.filter(row => allowedRanges.includes(row.range)).map(row => ({ ...row, uploadEnabled: false })) }));
 
   const handleSave = () => {
     if (!initialProject && !allowedProjectTypes(creator).includes(project.projectType)) {
@@ -969,7 +969,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
       return;
     }
     let photoAssets;
-    try { photoAssets = selectInventoryPhotoAssets(scopeAssets, photoConfig.rules, photoConfig.enabled); }
+    try { photoAssets = selectInventoryPhotoAssets(scopeAssets, photoConfig.rules); }
     catch (error) { messageApi.warning(error.message); return; }
     const sampled = selectReplaySnapshotAssets(scopeAssets.filter(asset => asset.executeInventory), project);
     const nextProject = {
