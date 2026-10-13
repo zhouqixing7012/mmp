@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, DatePicker, InputNumber, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Button, Card, DatePicker, InputNumber, Modal, Select, Space, Table, TreeSelect, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import { Eye, Search, Trash2 } from 'lucide-react';
 import {
@@ -12,8 +12,9 @@ import {
 import { ASSET_ROWS, SCOPE_ROWS } from './mockData';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import SectionCardTitle from './SectionCardTitle';
-import { AssetCategorySelect, AssetPersonSelect, AssetValueSelect, OwnerLevelSelect } from '../../components/AssetQueryControls';
+import { AssetCategorySelect, AssetPersonSelect, OwnerLevelSelect } from '../../components/AssetQueryControls';
 import { selectScopeAssets } from './inventoryScopeQuery';
+import { buildInventoryOrganizationTree } from './inventoryOrganizationQuery';
 
 function unique(values) {
   return [...new Set(values.flatMap((value) => Array.isArray(value) ? value : [value]).filter(Boolean).map((value) => String(value).trim()).filter(Boolean))];
@@ -64,8 +65,10 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
   const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const options = useMemo(() => getScheme3InventoryDemoOptions(allowedRanges), [allowedRanges]);
+  const sourceAssets = useMemo(() => ASSET_ROWS.filter(row => isInventoryRangeAllowed(row, allowedRanges)), [allowedRanges]);
+  const organizationTree = useMemo(() => buildInventoryOrganizationTree(sourceAssets), [sourceAssets]);
   const [filters, setFilters] = useState({
-    organization: [], department: [], assetCategory: [], assetStatus: [], warehouse: [],
+    organizationDepartments: [], assetCategory: [], assetStatus: [], warehouse: [],
     city: [], building: [], floor: [], owner: [], ownerLevel: [], enableFrom: '', enableTo: '', ratio: 100, netValueTopPercent: null,
   });
   const [rows, setRows] = useState(() => SCOPE_ROWS.map((row) => ({ ...row })));
@@ -95,12 +98,12 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
   ];
 
   const generate = () => {
-    const matches = selectScopeAssets(ASSET_ROWS.filter((row) => isInventoryRangeAllowed(row, allowedRanges)), filters, projectType);
+    const matches = selectScopeAssets(sourceAssets, filters, projectType);
     if (!matches.length) { messageApi.warning('当前条件下没有可纳入的资产'); return; }
     updateRows((current) => [...current, {
       key: `scope-v3-${Date.now()}`,
-      organization: filters.organization.join('、') || '全部',
-      department: filters.department.join('、') || '全部',
+      organization: [...new Set(matches.map(asset => asset.organization))].join('、') || '全部',
+      department: [...new Set(matches.map(asset => asset.ownerDept))].join('、') || '全部',
       assetCategory: filters.assetCategory.map((value) => value.startsWith('minor:') ? value.slice(6).replace('|', '.') : value.replace('major:', '')).join('、') || '全部',
       assetStatus: filters.assetStatus.join('、') || '全部',
       warehouse: filters.warehouse.join('、') || '全部',
@@ -122,12 +125,8 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
       {contextHolder}
       <div className="grid grid-cols-3 gap-x-6 gap-y-3">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="w-28 shrink-0 text-right text-sm text-gray-600">子公司:</span>
-          <AssetValueSelect rows={ASSET_ROWS} field="organization" multiple value={filters.organization} onChange={(value) => setFilters((current) => ({ ...current, organization: value }))} />
-        </div>
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="w-28 shrink-0 text-right text-sm text-gray-600">部门:</span>
-          <AssetValueSelect rows={ASSET_ROWS} field="ownerDept" multiple value={filters.department} onChange={(value) => setFilters((current) => ({ ...current, department: value }))} />
+          <span className="w-28 shrink-0 text-right text-sm text-gray-600">子公司/部门:</span>
+          <TreeSelect className="w-full" treeData={organizationTree} value={filters.organizationDepartments} onChange={value => setFilters(current => ({ ...current, organizationDepartments: value }))} treeCheckable showCheckedStrategy={TreeSelect.SHOW_PARENT} showSearch treeNodeFilterProp="title" allowClear placeholder="请选择子公司或部门" />
         </div>
         {fields.map(([label, field]) => (
           <div key={field} className="flex items-center gap-2 min-w-0">
