@@ -10,7 +10,7 @@ export const PROGRESS_ASSET_FIELDS = [
   ['NO扫描数据核对差异', 'noScanDiff'], ['未盘说明', 'inventoryNote'], ['是否上传图片', 'needPhoto'],
 ];
 
-export const isUncountedProgressAsset = (asset) => !['已盘', '代盘', '报失'].includes(asset.inventoryStatus);
+export const isUncountedProgressAsset = (asset) => !['已盘', '代盘'].includes(asset.inventoryStatus);
 
 function remainingDays(project, today) {
   if (!project?.endDate) return '-';
@@ -36,13 +36,10 @@ export function buildInventoryProgress(project, allowedRanges, plans, assetsForP
       : asset.executorDepartment ? asset.executorDepartment.split('.').slice(0, 2).join('.') : '-';
     const key = [asset.inventoryRange, asset.organization, department, asset.city].join('::');
     if (!groups.has(key)) groups.set(key, { key, range: asset.inventoryRange, organization: asset.organization, department, city: asset.city,
-      expected: 0, counted: 0, lost: 0, assets: [], supervisor: [], financialSupervisor: [], auditSupervisor: [], remainingDays: remainingDays(project, today) });
+      expected: 0, counted: 0, assets: [], supervisor: [], financialSupervisor: [], auditSupervisor: [], remainingDays: remainingDays(project, today) });
     const row = groups.get(key);
-    const quantity = Number(asset.quantity);
-    if (!Number.isFinite(quantity) || quantity < 0) throw new Error('盘点资产数量不正确');
-    row.expected += quantity;
-    if (['已盘', '代盘'].includes(asset.inventoryStatus)) row.counted += quantity;
-    if (asset.inventoryStatus === '报失') row.lost += quantity;
+    row.expected += 1;
+    if (['已盘', '代盘'].includes(asset.inventoryStatus)) row.counted += 1;
     row.assets.push(asset);
     ['supervisor', 'financialSupervisor', 'auditSupervisor'].forEach((field) => {
       if (asset[field] && asset[field] !== '-' && !row[field].includes(asset[field])) row[field].push(asset[field]);
@@ -50,7 +47,7 @@ export function buildInventoryProgress(project, allowedRanges, plans, assetsForP
   });
   const details = [...groups.values()].map((row) => ({ ...row,
     ...Object.fromEntries(['supervisor', 'financialSupervisor', 'auditSupervisor'].map((field) => [field, row[field].join('、') || '-'])),
-    assetTags: row.assets.map((asset) => asset.assetTag), uncounted: row.expected - row.counted - row.lost,
+    assetTags: row.assets.map((asset) => asset.assetTag), uncounted: row.expected - row.counted,
     progress: row.expected ? Number((row.counted / row.expected * 100).toFixed(1)) : 0,
   }));
   const summary = allowedRanges.map((range) => {
@@ -58,7 +55,7 @@ export function buildInventoryProgress(project, allowedRanges, plans, assetsForP
     const sum = (field) => children.reduce((total, row) => total + row[field], 0);
     const expected = sum('expected'), counted = sum('counted');
     return { key: 'progress-' + range, range, startDate: project?.startDate || '-', endDate: project?.endDate || '-',
-      expected, counted, lost: sum('lost'), uncounted: sum('uncounted'), progress: expected ? Number((counted / expected * 100).toFixed(1)) : 0 };
+      expected, counted, uncounted: sum('uncounted'), progress: expected ? Number((counted / expected * 100).toFixed(1)) : 0 };
   });
   return { assets, details, summary };
 }

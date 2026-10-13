@@ -5,7 +5,14 @@ test('复盘准备通知取启动日与开始前三天中较晚的一天', () =>
   expect(replayPreparationDate('2026-10-10','2026-10-01')).toBe('2026-10-07');
   expect(replayPreparationDate('2026-10-10','2026-10-09')).toBe('2026-10-09');
   expect(replayPreparationDate('2026-10-10','2026-10-10')).toBe('2026-10-10');
-  expect(() => replayPreparationDate('2026-10-10','2026-10-11')).toThrow('不能在盘点开始日之后启动');
+  expect(replayPreparationDate('2026-10-10','2026-10-11')).toBe('2026-10-11');
+});
+
+test('晚启动当天通知员工，通知正文不再使用将来开始的说明', () => {
+  const [notice] = buildReplayPreparationNotices({ projectNo: 'R', projectType: '复盘' },
+    [{ planNo: 'P', startDate: '2026-10-10' }], () => [{ inventoryRange: '员工', owner: '苏伟' }], '2026-10-11');
+  expect(notice.scheduledDate).toBe('2026-10-11');
+  expect(notice.content).toBe('复盘计划已启动，请准备资产。');
 });
 
 test('各计划按自身开始日通知员工，库房公共不加入员工准备通知', () => {

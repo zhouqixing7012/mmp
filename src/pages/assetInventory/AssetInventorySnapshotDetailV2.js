@@ -316,7 +316,7 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
 }
 
 function SnapshotStats({ projectStatus, onOpenPlans, executionRows, notExecutionRows }) {
-  const { total, execution, notExecution, counted, uncounted, lost, rate } = calculateInventorySnapshotStats(executionRows, notExecutionRows);
+  const { total, execution, notExecution, counted, uncounted, rate } = calculateInventorySnapshotStats(executionRows, notExecutionRows);
   const generatedPlan = ['生成盘点计划', '盘点中', '盘点关闭'].includes(projectStatus);
 
   return (
@@ -327,7 +327,6 @@ function SnapshotStats({ projectStatus, onOpenPlans, executionRows, notExecution
         <Statistic title="未执行盘点数量" value={notExecution} />
         {generatedPlan && <Statistic title="已盘数量" value={counted} />}
         {generatedPlan && <Statistic title="未盘数量" value={uncounted} />}
-        {generatedPlan && <Statistic title="盘亏数量" value={lost} />}
         {generatedPlan && <Statistic title="盘到率（%）" value={rate} suffix="%" />}
       </div>
       {generatedPlan && <div className="mt-4 flex justify-end"><Button type="link" onClick={onOpenPlans}>查看计划清单</Button></div>}

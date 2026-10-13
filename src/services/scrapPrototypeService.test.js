@@ -7,6 +7,7 @@ import {
   prepareScrapAsset,
   resetScrapPrototypeMemory,
   saveScrapPrototypeRecords,
+  deleteScrapPrototypeDrafts,
   validateAccountingAssets,
   validateDisposalAssets,
   validateScrapAssets,
@@ -20,6 +21,22 @@ beforeEach(() => {
   window.localStorage.clear();
   resetScrapPrototypeMemory();
   saveScrapPrototypeRecords('crossCompany', []);
+});
+
+test.each(['crossCompany', 'scrap', 'accounting', 'disposal'])('%s 仅允许整批删除本人草稿，驳回和过期选择不产生部分删除', (type) => {
+  const records = [
+    { id: 'draft-1', creator: 'actor', documentStatus: '草稿' },
+    { id: 'draft-2', creator: 'actor', documentStatus: '草稿' },
+    { id: 'rejected', creator: 'actor', documentStatus: '已驳回' },
+    { id: 'other', creator: 'other', documentStatus: '草稿' },
+  ];
+  saveScrapPrototypeRecords(type, records);
+  expect(() => deleteScrapPrototypeDrafts(type, ['draft-1', 'rejected'], 'actor')).toThrow('已驳回');
+  expect(() => deleteScrapPrototypeDrafts(type, ['draft-1', 'missing'], 'actor')).toThrow('已变化');
+  expect(() => deleteScrapPrototypeDrafts(type, ['draft-1', 'other'], 'actor')).toThrow('本人草稿');
+  expect(() => deleteScrapPrototypeDrafts(type, [], 'actor')).toThrow('请先选择');
+  expect(getScrapPrototypeRecords(type)).toEqual(records);
+  expect(deleteScrapPrototypeDrafts(type, ['draft-1', 'draft-2'], 'actor')).toEqual(records.slice(2));
 });
 
 test('当前报废单不占用自身资产，跨公司转移即使同号也不能豁免', () => {

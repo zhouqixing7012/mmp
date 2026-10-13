@@ -23,6 +23,23 @@ export function resetScrapPrototypeMemory() {
   inMemoryRecords.clear();
 }
 
+export function canDeleteScrapDraft(record, creator) {
+  return Boolean(creator) && record?.documentStatus === '草稿' && record.creator === creator;
+}
+
+export function deleteScrapPrototypeDrafts(type, ids, creator) {
+  const selectedIds = new Set(ids || []);
+  if (!selectedIds.size) throw new Error('请先选择需要删除的草稿单据');
+  const current = getScrapPrototypeRecords(type);
+  const selected = current.filter((record) => selectedIds.has(record.id));
+  // 删除前按当前保存记录整批检查，任何一条已变化均不删除。
+  if (selected.length !== selectedIds.size) throw new Error('单据已变化，请刷新列表后重试');
+  if (selected.some((record) => !canDeleteScrapDraft(record, creator))) {
+    throw new Error('仅允许删除本人草稿单据，已驳回单据不可删除');
+  }
+  return saveScrapPrototypeRecords(type, current.filter((record) => !selectedIds.has(record.id)));
+}
+
 function actorIdentity(actor) {
   if (!actor) return '';
   if (typeof actor === 'string') return actor.trim();

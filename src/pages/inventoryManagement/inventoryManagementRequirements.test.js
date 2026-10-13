@@ -226,7 +226,7 @@ test('借用归还候选固定为在用借用中并复用资产维护真实枚�
   expect(inboundSource).toContain("DEFAULT_ASSET_MAINTENANCE_ROWS");
   expect(inboundSource).toContain(".filter((row) => row.status === '在用-借用中')");
   expect(inboundSource).toContain("const INBOUND_PURPOSE_OPTIONS = ['部门公用', '员工用机', '其他用途', '专业用途']");
-  expect(inboundSource).toContain("const INBOUND_ASSET_MARK_OPTIONS = ['硬件老化', '组件缺失', '设备故障', '物理损伤']");
+  expect(inboundSource).toContain("ASSET_MARK_OPTIONS as INBOUND_ASSET_MARK_OPTIONS");
   expect(inboundSource).toContain("dataSource={candidateAssets}");
   expect(inboundSource).not.toContain("assetStatus: '借出'");
   expect(inboundSource).not.toContain("usage: '办公'");
@@ -353,7 +353,7 @@ test('转移资产选择弹窗与父弹窗同级且字段对齐入库出库资�
   expect(source).toContain("</Modal>\n      <SelectorModal config={selectorConfig}");
   expect(source).not.toContain("<SelectorModal config={selectorConfig} onClose={() => setSelectorType('')} />\n    </Modal>");
   ["label: '标签号'", "label: 'SN号'", "label: '板块'", "label: '资产说明'"].forEach((value) => expect(source).toContain(value));
-  ['标签号', 'SN号', '公司', '板块', '资产大类', '资产小类', '资产说明', '品牌', '数量', '原值', '资产责任人', '资产状态', '成本中心', '启用日期'].forEach((title) => {
+  ['标签号', 'SN号', '公司', '板块', '资产类别', '资产说明', '品牌', '数量', '原值', '资产责任人', '资产状态', '成本中心', '启用日期'].forEach((title) => {
     expect(source).toContain(`title: '${title}'`);
   });
 });

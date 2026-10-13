@@ -1,3 +1,4 @@
+import { ASSET_MARK_SELECT_OPTIONS, isValidAssetMark } from '../../config/assetMarks';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
@@ -204,12 +205,6 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
   const [rejectAsset, setRejectAsset] = useState(null);
   const [printOpen, setPrintOpen] = useState(false);
   const [lines, setLines] = useState(row.lines || []);
-  const assetMarkOptions = useMemo(() => Array.from(new Set(
-    documents
-      .flatMap((document) => document.lines || [])
-      .map((line) => String(line.assetMark || '').trim())
-      .filter(Boolean),
-  )).map((value) => ({ label: value, value })), [documents]);
 
   useEffect(() => {
     setLines(row.lines || []);
@@ -223,6 +218,10 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
   };
 
   const updateReceiveField = (assetId, field, value) => {
+    if (field === 'assetMark' && !isValidAssetMark(value)) {
+      messageApi.warning('当前资产标记无效');
+      return;
+    }
     const nextLines = lines.map((line) => line.id === assetId ? { ...line, [field]: value } : line);
     syncLines(nextLines);
   };
@@ -288,6 +287,9 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
     const selected = lines.filter((line) => selectedKeys.includes(line.id));
     if (!selected.length || selected.some((line) => line.moveStatus !== '待接收' || line.verification !== '已验证')) {
       return messageApi.warning('无已验证待接收的资产');
+    }
+    if (selected.some((line) => !isValidAssetMark(line.assetMark))) {
+      return messageApi.warning('当前资产标记无效，请重新选择');
     }
     Modal.confirm({
       title: '是否确定执行移库接收？',
@@ -418,7 +420,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
           value={value || undefined}
           allowClear
           placeholder="请选择"
-          options={assetMarkOptions}
+          options={ASSET_MARK_SELECT_OPTIONS}
           onChange={(nextValue) => updateReceiveField(asset.id, 'assetMark', nextValue || '')}
         />
         : value || '-',

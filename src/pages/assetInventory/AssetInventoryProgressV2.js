@@ -77,7 +77,6 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
     { title: '结束时间', dataIndex: 'endDate', width: 120 },
     { title: '应盘数量', dataIndex: 'expected', width: 110, align: 'right', render: formatCount },
     { title: '已盘数量', dataIndex: 'counted', width: 110, align: 'right', render: formatCount },
-    { title: '报失数量', dataIndex: 'lost', width: 110, align: 'right', render: formatCount },
     { title: '未盘数量', dataIndex: 'uncounted', width: 110, align: 'right', render: formatCount },
     { title: '数量进度', dataIndex: 'progress', width: 180, render: (value) => <Progress percent={value} size="small" /> },
     {
@@ -100,7 +99,6 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
     { title: 'City', dataIndex: 'city', width: 110 },
     { title: '应盘数量', dataIndex: 'expected', width: 110, align: 'right', render: formatCount },
     { title: '已盘数量', dataIndex: 'counted', width: 110, align: 'right', render: formatCount },
-    { title: '报失数量', dataIndex: 'lost', width: 110, align: 'right', render: formatCount },
     { title: '未盘数量', dataIndex: 'uncounted', width: 110, align: 'right', render: formatCount },
     { title: '数量进度', dataIndex: 'progress', width: 180, render: (value) => <Progress percent={value} size="small" /> },
     { title: '剩余天数', dataIndex: 'remainingDays', width: 100 },

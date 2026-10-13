@@ -21,6 +21,7 @@ import {
   validateDisposalAssets,
   getScrapPrototypeRecords,
   saveScrapPrototypeRecords,
+  deleteScrapPrototypeDrafts,
   validateAccountingAssets,
 } from '../../services/scrapPrototypeService';
 
@@ -375,18 +376,15 @@ export default function ScrapPrototypeModule({
   };
 
   const deleteDrafts = (ids) => {
-    const selected = records.filter((item) => ids.includes(item.id));
-    if (selected.some((item) => item.documentStatus !== '草稿')) {
-      message.warning('仅草稿单据允许删除');
-      return;
+    try {
+      const next = deleteScrapPrototypeDrafts(type, ids, `${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`);
+      setRecords(next);
+      message.success('删除成功');
+      return true;
+    } catch (error) {
+      message.warning(error.message);
+      return false;
     }
-
-    setRecords((current) => {
-      const next = current.filter((item) => !ids.includes(item.id));
-      saveScrapPrototypeRecords(type, next);
-      return next;
-    });
-    message.success('删除成功');
   };
 
   const saveRecord = (form, assets, submit) => {
@@ -939,6 +937,7 @@ export default function ScrapPrototypeModule({
         onCopy={copyRecord}
         onExecute={executeAccounting}
         onDeleteDrafts={deleteDrafts}
+        currentCreator={`${CURRENT_EMPLOYEE.id}-${CURRENT_EMPLOYEE.name}`}
         onApprove={processApproval}
       />
     );

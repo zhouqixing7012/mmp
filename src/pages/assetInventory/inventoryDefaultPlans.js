@@ -22,7 +22,7 @@ export function buildDefaultInventoryPlans(project, assets, existingPlans = [], 
     const department = [...new Set(group.assets.map(asset => ['库房', '公共'].includes(asset.inventoryRange) ? '虚拟组织' : String(asset.ownerDept || '').split('.')[0]))].filter(Boolean).join('、');
     const city = [...new Set(group.assets.map(asset => asset.city))].filter(Boolean).join('、');
     const planNo = nextInventoryPlanNumber(project.projectType, existingPlans, index, date);
-    const quantity = group.assets.reduce((total, asset) => total + Number(asset.quantity), 0);
+    const quantity = group.assets.length;
     return { key: `generated-${project.projectNo}-${planNo}`, planNo, planName: `${city}盘点计划`, status: '草稿', organization, department, city, range,
       assetCount: quantity, uncountedCount: quantity, countedCount: 0,
       startDate: project.startDate, endDate: project.projectType === '复盘' ? project.startDate : project.endDate,

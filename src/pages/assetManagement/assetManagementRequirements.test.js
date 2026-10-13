@@ -80,16 +80,18 @@ test('三类维护批量模板统一为空白不变非空覆盖', () => {
   expect(consumableMaintenanceSource).toContain('耗材标签号必填并用于定位既有卡片；其余可修改字段不填表示不变，填写后覆盖原值。');
   expect(consumableMaintenanceSource).toContain('async function readConsumableBatchFile(file)');
   expect(consumableMaintenanceSource).toContain('batchUpdateConsumableMaintenanceRows(batchValidation.updates || [])');
-  expect(consumableMaintenanceSource).not.toContain("'板块', 'City'");
-  expect(consumableMaintenanceSource).not.toContain("'耗材说明',");
+  const templateFields = consumableMaintenanceSource.match(/const BATCH_TEMPLATE_FIELDS = \[([\s\S]*?)\];/)[1];
+  expect(templateFields).not.toContain("'板块'");
+  expect(templateFields).not.toContain("'耗材说明'");
+  expect(templateFields).not.toContain("'数量'");
   expect(contractMaintenanceSource).toContain('除标签号外，其余模板字段空白表示保留原值，不进行覆盖。');
 });
 
 
 test('资产管理菜单UI一致性关键规则保持统一', () => {
   expect(scrapListSource).toContain('<Title level={4} className="!mb-0">{config.title}</Title>');
-  expect(scrapListSource).not.toContain('rowSelection={{');
-  expect(scrapListSource).not.toContain('确认删除所选草稿');
+  expect(scrapListSource).toContain('rowSelection={{');
+  expect(scrapListSource).toContain('确认删除所选草稿');
   expect(scrapListSource).toContain('placeholder="请选择制单人"');
   expect(scrapListSource).toContain('placeholder="请选择公司"');
   expect(scrapListSource).toContain('footer={null}');

@@ -21,6 +21,7 @@ import OutboundApprovalHistoryPage from '../inventoryManagement/OutboundApproval
 import { ASSET_SCOPE_OPTIONS } from './scrapPrototypeData';
 import { getScrapPrototypeApprovalRecords } from './scrapPrototypeApproval';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
+import { canDeleteScrapDraft } from '../../services/scrapPrototypeService';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 
 const { RangePicker } = DatePicker;
@@ -66,11 +67,18 @@ export default function ScrapPrototypeList({
   onCopy,
   onExecute,
   onApprove,
+  onDeleteDrafts,
+  currentCreator,
 }) {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [approvalRecord, setApprovalRecord] = useState(null);
   const [lookupKey, setLookupKey] = useState('');
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const selectedDrafts = records.filter((record) => selectedRowKeys.includes(record.id));
+  const canDeleteSelected = selectedRowKeys.length > 0
+    && selectedDrafts.length === selectedRowKeys.length
+    && selectedDrafts.every((record) => canDeleteScrapDraft(record, currentCreator));
 
   const creatorLookupRecords = useMemo(() => Array.from(new Map([
     ...maintenanceRows
@@ -416,6 +424,17 @@ export default function ScrapPrototypeList({
       >
         <div className="mb-3 flex justify-end">
           <Space>
+            <Button
+              danger
+              disabled={!canDeleteSelected}
+              onClick={() => Modal.confirm({
+                title: '确认删除所选草稿单据？',
+                content: `将删除 ${selectedRowKeys.length} 张草稿单据。`,
+                onOk: () => {
+                  if (onDeleteDrafts(selectedRowKeys)) setSelectedRowKeys([]);
+                },
+              })}
+            >删除</Button>
             {type === 'accounting' ? <Dropdown menu={{ items: ['调账', '非调账'].map((method) => ({ key: method, label: method, onClick: () => onCreate(method) })) }}>
               <Button type="primary" icon={<PlusOutlined />}>创建</Button>
             </Dropdown> : <Button
@@ -436,6 +455,11 @@ export default function ScrapPrototypeList({
           bordered
           columns={columnsByType[type]}
           dataSource={filteredRows}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: setSelectedRowKeys,
+            getCheckboxProps: (record) => ({ disabled: !canDeleteScrapDraft(record, currentCreator) }),
+          }}
           scroll={{ x: 'max-content' }}
           pagination={{
             pageSize: 10,

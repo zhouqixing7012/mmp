@@ -15,7 +15,7 @@ const mobileFixtureProgress = (project, ranges, assets = INVENTORY_MOBILE_ASSETS
   expect(details).toHaveLength(2);
   expect(details.every((row) => row.department === '虚拟组织')).toBe(true);
   expect(details.flatMap((row) => row.assetTags)).toEqual(expect.arrayContaining(['1141300083-P', '3102200966']));
-  summary.forEach((row) => { const children = details.filter((detail) => detail.range === row.range); expect(row.expected).toBe(children.reduce((total, detail) => total + detail.expected, 0)); expect(row.uncounted).toBe(row.expected - row.counted - row.lost); });
+  summary.forEach((row) => { const children = details.filter((detail) => detail.range === row.range); expect(row.expected).toBe(children.reduce((total, detail) => total + detail.expected, 0)); expect(row.uncounted).toBe(row.expected - row.counted); });
   expect(details.every((row) => row.remainingDays === 1)).toBe(true);
  });
  test('范围过滤且逾期剩余天数保留负数', () => {
@@ -47,12 +47,23 @@ const sampleAssets = {
 const progressFor = (ranges = ['员工', '公共']) => buildInventoryProgress({ endDate: '2026-09-30' }, ranges, plans,
   (plan) => sampleAssets[plan.planNo], [{ employeeName: '苏伟', department: '搜狐媒体.智能平台.新闻产品中心' }], new Date(2026, 9, 1));
 
+test('不同卡片数量仍各计一条，汇总和下钻未盘包含报失及审核中', () => {
+  const result = buildInventoryProgress({}, ['员工'], [plans[0]], () => [
+    { ...sampleAssets.P1[0], quantity: 5 },
+    { ...sampleAssets.P1[1], quantity: 10 },
+    { ...sampleAssets.P1[0], assetTag: 'C', quantity: 20, inventoryStatus: '已盘' },
+  ]);
+  expect(result.summary[0]).toMatchObject({ expected: 3, counted: 1, uncounted: 2, progress: 33.3 });
+  expect(result.assets.filter(isUncountedProgressAsset)).toHaveLength(result.summary[0].uncounted);
+  expect(result.summary[0]).not.toHaveProperty('lost');
+});
+
 test('实际计划清单同源汇总、待审计入未盘、报失不增加已盘进度', () => {
   const result = progressFor();
-  expect(result.summary.find((row) => row.range === '员工')).toMatchObject({ expected: 2, counted: 0, lost: 1, uncounted: 1, progress: 0 });
+  expect(result.summary.find((row) => row.range === '员工')).toMatchObject({ expected: 2, counted: 0, uncounted: 2, progress: 0 });
   expect(result.details.find((row) => row.range === '员工')).toMatchObject({ department: '搜狐媒体.智能平台', supervisor: '韩晓晗', financialSupervisor: '徐博', remainingDays: -1 });
   expect(result.details.find((row) => row.range === '公共')).toMatchObject({ department: '虚拟组织', counted: 1 });
-  expect(result.assets.filter(isUncountedProgressAsset).map((asset) => asset.assetTag)).toEqual(['114121801802']);
+  expect(result.assets.filter(isUncountedProgressAsset).map((asset) => asset.assetTag)).toEqual(['3103201755', '114121801802']);
   expect(progressFor(['公共']).assets.map((asset) => asset.assetTag)).toEqual(['3102200966']);
 });
 
@@ -72,4 +83,14 @@ test('全量资产Excel保留联系字段，缺失邮箱不构造，未执行资
   const result = buildInventoryProgress({}, ['员工'], [plans[0]], () => [{ ...sampleAssets.P1[0], executeInventory: false }]);
   expect(result.assets).toEqual([]);
   expect(result.summary[0].expected).toBe(0);
+});
+
+test('进度Excel统计卡片条数，未盘资产Excel仍保留报失及卡片数量', () => {
+  const result = buildInventoryProgress({}, ['员工'], [plans[0]], () => [{ ...sampleAssets.P1[0], quantity: 5 }]);
+  const sheet = createProgressWorkbook(result.summary, [['应盘数量', 'expected'], ['已盘数量', 'counted'], ['未盘数量', 'uncounted']], '汇总');
+  expect(XLSX.utils.sheet_to_json(sheet.Sheets['汇总'], { header: 1 })).toEqual([['应盘数量', '已盘数量', '未盘数量'], [1, 0, 1]]);
+  const book = createProgressAssetWorkbook(result.assets.filter(isUncountedProgressAsset));
+  const [header, row] = XLSX.utils.sheet_to_json(book.Sheets['资产清单'], { header: 1 });
+  expect(row[header.indexOf('盘点状态')]).toBe('报失');
+  expect(row[header.indexOf('数量')]).toBe(5);
 });

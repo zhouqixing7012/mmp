@@ -1,3 +1,4 @@
+import { ASSET_MARK_OPTIONS as INBOUND_ASSET_MARK_OPTIONS } from '../../config/assetMarks';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Button,
@@ -70,7 +71,6 @@ const RESPONSIBLE_OPTIONS = [
 
 const INFRA_ASSET_TYPES = new Set(['服务器', '网络设备', '服务器备件', '网络设备备件']);
 const INBOUND_PURPOSE_OPTIONS = ['部门公用', '员工用机', '其他用途', '专业用途'];
-const INBOUND_ASSET_MARK_OPTIONS = ['硬件老化', '组件缺失', '设备故障', '物理损伤'];
 const GENERATED_INBOUND_STORAGE_KEY = 'mmp.inventory.generatedInboundRows.v1';
 
 const SOURCE_ASSET = {

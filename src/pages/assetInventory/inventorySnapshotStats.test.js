@@ -1,11 +1,19 @@
 import { calculateInventorySnapshotStats } from './inventorySnapshotStats';
 import { serializeInventorySnapshotExport } from './inventoryAssetExport';
 
-test('快照统计按当前清单及资产数量计算，不混入未执行清单盘点状态', () => {
+test('快照统计按当前卡片条数计算，不混入未执行清单盘点状态', () => {
   const execution = [{ quantity: 3, inventoryStatus: '已盘' }, { quantity: 2, inventoryStatus: '未盘' }];
   const notExecution = [{ quantity: 7, inventoryStatus: '已盘' }];
-  expect(calculateInventorySnapshotStats(execution, notExecution)).toEqual({ total: 12, execution: 5, notExecution: 7, counted: 3, uncounted: 2, lost: 0, rate: 60 });
-  expect(calculateInventorySnapshotStats([execution[0]], [...notExecution, execution[1]])).toEqual({ total: 12, execution: 3, notExecution: 9, counted: 3, uncounted: 0, lost: 0, rate: 100 });
+  expect(calculateInventorySnapshotStats(execution, notExecution)).toEqual({ total: 3, execution: 2, notExecution: 1, counted: 1, uncounted: 1, rate: 50 });
+  expect(calculateInventorySnapshotStats([execution[0]], [...notExecution, execution[1]])).toEqual({ total: 3, execution: 1, notExecution: 2, counted: 1, uncounted: 0, rate: 100 });
+});
+
+test('报失和审核中均包含在未盘，卡片数量不影响统计', () => {
+  expect(calculateInventorySnapshotStats([
+    { quantity: 5, inventoryStatus: '报失' },
+    { quantity: 10, inventoryStatus: '审核中' },
+    { quantity: 3, inventoryStatus: '代盘' },
+  ], [])).toEqual({ total: 3, execution: 3, notExecution: 0, counted: 1, uncounted: 2, rate: 33.3 });
 });
 
 test('快照导出两类实际资产并保留是否执行标记', () => {

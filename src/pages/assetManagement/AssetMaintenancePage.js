@@ -1,3 +1,4 @@
+import { ASSET_MARK_OPTIONS } from '../../config/assetMarks';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
@@ -55,7 +56,6 @@ const STATUS_OPTIONS = [
 const FORMAL_SCRAP_STATUSES = new Set(['已报废-已处置', '已报废-待处置']);
 const EDITABLE_STATUS_OPTIONS = STATUS_OPTIONS.filter((item) => !FORMAL_SCRAP_STATUSES.has(item));
 const PURPOSE_OPTIONS = ['部门公用', '员工用机', '其他用途', '专业用途'];
-const ASSET_MARK_OPTIONS = ['硬件老化', '组件缺失', '设备故障', '物理损伤'];
 const ASSET_TYPE_OPTIONS = ['公司资产', '自备资产'];
 const ADD_TYPE_OPTIONS = ['报废新增', '采购新增', '历史新增', '收购新增', '赠与新增', '再利用新增', '转移新增'];
 const SCRAP_TYPE_OPTIONS = ['已到报废期', '未到报废期', '丢失'];

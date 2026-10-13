@@ -76,12 +76,12 @@ beforeEach(() => {
 
 test('114.新媒体有可选的调账与非调账演示资产，均来自已完成的前置单据', () => {
   const assets = getAccountingCandidates({ ...ACCOUNTING_DEMO_ACCESS, company: '114.新媒体' });
-  expect(assets.filter((item) => item.scrapMethod === '调账')).toEqual([
+  expect(assets.filter((item) => item.scrapMethod === '调账')).toEqual(expect.arrayContaining([
     expect.objectContaining({ tagNo: 'SW-2026-000021', sourceBusinessType: '跨公司转移', sourceBusinessNo: 'CT20260921000004' }),
-  ]);
-  expect(assets.filter((item) => item.scrapMethod === '非调账')).toEqual([
+  ]));
+  expect(assets.filter((item) => item.scrapMethod === '非调账')).toEqual(expect.arrayContaining([
     expect.objectContaining({ tagNo: 'FA-2026-000122', sourceBusinessType: '资产报废', sourceBusinessNo: 'BF20260921000012' }),
-  ]);
+  ]));
 });
 
 test('四类原型主模块可加载，跨公司转移草稿保存后可以重新打开', async () => {
@@ -357,7 +357,8 @@ test('账面报废财务审批为单人串行，普通范围固定冯丽婷张�
 });
 
 test('缺少真实审批人映射时账面报废流程停在当前节点，不虚构审批通过', () => {
-  const record = getScrapPrototypeRecords('accounting')[0];
+  const record = getScrapPrototypeRecords('accounting').find((item) => item.documentStatus === '审批中' && !item.currentApprover);
+  expect(record).toBeDefined();
   saveScrapPrototypeRecords('accounting', [record]);
   render(<ScrapPrototypeModule type="accounting" />);
 

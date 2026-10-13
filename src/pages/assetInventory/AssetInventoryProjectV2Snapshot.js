@@ -39,14 +39,13 @@ export default function SnapshotView({ project, onBack, onDeleteSnapshot, onGene
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const executeRows = ASSET_ROWS.filter((row) => row.executeInventory);
   const notExecuteRows = ASSET_ROWS.filter((row) => !row.executeInventory);
-  const total = ASSET_ROWS.reduce((sum, row) => sum + Number(row.quantity || 0), 0);
-  const executeCount = executeRows.reduce((sum, row) => sum + Number(row.quantity || 0), 0);
-  const counted = executeRows.filter((row) => ['已盘', '代盘'].includes(row.inventoryStatus)).reduce((sum, row) => sum + Number(row.quantity || 0), 0);
-  const lost = executeRows.filter((row) => row.inventoryStatus === '报失').reduce((sum, row) => sum + Number(row.quantity || 0), 0);
+  const total = ASSET_ROWS.length;
+  const executeCount = executeRows.length;
+  const counted = executeRows.filter((row) => ['已盘', '代盘'].includes(row.inventoryStatus)).length;
   const rate = executeCount ? Math.round((counted / executeCount) * 1000) / 10 : 0;
 
   const tabs = [
-    { key: 'summary', label: '快照清单统计', children: <div className="grid grid-cols-4 gap-4"><Card size="small"><Statistic title="盘点资产总量" value={total} /></Card><Card size="small"><Statistic title="执行盘点数量" value={executeCount} /></Card><Card size="small"><Statistic title="未执行盘点数量" value={total - executeCount} /></Card><Card size="small"><Statistic title="盘到率" value={rate} suffix="%" /></Card><Card size="small"><Statistic title="已盘数量" value={counted} /></Card><Card size="small"><Statistic title="未盘数量" value={Math.max(executeCount - counted - lost, 0)} /></Card><Card size="small"><Statistic title="盘亏/报失数量" value={lost} /></Card></div> },
+    { key: 'summary', label: '快照清单统计', children: <div className="grid grid-cols-4 gap-4"><Card size="small"><Statistic title="盘点资产总量" value={total} /></Card><Card size="small"><Statistic title="执行盘点数量" value={executeCount} /></Card><Card size="small"><Statistic title="未执行盘点数量" value={total - executeCount} /></Card><Card size="small"><Statistic title="盘到率" value={rate} suffix="%" /></Card><Card size="small"><Statistic title="已盘数量" value={counted} /></Card><Card size="small"><Statistic title="未盘数量" value={executeCount - counted} /></Card></div> },
     { key: 'execute', label: `执行盘点资产清单（${executeRows.length}）`, children: <Table rowKey="key" size="small" bordered columns={assetColumns} dataSource={executeRows} scroll={{ x: 1900 }} pagination={{ pageSize: 10 }} /> },
     { key: 'not-execute', label: `未执行盘点资产清单（${notExecuteRows.length}）`, children: <Table rowKey="key" size="small" bordered columns={assetColumns} dataSource={notExecuteRows} scroll={{ x: 1900 }} pagination={{ pageSize: 10 }} /> },
     { key: 'unincluded', label: `未包含资产清单（${UNINCLUDED_ASSET_ROWS.length}）`, children: <Table rowKey="key" size="small" bordered columns={assetColumns} dataSource={UNINCLUDED_ASSET_ROWS} scroll={{ x: 1900 }} pagination={{ pageSize: 10 }} /> },

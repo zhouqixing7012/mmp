@@ -1196,12 +1196,11 @@ function SnapshotAssetTab({ type, projectStatus, rows, setRows, otherRows, setOt
 }
 
 function SnapshotStats({ projectStatus, onOpenPlans }) {
-  const total = ASSET_ROWS.reduce((sum, row) => sum + row.quantity, 0);
-  const execution = ASSET_ROWS.filter((row) => row.executeInventory).reduce((sum, row) => sum + row.quantity, 0);
+  const total = ASSET_ROWS.length;
+  const execution = ASSET_ROWS.filter((row) => row.executeInventory).length;
   const notExecution = total - execution;
-  const counted = ASSET_ROWS.filter((row) => ['已盘', '代盘'].includes(row.inventoryStatus)).reduce((sum, row) => sum + row.quantity, 0);
-  const uncounted = ASSET_ROWS.filter((row) => row.executeInventory && ['未盘', '报失', '盘亏'].includes(row.inventoryStatus)).reduce((sum, row) => sum + row.quantity, 0);
-  const lost = ASSET_ROWS.filter((row) => row.inventoryStatus === '盘亏').reduce((sum, row) => sum + row.quantity, 0);
+  const counted = ASSET_ROWS.filter((row) => row.executeInventory && ['已盘', '代盘'].includes(row.inventoryStatus)).length;
+  const uncounted = execution - counted;
   const rate = execution ? Number(((counted / execution) * 100).toFixed(1)) : 0;
 
   const generatedPlan = ['生成盘点计划', '盘点中', '盘点关闭'].includes(projectStatus);
@@ -1214,7 +1213,6 @@ function SnapshotStats({ projectStatus, onOpenPlans }) {
         <Statistic title="未执行盘点数量" value={notExecution} />
         {generatedPlan && <Statistic title="已盘数量" value={counted} />}
         {generatedPlan && <Statistic title="未盘数量" value={uncounted} />}
-        {generatedPlan && <Statistic title="盘亏数量" value={lost} />}
         {generatedPlan && <Statistic title="盘到率（%）" value={rate} suffix="%" />}
       </div>
       {generatedPlan && (
@@ -2024,9 +2022,8 @@ function ProgressView({ project, onBack }) {
     { title: '结束时间', dataIndex: 'endDate', width: 120 },
     { title: '应盘数量（A）', dataIndex: 'expected', width: 110, align: 'right' },
     { title: '已盘数量（B）', dataIndex: 'counted', width: 110, align: 'right' },
-    { title: '报失数量（C）', dataIndex: 'lost', width: 110, align: 'right' },
-    { title: '未盘数量（D）', dataIndex: 'uncounted', width: 110, align: 'right' },
-    { title: '数量进度（E）', dataIndex: 'progress', width: 150, render: (value) => <Progress percent={value} size="small" /> },
+    { title: '未盘数量（C）', dataIndex: 'uncounted', width: 110, align: 'right' },
+    { title: '数量进度（D）', dataIndex: 'progress', width: 150, render: (value) => <Progress percent={value} size="small" /> },
     { title: '备注', dataIndex: 'remark', width: 220 },
   ];
 
@@ -2037,9 +2034,8 @@ function ProgressView({ project, onBack }) {
     { title: 'City', dataIndex: 'city', width: 120 },
     { title: '应盘数量（A）', dataIndex: 'expected', width: 110, align: 'right' },
     { title: '已盘数量（B）', dataIndex: 'counted', width: 110, align: 'right' },
-    { title: '报失数量（C）', dataIndex: 'lost', width: 110, align: 'right' },
-    { title: '未盘数量（D）', dataIndex: 'uncounted', width: 110, align: 'right' },
-    { title: '数量进度（E）', dataIndex: 'progress', width: 150, render: (value) => <Progress percent={value} size="small" /> },
+    { title: '未盘数量（C）', dataIndex: 'uncounted', width: 110, align: 'right' },
+    { title: '数量进度（D）', dataIndex: 'progress', width: 150, render: (value) => <Progress percent={value} size="small" /> },
     { title: '剩余天数（天）', dataIndex: 'remainingDays', width: 120, align: 'right' },
     ...(project.projectType === '复盘'
       ? [
@@ -2062,7 +2058,7 @@ function ProgressView({ project, onBack }) {
               <Button icon={<Download size={14} />}>导出项目进度</Button>
             </Space>
           </div>
-          <Table rowKey="key" size="small" bordered columns={progressColumns} dataSource={PROGRESS_ROWS} pagination={false} scroll={{ x: 1250 }} />
+          <Table rowKey="key" size="small" bordered columns={progressColumns} dataSource={PROGRESS_ROWS.map((row) => ({ ...row, uncounted: row.expected - row.counted }))} pagination={false} scroll={{ x: 1250 }} />
         </Card>
       ),
     },
@@ -2094,7 +2090,7 @@ function ProgressView({ project, onBack }) {
             size="small"
             bordered
             columns={detailColumns}
-            dataSource={PROGRESS_DETAIL_ROWS}
+            dataSource={PROGRESS_DETAIL_ROWS.map((row) => ({ ...row, uncounted: row.expected - row.counted }))}
             rowSelection={{ selectedRowKeys: detailSelectedKeys, onChange: setDetailSelectedKeys }}
             scroll={{ x: 1450 }}
             pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
@@ -2105,7 +2101,7 @@ function ProgressView({ project, onBack }) {
   ];
 
   const modalRows = assetModal === 'uncounted'
-    ? ASSET_ROWS.filter((row) => ['未盘', '报失', '盘亏'].includes(row.inventoryStatus))
+    ? ASSET_ROWS.filter((row) => row.executeInventory && !['已盘', '代盘'].includes(row.inventoryStatus))
     : ASSET_ROWS;
 
   return (
