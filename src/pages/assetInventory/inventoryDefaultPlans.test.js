@@ -8,6 +8,7 @@ test('按公司一级部门城市范围拆分，数量按资产数量汇总', ()
   expect(plans[0]).toMatchObject({ assetCount: 5, uncountedCount: 5, department: 'D', planNo: 'PLAN-20261006-0001' });
   expect(plans[4].department).toBe('虚拟组织');
   expect(plans.flatMap(plan => plan.assets)).toHaveLength(6);
+  expect(plans.every(plan => !Object.prototype.hasOwnProperty.call(plan, 'manager'))).toBe(true);
 });
 test('三种计划编号使用创建日和流水号，删除中间计划后不重复编号', () => {
   const existing = [{ planNo: 'RCT-20261006-0003' }, { planNo: 'RCT-20261005-0009' }];

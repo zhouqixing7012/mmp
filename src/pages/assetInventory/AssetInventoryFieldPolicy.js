@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 const REMOVED_FIELD = '内审监督人';
 const RENAMED_FIELD = '盘点组织';
 const RENAMED_FIELD_LABEL = '子公司';
-const PLAN_DETAIL_REMOVED_COLUMNS = new Set(['计划负责人', '计划监督人', '盘点执行人', 'City']);
+const PLAN_DETAIL_REMOVED_COLUMNS = new Set(['计划监督人', '盘点执行人', 'City']);
 const COUNT_LABELS = new Set([
   '数量', '资产数量', '资产总量', '执行盘点数量', '盘点资产总量', '未执行盘点数量',
   '应盘数量', '已盘数量', '未盘数量', '报失数量', '盘亏数量', '复盘数量',

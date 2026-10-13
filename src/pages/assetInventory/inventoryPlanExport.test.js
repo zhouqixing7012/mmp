@@ -8,6 +8,7 @@ test('计划导出分别保留资产备注和报失原因，并合并类别', ()
   const rows = XLSX.utils.sheet_to_json(workbook.Sheets['关联资产清单']);
   expect(rows[0]).toMatchObject({'计划编号':'P1','资产类别':'NOTEBOOK.办公笔记本','备注':'资产备注','盘点备注':'设备遗失','盘点状态':'报失'});
   expect(PLAN_ASSET_EXPORT_FIELDS.filter(([label]) => label === '盘点备注')).toHaveLength(1);
+  expect(XLSX.utils.sheet_to_json(workbook.Sheets['计划信息'], { header: 1 })[0]).not.toContain('计划负责人');
 });
 
 test('报失后继续盘点，既有盘点备注仍保留；只导出所传计划', () => {

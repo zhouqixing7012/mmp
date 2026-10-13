@@ -5,7 +5,7 @@ export const PROGRESS_ASSET_FIELDS = [
   ...PLAN_ASSET_EXPORT_FIELDS,
   ['责任人办公电话', 'officePhone'], ['责任人邮箱', 'email'],
   ['现资产责任人', 'currentOwner'], ['现资产责任人部门', 'currentOwnerDept'],
-  ['盘点组织', 'organization'], ['计划负责人', 'planManager'],
+  ['盘点组织', 'organization'],
   ['盘点监督人', 'supervisor'], ['盘点执行人', 'executor'],
   ['NO扫描数据核对差异', 'noScanDiff'], ['未盘说明', 'inventoryNote'], ['是否上传图片', 'needPhoto'],
 ];
@@ -25,7 +25,7 @@ export function buildInventoryProgress(project, allowedRanges, plans, assetsForP
     .filter((asset) => asset.executeInventory !== false && asset.inventoryStatus !== '未执行盘点')
     .map((asset) => ({
       ...asset, planNo: plan.planNo, inventoryRange: plan.range,
-      planManager: plan.manager, supervisor: plan.supervisor,
+      supervisor: plan.supervisor,
       financialSupervisor: plan.financialSupervisor, auditSupervisor: plan.auditSupervisor,
       executor: plan.executor,
       executorDepartment: plan.executorDepartment ?? employees.find((person) => person.employeeName === plan.executor)?.department,

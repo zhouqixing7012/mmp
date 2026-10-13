@@ -10,7 +10,7 @@ export const PLAN_ASSET_EXPORT_FIELDS = [
 const PLAN_FIELDS = [
   ['计划编号', 'planNo'], ['计划名称', 'planName'], ['计划状态', 'status'],
   ['子公司', 'organization'], ['盘点范围', 'range'], ['盘点开始日期', 'startDate'],
-  ['盘点结束日期', 'endDate'], ['计划负责人', 'manager'],
+  ['盘点结束日期', 'endDate'],
 ];
 
 export function mergePlanInventoryResult(asset, result, photoReview) {

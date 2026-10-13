@@ -32,7 +32,7 @@ export default function InventoryReplayReview({ project, plans, assetsForPlan, s
     <Typography.Title level={4} style={{margin:0}}>复盘结果审核</Typography.Title>
     <Card size="small" title={<SectionCardTitle>复盘信息</SectionCardTitle>}><Table size="small" bordered pagination={false} rowKey="planNo" scroll={{x:'max-content'}} dataSource={summary} columns={[
       {title:'计划编号',dataIndex:'planNo',render:(value)=><Button type="link" onClick={()=>{setPlanNo(value);setDraft(EMPTY);setFilters(EMPTY);}}>{value}</Button>},
-      ...[['计划名称','planName'],['期间','period'],['计划负责人','manager'],['盘点执行人','executor'],['财务监督人','financialSupervisor'],['内审监督人','auditSupervisor'],['资产总量','assetCount'],['已盘数量','countedCount'],['未盘数量','uncountedCount'],['盘点比例','ratio']].map(([title,dataIndex])=>({title,dataIndex,render:(value)=>value ?? '-'}))
+      ...[['计划名称','planName'],['期间','period'],['盘点执行人','executor'],['财务监督人','financialSupervisor'],['内审监督人','auditSupervisor'],['资产总量','assetCount'],['已盘数量','countedCount'],['未盘数量','uncountedCount'],['盘点比例','ratio']].map(([title,dataIndex])=>({title,dataIndex,render:(value)=>value ?? '-'}))
     ]}/></Card>
     <Card size="small" title={<SectionCardTitle>查询</SectionCardTitle>}>
       <Typography.Text>当前计划：{plan?.planName || '-'}</Typography.Text>

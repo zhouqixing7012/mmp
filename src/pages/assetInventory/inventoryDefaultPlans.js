@@ -25,7 +25,7 @@ export function buildDefaultInventoryPlans(project, assets, existingPlans = [], 
     return { key: `generated-${project.projectNo}-${planNo}`, planNo, planName: `${city}盘点计划`, status: '草稿', organization, department, city, range,
       assetCount: quantity, uncountedCount: quantity, countedCount: 0,
       startDate: project.startDate, endDate: project.projectType === '复盘' ? project.startDate : project.endDate,
-      manager: '-', supervisor: '-', executor: '-', financialSupervisor: project.projectType === '复盘' ? '徐博' : '-', auditSupervisor: '-', assets: group.assets,
+      supervisor: '-', executor: '-', financialSupervisor: project.projectType === '复盘' ? '徐博' : '-', auditSupervisor: '-', assets: group.assets,
     };
   });
 }

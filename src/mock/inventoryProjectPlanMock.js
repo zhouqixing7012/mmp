@@ -28,7 +28,7 @@ const nonRoomPlans = (status) => [
   {
     key: 'plan-warehouse', planNo: 'PLAN-20260818-0004', planName: '北京市库房盘点计划',
     status, organization: warehouseSource.company, city, range: '库房',
-    startDate: '2026-08-18', endDate: '2026-08-31', manager: '杨芊',
+    startDate: '2026-08-18', endDate: '2026-08-31',
     supervisor: '孙志强', executor: warehouseSource.owner, assetKeys: [warehouseAsset.key],
   },
 ];

@@ -285,7 +285,6 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
         countedCount: 0,
         startDate: planProject.startDate || PROJECT_INFO.startDate,
         endDate: planProject.projectType === '复盘' ? (planProject.startDate || PROJECT_INFO.startDate) : (planProject.endDate || PROJECT_INFO.endDate),
-        manager: '-',
         supervisor: personnel.supervisor || '-',
         executor: personnel.executor || '-',
         financialSupervisor: planProject.projectType === '复盘' ? '徐博' : '-',

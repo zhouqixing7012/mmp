@@ -20,7 +20,6 @@ export function PlansView({ project, onBack }) {
     { title: '已盘数量', dataIndex: 'countedCount', width: 100 },
     { title: '盘点开始日期', dataIndex: 'startDate', width: 130 },
     { title: '盘点结束日期', dataIndex: 'endDate', width: 130 },
-    { title: '计划负责人', dataIndex: 'manager', width: 130 },
     { title: '盘点监督人', dataIndex: 'supervisor', width: 130 },
     { title: '盘点执行人', dataIndex: 'executor', width: 150 },
   ];

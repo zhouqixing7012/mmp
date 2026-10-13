@@ -196,7 +196,6 @@ function makeAssetColumns({ includeNo = true, includePlan = false, includeCurren
 
   if (includePlan) {
     columns.push(
-      { title: '计划负责人', dataIndex: 'planManager', width: 130 },
       { title: '盘点监督人', dataIndex: 'supervisor', width: 130 },
       { title: '盘点执行人', dataIndex: 'executor', width: 150 },
     );
@@ -1232,7 +1231,6 @@ function CustomPlanModal({ open, onCancel, onConfirm }) {
   const [rows, setRows] = useState(() => RANGE_OPTIONS.map((range) => ({
     key: range,
     range,
-    manager: '',
     supervisor: '',
     executor: '',
   })));
@@ -1246,7 +1244,6 @@ function CustomPlanModal({ open, onCancel, onConfirm }) {
 
   const columns = [
     { title: '盘点范围', dataIndex: 'range', width: 100 },
-    { title: '计划负责人', dataIndex: 'manager', width: 170, render: (value, row) => <Input readOnly value={value} placeholder="选填" suffix={<Search size={14} />} onClick={() => setPersonTarget({ key: row.key, field: 'manager' })} /> },
     { title: '盘点监督人', dataIndex: 'supervisor', width: 170, render: (value, row) => <Input readOnly value={value} placeholder="选填" suffix={<Search size={14} />} onClick={() => setPersonTarget({ key: row.key, field: 'supervisor' })} /> },
     { title: '盘点执行人', dataIndex: 'executor', width: 170, render: (value, row) => <Input readOnly value={value} placeholder="选填" suffix={<Search size={14} />} onClick={() => setPersonTarget({ key: row.key, field: 'executor' })} /> },
   ];
@@ -1263,7 +1260,7 @@ function CustomPlanModal({ open, onCancel, onConfirm }) {
         onOk={() => onConfirm({ planName, rows })}
       >
         <Space direction="vertical" size={16} className="w-full">
-          <Alert type="info" showIcon message="自定义计划从执行盘点资产清单中筛选资产，可按盘点范围分别配置计划负责人、盘点监督人、盘点执行人；未填写时沿用自动生成规则。" />
+          <Alert type="info" showIcon message="自定义计划从执行盘点资产清单中筛选资产，可按盘点范围分别配置盘点监督人、盘点执行人；未填写时沿用自动生成规则。" />
           <div>
             <Typography.Text type="secondary">计划名称</Typography.Text>
             <Input value={planName} onChange={(event) => setPlanName(event.target.value)} />
@@ -1659,11 +1656,11 @@ function PlansView({ project, projectStatus, setProjectStatus, onBack, onOpenPla
       return;
     }
     const selected = new Set(selectedKeys);
-    const missing = rows.find((row) => selected.has(row.key) && (!row.manager || !row.executor));
+    const missing = rows.find((row) => selected.has(row.key) && !row.executor);
     if (missing) {
       Modal.warning({
         title: '人员配置不完整',
-        content: `盘点计划 ${missing.planNo} 未完整配置计划负责人/盘点执行人，请先完成配置。`,
+        content: `盘点计划 ${missing.planNo} 未完整配置盘点执行人，请先完成配置。`,
       });
       return;
     }
@@ -1722,7 +1719,6 @@ function PlansView({ project, projectStatus, setProjectStatus, onBack, onOpenPla
         ? <DatePicker value={dayjs(value)} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, endDate: date ? date.format('YYYY-MM-DD') : '' } : item))} />
         : value,
     },
-    { title: '计划负责人', dataIndex: 'manager', width: 160, render: (value, row) => <PersonnelInput disabled={!editable(row)} value={value} onClick={() => openPersonnel(row.key, 'manager')} /> },
     ...(project.projectType === '复盘' ? [] : [{ title: '计划监督人', dataIndex: 'supervisor', width: 160, render: (value, row) => <PersonnelInput disabled={!editable(row)} value={value} onClick={() => openPersonnel(row.key, 'supervisor')} /> }]),
     { title: '盘点执行人', dataIndex: 'executor', width: 160, render: (value, row) => <PersonnelInput disabled={!editable(row)} value={value} onClick={() => openPersonnel(row.key, 'executor')} /> },
     { title: '资产清单', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => onOpenPlanAssets(row)}>查看</Button> },
