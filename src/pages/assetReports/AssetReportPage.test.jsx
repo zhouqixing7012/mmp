@@ -112,3 +112,13 @@ test('并行审批完整展示，再次查询读取已完成结果并清空审�
     expect(screen.getByText(record.values['申请单号'])).toBeInTheDocument();
   } finally { source.status = previousStatus; }
 });
+
+test("事务报表复用直接类别树与标签文本，秒级日期并移除担保人列", () => {
+  render(<AssetReportPage reportId="report-3-1" />);
+  expect(screen.getByRole("combobox", { name: "资产类别" })).toBeInTheDocument();
+  expect(screen.getByRole("textbox", { name: "资产标签号" })).not.toHaveAttribute("readonly");
+  expect(screen.queryByRole("columnheader", { name: "原资产担保人" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("columnheader", { name: "现资产担保人" })).not.toBeInTheDocument();
+  const date = queryReport("report-3-1")[0].values["事务处理日期"];
+  expect(screen.getAllByText(date).length).toBeGreaterThan(0);
+});

@@ -307,3 +307,19 @@ test("资产明细财务与组织格式同步列表导出且不修改其他报�
     if(row.values["报废类型"]) expect(["已到报废期", "未到报废期", "丢失"]).toContain(row.values["报废类型"]);
   }
 });
+
+test("事务标签模糊查询导出一致，秒级处理日期和担保人列按新口径", () => {
+  const definition = getReportDefinition("report-3-1");
+  const rows = query("report-3-1"), tag = rows[0].values["资产标签号"];
+  const term = tag.slice(1, -1);
+  const filtered = query("report-3-1", { "资产标签号": term });
+  expect(filtered.length).toBeGreaterThan(0);
+  expect(filtered.every(row => row.values["资产标签号"].includes(term))).toBe(true);
+  const data = exported("report-3-1", { "资产标签号": term });
+  expect(data[0]).not.toContain("原资产担保人");
+  expect(data[0]).not.toContain("现资产担保人");
+  const column = data[0].indexOf("事务处理日期");
+  expect(data.slice(1).map(row => row[column])).toEqual(filtered.map(row => row.values["事务处理日期"]));
+  data.slice(1).forEach(row => expect(row[column]).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/));
+  expect(definition.filters.find(field => field.label === "资产类别").type).toBe("treeSelect");
+});
