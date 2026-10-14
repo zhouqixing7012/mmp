@@ -1,3 +1,9 @@
+// 资产维护和报表共用同一资产状态枚举。
+export const ASSET_STATUS_OPTIONS = Object.freeze([
+  '在用-使用中', '在库-修理', '在库-新增', '在用-借用中', '在库-待处理',
+  '再利用-使用中', '已报废-已处置', '已报废-待处置', '再利用-待报废',
+]);
+
 export function formatAssetCategory(asset) {
   return [asset.category, asset.subCategory].filter(Boolean).join('.');
 }

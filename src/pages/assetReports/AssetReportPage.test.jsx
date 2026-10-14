@@ -3,15 +3,36 @@ jest.mock('@rc-component/pagination/locale/en_US', () => jest.requireActual('@rc
 jest.mock('@rc-component/picker/locale/en_US', () => jest.requireActual('@rc-component/picker/lib/locale/en_US'), { virtual: true });
 jest.mock('@rc-component/picker/generate/dayjs', () => jest.requireActual('@rc-component/picker/lib/generate/dayjs'), { virtual: true });
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import AssetReportPage from './AssetReportPage';
 import AssetReportsContent from './index';
+import ReportFilter from './ReportFilter';
 import { queryReport, reportDefinitions } from '../../services/assetReportsService';
 
 beforeEach(() => {
   window.matchMedia = jest.fn().mockImplementation(query => ({ matches: false, media: query, onchange: null, addListener: jest.fn(), removeListener: jest.fn(), addEventListener: jest.fn(), removeEventListener: jest.fn(), dispatchEvent: jest.fn() }));
   window.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
   window.getComputedStyle = jest.fn().mockReturnValue({ getPropertyValue: () => '', content: '', overflow: '', overflowX: '', overflowY: '' });
+});
+test('资产明细类别与状态直接多选下拉，标签是文本，按钮统一命名', () => {
+  render(<AssetReportPage reportId="report-1-1" />);
+  expect(screen.getByRole('combobox', { name: '资产类别' })).toBeInTheDocument();
+  expect(screen.getByRole('combobox', { name: '资产状态' })).toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: '资产标签号' })).not.toHaveAttribute('readonly');
+  expect(screen.getByRole('button', { name: /重\s*置/ })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /导\s*出/ })).toBeInTheDocument();
+  expect(screen.queryByText('采购日期从')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '更多' }));
+  expect(screen.getByRole('textbox', { name: '主资产标签号' })).not.toHaveAttribute('readonly');
+  expect(screen.queryByRole('combobox', { name: '级别' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('combobox', { name: '报废状态' })).not.toBeInTheDocument();
+});
+test.each([['仓库', ['编码', '名称', '公司']], ['Building', ['Building名称', 'City名称']]])('%s选择弹窗包含要求的查询列表列', async (label, titles) => {
+  const definition = reportDefinitions.find(item => item.id === 'report-1-1');
+  render(<ReportFilter definition={definition} field={definition.filters.find(field => field.label === label)} filters={{}} onChange={jest.fn()} onQuery={jest.fn()} />);
+  fireEvent.click(screen.getByPlaceholderText('请选择'));
+  const dialog = await screen.findByRole('dialog');
+  titles.forEach(title => expect(within(dialog).getByRole('columnheader', { name: title })).toBeInTheDocument());
 });
 test.each(reportDefinitions.map(definition => [definition.id, definition.title]))('%s从实际内容组件渲染%s', (id, title) => {
   const definition = reportDefinitions.find(item => item.id === id);

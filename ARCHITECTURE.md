@@ -278,3 +278,5 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 调用关系：后台菜单/页签 → AssetReportsContent → AssetReportPage/ReportFilter → assetReportsService → businessRulesMock → assetReportsMock；导出复用同一筛选定义并读取独立导出字段配置。没有新增路由、后台或运行依赖。
 
 默认按大类、小类编码排序的三页已使用上传的真实分类码；演示交易选取明确核实的物料记录，未来未映射或异码冲突仍明确失败。页面、候选及导出接受同一台账/卡片access，不另设报表导出授权。附加耗材明细每次查询投影入库保存税金、卡片或入库仓库、领用单状态；空仓不生成点号。完成快照与当前值分开。最新核查见[基础资料与耗材规则核查](docs/八项报表独立PRD/比对报告/报表基础资料与耗材规则核查-20261014.md)。
+
+资产明细类别直接复用AssetQueryControls.AssetCategorySelect，状态与资产维护共用AssetValueSelect及assetQueryModel.ASSET_STATUS_OPTIONS。十页报表日期定义为单daterange，服务按原业务日期键匹配区间；现役盘点资产查询的启用日期同样用RangePicker，但保留原enableFrom/enableTo数据键。精修与来源追溯见[查询精修核查](docs/八项报表独立PRD/比对报告/资产明细查询精修核查-20261014.md)。

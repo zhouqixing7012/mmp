@@ -32,6 +32,8 @@ import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';
 import LookupInput from '../../components/LookupInput';
 import StatusTag from '../../components/StatusTag';
+import { AssetValueSelect } from '../../components/AssetQueryControls';
+import { ASSET_STATUS_OPTIONS as STATUS_OPTIONS } from '../../components/assetQueryModel';
 import {
   batchUpdateAssetMaintenanceRows,
   getAssetMaintenanceRows,
@@ -42,17 +44,6 @@ const { RangePicker } = DatePicker;
 const { TextArea } = Input;
 const { Dragger } = Upload;
 
-const STATUS_OPTIONS = [
-  '在用-使用中',
-  '在库-修理',
-  '在库-新增',
-  '在用-借用中',
-  '在库-待处理',
-  '再利用-使用中',
-  '已报废-已处置',
-  '已报废-待处置',
-  '再利用-待报废',
-];
 const FORMAL_SCRAP_STATUSES = new Set(['已报废-已处置', '已报废-待处置']);
 const EDITABLE_STATUS_OPTIONS = STATUS_OPTIONS.filter((item) => !FORMAL_SCRAP_STATUSES.has(item));
 const PURPOSE_OPTIONS = ['部门公用', '员工用机', '其他用途', '专业用途'];
@@ -807,7 +798,7 @@ export default function AssetMaintenancePage() {
         />
       </QueryItem>
       <QueryItem label="资产状态">
-        <Select mode="multiple" value={draftFilters.statuses} allowClear placeholder="请选择" options={STATUS_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('statuses', value)} />
+        <AssetValueSelect rows={STATUS_OPTIONS.map((status) => ({ status }))} field="status" multiple value={draftFilters.statuses} onChange={(value) => updateFilter('statuses', value)} />
       </QueryItem>
       <QueryItem label="板块">
         <Select mode="multiple" value={draftFilters.plates} allowClear placeholder="请选择" options={PLATE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('plates', value)} />

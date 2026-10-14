@@ -3,6 +3,7 @@ import { assetReportRows, assetReportCatalog } from '../mock/businessRulesMock';
 import { DEFAULT_REPORT_ACCESS, assertReportAccess, canReadReportRow, getWarehouseScope } from './assetReportAccess';
 
 const isEmpty = value => value === undefined || value === null || value === '' || (Array.isArray(value) && !value.length);
+const directoryName = value => String(value ?? '').includes('.') ? String(value).slice(String(value).indexOf('.') + 1) : String(value ?? '');
 const list = value => Array.isArray(value) ? value : isEmpty(value) ? [] : [value];
 const COMPANY_FIELDS = new Set(['company', '公司', '耗材公司', '申请人公司', '耗材责任人公司']);
 const WAREHOUSE_FIELDS = new Set(['warehouse', '仓库', '源仓库', '目标仓库']);
@@ -59,7 +60,8 @@ export function getReportOptions(definition, field, filters = {}, access = DEFAU
     const cities = list(filters.City);
     const key = group.toLowerCase();
     return uniqueOptions(warehouses.filter(warehouse => group !== 'Building' || !cities.length || cities.includes(warehouse.city))
-      .map(warehouse => ({ value: warehouse[key], label: warehouse[key] })));
+      .map(warehouse => ({ value: warehouse[key], label: group === 'Floor' && definition.id === 'report-1-1' ? directoryName(warehouse.floor) : warehouse[key],
+        name: directoryName(warehouse[key]), city: directoryName(warehouse.city) })));
   }
   const options = rowOptions(rows, field);
   if (group === 'department' || field.match === 'department') {

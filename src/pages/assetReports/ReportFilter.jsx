@@ -3,6 +3,8 @@ import { Button, DatePicker, Input, Modal, Select, Space, TreeSelect, message } 
 import dayjs from 'dayjs';
 import LookupInput from '../../components/LookupInput';
 import SelectModal from '../../components/SelectModal';
+import { AssetCategorySelect, AssetValueSelect } from '../../components/AssetQueryControls';
+import { ASSET_STATUS_OPTIONS } from '../../components/assetQueryModel';
 import { getReportOptions } from '../../services/assetReportsService';
 import { buildReportTree } from '../../services/assetReportOptions';
 
@@ -18,6 +20,13 @@ export default function ReportFilter({ definition, field, filters, access, onCha
     setTreeDraft(value || []);
     setOpen(true);
   };
+  if (field.type === 'treeSelect') return <AssetCategorySelect rows={[]} treeData={buildReportTree(options)}
+    aria-label={field.label} value={selected} onChange={change} />;
+  if (field.type === 'assetStatusSelect') return <AssetValueSelect rows={ASSET_STATUS_OPTIONS.map(status => ({ status }))}
+    field="status" multiple aria-label={field.label} value={selected} onChange={change} />;
+  if (field.type === 'daterange') return <DatePicker.RangePicker style={{ width: '100%' }} format="YYYY-MM-DD" allowEmpty={[true, true]}
+    placeholder={['开始日期', '结束日期']} value={value ? value.map(date => date ? dayjs(date) : null) : null}
+    onChange={dates => change(dates ? dates.map(date => date ? date.format('YYYY-MM-DD') : null) : undefined)} />;
   if (field.type === 'date') {
     const other = definition.filters.find(item => item.key === field.key && item.side !== field.side && item.type === 'date');
     const boundary = other && filters[other.label];
@@ -42,12 +51,17 @@ export default function ReportFilter({ definition, field, filters, access, onCha
           placeholder={department ? '请选择部门' : '请选择类别'} value={treeDraft} onChange={setTreeDraft} />
       </Modal> : <SelectModal open={open} onCancel={() => setOpen(false)} title={`选择${field.label}`} rowKey="value" multiple={field.multiple}
         dataSource={options} initialSelectedKeys={selected}
-        searchFields={[{ name: 'code', label: person ? '员工编号' : '编码', dataIndex: 'code' },
+        searchFields={field.optionSet === 'Building' && definition.id === 'report-1-1' ? [
+          { name: 'name', label: 'Building名称', dataIndex: 'name' }, { name: 'city', label: 'City名称', dataIndex: 'city' },
+        ] : [{ name: 'code', label: person ? '员工编号' : '编码', dataIndex: 'code' },
           { name: person ? 'name' : 'label', label: person ? '姓名' : '名称', dataIndex: person ? 'name' : 'label' },
           ...(person ? [{ name: 'department', label: '部门', dataIndex: 'department' }] : [])]}
-        columns={[{ title: person ? '员工编号' : '编码', dataIndex: 'code', width: 160 },
+        columns={field.optionSet === 'Building' && definition.id === 'report-1-1' ? [
+          { title: 'Building名称', dataIndex: 'name', width: 260 }, { title: 'City名称', dataIndex: 'city', width: 200 },
+        ] : [{ title: person ? '员工编号' : '编码', dataIndex: 'code', width: 160 },
           { title: person ? '姓名' : '名称', dataIndex: person ? 'name' : 'label', width: 260 },
-          ...(person ? [{ title: '部门', dataIndex: 'department', width: 200 }] : [])]}
+          ...(person ? [{ title: '部门', dataIndex: 'department', width: 200 }] : []),
+          ...(field.optionSet === 'warehouse' && definition.id === 'report-1-1' ? [{ title: '公司', dataIndex: 'company', width: 220 }] : [])]}
         onConfirm={records => change(field.multiple ? records.map(record => record.value) : records.value)} />}
     </>;
   }

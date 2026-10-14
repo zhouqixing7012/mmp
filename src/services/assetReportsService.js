@@ -16,14 +16,18 @@ export const isReportValueEmpty = value => value === undefined || value === null
 const selectedValues = value => Array.isArray(value) ? value : [value];
 
 export function validateReportFilters(definition, filters) {
+  for (const label of Object.keys(filters)) {
+    if (!definition.filters.some(field => field.label === label) && !isReportValueEmpty(filters[label])) throw new Error(`未定义查询条件：${label}`);
+  }
   for (const field of definition.filters) {
     const value = filters[field.label];
     if (isReportValueEmpty(value)) continue;
     if (field.type === 'amount' && !Number.isFinite(Number(String(value).replace(/,/g, '')))) throw new Error(`${field.label}须填写有效金额`);
-    if (field.type === 'date' && !dayjs(value).isValid()) throw new Error(`${field.label}须填写有效日期`);
-    if (field.side === 'from') {
-      const end = definition.filters.find(item => item.key === field.key && item.side === 'to');
-      if (end && !isReportValueEmpty(filters[end.label]) && dayjs(value).isAfter(dayjs(filters[end.label]), 'day')) throw new Error(`${field.label}不能晚于${end.label}`);
+    if (field.type === 'daterange') {
+      if (!Array.isArray(value) || value.length !== 2) throw new Error(`${field.label}须填写日期范围`);
+      const [from, to] = value;
+      if (value.some(date => !isReportValueEmpty(date) && !dayjs(date).isValid())) throw new Error(`${field.label}须填写有效日期`);
+      if (!isReportValueEmpty(from) && !isReportValueEmpty(to) && dayjs(from).isAfter(dayjs(to), 'day')) throw new Error(`${field.label}开始日期不能晚于结束日期`);
     }
   }
 }
@@ -43,8 +47,12 @@ export function matchesReportRow(definition, row, filters) {
       case 'category': return values.includes(text) || values.some(value => value.startsWith('major:') && text.split('|')[0] === value.slice(6));
       case 'department': return values.some(value => text === value || text.startsWith(`${value}.`) || row.departmentAncestors?.[field.key]?.includes(value));
       case 'number': return !isReportValueEmpty(source) && Number(source) === Number(term.replace(/,/g, ''));
-      case 'gteDate': return !isReportValueEmpty(source) && !dayjs(source).isBefore(dayjs(input), 'day');
-      case 'lteDate': return !isReportValueEmpty(source) && !dayjs(source).isAfter(dayjs(input), 'day');
+      case 'dateRange': {
+        const [from, to] = input;
+        if (isReportValueEmpty(from) && isReportValueEmpty(to)) return true;
+        return !isReportValueEmpty(source) && (isReportValueEmpty(from) || !dayjs(source).isBefore(dayjs(from), 'day'))
+          && (isReportValueEmpty(to) || !dayjs(source).isAfter(dayjs(to), 'day'));
+      }
       case 'gteNumber': return !isReportValueEmpty(source) && Number(source) >= Number(term.replace(/,/g, ''));
       case 'lteNumber': return !isReportValueEmpty(source) && Number(source) <= Number(term.replace(/,/g, ''));
       default: throw new Error(`未定义的匹配规则：${field.match}`);
