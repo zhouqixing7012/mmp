@@ -254,3 +254,17 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 | `src/pages/assetInventory/inventoryPhotoRules.js` | 按规则独立抽取、按标签合并，保存配置与固定快照结果 |
 
 创建项目 → 图片规则编辑 → 生成快照抽取并持久化 → 快照/计划读取统一标记 → 移动端必传校验 → 非机房人工审核；机房仅保存照片、不进入人工审核。
+
+
+## 资产报表（2026-10-14）
+
+| 文件 | 职责 |
+|---|---|
+| `src/pages/assetReports/index.js` | 按后台子菜单和页签定位八入口十个报表定义。 |
+| `src/pages/assetReports/AssetReportPage.jsx` | 只读查询、分页、排序、选中导出及耗材详情的公共页面。 |
+| `src/pages/assetReports/ReportFilter.jsx` | 复用公共选择弹窗和查询组件，承载日期、金额、类别树及联动选择。 |
+| `src/pages/assetReports/reportDefinitions.json` | 各报表明确的字段、控件、匹配、导出顺序及差异配置。 |
+| `src/services/assetReportsService.js` | 查询校验、匹配、排序、格式与xlsx生成，不写业务数据。 |
+| `src/mock/assetReportsMock.js` | 既有卡片和事务的演示快照、独立报表演示记录及参考目录。 |
+
+调用关系：后台菜单/页签 → AssetReportsContent → AssetReportPage/ReportFilter → assetReportsService → businessRulesMock → assetReportsMock；导出复用同一筛选定义并读取独立导出字段配置。没有新增路由、后台或运行依赖。

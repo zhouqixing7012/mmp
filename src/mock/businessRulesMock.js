@@ -323,3 +323,6 @@ export const mockNOServiceSubjectMappingData = [
 export const mockEmployeeProjectMappingData = [
     { id: 21, empNo: '219177', empName: '黄涛', projName: 'A项目' },
   ];
+
+// 八项资产报表的独立演示快照及公共参考目录。
+export { assetReportRows, assetReportCatalog } from './assetReportsMock';

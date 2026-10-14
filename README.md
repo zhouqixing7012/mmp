@@ -6,6 +6,12 @@ PRD 编写与复核遵循 [`我的 PRD 偏好与写作规范`](docs/PRD-撰写�
 
 这是一个用于产品设计、研发评审和流程演示的企业资产管理前端项目，不是生产系统。当前覆盖员工自助、资产申请/借用/更换/退库、耗材、合约号码、库存管理、后台资产管理、资产盘点、报废和机房资产等场景。
 
+## 资产报表
+
+「资产报表」位于「资产盘点」下方，包含八个入口。资产、耗材统一申领各分两个页签，支持查询、分页和Excel导出；耗材明细支持选中导出与只读详情。依据[八项独立PRD](docs/八项报表独立PRD/)，原型边界及验证见[交付记录](docs/八项报表独立PRD/原型交付记录-20261014.md)。
+
+定向测试：`CI=true npm test -- --watchAll=false --runInBand --runTestsByPath src/services/assetReportsService.test.js src/pages/assetReports/AssetReportPage.test.jsx`。
+
 ## 技术架构
 
 - React 19 + Create React App
