@@ -63,7 +63,30 @@ export function completedSnapshot(row, type) {
   const snapshot = Object.freeze({ ...row.values });
   return { ...row, snapshotType: type, snapshot, values: snapshot, exports: snapshot };
 }
-export const reportAssets = reportWarehouses.flatMap((warehouse, group) => reportAssetMaterials.map((material, index) => fixture(`asset-${group}-${index}`, material, warehouse, index === 1 ? { '原值': 1100, '累计折旧': 150, '净值': 850, '升级日期': '2026-09-20', '升级金额': 1234.56 } : {})));
+// 仅资产明细的展示源：用户财务示例与独立组织演示，不代表生产财务或组织对应关系。
+export const assetReportPresentationSource = Object.freeze({
+  finance: Object.freeze({ account: '112.16.909003.72101.E2104.0.0.0.0', book: 'FA_BOOK_SOHU', firstAssetNumber: '100067249', source: '用户给定财务字段格式示例' }),
+  organization: Object.freeze({ subsidiaries: Object.freeze(['集团', '媒体', '焦点', '视频']),
+    hr1: Object.freeze({ code: 'D0001', name: '集团总部' }), hr2: Object.freeze({ code: 'D0002', name: '财务中心' }),
+    source: 'src/mock/businessRulesMock.js的mockDepartments既有演示记录；级次关系仅本报表示例，非真实映射' }),
+  retirementTypes: Object.freeze(['已到报废期', '未到报废期', '丢失']),
+});
+export const reportAssets = reportWarehouses.flatMap((warehouse, group) => reportAssetMaterials.map((material, index) => {
+  const { finance, organization, retirementTypes } = assetReportPresentationSource;
+  const subsidiary = organization.subsidiaries[index % organization.subsidiaries.length];
+  const department = `演示组织.${subsidiary}.${organization.hr1.name}.${organization.hr2.name}.台账组.报表组`;
+  const row = fixture(`asset-${group}-${index}`, material, warehouse, {
+    ...(index === 1 ? { '原值': 1100, '累计折旧': 150, '净值': 850, '升级日期': '2026-09-20', '升级金额': 1234.56 } : {}),
+    '费用账户': finance.account, '资产账簿': finance.book, '资产编号': String(Number(finance.firstAssetNumber) + group * 100 + index),
+    '子公司': subsidiary, 'HR一级部门': `${organization.hr1.code}.${organization.hr1.name}`,
+    'HR二级部门': `${organization.hr2.code}.${organization.hr2.name}`,
+    '报废类型': index < 3 ? '' : retirementTypes[index - 3],
+  }, { presentationSource: assetReportPresentationSource, organizationSource: organization.source });
+  Object.assign(row.filters, { 'HR部门': department, '部门': department });
+  Object.assign(row.lookupLabels, { 'HR部门': department, '部门': department });
+  row.exports = { ...row.exports, ...row.values };
+  return row;
+}));
 export const reportConsumables = consumableWarehouses.flatMap((warehouse, group) => consumableMaterials.slice(0, 6).map((material, index) => {
   const row = fixture(`consumable-${group}-${index}`, material, warehouse, {
   '耗材标签号': material.materialType === '低值耐用品' ? `CONSUM-${group}-${index}` : '', '资产标签号': material.materialType === '低值耐用品' ? `CONSUM-${group}-${index}` : '',

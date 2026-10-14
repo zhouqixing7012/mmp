@@ -45,7 +45,7 @@ export default function AssetReportPage({ reportId, access = DEFAULT_REPORT_ACCE
   };
   const columns = [
     { title: '序号', key: 'index', width: 70, fixed: 'left', render: (_, row, index) => (pagination.current - 1) * pagination.pageSize + index + 1 },
-    ...definition.columns.map(column => ({ title: column.label, key: column.key, dataIndex: ['values', column.key], width: 160,
+    ...definition.columns.map(column => ({ title: column.label, key: column.key, dataIndex: ['values', column.key], width: column.width ?? 160,
       ellipsis: !['审批节点', '当前审批人', '当前审批人名称'].includes(column.key), align: ['money', 'moneyOptional', 'integer'].includes(column.format) ? 'right' : 'left',
       sorter: definition.sortable && !(reportId === 'report-8-1' && ['报废原值', '报废净值'].includes(column.key))
         && !(reportId === 'report-5-1' && ['含税金额', '资产所属板块', '资产账簿'].includes(column.key)),

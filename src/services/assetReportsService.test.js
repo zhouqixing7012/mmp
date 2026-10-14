@@ -58,7 +58,7 @@ test('标签模糊查询与公司多选取交集，分类父节点匹配小类',
 test('部门包含下级，邻接名称不能误命中', () => {
   const rows = query('report-1-1', { 'HR部门': ['演示组织.集团'] });
   expect(rows.length).toBeGreaterThan(0);
-  expect(rows.every(row => row.scope === '集团')).toBe(true);
+  expect(rows.every(row => row.values['子公司'] === '集团')).toBe(true);
   expect(query('report-1-1', { 'HR部门': ['演示组织.集团其他'] })).toHaveLength(0);
 });
 test('入职查询与展示日期一致，领用区间包含当天，逆序日期报错', () => {
@@ -268,7 +268,7 @@ test('日期范围可仅一端，并在查询和导出使用相同自然日边�
   expect(() => query('report-4-1', { '入职日期': ['错误日期', null] })).toThrow('须填写有效日期');
   expect(() => query('report-4-1', { '入职日期从': '2026-09-01' })).toThrow('未定义查询条件');
 });
-test('十页全部合并日期与导出命名，01查询精修不删结果字段', () => {
+test('十页合并日期与导出命名，01查询和结果按最新确认精修', () => {
   const ids = Object.keys(assetReportRows);
   ids.forEach(id => {
     const definition = getReportDefinition(id);
@@ -284,7 +284,7 @@ test('十页全部合并日期与导出命名，01查询精修不删结果字段
   expect(definition.filters.some(field => ['级别', '报废状态'].includes(field.label))).toBe(false);
   expect(definition.filters.find(field => field.label === '资产类别').type).toBe('treeSelect');
   expect(definition.filters.find(field => field.label === '资产状态').type).toBe('assetStatusSelect');
-  expect(definition.columns.some(field => field.key === '级别')).toBe(true);
+  expect(definition.columns.some(field => field.key === '级别')).toBe(false);
   const floor = definition.filters.find(field => field.label === 'Floor');
   expect(floor).toMatchObject({ type: 'select', multiple: true });
   expect(getReportOptions(definition, floor).every(option => option.label === option.name)).toBe(true);
@@ -292,4 +292,18 @@ test('十页全部合并日期与导出命名，01查询精修不删结果字段
   expect(getReportOptions(definition, building, { City: ['37.上海市'] })).toEqual(expect.arrayContaining([expect.objectContaining({ value: '127.瑞安广场', name: '瑞安广场', city: '上海市' })]));
   const warehouse = definition.filters.find(field => field.label === '仓库');
   expect(getReportOptions(definition, warehouse).every(option => option.company && option.code)).toBe(true);
+});
+
+test("资产明细财务与组织格式同步列表导出且不修改其他报表", () => {
+  const rows = query("report-1-1");
+  expect(new Set(rows.map(row => row.values["子公司"]))).toEqual(new Set(["集团", "媒体", "焦点", "视频"]));
+  for (const row of rows) {
+    expect(row.values["费用账户"]).toBe("112.16.909003.72101.E2104.0.0.0.0");
+    expect(row.values["资产账簿"]).toBe("FA_BOOK_SOHU");
+    expect(row.values["资产编号"]).toMatch(/^\d+$/);
+    expect(row.values["HR一级部门"]).toBe("D0001.集团总部");
+    expect(row.values["HR二级部门"]).toBe("D0002.财务中心");
+    for (const key of ["费用账户", "资产账簿", "资产编号", "子公司", "HR一级部门", "HR二级部门"]) expect(row.exports[key]).toBe(row.values[key]);
+    if(row.values["报废类型"]) expect(["已到报废期", "未到报废期", "丢失"]).toContain(row.values["报废类型"]);
+  }
 });

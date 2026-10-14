@@ -17,6 +17,10 @@ beforeEach(() => {
 test('资产明细类别与状态直接多选下拉，标签是文本，按钮统一命名', () => {
   render(<AssetReportPage reportId="report-1-1" />);
   expect(screen.getByRole('combobox', { name: '资产类别' })).toBeInTheDocument();
+  expect(screen.getByRole('combobox', { name: 'HR部门' })).toBeInTheDocument();
+  expect(screen.getByRole('columnheader', { name: '仓库' })).toBeInTheDocument();
+  expect(screen.queryByRole('columnheader', { name: '库房' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('columnheader', { name: '级别' })).not.toBeInTheDocument();
   expect(screen.getByRole('combobox', { name: '资产状态' })).toBeInTheDocument();
   expect(screen.getByRole('textbox', { name: '资产标签号' })).not.toHaveAttribute('readonly');
   expect(screen.getByRole('button', { name: /重\s*置/ })).toBeInTheDocument();

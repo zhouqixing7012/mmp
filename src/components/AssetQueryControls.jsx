@@ -5,6 +5,10 @@ import SelectModal from './SelectModal';
 
 export { formatAssetCategory, matchesAssetCategory, matchesQuerySelection } from './assetQueryModel';
 
+export function AssetTreeSelect({ value, onChange, ...props }) {
+  return <TreeSelect treeCheckable showCheckedStrategy={TreeSelect.SHOW_PARENT} showSearch treeNodeFilterProp="title" allowClear style={{ width: "100%" }} value={value || []} onChange={onChange} {...props} />;
+}
+
 export function AssetCategorySelect({ rows, value, onChange, ...props }) {
   const treeData = useMemo(() => {
     const categories = new Map();
@@ -18,7 +22,7 @@ export function AssetCategorySelect({ rows, value, onChange, ...props }) {
       children: [...minors].map((minor) => ({ title: minor, value: `minor:${major}|${minor}` })),
     }));
   }, [rows]);
-  return <TreeSelect treeData={treeData} treeCheckable showCheckedStrategy={TreeSelect.SHOW_PARENT} showSearch treeNodeFilterProp="title" allowClear style={{ width: '100%' }} placeholder="请选择资产类别" value={value || []} onChange={onChange} {...props} />;
+  return <AssetTreeSelect treeData={treeData} placeholder="请选择资产类别" value={value} onChange={onChange} {...props} />;
 }
 
 // 正式职级由PS提供；原型选项仅使用已有演示记录，实习生和公共独立展示。

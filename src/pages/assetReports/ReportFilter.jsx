@@ -3,7 +3,7 @@ import { Button, DatePicker, Input, Modal, Select, Space, TreeSelect, message } 
 import dayjs from 'dayjs';
 import LookupInput from '../../components/LookupInput';
 import SelectModal from '../../components/SelectModal';
-import { AssetCategorySelect, AssetValueSelect } from '../../components/AssetQueryControls';
+import { AssetCategorySelect, AssetTreeSelect, AssetValueSelect } from '../../components/AssetQueryControls';
 import { ASSET_STATUS_OPTIONS } from '../../components/assetQueryModel';
 import { getReportOptions } from '../../services/assetReportsService';
 import { buildReportTree } from '../../services/assetReportOptions';
@@ -22,6 +22,8 @@ export default function ReportFilter({ definition, field, filters, access, onCha
   };
   if (field.type === 'treeSelect') return <AssetCategorySelect rows={[]} treeData={buildReportTree(options)}
     aria-label={field.label} value={selected} onChange={change} />;
+  if (field.type === 'departmentTreeSelect') return <AssetTreeSelect treeData={buildReportTree(options, true)}
+    aria-label={field.label} placeholder="请选择HR部门" value={selected} onChange={change} />;
   if (field.type === 'assetStatusSelect') return <AssetValueSelect rows={ASSET_STATUS_OPTIONS.map(status => ({ status }))}
     field="status" multiple aria-label={field.label} value={selected} onChange={change} />;
   if (field.type === 'daterange') return <DatePicker.RangePicker style={{ width: '100%' }} format="YYYY-MM-DD" allowEmpty={[true, true]}
