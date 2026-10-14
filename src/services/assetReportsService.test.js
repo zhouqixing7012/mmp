@@ -1,96 +1,140 @@
 import * as XLSX from 'xlsx';
 import { assetReportRows } from '../mock/businessRulesMock';
-import { buildReportWorkbook, formatReportValue, getReportDefinition, getReportOptions, matchesReportRow, queryReport, reportDefinitions, updateReportFilter } from './assetReportsService';
-import { MAIN_MENU_ITEMS, ASSET_REPORT_MENU_ITEMS } from '../pages/yewurules/config/menuConfig';
-
-const sheetRows = workbook => XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, defval: '' });
-test('资产报表在资产盘点之后，八个入口十个独立页面', () => {
-  const index = MAIN_MENU_ITEMS.findIndex(item => item.key === '资产盘点');
-  expect(MAIN_MENU_ITEMS[index + 1].key).toBe('资产报表');
-  expect(ASSET_REPORT_MENU_ITEMS).toHaveLength(8);
-  expect(reportDefinitions).toHaveLength(10);
+import { buildReportWorkbook, formatReportValue, getReportDefinition, getReportOptions, queryReport, updateReportFilter } from './assetReportsService';
+const sort = { key: '资产标签号', order: 'ascend' };
+const permission = scopes => ({ userId: 'test-user', canView: true, canExport: true, allowedScopes: scopes });
+const all = permission(['集团', '上海媒体', '广州媒体']);
+const query = (id, filters = {}, access = all) => queryReport(id, filters, sort, access);
+const exported = (id, filters = {}, selected = [], access = all) => {
+  const book = buildReportWorkbook(id, filters, selected, sort, access);
+  return XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]], { header: 1, defval: '' });
+};
+test.each(['集团', '上海媒体', '广州媒体'])('%s查询与导出仅含授权台账', scope => {
+  const access = permission([scope]), rows = query('report-1-1', {}, access), data = exported('report-1-1', {}, [], access);
+  expect(rows.length).toBeGreaterThan(0);
+  expect(rows.every(row => row.scope === scope)).toBe(true);
+  expect(data.slice(1).map(row => row[data[0].indexOf('资产标签号')])).toEqual(rows.map(row => row.values['资产标签号']));
 });
-test.each([
-  ['report-1-1',36,64,64], ['report-2-1',27,17,61], ['report-3-1',13,34,34],
-  ['report-4-1',15,30,30], ['report-5-1',32,38,39], ['report-6-1',12,30,30],
-  ['report-6-2',13,36,36], ['report-7-1',13,31,31], ['report-7-2',16,27,27], ['report-8-1',34,34,34],
-])('%s保留完整字段并支持仅表头导出', (id, filters, columns, exports) => {
-  const definition = getReportDefinition(id);
-  expect(definition.filters).toHaveLength(filters);
-  expect(definition.columns).toHaveLength(columns);
-  expect(definition.exportColumns).toHaveLength(exports);
-  const textField = definition.filters.find(field => field.type === 'text');
-  const data = sheetRows(buildReportWorkbook(id, { [textField.label]: 'NO-MATCH-RECORD' }));
-  expect(data).toHaveLength(1);
-  expect(data[0]).toHaveLength(exports);
-  expect(data[0]).not.toContain('序号');
+test('缺少授权立即失败，选中其他台账不能绕过权限', () => {
+  expect(() => query('report-1-1', {}, { ...all, canView: false })).toThrow('无报表查看权限');
+  expect(() => exported('report-1-1', {}, [], { ...all, canExport: false })).toThrow('无报表导出权限');
+  const outside = assetReportRows['report-2-1'].find(row => row.scope === '上海媒体');
+  expect(exported('report-2-1', {}, [outside.id], permission(['集团']))).toHaveLength(1);
 });
-test('标签包含和前缀分别匹配，主标签可匹配自身前缀', () => {
-  const row = { filters: { '资产标签号': 'ABC123', '主资产标签号': 'PARENT' } };
-  expect(matchesReportRow(getReportDefinition('report-1-1'), row, { '资产标签号': '123' })).toBe(true);
-  expect(matchesReportRow(getReportDefinition('report-8-1'), row, { '资产标签号': '123' })).toBe(false);
-  expect(matchesReportRow(getReportDefinition('report-8-1'), row, { '主资产标签号': 'ABC' })).toBe(true);
+test('卡片授权限制列表和导出', () => {
+  const tag = assetReportRows['report-1-1'][0].filters['资产标签号'], access = { ...all, allowedAssetTags: [tag] };
+  expect(query('report-1-1', {}, access).map(row => row.values['资产标签号'])).toEqual([tag]);
+  expect(exported('report-1-1', {}, [], access)).toHaveLength(2);
+  const definition = getReportDefinition('report-1-1'), field = definition.filters.find(item => item.label === '资产标签号');
+  expect(getReportOptions(definition, field, {}, access).map(option => option.value)).toEqual([tag]);
 });
-test('金额零值精确匹配，耗材原值范围零不筛选', () => {
-  expect(matchesReportRow(getReportDefinition('report-1-1'), { filters: { '原值': 1 } }, { '原值': '0' })).toBe(false);
-  expect(matchesReportRow(getReportDefinition('report-2-1'), { filters: { '原值': 1 } }, { '原值至': '0' })).toBe(true);
+test('缺类别编码明确报错，不用名称冒充编码排序', () => {
+  ['report-1-1', 'report-2-1', 'report-5-1'].forEach(id => {
+    expect(() => queryReport(id, {}, null, all)).toThrow('无法执行默认排序');
+    expect(query(id).length).toBeGreaterThan(0);
+  });
 });
-test('报废值为空，不补0或按数量分摊，导出排除印刷号', () => {
-  const definition = getReportDefinition('report-8-1');
-  expect(definition.exportColumns.map(field => field.label)).not.toContain('印刷号');
-  const data = sheetRows(buildReportWorkbook(definition.id));
-  expect(data.length).toBeGreaterThan(1);
-  for (const row of data.slice(1)) {
+test('多选标签和公司取交集，分类父节点匹配小类', () => {
+  const rows = assetReportRows['report-1-1'].filter(row => row.scope === '集团').slice(0, 2);
+  expect(query('report-1-1', { '资产标签号': rows.map(row => row.filters['资产标签号']), '公司': [rows[0].filters['公司']] }).map(row => row.id)).toEqual(rows.map(row => row.id));
+  expect(query('report-1-1', { '资产标签号': [rows[0].filters['资产标签号']], '公司': ['115'] })).toHaveLength(0);
+  const major = rows[0].values['资产大类'];
+  expect(query('report-1-1', { '资产类别': [`major:${major}`] }).every(row => row.values['资产大类'] === major)).toBe(true);
+});
+test('部门包含下级，邻接名称不能误命中', () => {
+  const rows = query('report-1-1', { 'HR部门': ['演示组织.集团'] });
+  expect(rows.length).toBeGreaterThan(0);
+  expect(rows.every(row => row.scope === '集团')).toBe(true);
+  expect(query('report-1-1', { 'HR部门': ['演示组织.集团其他'] })).toHaveLength(0);
+});
+test('入职查询与展示日期一致，领用区间包含当天，逆序日期报错', () => {
+  const rows = queryReport('report-4-1', { '入职日期从': '2026-09-02', '入职日期至': '2026-09-02' }, null, all);
+  expect(rows).toHaveLength(3);
+  expect(rows.every(row => row.values['入职日期'] === '2026-09-02' && row.values['数量'] === 1)).toBe(true);
+  expect(query('report-4-1', { '领用日期从': '2026-10-02', '领用日期至': '2026-10-02' })).toHaveLength(3);
+  expect(() => query('report-4-1', { '入职日期从': '2026-09-03', '入职日期至': '2026-09-02' })).toThrow('不能晚于');
+});
+test('延期可见，刷卡按员工确认方式判断', () => {
+  const rows = query('report-4-1');
+  expect(rows.some(row => row.values['领用状态'] === '延期' && row.values['是否领用'] === '否')).toBe(true);
+  expect(rows.every(row => row.values['是否刷卡'] === (row.values['员工确认方式'] === '刷卡' ? '是' : '否'))).toBe(true);
+});
+test('City改变后仅保留合法Building', () => {
+  const definition = getReportDefinition('report-1-1'), field = definition.filters.find(item => item.label === 'City');
+  const next = updateReportFilter(definition, { Building: ['127.瑞安广场', '129753.搜狐媒体大厦'] }, field, ['37.上海市']);
+  expect(next.Building).toEqual(['127.瑞安广场']);
+  expect(getReportOptions(definition, definition.filters.find(item => item.label === 'Building'), next).every(item => item.value === '127.瑞安广场')).toBe(true);
+});
+test('新增仅已完成的三种入库，完成快照不可修改', () => {
+  const rows = query('report-5-1');
+  expect(new Set(rows.map(row => row.values['入库类型']))).toEqual(new Set(['新增入库', '采购接收', '自购入库']));
+  expect(rows.every(row => row.documentStatus === '已完成' && row.kind === '资产')).toBe(true);
+  expect(rows.some(row => row.id === 'add-pending')).toBe(false);
+  expect(Object.isFrozen(rows[0].snapshot)).toBe(true);
+  expect(() => { rows[0].snapshot['原值'] = 99999; }).toThrow();
+});
+test('事务单据类型和操作类型独立筛选，不适用的变更字段为空', () => {
+  const rows = queryReport('report-3-1', { '单据类型': ['资产变更'], '事务类型': ['104'] }, null, all);
+  expect(rows).toHaveLength(3);
+  expect(rows.every(row => row.documentStatus === '已处理' && row.values['原序列号'] !== row.values['现序列号'] && row.values['原仓库'] === '' && row.values['现资产责任人'] === '')).toBe(true);
+  expect(query('report-3-1').some(row => row.id === 'transaction-pending')).toBe(false);
+  const data = exported('report-3-1', { '事务类型': ['104'] });
+  expect(data[1][data[0].indexOf('事务执行人')]).toBe('213852.孙志强');
+});
+test('事务处理日期默认从新到旧', () => {
+  const rows = queryReport('report-3-1', {}, null, all);
+  expect(rows.every((row, index) => !index || rows[index - 1].sort.processedAt >= row.sort.processedAt)).toBe(true);
+});
+test.each(['report-6-1', 'report-6-2'])('%s拆行共享单头物料，保持来源数量和价格', id => {
+  const rows = query(id, {}, permission(['集团'])), split = rows.find(row => row.grain === '资产配给单.物料.数量');
+  const same = rows.filter(row => row.values['申请单号'] === split.values['申请单号']);
+  expect(same).toHaveLength(2);
+  expect(same[0].claimSource).toBe(same[1].claimSource);
+  expect(same[0].values['物料编码']).toBe(same[1].values['物料编码']);
+  expect(same[0].values['申请日期']).toBe(same[1].values['申请日期']);
+  expect(same.every(row => row.values['申请数量'] === 2)).toBe(true);
+  expect(rows.filter(row => row.grain === '资产配给单.物料')).toHaveLength(1);
+  expect(same.every(row => row.values['预计采购金额'] === (id === 'report-6-2' ? 2000 : null) && row.values['实际采购金额'] === (id === 'report-6-2' ? 1130 : null))).toBe(true);
+});
+test('采购有PO未领用已拆行，库存领用标签优先于配给标签', () => {
+  const purchased = query('report-6-2').filter(row => row.values['PO单号'] && !row.values['领用出库单号']);
+  expect(purchased).toHaveLength(6);
+  expect(purchased.every(row => row.values['完成时间'] === '' && row.values['领用数量'] === null)).toBe(true);
+  const received = query('report-6-1').filter(row => row.tagSource === '领用单');
+  expect(received).toHaveLength(6);
+  expect(received.every(row => row.claimSource.claim.tags.includes(row.values['资产标签号']) && !row.claimSource.line.assignedTags.includes(row.values['资产标签号']) && row.values['领用数量'] === 2)).toBe(true);
+});
+test('耗材两种粒度齐全，普通耗材不生成卡片标签和EBS净值', () => {
+  const rows = query('report-2-1');
+  expect(new Set(rows.map(row => row.kind))).toEqual(new Set(['耗材', '低值耐用品']));
+  expect(rows.filter(row => row.kind === '耗材').every(row => row.grain === '耗材领用单.物料' && !row.filters['资产标签号'] && !row.filters['耗材标签号'] && row.values['净值'] === null)).toBe(true);
+  expect(rows.filter(row => row.kind === '低值耐用品').every(row => row.grain === '耗材卡片.耗材标签号' && row.values['耗材标签号'])).toBe(true);
+  expect(exported('report-2-1', {}, [rows[0].id])).toHaveLength(2);
+  const data = exported('report-2-1', {}, [rows[0].id]);
+  expect(data[1][data[0].indexOf('库房')]).toBe(rows[0].exports['库房']);
+  expect(data[1][data[0].indexOf('库房')]).not.toMatch(/^I\d+\./);
+});
+test('耗材结果标记独立取源，不以出库推算领用占用', () => {
+  const rows = query('report-7-2');
+  expect(rows.some(row => !row.values['领用出库单号'] && row.values['是否领用'] === '是')).toBe(true);
+  expect(rows.every(row => row.values['是否领用'] === row.sourceFlags.received && row.values['是否占用'] === row.sourceFlags.occupied)).toBe(true);
+});
+test('报废仅资产，EBS原值不分摊，未定义价值导出为空，标签可文本查询', () => {
+  const rows = queryReport('report-8-1', {}, null, all), data = exported('report-8-1');
+  expect(rows.every(row => row.kind === '资产' && row.values['原值'] === row.values['EBS资产原值'])).toBe(true);
+  expect(rows.every(row => row.values['原值'] === row.retirementSource.ebsOriginalValue && row.values['原值'] !== row.retirementSource.assetSystemOriginalValue)).toBe(true);
+  data.slice(1).forEach(row => {
     expect(row[data[0].indexOf('报废原值')]).toBe('');
     expect(row[data[0].indexOf('报废净值')]).toBe('');
-  }
+  });
+  expect(query('report-8-1', { '资产标签号': 'retired-0' })).toHaveLength(1);
 });
-test('耗材选中导出只包含选中卡片，未选导出全查询结果', () => {
-  const rows = queryReport('report-2-1');
-  const data = sheetRows(buildReportWorkbook('report-2-1', {}, [rows[0].id]));
-  expect(data).toHaveLength(2);
-  expect(sheetRows(buildReportWorkbook('report-2-1'))).toHaveLength(rows.length + 1);
-});
-test('目录和快照类别可选且能匹配，仓库选项能匹配当前卡片', () => {
-  for (const id of ['report-2-1', 'report-8-1']) {
-    const definition = getReportDefinition(id), row = queryReport(id)[0];
-    const category = definition.filters.find(field => field.type === 'tree');
-    const options = getReportOptions(definition, category);
-    expect(options.some(option => option.value === row.filters['资产类别'])).toBe(true);
-    expect(queryReport(id, { [category.label]: [row.filters['资产类别']] }).some(item => item.id === row.id)).toBe(true);
-    const warehouse = definition.filters.find(field => field.label === '仓库');
-    expect(getReportOptions(definition, warehouse).some(option => option.value === row.filters['仓库'])).toBe(true);
-  }
-});
-test('部门包含下级，新员工部门仅精确匹配', () => {
-  const row = { filters: { 'HR部门': '总部.技术部' } };
-  expect(matchesReportRow(getReportDefinition('report-1-1'), row, { 'HR部门': ['总部'] })).toBe(true);
-  expect(matchesReportRow(getReportDefinition('report-4-1'), row, { 'HR部门': ['总部'] })).toBe(false);
-});
-test('新员工入职条件使用独立查询日期字段', () => {
-  expect(queryReport('report-4-1', { '入职日期至': '2026-08-31' })).toHaveLength(3);
-  expect(queryReport('report-4-1')[0].values['入职日期']).toBe('2026-09-01');
-});
-test('大类联动小类，清City保持Building', () => {
-  const definition = getReportDefinition('report-1-1');
-  const city = definition.filters.find(field => field.label === 'City');
-  expect(updateReportFilter(definition, { Building: ['现有地点'] }, city, [])).toEqual({ City: [], Building: ['现有地点'] });
-  const major = definition.filters.find(field => field.label === '资产大类');
-  expect(updateReportFilter(definition, { '资产小类': ['不属于所选大类'] }, major, ['PC'])['资产小类']).toEqual([]);
-});
-test('错误日期和未定义的新增查询尽早报错', () => {
-  expect(() => queryReport('report-1-1', { '采购日期从': '2026-10-02', '采购日期至': '2026-10-01' })).toThrow();
-  expect(() => queryReport('report-5-1', { '折旧月数': '12' })).toThrow('尚未确认');
-  expect(() => queryReport('report-5-1', { '资产状态': ['A','B'] })).toThrow('尚未确认');
-});
-test('统一采购导出弃领和出库号分别取本字段', () => {
-  const row = assetReportRows['report-6-2'][6];
-  const data = sheetRows(buildReportWorkbook('report-6-2', { '申请单号': row.values['申请单号'] }));
-  expect(data[1][data[0].indexOf('是否弃领')]).toBe('否');
-  expect(data[1][data[0].indexOf('领用出库单号')]).toBe('');
-});
-test('显示及导出保留金额零、空值和整数截断', () => {
-  expect(formatReportValue(0,'money')).toBe('0.00');
-  expect(formatReportValue(null,'money')).toBe('');
-  expect(formatReportValue(1.9,'truncateInteger')).toBe('1');
+test('财务差异及升级金额可见，零和空保留各自含义', () => {
+  const row = query('report-1-1').find(item => item.values['是否有差异'] === '是');
+  expect(row.values['原值'] - row.values['EBS资产原值']).not.toBe(0);
+  const data = exported('report-1-1', { '资产标签号': [row.values['资产标签号']] });
+  expect(data[1][data[0].indexOf('升级金额')]).toBe('1,234.56');
+  expect(formatReportValue(0, 'money')).toBe('0.00');
+  expect(formatReportValue(null, 'money')).toBe('');
+  expect(() => formatReportValue('错误金额', 'money')).toThrow();
 });

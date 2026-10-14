@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Card, Modal, Space, Table, Typography, message } from 'antd';
+import { Alert, Button, Card, Modal, Space, Table, Typography, message } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { exportReport, formatReportValue, getReportDefinition, queryReport, updateReportFilter } from '../../services/assetReportsService';
 import ReportFilter from './ReportFilter';
@@ -13,7 +13,11 @@ export default function AssetReportPage({ reportId }) {
   const [sort, setSort] = useState(null);
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [detail, setDetail] = useState(null);
-  const rows = useMemo(() => queryReport(reportId, applied, sort), [reportId, applied, sort]);
+  const queryResult = useMemo(() => {
+    try { return { rows: queryReport(reportId, applied, sort), error: null }; }
+    catch (error) { return { rows: [], error: error.message }; }
+  }, [reportId, applied, sort]);
+  const rows = queryResult.rows;
   const moreIndex = definition.moreStart ? definition.filters.findIndex(field => field.label === definition.moreStart) : -1;
   const visibleFilters = expanded || moreIndex < 0 ? definition.filters : definition.filters.slice(0, moreIndex);
   const onQuery = () => {
@@ -55,9 +59,11 @@ export default function AssetReportPage({ reportId }) {
         </QueryItem>)}
       </QueryBar>
     </div>
-    <Card size="small" title="查询结果" extra={<Button onClick={download}>{definition.exportLabel}</Button>}>
+    {queryResult.error && <Alert type="error" showIcon title={queryResult.error} />}
+    <Card size="small" title="查询结果" extra={<Button disabled={Boolean(queryResult.error)} onClick={download}>{definition.exportLabel}</Button>}>
       <Table rowKey="id" size="small" bordered columns={columns} dataSource={rows} scroll={{ x: 'max-content' }}
         rowSelection={definition.selectRows ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, preserveSelectedRowKeys: true } : undefined}
+        locale={queryResult.error ? { emptyText: '数据条件未满足，暂无法显示结果' } : { emptyText: '暂无数据' }}
         pagination={{ ...pagination, showSizeChanger: true, showTotal: total => `共 ${total} 条` }}
         onChange={(next, _, sorter, extra) => {
           setPagination({ current: next.current, pageSize: next.pageSize });

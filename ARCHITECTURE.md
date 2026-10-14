@@ -265,6 +265,13 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 | `src/pages/assetReports/ReportFilter.jsx` | 复用公共选择弹窗和查询组件，承载日期、金额、类别树及联动选择。 |
 | `src/pages/assetReports/reportDefinitions.json` | 各报表明确的字段、控件、匹配、导出顺序及差异配置。 |
 | `src/services/assetReportsService.js` | 查询校验、匹配、排序、格式与xlsx生成，不写业务数据。 |
-| `src/mock/assetReportsMock.js` | 既有卡片和事务的演示快照、独立报表演示记录及参考目录。 |
+| `src/services/assetReportAccess.js` | 复用演示身份，集中校验查看、导出及台账范围；正式授权尚未接入。 |
+| `src/services/assetReportOptions.js` | 从物料、仓库目录和报表记录生成候选，处理类别、部门层级及地点联动。 |
+| `src/mock/assetReportsMock.js` | 汇集报表演示记录及参考目录，通过 businessRulesMock 提供服务入口。 |
+| `src/mock/assetReportsFixtures.js` | 当前台账、耗材明细、入库和报废完成快照；基础属性逐行复用现有目录。 |
+| `src/mock/assetReportsTransactions.js` | 已处理事务及适用的原值、现值完成快照。 |
+| `src/mock/assetReportsClaims.js` | 申请单头、配给行、汇总、采购及出库的演示链路与报表投影。 |
 
 调用关系：后台菜单/页签 → AssetReportsContent → AssetReportPage/ReportFilter → assetReportsService → businessRulesMock → assetReportsMock；导出复用同一筛选定义并读取独立导出字段配置。没有新增路由、后台或运行依赖。
+
+默认按大类、小类编码排序的三页缺正式分类编码。服务明确报错，页面展示原因并禁用导出，不以分类名称、物料编码或自造编码代替。完成快照与当前值分开，查询及选中导出均执行同一权限和范围校验。整改状态见[现状整改核查](docs/八项报表独立PRD/比对报告/八项报表-现状整改核查-20261014.md)。
