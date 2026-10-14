@@ -1,3 +1,4 @@
+import { CONSUMABLE_STATUS_OPTIONS as CONSUMABLE_STATUSES } from '../components/assetQueryModel';
 import {
   ASSET_MAINTENANCE_STORAGE_KEY,
   DEFAULT_ASSET_MAINTENANCE_ROWS,
@@ -17,7 +18,7 @@ const CONSUMABLE_MAINTENANCE_EDIT_FIELDS = [
   'enabledDate', 'mainTag', 'mainAssetDesc', 'warehouse', 'usageDescription', 'remarks',
 ];
 const CONSUMABLE_ALLOWED_PATCH_FIELDS = new Set(CONSUMABLE_MAINTENANCE_EDIT_FIELDS);
-const CONSUMABLE_STATUS_OPTIONS = new Set(['在用', '在库', '维修', '借用中', '待处理', '再利用', '已报废']);
+const CONSUMABLE_STATUS_OPTIONS = new Set(CONSUMABLE_STATUSES);
 const CONSUMABLE_SCRAP_STATUSES = new Set(['已报废']);
 const CONSUMABLE_BUILDING_BY_CITY = {
   北京: ['搜狐媒体大厦', '北京亦庄数据中心'],

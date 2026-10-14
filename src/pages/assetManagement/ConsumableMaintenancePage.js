@@ -1,3 +1,5 @@
+import { AssetValueSelect } from '../../components/AssetQueryControls';
+import { CONSUMABLE_STATUS_OPTIONS as STATUS_OPTIONS } from '../../components/assetQueryModel';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
@@ -41,7 +43,6 @@ const { RangePicker } = DatePicker;
 const { TextArea } = Input;
 const { Dragger } = Upload;
 
-const STATUS_OPTIONS = ['在用', '在库', '维修', '借用中', '待处理', '再利用', '已报废'];
 const FORMAL_SCRAP_STATUSES = new Set(['已报废']);
 const EDITABLE_STATUS_OPTIONS = STATUS_OPTIONS.filter((item) => !FORMAL_SCRAP_STATUSES.has(item));
 const ADD_TYPE_OPTIONS = ['采购新增', '历史新增', '收购新增', '赠与新增', '再利用新增', '转移新增'];
@@ -766,7 +767,7 @@ export default function ConsumableMaintenancePage() {
         <TreeSelect treeData={categoryTree} value={draftFilters.category || undefined} allowClear placeholder="请选择耗材类别" style={{ width: '100%' }} onChange={(value) => updateFilter('category', value || '')} />
       </QueryItem>
       <QueryItem label="耗材状态">
-        <Select mode="multiple" value={draftFilters.statuses} allowClear placeholder="请选择" options={STATUS_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('statuses', value)} />
+        <AssetValueSelect rows={STATUS_OPTIONS.map(status => ({ status }))} field="status" multiple value={draftFilters.statuses} onChange={(value) => updateFilter('statuses', value)} />
       </QueryItem>
       <QueryItem label="板块">
         <Select value={draftFilters.plate || undefined} allowClear placeholder="请选择" options={PLATE_OPTIONS.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('plate', value || '')} />

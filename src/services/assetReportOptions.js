@@ -60,7 +60,7 @@ export function getReportOptions(definition, field, filters = {}, access = DEFAU
     const cities = list(filters.City);
     const key = group.toLowerCase();
     return uniqueOptions(warehouses.filter(warehouse => group !== 'Building' || !cities.length || cities.includes(warehouse.city))
-      .map(warehouse => ({ value: warehouse[key], label: group === 'Floor' && definition.id === 'report-1-1' ? directoryName(warehouse.floor) : warehouse[key],
+      .map(warehouse => ({ value: warehouse[key], label: group === 'Floor' ? directoryName(warehouse.floor) : warehouse[key],
         name: directoryName(warehouse[key]), city: directoryName(warehouse.city) })));
   }
   const options = rowOptions(rows, field);

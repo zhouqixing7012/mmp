@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import LookupInput from '../../components/LookupInput';
 import SelectModal from '../../components/SelectModal';
 import { AssetCategorySelect, AssetTreeSelect, AssetValueSelect } from '../../components/AssetQueryControls';
-import { ASSET_STATUS_OPTIONS } from '../../components/assetQueryModel';
+import { ASSET_STATUS_OPTIONS, CONSUMABLE_STATUS_OPTIONS } from '../../components/assetQueryModel';
 import { getReportOptions } from '../../services/assetReportsService';
 import { buildReportTree } from '../../services/assetReportOptions';
 
@@ -23,8 +23,10 @@ export default function ReportFilter({ definition, field, filters, access, onCha
   if (field.type === 'treeSelect') return <AssetCategorySelect rows={[]} treeData={buildReportTree(options)}
     aria-label={field.label} value={selected} onChange={change} />;
   if (field.type === 'departmentTreeSelect') return <AssetTreeSelect treeData={buildReportTree(options, true)}
-    aria-label={field.label} placeholder="请选择HR部门" value={selected} onChange={change} />;
+    aria-label={field.label} placeholder={'请选择' + field.label} treeCheckable={field.multiple} value={field.multiple ? selected : value ?? undefined} onChange={change} />;
   if (field.type === 'assetStatusSelect') return <AssetValueSelect rows={ASSET_STATUS_OPTIONS.map(status => ({ status }))}
+    field="status" multiple aria-label={field.label} value={selected} onChange={change} />;
+  if (field.type === 'consumableStatusSelect') return <AssetValueSelect rows={CONSUMABLE_STATUS_OPTIONS.map(status => ({ status }))}
     field="status" multiple aria-label={field.label} value={selected} onChange={change} />;
   if (field.type === 'daterange') return <DatePicker.RangePicker style={{ width: '100%' }} format="YYYY-MM-DD" allowEmpty={[true, true]}
     placeholder={['开始日期', '结束日期']} value={value ? value.map(date => date ? dayjs(date) : null) : null}
@@ -53,17 +55,17 @@ export default function ReportFilter({ definition, field, filters, access, onCha
           placeholder={department ? '请选择部门' : '请选择类别'} value={treeDraft} onChange={setTreeDraft} />
       </Modal> : <SelectModal open={open} onCancel={() => setOpen(false)} title={`选择${field.label}`} rowKey="value" multiple={field.multiple}
         dataSource={options} initialSelectedKeys={selected}
-        searchFields={field.optionSet === 'Building' && definition.id === 'report-1-1' ? [
+        searchFields={field.optionSet === 'Building' ? [
           { name: 'name', label: 'Building名称', dataIndex: 'name' }, { name: 'city', label: 'City名称', dataIndex: 'city' },
         ] : [{ name: 'code', label: person ? '员工编号' : '编码', dataIndex: 'code' },
           { name: person ? 'name' : 'label', label: person ? '姓名' : '名称', dataIndex: person ? 'name' : 'label' },
           ...(person ? [{ name: 'department', label: '部门', dataIndex: 'department' }] : [])]}
-        columns={field.optionSet === 'Building' && definition.id === 'report-1-1' ? [
+        columns={field.optionSet === 'Building' ? [
           { title: 'Building名称', dataIndex: 'name', width: 260 }, { title: 'City名称', dataIndex: 'city', width: 200 },
         ] : [{ title: person ? '员工编号' : '编码', dataIndex: 'code', width: 160 },
           { title: person ? '姓名' : '名称', dataIndex: person ? 'name' : 'label', width: 260 },
           ...(person ? [{ title: '部门', dataIndex: 'department', width: 200 }] : []),
-          ...(field.optionSet === 'warehouse' && definition.id === 'report-1-1' ? [{ title: '公司', dataIndex: 'company', width: 220 }] : [])]}
+          ...(field.optionSet === 'warehouse' ? [{ title: '公司', dataIndex: 'company', width: 220 }] : [])]}
         onConfirm={records => change(field.multiple ? records.map(record => record.value) : records.value)} />}
     </>;
   }

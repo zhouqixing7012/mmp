@@ -125,8 +125,8 @@ test('耗材两种粒度齐全，普通耗材不生成卡片标签和EBS净值',
   expect(rows.filter(row => row.kind === '低值耐用品').every(row => row.grain === '耗材卡片.耗材标签号' && row.values['耗材标签号'])).toBe(true);
   expect(exported('report-2-1', {}, [rows[0].id])).toHaveLength(2);
   const data = exported('report-2-1', {}, [rows[0].id]);
-  expect(data[1][data[0].indexOf('库房')]).toBe(rows[0].exports['库房']);
-  expect(data[1][data[0].indexOf('库房')]).not.toMatch(/^I\d+\./);
+  expect(data[1][data[0].indexOf('仓库')]).toBe(rows[0].exports['库房']);
+  expect(data[1][data[0].indexOf('仓库')]).not.toMatch(/^I\d+\./);
 });
 test('耗材结果读取领用状态、原税额和仓库，每次查询更新且导出一致', () => {
   const rows = query('report-7-2');
@@ -322,4 +322,32 @@ test("事务标签模糊查询导出一致，秒级处理日期和担保人列�
   expect(data.slice(1).map(row => row[column])).toEqual(filtered.map(row => row.values["事务处理日期"]));
   data.slice(1).forEach(row => expect(row[column]).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/));
   expect(definition.filters.find(field => field.label === "资产类别").type).toBe("treeSelect");
+});
+
+test("全报表公共查询口径、级别删除、名称与格式保持一致", () => {
+  const ids = Object.keys(assetReportRows);
+  for (const id of ids) {
+    const definition = getReportDefinition(id);
+    expect([...definition.columns, ...definition.exportColumns].some(c => ["级别", "资产级别", "库房", "采购申请号"].includes(c.label))).toBe(false);
+    for (const field of definition.filters) {
+      if (field.match === "category") expect(field.type).toBe("treeSelect");
+      if (field.match === "department") expect(field.type).toBe("departmentTreeSelect");
+      if (field.label === "资产标签号") {
+        const row = query(id).find(row => row.values["资产标签号"]);
+        const term = row.values["资产标签号"].slice(1, -1);
+        const rows = query(id, { "资产标签号": term });
+        expect(rows.length).toBeGreaterThan(0);
+        expect(rows.every(row => row.values["资产标签号"].includes(term))).toBe(true);
+        const data = exported(id, { "资产标签号": term });
+        expect(data.slice(1).map(row => row[data[0].indexOf("资产标签号")])).toEqual(rows.map(row => row.values["资产标签号"]));
+      }
+      if (field.optionSet === "Floor") expect(getReportOptions(definition, field).every(option => option.label === option.name)).toBe(true);
+    }
+  }
+  for (const id of ["report-4-1", "report-5-1"]) expect(query(id).every(row => row.values["费用账户"] === "112.16.909003.72101.E2104.0.0.0.0")).toBe(true);
+  expect(query("report-5-1").every(row => row.values["资产账簿"] === "FA_BOOK_SOHU")).toBe(true);
+  const retired = query("report-8-1");
+  expect(retired.map(row => row.values["报废类型"])).toEqual(["已到报废期", "未到报废期", "丢失"]);
+  retired.forEach(row => expect(row.values["报废类型"]).toBe(row.accountingSource.assetsSnapshot[0].retirementType));
+  expect(getReportDefinition("report-2-1").filters.find(f => f.label === "部门").multiple).toBe(false);
 });

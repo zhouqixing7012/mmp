@@ -21,3 +21,6 @@ export function matchesQuerySelection(value, selected) {
   return !choices.length || choices.includes('全部') || choices.includes(String(value ?? ''));
 }
 
+
+// 耗材维护、业务校验和报表共用耗材状态字典。
+export const CONSUMABLE_STATUS_OPTIONS = Object.freeze(['在用', '在库', '维修', '借用中', '待处理', '再利用', '已报废']);

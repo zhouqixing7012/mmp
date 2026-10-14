@@ -5,8 +5,8 @@ import SelectModal from './SelectModal';
 
 export { formatAssetCategory, matchesAssetCategory, matchesQuerySelection } from './assetQueryModel';
 
-export function AssetTreeSelect({ value, onChange, ...props }) {
-  return <TreeSelect treeCheckable showCheckedStrategy={TreeSelect.SHOW_PARENT} showSearch treeNodeFilterProp="title" allowClear style={{ width: "100%" }} value={value || []} onChange={onChange} {...props} />;
+export function AssetTreeSelect({ value, onChange, treeCheckable = true, ...props }) {
+  return <TreeSelect treeCheckable={treeCheckable} showCheckedStrategy={TreeSelect.SHOW_PARENT} showSearch treeNodeFilterProp="title" allowClear style={{ width: "100%" }} value={value ?? (treeCheckable ? [] : undefined)} onChange={onChange} {...props} />;
 }
 
 export function AssetCategorySelect({ rows, value, onChange, ...props }) {

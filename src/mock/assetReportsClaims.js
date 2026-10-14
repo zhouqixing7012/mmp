@@ -1,4 +1,4 @@
-import { assetMaterials, consumableMaterials, reportWarehouses, consumableWarehouses, fixture } from './assetReportsFixtures';
+import { assetMaterials, consumableMaterials, reportWarehouses, consumableWarehouses, fixture, assetReportPresentationSource } from './assetReportsFixtures';
 
 function approval(status) {
   return { status, source: '并行待审批演示，不表示正式节点人员授权', nodes: [
@@ -20,6 +20,7 @@ function sync(row) { row.exports = { ...row.values }; return row; }
 export const newEmployeeClaims = reportWarehouses.flatMap((warehouse, group) => ['刷卡', '扫码', ''].map((confirmation, index) => {
   const received = Boolean(confirmation), date = `2026-09-${String(index + 1).padStart(2, '0')}`;
   const row = fixture(`new-${group}-${index}`, assetMaterials[index], warehouse, {
+    '费用账户': assetReportPresentationSource.finance.account,
     '申请单号': `NEW-CLAIM-DEMO-${group}-${index}`, '单据状态': received ? '已处理' : '处理中',
     '领用状态': received ? '领用' : '延期', '入职日期': date, 'PS配置': assetMaterials[index].config,
     '办公地点': `${warehouse.city}.${warehouse.building}`, '是否领用': received ? '是' : '否',

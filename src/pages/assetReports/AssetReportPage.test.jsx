@@ -122,3 +122,17 @@ test("事务报表复用直接类别树与标签文本，秒级日期并移除�
   const date = queryReport("report-3-1")[0].values["事务处理日期"];
   expect(screen.getAllByText(date).length).toBeGreaterThan(0);
 });
+
+test.each(reportDefinitions.flatMap(d => d.filters.filter(f => ["treeSelect", "departmentTreeSelect", "assetStatusSelect", "consumableStatusSelect"].includes(f.type)).map(f => [d.id, f.label]))) ("%s的%s直接使用公共下拉", (id, label) => {
+  const definition = reportDefinitions.find(d => d.id === id);
+  render(<ReportFilter definition={definition} field={definition.filters.find(f => f.label === label)} filters={{}} onChange={jest.fn()} onQuery={jest.fn()} />);
+  expect(screen.getByRole("combobox", { name: label })).toBeInTheDocument();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+test.each([["report-5-1", "仓库", ["编码", "名称", "公司"]], ["report-8-1", "Building", ["Building名称", "City名称"]], ["report-2-1", "Building", ["Building名称", "City名称"]]])("%s的%s选择列表统一列", async (id, label, titles) => {
+  const definition = reportDefinitions.find(d => d.id === id);
+  render(<ReportFilter definition={definition} field={definition.filters.find(f => f.label === label)} filters={{ City: "北京" }} onChange={jest.fn()} onQuery={jest.fn()} />);
+  fireEvent.click(screen.getByPlaceholderText("请选择"));
+  const dialog = await screen.findByRole("dialog");
+  titles.forEach(title => expect(within(dialog).getByRole("columnheader", { name: title })).toBeInTheDocument());
+});

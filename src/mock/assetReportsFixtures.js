@@ -63,7 +63,7 @@ export function completedSnapshot(row, type) {
   const snapshot = Object.freeze({ ...row.values });
   return { ...row, snapshotType: type, snapshot, values: snapshot, exports: snapshot };
 }
-// 仅资产明细的展示源：用户财务示例与独立组织演示，不代表生产财务或组织对应关系。
+// 已确认报表的展示源：用户财务示例与独立组织演示，不代表生产财务或组织对应关系。
 export const assetReportPresentationSource = Object.freeze({
   finance: Object.freeze({ account: '112.16.909003.72101.E2104.0.0.0.0', book: 'FA_BOOK_SOHU', firstAssetNumber: '100067249', source: '用户给定财务字段格式示例' }),
   organization: Object.freeze({ subsidiaries: Object.freeze(['集团', '媒体', '焦点', '视频']),
@@ -90,13 +90,14 @@ export const reportAssets = reportWarehouses.flatMap((warehouse, group) => repor
 export const reportConsumables = consumableWarehouses.flatMap((warehouse, group) => consumableMaterials.slice(0, 6).map((material, index) => {
   const row = fixture(`consumable-${group}-${index}`, material, warehouse, {
   '耗材标签号': material.materialType === '低值耐用品' ? `CONSUM-${group}-${index}` : '', '资产标签号': material.materialType === '低值耐用品' ? `CONSUM-${group}-${index}` : '',
-  '原值': 100, '净值': null, 'EBS资产原值': null, '累计折旧': null, '折旧月数': null, '折旧年限': null, '折旧剩余月份': null,
+  '资产状态': '在用', '原值': 100, '净值': null, 'EBS资产原值': null, '累计折旧': null, '折旧月数': null, '折旧年限': null, '折旧剩余月份': null,
   '领用单号': material.materialType === '耗材' ? `CLAIM-CONSUM-${group}-${index}` : '', '数量': material.materialType === '耗材' ? 3 : 1,
 }, { grain: material.materialType === '低值耐用品' ? '耗材卡片.耗材标签号' : '耗材领用单.物料' });
   row.exports['库房'] = warehouse.warehouseDescription;
   return row;
 }));
 export const addedAssets = reportWarehouses.flatMap((warehouse, group) => ['新增入库', '采购接收', '自购入库'].map((type, index) => completedSnapshot(fixture(`add-${group}-${index}`, assetMaterials[index], warehouse, {
+  '费用账户': assetReportPresentationSource.finance.account, '资产账簿': assetReportPresentationSource.finance.book,
   '税金': 130, '含税金额': 1130, '入库类型': type, '新增类型': '采购新增',
   'PO单号': type === '采购接收' ? `PO-DEMO-${group}-${index}` : '',
 }), '入库完成')));
@@ -107,13 +108,14 @@ export const retiredAssets = reportWarehouses.map((warehouse, group) => {
   const tag = `REPORT-retired-${group}`;
   const accountingDetail = Object.freeze({ tagNo: tag, materialCode: assetMaterials[group].materialCode,
     cardQuantity: group === 0 ? 4 : 1, requestedScrapQuantity: 1, quantity: 1,
+    retirementType: assetReportPresentationSource.retirementTypes[group],
     detailScrapMethod: group === 0 ? '部分报废' : '全部报废', originalValue: group === 0 ? 300 : 1200, netValue: group === 0 ? 75 : 0 });
   const accountingSource = { applicationNo: `ZMBF-REPORT-DEMO-${group}`, documentStatus: '已完成',
     source: '对应报表标签的账面报废交易演示，沿用现有assetsSnapshot模型', assetsSnapshot: Object.freeze([accountingDetail]) };
   return completedSnapshot(fixture(`retired-${group}`, assetMaterials[group], warehouse, {
     '原值': retirementSource.ebsOriginalValue, 'EBS资产原值': retirementSource.ebsOriginalValue, '净值': 0, '累计折旧': 1200,
     '资产状态': group % 2 ? '已报废-已处置' : '已报废-待处置', '报废数量': 1,
-    '报废原值': accountingDetail.originalValue, '报废净值': accountingDetail.netValue, '报废类型': accountingDetail.detailScrapMethod,
+    '报废原值': accountingDetail.originalValue, '报废净值': accountingDetail.netValue, '报废类型': accountingDetail.retirementType,
     '报废原因': '实物损坏', '报废日期': `2026-10-0${group + 1}`,
   }, { statusCode: group % 2 ? '14' : '13', deleted: 'N', retirementSource, accountingSource }), '报废完成');
 });
