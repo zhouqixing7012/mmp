@@ -1,5 +1,12 @@
 import { assetMaterials, consumableMaterials, reportWarehouses, consumableWarehouses, fixture } from './assetReportsFixtures';
 
+function approval(status) {
+  return { status, source: '并行待审批演示，不表示正式节点人员授权', nodes: [
+    { name: 'ES主管审批', status: status === '已处理' ? '已通过' : '待审批', approvers: [{ employeeNo: '213852', name: '孙志强' }, { employeeNo: '220784', name: '周琦星' }] },
+    { name: '财务审批', status: status === '已处理' ? '已通过' : '待审批', approvers: [{ employeeNo: '213852', name: '孙志强' }] },
+    { name: '申请人提交', status: '已通过', approvers: [{ employeeNo: '220784', name: '周琦星' }] },
+  ] };
+}
 function applicant(row) {
   const person = `${row.values['资产责任人工号']}.${row.values['资产责任人姓名']}`;
   const department = row.filters['HR部门'];
@@ -20,6 +27,7 @@ export const newEmployeeClaims = reportWarehouses.flatMap((warehouse, group) => 
     '员工确认方式': confirmation, '出库单号': received ? `OUT-NEW-DEMO-${group}-${index}` : '',
   });
   row.values['部门'] = row.filters['HR部门']; row.filters['领用日期'] = row.values['领用日期'];
+  row.reportRecordId = group * 100 + [21, 3, 12][index]; row.sort.recordId = row.reportRecordId;
   row.sort.processedAt = row.values['领用日期']; row.documentStatus = row.values['单据状态'];
   return sync(row);
 }));
@@ -28,7 +36,7 @@ function assetClaimSource(warehouse, group, mode, stage) {
   const material = assetMaterials[0], suffix = `${group}-${mode}-${stage}`;
   // 单头、配给物料和联查结果构成同一演示链路，投影行共享此对象。
   return {
-    warehouse, material, mode, stage,
+    warehouse, material, mode, stage, approval: approval(received ? '已处理' : '处理中'),
     header: { number: `ASSET-CLAIM-DEMO-${suffix}`, applyDate: '2026-10-02 09:00:00', status: received ? '已处理' : '处理中' },
     line: { number: `ASSIGN-DEMO-${suffix}`, quantity: 2, referencePrice: 1000,
       assignedTags: !purchase && linked ? [`ASSIGN-TAG-${suffix}-1`, `ASSIGN-TAG-${suffix}-2`] : [] },
@@ -62,7 +70,7 @@ function projectAssetClaim(source) {
     Object.assign(row.filters, { '申请日期': header.applyDate, '申请人办公区': row.values['申请人办公区'], '汇总提交人名称': summary ? '213852' : '', '是否超标': '否' });
     row.lookupLabels['汇总提交人名称'] = summary?.person || '';
     row.matchStatus = mode; row.documentStatus = header.status; row.sort.applyDate = header.applyDate;
-    row.grain = split ? '资产配给单.物料.数量' : '资产配给单.物料'; row.claimSource = source;
+    row.grain = split ? '资产配给单.物料.数量' : '资产配给单.物料'; row.claimSource = source; row.approvalSource = source.approval;
     row.tagSource = claim.tags.length ? '领用单' : line.assignedTags.length ? '配给单' : '';
     return sync(row);
   });
@@ -88,6 +96,7 @@ export const consumableClaims = consumableWarehouses.flatMap((warehouse, group) 
     '耗材大类名称': material.majorCategory, '耗材小类名称': material.minorCategory, '领用数量': completed ? 2 : null,
   }));
   Object.assign(row.filters, { '耗材物料编码': material.materialCode, '耗材名称': material.materialCode, '申请日期': row.values['申请日期'], '申请人办公区': row.values['申请人办公区'] });
+  row.approvalSource = approval(completed ? '已处理' : '处理中');
   row.sort.applyDate = row.values['申请日期']; row.documentStatus = row.values['统一申请单状态']; return sync(row);
 }));
 // 申请结果补充页的领用/占用来自独立演示源标记；现状未定义生成公式。

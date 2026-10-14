@@ -19,6 +19,7 @@ test.each(reportDefinitions.map(definition => [definition.id, definition.title])
   expect(screen.getByRole('heading', { name: title })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /查\s*询/ })).toBeInTheDocument();
   expect(screen.getByText('查询结果')).toBeInTheDocument();
+  if (id === 'report-8-1') expect(screen.queryByRole('columnheader', { name: '处置类型' })).not.toBeInTheDocument();
 });
 test('条件编辑不改变列表，回车执行查询后结果改变', async () => {
   const document = queryReport('report-3-1')[0].values['单据编号'];
@@ -51,4 +52,21 @@ test('缺少正式分类编码时显示具体错误并阻止导出', () => {
   expect(screen.getByText(/物料目录未提供资产大类和小类编码/)).toBeInTheDocument();
   expect(screen.getByText('数据条件未满足，暂无法显示结果')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /导出/ })).toBeDisabled();
+});
+test('并行审批完整展示，再次查询读取已完成结果并清空审批信息', async () => {
+  const record = queryReport('report-6-1').find(row => row.approvalSource.status === '处理中' && row.grain === '资产配给单.物料');
+  const source = record.approvalSource, previousStatus = source.status;
+  try {
+    render(<AssetReportPage reportId="report-6-1" />);
+    fireEvent.change(screen.getByRole('textbox', { name: '申请单号' }), { target: { value: record.values['申请单号'] } });
+    fireEvent.click(screen.getByRole('button', { name: /查\s*询/ }));
+    const pendingNodes = await screen.findByText('ES主管审批；财务审批');
+    expect(pendingNodes.style.whiteSpace).toBe('pre-wrap');
+    expect(screen.getByText('213852.孙志强；220784.周琦星')).toBeInTheDocument();
+    source.status = '已处理';
+    fireEvent.click(screen.getByRole('button', { name: /查\s*询/ }));
+    await waitFor(() => expect(screen.queryByText('ES主管审批；财务审批')).not.toBeInTheDocument());
+    expect(screen.queryByText('213852.孙志强；220784.周琦星')).not.toBeInTheDocument();
+    expect(screen.getByText(record.values['申请单号'])).toBeInTheDocument();
+  } finally { source.status = previousStatus; }
 });

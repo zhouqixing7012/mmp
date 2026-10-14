@@ -267,6 +267,7 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 | `src/services/assetReportsService.js` | 查询校验、匹配、排序、格式与xlsx生成，不写业务数据。 |
 | `src/services/assetReportAccess.js` | 复用演示身份，集中校验查看、导出及台账范围；正式授权尚未接入。 |
 | `src/services/assetReportOptions.js` | 从物料、仓库目录和报表记录生成候选，处理类别、部门层级及地点联动。 |
+| `src/services/assetReportProjection.js` | 每次查询投影当前待审批节点与人员，已处理、已完成、已驳回后清空；保留已完成业务快照。 |
 | `src/mock/assetReportsMock.js` | 汇集报表演示记录及参考目录，通过 businessRulesMock 提供服务入口。 |
 | `src/mock/assetReportsFixtures.js` | 当前台账、耗材明细、入库和报废完成快照；基础属性逐行复用现有目录。 |
 | `src/mock/assetReportsTransactions.js` | 已处理事务及适用的原值、现值完成快照。 |

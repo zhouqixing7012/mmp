@@ -35,7 +35,7 @@ export function fixture(id, material, warehouse, overrides = {}, metadata = {}) 
     '报废类型': '', '报废日期': '', '报废原因': '', 'ES实物报废期': '', '升级金额': null, '升级日期': '', '备注': '报表演示记录',
     ...overrides,
   };
-  values['是否有差异'] = values['原值'] == null || values['EBS资产原值'] == null ? null : values['原值'] - values['EBS资产原值'] === 0 ? '否' : '是';
+  values['是否有差异'] = values['原值'] == null || values['原值'] === '' || values['EBS资产原值'] == null || values['EBS资产原值'] === '' ? null : values['原值'] - values['EBS资产原值'] === 0 ? '否' : '是';
   const filters = {
     ...values, '公司': companyCode, '资产类别': `${material.majorCategory}|${material.minorCategory}`,
     '耗材类别': `${material.majorCategory}|${material.minorCategory}`, '资产责任人工号': values['资产责任人工号'],
@@ -69,10 +69,19 @@ export const addedAssets = reportWarehouses.flatMap((warehouse, group) => ['新�
   'PO单号': type === '采购接收' ? `PO-DEMO-${group}-${index}` : '',
 }), '入库完成')));
 addedAssets.push({ ...fixture('add-pending', assetMaterials[0], reportWarehouses[0], { '入库类型': '新增入库' }), documentStatus: '待执行' });
+// 字段结构复用现有账面报废模型：已完成单据的assetsSnapshot保存金额，不在报表分摊。
 export const retiredAssets = reportWarehouses.map((warehouse, group) => {
   const retirementSource = { ebsOriginalValue: 1200, assetSystemOriginalValue: 1400 };
+  const tag = `REPORT-retired-${group}`;
+  const accountingDetail = Object.freeze({ tagNo: tag, materialCode: assetMaterials[group].materialCode,
+    cardQuantity: group === 0 ? 4 : 1, requestedScrapQuantity: 1, quantity: 1,
+    detailScrapMethod: group === 0 ? '部分报废' : '全部报废', originalValue: group === 0 ? 300 : 1200, netValue: group === 0 ? 75 : 0 });
+  const accountingSource = { applicationNo: `ZMBF-REPORT-DEMO-${group}`, documentStatus: '已完成',
+    source: '对应报表标签的账面报废交易演示，沿用现有assetsSnapshot模型', assetsSnapshot: Object.freeze([accountingDetail]) };
   return completedSnapshot(fixture(`retired-${group}`, assetMaterials[group], warehouse, {
-  '原值': retirementSource.ebsOriginalValue, 'EBS资产原值': retirementSource.ebsOriginalValue, '净值': 0, '累计折旧': 1200, '资产状态': group % 2 ? '已报废-已处置' : '已报废-待处置',
-  '报废数量': 1, '报废原值': null, '报废净值': null, '报废类型': '全部报废', '报废原因': '实物损坏', '报废日期': `2026-10-0${group + 1}`, '处置类型': group % 2 ? '变卖' : '',
-}, { statusCode: group % 2 ? '14' : '13', deleted: 'N', retirementSource }), '报废完成');
+    '原值': retirementSource.ebsOriginalValue, 'EBS资产原值': retirementSource.ebsOriginalValue, '净值': 0, '累计折旧': 1200,
+    '资产状态': group % 2 ? '已报废-已处置' : '已报废-待处置', '报废数量': 1,
+    '报废原值': accountingDetail.originalValue, '报废净值': accountingDetail.netValue, '报废类型': accountingDetail.detailScrapMethod,
+    '报废原因': '实物损坏', '报废日期': `2026-10-0${group + 1}`,
+  }, { statusCode: group % 2 ? '14' : '13', deleted: 'N', retirementSource, accountingSource }), '报废完成');
 });

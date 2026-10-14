@@ -305,7 +305,7 @@
     "selectRows": false,
     "sortable": false,
     "exportLabel": "导出新员工领用报表",
-    "sortKeys": [{"key":"processedAt","order":"descend"}],
+    "sortKeys": [{"key":"recordId","order":"ascend"}],
     "range": "newEmployeeClaims"
   },
   {
@@ -699,12 +699,11 @@
       {"label":"报废类型","key":"报废类型","format":"text"},
       {"label":"报废原因","key":"报废原因","format":"text"},
       {"label":"报废日期","key":"报废日期","format":"date"},
-      {"label":"处置类型","key":"处置类型","format":"text"},
       {"label":"备注","key":"备注","format":"text"},
       {"label":"升级日期","key":"升级日期","format":"date"},
       {"label":"升级金额","key":"升级金额","format":"money"}
     ],
-    "exportColumns": [{"label":"资产大类","key":"资产大类","format":"text"},{"label":"资产小类","key":"资产小类","format":"text"},{"label":"资产标签号","key":"资产标签号","format":"text"},{"label":"资产说明","key":"资产说明","format":"text"},{"label":"数量","key":"数量","format":"integer"},{"label":"单位","key":"单位","format":"text"},{"label":"采购日期","key":"采购日期","format":"date"},{"label":"启用日期","key":"启用日期","format":"date"},{"label":"原值","key":"原值","format":"money"},{"label":"净值","key":"净值","format":"money"},{"label":"折旧月数","key":"折旧月数","format":"integer"},{"label":"资产用途","key":"资产用途","format":"text"},{"label":"资产状态","key":"资产状态","format":"text"},{"label":"资产标记","key":"资产标记","format":"text"},{"label":"资产责任人工号","key":"资产责任人工号","format":"text"},{"label":"资产责任人姓名","key":"资产责任人姓名","format":"text"},{"label":"成本中心","key":"成本中心","format":"text"},{"label":"公司","key":"公司","format":"text"},{"label":"财务核算板块","key":"财务核算板块","format":"text"},{"label":"资产所属板块","key":"资产所属板块","format":"text"},{"label":"City","key":"City","format":"text"},{"label":"Building","key":"Building","format":"text"},{"label":"Floor","key":"Floor","format":"text"},{"label":"主资产标签号","key":"主资产标签号","format":"text"},{"label":"报废数量","key":"报废数量","format":"integer"},{"label":"报废原值","key":"报废原值","format":"money"},{"label":"报废净值","key":"报废净值","format":"money"},{"label":"报废类型","key":"报废类型","format":"text"},{"label":"报废原因","key":"报废原因","format":"text"},{"label":"报废日期","key":"报废日期","format":"date"},{"label":"处置类型","key":"处置类型","format":"text"},{"label":"备注","key":"备注","format":"text"},{"label":"升级日期","key":"升级日期","format":"date"},{"label":"升级金额","key":"升级金额","format":"money"}],
+    "exportColumns": [{"label":"资产大类","key":"资产大类","format":"text"},{"label":"资产小类","key":"资产小类","format":"text"},{"label":"资产标签号","key":"资产标签号","format":"text"},{"label":"资产说明","key":"资产说明","format":"text"},{"label":"数量","key":"数量","format":"integer"},{"label":"单位","key":"单位","format":"text"},{"label":"采购日期","key":"采购日期","format":"date"},{"label":"启用日期","key":"启用日期","format":"date"},{"label":"原值","key":"原值","format":"money"},{"label":"净值","key":"净值","format":"money"},{"label":"折旧月数","key":"折旧月数","format":"integer"},{"label":"资产用途","key":"资产用途","format":"text"},{"label":"资产状态","key":"资产状态","format":"text"},{"label":"资产标记","key":"资产标记","format":"text"},{"label":"资产责任人工号","key":"资产责任人工号","format":"text"},{"label":"资产责任人姓名","key":"资产责任人姓名","format":"text"},{"label":"成本中心","key":"成本中心","format":"text"},{"label":"公司","key":"公司","format":"text"},{"label":"财务核算板块","key":"财务核算板块","format":"text"},{"label":"资产所属板块","key":"资产所属板块","format":"text"},{"label":"City","key":"City","format":"text"},{"label":"Building","key":"Building","format":"text"},{"label":"Floor","key":"Floor","format":"text"},{"label":"主资产标签号","key":"主资产标签号","format":"text"},{"label":"报废数量","key":"报废数量","format":"integer"},{"label":"报废原值","key":"报废原值","format":"money"},{"label":"报废净值","key":"报废净值","format":"money"},{"label":"报废类型","key":"报废类型","format":"text"},{"label":"报废原因","key":"报废原因","format":"text"},{"label":"报废日期","key":"报废日期","format":"date"},{"label":"备注","key":"备注","format":"text"},{"label":"升级日期","key":"升级日期","format":"date"},{"label":"升级金额","key":"升级金额","format":"money"}],
     "sheetName": "资产报废报表",
     "moreStart": "City",
     "selectRows": false,

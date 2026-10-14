@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
+import { projectCurrentReportRow } from './assetReportProjection';
 import definitions from '../pages/assetReports/reportDefinitions.json';
 import { assetReportRows } from '../mock/businessRulesMock';
 import { DEFAULT_REPORT_ACCESS, assertReportAccess, canReadReportRow } from './assetReportAccess';
@@ -76,7 +77,7 @@ export function queryReport(id, filters = {}, sort = null, access = DEFAULT_REPO
   const definition = getReportDefinition(id);
   assertReportAccess(access);
   validateReportFilters(definition, filters);
-  const rows = assetReportRows[id].filter(row => canReadReportRow(row, access) && isInReportRange(definition, row) && matchesReportRow(definition, row, filters));
+  const rows = assetReportRows[id].map(projectCurrentReportRow).filter(row => canReadReportRow(row, access) && isInReportRange(definition, row) && matchesReportRow(definition, row, filters));
   if (!sort?.key && definition.sortSourceGap && rows.some(row => definition.sortKeys.some(item => ['majorCode', 'minorCode'].includes(item.key) && isReportValueEmpty(row.sort[item.key])))) {
     throw new Error(definition.sortSourceGap + '，无法执行默认排序');
   }

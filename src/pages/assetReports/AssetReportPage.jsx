@@ -39,13 +39,15 @@ export default function AssetReportPage({ reportId }) {
   const columns = [
     { title: '序号', key: 'index', width: 70, fixed: 'left', render: (_, row, index) => (pagination.current - 1) * pagination.pageSize + index + 1 },
     ...definition.columns.map(column => ({ title: column.label, key: column.key, dataIndex: ['values', column.key], width: 160,
-      ellipsis: true, align: ['money', 'moneyOptional', 'integer'].includes(column.format) ? 'right' : 'left',
+      ellipsis: !['审批节点', '当前审批人', '当前审批人名称'].includes(column.key), align: ['money', 'moneyOptional', 'integer'].includes(column.format) ? 'right' : 'left',
       sorter: definition.sortable && !(reportId === 'report-8-1' && ['报废原值', '报废净值'].includes(column.key))
         && !(reportId === 'report-5-1' && ['含税金额', '资产所属板块', '资产账簿'].includes(column.key)),
       sortOrder: sort?.key === column.key ? sort.order : null,
       render: (value, record) => definition.selectRows && column.key === '耗材标签号'
         ? <Button type="link" className="!p-0" onClick={() => setDetail(record)}>{value}</Button>
-        : formatReportValue(value, column.format),
+        : ['审批节点', '当前审批人', '当前审批人名称'].includes(column.key)
+          ? <span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{formatReportValue(value, column.format)}</span>
+          : formatReportValue(value, column.format),
     })),
   ];
   return <div className="flex flex-col gap-4">

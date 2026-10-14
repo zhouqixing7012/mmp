@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { fixture, assetMaterials, reportWarehouses } from '../mock/assetReportsFixtures';
 import { assetReportRows } from '../mock/businessRulesMock';
 import { buildReportWorkbook, formatReportValue, getReportDefinition, getReportOptions, queryReport, updateReportFilter } from './assetReportsService';
 const sort = { key: '资产标签号', order: 'ascend' };
@@ -119,14 +120,24 @@ test('耗材结果标记独立取源，不以出库推算领用占用', () => {
   expect(rows.some(row => !row.values['领用出库单号'] && row.values['是否领用'] === '是')).toBe(true);
   expect(rows.every(row => row.values['是否领用'] === row.sourceFlags.received && row.values['是否占用'] === row.sourceFlags.occupied)).toBe(true);
 });
-test('报废仅资产，EBS原值不分摊，未定义价值导出为空，标签可文本查询', () => {
+test('报废金额读取已完成账面源快照，导出一致且移除处置类型', () => {
   const rows = queryReport('report-8-1', {}, null, all), data = exported('report-8-1');
   expect(rows.every(row => row.kind === '资产' && row.values['原值'] === row.values['EBS资产原值'])).toBe(true);
   expect(rows.every(row => row.values['原值'] === row.retirementSource.ebsOriginalValue && row.values['原值'] !== row.retirementSource.assetSystemOriginalValue)).toBe(true);
-  data.slice(1).forEach(row => {
-    expect(row[data[0].indexOf('报废原值')]).toBe('');
-    expect(row[data[0].indexOf('报废净值')]).toBe('');
+  expect(getReportDefinition('report-8-1').columns.some(field => field.key === '处置类型')).toBe(false);
+  expect(data[0]).not.toContain('处置类型');
+  rows.forEach(row => {
+    const source = row.accountingSource;
+    expect(source.documentStatus).toBe('已完成');
+    const detail = source.assetsSnapshot.find(item => item.tagNo === row.values['资产标签号']);
+    expect(row.values['报废原值']).toBe(detail.originalValue);
+    expect(row.values['报废净值']).toBe(detail.netValue);
+    const exportedRow = data.slice(1).find(item => item[data[0].indexOf('资产标签号')] === row.values['资产标签号']);
+    expect(exportedRow[data[0].indexOf('报废原值')]).toBe(formatReportValue(detail.originalValue, 'money'));
+    expect(exportedRow[data[0].indexOf('报废净值')]).toBe(formatReportValue(detail.netValue, 'money'));
   });
+  expect(rows.some(row => row.accountingSource.assetsSnapshot[0].detailScrapMethod === '部分报废')).toBe(true);
+  expect(rows.some(row => row.accountingSource.assetsSnapshot[0].detailScrapMethod === '全部报废')).toBe(true);
   expect(query('report-8-1', { '资产标签号': 'retired-0' })).toHaveLength(1);
 });
 test('财务差异及升级金额可见，零和空保留各自含义', () => {
@@ -137,4 +148,58 @@ test('财务差异及升级金额可见，零和空保留各自含义', () => {
   expect(formatReportValue(0, 'money')).toBe('0.00');
   expect(formatReportValue(null, 'money')).toBe('');
   expect(() => formatReportValue('错误金额', 'money')).toThrow();
+});
+
+test('新员工按数值记录ID升序，与日期或字符串ID无关', () => {
+  const rows = queryReport('report-4-1', {}, null, all);
+  expect(rows.map(row => row.reportRecordId)).toEqual([3, 12, 21, 103, 112, 121, 203, 212, 221]);
+  expect(rows[0].values['入职日期']).toBe('2026-09-02');
+});
+test.each(['report-6-1', 'report-6-2', 'report-7-1'])('%s每次查询所有待审节点和人员，完成后清空，导出一致', id => {
+  const row = query(id).find(item => item.approvalSource.status === '处理中');
+  const source = row.approvalSource, savedNodes = source.nodes, savedStatus = source.status;
+  const personKey = id === 'report-7-1' ? '当前审批人名称' : '当前审批人';
+  try {
+    expect(row.values['审批节点']).toBe('ES主管审批；财务审批');
+    expect(row.values[personKey]).toBe('213852.孙志强；220784.周琦星');
+    expect(row.values['审批节点']).not.toContain('申请人提交');
+    source.nodes = [{ name: '新的并行审批', status: '待审批', approvers: [{ employeeNo: '213852', name: '孙志强' }] }];
+    const fresh = query(id).find(item => item.id === row.id);
+    expect(fresh.values['审批节点']).toBe('新的并行审批');
+    const data = exported(id, { '申请单号': row.values['申请单号'] });
+    expect(data[1][data[0].indexOf('审批节点')]).toBe('新的并行审批');
+    source.status = '已处理';
+    expect(query(id).filter(item => item.approvalSource === source).every(item => item.values['审批节点'] === '' && item.values[personKey] === '')).toBe(true);
+    const completed = exported(id, { '申请单号': row.values['申请单号'] });
+    expect(completed[1][completed[0].indexOf('审批节点')]).toBe('');
+    source.status = '已驳回';
+    const rejected = query(id).find(item => item.id === row.id);
+    expect(rejected.values['审批节点']).toBe('');
+    expect(rejected.values[personKey]).toBe('');
+    const rejectedExport = exported(id, { '申请单号': row.values['申请单号'] });
+    expect(rejectedExport[1][rejectedExport[0].indexOf('审批节点')]).toBe('');
+  } finally { source.nodes = savedNodes; source.status = savedStatus; }
+});
+test('资产报废类型与枚举保持，来源关联账面报废单和同一资产完成源', () => {
+  const rows = query('report-3-1', { '单据类型': ['资产报废'], '事务类型': ['70', '71'] });
+  expect(rows).toHaveLength(6);
+  rows.forEach(row => {
+    expect(row.values['单据类型']).toBe('资产报废');
+    expect(row.sourceDocumentName).toBe('账面报废单');
+    expect(row.values['单据编号']).toBe(row.accountingSource.applicationNo);
+    expect(row.values['资产标签号']).toBe(row.accountingSource.assetsSnapshot[0].tagNo);
+  });
+  const data = exported('report-3-1', { '事务类型': ['70'] });
+  expect(data[1][data[0].indexOf('单据类型')]).toBe('资产报废');
+});
+test('分隔符和金额缺失保持空值，导出不补值或误判差异', () => {
+  const material = { ...assetMaterials[0], minorCategory: '无分隔符小类', materialDescription: '无点号说明' };
+  const row = fixture('format-missing-test', material, reportWarehouses[0], { '原值': null, 'EBS资产原值': null });
+  expect(row.values['资产小类A']).toBe('无分隔符小类');
+  expect(row.values['资产小类明细']).toBe('');
+  expect(row.values['型号']).toBe('');
+  expect(row.values['是否有差异']).toBeNull();
+  expect(fixture('empty-amount', material, reportWarehouses[0], { '原值': '', 'EBS资产原值': 1000 }).values['是否有差异']).toBeNull();
+  expect(row.exports['资产小类明细']).toBe('');
+  expect(formatReportValue(row.exports['原值'], 'money')).toBe('');
 });

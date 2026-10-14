@@ -1,5 +1,5 @@
 import definitions from '../pages/assetReports/reportDefinitions.json';
-import { assetMaterials, reportWarehouses, fixture, completedSnapshot } from './assetReportsFixtures';
+import { assetMaterials, reportWarehouses, fixture, completedSnapshot, retiredAssets } from './assetReportsFixtures';
 
 const transactionOptions = definitions.find(row => row.id === 'report-3-1').filters.find(row => row.key === '事务类型').options;
 const documentType = code => ['10', '13', '15', '30', '112', '113', '114', '115'].includes(code) ? '入库单'
@@ -9,8 +9,10 @@ const documentType = code => ['10', '13', '15', '30', '112', '113', '114', '115'
 export const reportTransactions = transactionOptions.flatMap((option, index) => reportWarehouses.map((warehouse, group) => {
   const type = documentType(option.value);
   const values = { '事务处理日期': `2026-10-${String(14 - (index % 14)).padStart(2, '0')} 09:00:00`,
-    '单据编号': `CHANGE-DEMO-${group}-${option.value}`, '单据类型': type, '事务类型': option.label,
+    '单据编号': ['70', '71'].includes(option.value) ? retiredAssets[group].accountingSource.applicationNo : `CHANGE-DEMO-${group}-${option.value}`, '单据类型': type, '事务类型': option.label,
     '事务执行人': '213852.孙志强', '业务原因': '演示已完成事务' };
+  const accountingSource = ['70', '71'].includes(option.value) ? retiredAssets[group].accountingSource : null;
+  if (accountingSource) values['资产标签号'] = accountingSource.assetsSnapshot[0].tagNo;
   const pairs = {
     '104': { '原序列号': 'DEMO-SN-BEFORE', '现序列号': 'DEMO-SN-AFTER' },
     '110': { '原资产用途': '部门公用', '现资产用途': '员工用机' },
@@ -28,12 +30,12 @@ export const reportTransactions = transactionOptions.flatMap((option, index) => 
     '现City': reportWarehouses[0].city, '现Building': reportWarehouses[0].building, '现Floor': reportWarehouses[0].floor,
   });
   if (option.value === '93') Object.assign(values, { '原NO位置': 'DEMO-NO-BEFORE', '现NO位置': 'DEMO-NO-AFTER' });
-  const row = fixture(`transaction-${group}-${option.value}`, assetMaterials[index % assetMaterials.length], warehouse, values, { documentStatus: '已处理' });
+  const row = fixture(`transaction-${group}-${option.value}`, accountingSource ? assetMaterials[group] : assetMaterials[index % assetMaterials.length], warehouse, values, { documentStatus: '已处理', accountingSource, sourceDocumentName: accountingSource ? '账面报废单' : type });
   // 清空配置定义内不适用的条件列，使导出与页面具有同样的空值规则。
   definitions.find(item => item.id === 'report-3-1').columns.filter(item => /^[原现]/.test(item.key)).forEach(item => {
     if (!(item.key in values)) row.values[item.key] = '';
   });
-  Object.assign(row.filters, { '事务类型': option.value, '事务执行人': '213852', '板块': '17', '资产所属板块': '17' });
+  Object.assign(row.filters, { '单据类型': type, '事务类型': option.value, '事务执行人': '213852', '板块': '17', '资产所属板块': '17' });
   row.lookupLabels['事务执行人'] = '213852.孙志强'; row.sort.processedAt = values['事务处理日期'];
   return completedSnapshot(row, '变更完成');
 }));
