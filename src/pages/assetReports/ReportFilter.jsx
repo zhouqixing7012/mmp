@@ -6,10 +6,10 @@ import SelectModal from '../../components/SelectModal';
 import { getReportOptions } from '../../services/assetReportsService';
 import { buildReportTree } from '../../services/assetReportOptions';
 
-export default function ReportFilter({ definition, field, filters, onChange, onQuery }) {
+export default function ReportFilter({ definition, field, filters, access, onChange, onQuery }) {
   const [open, setOpen] = useState(false);
   const [treeDraft, setTreeDraft] = useState([]);
-  const options = useMemo(() => getReportOptions(definition, field, filters), [definition, field, filters]);
+  const options = useMemo(() => getReportOptions(definition, field, filters, access), [definition, field, filters, access]);
   const value = filters[field.label];
   const selected = Array.isArray(value) ? value : value !== undefined && value !== null && value !== '' ? [value] : [];
   const change = next => onChange(field, next);

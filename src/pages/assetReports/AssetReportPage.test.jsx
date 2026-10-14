@@ -20,6 +20,8 @@ test.each(reportDefinitions.map(definition => [definition.id, definition.title])
   expect(screen.getByRole('button', { name: /查\s*询/ })).toBeInTheDocument();
   expect(screen.getByText('查询结果')).toBeInTheDocument();
   if (id === 'report-8-1') expect(screen.queryByRole('columnheader', { name: '处置类型' })).not.toBeInTheDocument();
+  if (id === 'report-2-1') expect(screen.queryByRole('columnheader', { name: '净值' })).not.toBeInTheDocument();
+  if (id === 'report-1-1') expect(screen.getByRole('columnheader', { name: '净值' })).toBeInTheDocument();
 });
 test('条件编辑不改变列表，回车执行查询后结果改变', async () => {
   const document = queryReport('report-3-1')[0].values['单据编号'];
@@ -46,12 +48,27 @@ test('耗材标签打开只读详情弹窗', async () => {
   expect(links.length).toBeGreaterThan(0);
   fireEvent.click(links[0]);
   await waitFor(() => expect(screen.getByText('耗材详情')).toBeInTheDocument());
+  expect(screen.queryByText('净值：')).not.toBeInTheDocument();
 });
-test('缺少正式分类编码时显示具体错误并阻止导出', () => {
-  render(<AssetReportPage reportId="report-1-1" />);
-  expect(screen.getByText(/物料目录未提供资产大类和小类编码/)).toBeInTheDocument();
-  expect(screen.getByText('数据条件未满足，暂无法显示结果')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: /导出/ })).toBeDisabled();
+test.each(['report-1-1', 'report-2-1', 'report-5-1'])('%s接入分类编码后默认查询显示结果并允许导出', id => {
+  render(<AssetReportPage reportId={id} />);
+  expect(screen.queryByText('数据条件未满足，暂无法显示结果')).not.toBeInTheDocument();
+  expect(screen.getByText(/共 \d+ 条/)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /导\s*出|Excel/i })).toBeEnabled();
+});
+test('页面使用传入的台账卡片权限，不扩大默认演示范围', () => {
+  const rows = queryReport('report-1-1'), tag = rows[0].values['资产标签号'];
+  const access = { userId: 'inherited-ledger-user', canView: true, allowedScopes: ['集团'], allowedAssetTags: [tag] };
+  render(<AssetReportsContent activeSubMenu="资产明细报表" access={access} />);
+  expect(screen.getByText(tag)).toBeInTheDocument();
+  expect(screen.queryByText(rows[1].values['资产标签号'])).not.toBeInTheDocument();
+  expect(screen.getByText('共 1 条')).toBeInTheDocument();
+});
+test('无台账卡片查看权限时显示原因且不提供查询导出', () => {
+  render(<AssetReportPage reportId="report-1-1" access={{ userId: 'denied-ledger-user', canView: false, allowedScopes: [] }} />);
+  expect(screen.getByText('无台账及卡片查看权限')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /导出/ })).not.toBeInTheDocument();
+  expect(screen.queryByText('查询结果')).not.toBeInTheDocument();
 });
 test('并行审批完整展示，再次查询读取已完成结果并清空审批信息', async () => {
   const record = queryReport('report-6-1').find(row => row.approvalSource.status === '处理中' && row.grain === '资产配给单.物料');

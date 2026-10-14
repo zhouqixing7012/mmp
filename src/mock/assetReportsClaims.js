@@ -99,18 +99,24 @@ export const consumableClaims = consumableWarehouses.flatMap((warehouse, group) 
   row.approvalSource = approval(completed ? '已处理' : '处理中');
   row.sort.applyDate = row.values['申请日期']; row.documentStatus = row.values['统一申请单状态']; return sync(row);
 }));
-// 申请结果补充页的领用/占用来自独立演示源标记；现状未定义生成公式。
-const detailFlags = [{ received: '否', occupied: '否' }, { received: '是', occupied: '是' }, { received: '是', occupied: '否' }];
+// 结果明细联查同一申请、入库行与可选低值卡片；普通耗材没有伪造卡片。
 export const consumableClaimDetails = consumableClaims.map((row, index) => {
-  const flags = detailFlags[index % detailFlags.length];
+  const inboundWarehouse = consumableWarehouses.find(warehouse => warehouse.company === row.values['公司']);
+  const cardWarehouse = reportWarehouses.find(warehouse => warehouse.company === row.values['公司']);
+  const source = {
+    claim: { status: [1, 3, 0][index % 3] },
+    inboundDetail: { taxAmount: [6.5, 13.11, null][index % 3] },
+    inbound: { warehouse: index % 3 === 2 ? null : inboundWarehouse },
+    card: row.kind === '低值耐用品' ? { warehouse: index % 3 === 2 ? null : cardWarehouse } : null,
+  };
   const values = { ...row.values, '耗材物料编码': row.values['物料编码'], '耗材物料描述': row.values['耗材名称'],
     '耗材大类': row.values['耗材大类名称'], '耗材小类': row.values['耗材小类名称'], '总类': row.kind,
-    '不含税单价': 50, '税金': 6.5, '耗材数量': 2, '耗材公司': row.values['公司'], '耗材状态': '在用',
+    '不含税单价': 50, '税金': source.inboundDetail.taxAmount, '耗材数量': 2, '耗材公司': row.values['公司'], '耗材状态': '在用',
     '耗材责任人': row.values['申请人'], '耗材责任人公司': row.values['公司'], '耗材责任人板块': row.values['板块'],
     '耗材责任人部门': row.values['申请人部门'], '申请人公司': row.values['公司'], '申请人板块': row.values['板块'],
-    '是否领用': flags.received, '是否占用': flags.occupied,
+    '是否领用': source.claim.status === 1 ? '是' : '否', '是否占用': source.claim.status === 3 ? '是' : '否',
     '采购单': row.values['PO单号'], '耗材领用单号': row.values['领用出库单号'] };
-  return { ...row, sourceFlags: flags, flagSource: '申请结果明细独立演示标记，公式未定义', sort: { ...row.sort, claimState: row.documentStatus, materialCode: row.values['物料编码'], tag: row.values['耗材标签号'] }, id: `detail-${row.id}`, values, exports: { ...values }, filters: { ...row.filters,
+  return { ...row, detailSource: source, flagSource: '领用源状态1为已领用，3为占用', sort: { ...row.sort, claimState: row.documentStatus, materialCode: row.values['物料编码'], tag: row.values['耗材标签号'] }, id: `detail-${row.id}`, values, exports: { ...values }, filters: { ...row.filters,
     '耗材公司': row.filters['公司'], '耗材责任人公司': row.filters['公司'], '申请人公司': row.filters['公司'],
     '耗材责任人': row.filters['申请人'], '耗材责任人查询': row.filters['申请人'], '耗材责任人部门': row.filters['申请人部门'],
     '耗材标签号': values['耗材标签号'], '耗材物料编码': values['耗材物料编码'], '是否领用': values['是否领用'], '是否占用': values['是否占用'], '耗材责任人板块': '17', '申请人板块': '17', '耗材物料描述': values['耗材物料描述'],

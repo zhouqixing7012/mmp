@@ -3,8 +3,9 @@ import { Alert, Button, Card, Modal, Space, Table, Typography, message } from 'a
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { exportReport, formatReportValue, getReportDefinition, queryReport, updateReportFilter } from '../../services/assetReportsService';
 import ReportFilter from './ReportFilter';
+import { DEFAULT_REPORT_ACCESS, assertReportAccess } from '../../services/assetReportAccess';
 
-export default function AssetReportPage({ reportId }) {
+export default function AssetReportPage({ reportId, access = DEFAULT_REPORT_ACCESS }) {
   const definition = getReportDefinition(reportId);
   const [filters, setFilters] = useState({});
   const [applied, setApplied] = useState({});
@@ -14,15 +15,21 @@ export default function AssetReportPage({ reportId }) {
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [detail, setDetail] = useState(null);
   const queryResult = useMemo(() => {
-    try { return { rows: queryReport(reportId, applied, sort), error: null }; }
+    try { return { rows: queryReport(reportId, applied, sort, access), error: null }; }
     catch (error) { return { rows: [], error: error.message }; }
-  }, [reportId, applied, sort]);
+  }, [reportId, applied, sort, access]);
+  let accessError = null;
+  try { assertReportAccess(access); } catch (error) { accessError = error.message; }
+  if (accessError) return <div className="flex flex-col gap-4">
+    <Typography.Title level={4} className="!mb-0">{definition.title}</Typography.Title>
+    <Alert type="error" showIcon title={accessError} />
+  </div>;
   const rows = queryResult.rows;
   const moreIndex = definition.moreStart ? definition.filters.findIndex(field => field.label === definition.moreStart) : -1;
   const visibleFilters = expanded || moreIndex < 0 ? definition.filters : definition.filters.slice(0, moreIndex);
   const onQuery = () => {
     try {
-      queryReport(reportId, filters, sort);
+      queryReport(reportId, filters, sort, access);
       setApplied({ ...filters });
       setPagination(previous => ({ ...previous, current: 1 }));
       setSelectedKeys([]);
@@ -31,9 +38,9 @@ export default function AssetReportPage({ reportId }) {
   const clear = () => Modal.confirm({ title: '此操作将清除所有查询条件，确定清除吗？', okText: '确定', cancelText: '取消', onOk: () => setFilters({}) });
   const download = () => {
     try {
-      queryReport(reportId, filters, sort);
+      queryReport(reportId, filters, sort, access);
       Modal.confirm({ title: selectedKeys.length && definition.selectRows ? `导出选中的 ${selectedKeys.length} 条记录？` : '导出当前条件下的所有数据到 Excel？',
-        okText: '确定', cancelText: '取消', onOk: () => { exportReport(reportId, filters, selectedKeys, sort); message.success('导出完成'); } });
+        okText: '确定', cancelText: '取消', onOk: () => { exportReport(reportId, filters, selectedKeys, sort, access); message.success('导出完成'); } });
     } catch (error) { message.error(error.message); }
   };
   const columns = [
@@ -56,7 +63,7 @@ export default function AssetReportPage({ reportId }) {
       <QueryBar labelWidth={112} buttons={<Space wrap><Button type="primary" onClick={onQuery}>查询</Button><Button onClick={clear}>清除</Button>
         {moreIndex >= 0 && <Button type="link" onClick={() => setExpanded(value => !value)}>{expanded ? '收起' : '更多'}</Button>}</Space>}>
         {visibleFilters.map(field => <QueryItem key={field.label} label={field.label} labelWidth={112}>
-          <ReportFilter definition={definition} field={field} filters={filters} onQuery={onQuery}
+          <ReportFilter definition={definition} field={field} filters={filters} access={access} onQuery={onQuery}
             onChange={(changed, value) => setFilters(previous => updateReportFilter(definition, previous, changed, value))} />
         </QueryItem>)}
       </QueryBar>

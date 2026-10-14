@@ -1,3 +1,4 @@
+import { categoryOptions } from '../mock/reference/materialCategoryMapping';
 import { assetReportRows, assetReportCatalog } from '../mock/businessRulesMock';
 import { DEFAULT_REPORT_ACCESS, assertReportAccess, canReadReportRow, getWarehouseScope } from './assetReportAccess';
 
@@ -36,8 +37,7 @@ export function getReportOptions(definition, field, filters = {}, access = DEFAU
   const materialRows = materials.filter(material => material.status === '启用' && (consumable ? material.materialType !== '资产' : material.materialType === '资产'));
   const group = field.optionSet;
   if (CATEGORY_FIELDS.has(group)) {
-    return uniqueOptions(materialRows.map(material => ({ value: `${material.majorCategory}|${material.minorCategory}`, label: material.minorCategory,
-      parent: material.majorCategory, code: material.materialCode })));
+    return uniqueOptions(categoryOptions(materialRows));
   }
   if (group === 'major') return uniqueOptions(materialRows.map(material => ({ value: material.majorCategory, label: material.majorCategory })));
   if (group === 'minor') {
@@ -85,7 +85,7 @@ export function buildReportTree(options, department = false) {
     return roots;
   }
   return [...new Set(options.map(option => option.parent))].map(parent => ({
-    title: parent, value: `major:${parent}`,
+    title: `${options.find(option => option.parent === parent).parentCode}.${parent}`, value: `major:${parent}`,
     children: options.filter(option => option.parent === parent).map(option => ({ title: option.label, value: option.value })),
   }));
 }

@@ -272,7 +272,9 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 | `src/mock/assetReportsFixtures.js` | 当前台账、耗材明细、入库和报废完成快照；基础属性逐行复用现有目录。 |
 | `src/mock/assetReportsTransactions.js` | 已处理事务及适用的原值、现值完成快照。 |
 | `src/mock/assetReportsClaims.js` | 申请单头、配给行、汇总、采购及出库的演示链路与报表投影。 |
+| `src/mock/reference/materialCategoryCatalog.json` | 两份上传分类附件的完整原始行、字符串编码、文件名称及摘要，保留重复源行。 |
+| `src/mock/reference/materialCategoryMapping.js` | 同一大类及小类名称精确映射真实编码，提供启用分类候选，不做相似项匹配。 |
 
 调用关系：后台菜单/页签 → AssetReportsContent → AssetReportPage/ReportFilter → assetReportsService → businessRulesMock → assetReportsMock；导出复用同一筛选定义并读取独立导出字段配置。没有新增路由、后台或运行依赖。
 
-默认按大类、小类编码排序的三页缺正式分类编码。服务明确报错，页面展示原因并禁用导出，不以分类名称、物料编码或自造编码代替。完成快照与当前值分开，查询及选中导出均执行同一权限和范围校验。整改状态见[现状整改核查](docs/八项报表独立PRD/比对报告/八项报表-现状整改核查-20261014.md)。
+默认按大类、小类编码排序的三页已使用上传的真实分类码；演示交易选取明确核实的物料记录，未来未映射或异码冲突仍明确失败。页面、候选及导出接受同一台账/卡片access，不另设报表导出授权。附加耗材明细每次查询投影入库保存税金、卡片或入库仓库、领用单状态；空仓不生成点号。完成快照与当前值分开。最新核查见[基础资料与耗材规则核查](docs/八项报表独立PRD/比对报告/报表基础资料与耗材规则核查-20261014.md)。

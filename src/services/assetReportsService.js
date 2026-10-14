@@ -79,7 +79,7 @@ export function queryReport(id, filters = {}, sort = null, access = DEFAULT_REPO
   validateReportFilters(definition, filters);
   const rows = assetReportRows[id].map(projectCurrentReportRow).filter(row => canReadReportRow(row, access) && isInReportRange(definition, row) && matchesReportRow(definition, row, filters));
   if (!sort?.key && definition.sortSourceGap && rows.some(row => definition.sortKeys.some(item => ['majorCode', 'minorCode'].includes(item.key) && isReportValueEmpty(row.sort[item.key])))) {
-    throw new Error(definition.sortSourceGap + '，无法执行默认排序');
+    throw new Error(rows.find(row => row.sortMappingError)?.sortMappingError + '，无法执行默认排序');
   }
   rows.sort((a, b) => {
     if (sort?.key) return compareReportValues(a.values[sort.key], b.values[sort.key], sort.order);
@@ -109,7 +109,7 @@ export function formatReportValue(value, format) {
 }
 export function buildReportWorkbook(id, filters = {}, selectedKeys = [], sort = null, access = DEFAULT_REPORT_ACCESS) {
   const definition = getReportDefinition(id);
-  assertReportAccess(access, 'export');
+  assertReportAccess(access);
   // 选中与全部导出均重用查询及权限，选中记录不能绕过数据范围。
   const matching = queryReport(id, filters, sort, access);
   const rows = definition.selectRows && selectedKeys.length ? matching.filter(row => selectedKeys.includes(row.id)) : matching;

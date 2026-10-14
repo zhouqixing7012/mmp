@@ -1,8 +1,16 @@
 import { materialCatalog } from './reference/materialCatalog';
+import { findMaterialCategory } from './reference/materialCategoryMapping';
 import { warehouseCatalog } from './reference/warehouseCatalog';
 
 // 基础属性逐行取自用户提供的目录；编号、金额和流程日期是明确的业务演示记录。
 export const assetMaterials = materialCatalog.filter(row => row.materialType === '资产');
+
+const reportAssetCodes = ['113014107010000', '113020011242010', '113004011287002', '112002002237001', '112001055268001', '115005118029000'];
+const reportAssetMaterials = reportAssetCodes.map(code => {
+  const material = assetMaterials.find(row => row.materialCode === code);
+  if (!material || !findMaterialCategory(material)) throw new Error(`演示物料分类未匹配：${code}`);
+  return material;
+});
 export const consumableMaterials = ['耗材', '低值耐用品'].flatMap(type => materialCatalog.filter(row => row.materialType === type).slice(0, 3));
 export const reportWarehouses = ['I0001', 'I3001', 'I3002'].map(code => warehouseCatalog.find(row => row.warehouseCode === code));
 export const consumableWarehouses = ['I1001', 'I3011', 'I1007'].map(code => warehouseCatalog.find(row => row.warehouseCode === code));
@@ -44,17 +52,18 @@ export function fixture(id, material, warehouse, overrides = {}, metadata = {}) 
     'PR单号': values['PR单号'], '资产所属板块': '17', '板块': '17', '成本中心': 'CC-REPORT', '用途': '70', '耗材说明': values['资产说明'], '耗材状态': values['资产状态'],
     '当前责任人': person.code, '购买日期': values['采购日期'],
   };
+  const category = findMaterialCategory(material);
   const row = { id, values, filters, exports: { ...values, '责任人编号': values['资产责任人工号'], '责任人姓名': values['资产责任人姓名'], 'PR单编号': values['PR单号'] }, scope, kind: material.materialType,
-    documentStatus: '已完成', sort: { majorCode: null, minorCode: null,
+    documentStatus: '已完成', sort: { majorCode: category?.majorCode ?? null, minorCode: category?.minorCode ?? null,
       companyCode, plateCode: '17', tag: values['资产标签号'], processedAt: '2026-10-01 10:00:00', retiredDate: values['报废日期'], applyDate: values['申请日期'] },
-    sortCodeSource: '物料目录未提供类别编码', organizationSource: '报表演示层级，非正式组织映射', lookupLabels: { '资产责任人工号': `${person.code}.${person.name}`, '当前责任人': `${person.code}.${person.name}`, 'HR部门': department, '部门': department }, ...metadata };
+    sortCodeSource: '用户上传物料大类与小类表，名称在同一大类精确匹配', sortMappingError: category ? null : `分类未精确匹配：${material.materialCode}/${material.majorCategory}/${material.minorCategory}`, organizationSource: '报表演示层级，非正式组织映射', lookupLabels: { '资产责任人工号': `${person.code}.${person.name}`, '当前责任人': `${person.code}.${person.name}`, 'HR部门': department, '部门': department }, ...metadata };
   return row;
 }
 export function completedSnapshot(row, type) {
   const snapshot = Object.freeze({ ...row.values });
   return { ...row, snapshotType: type, snapshot, values: snapshot, exports: snapshot };
 }
-export const reportAssets = reportWarehouses.flatMap((warehouse, group) => assetMaterials.slice(0, 6).map((material, index) => fixture(`asset-${group}-${index}`, material, warehouse, index === 1 ? { '原值': 1100, '累计折旧': 150, '净值': 850, '升级日期': '2026-09-20', '升级金额': 1234.56 } : {})));
+export const reportAssets = reportWarehouses.flatMap((warehouse, group) => reportAssetMaterials.map((material, index) => fixture(`asset-${group}-${index}`, material, warehouse, index === 1 ? { '原值': 1100, '累计折旧': 150, '净值': 850, '升级日期': '2026-09-20', '升级金额': 1234.56 } : {})));
 export const reportConsumables = consumableWarehouses.flatMap((warehouse, group) => consumableMaterials.slice(0, 6).map((material, index) => {
   const row = fixture(`consumable-${group}-${index}`, material, warehouse, {
   '耗材标签号': material.materialType === '低值耐用品' ? `CONSUM-${group}-${index}` : '', '资产标签号': material.materialType === '低值耐用品' ? `CONSUM-${group}-${index}` : '',

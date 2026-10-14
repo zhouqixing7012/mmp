@@ -110,7 +110,7 @@
     "exportLabel": "导出资产明细报表",
     "sortKeys": [{"key":"majorCode","order":"ascend"},{"key":"minorCode","order":"ascend"}],
     "range": "assetCards",
-    "sortSourceGap": "物料目录未提供资产大类和小类编码"
+    "sortSourceGap": "物料分类编码未精确匹配"
   },
   {
     "id": "report-2-1",
@@ -157,7 +157,6 @@
       {"label":"主资产标签号","key":"主资产标签号","format":"text"},
       {"label":"数量","key":"数量","format":"integer"},
       {"label":"原值","key":"原值","format":"moneyOptional"},
-      {"label":"净值","key":"净值","format":"moneyOptional"},
       {"label":"资产责任人编号","key":"资产责任人编号","format":"text"},
       {"label":"资产责任人","key":"资产责任人","format":"text"},
       {"label":"资产状态","key":"资产状态","format":"text"},
@@ -165,7 +164,7 @@
       {"label":"仓库","key":"仓库","format":"text"},
       {"label":"启用日期","key":"启用日期","format":"date"}
     ],
-    "exportColumns": [{"label":"库房","key":"库房","format":"text"},{"label":"资产大类","key":"资产大类","format":"text"},{"label":"资产小类","key":"资产小类","format":"text"},{"label":"资产小类A","key":"资产小类A","format":"text"},{"label":"资产小类明细","key":"资产小类明细","format":"text"},{"label":"资产标签号","key":"资产标签号","format":"text"},{"label":"序列号","key":"序列号","format":"text"},{"label":"品牌","key":"品牌","format":"text"},{"label":"型号","key":"型号","format":"text"},{"label":"级别","key":"级别","format":"text"},{"label":"资产说明","key":"资产说明","format":"text"},{"label":"配置","key":"配置","format":"text"},{"label":"备注","key":"备注","format":"text"},{"label":"数量","key":"数量","format":"truncateInteger"},{"label":"单位","key":"单位","format":"text"},{"label":"采购日期","key":"采购日期","format":"date"},{"label":"启用日期","key":"启用日期","format":"date"},{"label":"原值","key":"原值","format":"money"},{"label":"净值","key":"净值","format":"money"},{"label":"印刷号","key":"印刷号","format":"text"},{"label":"折旧月数","key":"折旧月数","format":"raw"},{"label":"资产用途","key":"资产用途","format":"text"},{"label":"使用说明","key":"使用说明","format":"text"},{"label":"资产状态","key":"资产状态","format":"text"},{"label":"资产标记","key":"资产标记","format":"text"},{"label":"责任人编号","key":"责任人编号","format":"text"},{"label":"责任人姓名","key":"责任人姓名","format":"text"},{"label":"成本中心","key":"成本中心","format":"text"},{"label":"公司","key":"公司","format":"text"},{"label":"财务核算板块","key":"财务核算板块","format":"text"},{"label":"资产所属板块","key":"资产所属板块","format":"text"},{"label":"业务线","key":"业务线","format":"text"},{"label":"项目","key":"项目","format":"text"},{"label":"费用账户","key":"费用账户","format":"text"},{"label":"HR一级部门","key":"HR一级部门","format":"text"},{"label":"HR二级部门","key":"HR二级部门","format":"text"},{"label":"City","key":"City","format":"text"},{"label":"Building","key":"Building","format":"text"},{"label":"Floor","key":"Floor","format":"text"},{"label":"NO位置","key":"NO位置","format":"text"},{"label":"服务","key":"服务","format":"text"},{"label":"子服务","key":"子服务","format":"text"},{"label":"资产账簿","key":"资产账簿","format":"text"},{"label":"资产编号","key":"资产编号","format":"text"},{"label":"申请单号","key":"申请单号","format":"text"},{"label":"PO单号","key":"PO单号","format":"text"},{"label":"PR单编号","key":"PR单编号","format":"text"},{"label":"入库单号","key":"入库单号","format":"text"},{"label":"批次号","key":"批次号","format":"text"},{"label":"入库来源类型","key":"入库来源类型","format":"text"},{"label":"新增类型","key":"新增类型","format":"text"},{"label":"主资产标签号","key":"主资产标签号","format":"text"},{"label":"物料编码","key":"物料编码","format":"text"},{"label":"报废类型","key":"报废类型","format":"text"},{"label":"报废日期","key":"报废日期","format":"date"},{"label":"报废原因","key":"报废原因","format":"text"},{"label":"折旧年限","key":"折旧年限","format":"raw"},{"label":"折旧剩余月份","key":"折旧剩余月份","format":"raw"},{"label":"升级日期","key":"升级日期","format":"date"},{"label":"升级金额","key":"升级金额","format":"raw","emptyValue":0},{"label":"ES实物报废期","key":"ES实物报废期","format":"date"}],
+    "exportColumns": [{"label":"库房","key":"库房","format":"text"},{"label":"资产大类","key":"资产大类","format":"text"},{"label":"资产小类","key":"资产小类","format":"text"},{"label":"资产小类A","key":"资产小类A","format":"text"},{"label":"资产小类明细","key":"资产小类明细","format":"text"},{"label":"资产标签号","key":"资产标签号","format":"text"},{"label":"序列号","key":"序列号","format":"text"},{"label":"品牌","key":"品牌","format":"text"},{"label":"型号","key":"型号","format":"text"},{"label":"级别","key":"级别","format":"text"},{"label":"资产说明","key":"资产说明","format":"text"},{"label":"配置","key":"配置","format":"text"},{"label":"备注","key":"备注","format":"text"},{"label":"数量","key":"数量","format":"truncateInteger"},{"label":"单位","key":"单位","format":"text"},{"label":"采购日期","key":"采购日期","format":"date"},{"label":"启用日期","key":"启用日期","format":"date"},{"label":"原值","key":"原值","format":"money"},{"label":"印刷号","key":"印刷号","format":"text"},{"label":"折旧月数","key":"折旧月数","format":"raw"},{"label":"资产用途","key":"资产用途","format":"text"},{"label":"使用说明","key":"使用说明","format":"text"},{"label":"资产状态","key":"资产状态","format":"text"},{"label":"资产标记","key":"资产标记","format":"text"},{"label":"责任人编号","key":"责任人编号","format":"text"},{"label":"责任人姓名","key":"责任人姓名","format":"text"},{"label":"成本中心","key":"成本中心","format":"text"},{"label":"公司","key":"公司","format":"text"},{"label":"财务核算板块","key":"财务核算板块","format":"text"},{"label":"资产所属板块","key":"资产所属板块","format":"text"},{"label":"业务线","key":"业务线","format":"text"},{"label":"项目","key":"项目","format":"text"},{"label":"费用账户","key":"费用账户","format":"text"},{"label":"HR一级部门","key":"HR一级部门","format":"text"},{"label":"HR二级部门","key":"HR二级部门","format":"text"},{"label":"City","key":"City","format":"text"},{"label":"Building","key":"Building","format":"text"},{"label":"Floor","key":"Floor","format":"text"},{"label":"NO位置","key":"NO位置","format":"text"},{"label":"服务","key":"服务","format":"text"},{"label":"子服务","key":"子服务","format":"text"},{"label":"资产账簿","key":"资产账簿","format":"text"},{"label":"资产编号","key":"资产编号","format":"text"},{"label":"申请单号","key":"申请单号","format":"text"},{"label":"PO单号","key":"PO单号","format":"text"},{"label":"PR单编号","key":"PR单编号","format":"text"},{"label":"入库单号","key":"入库单号","format":"text"},{"label":"批次号","key":"批次号","format":"text"},{"label":"入库来源类型","key":"入库来源类型","format":"text"},{"label":"新增类型","key":"新增类型","format":"text"},{"label":"主资产标签号","key":"主资产标签号","format":"text"},{"label":"物料编码","key":"物料编码","format":"text"},{"label":"报废类型","key":"报废类型","format":"text"},{"label":"报废日期","key":"报废日期","format":"date"},{"label":"报废原因","key":"报废原因","format":"text"},{"label":"折旧年限","key":"折旧年限","format":"raw"},{"label":"折旧剩余月份","key":"折旧剩余月份","format":"raw"},{"label":"升级日期","key":"升级日期","format":"date"},{"label":"升级金额","key":"升级金额","format":"raw","emptyValue":0},{"label":"ES实物报废期","key":"ES实物报废期","format":"date"}],
     "sheetName": "低值耐用品明细",
     "moreStart": "City",
     "selectRows": true,
@@ -174,7 +173,7 @@
     "supplemental": true,
     "sortKeys": [{"key":"majorCode","order":"ascend"},{"key":"minorCode","order":"ascend"}],
     "range": "consumableDetails",
-    "sortSourceGap": "物料目录未提供资产大类和小类编码"
+    "sortSourceGap": "物料分类编码未精确匹配"
   },
   {
     "id": "report-3-1",
@@ -377,7 +376,7 @@
     "exportLabel": "导出资产新增报表",
     "sortKeys": [{"key":"majorCode","order":"ascend"},{"key":"minorCode","order":"ascend"},{"key":"companyCode","order":"ascend"},{"key":"plateCode","order":"ascend"},{"key":"tag","order":"ascend"}],
     "range": "completedInboundAssets",
-    "sortSourceGap": "物料目录未提供资产大类和小类编码"
+    "sortSourceGap": "物料分类编码未精确匹配"
   },
   {
     "id": "report-6-1",
