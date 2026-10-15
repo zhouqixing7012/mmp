@@ -249,3 +249,11 @@ PC位置变更：移动端公共/复盘资产扫码提交地点变化后，资�
 盘点 DOCX 三方复核入口：[2026-10-06 报告](docs/asset-inventory/资产盘点-DOCX三方对抗测试-20261006.md)。`inventoryProjectPlanMock` 明确项目样本归属；`inventoryDefaultPlans` 管理默认分组；`inventoryProgressModel` 统一进度统计；`inventoryLocationPhotoRules` 统一位置变更照片前置条件。
 
 图片上传规则在项目中保存；生成快照时按每条规则分别随机抽取，条数四舍五入，按资产标签号合并去重。快照、计划、移动端和图片审核使用相同标记，重新进入不重新抽取。相机与照片仍为前端演示，不代表真实上传服务已接入。
+
+## 申请菜单原型（2026-10-15）
+
+“申请”大菜单位于“资产报表”之后，包含移库单、退库单、转移单、借用单、更换单、未完成单据、资产申请单、耗材申请单、新员工领用单。八类已有字段定义的入口提供对应查询和可达详情；更换单按新版PRD保留入口说明。转移单支持创建、草稿编辑、资产锁定、执行与事务结果；查询与个人工作台办理分开。
+
+依据[九类独立新版PRD](docs/申请菜单九类单据独立新版PRD/)，范围和待补资料见[原型交付记录](docs/申请菜单九类单据独立新版PRD/原型交付记录-20261015.md)。运行、部署方式和依赖保持不变。复用已记录的AntD、QueryBar、SelectModal、DetailGrid等实现，无需新增外部方案。
+
+测试：`npm test -- --watchAll=false --runInBand src/pages/applicationQueries src/services/applicationQueryService.test.js src/services/applicationTransferService.test.js`。

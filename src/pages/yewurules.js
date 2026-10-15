@@ -9,6 +9,7 @@ import { AssetManagementContent } from './assetManagement/index';
 import { InventoryManagementContent } from './inventoryManagement';
 import { AssetInventoryContent } from './assetInventory';
 import AssetReportsContent from './assetReports';
+import ApplicationQueriesContent from './applicationQueries';
 import AdminSidebar from './yewurules/components/AdminSidebar';
 import AdminHeader from './yewurules/components/AdminHeader';
 import AdminContent from './yewurules/components/AdminContent';
@@ -95,6 +96,10 @@ export default function App() {
       setActiveSubMenu('资产明细报表');
       setActiveTab('');
     }
+    if (menuKey === '申请' && !isClosing) {
+      setActiveSubMenu('移库单');
+      setActiveTab('');
+    }
     setActiveMenu(isClosing ? '' : menuKey);
   };
 
@@ -117,6 +122,7 @@ export default function App() {
           {activeMenu === '资产管理' && <AssetManagementContent activeSubMenu={activeSubMenu} />}
           {activeMenu === '库存管理' && <InventoryManagementContent activeSubMenu={activeSubMenu} />}
           {activeMenu === '资产盘点' && <AssetInventoryContent activeSubMenu={activeSubMenu} />}
+          {activeMenu === '申请' && <ApplicationQueriesContent activeSubMenu={activeSubMenu} />}
           {activeMenu === '资产报表' && <AssetReportsContent activeSubMenu={activeSubMenu} activeTab={activeTab} />}
           {activeMenu === '后台基础配置' && activeTab === '物料维度组合' && <MaterialComprehensiveView />}
           {activeMenu === '后台基础配置' && activeTab === '物料大类' && <MaterialCategoryView />}

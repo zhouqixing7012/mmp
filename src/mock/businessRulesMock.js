@@ -326,3 +326,7 @@ export const mockEmployeeProjectMappingData = [
 
 // 八项资产报表的独立演示快照及公共参考目录。
 export { assetReportRows, assetReportCatalog } from './assetReportsMock';
+
+// 申请菜单的独立业务查询演示源。
+export { applicationQueryRows } from './applicationQueriesMock';
+export { applicationTransferStore } from './applicationTransferMock';

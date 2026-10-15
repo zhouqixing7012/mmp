@@ -18,12 +18,17 @@ export const ASSET_REPORT_MENU_ITEMS = [
   '资产新增报表', '资产统一申领报表', '耗材统一申领报表', '资产报废报表',
 ];
 
+export const APPLICATION_MENU_ITEMS = [
+  '移库单', '退库单', '转移单', '借用单', '更换单', '未完成单据', '资产申请单', '耗材申请单', '新员工领用单',
+];
+
 export const MAIN_MENU_ITEMS = [
   { key: '资产管理', label: '资产管理', icon: Monitor, children: ASSET_MANAGEMENT_MENU_ITEMS },
   { key: '无形资产', label: '无形资产', icon: Layers },
   { key: '库存管理', label: '库存管理', icon: Layers, children: INVENTORY_MANAGEMENT_MENU_ITEMS },
   { key: '资产盘点', label: '资产盘点', icon: ClipboardList, children: ASSET_INVENTORY_MENU_ITEMS },
   { key: '资产报表', label: '资产报表', icon: ClipboardList, children: ASSET_REPORT_MENU_ITEMS },
+  { key: '申请', label: '申请', icon: ClipboardList, children: APPLICATION_MENU_ITEMS },
 ];
 
 export const BACKEND_CONFIG_MENU_ITEMS = [

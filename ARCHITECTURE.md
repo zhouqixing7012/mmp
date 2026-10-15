@@ -280,3 +280,18 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 默认按大类、小类编码排序的三页已使用上传的真实分类码；演示交易选取明确核实的物料记录，未来未映射或异码冲突仍明确失败。页面、候选及导出接受同一台账/卡片access，不另设报表导出授权。附加耗材明细每次查询投影入库保存税金、卡片或入库仓库、领用单状态；空仓不生成点号。完成快照与当前值分开。最新核查见[基础资料与耗材规则核查](docs/八项报表独立PRD/比对报告/报表基础资料与耗材规则核查-20261014.md)。
 
 资产明细类别直接复用AssetQueryControls.AssetCategorySelect，状态与资产维护共用AssetValueSelect及assetQueryModel.ASSET_STATUS_OPTIONS。十页报表日期定义为单daterange，服务按原业务日期键匹配区间；现役盘点资产查询的启用日期同样用RangePicker，但保留原enableFrom/enableTo数据键。精修与来源追溯见[查询精修核查](docs/八项报表独立PRD/比对报告/资产明细查询精修核查-20261014.md)。
+
+## 申请菜单（2026-10-15）
+
+| 文件/模块 | 职责 |
+| --- | --- |
+| `src/pages/applicationQueries/index.jsx` | 将九个子菜单映射到查询、转移执行单或更换单入口说明。 |
+| `ApplicationQueryPage.jsx`、`ApplicationFilter.jsx`、`ApplicationProgress.jsx` | 公共查询、分页、导出、草稿删除和只读审批记录。 |
+| `legacyDefinitions.js`、`Legacy*Detail.jsx` | 移库、退库、借用及续借的专属字段与嵌套详情。 |
+| `claimDefinitions.js`、`Claim*Detail.jsx` | 资产/耗材申请子流程、汇总明细及新员工领用查看。 |
+| `TransferApplicationPage.jsx`、`TransferOrderEditor.jsx`、`TransferDetailDialog.jsx`、`TransferLookup.jsx` | 转移查询、创建/编辑、明细与执行操作。 |
+| `src/services/applicationQueryService.js` | 各页精确/包含/前缀/日期匹配、排序、导出、删除与待办选取。 |
+| `src/services/applicationTransferService.js` | 转移保存锁定、全量执行校验、资产更新与事务生成。 |
+| `src/mock/application*Mock.js` | 各业务独立交易演示及真实整行参考目录。 |
+
+调用：后台申请菜单→独立查询页/转移页→对应Service→businessRulesMock统一入口→申请演示源。与资产报表结果表、工作台办理入口独立；转移演示数据按当前标签页会话保存。未新增后端、路由或依赖。
