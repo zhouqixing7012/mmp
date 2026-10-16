@@ -18,9 +18,23 @@ test('查询按创建日期倒序，范围包含起止整天，数量取明细�
   const { service } = setup(); const rows = service.list({ dateRange: ['2026-10-14', '2026-10-15'] });
   expect(rows.map(row => row.number)).toEqual(['ZY202610150001', 'ZY202610140002']); expect(rows[0].totalQuantity).toBe(1);
 });
-test('转出转入查询同一条明细字段，两个不同部门不能同时满足', () => {
-  const { service } = setup(); expect(service.list({ sourceDepartment: 'D0001.集团总部', targetDepartment: 'D0002.财务中心' })).toHaveLength(0);
-  expect(service.list({ sourceDepartment: 'D0001.集团总部' })).toHaveLength(2);
+test('转出条件读取原属性，转入条件读取目标属性且必须同一明细', () => {
+  const { service, store } = setup();
+  const state = store.read();
+  state.orders[0].details[0].original.department = '原部门';
+  state.orders[0].details[0].department = '新部门';
+  state.orders[0].details[0].original.building = '原地点';
+  state.orders[0].details[0].building = '新地点';
+  store.write(state);
+  expect(service.list({ sourceDepartment: '原部门', targetDepartment: '新部门', sourceBuilding: '原地点', targetBuilding: '新地点' })).toHaveLength(1);
+  expect(service.list({ sourceDepartment: '新部门' })).toHaveLength(0);
+  expect(service.list({ targetDepartment: '原部门' })).toHaveLength(0);
+  const changed = store.read();
+  delete changed.orders[0].details[0].original.department;
+  store.write(changed);
+  expect(service.list({ sourceDepartment: '新部门' })).toHaveLength(0);
+  expect(service.list({ sourceDepartment: '原部门' })).toHaveLength(0);
+  expect(service.list({ targetDepartment: '新部门' })).toHaveLength(1);
 });
 test('新建默认公司及制单人，首次保存生成编号，重复保存沿用同号', () => {
   const { service } = setup(); const order = service.create(); expect(order.creator).toBe('sunzhq');

@@ -43,8 +43,8 @@ test('退库详情只显示首条主资产，配件与附属耗材来自该条�
 });
 test('续借有独立字段，审批代理人保持空白', () => {
   open('borrow-3');
-  expect(screen.getByText('续借次数')).toBeInTheDocument();
-  expect(screen.getByText('续借开始日期')).toBeInTheDocument();
+  expect(screen.getAllByText('续借次数')).toHaveLength(2);
+  expect(screen.getAllByText('续借开始日期')).toHaveLength(2);
   expect(screen.getByRole('columnheader', { name: '代理人' })).toBeInTheDocument();
   expect(screen.queryByText('借用开始日期')).not.toBeInTheDocument();
 });

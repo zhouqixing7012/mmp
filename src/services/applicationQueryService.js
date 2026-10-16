@@ -4,8 +4,10 @@ import { applicationQueryRows, assetReportCatalog } from '../mock/businessRulesM
 import { legacyDefinitions } from '../pages/applicationQueries/legacyDefinitions';
 import { claimDefinitions } from '../pages/applicationQueries/claimDefinitions';
 import { unfinishedDefinition } from '../pages/applicationQueries/unfinishedDefinition';
+import { employeeApplicationDefinitions } from '../pages/applicationQueries/employeeApplicationDefinitions';
+import { DEFAULT_APPLICATION_ACCESS, assertApplicationAccess, canReadApplication } from './applicationAccess';
 
-export const applicationDefinitions = [...legacyDefinitions, ...claimDefinitions, unfinishedDefinition];
+export const applicationDefinitions = [...legacyDefinitions, ...claimDefinitions, ...employeeApplicationDefinitions, unfinishedDefinition];
 const empty = value => value === '' || value === undefined || value === null || (Array.isArray(value) && !value.length);
 const deletionStorageKey = 'mmp-application-query-deletions-v1';
 function removedIds() {
@@ -21,30 +23,38 @@ export function getApplicationDefinition(id) {
   if (!definition) throw new Error(`申请页面未定义：${id}`);
   return definition;
 }
-// PRD要求节点排序、去重保留首条；不额外去掉等待，不补造未来节点。
+// 审批序号只决定顺序；不同人员及同一人的重复办理均保留，仅去除同一记录ID的重复关联。
 export function applicationProgressRecords(history = []) {
-  const sorted = history.filter(row => !empty(row.sequence)).slice().sort((a, b) =>
-    String(a.sequence).length - String(b.sequence).length || String(a.sequence).localeCompare(String(b.sequence)) || String(a.time || '').localeCompare(String(b.time || '')));
+  const sorted = history.slice().sort((a, b) => String(a.sequence || '').length - String(b.sequence || '').length
+    || String(a.sequence || '').localeCompare(String(b.sequence || '')) || String(a.time || '').localeCompare(String(b.time || '')));
   const seen = new Set();
-  return sorted.filter(row => { const key = String(row.sequence); if (seen.has(key)) return false; seen.add(key); return true; });
+  return sorted.filter(row => {
+    if (!row.id) throw new Error('审批记录缺少唯一标识');
+    if (seen.has(row.id)) return false;
+    seen.add(row.id); return true;
+  });
 }
 export function selectUnfinishedTodo(record) {
   if (String(record.statusCode) !== '3') return null;
-  const records = record.history.filter(row => row.todo === true && !String(row.account || '').endsWith('-1'));
-  records.sort((a, b) => String(b.sequence).length - String(a.sequence).length || String(b.sequence).localeCompare(String(a.sequence)));
-  const selected = records[0];
-  return selected && selected.node !== '等待' ? selected : null;
+  const pending = applicationProgressRecords(record.history).filter(row => row.todo === true);
+  if (!pending.length) return null;
+  return { node: [...new Set(pending.map(row => row.node).filter(Boolean))].join('、'),
+    approver: [...new Set(pending.filter(row => !String(row.account || '').endsWith('-1')).map(row => row.approver).filter(Boolean))].join('、') };
 }
-export function getApplicationOptions(id, field) {
+export function getApplicationOptions(id, field, access = DEFAULT_APPLICATION_ACCESS) {
+  assertApplicationAccess(access, id);
   if (field.options) return field.options;
-  if (field.label === '仓库') return assetReportCatalog.warehouses.filter(row => row.status === '启用').map(row => ({ value: row.warehouseCode, code: row.warehouseCode, name: row.warehouseDescription, label: row.warehouseCode + '.' + row.warehouseDescription, company: row.company }));
+  if (field.label === '仓库') {
+    const warehouseCodes = new Set(queryApplications(id, {}, null, access).flatMap(row => list(row.filters.warehouse)));
+    return assetReportCatalog.warehouses.filter(row => row.status === '启用' && warehouseCodes.has(row.warehouseCode)).map(row => ({ value: row.warehouseCode, code: row.warehouseCode, name: row.warehouseDescription, label: row.warehouseCode + '.' + row.warehouseDescription, company: row.company }));
+  }
   const found = new Map();
   const deleted = removedIds();
-  applicationQueryRows.filter(row => row.kind === id && !row.deleted && !deleted.has(row.id)).forEach(row => {
-    if (id === 'unfinished' && !selectUnfinishedTodo(row)) return;
-    list(row.filters[field.key]).forEach(value => {
+  applicationQueryRows.filter(row => row.kind === id && !row.deleted && !deleted.has(row.id) && canReadApplication(row, access)).forEach(row => {
+    if (id === 'unfinished' && row.statusCode !== '3') return;
+    list(row.filters[field.key]).filter(value => !empty(value)).forEach(value => {
       if (!found.has(String(value))) found.set(String(value), {
-        value: String(value), code: String(value), label: row.lookupLabels?.[field.key] ?? row.values[field.key] ?? String(value),
+        value: String(value), code: String(value), label: row.optionLabels?.[field.key]?.[value] ?? row.lookupLabels?.[field.key] ?? row.values[field.key] ?? String(value),
       });
     });
   });
@@ -63,12 +73,13 @@ export function validateApplicationFilters(definition, filters) {
     }
   }
 }
-export function queryApplications(id, filters = {}, sort = null) {
+export function queryApplications(id, filters = {}, sort = null, access = DEFAULT_APPLICATION_ACCESS) {
+  assertApplicationAccess(access, id);
   const definition = getApplicationDefinition(id);
   validateApplicationFilters(definition, filters);
   const deleted = removedIds();
-  const rows = applicationQueryRows.filter(row => row.kind === id && !row.deleted && !deleted.has(row.id)).filter(row => {
-    if (id === 'unfinished' && !selectUnfinishedTodo(row)) return false;
+  const rows = applicationQueryRows.filter(row => row.kind === id && !row.deleted && !deleted.has(row.id) && canReadApplication(row, access)).filter(row => {
+    if (id === 'unfinished' && String(row.statusCode) !== '3') return false;
     return definition.filters.every(field => {
       const selected = filters[field.key];
       if (empty(selected)) return true;
@@ -92,7 +103,12 @@ export function queryApplications(id, filters = {}, sort = null) {
     const first = a.values[key] ?? a[key], second = b.values[key] ?? b[key];
     return (typeof first === 'number' && typeof second === 'number' ? first - second : String(first ?? '').localeCompare(String(second ?? ''))) * direction;
   });
-  return rows.map(row => id === 'unfinished' ? { ...row, values: { ...row.values, node: selectUnfinishedTodo(row).node, approver: selectUnfinishedTodo(row).approver } } : row);
+  const allowedOriginalLines = new Set(applicationQueryRows.filter(row => row.kind === id && !row.deleted && !deleted.has(row.id) && canReadApplication(row, access)).map(row => row.originalLineId).filter(Boolean));
+  const scopedRows = rows.map(row => row.summary ? { ...row, summary: { ...row.summary, lines: row.summary.lines.filter(line => {
+    if (!line.originalLineId) throw new Error('汇总明细缺少原申请明细关联');
+    return allowedOriginalLines.has(line.originalLineId);
+  }) } } : row);
+  return scopedRows.map(row => id === 'unfinished' ? { ...row, values: { ...row.values, node: selectUnfinishedTodo(row)?.node || '', approver: selectUnfinishedTodo(row)?.approver || '' } } : row);
 }
 export function formatApplicationValue(value, format) {
   if (empty(value)) return '';
@@ -103,31 +119,32 @@ export function formatApplicationValue(value, format) {
   }
   return value;
 }
-export function buildApplicationWorkbook(id, filters = {}, sort = null, page = null) {
+export function buildApplicationWorkbook(id, filters = {}, sort = null, page = null, access = DEFAULT_APPLICATION_ACCESS) {
   const definition = getApplicationDefinition(id);
   if (!definition.actions.export) throw new Error('此查询未定义导出');
-  let rows = queryApplications(id, filters, sort);
+  let rows = queryApplications(id, filters, sort, access);
   if (page) rows = rows.slice((page.current - 1) * page.pageSize, page.current * page.pageSize);
-  const columns = definition.exportColumns || definition.columns.filter(column => !column.action);
-  const body = rows.map(row => columns.map(column => {
-    const display = definition.columns.find(item => item.key === column.key);
-    return formatApplicationValue(row.values[column.key], column.format || display?.format);
-  }));
   const workbook = XLSX.utils.book_new();
-  const sheet = XLSX.utils.aoa_to_sheet([columns.map(column => column.label), ...body]);
-  sheet['!cols'] = columns.map(column => ({ wch: Math.max(18, column.label.length * 2 + 4) }));
-  XLSX.utils.book_append_sheet(workbook, sheet, definition.title);
+  const sheets = definition.exportSheets || [{ name: definition.title,
+    columns: definition.exportColumns || definition.columns.filter(column => !column.action), records: items => items.map(item => item.values) }];
+  for (const spec of sheets) {
+    const body = spec.records(rows).map(row => spec.columns.map(column => formatApplicationValue(row[column.key], column.format)));
+    const sheet = XLSX.utils.aoa_to_sheet([spec.columns.map(column => column.label), ...body]);
+    sheet['!cols'] = spec.columns.map(column => ({ wch: Math.max(18, column.label.length * 2 + 4) }));
+    XLSX.utils.book_append_sheet(workbook, sheet, spec.name);
+  }
   return workbook;
 }
-export function exportApplications(id, filters, sort, page) {
-  XLSX.writeFile(buildApplicationWorkbook(id, filters, sort, page), `${getApplicationDefinition(id).title}-${dayjs().format('YYYYMMDD')}.xlsx`);
+export function exportApplications(id, filters, sort, page, access = DEFAULT_APPLICATION_ACCESS) {
+  XLSX.writeFile(buildApplicationWorkbook(id, filters, sort, page, access), `${getApplicationDefinition(id).title}-${dayjs().format('YYYYMMDD')}.xlsx`);
 }
-export function removeApplicationDrafts(id, keys) {
+export function removeApplicationDrafts(id, keys, access = DEFAULT_APPLICATION_ACCESS) {
+  assertApplicationAccess(access, id);
   const definition = getApplicationDefinition(id);
   if (!definition.actions.remove) throw new Error('此查询不支持删除');
   if (!keys.length) throw new Error('请先选择单据');
   const deleted = removedIds();
-  const rows = keys.map(key => applicationQueryRows.find(row => row.kind === id && row.id === key && !row.deleted && !deleted.has(row.id)));
+  const rows = keys.map(key => applicationQueryRows.find(row => row.kind === id && row.id === key && !row.deleted && !deleted.has(row.id) && canReadApplication(row, access)));
   if (rows.some(row => !row || String(row.statusCode) !== '0')) throw new Error('只能删除草稿单据');
   keys.forEach(key => deleted.add(key));
   if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(deletionStorageKey, JSON.stringify([...deleted]));

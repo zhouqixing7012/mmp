@@ -16,8 +16,8 @@ export function createApplicationTransferService(store = applicationTransferStor
     const [start, end] = filters.dateRange || [];
     if (start && order.createdAt < start + ' 00:00:00') return false;
     if (end && order.createdAt > end + ' 23:59:59') return false;
-    const detailKeys = { sourceDepartment: 'department', targetDepartment: 'department', sourceBuilding: 'building', targetBuilding: 'building', plate: 'plate' };
-    return !Object.entries(detailKeys).some(([filter]) => filters[filter]) || order.details.some(detail => Object.entries(detailKeys).every(([filter, key]) => !filters[filter] || detail[key] === filters[filter]));
+    const detailValue = { sourceDepartment: detail => detail.original?.department, targetDepartment: detail => detail.department, sourceBuilding: detail => detail.original?.building, targetBuilding: detail => detail.building, plate: detail => detail.plate };
+    return order.details.some(detail => Object.entries(detailValue).every(([filter, value]) => !filters[filter] || value(detail) === filters[filter])) || !Object.keys(detailValue).some(key => filters[key]);
   }).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(order => ({ ...copy(order), totalQuantity: order.details.reduce((sum, detail) => sum + Number(detail.quantity || 0), 0) }));
   const get = id => copy(readOrder(store.read(), id));
   const create = () => ({ id: '', number: '', applicationNo: '', type: 'ASSETS_TRANSFER_ORDER', migrationValid: 'Y', company: refs.currentUser.company, creator: refs.currentUser.id, createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss'), status: '草稿', remarks: '', details: [], revision: 0 });

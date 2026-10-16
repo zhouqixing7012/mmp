@@ -22,7 +22,7 @@ test('原申请数量金额与执行数量分离，采购详情无凭空生成�
   expect(row.lines[0].tag).toBe('');
   expect(row.head['当前仓库']).toBe('');
   expect(materialCatalog).toContain(row.lines[0].material);
-  expect(row.summary.lines.map(line => line.inUseCount)).toEqual([2, 2]);
+  expect(row.summary.lines.map(line => line.inUseCount)).toEqual([2]);
   expect(row.ledgerCards.reduce((sum, card) => sum + card.quantity, 0)).toBe(6);
 });
 test('资产汇总按物资类别、耗材汇总按历史部门分组，空金额按已定义规则处理', () => {
@@ -31,7 +31,7 @@ test('资产汇总按物资类别、耗材汇总按历史部门分组，空金�
   expect(claimSummaryGroups(lines, true)).toHaveLength(2);
 });
 test('PO按单号和状态同时去重，导出费用按采购数量计算', () => {
-  const lines = assetPurchase().summary.lines;
+  const lines = [...assetPurchase().summary.lines, { ...assetPurchase().summary.lines[0], id: 'other-status', purchaseQuantity: 1, poStatus: '待下单' }];
   expect(claimSummaryPOs([...lines, { ...lines[0], id: 'duplicate' }])).toHaveLength(2);
   const exported = summaryExportRows(lines, false);
   expect(exported[0]['预计费用（元）']).toBe(17400);
@@ -66,9 +66,9 @@ test('新员工保留申请与领用数量差异，无独立导出或办理按�
   expect(byKind('newEmployee').filters.filter(item => item.disabledReason)).toHaveLength(2);
 });
 
-test('资产领用可打开真实目录配件，固定来源标题仅采购展示', () => {
+test('资产领用可打开真实目录配件，领用与采购均展示资产来源标题', () => {
   const row = claimApplicationRows.find(item => item.kind === 'asset' && item.filters.subType === 'USE');
-  expect(row.progressTitle).toBe('');
+  expect(row.progressTitle).toBe('资产申请详情（此信息来源于资产系统）');
   expect(assetPurchase().progressTitle).toBe('资产申请详情（此信息来源于资产系统）');
   expect(row.lines[0].componentQuantity).toBe(1);
   expect(row.lines[0].components[0]).toEqual(expect.objectContaining(materialCatalog.find(item => item.materialCode === '228001598002000')));

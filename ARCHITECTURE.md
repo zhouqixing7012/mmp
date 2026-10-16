@@ -281,17 +281,19 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 
 资产明细类别直接复用AssetQueryControls.AssetCategorySelect，状态与资产维护共用AssetValueSelect及assetQueryModel.ASSET_STATUS_OPTIONS。十页报表日期定义为单daterange，服务按原业务日期键匹配区间；现役盘点资产查询的启用日期同样用RangePicker，但保留原enableFrom/enableTo数据键。精修与来源追溯见[查询精修核查](docs/八项报表独立PRD/比对报告/资产明细查询精修核查-20261014.md)。
 
-## 申请菜单（2026-10-15）
+## 申请菜单（2026-10-16）
 
 | 文件/模块 | 职责 |
 | --- | --- |
-| `src/pages/applicationQueries/index.jsx` | 将九个子菜单映射到查询、转移执行单或更换单入口说明。 |
+| `src/pages/applicationQueries/index.jsx` | 将九个子菜单映射到统一的申请查询页。 |
 | `ApplicationQueryPage.jsx`、`ApplicationFilter.jsx`、`ApplicationProgress.jsx` | 公共查询、分页、导出、草稿删除和只读审批记录。 |
 | `legacyDefinitions.js`、`Legacy*Detail.jsx` | 移库、退库、借用及续借的专属字段与嵌套详情。 |
 | `claimDefinitions.js`、`Claim*Detail.jsx` | 资产/耗材申请子流程、汇总明细及新员工领用查看。 |
-| `TransferApplicationPage.jsx`、`TransferOrderEditor.jsx`、`TransferDetailDialog.jsx`、`TransferLookup.jsx` | 转移查询、创建/编辑、明细与执行操作。 |
+| `TransferApplicationPage.jsx`、`TransferOrderEditor.jsx`、`TransferDetailDialog.jsx`、`TransferLookup.jsx` | 保留既有转移执行组件；申请转移查询改由员工申请定义承载，执行代码不替代申请入口。 |
 | `src/services/applicationQueryService.js` | 各页精确/包含/前缀/日期匹配、排序、导出、删除与待办选取。 |
 | `src/services/applicationTransferService.js` | 转移保存锁定、全量执行校验、资产更新与事务生成。 |
 | `src/mock/application*Mock.js` | 各业务独立交易演示及真实整行参考目录。 |
 
 调用：后台申请菜单→独立查询页/转移页→对应Service→businessRulesMock统一入口→申请演示源。与资产报表结果表、工作台办理入口独立；转移演示数据按当前标签页会话保存。未新增后端、路由或依赖。
+
+申请现状对齐新增 `employeeApplicationDefinitions.js / EmployeeApplicationDetail.jsx`：员工转移及更换的查询、只读详情和全单导出；`applicationAccess.js`：人员／部门／公司及台账权限，候选与导出复用；`applicationClaimAssembly.js`：关联原申请明细、子单、汇总、出库与完整历史；`applicationWeeklyReport.js`：生成每周一未完成员工申请材料，不执行真实通知。调用链为后台申请菜单→ApplicationQueryPage→applicationQueryService→权限校验及businessRulesMock统一申请源；全单导出按定义生成多工作表。

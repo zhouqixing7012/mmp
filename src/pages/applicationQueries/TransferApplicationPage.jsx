@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ApplicationQueryPage from './ApplicationQueryPage';
 import { App, Button, Card, DatePicker, Input, Popconfirm, Select, Space, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
@@ -7,7 +8,7 @@ import TransferLookup, { transferChoices } from './TransferLookup';
 import TransferOrderEditor from './TransferOrderEditor';
 import { applicationTransferService as service } from '../../services/applicationTransferService';
 
-export default function TransferApplicationPage() {
+export function ExecutionTransferPage() {
   const { message } = App.useApp();
   const [references] = useState(() => service.references());
   const [draft, setDraft] = useState({});
@@ -52,3 +53,5 @@ export default function TransferApplicationPage() {
     </Card>
   </div>;
 }
+
+export default function TransferApplicationPage() { return <ApplicationQueryPage id="transfer" />; }

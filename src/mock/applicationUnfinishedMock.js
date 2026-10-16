@@ -17,19 +17,19 @@ export const applicationUnfinishedRows = Array.from({ length: 18 }, (_, index) =
     { id: `${number}-1`, sequence: '1', node: '申请人提交', approver: applicant, status: '已提交', time: createdAt, opinion: '' },
     { id: `${number}-2`, sequence: '2', node: 'ES主管审批', approver: '213852-孙志强', status: '待审批', time: '', opinion: '', todo: true, account: '213852' },
   ];
-  // 覆盖“首条等待则排除”、非待办、已完成及无效审批账号等固定查询边界。
+  // 等待、无待办和异常审批账号仍保留处理中单头；已完成记录退出未完成范围。
   if (index === 12) history.push({ ...history[1], id: `${number}-wait`, sequence: '99', node: '等待', todo: true });
   if (index === 13) history[1].todo = false;
   if (index === 15) history[1].account = 'invalid-1';
   const userStatus = index % 3 === 0 ? null : 'Y';
   return {
-    id: number, kind: 'unfinished', statusCode: index === 14 ? '1' : '3', createdAt, history,
+    id: number, kind: 'unfinished', employeeApplication: !['REC', 'ED'].includes(type), access: { applicant: applicant.split('-')[0], department: 'DEMO-DEPT', company: warehouse.company, ledger: '资产台账' }, statusCode: index === 14 ? '1' : '3', createdAt, history,
     values: { number, type: name, businessType: type === 'PURCHASE' ? '统一采购' : name,
       status: index === 14 ? '已完成' : '处理中', node: 'ES主管审批', approver: '213852-孙志强',
       applicant, createdAt, company: warehouse.company, plate: '17.Corporate', department: '演示组织.员工服务中心', resigned: userStatus === 'Y' ? '否' : '是' },
     filters: { number, type, applicant: applicant.split('-')[0], company: warehouse.company.split('.')[0], plate: '17', department: 'DEMO-DEPT', createdAt, resigned: userStatus === 'Y' ? 'Y' : 'N' },
     lookupLabels: { company: warehouse.company, plate: '17.Corporate', applicant, department: '演示组织.员工服务中心' },
-    allowProgress: !['REC', 'ED'].includes(type), showFlowGraph: !['DRAW', 'PURCHASE'].includes(type),
+    allowProgress: true, showFlowGraph: !['DRAW', 'PURCHASE'].includes(type),
     source: '未完成单据交易演示，非生产角色授权、HR组织或正式流程配置',
   };
 });

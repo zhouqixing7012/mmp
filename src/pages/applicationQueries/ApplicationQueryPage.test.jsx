@@ -18,8 +18,7 @@ test('申请菜单紧接资产报表且九个入口均有实际映射', () => {
 test.each(APPLICATION_MENU_ITEMS)('%s从实际菜单内容组件可进入', title => {
   render(<ApplicationQueriesContent activeSubMenu={title} />);
   expect(screen.getByRole('heading', { name: title })).toBeInTheDocument();
-  if (title === '更换单') expect(screen.getByText('新版 PRD 尚未定义更换单的查询入口及页面字段。')).toBeInTheDocument();
-  else expect(screen.getByRole('button', { name: /查\s*询/ })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /查\s*询/ })).toBeInTheDocument();
 });
 test('查询编辑后执行才更新列表，详情返回保留查询，进度接收当前业务记录', async () => {
   render(<ApplicationQueriesContent activeSubMenu="退库单" />);

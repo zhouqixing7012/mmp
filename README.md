@@ -257,3 +257,8 @@ PC位置变更：移动端公共/复盘资产扫码提交地点变化后，资�
 依据[九类独立新版PRD](docs/申请菜单九类单据独立新版PRD/)，范围和待补资料见[原型交付记录](docs/申请菜单九类单据独立新版PRD/原型交付记录-20261015.md)。运行、部署方式和依赖保持不变。复用已记录的AntD、QueryBar、SelectModal、DetailGrid等实现，无需新增外部方案。
 
 测试：`npm test -- --watchAll=false --runInBand src/pages/applicationQueries src/services/applicationQueryService.test.js src/services/applicationTransferService.test.js`。
+
+
+### 申请菜单现状对齐（2026-10-16）
+
+九类查询入口已接通，转移以员工申请为主，更换补齐只读查询与详情；移库、退库、借用、资产申请导出包含单头和明细，耗材恢复20列模板。查看与导出共用授权范围，未完成保留等待和无待办的处理中申请。整改及字数见[整改记录](docs/申请菜单九类单据独立新版PRD/比对报告/申请菜单-现状对齐整改记录-20261016.md)。真实周一定时通知仍待发送时刻、渠道及执行身份配置，原型仅生成材料并显示未发送。浏览器及生产接口权限未验证。

@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { applicationQueryRows } from '../mock/businessRulesMock';
-import { applicationDefinitions, applicationProgressRecords, buildApplicationWorkbook, getApplicationDefinition, queryApplications, removeApplicationDrafts, selectUnfinishedTodo } from './applicationQueryService';
+import { applicationDefinitions, applicationProgressRecords, buildApplicationWorkbook, getApplicationDefinition, queryApplications, removeApplicationDrafts } from './applicationQueryService';
 
 const exported = (id, filters = {}, page) => {
   const book = buildApplicationWorkbook(id, filters, null, page);
@@ -25,7 +25,7 @@ test('退库标签前缀匹配包含整单，列表业务日期和导出创建�
   expect(queryApplications('return', { assetTag: tag.slice(1) }).some(item => item.id === row.id)).toBe(false);
   const data = exported('return');
   const index = data[0].indexOf('申请时间');
-  expect(data[1][index]).toBe(row.values.createdAt.slice(0, 10));
+  expect(data[1][index]).toBe(row.values.createdAt);
 });
 test('退库批删只允许草稿，混选失败不产生部分删除', () => {
   const rows = queryApplications('return'), draft = rows.find(row => row.statusCode === '0'), other = rows.find(row => row.statusCode !== '0');
@@ -40,23 +40,24 @@ test('退库批删只允许草稿，混选失败不产生部分删除', () => {
   // 测试恢复的是测试对象标记，不执行业务删除或覆盖源数据。
   applicationQueryRows.find(row => row.id === draft.id).deleted = false;
 });
-test('未完成只选有效待办一条，最高节点等待时整单排除，REC/ED无流程入口', () => {
+test('未完成保留全部处理中单据，包括等待与无有效待办；全流程入口可达', () => {
   const rows = queryApplications('unfinished');
-  expect(rows).toHaveLength(14);
-  expect(rows.every(row => row.statusCode === '3' && selectUnfinishedTodo(row))).toBe(true);
-  expect(rows.filter(row => ['REC', 'ED'].includes(row.filters.type)).every(row => !row.allowProgress)).toBe(true);
-  expect(rows.some(row => row.values.resigned === '是')).toBe(true);
-  expect(exported('unfinished', {}, { current: 2, pageSize: 10 })).toHaveLength(5);
-  expect(exported('unfinished')).toHaveLength(15);
+  expect(rows).toHaveLength(17);
+  expect(rows.every(row => row.statusCode === '3')).toBe(true);
+  expect(rows.find(row => row.id.endsWith('013')).values.node).toContain('等待');
+  expect(rows.find(row => row.id.endsWith('014')).values.node).toBe('');
+  expect(rows.filter(row => ['REC', 'ED'].includes(row.filters.type)).every(row => row.allowProgress)).toBe(true);
+  expect(exported('unfinished', {}, { current: 2, pageSize: 10 })).toHaveLength(8);
+  expect(exported('unfinished')).toHaveLength(18);
 });
-test('进度排序按序号长度、内容、时间升序，去重保首且保留等待及历史人员', () => {
+test('进度排序保留多人及历史办理，仅去重同一记录ID', () => {
   const rows = applicationProgressRecords([
     { id: 'last', sequence: '10', time: '', node: '等待' },
-    { id: 'duplicate', sequence: '2', time: '2026-10-15' },
+    { id: 'second', sequence: '2', time: '2026-10-15' },
     { id: 'first', sequence: '2', time: '2026-10-14' },
     { id: 'empty', sequence: '', time: '' },
   ]);
-  expect(rows.map(row => row.id)).toEqual(['first', 'last']);
+  expect(rows.map(row => row.id)).toEqual(['empty', 'first', 'second', 'last']);
 });
 test('资产和耗材预计金额按原申请数量，领用为空；未定义导出入口不得导出', () => {
   for (const id of ['asset', 'consumable']) {

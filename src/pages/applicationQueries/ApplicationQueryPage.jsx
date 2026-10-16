@@ -7,6 +7,7 @@ import ApplicationFilter from './ApplicationFilter';
 import ApplicationProgress from './ApplicationProgress';
 import LegacyApplicationDetail from './LegacyApplicationDetail';
 import ClaimApplicationDetail from './ClaimApplicationDetail';
+import EmployeeApplicationDetail from './EmployeeApplicationDetail';
 
 export default function ApplicationQueryPage({ id }) {
   const definition = getApplicationDefinition(id);
@@ -44,10 +45,11 @@ export default function ApplicationQueryPage({ id }) {
     })),
     ...(id === 'unfinished' ? [{ title: '操作', key: 'operation', width: 100, render: (_, row) => row.allowProgress ? <Button type="link" className="!p-0" onClick={() => setProgress(row)}>查看流程</Button> : '' }] : []),
   ];
-  const Detail = ['storage', 'return', 'borrow'].includes(id) ? LegacyApplicationDetail : ClaimApplicationDetail;
+  const Detail = definition.detailType === 'employee' ? EmployeeApplicationDetail : ['storage', 'return', 'borrow'].includes(id) ? LegacyApplicationDetail : ClaimApplicationDetail;
   return <div className="flex flex-col gap-4">
     {detail ? <Detail definition={definition} record={detail.record} view={detail.view} onBack={goBack} onProgress={setProgress} /> : <>
       <Typography.Title level={4} className="!mb-0">{definition.title}</Typography.Title>
+      {id === 'unfinished' && <Alert type="info" title="每周一汇总当前台账的未完成员工申请，通知杨芊、王英、孙志强、刘建、何文。" description="发送时刻和渠道尚未配置；当前可查询、导出汇总清单，未发送实际通知。" />}
       {definition.knownFilterWarning && <Alert type="info" showIcon title={definition.knownFilterWarning} />}
       <QueryBar labelWidth={112} buttons={<Space><Button type="primary" onClick={onQuery}>查询</Button><Button onClick={reset}>重置</Button></Space>}>
         {definition.filters.map(field => <QueryItem key={field.key} label={field.label} labelWidth={112}>
