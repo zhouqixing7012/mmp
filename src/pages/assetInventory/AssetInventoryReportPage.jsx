@@ -5,7 +5,7 @@ import { AnalysisTables, DetailTable } from './InventoryReportTables';
 import InventoryReportCharts from './InventoryReportCharts';
 
 export default function AssetInventoryReportPage() {
-  const [year, setYear] = useState(2025);
+  const [year, setYear] = useState(2026);
   const [activeTab, setActiveTab] = useState('analysis');
   const report = getInventoryReport(year);
   const download = () => {

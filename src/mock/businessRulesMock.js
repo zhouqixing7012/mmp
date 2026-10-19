@@ -333,3 +333,6 @@ export { applicationTransferStore } from './applicationTransferMock';
 
 // ES盘点报告附件内的只读模板示例。
 export { inventoryReportTemplate } from './inventoryReportTemplate';
+
+// 用户提供的真实年度汇总，与交易演示明细分别保留来源。
+export { inventoryReportActuals } from '../data/inventoryReportActuals';

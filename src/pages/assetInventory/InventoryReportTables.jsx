@@ -1,22 +1,22 @@
 import React from 'react';
 import { Card, Space, Table, Typography, theme } from 'antd';
-import { amount, percent, quantity, accounting, getGroupedRowSpans, getIncrementTitle, DETAIL_FIELDS, getIncrementRows, getInventoryReportSummary, getInventoryDetailRows, getInventoryLossCategoryRows } from '../../services/inventoryReportService';
+import { amount, percent, historyPercent, quantity, accounting, getGroupedRowSpans, getIncrementTitle, DETAIL_FIELDS, getIncrementRows, getInventoryReportSummary, getInventoryDetailRows, getInventoryLossCategoryRows } from '../../services/inventoryReportService';
 
 export function ReportTable({ columns, rows, rowKey = 'key', ...props }) {
   return <Table size="small" bordered columns={columns} dataSource={rows} rowKey={rowKey} pagination={false} scroll={{ x: 'max-content' }} {...props} />;
 }
 const column = (title, dataIndex, render = quantity) => ({ title, dataIndex, key: dataIndex, render, align: 'right', width: render === amount || title.includes('（元）') ? 150 : title.includes('占') ? 120 : 100 });
 const textColumn = (title, dataIndex, width = 150) => ({ title, dataIndex, key: dataIndex, width });
-export function IncrementTable() {
+export function IncrementTable({ year }) {
   const { token } = theme.useToken();
-  const rows = getIncrementRows();
+  const rows = getIncrementRows(year);
   const isSummary = row => row.name === '小计' || row.name === '合计';
   const spans = getGroupedRowSpans(rows, 'category', row => !isSummary(row));
   return <ReportTable rows={rows} columns={[
     { ...textColumn('资产大类', 'category'), onCell: (row, index) => isSummary(row) ? { colSpan: 2, style: { background: row.name === '合计' ? token.colorPrimaryBg : token.colorFillAlter, fontWeight: 600 } } : { rowSpan: spans[index] },
       render: (_, row) => isSummary(row) ? row.name === '合计' ? '合计' : `${row.category}小计` : row.category },
     { ...textColumn('资产细类', 'name'), onCell: row => isSummary(row) ? { colSpan: 0 } : {} },
-    { ...column('汇总', 'value'), onCell: row => isSummary(row) ? { style: { background: row.name === '合计' ? token.colorPrimaryBg : token.colorFillAlter, fontWeight: 600 } } : {} },
+    { ...column('汇总', 'value', value => value == null || value === 0 ? '-' : quantity(value)), onCell: row => isSummary(row) ? { style: { background: row.name === '合计' ? token.colorPrimaryBg : token.colorFillAlter, fontWeight: 600 } } : {} },
   ]} />;
 }
 export function CompanyLossTable({ report }) {
@@ -44,21 +44,21 @@ export function AnalysisTables({ report }) {
       <ReportTable rowKey="year" rows={report.history} columns={[
         textColumn('年份', 'year', 90),
         { title: '全部盘点资产情况', children: [column('数量（件）', 'quantity'), column('原值（元）', 'original', amount), column('净值（元）', 'net', amount)] },
-        { title: '盘亏数量情况', children: [column('数量（件）', 'lossQuantity'), column('占全部盘点资产', 'lossRate', v => v == null ? '-' : `${(v * 100).toFixed(3)}%`)] },
-        { title: '盘亏原值情况', children: [column('金额（元）', 'lossOriginal', amount), column('占全部盘点资产', 'lossOriginalRate', percent)] },
-        { title: '盘亏净值情况', children: [column('金额（元）', 'lossNet', amount), column('占全部盘点资产', 'lossNetRate', percent)] },
+        { title: '盘亏数量情况', children: [column('数量（件）', 'lossQuantity'), column('占全部盘点资产', 'lossRate', historyPercent)] },
+        { title: '盘亏原值情况', children: [column('金额（元）', 'lossOriginal', amount), column('占全部盘点资产', 'lossOriginalRate', historyPercent)] },
+        { title: '盘亏净值情况', children: [column('金额（元）', 'lossNet', accounting), column('占全部盘点资产', 'lossNetRate', historyPercent)] },
       ]} />
     </Card>
-    <Card size="small" title={`${report.year}年资产盘亏统计`}>
+    <Card size="small" title={`${report.year}年资产盘亏统计`} extra={report.detailsAreDemo ? <Typography.Text type="secondary">演示数据</Typography.Text> : null}>
       <ReportTable rows={categories} columns={[{ ...textColumn('资产类别', 'category', 230), onCell: (_, index) => ({ rowSpan: spans[index] }) }, textColumn('盘点年份', 'year', 100), column('盘亏数量（件）', 'quantity', accounting), column('盘亏原值（元）', 'original', accounting), column('盘亏净值（元）', 'net', accounting), { ...textColumn('备注', 'remark'), render: () => '-' }]} />
     </Card>
-    <Card size="small" title={getIncrementTitle(report.year)}><IncrementTable /></Card>
+    <Card size="small" title={getIncrementTitle(report.year)}><IncrementTable year={report.year} /></Card>
   </Space>;
 }
 export function DetailTable({ report }) {
   const rows = getInventoryDetailRows(report);
   const widths = { 序号: 70, 盘点状态: 90, 资产大类: 130, 资产小类: 160, 资产说明: 240, 数量: 90, 原值: 150, 报失当月资产净值: 170, 是否已赔偿: 110, 赔偿金额: 150, 损失: 150, 标签号: 180, 购买日期: 120, 责任人姓名: 120, 责任人编号: 130, 子公司: 160, 一级部门: 160, 说明: 220 };
-  return <Card size="small" title="盘亏及待查明细" extra={`共 ${report.details.length} 条`}>
+  return <Card size="small" title="盘亏及待查明细" extra={`${report.detailsAreDemo ? "演示数据 · " : ""}共 ${report.details.length} 条`}>
     <Table size="small" bordered rowKey="key" dataSource={rows} pagination={false} columns={DETAIL_FIELDS.map((name, i) => ({
       title: name, dataIndex: name, key: name, width: widths[name],
       align: ['数量', '原值', '报失当月资产净值', '赔偿金额', '损失'].includes(name) ? 'right' : 'left',

@@ -15,8 +15,10 @@ beforeEach(() => {
   window.matchMedia = jest.fn().mockImplementation(query => ({ matches: false, media: query, addListener: jest.fn(), removeListener: jest.fn(), addEventListener: jest.fn(), removeEventListener: jest.fn() }));
   window.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
 });
-test('页面只留即时年份下拉，盘亏和待查使用同一张含合计的表', () => {
+test('页面只留即时年份下拉，2025演示明细保持原字段', async () => {
   render(<AssetInventoryReportPage />);
+  fireEvent.mouseDown(screen.getByRole('combobox', { name: '盘点年份' }));
+  fireEvent.click(await screen.findByText('2025年', { selector: '.ant-select-item-option-content' }));
   expect(screen.getAllByRole('combobox')).toHaveLength(1);
   expect(screen.queryByRole('button', { name: /查\s*询/ })).not.toBeInTheDocument();
   expect(screen.queryByRole('link', { name: /下载/ })).not.toBeInTheDocument();
@@ -41,14 +43,14 @@ test('页面只留即时年份下拉，盘亏和待查使用同一张含合计�
   expect(within(panel).getByText('ES-DEMO-007')).toBeInTheDocument();
   expect(within(panel).getByText('总计')).toBeInTheDocument();
 });
-test('年份选择后立即刷新，无需查询按钮，再选2025恢复报告', async () => {
+test('默认2026真实报告，年份即时切换并能回到真实报告', async () => {
   render(<AssetInventoryReportPage />);
   fireEvent.mouseDown(screen.getByRole('combobox', { name: '盘点年份' }));
-  fireEvent.click(screen.getByText('2026年', { selector: '.ant-select-item-option-content' }));
-  expect(screen.getByText('2026年暂无盘点报告')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('2022年', { selector: '.ant-select-item-option-content' }));
+  expect(screen.getByText('2022年暂无盘点报告')).toBeInTheDocument();
   fireEvent.mouseDown(screen.getByRole('combobox', { name: '盘点年份' }));
-  fireEvent.click(await screen.findByText('2025年', { selector: '.ant-select-item-option-content' }));
-  expect(screen.getByText('2025年度资产盘点报告（ES管控资产）')).toBeInTheDocument();
+  fireEvent.click(await screen.findByText('2026年', { selector: '.ant-select-item-option-content' }));
+  expect(screen.getByText('2026年度资产盘点报告（ES管控资产）')).toBeInTheDocument();
 });
 
 test('资产增量的小计是独立汇总行，不再充当细类', () => {
@@ -66,5 +68,5 @@ test('范围仅在比较分析中显示，分类和增量按组纵向合并', ()
   expect(within(panel).getAllByText('台式机', { exact: true })[0].closest('td')).toHaveAttribute('rowspan', '3');
   expect(within(panel).getByRole('columnheader', { name: '汇总' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('tab', { name: '盘亏及待查明细' }));
-  expect(screen.queryByText('资产变化周期：2024年7月—2025年7月')).not.toBeVisible();
+  expect(screen.queryByText('资产变化周期：2025年7月—2026年7月')).not.toBeVisible();
 });

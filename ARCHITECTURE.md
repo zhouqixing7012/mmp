@@ -313,3 +313,5 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 调用：资产盘点菜单index → 报表页面 → Service → businessRulesMock → 模板示例；报表页面调用表格和图表组件。新页面不使用旧FieldPolicy对DOM做字段后处理。正式盘点项目、财务报告链路本轮不变。
 
 `src/mock/inventoryReportDetails.js`保存用户授权的7条ES报表交易演示，复用物料目录；模板入口引用后经Service供明细、汇总及Excel共用。
+
+`src/data/inventoryReportActuals.js`唯一保存用户提供的四年真实汇总及2025—2026增量，经businessRulesMock统一出口供Service读取；真实历史、年度指标和导出不依赖演示明细反算。

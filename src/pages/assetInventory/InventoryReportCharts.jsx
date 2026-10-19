@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Space, Typography, theme } from 'antd';
+import { Card, Empty, Space, Typography, theme } from 'antd';
 import { CartesianGrid, ComposedChart, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { amount, percent, getInventoryHistoryChartRows } from '../../services/inventoryReportService';
 import { CompanyLossTable, IncrementTable, ReportTable } from './InventoryReportTables';
@@ -36,11 +36,11 @@ export default function InventoryReportCharts({ report }) {
         { title: '当前总数', dataIndex: 'total', width: 140, align: 'right', render: (v, row) => row.name.includes('数量') ? v : amount(v) },
         { title: '年度增长量', dataIndex: 'change', width: 140, align: 'right', render: (v, row) => row.name.includes('数量') ? v : amount(v) },
         { title: '年度增长率', dataIndex: 'rate', width: 140, align: 'right', render: percent },
-        { title: '增长率变化', dataIndex: 'rateChange', width: 190, align: 'right', render: v => `${v.toFixed(2)}%` },
+        { title: '增长率变化', dataIndex: 'rateChange', width: 190, align: 'right', render: v => v == null ? '-' : `${v.toFixed(2)}%` },
       ]} />
     </Card>
-    <Card size="small" title="资产类型分布（按原值）">
-      <div className="flex flex-wrap items-center gap-6">
+    <Card size="small" title="资产类型分布（按原值）" extra={report.distributionIsTemplate ? <Typography.Text type="secondary">模板数据</Typography.Text> : null}>
+      {!pie.length ? <Empty description="暂无资产类型分布数据" /> :       <div className="flex flex-wrap items-center gap-6">
         <div className="relative" style={{ flex: '1 1 300px', minWidth: 0 }}>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart><Pie data={pie} dataKey="original" nameKey="category" cx="50%" cy="50%" innerRadius={82} outerRadius={112} paddingAngle={3} cornerRadius={4} stroke="none" />
@@ -59,9 +59,10 @@ export default function InventoryReportCharts({ report }) {
             { title: '原值占比', key: 'ratio', width: 100, align: 'right', render: (_, row) => originalTotal === 0 ? '-' : percent(row.original / originalTotal) },
           ]} />
         </div>
-      </div>
+      </div>}
+
     </Card>
-    <Card size="small" title="资产增量情况"><IncrementTable /></Card>
+    <Card size="small" title="资产增量情况"><IncrementTable year={report.year} /></Card>
     <Card size="small" title="资产盘亏趋势">
       <AxisUnits left="盘亏占比（%）" right="盘亏数量（件）" />
       <ResponsiveContainer width="100%" height={300}>
@@ -76,6 +77,6 @@ export default function InventoryReportCharts({ report }) {
         </ComposedChart>
       </ResponsiveContainer>
     </Card>
-    <Card size="small" title="盘亏分布（按子公司汇总）"><CompanyLossTable report={report} /></Card>
+    <Card size="small" title="盘亏分布（按子公司汇总）" extra={report.companyIsDemo ? <Typography.Text type="secondary">演示数据</Typography.Text> : null}><CompanyLossTable report={report} /></Card>
   </Space>;
 }
