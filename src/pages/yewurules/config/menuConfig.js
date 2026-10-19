@@ -15,7 +15,7 @@ export const ASSET_INVENTORY_MENU_ITEMS = [
 
 export const ASSET_REPORT_MENU_ITEMS = [
   '资产明细报表', '耗材明细报表', '资产事务报表', '新员工领用报表',
-  '资产新增报表', '资产统一申领报表', '耗材统一申领报表', '资产报废报表',
+  '资产新增报表', '固定资产新增报表', '资产统一申领报表', '耗材统一申领报表', '资产报废报表',
 ];
 
 export const APPLICATION_MENU_ITEMS = [

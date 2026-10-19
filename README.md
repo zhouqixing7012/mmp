@@ -275,3 +275,10 @@ PC位置变更：移动端公共/复盘资产扫码提交地点变化后，资�
 盘点报表Excel样式：新增固定依赖 `xlsx-js-style@1.2.0`，仅该报表使用；其他模块继续使用原 `xlsx`。四工作表统一字体、标题/表头、边框、小计/总计强调、列宽和换行。安装仍执行 `npm install`，构建命令不变。
 
 搜索记录补充（2026-10-19）：查阅[xlsx-js-style官方说明](https://github.com/gitbrent/xlsx-js-style)，支持字体、填色、边框、对齐和数字格式；其基于现有SheetJS 0.18.5 API，可保留当前报表数据、链接和合并结构，无需重写数据导出。
+
+### 财务固定资产新增报表（2026-10-19）
+
+资产报表菜单新增“固定资产新增报表”：公司弹窗多选、启用日期范围查询，按附件13列展示，支持重置、分页、合计和按公司分Sheet导出。原“资产新增报表”保留。附件2条真实样本及12个Sheet名称用于原型，正式公司映射和权限待确认。每月26日10:00发送当月1—25日记录的服务号通知已写入[需求](docs/财务固定资产新增报表/固定资产新增报表PRD.md)，当前前端未接通真实通知。
+
+测试：`CI=true npm test -- --watchAll=false --runInBand src/services/financialNewAssetReportService.test.js src/pages/assetReports/FinancialNewAssetReportPage.test.jsx`。
+搜索记录：复用已有QueryBar、LookupInput、SelectModal及xlsx-js-style，无新增依赖或外部方案。
