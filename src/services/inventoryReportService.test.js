@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import { getInventoryReport, getInventoryReportSummary, getIncrementRows, getInventoryLossCategoryRows, getInventoryDetailRows, getInventoryHistoryChartRows, getGroupedRowSpans, buildInventoryReportWorkbook, DETAIL_FIELDS, companyQuantity, companyAmount, accounting } from './inventoryReportService';
 
 const workbook = year => XLSX.read(XLSX.write(buildInventoryReportWorkbook(getInventoryReport(year)), { type: 'array', bookType: 'xlsx' }), { type: 'array', cellNF: true });
@@ -127,4 +127,28 @@ test('2026资产类型分布使用授权演示且单位万元，分项合计与�
   expect(sheet.A1.v).toBe('类别（演示数据）');
   expect(sheet.C1.v).toBe('原值（万元）');
   expect(sheet.C2.v).toBe(2700);
+});
+
+
+test.each([2025, 2026])('导出%s年实际文件保留标题、边框、汇总强调和数字格式', year => {
+  const report = getInventoryReport(year);
+  const styled = buildInventoryReportWorkbook(report);
+  const analysis = styled.Sheets['盘点结果比较分析'];
+  expect(analysis.A1.s.font).toMatchObject({ bold: true, sz: 16, name: '微软雅黑' });
+  expect(analysis.A5.s.fill.fgColor.rgb).toBe('EAF1FF');
+  expect(analysis.G8.s.border.bottom.style).toBe('thin');
+  expect(analysis.A7.s.font.underline).toBe(true);
+  const details = styled.Sheets['盘亏资产明细及原因'];
+  const summaryRow = getInventoryDetailRows(report).findIndex(row => row.label === '总计') + 4;
+  expect(details['F' + summaryRow].s.fill.fgColor.rgb).toBe('DBE7FF');
+  expect(details['I' + summaryRow].v).toBe('');
+  expect(details['!cols'][4].wch).toBe(32);
+  const saved = XLSX.read(XLSX.write(styled, { type: 'buffer', bookType: 'xlsx' }), { type: 'buffer', cellNF: true, cellStyles: true, bookFiles: true });
+  const xml = Buffer.from(saved.files['xl/styles.xml'].content).toString('utf8');
+  expect(xml).toContain('EAF1FF');
+  expect(xml).toContain('DBE7FF');
+  expect(xml).toContain('微软雅黑');
+  expect(xml).toContain('style="thin"');
+  expect(saved.Sheets['盘点结果比较分析'].A7.l.Target).toBe("#'盘亏资产明细及原因'!A4");
+  expect(saved.Sheets['盘亏分布'].C2.w).toBe('');
 });

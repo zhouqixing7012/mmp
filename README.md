@@ -271,3 +271,7 @@ PC位置变更：移动端公共/复盘资产扫码提交地点变化后，资�
 页面使用轻网格折线与环形图，模板来源及数据缺口仅记入交付文档。原始文件见 [盘点模板](docs/asset-inventory/templates/)，字段规则见 [盘点新版PRD第4.12.2节](docs/asset-inventory/资产盘点-新版PRD.md)，资料口径与验证范围见 [交付记录](docs/asset-inventory/ES年度盘点报表-交付记录-20261019.md)。
 
 搜索记录补充：本轮复用仓库已有Ant Design、Recharts、xlsx和QueryBar；已具备所需方案，不新增依赖、不重复外部搜索。
+
+盘点报表Excel样式：新增固定依赖 `xlsx-js-style@1.2.0`，仅该报表使用；其他模块继续使用原 `xlsx`。四工作表统一字体、标题/表头、边框、小计/总计强调、列宽和换行。安装仍执行 `npm install`，构建命令不变。
+
+搜索记录补充（2026-10-19）：查阅[xlsx-js-style官方说明](https://github.com/gitbrent/xlsx-js-style)，支持字体、填色、边框、对齐和数字格式；其基于现有SheetJS 0.18.5 API，可保留当前报表数据、链接和合并结构，无需重写数据导出。

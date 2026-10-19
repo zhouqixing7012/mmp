@@ -1,4 +1,5 @@
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
+import { styleInventoryReportWorkbook } from './inventoryReportWorkbookStyles';
 import { inventoryReportTemplate, inventoryReportActuals } from '../mock/businessRulesMock';
 
 export const LOSS_CATEGORIES = ['台式机、显示器', '笔记本', '照摄像器材', '移动数码', '办公设备', '车辆', '电话'];
@@ -135,6 +136,7 @@ export function buildInventoryReportWorkbook(report) {
       if (cell?.t === 'n') cell.z = column === 5 ? '0;-0;"-"' : '#,##0.00;(#,##0.00);"-"';
     });
   });
+  styleInventoryReportWorkbook(workbook, { historyLength: report.history.length, categoryStart, categoryCount: categories.length, incrementStart, increments, indicatorStart, detailRows, detailsAreDemo: report.detailsAreDemo, companyRows: report.companyLoss });
   return workbook;
 }
 export function exportInventoryReport(report) {
