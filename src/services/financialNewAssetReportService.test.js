@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx-js-style';
-import { financialAssetFields, financialAssetExportFields, financialAssetCompanies, queryFinancialNewAssets, totalFinancialNewAssets, buildFinancialNewAssetWorkbook } from './financialNewAssetReportService';
+import { getFinancialAssetCompanyOptions, financialAssetFields, financialAssetExportFields, financialAssetCompanies, queryFinancialNewAssets, totalFinancialNewAssets, buildFinancialNewAssetWorkbook } from './financialNewAssetReportService';
 
 test('列表15列（公司/板块在附件13列之前）、两条真实明细和12家公司Sheet原样保留', () => {
   expect(financialAssetFields).toEqual(['公司', '板块', 'PO单号', '资产大类', '资产说明', '配置', '数量', '原值', '税金', '含税金额', '启用日期', '使用说明', 'PR单号', '资产标签号', '服务']);
@@ -38,4 +38,13 @@ test('导出一个Excel按公司分Sheet，数据和合计不重复，空公司�
   const selected = buildFinancialNewAssetWorkbook({ companies: ['Media'], dates: ['2026-07-24', null] });
   expect(selected.SheetNames).toEqual(['Media']);
   expect(XLSX.utils.sheet_to_json(selected.Sheets.Media, { header: 1 })).toHaveLength(2);
+});
+
+
+test('公司选项与资产明细报表同源，缺失公司映射显式报错', () => {
+  const { getReportOptions } = require('./assetReportOptions');
+  const definitions = require('../pages/assetReports/reportDefinitions.json');
+  const definition = definitions.find(item => item.id === 'report-1-1');
+  expect(getFinancialAssetCompanyOptions()).toEqual(getReportOptions(definition, definition.filters.find(field => field.label === '公司')));
+  expect(() => queryFinancialNewAssets({ companies: [getFinancialAssetCompanyOptions()[0].value] })).toThrow('附件公司与系统公司尚未建立对应关系');
 });

@@ -1,23 +1,18 @@
 import React, { useState } from 'react';
-import { Button, Card, DatePicker, Space, Table, Typography, message } from 'antd';
+import { Button, Card, DatePicker, Select, Space, Table, Typography, message } from 'antd';
 import dayjs from 'dayjs';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
-import LookupInput from '../../components/LookupInput';
-import SelectModal from '../../components/SelectModal';
-import ReportFilter from './ReportFilter';
-import { getReportDefinition } from '../../services/assetReportsService';
-import { financialAssetFields, financialAssetCompanies, queryFinancialNewAssets, totalFinancialNewAssets, formatFinancialAssetValue, exportFinancialNewAssets } from '../../services/financialNewAssetReportService';
+import { ASSET_PLATE_OPTIONS } from '../../config/assetPlates';
+import { financialAssetFields, getFinancialAssetCompanyOptions, queryFinancialNewAssets, totalFinancialNewAssets, formatFinancialAssetValue, exportFinancialNewAssets } from '../../services/financialNewAssetReportService';
 
 const emptyFilters = () => ({ companies: [], plates: [], dates: [] });
 const widths = [180, 180, 180, 150, 250, 340, 90, 150, 150, 150, 130, 280, 180, 190, 150];
-const plateDefinition = getReportDefinition('report-5-1');
-const plateField = { ...plateDefinition.filters.find(field => field.optionSet === 'plate'), label: '板块' };
 const numeric = ['数量', '原值', '税金', '含税金额'];
 export default function FinancialNewAssetReportPage() {
   const [draft, setDraft] = useState(emptyFilters);
   const [applied, setApplied] = useState(emptyFilters);
   const [rows, setRows] = useState(() => queryFinancialNewAssets());
-  const [open, setOpen] = useState(false);
+  const companyOptions = getFinancialAssetCompanyOptions();
   const [page, setPage] = useState({ current: 1, pageSize: 10 });
   const totals = totalFinancialNewAssets(rows);
   const query = () => {
@@ -32,23 +27,20 @@ export default function FinancialNewAssetReportPage() {
   return <div className="flex flex-col gap-4">
     <Typography.Title level={4} className="!mb-0">固定资产新增报表</Typography.Title>
     <QueryBar onQuery={query} onReset={reset}>
-      <QueryItem label="公司"><LookupInput value={draft.companies.join('、')} placeholder="请选择公司" onOpen={() => setOpen(true)} onClear={() => setDraft(previous => ({ ...previous, companies: [] }))} /></QueryItem>
-      <QueryItem label="板块"><ReportFilter definition={plateDefinition} field={plateField} filters={{ 板块: draft.plates }} onQuery={query}
-        onChange={(_, plates) => setDraft(previous => ({ ...previous, plates: plates || [] }))} /></QueryItem>
+      <QueryItem label="公司"><Select mode="multiple" aria-label="公司" showSearch optionFilterProp="label" allowClear style={{ width: '100%' }} placeholder="请选择公司" options={companyOptions} value={draft.companies} onChange={companies => setDraft(previous => ({ ...previous, companies }))} /></QueryItem>
+      <QueryItem label="板块"><Select mode="multiple" aria-label="板块" showSearch optionFilterProp="label" allowClear style={{ width: '100%' }} placeholder="请选择板块" options={ASSET_PLATE_OPTIONS.map(value => ({ label: value, value }))} value={draft.plates} onChange={plates => setDraft(previous => ({ ...previous, plates }))} /></QueryItem>
       <QueryItem label="启用日期"><DatePicker.RangePicker style={{ width: '100%' }} format="YYYY-MM-DD" allowEmpty={[true, true]} placeholder={['开始日期', '结束日期']}
         value={draft.dates.length ? draft.dates.map(value => value ? dayjs(value) : null) : null}
         onChange={dates => setDraft(previous => ({ ...previous, dates: dates ? dates.map(date => date ? date.format('YYYY-MM-DD') : null) : [] }))} /></QueryItem>
     </QueryBar>
-    <Card size="small" title="查询结果" styles={{ extra: { maxWidth: 'calc(100% - 88px)' } }} extra={<Space wrap size={[16, 8]}><Typography.Text>共 {rows.length} 条</Typography.Text>
+    <Card size="small" title="查询结果" styles={{ extra: { maxWidth: 'calc(100% - 88px)' } }} extra={<Space wrap size={[16, 8]}>
       {numeric.map(field => <span key={field}><Typography.Text type="secondary">{field}合计：</Typography.Text><Typography.Text strong>{formatFinancialAssetValue(totals[field], field)}</Typography.Text></span>)}
       <Button onClick={download}>导出</Button></Space>}>
       <Table rowKey="id" size="small" bordered dataSource={rows} scroll={{ x: 'max-content' }} locale={{ emptyText: '暂无数据' }}
         columns={financialAssetFields.map((field, index) => ({ title: field, dataIndex: ['values', field], key: field, width: widths[index], align: numeric.includes(field) ? 'right' : 'left',
           render: value => formatFinancialAssetValue(value, field) }))}
-        pagination={{ ...page, showSizeChanger: true, showTotal: total => `共 ${total} 条`, onChange: (current, pageSize) => setPage({ current, pageSize }) }} />
+        pagination={{ ...page, showSizeChanger: true, onChange: (current, pageSize) => setPage({ current, pageSize }) }} />
     </Card>
-    <SelectModal title="选择公司" open={open} onCancel={() => setOpen(false)} multiple rowKey="id" initialSelectedKeys={draft.companies}
-      dataSource={financialAssetCompanies.map(company => ({ id: company, name: company }))} searchFields={[{ name: 'name', label: '公司', dataIndex: 'name' }]} columns={[{ title: '公司', dataIndex: 'name' }]}
-      onConfirm={records => { setDraft(previous => ({ ...previous, companies: records.map(record => record.id) })); setOpen(false); }} />
+
   </div>;
 }

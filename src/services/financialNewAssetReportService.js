@@ -1,14 +1,19 @@
 import * as XLSX from 'xlsx-js-style';
 import dayjs from 'dayjs';
 import source from '../data/financialNewAssets.json';
+import { getReportOptions } from './assetReportOptions';
+import definitions from '../pages/assetReports/reportDefinitions.json';
 
 // 原型仅读取附件真实样本；工作表名称原样作为公司标识，不推断财务公司映射。
 export const financialAssetFields = ['公司', '板块', ...source.fields];
 export const financialAssetExportFields = source.fields;
 export const financialAssetCompanies = source.companies;
+const companyDefinition = definitions.find(row => row.id === 'report-1-1');
+const companyField = companyDefinition.filters.find(field => field.label === '公司');
+export const getFinancialAssetCompanyOptions = () => getReportOptions(companyDefinition, companyField);
 const numericFields = ['数量', '原值', '税金', '含税金额'];
 export function validateFinancialAssetFilters({ companies = [], plates = [], dates = [] } = {}) {
-  if (!Array.isArray(companies) || companies.some(company => !source.companies.includes(company))) throw new Error('公司不存在');
+  if (!Array.isArray(companies) || companies.some(company => !source.companies.includes(company) && !getFinancialAssetCompanyOptions().some(option => option.value === company))) throw new Error('公司不存在');
   if (!Array.isArray(plates) || plates.some(value => typeof value !== 'string' || !value.trim())) throw new Error('板块条件无效');
   if (!Array.isArray(dates) || dates.length > 2) throw new Error('启用日期范围无效');
   dates.forEach(value => {
@@ -19,8 +24,9 @@ export function validateFinancialAssetFilters({ companies = [], plates = [], dat
 export function queryFinancialNewAssets(filters = {}) {
   validateFinancialAssetFilters(filters);
   const { companies = [], plates = [], dates = [] } = filters;
+  if (companies.some(company => !source.companies.includes(company))) throw new Error('附件公司与系统公司尚未建立对应关系，暂不能按系统公司查询');
   return source.rows.map(row => ({ ...row, values: { 公司: row.company, 板块: null, ...row.values } })).filter(row => (!companies.length || companies.includes(row.company))
-    && (!plates.length || plates.includes(String(row.values['板块'] ?? '').split('.')[0]))
+    && (!plates.length || plates.some(plate => plate.split('.')[0] === String(row.values['板块'] ?? '').split('.')[0]))
     && (!dates[0] || row.values['启用日期'] >= dates[0]) && (!dates[1] || row.values['启用日期'] <= dates[1]));
 }
 export function totalFinancialNewAssets(rows) {

@@ -322,8 +322,10 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 
 - `src/data/financialNewAssets.json`：附件真实13字段、12个公司Sheet和2条明细，保留来源公司名。
 - `src/services/financialNewAssetReportService.js`：公司/日期过滤、金额合计及一个文件多公司Sheet导出。
-- `src/pages/assetReports/FinancialNewAssetReportPage.jsx`：复用公共查询及公司选择弹窗的只读列表。
+- `src/pages/assetReports/FinancialNewAssetReportPage.jsx`：复用公共查询及公司/板块多选下拉的只读列表。
 - `src/pages/assetReports/index.js`：从资产报表菜单将“固定资产新增报表”交给专属页面，其余原报表入口不变。
 - `docs/财务固定资产新增报表/`：两章需求及只读原件；通知是研发目标，前端没有定时或服务号发送实现。
 
 调用：资产报表菜单 → FinancialNewAssetReportPage → financialNewAssetReportService → financialNewAssets.json；导出使用当前已执行查询条件，按源公司Sheet分组。
+
+`src/config/assetPlates.js`保存资产维护及财务固定资产新增报表共用的板块查询选项；财务公司的候选直接调用资产明细报表的getReportOptions，同源而不复制目录。

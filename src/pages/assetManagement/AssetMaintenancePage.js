@@ -1,3 +1,4 @@
+import { ASSET_PLATE_OPTIONS as PLATE_OPTIONS } from '../../config/assetPlates';
 import { ASSET_MARK_OPTIONS } from '../../config/assetMarks';
 import React, { useMemo, useState } from 'react';
 import {
@@ -50,10 +51,7 @@ const PURPOSE_OPTIONS = ['部门公用', '员工用机', '其他用途', '专业
 const ASSET_TYPE_OPTIONS = ['公司资产', '自备资产'];
 const ADD_TYPE_OPTIONS = ['报废新增', '采购新增', '历史新增', '收购新增', '赠与新增', '再利用新增', '转移新增'];
 const SCRAP_TYPE_OPTIONS = ['已到报废期', '未到报废期', '丢失'];
-const PLATE_OPTIONS = [
-  '11.搜狐网-web', '12.搜狐网-mobile', '13.汽车', '14.无线', '15.焦点', '16.视频', '17.Corporate',
-  '51.焦点 Corporate', '52.房产', '53.家居', '54.二手房', '56.SAAS',
-];
+
 const CITY_OPTIONS = ['北京', '上海', '广州', '天津'];
 const BUILDING_BY_CITY = {
   北京: ['搜狐媒体大厦', '北京亦庄数据中心'],
