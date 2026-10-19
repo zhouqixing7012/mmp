@@ -10,13 +10,18 @@ beforeEach(() => {
   window.matchMedia = jest.fn().mockImplementation(query => ({ matches: false, media: query, addListener: jest.fn(), removeListener: jest.fn(), addEventListener: jest.fn(), removeEventListener: jest.fn() }));
   window.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
 });
-test('资产报表菜单可进入新查询页，13列无多余字段，重置恢复数据', () => {
+test('资产报表菜单可进入新查询页，公司/板块在前且汇总在右上角，重置恢复数据', () => {
   expect(ASSET_REPORT_MENU_ITEMS).toContain('固定资产新增报表');
   render(<AssetReportsContent activeSubMenu="固定资产新增报表" />);
   expect(screen.getByRole('heading', { name: '固定资产新增报表' })).toBeInTheDocument();
-  expect(screen.getAllByRole('columnheader')).toHaveLength(13);
+  expect(screen.getAllByRole('columnheader')).toHaveLength(15);
   expect(screen.getByText('114122602627')).toBeInTheDocument();
   expect(screen.getByText('11216122601019')).toBeInTheDocument();
+  expect(screen.getAllByRole('columnheader').slice(0, 2).map(cell => cell.textContent)).toEqual(['公司', '板块']);
+  expect(document.querySelector('.ant-table-summary')).toBeNull();
+  expect(screen.getByText('含税金额合计：').closest('.ant-card-extra')).not.toBeNull();
+  expect(screen.getByRole('button', { name: /查\s*询/ }).querySelector('svg')).not.toBeNull();
+  expect(screen.getByRole('button', { name: /重\s*置/ }).querySelector('svg')).not.toBeNull();
   expect(screen.getByPlaceholderText('开始日期')).toBeInTheDocument();
   expect(screen.getByPlaceholderText('结束日期')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: /重\s*置/ }));
