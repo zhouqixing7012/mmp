@@ -206,6 +206,7 @@ npm test
 - `docs/asset-inventory/资产盘点-现状PRD.md`：PC 与移动端现状资料索引。
 - `docs/asset-inventory/资产盘点-新版PRD.md`：资产盘点 PC 端与移动端目标业务规则。
 - `docs/asset-inventory/资产盘点-三方比对.md`：原始 PRD、当前原型和新版 PRD 的差异及处理结论。
+- [2026-10-20盘点PC与移动端三方比对报告](docs/asset-inventory/比对报告/资产盘点-PC移动端-三方比对报告-20261020.md)：原版DOCX、新版PRD及当前活动原型的差异，含提示语对照和固定版本来源。
 - `docs/asset-inventory/资产盘点-待决策清单.md`：需要业务确认的资产盘点口径。
 - `docs/原型标注生成规范.md`：PRD 标注和 Coverage 统一规范。
 - [lessons.md](lessons.md)：可复用纠错经验，业务规则回到对应正式 PRD。
