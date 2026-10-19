@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { getInventoryReport, getInventoryReportSummary, getIncrementRows, getInventoryLossCategoryRows, getInventoryDetailRows, getInventoryHistoryChartRows, getGroupedRowSpans, buildInventoryReportWorkbook, DETAIL_FIELDS, accounting } from './inventoryReportService';
+import { getInventoryReport, getInventoryReportSummary, getIncrementRows, getInventoryLossCategoryRows, getInventoryDetailRows, getInventoryHistoryChartRows, getGroupedRowSpans, buildInventoryReportWorkbook, DETAIL_FIELDS, companyQuantity, companyAmount, accounting } from './inventoryReportService';
 
 const workbook = year => XLSX.read(XLSX.write(buildInventoryReportWorkbook(getInventoryReport(year)), { type: 'array', bookType: 'xlsx' }), { type: 'array', cellNF: true });
 test('四年真实数据逐项保留且演示明细不能覆盖真实汇总', () => {
@@ -14,7 +14,7 @@ test('四年真实数据逐项保留且演示明细不能覆盖真实汇总', ()
   expect(getInventoryReportSummary(report)[1]).toMatchObject({ original: 813957, net: 0 });
   expect(getInventoryReportSummary(report)[2].quantity).toBeNull();
   expect(getInventoryReport(2026).details).toHaveLength(2);
-  expect(getInventoryReport(2026).distribution).toEqual([]);
+  expect(getInventoryReport(2026).distributionIsDemo).toBe(true);
 });
 test('增量明细、小计、电话和合计对应2025至2026年', () => {
   const rows = getIncrementRows(2026);
@@ -77,7 +77,7 @@ test('分组编号和缺失净值不被真实汇总改写，合并不跨小计',
   expect(accounting(0)).toBe('-');
 });
 
-test('用户分类表与两条真实明细和公司统计保持一致，未补前年公司数据', () => {
+test('用户分类表与两条真实明细和公司统计保持一致，上一年公司使用截图来源', () => {
   const report = getInventoryReport(2026);
   const categories = getInventoryLossCategoryRows(report);
   [2025, 2026].forEach(year => {
@@ -94,8 +94,37 @@ test('用户分类表与两条真实明细和公司统计保持一致，未补�
   expect(report.companyLoss.find(row => row.company === '搜狐媒体' && row.year === 2026)).toMatchObject({ mobile: 1, quantity: 1, net: 130 });
   expect(report.companyLoss.find(row => row.company === '集团总部' && row.year === 2026)).toMatchObject({ mobile: 1, quantity: 1, net: 87 });
   expect(report.companyLoss.find(row => row.company === '合计' && row.year === 2026)).toMatchObject({ mobile: 2, quantity: 2, net: 217 });
-  expect(report.companyLoss.find(row => row.company === '合计' && row.year === 2025).quantity).toBeUndefined();
+  expect(report.companyLoss.find(row => row.company === '合计' && row.year === 2025)).toMatchObject({ quantity: 40, net: 0 });
+  expect(report.companyLoss.find(row => row.company === '搜狐媒体' && row.year === 2025).quantity).toBeUndefined();
   expect(getInventoryReportSummary(report)[2]).toMatchObject({ quantity: 0, original: 0, net: 0 });
   const totals = getInventoryDetailRows(report).find(row => row.label === '总计');
   expect(totals).toMatchObject({ 数量: 2, 原值: 2813, 报失当月资产净值: 217 });
+});
+
+test('截图公司分布按真实年份录入，页面和导出零值留白', () => {
+  const report = getInventoryReport(2025);
+  expect(report.companyIsDemo).toBe(false);
+  expect(report.companyLoss.map(row => [row.company, row.year, row.office, row.mobile, row.vehicle, row.quantity, row.net])).toEqual([
+    ['集团总部', 2024, 0, 0, 0, 0, 0], ['集团总部', 2025, 33, 1, 5, 39, 0],
+    ['搜狐媒体（含焦点）', 2024, 2, 0, 0, 2, 2274], ['搜狐媒体（含焦点）', 2025, 1, 0, 0, 1, 0],
+    ['视频', 2024, 0, 1, 0, 1, 0], ['视频', 2025, 0, 0, 0, 0, 0],
+    ['合计', 2024, 2, 1, 0, 3, 2274], ['合计', 2025, 34, 1, 5, 40, 0],
+  ]);
+  expect(companyQuantity(0)).toBe(''); expect(companyAmount(0)).toBe('');
+  expect(companyQuantity(null)).toBe(''); expect(companyAmount(2274)).toBe('2,274.00');
+  const sheet = workbook(2025).Sheets['盘亏分布'];
+  expect(sheet.C2.v).toBe(0); expect(sheet.C2.w).toBe('');
+  expect(sheet.K3.v).toBe(0); expect(sheet.K3.w).toBe('');
+  expect(sheet.K4.w).toBe('2,274.00');
+  expect(sheet['!merges']).toContainEqual({ s: { r: 1, c: 0 }, e: { r: 2, c: 0 } });
+});
+test('2026资产类型分布使用授权演示且单位万元，分项合计与年度汇总一致', () => {
+  const report = getInventoryReport(2026);
+  expect(report.distributionIsDemo).toBe(true);
+  expect(report.distribution.reduce((sum, row) => sum + row.quantity, 0)).toBe(14456);
+  expect(report.distribution.reduce((sum, row) => sum + row.original, 0)).toBe(78067413);
+  const sheet = workbook(2026).Sheets['资产类型分布'];
+  expect(sheet.A1.v).toBe('类别（演示数据）');
+  expect(sheet.C1.v).toBe('原值（万元）');
+  expect(sheet.C2.v).toBe(2700);
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Space, Table, Typography, theme } from 'antd';
-import { amount, percent, historyPercent, quantity, accounting, getGroupedRowSpans, getIncrementTitle, DETAIL_FIELDS, getIncrementRows, getInventoryReportSummary, getInventoryDetailRows, getInventoryLossCategoryRows } from '../../services/inventoryReportService';
+import { companyQuantity, companyAmount, amount, percent, historyPercent, quantity, accounting, getGroupedRowSpans, getIncrementTitle, DETAIL_FIELDS, getIncrementRows, getInventoryReportSummary, getInventoryDetailRows, getInventoryLossCategoryRows } from '../../services/inventoryReportService';
 
 export function ReportTable({ columns, rows, rowKey = 'key', ...props }) {
   return <Table size="small" bordered columns={columns} dataSource={rows} rowKey={rowKey} pagination={false} scroll={{ x: 'max-content' }} {...props} />;
@@ -23,8 +23,8 @@ export function CompanyLossTable({ report }) {
   const spans = getGroupedRowSpans(report.companyLoss, 'company');
   return <ReportTable rowKey={r => `${r.company}-${r.year}`} rows={report.companyLoss} columns={[
     { ...textColumn('子公司', 'company', 180), onCell: (_, index) => ({ rowSpan: spans[index] }) }, textColumn('年份', 'year', 90),
-    ...[['笔记本', 'notebook'], ['主机', 'desktop'], ['显示器', 'display']].map(([name, key]) => column(name, key)),
-    column('办公设备', 'office'), column('移动数码', 'mobile'), { ...column('照摄像器材及配件', 'camera'), width: 170 }, column('车辆', 'vehicle'), column('数量合计（件）', 'quantity'), column('净值合计（元）', 'net', amount),
+    ...[['笔记本', 'notebook'], ['主机', 'desktop'], ['显示器', 'display']].map(([name, key]) => column(name, key, companyQuantity)),
+    column('办公设备', 'office', companyQuantity), column('移动数码', 'mobile', companyQuantity), { ...column('照摄像器材及配件', 'camera', companyQuantity), width: 170 }, column('车辆', 'vehicle', companyQuantity), column('数量合计（件）', 'quantity', companyQuantity), column('净值合计（元）', 'net', companyAmount),
   ]} />;
 }
 export function AnalysisTables({ report }) {

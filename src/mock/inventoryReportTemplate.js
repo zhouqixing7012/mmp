@@ -13,16 +13,15 @@ export const inventoryReportTemplate = {
     { category: '车辆', quantity: 20, original: 8230000 },
     { category: '移动数码', quantity: 1216, original: 4900000 },
   ],
-  // 原PPT数量保留；2025年净值按本次演示明细合计。
-  companyLoss: [
-    { company: '集团总部', year: 2024 },
-    { company: '集团总部', year: 2025, office: 33, mobile: 1, vehicle: 5, quantity: 39, net: 90200 },
-    { company: '搜狐媒体（含焦点）', year: 2024, office: 2, quantity: 2, net: 2274 },
-    { company: '搜狐媒体（含焦点）', year: 2025, office: 1, quantity: 1, net: 200 },
-    { company: '视频', year: 2024, mobile: 1, quantity: 1 },
-    { company: '视频', year: 2025 },
-    { company: '合计', year: 2024, office: 2, mobile: 1, quantity: 3, net: 2274 },
-    { company: '合计', year: 2025, office: 34, mobile: 1, vehicle: 5, quantity: 40, net: 90400 },
+  // 用户授权的2026年资产类型分布演示；分项为Mock，合计与年度数量/原值一致。
+  demoDistribution: [
+    { category: '笔记本及配件', quantity: 3120, original: 27000000 },
+    { category: '办公设备', quantity: 3258, original: 17000000 },
+    { category: '照摄像器材及配件', quantity: 651, original: 9500000 },
+    { category: '台式机、显示器', quantity: 2502, original: 8800000 },
+    { category: '车辆', quantity: 15, original: 8000000 },
+    { category: '移动数码', quantity: 1186, original: 5000000 },
+    { category: '电话', quantity: 3724, original: 2767413 },
   ],
   details: inventoryReportDetails,
 };

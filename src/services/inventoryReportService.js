@@ -6,6 +6,8 @@ export const DETAIL_FIELDS = ['序号', '盘点状态', '资产大类', '资产�
 export const amount = value => value == null ? '-' : value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const accounting = value => value == null || value === 0 ? '-' : value < 0 ? `(${amount(-value)})` : amount(value);
 export const percent = value => value == null ? '-' : `${(value * 100).toFixed(2)}%`;
+export const companyQuantity = value => value == null || value === 0 ? '' : value.toLocaleString('zh-CN');
+export const companyAmount = value => value == null || value === 0 ? '' : amount(value);
 export const quantity = value => value == null ? '-' : String(value);
 export function getInventoryReport(year) {
   const selectedYear = Number(year);
@@ -24,10 +26,10 @@ export function getInventoryReport(year) {
   const hasActualDetails = Object.prototype.hasOwnProperty.call(inventoryReportActuals.detailsByYear, selectedYear);
   const details = hasActualDetails ? inventoryReportActuals.detailsByYear[selectedYear] : isTemplateYear ? inventoryReportTemplate.details : [];
   return { ...inventoryReportTemplate, year: selectedYear, period: `${selectedYear - 1}年7月—${selectedYear}年7月`, history, indicators,
-    distribution: isTemplateYear ? inventoryReportTemplate.distribution : [],
-    companyLoss: hasActualDetails ? getActualCompanyLoss(details, selectedYear) : isTemplateYear ? inventoryReportTemplate.companyLoss : [],
+    distribution: isTemplateYear ? inventoryReportTemplate.distribution : inventoryReportTemplate.demoDistribution,
+    companyLoss: hasActualDetails ? getActualCompanyLoss(details, selectedYear) : inventoryReportActuals.companyLoss.filter(row => [selectedYear - 1, selectedYear].includes(row.year)),
     details, hasActualDetails,
-    detailsAreDemo: isTemplateYear && !hasActualDetails, companyIsDemo: isTemplateYear && !hasActualDetails, distributionIsTemplate: isTemplateYear,
+    detailsAreDemo: isTemplateYear && !hasActualDetails, companyIsDemo: false, distributionIsTemplate: isTemplateYear, distributionIsDemo: !isTemplateYear,
   };
 }
 export function getInventoryReportSummary(report) {
@@ -73,7 +75,7 @@ export function buildInventoryReportWorkbook(report) {
   const pendingStart = detailRows.findIndex(row => row.summary && row.label === '资产盘亏合计') + 1;
   analysisSheet.A8.l = { Target: `#'盘亏资产明细及原因'!A${pendingStart + 4}`, Tooltip: '查看待查明细' };
   const originalTotal = report.distribution.reduce((sum, row) => sum + row.original, 0);
-  const distribution = add('资产类型分布', [[report.distributionIsTemplate ? '类别（模板数据）' : '类别', '数量（件）', '原值（万元）', '原值占比'], ...report.distribution.map(r => [r.category, r.quantity, r.original / 10000, originalTotal === 0 ? null : r.original / originalTotal])]);
+  const distribution = add('资产类型分布', [[report.distributionIsDemo ? '类别（演示数据）' : report.distributionIsTemplate ? '类别（模板数据）' : '类别', '数量（件）', '原值（万元）', '原值占比'], ...report.distribution.map(r => [r.category, r.quantity, r.original / 10000, originalTotal === 0 ? null : r.original / originalTotal])]);
   const company = add('盘亏分布', [[report.companyIsDemo ? '子公司（演示数据）' : '子公司', '年份', '笔记本', '主机', '显示器', '办公设备', '移动数码', '照摄像器材及配件', '车辆', '数量合计', '净值合计（元）'],
     ...report.companyLoss.map(r => [r.company, r.year, r.notebook, r.desktop, r.display, r.office, r.mobile, r.camera, r.vehicle, r.quantity, r.net])]);
   // 金额和百分比按单元格类型设置，保持可计算的数字而非格式化文本。
@@ -118,7 +120,13 @@ export function buildInventoryReportWorkbook(report) {
   });
   mergeGroups(company, report.companyLoss, 'company', 1);
   formatCells(distribution, report.distribution.map((_, i) => i + 1), [2], [3]);
-  formatCells(company, report.companyLoss.map((_, i) => i + 1), [10]);
+  // 公司分布的0值留白，数字保留在单元格中用于计算。
+  report.companyLoss.forEach((_, index) => {
+    for (let column = 2; column <= 10; column += 1) {
+      const cell = company[XLSX.utils.encode_cell({ r: index + 1, c: column })];
+      if (cell?.t === 'n') cell.z = column === 10 ? '#,##0.00;(#,##0.00);;' : '#,##0;-#,##0;;';
+    }
+  });
   formatCells(details, detailRows.map((_, i) => i + 3), [6, 7, 9, 10]);
   detailRows.forEach((row, index) => {
     if (!row.summary) return;
@@ -162,7 +170,7 @@ export function getInventoryLossCategoryRows(report) {
   }));
 }
 
-// 只对用户已提供的完整年度明细汇总，不填补上一年度公司数据。
+// 当前年度由完整明细汇总；上一年度仅使用同名公司真实统计，不猜测合并公司对应关系。
 function getActualCompanyLoss(details, year) {
   const loss = details.filter(row => row['盘点状态'] === '盘亏');
   const companies = [...new Set(loss.map(row => row['子公司']))];
@@ -172,8 +180,9 @@ function getActualCompanyLoss(details, year) {
     net: rows.reduce((sum, row) => sum + row['报失当月资产净值'], 0),
     ...Object.fromEntries(Object.entries(keys).map(([category, key]) => [key, rows.filter(row => row.reportCategory === category).reduce((sum, row) => sum + row['数量'], 0)])),
   });
-  return [...companies.flatMap(company => [{ company, year: year - 1 }, { company, year, ...summarize(loss.filter(row => row['子公司'] === company)) }]),
-    { company: '合计', year: year - 1 }, { company: '合计', year, ...summarize(loss) }];
+  const previous = company => inventoryReportActuals.companyLoss.find(row => row.company === company && row.year === year - 1) || { company, year: year - 1 };
+  return [...companies.flatMap(company => [previous(company), { company, year, ...summarize(loss.filter(row => row['子公司'] === company)) }]),
+    previous('合计'), { company: '合计', year, ...summarize(loss) }];
 }
 function getActualPendingSummary(report, current) {
   const rows = report.details.filter(row => row['盘点状态'] === '待查');

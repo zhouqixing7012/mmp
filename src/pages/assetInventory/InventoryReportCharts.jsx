@@ -9,7 +9,7 @@ function AxisUnits({ left, right }) {
 }
 export default function InventoryReportCharts({ report }) {
   const { token } = theme.useToken();
-  const colors = [token.colorPrimary, token.colorSuccess, token.colorWarning, token.purple, token.cyan, token.colorTextSecondary];
+  const colors = [token.colorPrimary, token.colorSuccess, token.colorWarning, token.purple, token.cyan, token.colorTextSecondary, token.colorError];
   const history = getInventoryHistoryChartRows(report);
   const pie = report.distribution.map((row, i) => ({ ...row, fill: colors[i] }));
   const originalTotal = pie.reduce((sum, row) => sum + row.original, 0);
@@ -39,7 +39,7 @@ export default function InventoryReportCharts({ report }) {
         { title: '增长率变化', dataIndex: 'rateChange', width: 190, align: 'right', render: v => v == null ? '-' : `${v.toFixed(2)}%` },
       ]} />
     </Card>
-    <Card size="small" title="资产类型分布（按原值）" extra={report.distributionIsTemplate ? <Typography.Text type="secondary">模板数据</Typography.Text> : null}>
+    <Card size="small" title="资产类型分布（按原值）" extra={report.distributionIsDemo ? <Typography.Text type="secondary">演示数据</Typography.Text> : report.distributionIsTemplate ? <Typography.Text type="secondary">模板数据</Typography.Text> : null}>
       {!pie.length ? <Empty description="暂无资产类型分布数据" /> :       <div className="flex flex-wrap items-center gap-6">
         <div className="relative" style={{ flex: '1 1 300px', minWidth: 0 }}>
           <ResponsiveContainer width="100%" height={300}>

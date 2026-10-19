@@ -8,6 +8,17 @@ export const inventoryReportActuals = {
     { year: 2025, quantity: 11072, original: 74656619, net: 6559666, lossQuantity: 40, lossRate: 0.00361, lossOriginal: 813957, lossOriginalRate: 0.01090, lossNet: 0, lossNetRate: 0 },
     { year: 2026, quantity: 14456, original: 78067413, net: 4604109, lossQuantity: 2, lossRate: 0.00014, lossOriginal: 2813, lossOriginalRate: 0.00004, lossNet: 217, lossNetRate: 0.00005 },
   ],
+  // 来源：用户补充的2024—2025年公司盘亏分布截图；空白数量及净值为0。
+  companyLoss: [
+    { company: '集团总部', year: 2024, quantity: 0, net: 0 },
+    { company: '集团总部', year: 2025, office: 33, mobile: 1, vehicle: 5, quantity: 39, net: 0 },
+    { company: '搜狐媒体（含焦点）', year: 2024, office: 2, quantity: 2, net: 2274 },
+    { company: '搜狐媒体（含焦点）', year: 2025, office: 1, quantity: 1, net: 0 },
+    { company: '视频', year: 2024, mobile: 1, quantity: 1, net: 0 },
+    { company: '视频', year: 2025, quantity: 0, net: 0 },
+    { company: '合计', year: 2024, office: 2, mobile: 1, quantity: 3, net: 2274 },
+    { company: '合计', year: 2025, office: 34, mobile: 1, vehicle: 5, quantity: 40, net: 0 },
+  ].map(row => ({ notebook: 0, desktop: 0, display: 0, office: 0, mobile: 0, camera: 0, vehicle: 0, ...row })),
   categoryLoss: [
     ['台式机、显示器', 2025, 0, 0, 0], ['台式机、显示器', 2026, 0, 0, 0],
     ['笔记本', 2025, 0, 0, 0], ['笔记本', 2026, 0, 0, 0],
