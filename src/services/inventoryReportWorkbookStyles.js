@@ -1,9 +1,9 @@
 import { utils } from 'xlsx-js-style';
 
-// 仅设置导出外观，保留单元格原值、数字格式、链接和已有业务合并。
-export function styleInventoryReportWorkbook(workbook, { historyLength, categoryStart, categoryCount, incrementStart, increments, indicatorStart, detailRows, detailsAreDemo, companyRows }) {
-  const palette = { text: '1D2126', blue: '145CFF', border: 'D3D9E5', header: 'EAF1FF', subtotal: 'F2F5FA', total: 'DBE7FF' };
-  const border = Object.fromEntries(['top', 'bottom', 'left', 'right'].map(side => [side, { style: 'thin', color: { rgb: palette.border } }]));
+// 按用户Excel参考设置外观；数字仍保留为数值，业务合并和内部链接不变。
+export function styleInventoryReportWorkbook(workbook, { summaryStart, historyStart, historyLength, categoryStart, categoryCount, incrementStart, increments, indicatorStart, detailRows, detailsAreDemo, companyRows }) {
+  const colors = { black: '000000', white: 'FFFFFF', gray: 'D9D9D9', blue: 'B8CCE4', total: 'BFBFBF', red: 'FF0000' };
+  const border = Object.fromEntries(['top', 'bottom', 'left', 'right'].map(side => [side, { style: 'thin', color: { rgb: colors.black } }]));
   const cellAt = (sheet, row, col) => {
     const address = utils.encode_cell({ r: row, c: col });
     if (!sheet[address]) sheet[address] = { t: 's', v: '' };
@@ -13,46 +13,74 @@ export function styleInventoryReportWorkbook(workbook, { historyLength, category
     for (let col = 0; col < columns; col += 1) {
       const cell = cellAt(sheet, row, col);
       cell.s = {
-        font: { name: '微软雅黑', sz: options.size || 11, color: { rgb: options.color || palette.text }, bold: Boolean(options.bold) },
+        font: { name: '宋体', sz: options.size || 11, color: { rgb: options.color || colors.black }, bold: Boolean(options.bold) },
         alignment: { vertical: 'center', horizontal: options.center ? 'center' : cell.t === 'n' ? 'right' : 'left', wrapText: true },
+        fill: { patternType: 'solid', fgColor: { rgb: options.fill || colors.white } },
         ...(options.borders ? { border } : {}),
-        ...(options.fill ? { fill: { patternType: 'solid', fgColor: { rgb: options.fill } } } : {}),
       };
-      if (cell.l) cell.s.font = { ...cell.s.font, color: { rgb: palette.blue }, underline: true };
+      if (cell.l) cell.s.font = { ...cell.s.font, color: { rgb: '0000FF' }, underline: true };
     }
     sheet['!rows'] = sheet['!rows'] || [];
-    sheet['!rows'][row] = { hpt: options.height || 28 };
+    sheet['!rows'][row] = { hpt: options.height || 21 };
   };
-  const merge = (sheet, row, start, end) => {
-    sheet['!merges'] = [...(sheet['!merges'] || []), { s: { r: row, c: start }, e: { r: row, c: end } }];
+  const merge = (sheet, row, start, end, endRow = row) => {
+    sheet['!merges'] = [...(sheet['!merges'] || []), { s: { r: row, c: start }, e: { r: endRow, c: end } }];
   };
-  const heading = (sheet, row, columns, main = false) => {
-    paint(sheet, row, columns, { bold: true, size: main ? 16 : 12, color: palette.blue, fill: main ? palette.header : palette.subtotal, height: main ? 38 : 32 });
+  const heading = (sheet, row, columns, main = false, bold = true) => {
+    paint(sheet, row, columns, { bold, size: main ? 13 : 11, height: main ? 28 : 25 });
     merge(sheet, row, 0, columns - 1);
   };
-  const table = (sheet, start, count, columns) => {
-    paint(sheet, start, columns, { bold: true, center: true, fill: palette.header, borders: true, height: 42 });
-    for (let row = start + 1; row <= start + count; row += 1) paint(sheet, row, columns, { borders: true });
+  const table = (sheet, start, count, columns, headerRows = 1) => {
+    for (let row = start; row < start + headerRows; row += 1) paint(sheet, row, columns, { bold: row === start, center: true, borders: true, height: 28 });
+    for (let row = start + headerRows; row < start + headerRows + count; row += 1) paint(sheet, row, columns, { borders: true });
   };
   const widths = (sheet, values) => { sheet['!cols'] = values.map(wch => ({ wch })); };
+  const format = (sheet, row, cols, code) => cols.forEach(col => {
+    const cell = cellAt(sheet, row, col);
+    if (cell.t === 'n') cell.z = code;
+  });
   const analysis = workbook.Sheets['盘点结果比较分析'];
-  widths(analysis, [26, 24, 24, 24, 22, 24, 22, 22, 22, 22]);
+  widths(analysis, [16, 17, 23, 23, 23, 25, 23, 25, 23, 25]);
   heading(analysis, 0, 10, true);
-  heading(analysis, 1, 10);
-  [2, 3].forEach(row => {
-    paint(analysis, row, 10, { height: row === 3 ? 44 : 28 });
-    cellAt(analysis, row, 0).s.font.bold = true;
+  heading(analysis, 2, 10);
+  [3, 4].forEach(row => {
+    paint(analysis, row, 10, { height: row === 4 ? 32 : 21 });
     merge(analysis, row, 1, 9);
   });
-  table(analysis, 4, 3, 7);
-  heading(analysis, 9, 10);
-  table(analysis, 10, historyLength, 10);
-  heading(analysis, categoryStart - 2, 10);
-  table(analysis, categoryStart - 1, categoryCount, 6);
+  heading(analysis, 6, 10);
+  heading(analysis, 7, 10, false, false);
+  table(analysis, summaryStart - 2, 3, 7, 2);
+  merge(analysis, summaryStart - 2, 0, 0, summaryStart - 1);
+  [[1, 2], [3, 4], [5, 6]].forEach(([start, end]) => merge(analysis, summaryStart - 2, start, end));
+  for (let row = summaryStart; row < summaryStart + 3; row += 1) {
+    if (row > summaryStart) paint(analysis, row, 7, { color: colors.red, borders: true });
+    cellAt(analysis, row, 0).s.font = { ...cellAt(analysis, row, 0).s.font, color: { rgb: row === summaryStart + 1 ? '0000FF' : colors.black }, bold: true };
+    format(analysis, row, [1, 3, 5], row === summaryStart ? '#,##0' : '#,##0;(#,##0);"-"');
+    format(analysis, row, [2, 4, 6], row === summaryStart ? '0%' : '0.000%;-0.000%;"-"');
+  }
+  heading(analysis, historyStart - 3, 10, false, false);
+  table(analysis, historyStart - 2, historyLength, 10, 2);
+  merge(analysis, historyStart - 2, 0, 0, historyStart - 1);
+  [[1, 3], [4, 5], [6, 7], [8, 9]].forEach(([start, end]) => merge(analysis, historyStart - 2, start, end));
+  for (let row = historyStart; row < historyStart + historyLength; row += 1) {
+    format(analysis, row, [0], '0"年"');
+    format(analysis, row, [1, 2, 3, 4, 6], '#,##0');
+    format(analysis, row, [8], '#,##0;(#,##0);"-"');
+  }
+  heading(analysis, categoryStart - 2, 10, false, false);
+  table(analysis, categoryStart - 1, categoryCount, 7);
+  merge(analysis, categoryStart - 1, 5, 6);
+  for (let index = 0; index < categoryCount; index += 1) {
+    const row = categoryStart + index;
+    if (index % 2 === 1) paint(analysis, row, 7, { fill: colors.gray, borders: true });
+    merge(analysis, row, 5, 6);
+    format(analysis, row, [1], '0"年"');
+    format(analysis, row, [2, 3, 4], '#,##0;(#,##0);"-"');
+  }
   heading(analysis, incrementStart - 2, 10);
   table(analysis, incrementStart - 1, increments.length, 3);
   increments.forEach((row, index) => {
-    if (['小计', '合计'].includes(row.name)) paint(analysis, incrementStart + index, 3, { bold: true, fill: row.name === '合计' ? palette.total : palette.subtotal, borders: true, height: 30 });
+    if (row.name === '小计' || ['车辆', '电话', '合计'].includes(row.category)) paint(analysis, incrementStart + index, 3, { bold: row.name === '合计', fill: row.name === '合计' ? colors.total : colors.blue, borders: true });
   });
   heading(analysis, indicatorStart - 2, 10);
   table(analysis, indicatorStart - 1, 3, 5);
@@ -61,21 +89,20 @@ export function styleInventoryReportWorkbook(workbook, { historyLength, category
   widths(details, [9, 12, 24, 26, 32, 10, 19, 21, 14, 19, 19, 23, 16, 14, 16, 24, 24, 32]);
   heading(details, 0, 18, true);
   if (detailsAreDemo) {
-    paint(details, 1, 18, { color: '545B66', height: 24 });
+    paint(details, 1, 18, { height: 21 });
     merge(details, 1, 0, 17);
   }
   table(details, 2, detailRows.length, 18);
+  details['!rows'][2] = { hpt: 34 };
   detailRows.forEach((row, index) => {
-    if (row.summary) paint(details, index + 3, 18, { bold: true, fill: row.label === '总计' ? palette.total : palette.subtotal, borders: true, height: 30 });
+    if (row.summary) paint(details, index + 3, 18, { bold: true, fill: row.label === '总计' ? colors.total : colors.blue, borders: true });
   });
-
   const distribution = workbook.Sheets['资产类型分布'];
   widths(distribution, [30, 16, 24, 18]);
   table(distribution, 0, utils.decode_range(distribution['!ref']).e.r, 4);
   const company = workbook.Sheets['盘亏分布'];
   widths(company, [28, 12, 13, 13, 13, 15, 15, 25, 13, 16, 22]);
   table(company, 0, companyRows.length, 11);
-  companyRows.forEach((row, index) => {
-    if (row.company === '合计') paint(company, index + 1, 11, { bold: true, fill: palette.total, borders: true, height: 30 });
-  });
+  company['!rows'][0] = { hpt: 34 };
+  companyRows.forEach((row, index) => paint(company, index + 1, 11, { bold: row.company === '合计', fill: index % 2 === 1 ? colors.gray : colors.white, borders: true }));
 }

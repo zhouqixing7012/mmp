@@ -37,17 +37,17 @@ test.each([2025, 2026])('导出%s年历史、分类和增量合并位置无偏�
   const wb = workbook(year);
   const sheet = wb.Sheets['盘点结果比较分析'];
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-  expect(rows[11].slice(0, 10)).toEqual([2023, 13317, 85199218, 10052457, 1, 0.00008, 6538, 0.00008, 0, 0]);
-  expect(sheet.H12.w).toBe('0.008%');
-  expect(sheet.I12.w).toBe('-');
-  const categoryStart = 11 + report.history.length + 3;
+  expect(rows[17].slice(0, 10)).toEqual([2023, 13317, 85199218, 10052457, 1, 0.00008, 6538, 0.00008, 0, 0]);
+  expect(sheet.H18.w).toBe('0.008%');
+  expect(sheet.I18.w).toBe('-');
+  const categoryStart = 17 + report.history.length + 3;
   expect(sheet['!merges']).toContainEqual({ s: { r: categoryStart, c: 0 }, e: { r: categoryStart + 1, c: 0 } });
   const incrementStart = categoryStart + 14 + 3;
   expect(sheet['!merges']).toContainEqual({ s: { r: incrementStart, c: 0 }, e: { r: incrementStart + 2, c: 0 } });
   expect(sheet['!merges']).toContainEqual({ s: { r: incrementStart + 3, c: 0 }, e: { r: incrementStart + 3, c: 1 } });
   const exported = XLSX.utils.sheet_to_json(wb.Sheets['盘亏资产明细及原因'], { header: 1 });
   expect(exported[2]).toEqual(DETAIL_FIELDS);
-  expect(sheet.A7.l.Target).toBe("#'盘亏资产明细及原因'!A4");
+  expect(sheet.A12.l.Target).toBe("#'盘亏资产明细及原因'!A4");
   if (year === 2026) {
     expect(rows[incrementStart + 12]).toEqual(['电话', '电话', 3675]);
     expect(rows[incrementStart + 13][2]).toBe(3384);
@@ -59,13 +59,13 @@ test.each([2025, 2026])('导出%s年历史、分类和增量合并位置无偏�
     expect(exported[5][5]).toBe(2);
     expect(exported[5][6]).toBe(2813);
     expect(exported[5][7]).toBe(217);
-    expect(sheet.A8.l.Target).toBe("#'盘亏资产明细及原因'!A7");
+    expect(sheet.A13.l.Target).toBe("#'盘亏资产明细及原因'!A7");
     expect(wb.Sheets['盘亏资产明细及原因'].F7.v).toBe(0);
     expect(wb.Sheets['盘亏资产明细及原因'].F7.w).toBe('-');
     expect(wb.Sheets['盘亏分布'].H3.v).toBe(0);
   } else {
     expect(exported[3][12]).toBe('2023-03-15');
-    expect(sheet.A8.l.Target).toBe("#'盘亏资产明细及原因'!A9");
+    expect(sheet.A13.l.Target).toBe("#'盘亏资产明细及原因'!A9");
     expect(wb.Sheets['盘亏资产明细及原因'].A9.v).toBe(1);
   }
 });
@@ -134,21 +134,45 @@ test.each([2025, 2026])('导出%s年实际文件保留标题、边框、汇总�
   const report = getInventoryReport(year);
   const styled = buildInventoryReportWorkbook(report);
   const analysis = styled.Sheets['盘点结果比较分析'];
-  expect(analysis.A1.s.font).toMatchObject({ bold: true, sz: 16, name: '微软雅黑' });
-  expect(analysis.A5.s.fill.fgColor.rgb).toBe('EAF1FF');
-  expect(analysis.G8.s.border.bottom.style).toBe('thin');
-  expect(analysis.A7.s.font.underline).toBe(true);
+  expect(analysis.A1.s.font).toMatchObject({ bold: true, sz: 13, name: '宋体' });
+  expect(analysis.A9.s.fill.fgColor.rgb).toBe('FFFFFF');
+  expect(analysis.B12.s.font.color.rgb).toBe('FF0000');
+  expect(analysis.B12.z).toBe('#,##0;(#,##0);"-"');
+  expect(analysis.G13.s.border.bottom.style).toBe('thin');
+  expect(analysis.A12.s.font.underline).toBe(true);
   const details = styled.Sheets['盘亏资产明细及原因'];
   const summaryRow = getInventoryDetailRows(report).findIndex(row => row.label === '总计') + 4;
-  expect(details['F' + summaryRow].s.fill.fgColor.rgb).toBe('DBE7FF');
+  expect(details['F' + summaryRow].s.fill.fgColor.rgb).toBe('BFBFBF');
   expect(details['I' + summaryRow].v).toBe('');
   expect(details['!cols'][4].wch).toBe(32);
   const saved = XLSX.read(XLSX.write(styled, { type: 'buffer', bookType: 'xlsx' }), { type: 'buffer', cellNF: true, cellStyles: true, bookFiles: true });
   const xml = Buffer.from(saved.files['xl/styles.xml'].content).toString('utf8');
-  expect(xml).toContain('EAF1FF');
-  expect(xml).toContain('DBE7FF');
-  expect(xml).toContain('微软雅黑');
+  expect(xml).toContain('D9D9D9');
+  expect(xml).toContain('B8CCE4');
+  expect(xml).toContain('宋体');
   expect(xml).toContain('style="thin"');
-  expect(saved.Sheets['盘点结果比较分析'].A7.l.Target).toBe("#'盘亏资产明细及原因'!A4");
+  expect(saved.Sheets['盘点结果比较分析'].A12.l.Target).toBe("#'盘亏资产明细及原因'!A4");
   expect(saved.Sheets['盘亏分布'].C2.w).toBe('');
+});
+
+
+test.each([2025, 2026])('参考样式%s双层表头和当前年灰底无重叠合并', year => {
+  const sheet = buildInventoryReportWorkbook(getInventoryReport(year)).Sheets['盘点结果比较分析'];
+  expect(sheet['!merges']).toContainEqual({ s: { r: 8, c: 1 }, e: { r: 8, c: 2 } });
+  expect(sheet['!merges']).toContainEqual({ s: { r: 8, c: 0 }, e: { r: 9, c: 0 } });
+  expect(sheet['!merges']).toContainEqual({ s: { r: 15, c: 1 }, e: { r: 15, c: 3 } });
+  const occupied = new Set();
+  sheet['!merges'].forEach(range => {
+    for (let row = range.s.r; row <= range.e.r; row += 1) {
+      for (let col = range.s.c; col <= range.e.c; col += 1) {
+        const address = XLSX.utils.encode_cell({ r: row, c: col });
+        expect(occupied.has(address)).toBe(false);
+        occupied.add(address);
+      }
+    }
+  });
+  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+  const firstCurrent = rows.findIndex(row => row[0] === '台式机、显示器' && row[1] === year);
+  expect(sheet[XLSX.utils.encode_cell({ r: firstCurrent, c: 1 })].s.fill.fgColor.rgb).toBe('D9D9D9');
+  expect(sheet.B11.v).toBe(getInventoryReport(year).history.find(row => row.year === year).quantity);
 });
