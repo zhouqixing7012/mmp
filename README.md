@@ -282,3 +282,5 @@ PC位置变更：移动端公共/复盘资产扫码提交地点变化后，资�
 
 测试：`CI=true npm test -- --watchAll=false --runInBand src/services/financialNewAssetReportService.test.js src/pages/assetReports/FinancialNewAssetReportPage.test.jsx`。
 搜索记录：复用QueryBar、资产明细报表公司候选及资产维护共享板块候选、xlsx-js-style，无新增依赖或外部方案。
+
+盘点报表导出关闭四个工作表默认网格线，表格黑色边框保留。显式依赖已有压缩组件`fflate@0.3.11`，用于写出OpenXML工作表视图设置；原有安装及构建命令不变。参考[OpenXML工作表网格线属性](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.sheetview.showgridlines)及[fflate官方说明](https://github.com/101arrowz/fflate)。

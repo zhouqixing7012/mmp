@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx-js-style';
+import { downloadInventoryReportFile } from './inventoryReportFile';
 import { styleInventoryReportWorkbook } from './inventoryReportWorkbookStyles';
 import { inventoryReportTemplate, inventoryReportActuals } from '../mock/businessRulesMock';
 
@@ -146,7 +147,7 @@ export function buildInventoryReportWorkbook(report) {
   return workbook;
 }
 export function exportInventoryReport(report) {
-  XLSX.writeFile(buildInventoryReportWorkbook(report), `${report.year}年度资产盘点报告-ES.xlsx`);
+  downloadInventoryReportFile(buildInventoryReportWorkbook(report), `${report.year}年度资产盘点报告-ES.xlsx`);
 }
 export function getIncrementRows(year = inventoryReportActuals.year) {
   if (Number(year) === inventoryReportActuals.year) return inventoryReportActuals.increments;

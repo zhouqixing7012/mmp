@@ -329,3 +329,5 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 调用：资产报表菜单 → FinancialNewAssetReportPage → financialNewAssetReportService → financialNewAssets.json；导出使用当前已执行查询条件，按源公司Sheet分组。
 
 `src/config/assetPlates.js`保存资产维护及财务固定资产新增报表共用的板块查询选项；财务公司的候选直接调用资产明细报表的getReportOptions，同源而不复制目录。
+
+`src/services/inventoryReportFile.js`负责盘点工作簿最终序列化、OpenXML工作表视图隐藏网格线及本地Blob下载；由inventoryReportService导出调用，保留原表数据/样式/边框/链接，仅设置视图属性。
