@@ -303,8 +303,8 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 
 | 文件 | 职责 |
 |---|---|
-| `src/pages/assetInventory/AssetInventoryReportPage.jsx` | 盘点报表菜单的即时年份切换、页签、明细联动和导出入口。 |
-| `src/pages/assetInventory/InventoryReportTables.jsx` | 比较分析、分类增量、子公司盘亏分布及19字段明细。 |
+| `src/pages/assetInventory/AssetInventoryReportPage.jsx` | 盘点报表菜单的即时年份切换、页签和导出入口。 |
+| `src/pages/assetInventory/InventoryReportTables.jsx` | 比较分析、分类增量、子公司盘亏分布及18字段明细。 |
 | `src/pages/assetInventory/InventoryReportCharts.jsx` | 年度报告五部分图表及指标。 |
 | `src/services/inventoryReportService.js` | 查询只读模板、共用明细/小计/总计行流及四工作表Excel导出。 |
 | `src/mock/inventoryReportTemplate.js` | 用户PPT明确示例值及缺失值，经businessRulesMock统一出口供Service读取。 |

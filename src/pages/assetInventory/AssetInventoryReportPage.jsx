@@ -24,7 +24,7 @@ export default function AssetInventoryReportPage() {
           <Typography.Paragraph className="!mb-0">资产盘点类别：{report.scope}</Typography.Paragraph>
         </Card>
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
-          { key: 'analysis', label: '盘点结果比较分析', children: <AnalysisTables report={report} onDetails={() => setActiveTab('details')} /> },
+          { key: 'analysis', label: '盘点结果比较分析', children: <AnalysisTables report={report} /> },
           { key: 'details', label: '盘亏及待查明细', children: <DetailTable report={report} /> },
           { key: 'charts', label: '年度报告图表', children: <InventoryReportCharts report={report} /> },
         ]} />
