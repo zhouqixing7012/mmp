@@ -1,20 +1,20 @@
 import React from 'react';
-import { Button, Card, Space, Table, Typography } from 'antd';
-import { amount, percent, quantity, DETAIL_FIELDS, LOSS_CATEGORIES, getIncrementRows, getInventoryReportSummary } from '../../services/inventoryReportService';
+import { Button, Card, Space, Table } from 'antd';
+import { amount, percent, quantity, DETAIL_FIELDS, LOSS_CATEGORIES, getIncrementRows, getInventoryReportSummary, getInventoryDetailRows } from '../../services/inventoryReportService';
 
 export function ReportTable({ columns, rows, rowKey = 'key', ...props }) {
   return <Table size="small" bordered columns={columns} dataSource={rows} rowKey={rowKey} pagination={false} scroll={{ x: 'max-content' }} {...props} />;
 }
-const column = (title, dataIndex, render = quantity) => ({ title, dataIndex, key: dataIndex, render, align: 'right', width: 150 });
-const textColumn = (title, dataIndex, width = 180) => ({ title, dataIndex, key: dataIndex, width });
+const column = (title, dataIndex, render = quantity) => ({ title, dataIndex, key: dataIndex, render, align: 'right', width: render === amount ? 150 : title.includes('占') ? 120 : 100 });
+const textColumn = (title, dataIndex, width = 150) => ({ title, dataIndex, key: dataIndex, width });
 export function IncrementTable() {
   return <ReportTable rows={getIncrementRows()} columns={[textColumn('资产大类', 'category'), textColumn('资产细类', 'name'), column('增量（件）', 'value')]} />;
 }
 export function CompanyLossTable({ report }) {
   return <ReportTable rowKey={r => `${r.company}-${r.year}`} rows={report.companyLoss} columns={[
-    textColumn('子公司', 'company', 200), textColumn('年份', 'year', 90),
+    textColumn('子公司', 'company', 180), textColumn('年份', 'year', 90),
     ...['笔记本', '主机', '显示器'].map((name, i) => column(name, `missing${i}`)),
-    column('办公设备', 'office'), column('移动数码', 'mobile'), column('照摄像器材及配件', 'camera'), column('车辆', 'vehicle'), column('数量合计（件）', 'quantity'), column('净值合计（元）', 'net', amount),
+    column('办公设备', 'office'), column('移动数码', 'mobile'), { ...column('照摄像器材及配件', 'camera'), width: 170 }, column('车辆', 'vehicle'), column('数量合计（件）', 'quantity'), column('净值合计（元）', 'net', amount),
   ]} />;
 }
 export function AnalysisTables({ report, onDetails }) {
@@ -28,7 +28,6 @@ export function AnalysisTables({ report, onDetails }) {
         { title: '原值', children: [column('金额（元）', 'original', amount), column('占全部盘点资产', 'originalRate', percent)] },
         { title: `净值（截至${report.year}年6月30日）`, children: [column('金额（元）', 'net', amount), column('占全部盘点资产', 'netRate', percent)] },
       ]} />
-      <Typography.Paragraph className="!mb-0 !mt-3" type="secondary">备注：-</Typography.Paragraph>
     </Card>
     <Card size="small" title="四年盘点数据对比">
       <ReportTable rowKey="year" rows={report.history} columns={[
@@ -45,14 +44,16 @@ export function AnalysisTables({ report, onDetails }) {
     <Card size="small" title={`${report.year - 1}—${report.year}年各类资产增量`}><IncrementTable /></Card>
   </Space>;
 }
-export function DetailTable({ report, status }) {
-  const rows = report.details.filter(row => status === '全部' || row['盘点状态'] === status);
-  return <Card size="small" title="盘亏资产明细及原因" extra={`共 ${rows.length} 条`}>
-    <Table size="small" bordered rowKey="标签号" dataSource={rows} columns={DETAIL_FIELDS.map((name, i) => ({
-      title: name, dataIndex: name, key: name, width: i < 2 ? 90 : ['资产说明', '说明', '备注'].includes(name) ? 240 : 150,
-      fixed: i < 2 ? 'left' : undefined,
-      render: value => ['原值', '报失当月资产净值', '赔偿金额', '损失'].includes(name) ? amount(value) : value ?? '-',
-    }))} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10 }} locale={{ emptyText: '模板未提供实际盘亏及待查资产明细' }} />
-    <ReportTable rows={(status === '全部' ? ['资产盘亏合计', '资产待查合计', '总计'] : [`资产${status}合计`]).map(name => ({ name }))} rowKey="name" columns={[textColumn('汇总', 'name'), column('数量（件）', 'quantity'), column('原值（元）', 'original', amount), column('报失当月净值（元）', 'net', amount)]} />
+export function DetailTable({ report }) {
+  const rows = getInventoryDetailRows(report);
+  const widths = { 序号: 70, 盘点状态: 90, 资产大类: 130, 资产小类: 160, 资产说明: 240, 数量: 90, 原值: 150, 报失当月资产净值: 170, 是否已赔偿: 110, 赔偿金额: 150, 损失: 150, 标签号: 180, 启用日期: 120, 责任人姓名: 120, 责任人编号: 130, 子公司: 160, 一级部门: 160, 说明: 220, 备注: 220 };
+  return <Card size="small" title="盘亏及待查明细" extra={`共 ${report.details.length} 条`}>
+    <Table size="small" bordered rowKey="key" dataSource={rows} pagination={false} columns={DETAIL_FIELDS.map((name, i) => ({
+      title: name, dataIndex: name, key: name, width: widths[name],
+      align: ['数量', '原值', '报失当月资产净值', '赔偿金额', '损失'].includes(name) ? 'right' : 'left',
+      onCell: row => row.summary && i < 5 ? { colSpan: i === 0 ? 5 : 0 } : {},
+      render: (value, row) => row.summary && i === 0 ? <strong>{row.label}</strong>
+        : ['原值', '报失当月资产净值', '赔偿金额', '损失'].includes(name) ? amount(value) : value ?? '-',
+    }))} scroll={{ x: 'max-content' }} />
   </Card>;
 }

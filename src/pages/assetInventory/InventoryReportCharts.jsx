@@ -1,54 +1,81 @@
 import React from 'react';
-import { Alert, Card, Space, theme } from 'antd';
+import { Card, Space, Typography, theme } from 'antd';
 import { CartesianGrid, ComposedChart, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { amount, percent } from '../../services/inventoryReportService';
 import { CompanyLossTable, IncrementTable, ReportTable } from './InventoryReportTables';
 
+function AxisUnits({ left, right }) {
+  return <div className="flex justify-between mb-2"><Typography.Text type="secondary">{left}</Typography.Text><Typography.Text type="secondary">{right}</Typography.Text></div>;
+}
 export default function InventoryReportCharts({ report }) {
   const { token } = theme.useToken();
-  const colors = [token.colorPrimary, token.colorSuccess, token.colorWarning, token.colorError, token.colorInfo, token.colorTextSecondary];
+  const colors = [token.colorPrimary, token.colorSuccess, token.colorWarning, token.purple, token.cyan, token.colorTextSecondary];
   const history = report.history.map(row => ({ ...row, originalWan: row.original == null ? null : row.original / 10000, netWan: row.net == null ? null : row.net / 10000, lossPercent: row.lossRate == null ? null : row.lossRate * 100 }));
   const pie = report.distribution.map((row, i) => ({ ...row, fill: colors[i] }));
+  const originalTotal = pie.reduce((sum, row) => sum + row.original, 0);
+  const axis = { axisLine: false, tickLine: false, tick: { fill: token.colorTextSecondary, fontSize: 12 }, tickMargin: 12 };
+  const line = { type: 'linear', strokeWidth: 2.5, connectNulls: false, dot: { r: 4, strokeWidth: 2, fill: token.colorBgContainer }, activeDot: { r: 6 } };
+  const tooltip = { contentStyle: { borderRadius: token.borderRadiusLG, borderColor: token.colorBorderSecondary, boxShadow: token.boxShadowSecondary }, labelStyle: { color: token.colorText, marginBottom: 8 } };
   return <Space orientation="vertical" size={16} className="w-full">
-    <Card size="small" title="ES管控资产变化情况概述 · 四年资产变化">
-      <ResponsiveContainer width="100%" height={320}>
-        <ComposedChart data={history} margin={{ top: 16, right: 30, left: 24, bottom: 8 }}>
-          <CartesianGrid stroke={token.colorBorderSecondary} strokeDasharray="3 3" />
-          <XAxis dataKey="year" /><YAxis yAxisId="value" width={85} label={{ value: '金额（万元）', position: 'insideTopLeft', offset: -8 }} /><YAxis yAxisId="quantity" orientation="right" width={80} label={{ value: '数量（件）', position: 'insideTopRight', offset: -8 }} />
-          <Tooltip formatter={(v, name) => name.includes('数量') ? v : amount(v)} /><Legend />
-          <Line yAxisId="value" dataKey="originalWan" name="盘点总原值（万元）" stroke={token.colorError} connectNulls={false} />
-          <Line yAxisId="value" dataKey="netWan" name="盘点总净值（万元）" stroke={token.colorSuccess} connectNulls={false} />
-          <Line yAxisId="quantity" dataKey="quantity" name="盘点总数量（件）" stroke={token.colorPrimary} />
+    <Card size="small" title="四年资产变化">
+      <AxisUnits left="金额（万元）" right="数量（件）" />
+      <ResponsiveContainer width="100%" height={300}>
+        <ComposedChart data={history} margin={{ top: 16, right: 12, left: 4, bottom: 12 }}>
+          <CartesianGrid vertical={false} stroke={token.colorBorderSecondary} strokeDasharray="3 6" />
+          <XAxis {...axis} dataKey="year" padding={{ left: 16, right: 16 }} />
+          <YAxis {...axis} yAxisId="value" width={76} tickCount={5} />
+          <YAxis {...axis} yAxisId="quantity" orientation="right" width={68} tickCount={5} />
+          <Tooltip {...tooltip} formatter={(v, name) => name.includes('数量') ? `${v} 件` : `${amount(v)} 万元`} /><Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 16 }} />
+          <Line {...line} yAxisId="value" dataKey="originalWan" name="盘点总原值" stroke={token.colorPrimary} />
+          <Line {...line} yAxisId="value" dataKey="netWan" name="盘点总净值" stroke={token.colorSuccess} />
+          <Line {...line} yAxisId="quantity" dataKey="quantity" name="盘点总数量" stroke={token.colorWarning} />
         </ComposedChart>
       </ResponsiveContainer>
       <ReportTable rowKey="name" rows={report.indicators} columns={[
         { title: '指标', dataIndex: 'name', width: 200 },
-        { title: '当前总数', dataIndex: 'total', align: 'right', render: (v, row) => row.name.includes('数量') ? v : amount(v) },
-        { title: '年度增长量', dataIndex: 'change', align: 'right', render: (v, row) => row.name.includes('数量') ? v : amount(v) },
-        { title: '年度增长率', dataIndex: 'rate', align: 'right', render: percent },
-        { title: '增长率变化（百分点）', dataIndex: 'rateChange', align: 'right', render: v => v.toFixed(2) },
+        { title: '当前总数', dataIndex: 'total', width: 140, align: 'right', render: (v, row) => row.name.includes('数量') ? v : amount(v) },
+        { title: '年度增长量', dataIndex: 'change', width: 140, align: 'right', render: (v, row) => row.name.includes('数量') ? v : amount(v) },
+        { title: '年度增长率', dataIndex: 'rate', width: 140, align: 'right', render: percent },
+        { title: '增长率变化（百分点）', dataIndex: 'rateChange', width: 190, align: 'right', render: v => v.toFixed(2) },
       ]} />
     </Card>
-    <Card size="small" title="资产类型分布概况（按原值统计）">
-      <ResponsiveContainer width="100%" height={340}>
-        <PieChart><Pie data={pie} dataKey="original" nameKey="category" cx="50%" cy="46%" outerRadius={110} label={({ percent: p }) => `${(p * 100).toFixed(1)}%`} />
-          <Tooltip formatter={v => [`${amount(v)} 元`, '原值']} /><Legend /></PieChart>
-      </ResponsiveContainer>
-      <ReportTable rowKey="category" rows={report.distribution} columns={[{ title: '资产类别', dataIndex: 'category' }, { title: '数量（件）', dataIndex: 'quantity', align: 'right' }, { title: '原值（元）', dataIndex: 'original', align: 'right', render: amount }]} />
+    <Card size="small" title="资产类型分布（按原值）">
+      <div className="flex flex-wrap items-center gap-6">
+        <div className="relative" style={{ flex: '1 1 300px', minWidth: 0 }}>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart><Pie data={pie} dataKey="original" nameKey="category" cx="50%" cy="50%" innerRadius={82} outerRadius={112} paddingAngle={3} cornerRadius={4} stroke="none" />
+              <Tooltip {...tooltip} formatter={v => [`${amount(v)} 元`, '原值']} /></PieChart>
+          </ResponsiveContainer>
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <Typography.Text type="secondary">资产总原值（万元）</Typography.Text>
+            <Typography.Title level={4} className="!mb-0 !mt-1">{amount(originalTotal / 10000)}</Typography.Title>
+          </div>
+        </div>
+        <div style={{ flex: '2 1 480px', minWidth: 0 }}>
+          <ReportTable rowKey="category" rows={pie} columns={[
+            { title: '资产类别', dataIndex: 'category', width: 200, render: (value, row) => <Space><span aria-hidden="true" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: row.fill }} />{value}</Space> },
+            { title: '数量（件）', dataIndex: 'quantity', width: 100, align: 'right' },
+            { title: '原值（元）', dataIndex: 'original', width: 150, align: 'right', render: amount },
+            { title: '原值占比', key: 'ratio', width: 100, align: 'right', render: (_, row) => originalTotal === 0 ? '-' : percent(row.original / originalTotal) },
+          ]} />
+        </div>
+      </div>
     </Card>
     <Card size="small" title="资产增量情况"><IncrementTable /></Card>
-    <Card size="small" title="ES管控资产盘点结果分析 · 资产盘亏情况">
-      <ResponsiveContainer width="100%" height={320}>
-        <ComposedChart data={history} margin={{ top: 16, right: 30, left: 24, bottom: 8 }}>
-          <CartesianGrid stroke={token.colorBorderSecondary} strokeDasharray="3 3" /><XAxis dataKey="year" />
-          <YAxis yAxisId="rate" width={85} tickFormatter={v => `${v.toFixed(3)}%`} /><YAxis yAxisId="loss" orientation="right" width={60} />
-          <Tooltip formatter={(v, name) => name.includes('占比') ? `${v.toFixed(3)}%` : `${v} 件`} /><Legend />
-          <Line yAxisId="rate" dataKey="lossPercent" name="盘亏数量占比" stroke={token.colorError} />
-          <Line yAxisId="loss" dataKey="lossQuantity" name="盘亏数量（件）" stroke={token.colorPrimary} connectNulls={false} />
+    <Card size="small" title="资产盘亏趋势">
+      <AxisUnits left="盘亏占比（%）" right="盘亏数量（件）" />
+      <ResponsiveContainer width="100%" height={300}>
+        <ComposedChart data={history} margin={{ top: 16, right: 12, left: 4, bottom: 12 }}>
+          <CartesianGrid vertical={false} stroke={token.colorBorderSecondary} strokeDasharray="3 6" />
+          <XAxis {...axis} dataKey="year" padding={{ left: 16, right: 16 }} />
+          <YAxis {...axis} yAxisId="rate" width={76} tickCount={5} tickFormatter={v => v.toFixed(3)} />
+          <YAxis {...axis} yAxisId="loss" orientation="right" width={68} tickCount={5} />
+          <Tooltip {...tooltip} formatter={(v, name) => name.includes('占比') ? `${v.toFixed(3)}%` : `${v} 件`} /><Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 16 }} />
+          <Line {...line} yAxisId="rate" dataKey="lossPercent" name="盘亏数量占比" stroke={token.colorPrimary} />
+          <Line {...line} yAxisId="loss" dataKey="lossQuantity" name="盘亏数量" stroke={token.colorWarning} />
         </ComposedChart>
       </ResponsiveContainer>
     </Card>
     <Card size="small" title="盘亏分布（按子公司汇总）"><CompanyLossTable report={report} /></Card>
-    <Alert type="info" showIcon title="图表及表格数值来自所附PPT示例。未提供的数据以空值展示，折线不跨缺失年份连接。" />
   </Space>;
 }

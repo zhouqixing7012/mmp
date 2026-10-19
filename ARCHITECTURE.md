@@ -303,11 +303,11 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 
 | 文件 | 职责 |
 |---|---|
-| `src/pages/assetInventory/AssetInventoryReportPage.jsx` | 盘点报表菜单的年份查询、页签、明细联动、原件下载和导出入口。 |
+| `src/pages/assetInventory/AssetInventoryReportPage.jsx` | 盘点报表菜单的即时年份切换、页签、明细联动和导出入口。 |
 | `src/pages/assetInventory/InventoryReportTables.jsx` | 比较分析、分类增量、子公司盘亏分布及19字段明细。 |
 | `src/pages/assetInventory/InventoryReportCharts.jsx` | 年度报告五部分图表及指标。 |
-| `src/services/inventoryReportService.js` | 查询只读模板、汇总展示及四工作表Excel导出。 |
+| `src/services/inventoryReportService.js` | 查询只读模板、共用明细/小计/总计行流及四工作表Excel导出。 |
 | `src/mock/inventoryReportTemplate.js` | 用户PPT明确示例值及缺失值，经businessRulesMock统一出口供Service读取。 |
-| `docs/asset-inventory/templates/` | 两个用户原始模板，只读归档；public同名文件供页面下载。 |
+| `docs/asset-inventory/templates/` | 两个用户原始模板，只读归档；public同名副本保留，页面不展示下载入口。 |
 
 调用：资产盘点菜单index → 报表页面 → Service → businessRulesMock → 模板示例；报表页面调用表格和图表组件。新页面不使用旧FieldPolicy对DOM做字段后处理。正式盘点项目、财务报告链路本轮不变。
