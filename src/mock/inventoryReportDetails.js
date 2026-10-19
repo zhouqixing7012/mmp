@@ -1,0 +1,20 @@
+import { getMaterialByCode } from './reference/materialCatalog';
+
+// 本文件为本次用户授权的交易演示数据；物料名称、大小类复用参考目录。
+const rows = [
+  ['盘亏', '113014107010000', 33, 66000, 6600, '否', 0, 6600, 'ES-DEMO-001', '2023-03-15', '张曙光', '111547', '集团总部', 'MIS部', '办公设备', '盘点报失，待核实赔偿'],
+  ['盘亏', '113014107010000', 1, 2000, 200, '是', 200, 0, 'ES-DEMO-002', '2023-05-20', '李磊', 'CW002506', '搜狐媒体（含焦点）', '智能媒体研发中心', '办公设备', '已完成赔偿'],
+  ['盘亏', '113020011242010', 1, 4800, 3600, '否', 0, 3600, 'ES-DEMO-003', '2025-04-08', '王鹏', '111558', '集团总部', '内部审计部', '移动数码', '盘点报失'],
+  ['盘亏', '118002014436000', 5, 250000, 80000, null, null, null, 'ES-DEMO-004', '2022-06-10', '张曙光', '111547', '集团总部', 'MIS部', '车辆', '赔偿情况待确认'],
+  ['待查', '112001055268001', 1, 6000, null, null, null, null, 'ES-DEMO-005', '2024-01-12', '苏伟', '111494', '搜狐媒体（含焦点）', '智能平台', '笔记本（NB）', '责任人出差，尚未盘点'],
+  ['待查', '112003011031000', 2, 600, null, null, null, null, 'ES-DEMO-006', '2021-09-03', '邓昭明', '111488', '视频', 'OTT业务部', '笔记本（NB）', '暂未找到实物'],
+  ['待查', '113020011242010', 1, 4800, null, null, null, null, 'ES-DEMO-007', '2025-05-16', '韩晓晗', 'CW002507', '搜狐媒体（含焦点）', '内容获取中心', '移动数码', '待补充实物核查结果'],
+];
+export const inventoryReportDetails = rows.map((row, index) => {
+  const [status, code, count, original, net, compensated, payment, loss, tag, date, name, employeeNo, company, department, reportCategory, remark] = row;
+  const material = getMaterialByCode(code);
+  if (!material) throw new Error(`盘点演示物料不存在：${code}`);
+  return { 序号: index + 1, 盘点状态: status, 资产大类: material.majorCategory, 资产小类: material.minorCategory, 资产说明: material.materialDescription,
+    数量: count, 原值: original, 报失当月资产净值: net, 是否已赔偿: compensated, 赔偿金额: payment, 损失: loss,
+    标签号: tag, 启用日期: date, 责任人姓名: name, 责任人编号: employeeNo, 子公司: company, 一级部门: department, 说明: null, 备注: remark, reportCategory };
+});

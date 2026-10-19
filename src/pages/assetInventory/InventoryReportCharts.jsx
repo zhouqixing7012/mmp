@@ -44,7 +44,7 @@ export default function InventoryReportCharts({ report }) {
         <div className="relative" style={{ flex: '1 1 300px', minWidth: 0 }}>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart><Pie data={pie} dataKey="original" nameKey="category" cx="50%" cy="50%" innerRadius={82} outerRadius={112} paddingAngle={3} cornerRadius={4} stroke="none" />
-              <Tooltip {...tooltip} formatter={v => [`${amount(v)} 元`, '原值']} /></PieChart>
+              <Tooltip {...tooltip} formatter={v => [`${amount(v / 10000)} 万元`, '原值']} /></PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <Typography.Text type="secondary">资产总原值（万元）</Typography.Text>
@@ -55,7 +55,7 @@ export default function InventoryReportCharts({ report }) {
           <ReportTable rowKey="category" rows={pie} columns={[
             { title: '资产类别', dataIndex: 'category', width: 200, render: (value, row) => <Space><span aria-hidden="true" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: row.fill }} />{value}</Space> },
             { title: '数量（件）', dataIndex: 'quantity', width: 100, align: 'right' },
-            { title: '原值（元）', dataIndex: 'original', width: 150, align: 'right', render: amount },
+            { title: '原值（万元）', dataIndex: 'original', width: 150, align: 'right', render: value => amount(value / 10000) },
             { title: '原值占比', key: 'ratio', width: 100, align: 'right', render: (_, row) => originalTotal === 0 ? '-' : percent(row.original / originalTotal) },
           ]} />
         </div>

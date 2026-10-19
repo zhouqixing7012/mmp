@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button, Card, Space, Table } from 'antd';
-import { amount, percent, quantity, DETAIL_FIELDS, LOSS_CATEGORIES, getIncrementRows, getInventoryReportSummary, getInventoryDetailRows } from '../../services/inventoryReportService';
+import { Button, Card, Space, Table, theme } from 'antd';
+import { amount, percent, quantity, DETAIL_FIELDS, getIncrementRows, getInventoryReportSummary, getInventoryDetailRows, getInventoryLossCategoryRows } from '../../services/inventoryReportService';
 
 export function ReportTable({ columns, rows, rowKey = 'key', ...props }) {
   return <Table size="small" bordered columns={columns} dataSource={rows} rowKey={rowKey} pagination={false} scroll={{ x: 'max-content' }} {...props} />;
@@ -8,7 +8,15 @@ export function ReportTable({ columns, rows, rowKey = 'key', ...props }) {
 const column = (title, dataIndex, render = quantity) => ({ title, dataIndex, key: dataIndex, render, align: 'right', width: render === amount ? 150 : title.includes('占') ? 120 : 100 });
 const textColumn = (title, dataIndex, width = 150) => ({ title, dataIndex, key: dataIndex, width });
 export function IncrementTable() {
-  return <ReportTable rows={getIncrementRows()} columns={[textColumn('资产大类', 'category'), textColumn('资产细类', 'name'), column('增量（件）', 'value')]} />;
+  const { token } = theme.useToken();
+  const rows = getIncrementRows();
+  const isSummary = row => row.name === '小计' || row.name === '合计';
+  return <ReportTable rows={rows} columns={[
+    { ...textColumn('资产大类', 'category'), onCell: row => isSummary(row) ? { colSpan: 2, style: { background: row.name === '合计' ? token.colorPrimaryBg : token.colorFillAlter, fontWeight: 600 } } : {},
+      render: (_, row) => isSummary(row) ? row.name === '合计' ? '合计' : `${row.category}小计` : row.category },
+    { ...textColumn('资产细类', 'name'), onCell: row => isSummary(row) ? { colSpan: 0 } : {} },
+    { ...column('增量（件）', 'value'), onCell: row => isSummary(row) ? { style: { background: row.name === '合计' ? token.colorPrimaryBg : token.colorFillAlter, fontWeight: 600 } } : {} },
+  ]} />;
 }
 export function CompanyLossTable({ report }) {
   return <ReportTable rowKey={r => `${r.company}-${r.year}`} rows={report.companyLoss} columns={[
@@ -18,7 +26,7 @@ export function CompanyLossTable({ report }) {
   ]} />;
 }
 export function AnalysisTables({ report, onDetails }) {
-  const categories = LOSS_CATEGORIES.flatMap((category, i) => [report.year - 1, report.year].map(year => ({ key: `${i}-${year}`, category, year })));
+  const categories = getInventoryLossCategoryRows(report);
   return <Space orientation="vertical" size={16} className="w-full">
     <Card size="small" title={`${report.year}年资产盘点情况汇总`}>
       <ReportTable rowKey="name" rows={getInventoryReportSummary(report)} columns={[

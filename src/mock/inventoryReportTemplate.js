@@ -1,3 +1,5 @@
+import { inventoryReportDetails } from './inventoryReportDetails';
+
 // 用户提供PPT中的示例数据，非在线项目盘点结果；未提供的值保持null。
 export const inventoryReportTemplate = {
   year: 2025,
@@ -22,16 +24,16 @@ export const inventoryReportTemplate = {
     { category: '车辆', quantity: 20, original: 8230000 },
     { category: '移动数码', quantity: 1216, original: 4900000 },
   ],
-  // 只收录截图中明确填写的数值，不把空白解释为0。
+  // 原PPT数量保留；2025年净值按本次演示明细合计。
   companyLoss: [
     { company: '集团总部', year: 2024 },
-    { company: '集团总部', year: 2025, office: 33, mobile: 1, vehicle: 5, quantity: 39 },
+    { company: '集团总部', year: 2025, office: 33, mobile: 1, vehicle: 5, quantity: 39, net: 90200 },
     { company: '搜狐媒体（含焦点）', year: 2024, office: 2, quantity: 2, net: 2274 },
-    { company: '搜狐媒体（含焦点）', year: 2025, office: 1, quantity: 1 },
+    { company: '搜狐媒体（含焦点）', year: 2025, office: 1, quantity: 1, net: 200 },
     { company: '视频', year: 2024, mobile: 1, quantity: 1 },
     { company: '视频', year: 2025 },
     { company: '合计', year: 2024, office: 2, mobile: 1, quantity: 3, net: 2274 },
-    { company: '合计', year: 2025, office: 34, mobile: 1, vehicle: 5, quantity: 40 },
+    { company: '合计', year: 2025, office: 34, mobile: 1, vehicle: 5, quantity: 40, net: 90400 },
   ],
-  details: [],
+  details: inventoryReportDetails,
 };

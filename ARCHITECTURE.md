@@ -311,3 +311,5 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 | `docs/asset-inventory/templates/` | 两个用户原始模板，只读归档；public同名副本保留，页面不展示下载入口。 |
 
 调用：资产盘点菜单index → 报表页面 → Service → businessRulesMock → 模板示例；报表页面调用表格和图表组件。新页面不使用旧FieldPolicy对DOM做字段后处理。正式盘点项目、财务报告链路本轮不变。
+
+`src/mock/inventoryReportDetails.js`保存用户授权的7条ES报表交易演示，复用物料目录；模板入口引用后经Service供明细、汇总及Excel共用。

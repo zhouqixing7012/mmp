@@ -29,6 +29,8 @@ test('页面只留即时年份下拉，盘亏和待查使用同一张含合计�
   expect(within(panel).getByRole('columnheader', { name: '赔偿金额' })).toBeInTheDocument();
   expect(within(panel).getByText('资产盘亏合计').closest('td')).toHaveAttribute('colspan', '5');
   expect(within(panel).getByText('资产待查合计')).toBeInTheDocument();
+  expect(within(panel).getByText('ES-DEMO-001')).toBeInTheDocument();
+  expect(within(panel).getByText('ES-DEMO-007')).toBeInTheDocument();
   expect(within(panel).getByText('总计')).toBeInTheDocument();
 });
 test('年份选择后立即刷新，无需查询按钮，再选2025恢复报告', async () => {
@@ -39,4 +41,11 @@ test('年份选择后立即刷新，无需查询按钮，再选2025恢复报告'
   fireEvent.mouseDown(screen.getByRole('combobox', { name: '盘点年份' }));
   fireEvent.click(await screen.findByText('2025年', { selector: '.ant-select-item-option-content' }));
   expect(screen.getByText('2025年度资产盘点报告（ES管控资产）')).toBeInTheDocument();
+});
+
+test('资产增量的小计是独立汇总行，不再充当细类', () => {
+  render(<AssetInventoryReportPage />);
+  const subtotal = screen.getByText('台式机小计');
+  expect(subtotal.closest('td')).toHaveAttribute('colspan', '2');
+  expect(screen.getByText('PC-主机').closest('td')).not.toHaveAttribute('colspan', '2');
 });

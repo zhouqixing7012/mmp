@@ -7,14 +7,23 @@ export const amount = value => value == null ? '-' : value.toLocaleString('zh-CN
 export const percent = value => value == null ? '-' : `${(value * 100).toFixed(2)}%`;
 export const quantity = value => value == null ? '-' : String(value);
 export function getInventoryReport(year) {
-  return Number(year) === inventoryReportTemplate.year ? inventoryReportTemplate : null;
+  if (Number(year) !== inventoryReportTemplate.year) return null;
+  const report = inventoryReportTemplate;
+  const loss = getInventoryDetailRows(report).find(row => row.label === '资产盘亏合计');
+  return { ...report, history: report.history.map(row => row.year === report.year ? { ...row, lossOriginal: loss['原值'], lossNet: loss['报失当月资产净值'], lossOriginalRate: loss['原值'] == null ? null : loss['原值'] / row.original, lossNetRate: loss['报失当月资产净值'] == null ? null : loss['报失当月资产净值'] / row.net } : row) };
+
 }
 export function getInventoryReportSummary(report) {
   const current = report.history.find(row => row.year === report.year);
+  const totals = getInventoryDetailRows(report);
+  const loss = totals.find(row => row.label === '资产盘亏合计');
+  const pending = totals.find(row => row.label === '资产待查合计');
+  const summary = (name, row) => ({ name, quantity: row['数量'], quantityRate: row['数量'] == null ? null : row['数量'] / current.quantity,
+    original: row['原值'], originalRate: row['原值'] == null ? null : row['原值'] / current.original,
+    net: row['报失当月资产净值'], netRate: row['报失当月资产净值'] == null ? null : row['报失当月资产净值'] / current.net });
   return [
     { name: '全部盘点资产', quantity: current.quantity, quantityRate: 1, original: current.original, originalRate: 1, net: current.net, netRate: 1 },
-    { name: '盘亏资产', quantity: current.lossQuantity, quantityRate: current.lossQuantity / current.quantity, original: null, originalRate: null, net: null, netRate: null },
-    { name: '待查资产', quantity: null, quantityRate: null, original: null, originalRate: null, net: null, netRate: null },
+    summary('盘亏资产', loss), summary('待查资产', pending),
   ];
 }
 export function buildInventoryReportWorkbook(report) {
@@ -33,9 +42,9 @@ export function buildInventoryReportWorkbook(report) {
     ...getInventoryReportSummary(report).map(r => [r.name, 'ES', r.quantity, r.quantityRate, r.original, r.originalRate, r.net, r.netRate]),
     [], ['四年盘点数据对比'],
     ['年份', '资产管控方', '盘点总数量（件）', '盘点总原值（元）', '盘点总净值（元）', '盘亏数量（件）', '盘亏数量占比', '盘亏原值（元）', '盘亏原值占比', '盘亏净值（元）', '盘亏净值占比'],
-    ...report.history.map(r => [r.year, 'ES', r.quantity, r.original, r.net, r.lossQuantity, r.lossRate, null, null, null, null]),
+    ...report.history.map(r => [r.year, 'ES', r.quantity, r.original, r.net, r.lossQuantity, r.lossRate, r.lossOriginal, r.lossOriginalRate, r.lossNet, r.lossNetRate]),
     [], ['资产盘亏统计'], ['资产类别', '资产管控方', '盘点年份', '盘亏数量（件）', '盘亏原值（元）', '盘亏净值（元）', '备注'],
-    ...LOSS_CATEGORIES.flatMap(c => [report.year - 1, report.year].map(y => [c, 'ES', y, null, null, null, null])),
+    ...getInventoryLossCategoryRows(report).map(row => [row.category, 'ES', row.year, row.quantity, row.original, row.net, null]),
     [], ['资产变化情况概述'], ['资产大类', '资产管控方', '资产细类', '增量（件）'],
     ...getIncrementRows().map(r => [r.category, 'ES', r.name, null]),
   ];
@@ -43,11 +52,11 @@ export function buildInventoryReportWorkbook(report) {
   analysis.push([], ['年度增长指标'], ['指标', '当前总数', '年度增长量', '年度增长率', '增长率变化（百分点）'], ...report.indicators.map(r => [r.name, r.total, r.change, r.rate, r.rateChange]));
   const analysisSheet = add('盘点结果比较分析', analysis);
   const detailRows = getInventoryDetailRows(report);
-  const details = add('盘亏资产明细及原因', [[`${report.year}年度资产盘点盘亏及待查统计（ES管控资产）`], ['附件未提供实际明细，以下小计为空'], DETAIL_FIELDS,
+  const details = add('盘亏资产明细及原因', [[`${report.year}年度资产盘点盘亏及待查统计（ES管控资产）`], [], DETAIL_FIELDS,
     ...detailRows.map(row => DETAIL_FIELDS.map((field, index) => row.summary && index === 0 ? row.label : row[field] ?? null))]);
   details['!merges'] = detailRows.flatMap((row, index) => row.summary ? [{ s: { r: index + 3, c: 0 }, e: { r: index + 3, c: 4 } }] : []);
   const originalTotal = report.distribution.reduce((sum, row) => sum + row.original, 0);
-  const distribution = add('资产类型分布', [['类别', '数量（件）', '原值（元）', '原值占比'], ...report.distribution.map(r => [r.category, r.quantity, r.original, originalTotal === 0 ? null : r.original / originalTotal])]);
+  const distribution = add('资产类型分布', [['类别', '数量（件）', '原值（万元）', '原值占比'], ...report.distribution.map(r => [r.category, r.quantity, r.original / 10000, originalTotal === 0 ? null : r.original / originalTotal])]);
   const company = add('盘亏分布', [['子公司', '年份', '笔记本', '主机', '显示器', '办公设备', '移动数码', '照摄像器材及配件', '车辆', '数量合计', '净值合计（元）'],
     ...report.companyLoss.map(r => [r.company, r.year, null, null, null, r.office, r.mobile, null, r.vehicle, r.quantity, r.net])]);
   // 金额和百分比按单元格类型设置，保持可计算的数字而非格式化文本。
@@ -63,6 +72,7 @@ export function buildInventoryReportWorkbook(report) {
   });
   formatCells(analysisSheet, [indicatorStart], [4], [3]);
   formatCells(analysisSheet, [indicatorStart + 1, indicatorStart + 2], [1, 2, 4], [3]);
+  formatCells(analysisSheet, Array.from({ length: 14 }, (_, i) => i + 18), [4, 5]);
   formatCells(distribution, report.distribution.map((_, i) => i + 1), [2], [3]);
   formatCells(company, report.companyLoss.map((_, i) => i + 1), [10]);
   formatCells(details, detailRows.map((_, i) => i + 3), [6, 7, 9, 10]);
@@ -91,4 +101,14 @@ export function getInventoryDetailRows(report) {
   const pending = report.details.filter(row => row['盘点状态'] === '待查');
   const detail = rows => rows.map((row, index) => ({ ...row, key: `detail-${row['盘点状态']}-${index}`, summary: false }));
   return [...detail(loss), total('资产盘亏合计', loss), ...detail(pending), total('资产待查合计', pending), total('总计', [...loss, ...pending])];
+}
+
+export function getInventoryLossCategoryRows(report) {
+  const loss = report.details.filter(row => row['盘点状态'] === '盘亏');
+  return LOSS_CATEGORIES.flatMap((category, index) => [report.year - 1, report.year].map(year => {
+    const rows = loss.filter(row => row.reportCategory === category);
+    const total = field => year !== report.year || !loss.length ? null
+      : rows.every(row => row[field] != null) ? rows.reduce((sum, row) => sum + row[field], 0) : null;
+    return { key: `${index}-${year}`, category, year, quantity: total('数量'), original: total('原值'), net: total('报失当月资产净值') };
+  }));
 }
