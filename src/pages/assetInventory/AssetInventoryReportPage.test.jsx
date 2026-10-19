@@ -64,9 +64,21 @@ test('范围仅在比较分析中显示，分类和增量按组纵向合并', ()
   render(<AssetInventoryReportPage />);
   const panel = screen.getByRole('tabpanel', { name: '盘点结果比较分析' });
   expect(within(panel).getByText('资产变化范围')).toBeInTheDocument();
-  expect(within(panel).getByText('台式机、显示器（PC）').closest('td')).toHaveAttribute('rowspan', '2');
+  expect(within(panel).getByText('台式机、显示器').closest('td')).toHaveAttribute('rowspan', '2');
   expect(within(panel).getAllByText('台式机', { exact: true })[0].closest('td')).toHaveAttribute('rowspan', '3');
   expect(within(panel).getByRole('columnheader', { name: '汇总' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('tab', { name: '盘亏及待查明细' }));
   expect(screen.queryByText('资产变化周期：2025年7月—2026年7月')).not.toBeVisible();
+});
+
+test('2026显示真实两条明细及真实分类金额，无演示标记', () => {
+  render(<AssetInventoryReportPage />);
+  expect(screen.getAllByText('2,813.00').length).toBeGreaterThan(0);
+  fireEvent.click(screen.getByRole('tab', { name: '盘亏及待查明细' }));
+  const panel = screen.getByRole('tabpanel', { name: '盘亏及待查明细' });
+  expect(within(panel).getByText('201132100282')).toBeInTheDocument();
+  expect(within(panel).getByText('NE3737')).toBeInTheDocument();
+  expect(within(panel).getByText('刘霞')).toBeInTheDocument();
+  expect(within(panel).getByText('王紫荆')).toBeInTheDocument();
+  expect(within(panel).queryByText(/演示数据/)).not.toBeInTheDocument();
 });

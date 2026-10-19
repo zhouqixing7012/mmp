@@ -23,7 +23,7 @@ export function CompanyLossTable({ report }) {
   const spans = getGroupedRowSpans(report.companyLoss, 'company');
   return <ReportTable rowKey={r => `${r.company}-${r.year}`} rows={report.companyLoss} columns={[
     { ...textColumn('子公司', 'company', 180), onCell: (_, index) => ({ rowSpan: spans[index] }) }, textColumn('年份', 'year', 90),
-    ...['笔记本', '主机', '显示器'].map((name, i) => column(name, `missing${i}`)),
+    ...[['笔记本', 'notebook'], ['主机', 'desktop'], ['显示器', 'display']].map(([name, key]) => column(name, key)),
     column('办公设备', 'office'), column('移动数码', 'mobile'), { ...column('照摄像器材及配件', 'camera'), width: 170 }, column('车辆', 'vehicle'), column('数量合计（件）', 'quantity'), column('净值合计（元）', 'net', amount),
   ]} />;
 }
@@ -49,7 +49,7 @@ export function AnalysisTables({ report }) {
         { title: '盘亏净值情况', children: [column('金额（元）', 'lossNet', accounting), column('占全部盘点资产', 'lossNetRate', historyPercent)] },
       ]} />
     </Card>
-    <Card size="small" title={`${report.year}年资产盘亏统计`} extra={report.detailsAreDemo ? <Typography.Text type="secondary">演示数据</Typography.Text> : null}>
+    <Card size="small" title={`${report.year}年资产盘亏统计`}>
       <ReportTable rows={categories} columns={[{ ...textColumn('资产类别', 'category', 230), onCell: (_, index) => ({ rowSpan: spans[index] }) }, textColumn('盘点年份', 'year', 100), column('盘亏数量（件）', 'quantity', accounting), column('盘亏原值（元）', 'original', accounting), column('盘亏净值（元）', 'net', accounting), { ...textColumn('备注', 'remark'), render: () => '-' }]} />
     </Card>
     <Card size="small" title={getIncrementTitle(report.year)}><IncrementTable year={report.year} /></Card>
@@ -63,7 +63,7 @@ export function DetailTable({ report }) {
       title: name, dataIndex: name, key: name, width: widths[name],
       align: ['数量', '原值', '报失当月资产净值', '赔偿金额', '损失'].includes(name) ? 'right' : 'left',
       onCell: row => row.summary && i < 5 ? { colSpan: i === 0 ? 5 : 0 } : {},
-      render: (value, row) => ['是否已赔偿', '赔偿金额', '损失'].includes(name) && value == null ? '' : row.summary && i === 0 ? <strong>{row.label}</strong>
+      render: (value, row) => ['是否已赔偿', '赔偿金额', '损失'].includes(name) && value == null ? '' : row.summary && value === 0 ? '-' : row.summary && i === 0 ? <strong>{row.label}</strong>
         : ['原值', '报失当月资产净值', '赔偿金额', '损失'].includes(name) ? amount(value) : value ?? '-',
     }))} scroll={{ x: 'max-content' }} />
   </Card>;

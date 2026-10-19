@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { getInventoryReport, getInventoryReportSummary, getIncrementRows, getInventoryDetailRows, getInventoryHistoryChartRows, getGroupedRowSpans, buildInventoryReportWorkbook, DETAIL_FIELDS, accounting } from './inventoryReportService';
+import { getInventoryReport, getInventoryReportSummary, getIncrementRows, getInventoryLossCategoryRows, getInventoryDetailRows, getInventoryHistoryChartRows, getGroupedRowSpans, buildInventoryReportWorkbook, DETAIL_FIELDS, accounting } from './inventoryReportService';
 
 const workbook = year => XLSX.read(XLSX.write(buildInventoryReportWorkbook(getInventoryReport(year)), { type: 'array', bookType: 'xlsx' }), { type: 'array', cellNF: true });
 test('四年真实数据逐项保留且演示明细不能覆盖真实汇总', () => {
@@ -13,7 +13,7 @@ test('四年真实数据逐项保留且演示明细不能覆盖真实汇总', ()
   expect(report.details).toHaveLength(7);
   expect(getInventoryReportSummary(report)[1]).toMatchObject({ original: 813957, net: 0 });
   expect(getInventoryReportSummary(report)[2].quantity).toBeNull();
-  expect(getInventoryReport(2026).details).toEqual([]);
+  expect(getInventoryReport(2026).details).toHaveLength(2);
   expect(getInventoryReport(2026).distribution).toEqual([]);
 });
 test('增量明细、小计、电话和合计对应2025至2026年', () => {
@@ -52,6 +52,17 @@ test.each([2025, 2026])('导出%s年历史、分类和增量合并位置无偏�
     expect(rows[incrementStart + 12]).toEqual(['电话', '电话', 3675]);
     expect(rows[incrementStart + 13][2]).toBe(3384);
     expect(rows[incrementStart + 2][2]).toBe(0);
+    expect(exported[3][11]).toBe('201132100282');
+    expect(exported[3][12]).toBe('2021-10-14');
+    expect(exported[4][11]).toBe('NE3737');
+    expect(exported[4][12]).toBe('2021-12-03');
+    expect(exported[5][5]).toBe(2);
+    expect(exported[5][6]).toBe(2813);
+    expect(exported[5][7]).toBe(217);
+    expect(sheet.A8.l.Target).toBe("#'盘亏资产明细及原因'!A7");
+    expect(wb.Sheets['盘亏资产明细及原因'].F7.v).toBe(0);
+    expect(wb.Sheets['盘亏资产明细及原因'].F7.w).toBe('-');
+    expect(wb.Sheets['盘亏分布'].H3.v).toBe(0);
   } else {
     expect(exported[3][12]).toBe('2023-03-15');
     expect(sheet.A8.l.Target).toBe("#'盘亏资产明细及原因'!A9");
@@ -64,4 +75,27 @@ test('分组编号和缺失净值不被真实汇总改写，合并不跨小计',
   expect(rows.find(row => row.label === '资产待查合计')['报失当月资产净值']).toBeNull();
   expect(getGroupedRowSpans(getIncrementRows(2026), 'category', row => !['小计', '合计'].includes(row.name)).slice(0, 4)).toEqual([3, 0, 0, 1]);
   expect(accounting(0)).toBe('-');
+});
+
+test('用户分类表与两条真实明细和公司统计保持一致，未补前年公司数据', () => {
+  const report = getInventoryReport(2026);
+  const categories = getInventoryLossCategoryRows(report);
+  [2025, 2026].forEach(year => {
+    const rows = categories.filter(row => row.year === year);
+    const history = report.history.find(row => row.year === year);
+    expect(rows.reduce((sum, row) => sum + row.quantity, 0)).toBe(history.lossQuantity);
+    expect(rows.reduce((sum, row) => sum + row.original, 0)).toBe(history.lossOriginal);
+    expect(rows.reduce((sum, row) => sum + row.net, 0)).toBe(history.lossNet);
+  });
+  expect(report.details[0]).toMatchObject({ 资产说明: '华为.MatePad', 资产小类: '移动数码-平板电脑', 责任人姓名: '刘霞', 责任人编号: '150193', 子公司: '搜狐媒体', 一级部门: '智能平台' });
+  expect(report.details[1]).toMatchObject({ 资产说明: '小米.红米Note9', 资产小类: '移动数码-手机', 责任人姓名: '王紫荆', 责任人编号: '220965', 子公司: '集团总部', 一级部门: '市场部' });
+  expect(report.detailsAreDemo).toBe(false);
+  expect(report.companyIsDemo).toBe(false);
+  expect(report.companyLoss.find(row => row.company === '搜狐媒体' && row.year === 2026)).toMatchObject({ mobile: 1, quantity: 1, net: 130 });
+  expect(report.companyLoss.find(row => row.company === '集团总部' && row.year === 2026)).toMatchObject({ mobile: 1, quantity: 1, net: 87 });
+  expect(report.companyLoss.find(row => row.company === '合计' && row.year === 2026)).toMatchObject({ mobile: 2, quantity: 2, net: 217 });
+  expect(report.companyLoss.find(row => row.company === '合计' && row.year === 2025).quantity).toBeUndefined();
+  expect(getInventoryReportSummary(report)[2]).toMatchObject({ quantity: 0, original: 0, net: 0 });
+  const totals = getInventoryDetailRows(report).find(row => row.label === '总计');
+  expect(totals).toMatchObject({ 数量: 2, 原值: 2813, 报失当月资产净值: 217 });
 });

@@ -314,4 +314,4 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 
 `src/mock/inventoryReportDetails.js`保存用户授权的7条ES报表交易演示，复用物料目录；模板入口引用后经Service供明细、汇总及Excel共用。
 
-`src/data/inventoryReportActuals.js`唯一保存用户提供的四年真实汇总及2025—2026增量，经businessRulesMock统一出口供Service读取；真实历史、年度指标和导出不依赖演示明细反算。
+`src/data/inventoryReportActuals.js`唯一保存用户提供的四年真实汇总、分类盘亏、2026明细及2025—2026增量，经businessRulesMock统一出口供Service读取；真实历史、年度指标和导出不依赖演示明细反算。
