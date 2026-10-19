@@ -297,3 +297,17 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 调用：后台申请菜单→独立查询页/转移页→对应Service→businessRulesMock统一入口→申请演示源。与资产报表结果表、工作台办理入口独立；转移演示数据按当前标签页会话保存。未新增后端、路由或依赖。
 
 申请现状对齐新增 `employeeApplicationDefinitions.js / EmployeeApplicationDetail.jsx`：员工转移及更换的查询、只读详情和全单导出；`applicationAccess.js`：人员／部门／公司及台账权限，候选与导出复用；`applicationClaimAssembly.js`：关联原申请明细、子单、汇总、出库与完整历史；`applicationWeeklyReport.js`：生成每周一未完成员工申请材料，不执行真实通知。调用链为后台申请菜单→ApplicationQueryPage→applicationQueryService→权限校验及businessRulesMock统一申请源；全单导出按定义生成多工作表。
+
+
+## ES盘点报表
+
+| 文件 | 职责 |
+|---|---|
+| `src/pages/assetInventory/AssetInventoryReportPage.jsx` | 盘点报表菜单的年份查询、页签、明细联动、原件下载和导出入口。 |
+| `src/pages/assetInventory/InventoryReportTables.jsx` | 比较分析、分类增量、子公司盘亏分布及19字段明细。 |
+| `src/pages/assetInventory/InventoryReportCharts.jsx` | 年度报告五部分图表及指标。 |
+| `src/services/inventoryReportService.js` | 查询只读模板、汇总展示及四工作表Excel导出。 |
+| `src/mock/inventoryReportTemplate.js` | 用户PPT明确示例值及缺失值，经businessRulesMock统一出口供Service读取。 |
+| `docs/asset-inventory/templates/` | 两个用户原始模板，只读归档；public同名文件供页面下载。 |
+
+调用：资产盘点菜单index → 报表页面 → Service → businessRulesMock → 模板示例；报表页面调用表格和图表组件。新页面不使用旧FieldPolicy对DOM做字段后处理。正式盘点项目、财务报告链路本轮不变。

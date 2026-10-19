@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Card, Empty, Space, Typography } from 'antd';
+import AssetInventoryReportPage from './AssetInventoryReportPage';
 import AssetInventoryProjectPageV3 from './AssetInventoryProjectPageV3';
 import AssetInventoryFieldPolicy from './AssetInventoryFieldPolicy';
 import './assetInventoryV2.css';
@@ -9,22 +9,6 @@ export const ASSET_INVENTORY_SUB_MENUS = [
   '盘点报表',
 ];
 
-function PendingAssetInventoryPage({ title }) {
-  return (
-    <Space direction="vertical" size={16} className="w-full">
-      <Typography.Title level={4} style={{ margin: 0 }}>{title}</Typography.Title>
-      <Alert
-        type="info"
-        showIcon
-        message="当前仅建立菜单入口，报表字段和交互待后续确认。"
-      />
-      <Card size="small">
-        <Empty description="等待盘点报表字段和交互确认" />
-      </Card>
-    </Space>
-  );
-}
-
 function withFieldPolicy(content) {
   return <AssetInventoryFieldPolicy>{content}</AssetInventoryFieldPolicy>;
 }
@@ -33,7 +17,7 @@ export function AssetInventoryContent({ activeSubMenu }) {
   if (['盘点项目', '盘点项目（方案二）', '盘点项目（方案三）'].includes(activeSubMenu)) {
     return withFieldPolicy(<AssetInventoryProjectPageV3 />);
   }
-  if (ASSET_INVENTORY_SUB_MENUS.includes(activeSubMenu)) return withFieldPolicy(<PendingAssetInventoryPage title={activeSubMenu} />);
+  if (activeSubMenu === '盘点报表') return <AssetInventoryReportPage />;
   return withFieldPolicy(<AssetInventoryProjectPageV3 />);
 }
 

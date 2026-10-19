@@ -330,3 +330,6 @@ export { assetReportRows, assetReportCatalog } from './assetReportsMock';
 // 申请菜单的独立业务查询演示源。
 export { applicationQueryRows } from './applicationQueriesMock';
 export { applicationTransferStore } from './applicationTransferMock';
+
+// ES盘点报告附件内的只读模板示例。
+export { inventoryReportTemplate } from './inventoryReportTemplate';
