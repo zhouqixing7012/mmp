@@ -19,10 +19,7 @@ export default function AssetInventoryReportPage() {
     </div>
     <div data-mmp-query-result>
       {!report ? <Card size="small"><Empty description={`${year}年暂无盘点报告`} /></Card> : <Space orientation="vertical" size={16} className="w-full">
-        <Card size="small" title={`${report.year}年度资产盘点报告（ES管控资产）`} extra={<Button onClick={download}>导出</Button>}>
-          <Typography.Paragraph>资产变化周期：{report.period}</Typography.Paragraph>
-          <Typography.Paragraph className="!mb-0">资产盘点类别：{report.scope}</Typography.Paragraph>
-        </Card>
+        <div className="flex items-center justify-between gap-4"><Typography.Text strong>{report.year}年度资产盘点报告（ES管控资产）</Typography.Text><Button onClick={download}>导出</Button></div>
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
           { key: 'analysis', label: '盘点结果比较分析', children: <AnalysisTables report={report} /> },
           { key: 'details', label: '盘亏及待查明细', children: <DetailTable report={report} /> },

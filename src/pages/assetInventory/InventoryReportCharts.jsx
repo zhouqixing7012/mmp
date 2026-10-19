@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, Space, Typography, theme } from 'antd';
 import { CartesianGrid, ComposedChart, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { amount, percent } from '../../services/inventoryReportService';
+import { amount, percent, getInventoryHistoryChartRows } from '../../services/inventoryReportService';
 import { CompanyLossTable, IncrementTable, ReportTable } from './InventoryReportTables';
 
 function AxisUnits({ left, right }) {
@@ -10,7 +10,7 @@ function AxisUnits({ left, right }) {
 export default function InventoryReportCharts({ report }) {
   const { token } = theme.useToken();
   const colors = [token.colorPrimary, token.colorSuccess, token.colorWarning, token.purple, token.cyan, token.colorTextSecondary];
-  const history = report.history.map(row => ({ ...row, originalWan: row.original == null ? null : row.original / 10000, netWan: row.net == null ? null : row.net / 10000, lossPercent: row.lossRate == null ? null : row.lossRate * 100 }));
+  const history = getInventoryHistoryChartRows(report);
   const pie = report.distribution.map((row, i) => ({ ...row, fill: colors[i] }));
   const originalTotal = pie.reduce((sum, row) => sum + row.original, 0);
   const axis = { axisLine: false, tickLine: false, tick: { fill: token.colorTextSecondary, fontSize: 12 }, tickMargin: 12 };
@@ -18,16 +18,16 @@ export default function InventoryReportCharts({ report }) {
   const tooltip = { contentStyle: { borderRadius: token.borderRadiusLG, borderColor: token.colorBorderSecondary, boxShadow: token.boxShadowSecondary }, labelStyle: { color: token.colorText, marginBottom: 8 } };
   return <Space orientation="vertical" size={16} className="w-full">
     <Card size="small" title="四年资产变化">
-      <AxisUnits left="金额（万元）" right="数量（件）" />
+      <AxisUnits left="金额（百万元）" right="数量（件）" />
       <ResponsiveContainer width="100%" height={300}>
         <ComposedChart data={history} margin={{ top: 16, right: 12, left: 4, bottom: 12 }}>
           <CartesianGrid vertical={false} stroke={token.colorBorderSecondary} strokeDasharray="3 6" />
           <XAxis {...axis} dataKey="year" padding={{ left: 16, right: 16 }} />
           <YAxis {...axis} yAxisId="value" width={76} tickCount={5} />
           <YAxis {...axis} yAxisId="quantity" orientation="right" width={68} tickCount={5} />
-          <Tooltip {...tooltip} formatter={(v, name) => name.includes('数量') ? `${v} 件` : `${amount(v)} 万元`} /><Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 16 }} />
-          <Line {...line} yAxisId="value" dataKey="originalWan" name="盘点总原值" stroke={token.colorPrimary} />
-          <Line {...line} yAxisId="value" dataKey="netWan" name="盘点总净值" stroke={token.colorSuccess} />
+          <Tooltip {...tooltip} formatter={(v, name) => name.includes('数量') ? `${v} 件` : `${amount(v)} 百万元`} /><Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 16 }} />
+          <Line {...line} yAxisId="value" dataKey="originalMillion" name="盘点总原值" stroke={token.colorPrimary} />
+          <Line {...line} yAxisId="value" dataKey="netMillion" name="盘点总净值" stroke={token.colorSuccess} />
           <Line {...line} yAxisId="quantity" dataKey="quantity" name="盘点总数量" stroke={token.colorWarning} />
         </ComposedChart>
       </ResponsiveContainer>
@@ -36,7 +36,7 @@ export default function InventoryReportCharts({ report }) {
         { title: '当前总数', dataIndex: 'total', width: 140, align: 'right', render: (v, row) => row.name.includes('数量') ? v : amount(v) },
         { title: '年度增长量', dataIndex: 'change', width: 140, align: 'right', render: (v, row) => row.name.includes('数量') ? v : amount(v) },
         { title: '年度增长率', dataIndex: 'rate', width: 140, align: 'right', render: percent },
-        { title: '增长率变化（百分点）', dataIndex: 'rateChange', width: 190, align: 'right', render: v => v.toFixed(2) },
+        { title: '增长率变化', dataIndex: 'rateChange', width: 190, align: 'right', render: v => `${v.toFixed(2)}%` },
       ]} />
     </Card>
     <Card size="small" title="资产类型分布（按原值）">

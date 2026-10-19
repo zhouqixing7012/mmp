@@ -57,3 +57,14 @@ test('资产增量的小计是独立汇总行，不再充当细类', () => {
   expect(subtotal.closest('td')).toHaveAttribute('colspan', '2');
   expect(screen.getByText('PC-主机').closest('td')).not.toHaveAttribute('colspan', '2');
 });
+
+test('范围仅在比较分析中显示，分类和增量按组纵向合并', () => {
+  render(<AssetInventoryReportPage />);
+  const panel = screen.getByRole('tabpanel', { name: '盘点结果比较分析' });
+  expect(within(panel).getByText('资产变化范围')).toBeInTheDocument();
+  expect(within(panel).getByText('台式机、显示器（PC）').closest('td')).toHaveAttribute('rowspan', '2');
+  expect(within(panel).getAllByText('台式机', { exact: true })[0].closest('td')).toHaveAttribute('rowspan', '3');
+  expect(within(panel).getByRole('columnheader', { name: '汇总' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('tab', { name: '盘亏及待查明细' }));
+  expect(screen.queryByText('资产变化周期：2024年7月—2025年7月')).not.toBeVisible();
+});

@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { amount, buildInventoryReportWorkbook, DETAIL_FIELDS, getInventoryReport, getInventoryReportSummary, getInventoryDetailRows, getInventoryLossCategoryRows } from './inventoryReportService';
+import { amount, buildInventoryReportWorkbook, DETAIL_FIELDS, getInventoryReport, getInventoryReportSummary, getInventoryDetailRows, getInventoryLossCategoryRows, getInventoryHistoryChartRows, getGroupedRowSpans, getIncrementRows, getIncrementTitle, accounting } from './inventoryReportService';
 
 test('模板总数保留，新增演示明细覆盖盘亏待查两类', () => {
   const report = getInventoryReport(2025);
@@ -66,4 +66,33 @@ test('混排明细按盘亏和待查分组，小计与总计同列，缺值不�
   expect(sheet.G8.v).toBe(30);
   expect(sheet.H8).toBeUndefined();
   expect(sheet['!merges']).toContainEqual({ s: { r: 7, c: 0 }, e: { r: 7, c: 4 } });
+});
+
+test('报告单位、分组序号、合并单元格与会计格式在导出保持一致', () => {
+  const report = getInventoryReport(2025);
+  const chart = getInventoryHistoryChartRows(report).find(row => row.year === 2025);
+  expect(chart.originalMillion).toBe(74.66);
+  expect(chart.netMillion).toBe(6.56);
+  expect(report.indicators[1].total).toBe(7466);
+  expect(getIncrementTitle(2026)).toBe('2026年资产变化情况概述：2025-2026年盘点范围内各类资产增量情况');
+  expect(accounting(0)).toBe('-');
+  expect(accounting(34)).toBe('34.00');
+  const details = getInventoryDetailRows(report).filter(row => !row.summary && row['盘点状态'] === '待查');
+  expect(details.map(row => row['序号'])).toEqual([1, 2, 3]);
+  expect(getGroupedRowSpans(getIncrementRows(), 'category', row => !['小计', '合计'].includes(row.name)).slice(0, 4)).toEqual([3, 0, 0, 1]);
+  const wb = XLSX.read(XLSX.write(buildInventoryReportWorkbook(report), { type: 'array', bookType: 'xlsx' }), { type: 'array', cellNF: true });
+  const sheet = wb.Sheets['盘点结果比较分析'];
+  expect(sheet.A2.v).toBe('资产变化范围');
+  expect(sheet.C20.v).toBe(0);
+  expect(sheet.C20.w).toBe('-');
+  expect(sheet['!merges']).toContainEqual({ s: { r: 18, c: 0 }, e: { r: 19, c: 0 } });
+  expect(sheet['!merges']).toContainEqual({ s: { r: 35, c: 0 }, e: { r: 37, c: 0 } });
+  expect(sheet['!merges']).toContainEqual({ s: { r: 38, c: 0 }, e: { r: 38, c: 1 } });
+  expect(wb.Sheets['盘亏分布']['!merges']).toContainEqual({ s: { r: 1, c: 0 }, e: { r: 2, c: 0 } });
+  expect(wb.Sheets['盘亏资产明细及原因'].A9.v).toBe(1);
+  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+  const rowIndex = rows.findIndex(row => row[0] === '资产数量（件）');
+  const growth = sheet[XLSX.utils.encode_cell({ r: rowIndex, c: 4 })];
+  expect(growth.v).toBe(0.0013);
+  expect(growth.w).toBe('0.13%');
 });

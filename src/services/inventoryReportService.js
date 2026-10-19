@@ -4,6 +4,7 @@ import { inventoryReportTemplate } from '../mock/businessRulesMock';
 export const LOSS_CATEGORIES = ['台式机、显示器（PC）', '笔记本（NB）', '照摄像器材', '移动数码', '办公设备', '电话', '车辆'];
 export const DETAIL_FIELDS = ['序号', '盘点状态', '资产大类', '资产小类', '资产说明', '数量', '原值', '报失当月资产净值', '是否已赔偿', '赔偿金额', '损失', '标签号', '购买日期', '责任人姓名', '责任人编号', '子公司', '一级部门', '说明'];
 export const amount = value => value == null ? '-' : value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const accounting = value => value == null || value === 0 ? '-' : value < 0 ? `(${amount(-value)})` : amount(value);
 export const percent = value => value == null ? '-' : `${(value * 100).toFixed(2)}%`;
 export const quantity = value => value == null ? '-' : String(value);
 export function getInventoryReport(year) {
@@ -36,7 +37,7 @@ export function buildInventoryReportWorkbook(report) {
   };
   const analysis = [
     [`${report.year}年资产盘点情况汇总（ES管控资产）`],
-    ['数据性质', '用户附件PPT模板示例，非在线项目盘点结果；空值表示未提供'],
+    ['资产变化范围'],
     ['资产变化周期', report.period], ['资产盘点类别', report.scope],
     ['资产情况', '数量（件）', '数量占比', '原值（元）', '原值占比', '净值（元）', '净值占比'],
     ...getInventoryReportSummary(report).map(r => [r.name, r.quantity, r.quantityRate, r.original, r.originalRate, r.net, r.netRate]),
@@ -45,11 +46,11 @@ export function buildInventoryReportWorkbook(report) {
     ...report.history.map(r => [r.year, r.quantity, r.original, r.net, r.lossQuantity, r.lossRate, r.lossOriginal, r.lossOriginalRate, r.lossNet, r.lossNetRate]),
     [], ['资产盘亏统计'], ['资产类别', '盘点年份', '盘亏数量（件）', '盘亏原值（元）', '盘亏净值（元）', '备注'],
     ...getInventoryLossCategoryRows(report).map(row => [row.category, row.year, row.quantity, row.original, row.net, null]),
-    [], ['资产变化情况概述'], ['资产大类', '资产细类', '增量（件）'],
+    [], [getIncrementTitle(report.year)], ['资产大类', '资产细类', '汇总'],
     ...getIncrementRows().map(r => [r.category, r.name, null]),
   ];
   const indicatorStart = analysis.length + 3;
-  analysis.push([], ['年度增长指标'], ['指标', '当前总数', '年度增长量', '年度增长率', '增长率变化（百分点）'], ...report.indicators.map(r => [r.name, r.total, r.change, r.rate, r.rateChange]));
+  analysis.push([], ['年度增长指标'], ['指标', '当前总数', '年度增长量', '年度增长率', '增长率变化'], ...report.indicators.map(r => [r.name, r.total, r.change, r.rate, r.rateChange / 100]));
   const analysisSheet = add('盘点结果比较分析', analysis);
   const detailRows = getInventoryDetailRows(report);
   const details = add('盘亏资产明细及原因', [[`${report.year}年度资产盘点盘亏及待查统计（ES管控资产）`], [], DETAIL_FIELDS,
@@ -74,9 +75,27 @@ export function buildInventoryReportWorkbook(report) {
     const cell = analysisSheet[XLSX.utils.encode_cell({ r: row, c: 5 })];
     if (cell?.t === 'n') cell.z = '0.000%';
   });
-  formatCells(analysisSheet, [indicatorStart], [4], [3]);
-  formatCells(analysisSheet, [indicatorStart + 1, indicatorStart + 2], [1, 2, 4], [3]);
-  formatCells(analysisSheet, Array.from({ length: 14 }, (_, i) => i + 18), [3, 4]);
+  formatCells(analysisSheet, [indicatorStart], [], [3, 4]);
+  formatCells(analysisSheet, [indicatorStart + 1, indicatorStart + 2], [1, 2], [3, 4]);
+  const categories = getInventoryLossCategoryRows(report);
+  const increments = getIncrementRows();
+  const categoryStart = 18;
+  const incrementStart = categoryStart + categories.length + 3;
+  categories.forEach((_, index) => [2, 3, 4].forEach(column => {
+    const cell = analysisSheet[XLSX.utils.encode_cell({ r: categoryStart + index, c: column })];
+    if (cell?.t === 'n') cell.z = '#,##0.00;(#,##0.00);"-"';
+  }));
+  const mergeGroups = (sheet, rows, key, startRow, canMerge) => {
+    const spans = getGroupedRowSpans(rows, key, canMerge);
+    sheet['!merges'] = [...(sheet['!merges'] || []), ...spans.flatMap((span, index) => span > 1 ? [{ s: { r: startRow + index, c: 0 }, e: { r: startRow + index + span - 1, c: 0 } }] : [])];
+  };
+  mergeGroups(analysisSheet, categories, 'category', categoryStart);
+  mergeGroups(analysisSheet, increments, 'category', incrementStart, row => !['小计', '合计'].includes(row.name));
+  analysisSheet['!merges'].push(...increments.flatMap((row, index) => ['小计', '合计'].includes(row.name) ? [{ s: { r: incrementStart + index, c: 0 }, e: { r: incrementStart + index, c: 1 } }] : []));
+  increments.forEach((row, index) => {
+    if (row.name === '小计') analysisSheet[XLSX.utils.encode_cell({ r: incrementStart + index, c: 0 })].v = row.category + '小计';
+  });
+  mergeGroups(company, report.companyLoss, 'company', 1);
   formatCells(distribution, report.distribution.map((_, i) => i + 1), [2], [3]);
   formatCells(company, report.companyLoss.map((_, i) => i + 1), [10]);
   formatCells(details, detailRows.map((_, i) => i + 3), [6, 7, 9, 10]);
@@ -103,7 +122,7 @@ export function getInventoryDetailRows(report) {
   });
   const loss = report.details.filter(row => row['盘点状态'] === '盘亏');
   const pending = report.details.filter(row => row['盘点状态'] === '待查');
-  const detail = rows => rows.map((row, index) => ({ ...row, key: `detail-${row['盘点状态']}-${index}`, summary: false }));
+  const detail = rows => rows.map((row, index) => ({ ...row, 序号: index + 1, key: `detail-${row['盘点状态']}-${index}`, summary: false }));
   return [...detail(loss), total('资产盘亏合计', loss), ...detail(pending), total('资产待查合计', pending), total('总计', [...loss, ...pending])];
 }
 
@@ -114,5 +133,30 @@ export function getInventoryLossCategoryRows(report) {
     const total = field => year !== report.year || !loss.length ? null
       : rows.every(row => row[field] != null) ? rows.reduce((sum, row) => sum + row[field], 0) : null;
     return { key: `${index}-${year}`, category, year, quantity: total('数量'), original: total('原值'), net: total('报失当月资产净值') };
+  }));
+}
+
+export const getIncrementTitle = year => `${year}年资产变化情况概述：${year - 1}-${year}年盘点范围内各类资产增量情况`;
+
+// 精确合并相邻同组，汇总行作为边界，不跨组或跨小计合并。
+export function getGroupedRowSpans(rows, key, canMerge = () => true) {
+  const spans = Array(rows.length).fill(0);
+  let index = 0;
+  while (index < rows.length) {
+    let end = index + 1;
+    if (canMerge(rows[index])) {
+      while (end < rows.length && canMerge(rows[end]) && rows[end][key] === rows[index][key]) end += 1;
+    }
+    spans[index] = end - index;
+    index = end;
+  }
+  return spans;
+}
+
+export function getInventoryHistoryChartRows(report) {
+  return report.history.map(row => ({ ...row,
+    originalMillion: row.original == null ? null : row.original / 1000000,
+    netMillion: row.net == null ? null : row.net / 1000000,
+    lossPercent: row.lossRate == null ? null : row.lossRate * 100,
   }));
 }
