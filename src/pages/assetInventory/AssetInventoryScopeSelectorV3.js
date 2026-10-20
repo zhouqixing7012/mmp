@@ -61,11 +61,11 @@ export function getScheme3InventoryDemoOptions(allowedRanges) {
   };
 }
 
-export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', onScopeAssetsChange }) {
+export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', sourceAssets: suppliedAssets = ASSET_ROWS, onScopeAssetsChange }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const options = useMemo(() => getScheme3InventoryDemoOptions(allowedRanges), [allowedRanges]);
-  const sourceAssets = useMemo(() => ASSET_ROWS.filter(row => isInventoryRangeAllowed(row, allowedRanges)), [allowedRanges]);
+  const sourceAssets = useMemo(() => suppliedAssets.filter(row => isInventoryRangeAllowed(row, allowedRanges)), [suppliedAssets, allowedRanges]);
   const organizationTree = useMemo(() => buildInventoryOrganizationTree(sourceAssets), [sourceAssets]);
   const [filters, setFilters] = useState({
     organizationDepartments: [], assetCategory: [], assetStatus: [], warehouse: [],
@@ -131,9 +131,9 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
         {fields.map(([label, field]) => (
           <div key={field} className="flex items-center gap-2 min-w-0">
             <span className="w-28 shrink-0 text-right text-sm text-gray-600">{label}:</span>
-            {field === 'owner' ? <AssetPersonSelect rows={ASSET_ROWS} value={filters.owner} onChange={(value) => setFilters((current) => ({ ...current, owner: value }))} />
-              : field === 'ownerLevel' ? <OwnerLevelSelect rows={ASSET_ROWS} value={filters.ownerLevel} onChange={(value) => setFilters((current) => ({ ...current, ownerLevel: value }))} />
-                : field === 'assetCategory' ? <AssetCategorySelect rows={ASSET_ROWS} value={filters.assetCategory} onChange={(value) => setFilters((current) => ({ ...current, assetCategory: value }))} />
+            {field === 'owner' ? <AssetPersonSelect rows={sourceAssets} value={filters.owner} onChange={(value) => setFilters((current) => ({ ...current, owner: value }))} />
+              : field === 'ownerLevel' ? <OwnerLevelSelect rows={sourceAssets} value={filters.ownerLevel} onChange={(value) => setFilters((current) => ({ ...current, ownerLevel: value }))} />
+                : field === 'assetCategory' ? <AssetCategorySelect rows={sourceAssets} value={filters.assetCategory} onChange={(value) => setFilters((current) => ({ ...current, assetCategory: value }))} />
                   : <Select mode="multiple" showSearch allowClear optionFilterProp="label" value={filters[field]} placeholder={`请选择${label}`} className="flex-1 min-w-0" options={toOptions(options[field])} onChange={(value) => setFilters((current) => ({ ...current, [field]: value || [] }))} />}
           </div>
         ))}
@@ -206,7 +206,7 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
           { title: '资产说明', dataIndex: 'description' },
           { title: '原值', dataIndex: 'originalValue' },
           { title: '净值', dataIndex: 'netValue' },
-        ]} dataSource={ASSET_ROWS.filter((asset) => previewKeys?.includes(asset.key))} pagination={false} />
+        ]} dataSource={sourceAssets.filter((asset) => previewKeys?.includes(asset.key))} pagination={false} />
       </Modal>
     </Card>
   );

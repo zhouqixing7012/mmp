@@ -1,8 +1,10 @@
 import { formatAssetCategory } from '../../components/assetQueryModel';
+import { inventoryResultSource } from './inventoryResultSource';
 // 三类盘点资产清单共用同一套导出字段，字段只从对应资产记录取值。
 export const INVENTORY_ASSET_EXPORT_FIELDS = [
   ['计划编号', 'planNo'],
   ['盘点方式', 'inventoryMethod'],
+  ['结果来源', 'resultSource'],
   ['盘点状态', 'inventoryStatus'],
   ['盘点人', 'counter'],
   ['盘点日期', 'inventoryDate'],
@@ -40,9 +42,9 @@ export const INVENTORY_ASSET_EXPORT_FIELDS = [
 function serializeRows(rows, fields) {
   const cell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
   const lines = [fields.map(([label]) => cell(label)).join(',')];
-  rows.forEach((row) => lines.push(fields.map(([, key]) => cell(key === 'assetCategory' ? formatAssetCategory(row) : key === 'executeInventory' ? (row.executeInventory ? '是' : '否') : row[key])).join(',')));
+  rows.forEach((row) => lines.push(fields.map(([, key]) => cell(key === 'resultSource' ? inventoryResultSource(row) : key === 'assetCategory' ? formatAssetCategory(row) : key === 'executeInventory' ? (row.executeInventory ? '是' : '否') : row[key])).join(',')));
   const missingFields = fields
-    .filter(([, key]) => rows.some((row) => key === 'assetCategory' ? !row.category || !row.subCategory : !Object.prototype.hasOwnProperty.call(row, key)))
+    .filter(([, key]) => key !== 'resultSource' && rows.some((row) => key === 'assetCategory' ? !row.category || !row.subCategory : !Object.prototype.hasOwnProperty.call(row, key)))
     .map(([label]) => label);
   return { csv: lines.join('\r\n'), missingFields };
 }

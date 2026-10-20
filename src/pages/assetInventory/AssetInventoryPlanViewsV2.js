@@ -30,6 +30,7 @@ import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import { EMPLOYEE_ROWS, INITIAL_PLAN_ROWS } from './mockData';
 import { downloadInventoryPlanAssets } from './inventoryPlanExport';
+import { inventoryResultSource } from './inventoryResultSource';
 
 const EMPTY_PLAN_FILTERS = {
   planNo: '',
@@ -474,6 +475,7 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, o
   const columns = [
     { title: '盘点范围', dataIndex: 'inventoryRange', width: 100, fixed: 'left' },
     { title: '盘点状态', dataIndex: 'inventoryStatus', width: 100, render: (value) => <StatusTag value={value} /> },
+    { title: '结果来源', key: 'resultSource', width: 150, render: (_, row) => inventoryResultSource(row) },
     { title: '资产盘点人', dataIndex: 'counter', width: 130 },
     { title: '盘点日期', dataIndex: 'inventoryDate', width: 120 },
     { title: '资产标签号', dataIndex: 'assetTag', width: 150 },

@@ -823,3 +823,18 @@
 .inventory-asset-card-meta { margin-top: 6px; font-size: 12px; }
 .inventory-asset-card-line { margin-top: 4px; font-size: 12px; color: #7b8593; }
 .inventory-modal-actions .ant-btn, .inventory-scan-controls .ant-btn { min-height: 44px; }
+
+.inventory-mobile-page .inventory-plan-pending-count {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #ec221f;
+  color: #fff;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}

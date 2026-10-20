@@ -1,3 +1,5 @@
+import * as XLSX from 'xlsx';
+import { parseSnapshotTransferRows } from './inventorySnapshotTransfer';
 import { isSnapshotExecutionAsset, isSnapshotNonExecutionAsset } from './inventorySnapshotAssets';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -5,6 +7,7 @@ import {
   Card,
   Modal,
   Space,
+  Select,
   Statistic,
   Table,
   Tabs,
@@ -14,7 +17,7 @@ import {
 import dayjs from 'dayjs';
 import { calculateInventorySnapshotStats } from './inventorySnapshotStats';
 import { serializeInventoryAssetExport, serializeInventorySnapshotExport } from './inventoryAssetExport';
-import { replayCloseBlockReason } from './inventoryCloseRules';
+import { inventoryProjectCloseBlockReason, replayCloseBlockReason } from './inventoryCloseRules';
 import { CheckCircle2, Download, PlayCircle, ScanLine, Trash2, Upload, XCircle } from 'lucide-react';
 import InventoryAssetQuery from './InventoryAssetQuery';
 import { EMPTY_INVENTORY_ASSET_QUERY, filterInventoryAssets } from './inventoryAssetQuery';
@@ -128,6 +131,10 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const showMachineRoomFeatures = allowedRanges.includes('机房');
   const photoInputRef = useRef(null);
+  const transferInputRef = useRef(null);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [transferTarget, setTransferTarget] = useState(true);
+  const [transferring, setTransferring] = useState(false);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
   const [selectedKeys, setSelectedKeys] = useState([]);
@@ -160,13 +167,37 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
     }
     const selected = new Set(selectedKeys);
     const moved = rows.filter((row) => selected.has(row.key)).map((row) => ({ ...row, executeInventory: targetExecute }));
-    if (onMoveRows) onMoveRows(selected, moved);
+    if (onMoveRows) onMoveRows(selected, moved, targetExecute);
     else {
       setRows((current) => current.filter((row) => !selected.has(row.key)));
       if (setOtherRows) setOtherRows((current) => [...current, ...moved]);
     }
     setSelectedKeys([]);
     messageApi.success(`已转移 ${moved.length} 条资产`);
+  };
+
+  const openTransferImport = (target) => { setTransferTarget(target); setTransferOpen(true); };
+  const downloadTransferTemplate = () => {
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([['资产标签号']]), '转移资产');
+    XLSX.writeFile(workbook, '快照资产转移模板.xlsx');
+  };
+  const importTransfers = async (event) => {
+    const file = event.target.files?.[0]; event.target.value = '';
+    if (!file || projectClosed) return;
+    setTransferring(true);
+    try {
+      if (!onMoveRows) throw new Error('当前资产清单缺少转移上下文');
+      if (!/\.(xlsx|xls|csv)$/i.test(file.name)) throw new Error('请上传xlsx、xls或csv文件');
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+      const matrix = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, defval: '', raw: false });
+      const matched = parseSnapshotTransferRows(matrix, rows);
+      const moved = matched.map(row => ({ ...row, executeInventory: transferTarget }));
+      onMoveRows?.(new Set(matched.map(row => row.key)), moved, transferTarget);
+      setSelectedKeys([]); setTransferOpen(false);
+      messageApi.success(`已转移 ${matched.length} 条资产`);
+    } catch (error) { messageApi.warning(error.message); }
+    finally { setTransferring(false); }
   };
 
   const confirmSelected = () => {
@@ -239,7 +270,7 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
   if (type === 'execution' && beforeStart) {
     operations.push(
       <Button key="move" onClick={() => moveSelected(false)}>转移至未执行盘点</Button>,
-      <Button key="importMove" icon={<Upload size={14} />}>模板转移至未执行盘点</Button>,
+      <Button key="importMove" icon={<Upload size={14} />} onClick={() => openTransferImport(false)}>模板转移至未执行盘点</Button>,
     );
     if (showMachineRoomFeatures) {
       operations.push(<Button key="no" icon={<ScanLine size={14} />} onClick={() => messageApi.info('NO扫描数据同步逻辑待机房蓝图确认')}>同步NO扫描数据</Button>);
@@ -254,7 +285,7 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
   if (type === 'notExecution' && beforeStart) {
     operations.push(
       <Button key="move" onClick={() => moveSelected(true)}>转移至执行盘点</Button>,
-      <Button key="importMove" icon={<Upload size={14} />}>模板转移至执行盘点</Button>,
+      <Button key="importMove" icon={<Upload size={14} />} onClick={() => openTransferImport(true)}>模板转移至执行盘点</Button>,
     );
   }
   if (type === 'notExecution' && during) {
@@ -265,9 +296,9 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
   }
   if (type === 'excluded' && !projectClosed) {
     operations.push(
-      <Button key="toExecution">批量转移至执行盘点</Button>,
-      <Button key="toNotExecution">批量转移至未执行盘点</Button>,
-      <Button key="import" icon={<Upload size={14} />}>批量导入转移</Button>,
+      <Button key="toExecution" onClick={() => moveSelected(true)}>批量转移至执行盘点</Button>,
+      <Button key="toNotExecution" onClick={() => moveSelected(false)}>批量转移至未执行盘点</Button>,
+      <Button key="import" icon={<Upload size={14} />} onClick={() => openTransferImport(true)}>批量导入转移</Button>,
     );
   }
   operations.push(<Button key="export" icon={<Download size={14} />} onClick={exportFilteredRows}>导出</Button>);
@@ -287,6 +318,13 @@ function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOt
 
   return (
     <Card size="small">
+      <input ref={transferInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={importTransfers} />
+      <Modal open={transferOpen} title="批量导入转移" onCancel={() => setTransferOpen(false)} footer={<Button onClick={() => setTransferOpen(false)}>返回</Button>}>
+        <Space direction="vertical">
+          {type === 'excluded' && <Select value={transferTarget} onChange={setTransferTarget} options={[{ value: true, label: '执行盘点资产清单' }, { value: false, label: '未执行盘点资产清单' }]} />}
+          <Space><Button onClick={downloadTransferTemplate}>下载模板</Button><Button type="primary" loading={transferring} onClick={() => transferInputRef.current?.click()}>选择文件并转移</Button></Space>
+        </Space>
+      </Modal>
       {type === 'execution' && during && (
         <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoImport} />
       )}
@@ -344,6 +382,7 @@ export default function AssetInventorySnapshotDetailV2({
   onDeleteSnapshot,
   assets = ASSET_ROWS,
   onSnapshotRowsChange,
+  getCloseBlockReason = inventoryProjectCloseBlockReason,
 }) {
   const { allowedRanges: configuredRanges } = useAssetInventoryVariant();
   const allowedRanges = project?.scopeRanges?.length ? project.scopeRanges : configuredRanges;
@@ -351,19 +390,13 @@ export default function AssetInventorySnapshotDetailV2({
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const initialProjectStatus = project?.status === '草稿' ? '快照生成' : (project?.status || '快照生成');
   const [projectStatus, setProjectStatus] = useState(initialProjectStatus);
-  const getCloseBlockReason = () => {
-    if (Number(project?.unstartedPlanCount || 0) > 0) return '仍有未启动的盘点计划，请先启动计划后再关闭项目';
-    if (Number(project?.pendingImageReviewCount || 0) > 0) return '仍有待审核的盘点图片，请完成审核后再关闭项目';
-    if (Number(project?.rejectedImageReviewCount || 0) > 0) return '仍有审核不通过的盘点图片，请处理后再关闭项目';
-    return '';
-  };
   const canManuallyClose = projectStatus === '盘点中'
     && !isSystemRoomInitial
     && !replayCloseBlockReason(project);
   const handleCloseProject = () => {
     const replayBlockReason = replayCloseBlockReason(project);
     if (replayBlockReason) { messageApi.warning(replayBlockReason); return; }
-    const closeBlockReason = getCloseBlockReason();
+    const closeBlockReason = getCloseBlockReason(project);
     if (closeBlockReason) { messageApi.warning(closeBlockReason); return; }
     Modal.confirm({
       title: '确认关闭盘点项目？',
@@ -446,6 +479,14 @@ export default function AssetInventorySnapshotDetailV2({
     onSnapshotRowsChange?.(nextExecution, nextNotExecution);
   };
 
+  const moveExcludedRows = (selected, moved, targetExecute) => {
+    const nextExcluded = excludedRows.filter(row => !selected.has(row.key));
+    const nextExecution = targetExecute ? [...executionRows, ...moved] : executionRows;
+    const nextNotExecution = targetExecute ? notExecutionRows : [...notExecutionRows, ...moved];
+    setExcludedRows(nextExcluded); setExecutionRows(nextExecution); setNotExecutionRows(nextNotExecution);
+    onSnapshotRowsChange?.(nextExecution, nextNotExecution);
+  };
+
   const tabItems = [
     { key: 'summary', label: '快照清单统计', children: <SnapshotStats projectStatus={projectStatus} onOpenPlans={onOpenPlans} executionRows={executionRows} notExecutionRows={notExecutionRows} /> },
     {
@@ -461,7 +502,7 @@ export default function AssetInventorySnapshotDetailV2({
     {
       key: 'excluded',
       label: '未包含资产清单',
-      children: <SnapshotAssetTab type="excluded" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={excludedRows} setRows={setExcludedRows} messageApi={messageApi} />,
+      children: <SnapshotAssetTab type="excluded" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={excludedRows} setRows={setExcludedRows} onMoveRows={moveExcludedRows} messageApi={messageApi} />,
     },
   ];
 

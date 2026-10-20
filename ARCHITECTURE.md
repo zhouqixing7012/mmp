@@ -331,3 +331,16 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 `src/config/assetPlates.js`保存资产维护及财务固定资产新增报表共用的板块查询选项；财务公司的候选直接调用资产明细报表的getReportOptions，同源而不复制目录。
 
 `src/services/inventoryReportFile.js`负责盘点工作簿最终序列化、OpenXML工作表视图隐藏网格线及本地Blob下载；由inventoryReportService导出调用，保留原表数据/样式/边框/链接，仅设置视图属性。
+
+
+## 2026-10-20 盘点整改模块补充
+
+| 文件 | 职责及调用关系 |
+|---|---|
+| inventoryProjectScope.js | 项目创建页和V3范围页共用关联执行快照、期间和年度截止规则。 |
+| inventorySnapshotTransfer.js | 快照模板转移先校验全文件，再由快照页统一更新执行/未执行清单。 |
+| inventoryResultSource.js | 计划资产列表和导出共用本次结果来源，不从配置方式猜执行渠道。 |
+| inventoryMobilePhotoStore.js | 单份Blob存于浏览器IndexedDB，移动结果与照片审核仅存照片标识。 |
+| InventoryMobilePhotoSlot.jsx / InventoryPhotoImage.jsx | 拍照保存与重试；页面和审核按标识读照片并管理ObjectURL生命周期。 |
+
+上述文件均位于src/pages/assetInventory。列表和详情关闭入口共用inventoryCloseRules，并由V2传入当前计划、照片和位置申请；位置申请保留原单号及历次审批记录。

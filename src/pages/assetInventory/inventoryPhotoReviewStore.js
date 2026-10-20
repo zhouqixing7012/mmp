@@ -16,6 +16,9 @@ export function getPhotoReviewResults(projectNo) {
 
 export function savePhotoReviewResult(projectNo, entry) {
   if (typeof window === 'undefined') return;
-  const existing = getPhotoReviewResults(projectNo).filter((item) => item.assetTag !== entry.assetTag);
-  writeDemoData(keyFor(projectNo), [...existing, entry]);
+  const records = getPhotoReviewResults(projectNo);
+  const previous = records.find(item => item.assetTag === entry.assetTag);
+  const existing = records.filter(item => item.assetTag !== entry.assetTag);
+  // 审核只更新结论，保留同次提交的照片、盘点人及备注。
+  writeDemoData(keyFor(projectNo), [...existing, { ...previous, ...entry }]);
 }

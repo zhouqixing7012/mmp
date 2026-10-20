@@ -16,7 +16,7 @@ jest.mock('../../components/StatusTag',()=>({value})=><span>{value}</span>);
 jest.mock('../../components/DetailGrid',()=>({__esModule:true,default:({children})=><div>{children}</div>,DetailItem:({label,children})=><div><span>{label}</span><span>{children}</span></div>}));
 jest.mock('../../components/SelectModal',()=>({open,onSelect,onConfirm,onCancel,dataSource,multiple})=>open?<div role="dialog">{dataSource.map(row=><button key={row.id || row.tag} onClick={()=>{multiple ? onConfirm([row]) : onSelect(row);onCancel();}}>{row.name || row.tag}</button>)}</div>:null);
 const sourceAssets=[{assetTag:'114121801802',inventoryRange:'员工',needPhoto:true},{assetTag:'114130000019',inventoryRange:'员工',needPhoto:false}];
-const project={projectNo:'RCP-202608180001',projectType:'复盘'};
+const project={projectNo:'RCP-202608180001',projectType:'复盘',creator:'冯丽婷'};
 beforeEach(()=>{window.localStorage.clear();window.sessionStorage.clear();mockError.mockClear();savePhotoReviewResult(project.projectNo,{assetTag:'114121801802',status:'已盘'});createInventoryLocationChangeDemo(project);});
 
 test('编辑页按截图显示八列、申请人固定点击人，无原值diff，提交后进入审批页',()=>{
@@ -42,7 +42,7 @@ test('编辑页按截图显示八列、申请人固定点击人，无原值diff�
 });
 
 test('何文通过独立审批入口操作，审批后更新台账，返回回调可用',()=>{
- render(<InventoryLocationChangeFlow project={project} projectAssets={sourceAssets} currentOperator="213852-孙志强" onBack={()=>{}}/>);
+ render(<InventoryLocationChangeFlow project={project} projectAssets={sourceAssets} currentOperator="冯丽婷" onBack={()=>{}}/>);
  fireEvent.change(screen.getByLabelText(/变更理由/),{target:{value:'现场位置核对'}});fireEvent.click(screen.getByRole('button',{name:'提交'}));
  const req=getInventoryLocationChangeRequests(project.projectNo)[0];
  const onBack=jest.fn();const view=render(<InventoryLocationChangeFlow project={project} projectAssets={sourceAssets} currentOperator="206984-何文" initialRequestId={req.id} onBack={onBack}/>);
@@ -70,11 +70,11 @@ test('项目关闭后从历史申请重开只读，无同意驳回及提交按�
 });
 
 
-test('未审核拟变更不进入默认候选，仍可手工准备但提交明确阻止', () => {
+test('未审核拟变更保留在整批明细内，提交明确阻止', () => {
  savePhotoReviewResult(project.projectNo,{assetTag:'114121801802',status:'审核中'});
  const view=render(<InventoryLocationChangeFlow project={project} projectAssets={sourceAssets} currentOperator="冯丽婷" onBack={()=>{}}/>);
- expect(screen.queryByLabelText('114121801802-楼层/机房')).not.toBeInTheDocument();
- expect(screen.getByRole('button',{name:'提交'})).toBeDisabled();
+ expect(screen.getByLabelText('114121801802-楼层/机房')).toBeInTheDocument();
+ expect(screen.getByRole('button',{name:'提交'})).not.toBeDisabled();
  expect(screen.getByText(/照片须审核通过/)).toBeInTheDocument();
  view.unmount();window.localStorage.removeItem('asset-inventory-location-changes-v1');
  render(<InventoryLocationChangeFlow project={project} projectAssets={sourceAssets} currentOperator="冯丽婷" onBack={()=>{}}/>);
@@ -84,4 +84,27 @@ test('未审核拟变更不进入默认候选，仍可手工准备但提交明�
  expect(mockError).toHaveBeenCalledWith(expect.stringContaining('照片须审核通过'));
  expect(getInventoryLocationChangeRequests(project.projectNo)).toHaveLength(0);
  expect(screen.getByRole('heading',{name:'位置变更'})).toBeInTheDocument();
+});
+
+
+test('非项目创建人即使进入编辑组件也没有提交或修改入口', () => {
+ render(<InventoryLocationChangeFlow project={project} projectAssets={sourceAssets} currentOperator="213852-孙志强" onBack={()=>{}}/>);
+ expect(screen.queryByRole('button',{name:'提交'})).not.toBeInTheDocument();
+ expect(screen.queryByRole('button',{name:'添加资产'})).not.toBeInTheDocument();
+ expect(screen.queryByLabelText('114121801802-楼层/机房')).not.toBeInTheDocument();
+});
+
+test('驳回申请由原项目创建人重新打开可编辑并重提，保留历史审批意见', () => {
+ const view=render(<InventoryLocationChangeFlow project={project} projectAssets={sourceAssets} currentOperator="冯丽婷" onBack={()=>{}}/>);
+ fireEvent.change(screen.getByLabelText(/变更理由/),{target:{value:'原始位置核对'}});fireEvent.click(screen.getByRole('button',{name:'提交'}));
+ const req=getInventoryLocationChangeRequests(project.projectNo)[0];view.unmount();
+ const utils=render(<InventoryLocationChangeFlow project={project} projectAssets={sourceAssets} currentOperator="206984-何文" initialRequestId={req.id} onBack={()=>{}}/>);
+ fireEvent.change(screen.getByLabelText('审批意见'),{target:{value:'请再次核对'}});fireEvent.click(screen.getByRole('button',{name:'驳回'}));utils.unmount();
+ render(<InventoryLocationChangeFlow project={project} projectAssets={sourceAssets} currentOperator="冯丽婷" initialRequestId={req.id} onBack={()=>{}}/>);
+ expect(screen.getByLabelText(/变更理由/)).toHaveValue('原始位置核对');
+ expect(screen.getByText('请再次核对')).toBeInTheDocument();
+ fireEvent.change(screen.getByLabelText(/变更理由/),{target:{value:'已复核位置'}});fireEvent.click(screen.getByRole('button',{name:'提交'}));
+ expect(getInventoryLocationChangeRequests(project.projectNo)).toHaveLength(1);
+ expect(getInventoryLocationChangeRequests(project.projectNo)[0].approvalRecords).toHaveLength(4);
+ expect(screen.getByText('请再次核对')).toBeInTheDocument();
 });

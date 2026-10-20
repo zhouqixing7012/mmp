@@ -14,7 +14,7 @@ import { calculateInventorySnapshotStats } from './inventorySnapshotStats';
 import InventoryLocationChangeFlow from './InventoryLocationChangeFlow';
 import InventoryReplayReview from './InventoryReplayReview';
 import { readDemoData, writeDemoData } from '../../services/demoStorage';
-import { getInventoryLocationChangeRequests } from './inventoryLocationChangeStore';
+import { canCreateInventoryLocationChange, getInventoryLocationChangeRequests } from './inventoryLocationChangeStore';
 import { downloadInventoryPlans } from './inventoryPlanExport';
 import { buildReplayPreparationNotices } from './inventoryReplayPreparation';
 import { schedulePreparationNotices } from './inventoryPreparationNoticeStore';
@@ -52,7 +52,12 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   const [locationRequestId, setLocationRequestId] = useState(null);
   const [locationRecordsOpen, setLocationRecordsOpen] = useState(false);
   const locationRequests = project?.projectType === '复盘' ? getInventoryLocationChangeRequests(project.projectNo) : [];
-  const openLocationDraft = () => { setLocationRequestId(null); setLocationChangeOpen(true); };
+  const canCreateLocationChange = canCreateInventoryLocationChange(project, currentOperator);
+  const openLocationDraft = () => {
+    if (!canCreateLocationChange) { messageApi.warning('仅盘点项目创建人可以发起位置变更'); return; }
+    setLocationRequestId(null);
+    setLocationChangeOpen(true);
+  };
   const [reviewOpen, setReviewOpen] = useState(false);
   const reviewStorageKey = `inventory-replay-review-${project?.projectNo || ''}`;
   const [submission, setSubmission] = useState(() => readDemoData(reviewStorageKey, null));
@@ -174,7 +179,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
         <QueryItem label="子公司"><AssetValueSelect rows={visibleRows} field="organization" value={draftFilters.organization} onChange={(value) => updateFilter('organization', value)} /></QueryItem>
         <QueryItem label="盘点范围"><Select value={draftFilters.range || undefined} allowClear placeholder="请选择" options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('range', value)} /></QueryItem>
       </QueryBar>
-      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}<Button type="primary" icon={<PlayCircle size={14} />} disabled={projectClosed || allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button><Button danger icon={<Trash2 size={14} />} disabled={!allSelectedDraft} onClick={handleDelete}>删除盘点计划</Button>{!projectClosed && <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />} onClick={exportPlans}>导出</Button>{project?.projectType === '复盘' && <Button disabled={projectClosed} onClick={openLocationDraft}>发起位置变更</Button>}{Boolean(locationRequests.length) && <Button onClick={() => setLocationRecordsOpen(true)}>位置变更记录</Button>}{!projectClosed && project?.projectType === '复盘' && anyStarted && !submission && <Button type="primary" onClick={submitReview}>提交审批</Button>}{submission && <Button onClick={() => setReviewOpen(true)}>查看审批</Button>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
+      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}<Button type="primary" icon={<PlayCircle size={14} />} disabled={projectClosed || allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button><Button danger icon={<Trash2 size={14} />} disabled={!allSelectedDraft} onClick={handleDelete}>删除盘点计划</Button>{!projectClosed && <Button icon={<Upload size={14} />}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />} onClick={exportPlans}>导出</Button>{canCreateLocationChange && <Button onClick={openLocationDraft}>发起位置变更</Button>}{Boolean(locationRequests.length) && <Button onClick={() => setLocationRecordsOpen(true)}>位置变更记录</Button>}{!projectClosed && project?.projectType === '复盘' && anyStarted && !submission && <Button type="primary" onClick={submitReview}>提交审批</Button>}{submission && <Button onClick={() => setReviewOpen(true)}>查看审批</Button>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.success('已发送盘点通知和待办')}>发送盘点通知</Button>}</Space></div>
       <Table rowKey="key" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true, getCheckboxProps: () => ({ disabled: projectClosed }) }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
     </Card>
     <div className="flex justify-center pb-2"><Button onClick={onBack}>返回</Button></div>

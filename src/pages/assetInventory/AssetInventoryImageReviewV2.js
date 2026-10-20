@@ -11,6 +11,7 @@ import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInvent
 import { getImportedInventoryPhotos } from './inventoryPhotoImportStore';
 import { getPhotoReviewResults, savePhotoReviewResult } from './inventoryPhotoReviewStore';
 import SectionCardTitle from './SectionCardTitle';
+import InventoryPhotoImage from './InventoryPhotoImage';
 import overallPhoto from './images/inventory-review-overall.webp';
 import partialPhoto from './images/inventory-review-partial.webp';
 
@@ -122,26 +123,35 @@ export function buildReviewRows(projectNo, allowedRanges) {
     const range = entry.inventoryRange ?? sourceAsset?.inventoryRange;
     if (!range || range === '机房' || !allowedRanges.includes(range)) return;
     const existing = rowByTag.get(entry.assetTag);
+    const submittedFields = { inventoryStatus: entry.status, inventoryDate: entry.inventoryDate, counter: entry.counter, inventoryNote: entry.inventoryNote };
+    // 移动结果只展示本次提交的照片，缺少照片时保留空值。
+    const submittedPhotos = entry.photos || { overall: null, partial: null, gallery: [] };
     if (existing) {
-      existing.asset = { ...existing.asset, inventoryStatus: entry.status };
+      existing.asset = { ...existing.asset, ...submittedFields };
+      if (entry.photos) existing.photos = submittedPhotos;
       existing.reviewStatus = reviewStatus;
       existing.decision = entry.status === '已盘' ? 'pass' : entry.status === '未盘' ? 'fail' : '';
       return;
     }
     const asset = { ...sourceAsset, key: `mobile-${entry.assetTag}`, assetTag: entry.assetTag, description: entry.description,
-      owner: entry.owner, inventoryRange: range, inventoryStatus: entry.status, inventoryDate: entry.inventoryDate };
+      owner: entry.owner, inventoryRange: range, ...submittedFields };
     rows.push({ key: `mobile-review-${entry.assetTag}`, asset, reviewStatus, decision: entry.status === '已盘' ? 'pass' : entry.status === '未盘' ? 'fail' : '',
-      photos: { overall: DEFAULT_REVIEW_PHOTOS[0], partial: DEFAULT_REVIEW_PHOTOS[1], gallery: DEFAULT_REVIEW_PHOTOS } });
+      photos: submittedPhotos });
   });
 
-  return rows;
+  return sortInventoryReviewRows(rows);
+}
+
+export function sortInventoryReviewRows(rows) {
+  const order = { 待审核: 0, 审核不通过: 1, 审核通过: 2 };
+  return [...rows].sort((left, right) => order[left.reviewStatus] - order[right.reviewStatus]);
 }
 
 function PhotoThumbnail({ photo, onOpen }) {
   return (
     <Button type="text" className="h-auto p-0" onClick={onOpen}>
       <div className="group relative h-32 w-36 overflow-hidden rounded-lg border border-[#d9d9d9] bg-[#f5f5f5] shadow-sm transition hover:border-[#1677ff] hover:shadow-md">
-        <img src={photo.src} alt={photo.label} className="h-full w-full object-contain transition duration-200 group-hover:scale-[1.03]" />
+        <InventoryPhotoImage photo={photo} alt={photo.label} className="h-full w-full object-contain transition duration-200 group-hover:scale-[1.03]" />
         <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-gradient-to-t from-black/70 to-transparent pb-2 pt-6 text-xs text-white opacity-90">
           <Maximize2 size={13} />
           查看大图
@@ -168,7 +178,7 @@ function ViewerToolButton({ title, icon, active = false, disabled = false, onCli
   );
 }
 
-function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose }) {
+export function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose }) {
   const viewportRef = useRef(null);
   const imageRef = useRef(null);
   const scaleRef = useRef(1);
@@ -179,6 +189,7 @@ function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose }) {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [flipX, setFlipX] = useState(1);
   const [flipY, setFlipY] = useState(1);
+  const [rotation, setRotation] = useState(0);
   const [selecting, setSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState(null);
   const [isPanning, setIsPanning] = useState(false);
@@ -200,6 +211,7 @@ function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose }) {
     setViewerPosition({ x: 0, y: 0 });
     setFlipX(1);
     setFlipY(1);
+    setRotation(0);
     setSelecting(false);
     setSelectionRect(null);
     setIsPanning(false);
@@ -400,14 +412,14 @@ function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose }) {
           />
 
           {photo && (
-            <img
+            <InventoryPhotoImage
               ref={imageRef}
-              src={photo.src}
+              photo={photo}
               alt={photo.label}
               draggable={false}
               className="max-h-[92%] max-w-[92%] select-none object-contain will-change-transform"
               style={{
-                transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${scale}) scaleX(${flipX}) scaleY(${flipY})`,
+                transform: `translate3d(${position.x}px, ${position.y}px, 0) rotate(${rotation}deg) scale(${scale}) scaleX(${flipX}) scaleY(${flipY})`,
                 transformOrigin: 'center center',
               }}
               onDragStart={(event) => event.preventDefault()}
@@ -453,7 +465,7 @@ function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose }) {
                 onClick={() => switchPhoto(photoIndex)}
               >
                 <div className={`relative h-14 w-20 overflow-hidden rounded-md border-2 bg-white/5 ${photoIndex === index ? 'border-[#69b1ff]' : 'border-transparent opacity-65 hover:opacity-100'}`}>
-                  <img src={item.src} alt={item.label} className="h-full w-full object-cover" />
+                  <InventoryPhotoImage photo={item} alt={item.label} className="h-full w-full object-cover" />
                   <span className="absolute inset-x-0 bottom-0 bg-black/55 py-0.5 text-[10px] text-white">{item.label}</span>
                 </div>
               </Button>
@@ -466,6 +478,8 @@ function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose }) {
             <ViewerToolButton title="缩小" icon={<ZoomOut size={15} />} disabled={scale <= MIN_SCALE} onClick={() => zoomAtCenter(1 / 1.25)} />
             <ViewerToolButton title="原图 1:1" icon={<Maximize2 size={15} />} onClick={showOriginalSize} />
             <span className="mx-1 h-5 w-px bg-white/15" />
+            <ViewerToolButton title="向左旋转" onClick={() => setRotation(value => (value - 90) % 360)} />
+            <ViewerToolButton title="向右旋转" onClick={() => setRotation(value => (value + 90) % 360)} />
             <ViewerToolButton title="镜像" active={flipX === -1} onClick={() => setFlipX((value) => value * -1)} />
             <ViewerToolButton title="翻转" active={flipY === -1} onClick={() => setFlipY((value) => value * -1)} />
             <ViewerToolButton title="重置" onClick={resetTransform} />
@@ -503,7 +517,7 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
   const pendingCount = rows.filter((row) => row.reviewStatus === '待审核').length;
   const approvedCount = rows.filter((row) => row.reviewStatus === '审核通过').length;
   const rejectedCount = rows.filter((row) => row.reviewStatus === '审核不通过').length;
-  const filteredRows = useMemo(() => rows.filter((row) => {
+  const filteredRows = useMemo(() => sortInventoryReviewRows(rows.filter((row) => {
     const asset = row.asset;
     return includesText(asset.assetTag, filters.assetTag)
       && includesText(asset.description, filters.description)
@@ -516,7 +530,7 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
       && matchesQuerySelection(asset.inventoryStatus, filters.inventoryStatus)
       && matchesQuerySelection(asset.city, filters.city)
       && matchesQuerySelection(asset.building, filters.building);
-  }), [rows, filters]);
+  })), [rows, filters]);
 
   const updateDraft = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
   const setDecision = (key, decision) => {

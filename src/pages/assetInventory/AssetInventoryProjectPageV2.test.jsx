@@ -28,7 +28,7 @@ jest.mock('./AssetInventoryProjectPage', () => ({ onProjectGenerated, snapshotEd
   React.useEffect(() => { if (snapshotEditRequest) setPage('编辑盘点项目'); }, [snapshotEditRequest]);
   return <div><h4 className="ant-typography">{page}</h4>
     {page === '盘点项目' ? <button onClick={() => setPage('创建盘点项目')}>创建项目</button>
-      : <><button onClick={() => { setPage('盘点项目详情'); onProjectGenerated({ projectNo: 'CP-new', projectType: '初盘', status: '快照生成', snapshotAssetKeys: ['asset-3'], scopeSnapshotAssetKeys: ['asset-3','asset-4'] }); }}>生成快照</button><button onClick={() => setPage('盘点项目')}>返 回</button></>}
+      : <><button onClick={() => { setPage('盘点项目详情'); require('./inventoryPhotoRules').saveInventoryPhotoSnapshot({ projectNo: 'CP-new' }, require('./mockData').ASSET_ROWS.filter(asset => ['asset-3','asset-4'].includes(asset.key)).map(asset => ({ ...asset, executeInventory: asset.key === 'asset-3' }))); onProjectGenerated({ projectNo: 'CP-new', projectType: '初盘', status: '快照生成', snapshotAssetKeys: ['asset-3'], scopeSnapshotAssetKeys: ['asset-3','asset-4'] }); }}>生成快照</button><button onClick={() => setPage('盘点项目')}>返 回</button></>}
   </div>;
 });
 jest.mock('./AssetInventoryPlansV2Refined', () => ({ project, projectAssets, rows, onPlansStarted, onBack }) => <div data-testid="opened-plan-project">

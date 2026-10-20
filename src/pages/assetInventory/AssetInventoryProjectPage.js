@@ -1,3 +1,5 @@
+import { getInventoryPeriodOptions, inventoryProjectScopeSource, inheritInitialInventoryPeriod } from './inventoryProjectScope';
+import { PROJECT_PLAN_ASSETS } from '../../mock/inventoryProjectPlanMock';
 import InventoryPhotoRuleEditor from './InventoryPhotoRuleEditor';
 import { selectInventoryPhotoAssets, saveInventoryPhotoSnapshot, getInventoryPhotoSnapshot, saveInventoryPhotoConfig, getInventoryPhotoConfig, normalizeInventoryPhotoConfig } from './inventoryPhotoRules';
 import { AssetPersonSelect, OwnerLevelSelect, formatAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
@@ -484,15 +486,7 @@ function ProjectListView({ onCreate, onOpenProject, onOpenPlans, onOpenProgress,
   );
 }
 
-function getPeriodOptions(inventoryType) {
-  const year = dayjs().year();
-  if (inventoryType === '年度') return Array.from({ length: 4 }, (_, index) => `${year}年Q${index + 1}`);
-  if (inventoryType === '月度') return Array.from({ length: 14 }, (_, index) => {
-    const month = dayjs(`${year - 1}-12-01`).add(index, 'month');
-    return `${month.year()}年${month.month() + 1}月`;
-  });
-  return ['第一季度', '第二季度', '第三季度', '第四季度'];
-}
+const getPeriodOptions = getInventoryPeriodOptions;
 
 function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
   const setField = (field, value) => setProject((current) => ({ ...current, [field]: value }));
@@ -579,7 +573,10 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
                 className="w-full"
                  placeholder="请选择已关闭且未被同类型关联的初盘项目"
                  options={initialProjectOptions.map((row) => ({ label: `${row.projectNo} ${row.projectName}`, value: row.projectNo }))}
-                onChange={(value) => setField('initialProjectNo', value)}
+                onChange={(value) => {
+                  const initial = initialProjectOptions.find(row => row.projectNo === value);
+                  if (initial) setProject(current => inheritInitialInventoryPeriod(current, { ...PROJECT_INFO, ...initial }));
+                }}
               />
             </div>
             <div>
@@ -902,11 +899,11 @@ function ScopeSelector({ projectType, scopeRows, setScopeRows, onPreviewAssets, 
   );
 }
 
-export function CreateProjectView({ initialProject, onBack, onGenerated, creator, scopeAssetKeys }) {
+export function CreateProjectView({ initialProject, onBack, onGenerated, creator, scopeAssetKeys, onDraftProjectChange }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const initialInventoryType = initialProject?.inventoryType || '年度';
-  const initialPeriod = getPeriodOptions(initialInventoryType).includes(initialProject?.period)
+  const initialPeriod = initialProject?.period && initialProject.period !== '-'
     ? initialProject.period : getPeriodOptions(initialInventoryType)[0];
   const [project, setProject] = useState(() => ({
     ...PROJECT_INFO,
@@ -916,6 +913,8 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     projectNo: initialProject?.projectNo || `${creator === '冯丽婷' ? 'RCP' : 'CP'}-${dayjs().format('YYYYMMDD')}-0003`,
     projectName: initialProject?.projectName || `${getPeriodOptions('年度')[0]}-年度盘点`,
     period: initialPeriod,
+    creator: initialProject ? initialProject.creator : creator,
+    createdAt: initialProject ? initialProject.createdAt : dayjs().format('YYYY-MM-DD'),
     status: '暂存',
     snapshotTime: initialProject?.snapshotTime || '-',
   }));
@@ -924,8 +923,11 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [scopeAssetQuery, setScopeAssetQuery] = useState({ assetTag: '', owner: [], ownerLevel: [] });
   const [scopeAssetFilter, setScopeAssetFilter] = useState({ assetTag: '', owner: [], ownerLevel: [] });
+  useEffect(() => { onDraftProjectChange?.(project); }, [project, onDraftProjectChange]);
+  const sourceAssets = inventoryProjectScopeSource(project, { allAssets: ASSET_ROWS,
+    initialSnapshot: getInventoryPhotoSnapshot(project.initialProjectNo), initialAssets: PROJECT_PLAN_ASSETS[project.initialProjectNo] });
   const scopeKeys = scopeAssetKeys ?? [...new Set(scopeRows.flatMap(row => row.assetKeys))];
-  const scopeAssets = ASSET_ROWS.filter(asset => isInventoryRangeAllowed(asset, allowedRanges) && scopeKeys.includes(asset.key) && !removedAssetKeys.includes(asset.key));
+  const scopeAssets = sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges) && scopeKeys.includes(asset.key) && !removedAssetKeys.includes(asset.key));
   const filteredScopeAssets = scopeAssets.filter((asset) =>
     String(asset.assetTag || '').includes(scopeAssetFilter.assetTag.trim()) && matchesQuerySelection(asset.owner, scopeAssetFilter.owner) && matchesQuerySelection(asset.ownerLevel, scopeAssetFilter.ownerLevel));
   const [assetPreviewOpen, setAssetPreviewOpen] = useState(false);
@@ -963,6 +965,10 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     }
     const dateBlockReason = inventoryProjectDateBlockReason(project.startDate, project.endDate);
     if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
+    if (project.projectType === '初盘' && project.inventoryType === '年度' && (!project.createdAt || !dayjs(project.createdAt).isValid())) {
+      messageApi.warning('缺少项目创建日期，无法核验年度初盘启用截止日期');
+      return;
+    }
     if (!scopeAssets.length) {
       messageApi.warning('请先生成至少一条盘点范围明细');
       return;
@@ -2127,7 +2133,7 @@ function ProgressView({ project, onBack }) {
   );
 }
 
-export default function AssetInventoryProjectPage({ creator = '213852-孙志强', scopeAssetKeys, snapshotEditRequest, onProjectGenerated }) {
+export default function AssetInventoryProjectPage({ creator = '213852-孙志强', scopeAssetKeys, snapshotEditRequest, onProjectGenerated, onDraftProjectChange }) {
   const [view, setView] = useState('list');
   const [activeProject, setActiveProject] = useState(PROJECT_INFO);
   const [activePlan, setActivePlan] = useState(INITIAL_PLAN_ROWS[0]);
@@ -2159,6 +2165,7 @@ export default function AssetInventoryProjectPage({ creator = '213852-孙志强'
     return (
       <CreateProjectView
         creator={creator}
+        onDraftProjectChange={onDraftProjectChange}
         scopeAssetKeys={activeProject?.scopeSnapshotAssetKeys ?? scopeAssetKeys}
         initialProject={activeProject?.status === '暂存' ? activeProject : null}
         onBack={() => setView('list')}

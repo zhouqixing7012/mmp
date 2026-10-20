@@ -56,6 +56,7 @@ export const PROJECT_LIST_ROWS = [
     key: 'RCP-202608180001',
     relationGroup: '2026年度盘点链路',
     projectNo: 'RCP-202608180001',
+    creator: '冯丽婷',
     projectType: '复盘',
     projectName: '2026年-年度复盘',
     status: '生成盘点计划',

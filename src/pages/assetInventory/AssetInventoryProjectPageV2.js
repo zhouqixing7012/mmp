@@ -1,4 +1,5 @@
-import { applyInventoryPhotoSnapshot, saveInventoryPhotoSnapshot } from './inventoryPhotoRules';
+import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
+import { applyInventoryPhotoSnapshot, saveInventoryPhotoSnapshot, getInventoryPhotoSnapshot } from './inventoryPhotoRules';
 import React, { useEffect, useRef, useState } from 'react';
 import { Modal } from 'antd';
 import AssetInventoryProjectPage from './AssetInventoryProjectPage';
@@ -6,7 +7,7 @@ import AssetInventoryCustomPlanBuilder from './AssetInventoryCustomPlanBuilder';
 import AssetInventoryProjectListV2 from './AssetInventoryProjectListV2';
 import { INVENTORY_CREATORS } from './inventoryCreatorPermissions';
 import AssetInventoryPlansV2Refined from './AssetInventoryPlansV2Refined';
-import AssetInventoryImageReviewV2 from './AssetInventoryImageReviewV2';
+import AssetInventoryImageReviewV2, { buildReviewRows } from './AssetInventoryImageReviewV2';
 import AssetInventoryProgressV2 from './AssetInventoryProgressV2';
 import AssetInventorySnapshotDetailV2 from './AssetInventorySnapshotDetailV2';
 import { AssetInventoryPlanAssetListV2 } from './AssetInventoryPlanViewsV2';
@@ -65,7 +66,7 @@ function resolveProject(root, sourceElement) {
   return current ? resolveProjectFromRow(current) : resolveProjectFromDetail(root);
 }
 
-export default function AssetInventoryProjectPageV2({ variantLabel = '方案二', menuLabel, scopeAssetKeys } = {}) {
+export default function AssetInventoryProjectPageV2({ variantLabel = '方案二', menuLabel, scopeAssetKeys, onDraftProjectChange } = {}) {
   const { allowedRanges } = useAssetInventoryVariant();
   const [planProject, setPlanProject] = useState(PROJECT_INFO);
   const allowedRangeKey = allowedRanges.join('|');
@@ -104,7 +105,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     && isSnapshotExecutionAsset(asset, planProject));
   // 地点申请取项目范围母集，不能被执行抽样或计划分配缩小；旧快照只有执行清单时按其明确范围。
   const locationProjectAssetKeys = planProject.scopeSnapshotAssetKeys ?? planProject.snapshotAssetKeys;
-  const locationProjectAssets = applyInventoryPhotoSnapshot(planProject.projectNo, ASSET_ROWS).filter(asset => isInventoryRangeAllowed(asset, allowedRanges)
+  const locationProjectAssets = (getInventoryPhotoSnapshot(planProject.projectNo)?.assets || applyInventoryPhotoSnapshot(planProject.projectNo, ASSET_ROWS)).filter(asset => isInventoryRangeAllowed(asset, allowedRanges)
     && (!locationProjectAssetKeys || locationProjectAssetKeys.includes(asset.key)));
   const projectSessions = useRef(new Map());
   const switchProjectSession = (project) => {
@@ -112,7 +113,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     let session = projectSessions.current.get(project.projectNo);
     if (!session) {
       const rows = (PROJECT_PLAN_ROWS[project.projectNo] || []).filter(row => allowedRanges.includes(row.range)).map(row => ({ ...row, status: row.status === '暂存' ? '草稿' : row.status }));
-      const assets = (PROJECT_PLAN_ASSETS[project.projectNo] || ASSET_ROWS).map(asset => ({ ...asset }));
+      const assets = (getInventoryPhotoSnapshot(project.projectNo)?.assets || PROJECT_PLAN_ASSETS[project.projectNo] || ASSET_ROWS).map(asset => ({ ...asset }));
       session = { project: resolveProjectFromRow(project), rows, assets,
         assetMap: Object.fromEntries(rows.flatMap(row => (row.assetKeys || []).map(key => [key, row.planNo]))) };
     }
@@ -133,6 +134,17 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     const replacements = new Map(updated.map((asset) => [asset.key, asset]));
     return current.map((asset) => replacements.get(asset.key) || asset);
   });
+
+  const closeBlockReasonForProject = (project) => {
+    const active = project.projectNo === planProject.projectNo;
+    const session = active ? { rows: planRows, assets: planAssets } : projectSessions.current.get(project.projectNo);
+    const plans = session?.rows ?? PROJECT_PLAN_ROWS[project.projectNo];
+    const snapshot = getInventoryPhotoSnapshot(project.projectNo);
+    const scope = snapshot?.assets ?? session?.assets ?? PROJECT_PLAN_ASSETS[project.projectNo];
+    const tags = new Set((scope || []).map(asset => asset.assetTag));
+    const photoRows = scope ? buildReviewRows(project.projectNo, project.scopeRanges || allowedRanges).filter(row => tags.has(row.asset.assetTag)) : undefined;
+    return inventoryProjectCloseBlockReason(project, { plans, photoRows, locationRequests: getInventoryLocationChangeRequests(project.projectNo) });
+  };
 
   const activePlanNos = new Set(planRows.filter((row) => allowedRanges.includes(row.range)).map((row) => row.planNo));
   const unplannedSnapshotAssets = availableAssets.filter((asset) => !assetPlanMap[asset.key] || !activePlanNos.has(assetPlanMap[asset.key]));
@@ -496,6 +508,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       onCreatorChange={setCreator}
       onCreate={() => triggerBaseAction(null, 'create')}
       onOpenProject={openProjectV2}
+      getCloseBlockReason={closeBlockReasonForProject}
       onCloseProject={handleProjectClose}
       statusOverrides={projectStatusOverrides}
       onOpenPlans={(row) => openPlanViewByProject(row)}
@@ -510,10 +523,11 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       onSnapshotRowsChange={(execution, notExecution) => {
         saveInventoryPhotoSnapshot(snapshotProject, [...execution.map(asset => ({ ...asset, executeInventory: true })), ...notExecution.map(asset => ({ ...asset, executeInventory: false }))]);
         const replacements = new Map([...execution, ...notExecution].map(asset => [asset.key, asset]));
-        setPlanAssets(current => current.map(asset => replacements.get(asset.key) || asset));
+        setPlanAssets(current => [...current.map(asset => replacements.get(asset.key) || asset), ...[...replacements.values()].filter(asset => !current.some(existing => existing.key === asset.key))]);
         setPlanProject(current => ({ ...current, snapshotAssetKeys: execution.map(asset => asset.key), scopeSnapshotAssetKeys: [...execution, ...notExecution].map(asset => asset.key) }));
       }}
       onCloseProject={handleProjectClose}
+      getCloseBlockReason={closeBlockReasonForProject}
       onDeleteSnapshot={restoreSnapshotDraft}
       onBack={returnToProjectList}
       onOpenPlans={() => openPlanViewByProject(snapshotProject, false, true)}
@@ -526,12 +540,12 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     {activePlan && <AssetInventoryPlanAssetListV2 plan={activePlan} project={planProject} assets={assetsForPlan(activePlan)} onAssetsChange={(updater) => changePlanAssets(activePlan, updater)} onBack={() => setActivePlan(null)} />}
     {imageReviewOpen && <AssetInventoryImageReviewV2 project={planProject} onBack={() => setImageReviewOpen(false)} />}
     {progressOpen && <AssetInventoryProgressV2 project={planProject} plans={planRows} assetsForPlan={assetsForPlan} onBack={() => setProgressOpen(false)} />}
-    <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage creator={creator} scopeAssetKeys={scopeAssetKeys} snapshotEditRequest={snapshotEditRequest} onProjectGenerated={(project) => {
+    <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage onDraftProjectChange={onDraftProjectChange} creator={creator} scopeAssetKeys={scopeAssetKeys} snapshotEditRequest={snapshotEditRequest} onProjectGenerated={(project) => {
       setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '快照生成' }));
       setPlanProject(project);
       setPlanRows([]);
       setAssetPlanMap({});
-      setPlanAssets(applyInventoryPhotoSnapshot(project.projectNo, ASSET_ROWS).map((asset) => ({
+      setPlanAssets((getInventoryPhotoSnapshot(project.projectNo)?.assets || []).map((asset) => ({
         ...asset, inventoryStatus: '未盘', counter: '-', inventoryDate: '-',
         inventoryNote: '-', importMode: '-',
       })));

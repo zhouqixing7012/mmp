@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { INVENTORY_ASSET_EXPORT_FIELDS } from './inventoryAssetExport';
 import { formatAssetCategory } from '../../components/assetQueryModel';
+import { inventoryResultSource } from './inventoryResultSource';
 
 // 资产备注与盘点备注分别保存；报失原因属于盘点备注，不覆盖资产备注。
 export const PLAN_ASSET_EXPORT_FIELDS = [
@@ -23,6 +24,7 @@ export function mergePlanInventoryResult(asset, result, photoReview) {
     ...(result.status !== undefined ? { inventoryStatus: result.status } : {}),
     ...(result.inventoryBy !== undefined ? { counter: result.inventoryBy } : {}),
     ...(result.inventoryDate !== undefined ? { inventoryDate: result.inventoryDate } : {}),
+    ...(result.resultSource !== undefined ? { resultSource: result.resultSource } : {}),
     ...(result.inventoryNote !== undefined ? { inventoryNote: result.inventoryNote } : {}),
     ...(result.inventoryRemark !== undefined ? { inventoryRemark: result.inventoryRemark } : {}),
     ...(result.lossReason !== undefined ? { lossReason: result.lossReason } : {}),
@@ -33,6 +35,7 @@ export function mergePlanInventoryResult(asset, result, photoReview) {
 export function planAssetExportValues(asset) {
   return PLAN_ASSET_EXPORT_FIELDS.map(([, key]) => {
     if (key === 'assetCategory') return formatAssetCategory(asset);
+    if (key === 'resultSource') return inventoryResultSource(asset);
     if (key === 'inventoryRemark') return asset.inventoryRemark ?? asset.lossReason ?? '';
     return asset[key] ?? '';
   });

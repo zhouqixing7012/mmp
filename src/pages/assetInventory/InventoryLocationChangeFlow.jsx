@@ -10,7 +10,7 @@ import SectionCardTitle from './SectionCardTitle';
 import StatusTag from '../../components/StatusTag';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import { getInventoryLocationOptions } from './inventoryMobileLocationService';
-import { approveInventoryLocationChangeRequest, getInventoryLocationApplicant, getInventoryLocationChangeRequest, getInventoryLocationChanges, submitInventoryLocationChangeRequest } from './inventoryLocationChangeStore';
+import { approveInventoryLocationChangeRequest, canCreateInventoryLocationChange, getInventoryLocationApprovalRecords, getInventoryLocationApplicant, getInventoryLocationChangeRequest, getInventoryLocationChanges, submitInventoryLocationChangeRequest } from './inventoryLocationChangeStore';
 import './inventoryLocationChange.css';
 import { inventoryLocationPhotoBlockReason } from './inventoryLocationPhotoRules';
 
@@ -28,7 +28,7 @@ export default function InventoryLocationChangeFlow({ project, currentOperator, 
   const [changes, setChanges] = useState(() => getInventoryLocationChanges(project.projectNo));
   const [drafts, setDrafts] = useState(() => Object.fromEntries(getInventoryLocationChanges(project.projectNo).map(change => [change.id, {...change.after}])));
   const [remarks, setRemarks] = useState(() => Object.fromEntries(getInventoryLocationChanges(project.projectNo).map(change => [change.id, change.remark || ''])));
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState(() => initialRequestId ? getInventoryLocationChangeRequest(initialRequestId)?.reason || '' : '');
   const [activeRequestId, setActiveRequestId] = useState(initialRequestId);
   const [opinion, setOpinion] = useState('');
   const [picker, setPicker] = useState(null);
@@ -42,16 +42,18 @@ export default function InventoryLocationChangeFlow({ project, currentOperator, 
   const [applicant] = useState(() => getInventoryLocationApplicant(currentOperator));
   const ledger = useMemo(() => new Map(getAssetMaintenanceRows().map(row => [row.tag, row])), []);
   const waiting = changes.filter(change => change.status === '待发起');
-  const held = waiting.filter(change => inventoryLocationPhotoBlockReason(project.projectNo, change.assetTag, projectAssets));
-  const pending = [...waiting.filter(change => !inventoryLocationPhotoBlockReason(project.projectNo, change.assetTag, projectAssets)), ...addedAssets];
+  const pending = [...waiting, ...addedAssets];
   const permittedTags = [...new Set(projectAssets.map(asset => String(asset.assetTag || asset.tag || '')).filter(Boolean))];
   const availableAssets = [...ledger.values()].filter(asset => permittedTags.includes(asset.tag));
-  const blockedTags = changes.filter(change => ['待发起','待审批'].includes(change.status)).map(change => change.assetTag).concat(addedAssets.map(change => change.assetTag));
   const request = activeRequestId ? getInventoryLocationChangeRequest(activeRequestId) : null;
-  const displayed = request ? changes.filter(change => request.changeIds.includes(change.id)) : pending;
+  const canApply = canCreateInventoryLocationChange(project, currentOperator);
+  const revising = Boolean(request?.status === '已驳回' && request.applicant === applicant.value && canApply);
+  const displayed = request ? [...changes.filter(change => request.changeIds.includes(change.id)), ...(revising ? addedAssets : [])] : pending;
+  const held = displayed.filter(change => inventoryLocationPhotoBlockReason(project.projectNo, change.assetTag, projectAssets));
+  const blockedTags = changes.filter(change => ['待发起','待审批'].includes(change.status) || (revising && request.changeIds.includes(change.id))).map(change => change.assetTag).concat(addedAssets.map(change => change.assetTag));
   const rows = displayed.map(change => ({...change, quantity:change.quantity ?? ledger.get(change.assetTag)?.quantity, remark:change.remark ?? ledger.get(change.assetTag)?.remarks ?? ''}));
   const projectClosed = project.status === '盘点关闭';
-  const readOnly = Boolean(request) || projectClosed;
+  const readOnly = projectClosed || !canApply || Boolean(request && !revising);
 
   const setField = (id, field, value) => setDrafts(current => {
     const existing = current[id] || {};
@@ -84,8 +86,9 @@ export default function InventoryLocationChangeFlow({ project, currentOperator, 
 
   const submit = () => {
     if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
+    if (!canApply) { messageApi.warning('仅盘点项目创建人可以发起位置变更'); return; }
     try {
-      const next = submitInventoryLocationChangeRequest({projectNo:project.projectNo, projectType:project.projectType, reason, applicant:applicant.value, applicantDepartment:applicant.department, draftLocations:drafts, draftRemarks:remarks, addedAssets, permittedAssetTags:permittedTags, projectAssets});
+      const next = submitInventoryLocationChangeRequest({projectNo:project.projectNo, projectType:project.projectType, projectCreator:project.creator, projectStatus:project.status, requestId:revising ? request.id : '', reason, applicant:applicant.value, applicantDepartment:applicant.department, draftLocations:drafts, draftRemarks:remarks, addedAssets, permittedAssetTags:permittedTags, projectAssets});
       setChanges(getInventoryLocationChanges(project.projectNo));
       setAddedAssets([]); setSelectedKeys([]);
       setActiveRequestId(next.id);
@@ -110,14 +113,11 @@ export default function InventoryLocationChangeFlow({ project, currentOperator, 
       : <Input readOnly aria-label={`${change.assetTag}-${FIELD_NAMES[field]}`} value={(drafts[change.id] || change.after)[field]} placeholder={`请选择${FIELD_NAMES[field]}`} suffix={<Search size={15}/>} onClick={() => openPicker(change, field)}/>})),
     {title:'备注', dataIndex:'remark', width:175, render:(value, change) => readOnly ? value || '-' : <Input aria-label={`${change.assetTag}-备注`} value={remarks[change.id] ?? value} maxLength={150} onChange={event => setRemarks(current => ({...current, [change.id]:event.target.value}))}/>},
   ];
-  const approvalRecords = request ? [
-    {key:'start', node:'提交申请', person:request.applicant, status:'已提交', time:request.appliedAt, opinion:request.reason},
-    {key:'review', node:'ES主管审批', person:request.approver, status:request.status === '待审批' ? '待审批' : request.status === '已通过' ? '已通过' : '已驳回', time:request.approvedAt, opinion:request.opinion},
-  ] : [];
+  const approvalRecords = request ? getInventoryLocationApprovalRecords(request) : [];
 
   return <div className="inventory-location-flow">
     {contextHolder}
-    <Typography.Title level={4} style={{margin:'0 0 24px'}}>位置变更{request ? '审批' : ''}</Typography.Title>
+    <Typography.Title level={4} style={{margin:'0 0 24px'}}>位置变更{request && !revising ? '审批' : ''}</Typography.Title>
     <Card size="small" title={<SectionCardTitle>申请信息</SectionCardTitle>}>
       <DetailGrid columns={3}>
         <DetailItem label="申请人">{request ? getInventoryLocationApplicant(request.applicant).displayName : applicant.displayName}</DetailItem>
@@ -142,7 +142,7 @@ export default function InventoryLocationChangeFlow({ project, currentOperator, 
     ]}/></Card>}
     {!projectClosed && request?.status === '待审批' && currentOperator === APPROVER && <Card size="small" title={<SectionCardTitle>审批意见</SectionCardTitle>}><Input.TextArea aria-label="审批意见" rows={3} placeholder="请输入审批意见，驳回时必填" value={opinion} onChange={event => setOpinion(event.target.value)}/></Card>}
     <div className="inventory-location-actions"><Space size={12}>
-      {!readOnly && <Button type="primary" disabled={importing || !pending.length} onClick={submit}>提交</Button>}
+      {!readOnly && <Button type="primary" disabled={importing || !rows.length} onClick={submit}>提交</Button>}
       {!projectClosed && request?.status === '待审批' && currentOperator === APPROVER && <><Button type="primary" onClick={()=>decide('同意')}>同意</Button><Button danger onClick={()=>decide('驳回')}>驳回</Button></>}
       <Button onClick={onBack}>返回</Button>
     </Space></div>

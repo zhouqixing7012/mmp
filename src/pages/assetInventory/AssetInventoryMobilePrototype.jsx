@@ -3,8 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
-  Camera,
-  CheckCircle2,
   ChevronDown,
   ChevronRight,
   Flashlight,
@@ -12,11 +10,12 @@ import {
   ListChecks,
   ScanLine,
   Search,
-  Trash2,
   X,
 } from 'lucide-react';
 import { Button, Input, Modal, Tag, message as antdMessage } from 'antd';
 import './assetInventoryMobile.css';
+import InventoryPhotoImage from './InventoryPhotoImage';
+import InventoryMobilePhotoSlot from './InventoryMobilePhotoSlot';
 import { getPhotoReviewResults, savePhotoReviewResult } from './inventoryPhotoReviewStore';
 import mobileScanReference from './images/mobile-scan-reference.png';
 import { INVENTORY_MOBILE_ASSETS as DEMO_ASSETS } from '../../mock/inventoryMobileMock';
@@ -88,6 +87,10 @@ const SCAN_COPY = {
     title: '资产不在盘点范围',
     message: '这枚设备不在盘点范围中，此般热情让人感动。您还有未盘到的资产哦，继续吧~',
   },
+  invalidCode: {
+    title: '无法识别资产二维码',
+    message: 'Duang!~~~ 好奇心满足了么？您还有未盘到的资产哦，继续吧~',
+  },
   network: {
     title: '提交失败',
     message: '未能连接网络，请检查网络信号后再次提交~',
@@ -132,6 +135,9 @@ function loadProjectAssets(projectNo) {
     usageStatus: asset.useStatus, category: asset.subCategory,
     address: [asset.city, asset.building, asset.floor].join('-'),
     status: asset.executeInventory ? asset.inventoryStatus : '未执行盘点', photoRequired: asset.needPhoto,
+    inventoryRemark: asset.inventoryRemark ?? asset.inventoryNote ?? '',
+    inventoryBy: asset.inventoryBy ?? asset.counter, inventoryDate: asset.inventoryDate,
+    resultSource: asset.resultSource, photos: asset.photos,
   })) : DEMO_ASSETS;
   return source.map((asset) => {
     const row = ledger.get(asset.tagNo);
@@ -168,14 +174,14 @@ function StatusBadge({ status }) {
   return <Tag color={STATUS_COLORS[status] || 'default'}>{status}</Tag>;
 }
 
-function AssetCard({ asset, onClick }) {
+function AssetCard({ asset, onClick, showOwner = false }) {
   const showDate = ['审核中', '已盘', '代盘'].includes(asset.status)
     ? asset.inventoryDate
     : asset.dueDate;
   return (
     <button type="button" className="inventory-asset-card" onClick={onClick}>
-      <div className="inventory-asset-thumb" data-photo-kind={asset.lastPhoto || 'empty'}>
-        {asset.lastPhoto ? <Camera size={18} /> : <ImagePlus size={18} />}
+      <div className="inventory-asset-thumb">
+        {asset.photos?.overall ? <InventoryPhotoImage photo={asset.photos.overall} alt="最近一次资产整体照片" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ImagePlus size={18} />}
       </div>
       <div className="inventory-asset-card-body">
         <div className="inventory-asset-card-title">
@@ -186,9 +192,11 @@ function AssetCard({ asset, onClick }) {
           <StatusBadge status={asset.status} />
           <span>{asset.tagNo}</span>
         </div>
+        <div className="inventory-asset-card-line">资产小类：{asset.category || '-'}</div>
+        {showOwner && <div className="inventory-asset-card-line">责任人：{asset.owner || '-'}</div>}
         <div className="inventory-asset-card-line">序列号：{asset.serialNo}</div>
         <div className="inventory-asset-card-line">
-          {asset.status === '已盘' || asset.status === '代盘' ? '盘点日期' : '盘点截止日期'}：{showDate || '-'}
+          {['审核中', '已盘', '代盘'].includes(asset.status) ? '盘点日期' : '盘点截止日期'}：{showDate || '-'}
         </div>
       </div>
     </button>
@@ -211,22 +219,6 @@ function DetailRow({ label, value }) {
   );
 }
 
-function PhotoSlot({ label, added, onAdd, onRemove }) {
-  return (
-    <div className="inventory-photo-slot">
-      <div className={`inventory-photo-preview ${added ? 'is-added' : ''}`}>
-        {added ? <CheckCircle2 size={20} /> : <ImagePlus size={22} />}
-      </div>
-      <div className="inventory-photo-label">{label}</div>
-      {added ? (
-        <Button type="text" danger size="small" icon={<Trash2 size={14} />} onClick={onRemove}>删除</Button>
-      ) : (
-        <Button type="text" size="small" icon={<Camera size={14} />} onClick={onAdd}>拍照</Button>
-      )}
-    </div>
-  );
-}
-
 function ScanPicker({ onSelect, canScanMine, canScanProxy, canSimulateNetwork }) {
   return (
     <div className="inventory-scan-picker">
@@ -236,15 +228,21 @@ function ScanPicker({ onSelect, canScanMine, canScanProxy, canSimulateNetwork })
         <Button disabled={!canScanProxy} onClick={() => onSelect('proxy')}>扫描他人资产</Button>
         <Button onClick={() => onSelect('scanned')}>扫描已盘资产</Button>
         <Button onClick={() => onSelect('outOfScope')}>扫描范围外资产</Button>
+        <Button onClick={() => onSelect('invalidCode')}>扫描无效二维码</Button>
         <Button disabled={!canSimulateNetwork} onClick={() => onSelect('network')}>模拟网络失败</Button>
       </div>
     </div>
   );
 }
 
-function ScanResultModal({ scanModal, onClose, onRest, onNetworkFailure }) {
+function ScanResultModal({ scanModal, onClose, onRest, onNetworkFailure, onFinish, hasPendingAssets }) {
   if (!scanModal) return null;
-  const copy = SCAN_COPY[scanModal.kind];
+  const copy = { ...SCAN_COPY[scanModal.kind] };
+  const finish = !hasPendingAssets && ['outOfScope', 'invalidCode'].includes(scanModal.kind);
+  if (!hasPendingAssets && scanModal.kind === 'scanned') copy.message = '该资产已被扫过了，您的全部资产已经完成盘点了，感谢您的参与！';
+  if (finish) copy.message = scanModal.kind === 'outOfScope'
+    ? '这枚设备不在盘点范围中，此般热情让人感动。您的全部资产已经完成盘点了，感谢您的参与！'
+    : 'Duang!~~~ 好奇心满足了么？您的全部资产已经完成盘点了，感谢您的参与！';
   return (
     <Modal
       open
@@ -257,8 +255,8 @@ function ScanResultModal({ scanModal, onClose, onRest, onNetworkFailure }) {
     >
       <p className="inventory-modal-message">{copy.message}</p>
       <div className="inventory-modal-actions">
-        <Button type="primary" onClick={scanModal.kind === 'network' ? onNetworkFailure : onClose}>{copy.confirm || '再接再厉'}</Button>
-        {['scanned', 'outOfScope'].includes(scanModal.kind) && <Button onClick={onRest}>休息一下</Button>}
+        <Button type="primary" onClick={finish ? onFinish : scanModal.kind === 'network' ? onNetworkFailure : onClose}>{finish ? '好的，收工' : copy.confirm || '再接再厉'}</Button>
+        {!finish && ['scanned', 'outOfScope', 'invalidCode'].includes(scanModal.kind) && <Button onClick={onRest}>休息一下</Button>}
       </div>
     </Modal>
   );
@@ -322,6 +320,15 @@ export default function AssetInventoryMobilePrototype() {
   const projectAssets = assets.filter((asset) => projectRanges.includes(asset.area));
   const filteredAssets = projectAssets.filter((asset) => asset.ownerNo === currentUser.employeeNo && includesQuery(asset, query));
   const supervisedPlans = DEMO_SUPERVISED_PLANS.filter((plan) => plan.supervisor === currentUser.name && (!hasRouteProject || (plan.projectType === projectType && projectAssets.some((asset) => plan.assetIds.includes(asset.id)))));
+  const hasUnfinishedAssets = (plan) => {
+    if (hasRouteProject && projectClosed) return false;
+    const contextNo = DEMO_CONTEXTS.find(context => context.id === (plan.contextId || 'initial'))?.projectNo || '';
+    if (contextNo && JSON.parse(window.sessionStorage.getItem('assetInventoryClosedProjectNos') || '[]').includes(contextNo)) return false;
+    const planAssets = hasRouteProject || contextNo === previewProjectNo ? assets : loadProjectAssets(contextNo).map(asset => ({ ...asset, status: getPhotoReviewResults(contextNo).find(entry => entry.assetTag === asset.tagNo)?.status || asset.status }));
+    return planAssets.some(asset => plan.assetIds.includes(asset.id) && ['未盘', '报失', '审核中'].includes(asset.status));
+  };
+  const unfinishedPlanCount = supervisedPlans.filter(hasUnfinishedAssets).length;
+  const hasPendingAssets = projectAssets.some(asset => asset.ownerNo === currentUser.employeeNo && canInventory(asset));
   const activePlan = supervisedPlans.find((plan) => plan.id === activePlanId);
   const activePlanAssets = projectAssets.filter((asset) => activePlan?.assetIds.includes(asset.id));
   const quickBatchKey = quickPlanId || 'personal';
@@ -458,17 +465,20 @@ export default function AssetInventoryMobilePrototype() {
       messageApi.warning(error.message);
       return;
     }
+    try {
     if (reviewPending) savePhotoReviewResult(previewProjectNo, {
       assetTag: scanAsset.tagNo, status: '审核中', inventoryRange: scanAsset.area, owner: scanAsset.owner,
-      description: scanAsset.assetDesc, inventoryDate: new Date().toISOString(),
+      description: scanAsset.assetDesc, inventoryDate: new Date().toISOString(), counter: currentUser.name, inventoryNote: scanAsset.inventoryRemark ?? scanAsset.inventoryNote ?? '', photoSource: '移动拍照', photos: capturedPhotos(scanAsset),
     });
     saveMobileInventoryResult(previewProjectNo, scanAsset.tagNo, {
       status: reviewPending ? '审核中' : kind === 'proxy' ? '代盘' : '已盘',
       inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }),
       inventoryBy: currentUser.name,
+      resultSource: '狐小e', photos: capturedPhotos(scanAsset),
       lossReported: scanAsset.lossReported,
       ...(scanAsset.lossReason ? { lossReason: scanAsset.lossReason, inventoryRemark: scanAsset.inventoryRemark } : {}),
     });
+    } catch (error) { messageApi.warning('盘点结果保存失败，请保留当前页面并重试：' + error.message); return; }
     if (scanAsset && ['mine', 'proxy'].includes(kind)) {
       setSelectedAssetId(scanAsset.id);
       setAssets((current) => current.map((asset) => (
@@ -478,6 +488,7 @@ export default function AssetInventoryMobilePrototype() {
             status: reviewPending ? '审核中' : kind === 'proxy' ? '代盘' : '已盘',
             inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }),
             inventoryBy: currentUser.name,
+            photos: capturedPhotos(scanAsset), resultSource: '狐小e',
             proxyFor: kind === 'proxy' ? scanAsset.owner : '',
             ...(locationChanged && projectType !== '复盘' ? { address: Object.values(locationDraft).join('-') } : {}),
           }
@@ -490,10 +501,17 @@ export default function AssetInventoryMobilePrototype() {
     messageApi.success(reviewPending ? '照片已提交，等待审核' : '盘点提交成功');
   };
 
-  const togglePhoto = (slot) => {
+  const updatePhoto = (slot, photo) => {
     if (!selectedAsset) return;
     const key = `${selectedAsset.id}::${slot}`;
-    setPhotoState((current) => ({ ...current, [key]: !current[key] }));
+    setPhotoState((current) => ({ ...current, [key]: photo }));
+  };
+
+  const capturedPhotos = (asset) => {
+    const labels = asset.area === '机房' ? ['二维码标签照片', '序列号照片'] : ['资产整体照片', '二维码标签照片'];
+    const gallery = labels.map((label, index) => { const photo = photoState[asset.id + '::' + label]; return photo ? { ...photo, key: index === 0 ? 'overall' : 'partial' } : null; }).filter(Boolean);
+    if (!gallery.length && asset.photos) return asset.photos;
+    return { overall: asset.area === '机房' ? null : gallery.find(photo => photo.key === 'overall') || null, partial: gallery.find(photo => photo.key === 'partial') || null, gallery };
   };
 
   const submitReportLoss = () => {
@@ -509,15 +527,15 @@ export default function AssetInventoryMobilePrototype() {
   const confirmReportLoss = () => {
     if (projectClosed) { messageApi.info('项目已关闭，不能提交报失'); return; }
     if (!selectedAsset || selectedAsset.status !== '未盘' || selectedAsset.lossReported) { messageApi.warning('该资产不能重复报失'); return; }
-    saveMobileInventoryResult(previewProjectNo, selectedAsset.tagNo, { status: '报失', lossReported: true, inventoryNote: reportReason.trim(), inventoryRemark: reportReason.trim(), lossReason: reportReason.trim(), inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name });
+    saveMobileInventoryResult(previewProjectNo, selectedAsset.tagNo, { status: '报失', resultSource: '狐小e', lossReported: true, inventoryNote: reportReason.trim(), inventoryRemark: reportReason.trim(), lossReason: reportReason.trim(), inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name });
     setAssets((current) => current.map((asset) => (
       asset.id === selectedAsset.id
-        ? { ...asset, status: '报失', lossReported: true, inventoryNote: reportReason.trim(), inventoryRemark: reportReason.trim(), lossReason: reportReason.trim(), inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name }
+        ? { ...asset, status: '报失', resultSource: '狐小e', lossReported: true, inventoryNote: reportReason.trim(), inventoryRemark: reportReason.trim(), lossReason: reportReason.trim(), inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name }
         : asset
     )));
     setConfirmLossOpen(false);
     setReportReason('');
-    messageApi.success('已提交报失，盘点说明已保存');
+    messageApi.success('已提交报失，盘点备注已保存');
     if (scannedDetail) { setScannedDetail(false); setView('scan'); }
   };
 
@@ -570,14 +588,16 @@ export default function AssetInventoryMobilePrototype() {
       }
     });
     if (success.length) {
+      try {
       success.forEach((tagNo) => {
         const asset = assets.find((item) => item.tagNo === tagNo);
-        if (needsPhotoReview(asset)) savePhotoReviewResult(previewProjectNo, { assetTag: tagNo, status: '审核中', inventoryRange: asset.area, owner: asset.owner, description: asset.assetDesc, inventoryDate: new Date().toISOString() });
-        saveMobileInventoryResult(previewProjectNo, tagNo, { status: needsPhotoReview(asset) ? '审核中' : asset.ownerNo === currentUser.employeeNo ? '已盘' : '代盘', inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name, lossReported: asset.lossReported, ...(asset.lossReason ? { lossReason: asset.lossReason, inventoryRemark: asset.inventoryRemark } : {}) });
+        if (needsPhotoReview(asset)) savePhotoReviewResult(previewProjectNo, { assetTag: tagNo, status: '审核中', inventoryRange: asset.area, owner: asset.owner, description: asset.assetDesc, inventoryDate: new Date().toISOString(), counter: currentUser.name, inventoryNote: asset.inventoryRemark ?? asset.inventoryNote ?? '', photoSource: '移动拍照', photos: capturedPhotos(asset) });
+        saveMobileInventoryResult(previewProjectNo, tagNo, { status: needsPhotoReview(asset) ? '审核中' : asset.ownerNo === currentUser.employeeNo ? '已盘' : '代盘', inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name, resultSource: '狐小e快速扫描', photos: capturedPhotos(asset), lossReported: asset.lossReported, ...(asset.lossReason ? { lossReason: asset.lossReason, inventoryRemark: asset.inventoryRemark } : {}) });
       });
+      } catch (error) { messageApi.warning('批量盘点结果保存失败，请保留当前标签和照片后重试：' + error.message); return; }
       setAssets((current) => current.map((asset) => (
         success.includes(asset.tagNo)
-          ? { ...asset, status: needsPhotoReview(asset) ? '审核中' : asset.ownerNo === currentUser.employeeNo ? '已盘' : '代盘', inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name, ...(asset.area === '公共' && projectType !== '复盘' && batchLocations[asset.tagNo] ? { address: Object.values(batchLocations[asset.tagNo]).join('-') } : {}) }
+          ? { ...asset, status: needsPhotoReview(asset) ? '审核中' : asset.ownerNo === currentUser.employeeNo ? '已盘' : '代盘', inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name, resultSource: '狐小e快速扫描', photos: capturedPhotos(asset), ...(asset.area === '公共' && projectType !== '复盘' && batchLocations[asset.tagNo] ? { address: Object.values(batchLocations[asset.tagNo]).join('-') } : {}) }
           : asset
       )));
     }
@@ -657,7 +677,7 @@ export default function AssetInventoryMobilePrototype() {
       ].map((group) => <section className="inventory-plan-section" key={group.key}>
         <AssetGroupHeading label={group.key} count={group.rows.length} collapsed={collapsedPlanSections.includes(group.key)} onToggle={() => setCollapsedPlanSections((current) => current.includes(group.key) ? current.filter((item) => item !== group.key) : [...current, group.key])} />
         {!collapsedPlanSections.includes(group.key) && <div className="inventory-plan-assets">
-          {group.rows.length ? group.rows.map((asset) => <AssetCard key={asset.id} asset={asset} onClick={() => openDetail(asset)} />) : <div className="inventory-empty">暂无{group.key}资产</div>}
+          {group.rows.length ? group.rows.map((asset) => <AssetCard key={asset.id} asset={asset} showOwner onClick={() => openDetail(asset)} />) : <div className="inventory-empty">暂无{group.key}资产</div>}
         </div>}
       </section>)}
     </div>
@@ -687,7 +707,7 @@ export default function AssetInventoryMobilePrototype() {
           {selectedAsset.area !== '员工' && <DetailRow label="盘点范围" value={selectedAsset.area} />}
           <DetailRow label="盘点人" value={selectedAsset.inventoryBy} />
           <DetailRow label="盘点日期" value={selectedAsset.inventoryDate} />
-          <DetailRow label="盘点说明" value={selectedAsset.inventoryNote} />
+          {(selectedAsset.inventoryRemark ?? selectedAsset.inventoryNote) && <DetailRow label="盘点备注" value={selectedAsset.inventoryRemark ?? selectedAsset.inventoryNote} />}
           {selectedAsset.area !== '员工' && <>
             <DetailRow label="用途" value={selectedAsset.purpose} /><DetailRow label="公司" value={selectedAsset.company} />
             <DetailRow label="使用说明" value={selectedAsset.usageNote} /><DetailRow label="备注" value={selectedAsset.remark} />
@@ -706,7 +726,7 @@ export default function AssetInventoryMobilePrototype() {
         {scannedDetail && canSubmit && selectedAsset.photoRequired && <div className="inventory-photo-card">
           <div className="inventory-section-title">上传图片</div>
           <div className="inventory-photo-tip">请拍摄清晰的资产照片和标签</div>
-          <div className="inventory-photo-grid">{slots.map((slot) => <PhotoSlot key={slot} label={slot} added={Boolean(photoState[selectedAsset.id + '::' + slot])} onAdd={() => togglePhoto(slot)} onRemove={() => togglePhoto(slot)} />)}</div>
+          <div className="inventory-photo-grid">{slots.map((slot) => <InventoryMobilePhotoSlot key={slot} label={slot} photo={photoState[selectedAsset.id + '::' + slot]} onChange={(photo) => updatePhoto(slot, photo)} />)}</div>
         </div>}
       </div>
       {(quickPhotoMode || canSubmit) && <div className="inventory-mobile-footer inventory-detail-actions">
@@ -748,6 +768,8 @@ export default function AssetInventoryMobilePrototype() {
       </div>
       <ScanResultModal
         scanModal={scanModal}
+        hasPendingAssets={hasPendingAssets}
+        onFinish={() => { setScanModal(null); setView('workbench'); }}
         onClose={() => setScanModal(null)}
         onRest={() => { setScanModal(null); setScannedDetail(false); setView(scanReturnView); }}
         onNetworkFailure={() => { setScanModal(null); setScannedDetail(true); setView('detail'); }}
@@ -823,11 +845,11 @@ export default function AssetInventoryMobilePrototype() {
               title="资产盘点"
               onBack={goBack}
               onExit={exitPrototype}
-              right={<>{canQuickScan && <Button type="text" aria-label="快速扫描" icon={<ScanLine size={18} />} onClick={() => openQuickScan()}>快扫</Button>}<Button type="text" shape="circle" aria-label="监督计划" icon={<ListChecks size={19} />} onClick={() => setPlanMenuOpen((current) => !current)} /></>}
+              right={<>{canQuickScan && <Button type="text" aria-label="快速扫描" icon={<ScanLine size={18} />} onClick={() => openQuickScan()}>快扫</Button>}<Button type="text" shape="circle" aria-label="监督计划" icon={<ListChecks size={19} />} onClick={() => setPlanMenuOpen((current) => !current)}>{unfinishedPlanCount > 0 && <span className="inventory-plan-pending-count" aria-label={'未完成监督计划' + unfinishedPlanCount + '个'}>{unfinishedPlanCount}</span>}</Button></>}
             />
             {planMenuOpen && <div className="inventory-supervised-plans" role="menu" aria-label="我监督的盘点计划">
               {supervisedPlans.map((plan) => <button type="button" role="menuitem" key={plan.id} onClick={() => { if (!hasRouteProject) switchDemoContext(DEMO_CONTEXTS.find(context => context.id === (plan.contextId || 'initial'))); setActivePlanId(plan.id); setCollapsedPlanSections([]); setPlanMenuOpen(false); setView('planDetail'); }}>
-                {plan.name}<span className="inventory-plan-dot" />
+                {plan.name}{hasUnfinishedAssets(plan) && <span className="inventory-plan-dot" aria-label="未完成" />}
               </button>)}
             </div>}
             <div className="inventory-mobile-content">

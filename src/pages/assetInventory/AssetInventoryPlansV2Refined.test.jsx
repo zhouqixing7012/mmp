@@ -26,3 +26,13 @@ test('启动前发现未分配资产，要求默认补计划或手工创建，�
   expect(onManualCreate).toHaveBeenCalledTimes(1);
   expect(setRows).not.toHaveBeenCalled();
 });
+
+test('位置变更入口仅向明确的项目创建人开放，不把负责人当创建人', () => {
+  const props = { rows: [], setRows: jest.fn(), assetsForPlan: () => [], currentOperator: '冯丽婷' };
+  const { rerender } = render(<AssetInventoryPlansV2Refined {...props} project={{ projectNo: 'R1', projectType: '复盘', creator: '冯丽婷' }} />);
+  expect(screen.getByRole('button', { name: '发起位置变更' })).toBeInTheDocument();
+  rerender(<AssetInventoryPlansV2Refined {...props} project={{ projectNo: 'R1', projectType: '复盘', owner: '冯丽婷', creator: '其他创建人' }} />);
+  expect(screen.queryByRole('button', { name: '发起位置变更' })).not.toBeInTheDocument();
+  rerender(<AssetInventoryPlansV2Refined {...props} project={{ projectNo: 'R1', projectType: '复盘', owner: '冯丽婷' }} />);
+  expect(screen.queryByRole('button', { name: '发起位置变更' })).not.toBeInTheDocument();
+});

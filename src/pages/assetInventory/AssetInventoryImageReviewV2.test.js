@@ -1,6 +1,6 @@
 import { saveInventoryPhotoSnapshot } from './inventoryPhotoRules';
 jest.mock('antd', () => ({}));
-import { buildReviewRows } from './AssetInventoryImageReviewV2';
+import { buildReviewRows, sortInventoryReviewRows } from './AssetInventoryImageReviewV2';
 import { savePhotoReviewResult } from './inventoryPhotoReviewStore';
 
 beforeEach(() => { window.localStorage.clear(); window.sessionStorage.clear(); });
@@ -34,4 +34,22 @@ test('快照项目不混入预置审核记录，非必传与范围外记录不�
   ]);
   ['NEED', 'OPTIONAL', 'OUTSIDE'].forEach(assetTag => savePhotoReviewResult('PHOTO-REVIEW', { assetTag, inventoryRange: '公共', status: '审核中' }));
   expect(buildReviewRows('PHOTO-REVIEW', ['公共']).map(row => row.asset.assetTag)).toEqual(['NEED']);
+});
+
+
+test('审核状态排序在结论变化后仍为待审核、不通过、通过',()=>{
+  const rows=[{key:'pass',reviewStatus:'审核通过'},{key:'todo',reviewStatus:'待审核'},{key:'fail',reviewStatus:'审核不通过'}];
+  expect(sortInventoryReviewRows(rows).map(row=>row.key)).toEqual(['todo','fail','pass']);
+  const changed=rows.map(row=>row.key==='todo'?{...row,reviewStatus:'审核通过'}:row);
+  expect(sortInventoryReviewRows(changed)[0].key).toBe('fail');
+  expect(rows[1].reviewStatus).toBe('待审核');
+});
+
+test('审核结论保存不丢失同次提交的实际照片、盘点人和备注',()=>{
+  const photos={overall:{key:'overall',label:'资产整体照片',src:'data:image/png;base64,cGhvdG8='},gallery:[]};
+  savePhotoReviewResult('CAPTURE',{assetTag:'TAG',inventoryRange:'员工',status:'审核中',photos,counter:'盘点人',inventoryNote:'本次备注'});
+  savePhotoReviewResult('CAPTURE',{assetTag:'TAG',status:'已盘'});
+  const row=buildReviewRows('CAPTURE',['员工']).find(item=>item.asset.assetTag==='TAG');
+  expect(row.photos.overall.src).toBe(photos.overall.src);expect(row.asset.counter).toBe('盘点人');expect(row.asset.inventoryNote).toBe('本次备注');
+  expect(row.reviewStatus).toBe('审核通过');
 });

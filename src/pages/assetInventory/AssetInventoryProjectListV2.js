@@ -1,3 +1,4 @@
+import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
@@ -48,14 +49,8 @@ function hasInventoryHistory(row) {
   return ['盘点中', '盘点关闭'].includes(normalizeStatus(row?.status));
 }
 
-function getProjectCloseBlockReason(project) {
-  if (Number(project?.unstartedPlanCount || 0) > 0) return '仍有未启动的盘点计划，请先启动计划后再关闭项目';
-  if (Number(project?.pendingImageReviewCount || 0) > 0) return '仍有待审核的盘点图片，请完成审核后再关闭项目';
-  if (Number(project?.rejectedImageReviewCount || 0) > 0) return '仍有审核不通过的盘点图片，请处理后再关闭项目';
-  return '';
-}
 
-export default function AssetInventoryProjectListV2({ creator, onCreatorChange, onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview, onCloseProject, statusOverrides = {} }) {
+export default function AssetInventoryProjectListV2({ creator, onCreatorChange, onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview, onCloseProject, statusOverrides = {}, getCloseBlockReason = inventoryProjectCloseBlockReason }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const navigate = useNavigate();
   const [rows, setRows] = useState(() => PROJECT_LIST_ROWS.map((row) => ({ ...row, status: statusOverrides[row.projectNo] || normalizeStatus(row.status) })));
@@ -127,7 +122,7 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
     }
     const replayBlockReason = replayCloseBlockReason(row);
     if (replayBlockReason) { messageApi.warning(replayBlockReason); return; }
-    const closeBlockReason = getProjectCloseBlockReason(row);
+    const closeBlockReason = getCloseBlockReason(row);
     if (closeBlockReason) { messageApi.warning(closeBlockReason); return; }
     Modal.confirm({
       title: '确认关闭盘点项目？',
