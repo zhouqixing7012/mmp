@@ -1,5 +1,8 @@
+import { getSharedPeople, PERSON_LOOKUP_FIELDS, PERSON_LOOKUP_COLUMNS, getSharedCostCenters, COST_CENTER_LOOKUP_FIELDS, COST_CENTER_LOOKUP_COLUMNS } from '../../services/assetReferenceOptions';
 import { AssetValueSelect } from '../../components/AssetQueryControls';
 import { CONSUMABLE_STATUS_OPTIONS as STATUS_OPTIONS } from '../../components/assetQueryModel';
+import { CONSUMABLE_ADD_TYPE_OPTIONS as ADD_TYPE_OPTIONS } from '../../config/assetFieldOptions';
+import { ASSET_PLATE_OPTIONS } from '../../config/assetPlates';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
@@ -45,12 +48,10 @@ const { Dragger } = Upload;
 
 const FORMAL_SCRAP_STATUSES = new Set(['已报废']);
 const EDITABLE_STATUS_OPTIONS = STATUS_OPTIONS.filter((item) => !FORMAL_SCRAP_STATUSES.has(item));
-const ADD_TYPE_OPTIONS = ['采购新增', '历史新增', '收购新增', '赠与新增', '再利用新增', '转移新增'];
 const SCRAP_TYPE_OPTIONS = ['已到报废期', '未到报废期', '丢失'];
-const PLATE_OPTIONS = [
-  '11.搜狐网-web', '12.搜狐网-mobile', '13.汽车', '14.无线', '15.焦点', '16.视频', '17.Corporate',
-  '51.焦点 Corporate', '52.房产', '53.家居', '54.二手房',
-];
+// 共用板块目录，保留耗材维护原有可选编码范围。
+const CONSUMABLE_PLATE_CODES = new Set(['11', '12', '13', '14', '15', '16', '17', '51', '52', '53', '54']);
+const PLATE_OPTIONS = ASSET_PLATE_OPTIONS.filter(value => CONSUMABLE_PLATE_CODES.has(value.split('.')[0]));
 const CITY_OPTIONS = ['北京', '上海', '广州', '天津'];
 const BUILDING_BY_CITY = {
   北京: ['搜狐媒体大厦', '北京亦庄数据中心'],
@@ -311,12 +312,8 @@ export default function ConsumableMaintenancePage() {
       code: rows.find((row) => row.company === name)?.companyCode || '',
       name,
     }));
-    const owners = [...new Map(rows.map((row) => [row.ownerId, {
-      id: row.ownerId,
-      code: row.ownerId,
-      name: row.ownerName,
-      department: row.department,
-    }])).values()];
+    const ownerIds = new Set(rows.map(row => row.ownerId));
+    const owners = getSharedPeople().filter(person => ownerIds.has(person.code));
     const mainAssets = MAIN_ASSET_OPTIONS.filter((item) => (
       item.status !== '已报废' && item.ownerId === editDraft?.ownerId
     ));
@@ -339,8 +336,8 @@ export default function ConsumableMaintenancePage() {
       },
       owners: {
         title: '选择耗材责任人', multiple: true, values: owners, valueField: 'code',
-        searchFields: [{ name: 'code', label: '员工编号', dataIndex: 'code' }, { name: 'name', label: '员工姓名', dataIndex: 'name' }, { name: 'department', label: '部门', dataIndex: 'department' }],
-        columns: [{ title: '员工编号', dataIndex: 'code' }, { title: '员工姓名', dataIndex: 'name' }, { title: '部门', dataIndex: 'department' }],
+        searchFields: PERSON_LOOKUP_FIELDS,
+        columns: PERSON_LOOKUP_COLUMNS,
       },
       warehouses: {
         title: '选择仓库', multiple: true, valueField: 'name',
@@ -354,9 +351,9 @@ export default function ConsumableMaintenancePage() {
       },
       costCenter: {
         title: '选择成本中心', multiple: false, valueField: 'name',
-        values: uniqueValues(rows, 'costCenter').map((name, index) => ({ id: `cc-${index}`, name })),
-        searchFields: [{ name: 'name', label: '成本中心', dataIndex: 'name' }],
-        columns: [{ title: '成本中心', dataIndex: 'name' }],
+        values: getSharedCostCenters(),
+        searchFields: COST_CENTER_LOOKUP_FIELDS,
+        columns: COST_CENTER_LOOKUP_COLUMNS,
       },
       editCompany: {
         title: '选择公司', multiple: false, values: companies, valueField: 'name',
@@ -365,8 +362,8 @@ export default function ConsumableMaintenancePage() {
       },
       editOwner: {
         title: '选择耗材责任人', multiple: false, values: owners, valueField: 'code',
-        searchFields: [{ name: 'code', label: '员工编号', dataIndex: 'code' }, { name: 'name', label: '员工姓名', dataIndex: 'name' }, { name: 'department', label: '部门', dataIndex: 'department' }],
-        columns: [{ title: '员工编号', dataIndex: 'code' }, { title: '员工姓名', dataIndex: 'name' }, { title: '部门', dataIndex: 'department' }],
+        searchFields: PERSON_LOOKUP_FIELDS,
+        columns: PERSON_LOOKUP_COLUMNS,
       },
       editMainAsset: {
         title: '选择主资产', multiple: false, values: mainAssets, valueField: 'tag',

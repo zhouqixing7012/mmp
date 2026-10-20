@@ -1,4 +1,6 @@
+import { getSharedCostCenters, costCenterCode, getSharedPeople, PERSON_LOOKUP_FIELDS, PERSON_LOOKUP_COLUMNS, COST_CENTER_LOOKUP_FIELDS, COST_CENTER_LOOKUP_COLUMNS } from '../../services/assetReferenceOptions';
 import { ASSET_PLATE_OPTIONS as PLATE_OPTIONS } from '../../config/assetPlates';
+import { ASSET_PURPOSE_OPTIONS, ASSET_ADD_TYPE_OPTIONS as ADD_TYPE_OPTIONS } from '../../config/assetFieldOptions';
 import { ASSET_MARK_OPTIONS } from '../../config/assetMarks';
 import React, { useMemo, useState } from 'react';
 import {
@@ -47,9 +49,8 @@ const { Dragger } = Upload;
 
 const FORMAL_SCRAP_STATUSES = new Set(['已报废-已处置', '已报废-待处置']);
 const EDITABLE_STATUS_OPTIONS = STATUS_OPTIONS.filter((item) => !FORMAL_SCRAP_STATUSES.has(item));
-const PURPOSE_OPTIONS = ['部门公用', '员工用机', '其他用途', '专业用途'];
+const PURPOSE_OPTIONS = ASSET_PURPOSE_OPTIONS.filter(option => option.value !== '99').map(option => option.label);
 const ASSET_TYPE_OPTIONS = ['公司资产', '自备资产'];
-const ADD_TYPE_OPTIONS = ['报废新增', '采购新增', '历史新增', '收购新增', '赠与新增', '再利用新增', '转移新增'];
 const SCRAP_TYPE_OPTIONS = ['已到报废期', '未到报废期', '丢失'];
 
 const CITY_OPTIONS = ['北京', '上海', '广州', '天津'];
@@ -227,24 +228,6 @@ function uniqueLookupRecords(rows, codeField, nameField, idPrefix) {
   return [...map.values()];
 }
 
-function costCenterCode(value) {
-  const text = String(value || '').trim();
-  if (!text) return '';
-  const separatorIndex = text.indexOf('.');
-  return separatorIndex > 0 ? text.slice(0, separatorIndex) : text;
-}
-
-function costCenterLookupRecords(rows) {
-  const map = new Map();
-  rows.forEach((row) => {
-    const name = String(row.costCenter || '').trim();
-    const code = costCenterCode(name);
-    if (!code || !name || map.has(code)) return;
-    map.set(code, { id: `cc-${code}`, code, name });
-  });
-  return [...map.values()];
-}
-
 function formatOwner(row) {
   const values = [row?.ownerId, row?.ownerName].filter((value) => !isEmptyValue(value));
   return values.length ? values.join('-') : '-';
@@ -384,32 +367,12 @@ export default function AssetMaintenancePage() {
         valueField: 'code',
       },
       owners: {
-        title: '选择资产责任人',
-        values: rows.map((row) => ({ id: row.ownerId, code: row.ownerId, name: row.ownerName, department: row.department })),
-        searchFields: [
-          { name: 'code', label: '员工编码', dataIndex: 'code' },
-          { name: 'name', label: '姓名', dataIndex: 'name' },
-          { name: 'department', label: '部门名称', dataIndex: 'department' },
-        ],
-        columns: [
-          { title: '员工编码', dataIndex: 'code' },
-          { title: '姓名', dataIndex: 'name' },
-          { title: '部门名称', dataIndex: 'department' },
-        ],
-        valueField: 'code',
+        title: '选择资产责任人', values: getSharedPeople(), searchFields: PERSON_LOOKUP_FIELDS,
+        columns: PERSON_LOOKUP_COLUMNS, valueField: 'code',
       },
       costCenters: {
-        title: '选择成本中心',
-        values: costCenterLookupRecords(rows),
-        searchFields: [
-          { name: 'code', label: '成本中心编码', dataIndex: 'code' },
-          { name: 'name', label: '成本中心', dataIndex: 'name' },
-        ],
-        columns: [
-          { title: '成本中心编码', dataIndex: 'code' },
-          { title: '成本中心', dataIndex: 'name' },
-        ],
-        valueField: 'code',
+        title: '选择成本中心', values: getSharedCostCenters(), searchFields: COST_CENTER_LOOKUP_FIELDS,
+        columns: COST_CENTER_LOOKUP_COLUMNS, valueField: 'code',
       },
       brands: {
         title: '选择品牌',
@@ -442,12 +405,12 @@ export default function AssetMaintenancePage() {
     }
     if (field === 'owners') {
       return values.map((id) => {
-        const row = rows.find((item) => item.ownerId === id);
-        return row ? formatOwner(row) : id;
+        const person = getSharedPeople().find(item => item.code === id);
+        return person ? person.code + '-' + person.name : id;
       }).join(', ');
     }
     if (field === 'costCenters') {
-      const lookup = new Map(costCenterLookupRecords(rows).map((record) => [String(record.code), record.name]));
+      const lookup = new Map(getSharedCostCenters().map((record) => [String(record.code), record.name]));
       return values.map((code) => lookup.get(String(code)) || code).join(', ');
     }
     return values.join(', ');

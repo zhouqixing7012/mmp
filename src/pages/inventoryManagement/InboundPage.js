@@ -1,3 +1,4 @@
+import { ASSET_ADD_TYPE_OPTIONS as NEW_INBOUND_ADD_TYPE_OPTIONS } from '../../config/assetFieldOptions';
 import { ASSET_MARK_OPTIONS as INBOUND_ASSET_MARK_OPTIONS } from '../../config/assetMarks';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -314,7 +315,6 @@ function EditorField({ label, required = false, children, span = 1 }) {
   return <DetailItem label={<FieldLabel label={label} required={required} />} span={span}>{children}</DetailItem>;
 }
 
-const NEW_INBOUND_ADD_TYPE_OPTIONS = ['报废新增', '采购新增', '历史新增', '收购新增', '赠与新增', '再利用新增', '转移新增'];
 
 const VIRTUAL_RESPONSIBLE_COMPANY_FALLBACK = {
   SOHU53: mockCompanies.find((item) => item.code === '114'),

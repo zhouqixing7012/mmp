@@ -1,3 +1,6 @@
+import { ASSET_PLATE_OPTIONS } from '../config/assetPlates';
+import { ASSET_PURPOSE_OPTIONS, ASSET_ADD_TYPE_OPTIONS, CONSUMABLE_ADD_TYPE_OPTIONS } from '../config/assetFieldOptions';
+import { getSharedCostCenters, getSharedPeople } from './assetReferenceOptions';
 import { categoryOptions } from '../mock/reference/materialCategoryMapping';
 import { assetReportRows, assetReportCatalog } from '../mock/businessRulesMock';
 import { DEFAULT_REPORT_ACCESS, assertReportAccess, canReadReportRow, getWarehouseScope } from './assetReportAccess';
@@ -31,6 +34,11 @@ function rowOptions(rows, field) {
 }
 export function getReportOptions(definition, field, filters = {}, access = DEFAULT_REPORT_ACCESS) {
   assertReportAccess(access);
+  if (field.optionSet === 'plate') return ASSET_PLATE_OPTIONS.map(label => ({ value: label.split('.')[0], code: label.split('.')[0], label }));
+  if (field.optionSet === 'purpose') return ASSET_PURPOSE_OPTIONS;
+  if (field.optionSet === 'addType') return (definition.id === 'report-2-1' ? CONSUMABLE_ADD_TYPE_OPTIONS : ASSET_ADD_TYPE_OPTIONS).map(value => ({ value, label: value }));
+  if (field.optionSet === 'person') return getSharedPeople(access);
+  if (field.optionSet === 'costCenter') return getSharedCostCenters(access);
   if (field.options) return field.options.map(option => typeof option === 'string' ? { value: option, label: option, code: option } : { ...option, code: option.value });
   const { materials, warehouses } = assetReportCatalog;
   const rows = assetReportRows[definition.id].filter(row => canReadReportRow(row, access) && row.deleted !== true && row.deleted !== 'Y');

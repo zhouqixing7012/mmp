@@ -344,3 +344,7 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 | InventoryMobilePhotoSlot.jsx / InventoryPhotoImage.jsx | 拍照保存与重试；页面和审核按标识读照片并管理ObjectURL生命周期。 |
 
 上述文件均位于src/pages/assetInventory。列表和详情关闭入口共用inventoryCloseRules，并由V2传入当前计划、照片和位置申请；位置申请保留原单号及历次审批记录。
+
+### 业务字段候选复用
+
+`src/config/assetFieldOptions.js`维护用途与新增类型字典，`assetPlates.js`维护板块字典；维护查询、维护编辑校验、入库与资产报表引用共同来源。`src/services/assetReferenceOptions.js`集中读取有来源的维护记录及业务引用，提供人员/成本中心候选、编码及选择列定义；报表调用时传入台账/卡片权限，维护表单保留原可选范围。`AssetPersonSelect`复用人员弹窗，显式options模式回填工号，原盘点rows模式保持原契约。报表的角色字段只决定匹配位置，不新建候选数组；正式主数据尚未接入。

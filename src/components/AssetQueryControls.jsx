@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Select, TreeSelect } from 'antd';
 import LookupInput from './LookupInput';
 import SelectModal from './SelectModal';
+import { PERSON_LOOKUP_FIELDS, PERSON_LOOKUP_COLUMNS } from '../services/assetReferenceOptions';
 
 export { formatAssetCategory, matchesAssetCategory, matchesQuerySelection } from './assetQueryModel';
 
@@ -36,10 +37,11 @@ export function AssetValueSelect({ rows, field, value, onChange, multiple = fals
   return <Select mode={multiple ? 'multiple' : undefined} showSearch optionFilterProp="label" allowClear style={{ width: '100%' }} placeholder={placeholder} value={multiple ? value || [] : value || undefined} options={options} onChange={onChange} {...props} />;
 }
 
-export function AssetPersonSelect({ rows, field = 'owner', value, onChange, title = '选择资产责任人', multiple = true }) {
+export function AssetPersonSelect({ rows = [], options, field = 'owner', value, onChange, title = '选择资产责任人', multiple = true }) {
   const [open, setOpen] = useState(false);
   const selected = Array.isArray(value) ? value : value ? [value] : [];
   const dataSource = useMemo(() => {
+    if (options) return options.map(option => ({ ...option, id: option.value }));
     const people = new Map();
     rows.forEach((row) => {
       const name = row[field];
@@ -47,12 +49,12 @@ export function AssetPersonSelect({ rows, field = 'owner', value, onChange, titl
       people.set(name, { id: name, name, code: field === 'owner' ? row.ownerNo || '' : '', department: field === 'owner' ? row.ownerDept || '' : '' });
     });
     return [...people.values()];
-  }, [rows, field]);
+  }, [rows, field, options]);
   return <>
-    <LookupInput value={selected.join('、')} placeholder="请选择" onOpen={() => setOpen(true)} onClear={() => onChange(multiple ? [] : '')} />
+    <LookupInput aria-label={title.replace(/^选择/, '')} value={selected.map(item => options ? options.find(option => option.value === item)?.label || item : item).join('、')} placeholder="请选择" onOpen={() => setOpen(true)} onClear={() => onChange(multiple ? [] : '')} />
     <SelectModal open={open} title={title} rowKey="id" multiple={multiple} dataSource={dataSource} initialSelectedKeys={selected}
-      searchFields={[{ name: 'code', label: '员工编号', dataIndex: 'code' }, { name: 'name', label: '员工姓名', dataIndex: 'name' }, { name: 'department', label: '部门', dataIndex: 'department' }]}
-      columns={[{ title: '员工编号', dataIndex: 'code', render: (code) => code || '-' }, { title: '员工姓名', dataIndex: 'name' }, { title: '部门', dataIndex: 'department', render: (department) => department || '-' }]}
-      onCancel={() => setOpen(false)} onConfirm={(records) => onChange(multiple ? records.map((record) => record.name) : records.name)} />
+      searchFields={PERSON_LOOKUP_FIELDS}
+      columns={PERSON_LOOKUP_COLUMNS}
+      onCancel={() => setOpen(false)} onConfirm={(records) => onChange(multiple ? records.map(record => options ? record.value : record.name) : options ? records.value : records.name)} />
   </>;
 }

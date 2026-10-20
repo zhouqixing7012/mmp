@@ -3,10 +3,11 @@ import { Button, DatePicker, Input, Modal, Select, Space, TreeSelect, message } 
 import dayjs from 'dayjs';
 import LookupInput from '../../components/LookupInput';
 import SelectModal from '../../components/SelectModal';
-import { AssetCategorySelect, AssetTreeSelect, AssetValueSelect } from '../../components/AssetQueryControls';
+import { AssetCategorySelect, AssetTreeSelect, AssetValueSelect, AssetPersonSelect } from '../../components/AssetQueryControls';
 import { ASSET_STATUS_OPTIONS, CONSUMABLE_STATUS_OPTIONS } from '../../components/assetQueryModel';
 import { getReportOptions } from '../../services/assetReportsService';
 import { buildReportTree } from '../../services/assetReportOptions';
+import { COST_CENTER_LOOKUP_FIELDS, COST_CENTER_LOOKUP_COLUMNS } from '../../services/assetReferenceOptions';
 
 export default function ReportFilter({ definition, field, filters, access, onChange, onQuery }) {
   const [open, setOpen] = useState(false);
@@ -20,6 +21,7 @@ export default function ReportFilter({ definition, field, filters, access, onCha
     setTreeDraft(value || []);
     setOpen(true);
   };
+  if (field.optionSet === 'person') return <AssetPersonSelect options={options} title={'选择' + field.label} multiple={field.multiple} value={value} onChange={change} />;
   if (field.type === 'treeSelect') return <AssetCategorySelect rows={[]} treeData={buildReportTree(options)}
     aria-label={field.label} value={selected} onChange={change} />;
   if (field.type === 'departmentTreeSelect') return <AssetTreeSelect treeData={buildReportTree(options, true)}
@@ -55,12 +57,12 @@ export default function ReportFilter({ definition, field, filters, access, onCha
           placeholder={department ? '请选择部门' : '请选择类别'} value={treeDraft} onChange={setTreeDraft} />
       </Modal> : <SelectModal open={open} onCancel={() => setOpen(false)} title={`选择${field.label}`} rowKey="value" multiple={field.multiple}
         dataSource={options} initialSelectedKeys={selected}
-        searchFields={field.optionSet === 'Building' ? [
+        searchFields={field.optionSet === 'costCenter' ? COST_CENTER_LOOKUP_FIELDS : field.optionSet === 'Building' ? [
           { name: 'name', label: 'Building名称', dataIndex: 'name' }, { name: 'city', label: 'City名称', dataIndex: 'city' },
         ] : [{ name: 'code', label: person ? '员工编号' : '编码', dataIndex: 'code' },
           { name: person ? 'name' : 'label', label: person ? '姓名' : '名称', dataIndex: person ? 'name' : 'label' },
           ...(person ? [{ name: 'department', label: '部门', dataIndex: 'department' }] : [])]}
-        columns={field.optionSet === 'Building' ? [
+        columns={field.optionSet === 'costCenter' ? COST_CENTER_LOOKUP_COLUMNS : field.optionSet === 'Building' ? [
           { title: 'Building名称', dataIndex: 'name', width: 260 }, { title: 'City名称', dataIndex: 'city', width: 200 },
         ] : [{ title: person ? '员工编号' : '编码', dataIndex: 'code', width: 160 },
           { title: person ? '姓名' : '名称', dataIndex: person ? 'name' : 'label', width: 260 },

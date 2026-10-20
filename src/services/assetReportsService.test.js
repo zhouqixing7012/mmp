@@ -351,3 +351,46 @@ test("全报表公共查询口径、级别删除、名称与格式保持一致",
   retired.forEach(row => expect(row.values["报废类型"]).toBe(row.accountingSource.assetsSnapshot[0].retirementType));
   expect(getReportDefinition("report-2-1").filters.find(f => f.label === "部门").multiple).toBe(false);
 });
+
+// 公共基础资料不能缩减为当前报表的少量样本。
+test('板块、用途和新增类型与维护共用完整目录，保留筛选编码', () => {
+  const { ASSET_PLATE_OPTIONS } = require('../config/assetPlates');
+  const { ASSET_PURPOSE_OPTIONS, ASSET_ADD_TYPE_OPTIONS, CONSUMABLE_ADD_TYPE_OPTIONS } = require('../config/assetFieldOptions');
+  const def = getReportDefinition('report-5-1');
+  const plate = def.filters.find(field => field.optionSet === 'plate');
+  expect(getReportOptions(def, plate).map(option => option.label)).toEqual(ASSET_PLATE_OPTIONS);
+  expect(plate.type).toBe('select');
+  const added = def.filters.find(field => field.optionSet === 'addType');
+  expect(added.type).toBe('select');
+  expect(getReportOptions(def, added).map(option => option.value)).toEqual(ASSET_ADD_TYPE_OPTIONS);
+  const asset = getReportDefinition('report-1-1');
+  expect(getReportOptions(asset, asset.filters.find(field => field.optionSet === 'purpose'))).toEqual(ASSET_PURPOSE_OPTIONS);
+  expect(queryReport('report-1-1', { '资产所属板块': ['17'], '资产用途': ['70'] }).length).toBeGreaterThan(0);
+  const consumable = getReportDefinition('report-2-1');
+  expect(getReportOptions(consumable, consumable.filters.find(field => field.optionSet === 'addType')).map(option => option.value)).toEqual(CONSUMABLE_ADD_TYPE_OPTIONS);
+});
+test('成本中心共用维护目录并保留有来源的报表历史引用', () => {
+  const { getSharedCostCenters } = require('./assetReferenceOptions');
+  const definition = getReportDefinition('report-1-1');
+  const options = getReportOptions(definition, definition.filters.find(field => field.optionSet === 'costCenter'));
+  expect(options).toEqual(expect.arrayContaining(getSharedCostCenters(permission(['集团'])).map(option => expect.objectContaining({ value: option.value, name: option.name }))));
+  expect(options.some(option => option.value === 'CC-REPORT')).toBe(true);
+  expect(getReportOptions(definition, definition.filters.find(field => field.optionSet === 'costCenter'), {}, permission([]))).toEqual([]);
+  expect(options.some(option => option.value === 'CC1602')).toBe(false);
+  expect(queryReport('report-1-1', { 成本中心: ['CC-REPORT'] }).length).toBeGreaterThan(0);
+});
+test('各角色人员候选共用授权引用，按工号匹配且结果权限不扩大', () => {
+  const optionsFor = (id, label) => { const d = getReportDefinition(id); return getReportOptions(d, d.filters.find(field => field.label === label)); };
+  expect(optionsFor('report-1-1', '资产责任人工号')).toEqual(optionsFor('report-3-1', '事务执行人'));
+  expect(optionsFor('report-6-1', '申请人')).toEqual(optionsFor('report-6-1', '汇总提交人名称'));
+  expect(optionsFor('report-3-1', '事务执行人')).toEqual(expect.arrayContaining([expect.objectContaining({ value: '213852', name: '孙志强' })]));
+  expect(optionsFor('report-1-1', '资产责任人工号').some(option => option.value === '215410')).toBe(false);
+  expect(queryReport('report-3-1', { 事务执行人: ['213852'] }).every(row => row.scope === '集团')).toBe(true);
+  expect(queryReport('report-7-2', { 申请人: ['220784'], 耗材责任人: ['220784'] }).length).toBeGreaterThan(0);
+});
+
+test('直接调用公共目录也先校验权限契约', () => {
+  const { getSharedCostCenters, getSharedPeople } = require('./assetReferenceOptions');
+  expect(() => getSharedCostCenters({ userId: 'missing' })).toThrow('缺少台账及卡片权限信息');
+  expect(() => getSharedPeople({ userId: 'missing' })).toThrow('缺少台账及卡片权限信息');
+});

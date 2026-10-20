@@ -136,3 +136,34 @@ test.each([["report-5-1", "仓库", ["编码", "名称", "公司"]], ["report-8-
   const dialog = await screen.findByRole("dialog");
   titles.forEach(title => expect(within(dialog).getByRole("columnheader", { name: title })).toBeInTheDocument());
 });
+
+test('新增类型直接下拉，人员弹窗使用工号回填并支持清空', async () => {
+  const definition = reportDefinitions.find(item => item.id === 'report-5-1');
+  const change = jest.fn();
+  const { rerender } = render(<ReportFilter definition={definition} field={definition.filters.find(field => field.label === '新增类型')} filters={{}} onChange={change} />);
+  expect(screen.getByRole('combobox', { name: '新增类型' })).toBeInTheDocument();
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  const field = definition.filters.find(field => field.label === '资产责任人工号');
+  rerender(<ReportFilter definition={definition} field={field} filters={{ '资产责任人工号': ['213852'] }} onChange={change} />);
+  expect(screen.getByDisplayValue('213852.孙志强')).toBeInTheDocument();
+  fireEvent.click(screen.getByDisplayValue('213852.孙志强'));
+  const dialog = await screen.findByRole('dialog');
+  expect(within(dialog).getByRole('columnheader', { name: '员工编号' })).toBeInTheDocument();
+  fireEvent.click(within(dialog).getByRole('button', { name: /确.*定/ }));
+  expect(change).toHaveBeenLastCalledWith(field, ['213852']);
+});
+
+test('公共人员选择保留同名不同工号，确认返回工号而非姓名', async () => {
+  const { AssetPersonSelect } = require('../../components/AssetQueryControls');
+  const change = jest.fn();
+  render(<AssetPersonSelect title="选择人员" options={[
+    { value: '0001', code: '0001', name: '同名人员', label: '0001.同名人员' },
+    { value: '0002', code: '0002', name: '同名人员', label: '0002.同名人员' },
+  ]} value={[]} onChange={change} />);
+  fireEvent.click(screen.getByRole('textbox', { name: '人员' }));
+  const dialog = await screen.findByRole('dialog');
+  expect(within(dialog).getAllByText('同名人员')).toHaveLength(2);
+  fireEvent.click(within(dialog).getAllByRole('checkbox')[0]);
+  fireEvent.click(within(dialog).getByRole('button', { name: /确.*定/ }));
+  expect(change).toHaveBeenCalledWith(['0001', '0002']);
+});

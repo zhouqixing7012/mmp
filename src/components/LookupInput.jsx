@@ -2,7 +2,7 @@ import React from 'react';
 import { Input } from 'antd';
 import { Search } from 'lucide-react';
 
-export default function LookupInput({ value, placeholder, onOpen, onClear, disabled = false }) {
+export default function LookupInput({ value, placeholder, onOpen, onClear, disabled = false, 'aria-label': ariaLabel }) {
   const handleOpen = (event) => {
     if (event?.target?.closest?.('.ant-input-clear-icon')) return;
     onOpen?.();
@@ -10,6 +10,7 @@ export default function LookupInput({ value, placeholder, onOpen, onClear, disab
 
   return (
     <Input
+      aria-label={ariaLabel}
       value={value || ''}
       readOnly
       allowClear={Boolean(onClear)}
