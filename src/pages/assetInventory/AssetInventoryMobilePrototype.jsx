@@ -708,7 +708,7 @@ export default function AssetInventoryMobilePrototype() {
           <DetailRow label="盘点人" value={selectedAsset.inventoryBy} />
           <DetailRow label="盘点日期" value={selectedAsset.inventoryDate} />
           {(selectedAsset.inventoryRemark ?? selectedAsset.inventoryNote) && <DetailRow label="盘点备注" value={selectedAsset.inventoryRemark ?? selectedAsset.inventoryNote} />}
-          {selectedAsset.area !== '员工' && <>
+          {currentUser.isESAssetGroup === true && <>
             <DetailRow label="用途" value={selectedAsset.purpose} /><DetailRow label="公司" value={selectedAsset.company} />
             <DetailRow label="使用说明" value={selectedAsset.usageNote} /><DetailRow label="备注" value={selectedAsset.remark} />
           </>}

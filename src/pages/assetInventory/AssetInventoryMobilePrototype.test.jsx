@@ -456,4 +456,33 @@ describe('AssetInventoryMobilePrototype', () => {
     expect(screen.getByText('盘点备注')).toBeInTheDocument();expect(screen.getByText('PC已有备注')).toBeInTheDocument();expect(screen.getByText('PC盘点人')).toBeInTheDocument();
   });
 
+  test.each([
+    { isESAssetGroup: true, area: '员工' },
+    { isESAssetGroup: false, area: '员工' },
+    { isESAssetGroup: true, area: '公共' },
+    { isESAssetGroup: false, area: '公共' },
+  ])('详情扩展字段按ES角色展示，与范围无关：$isESAssetGroup / $area', ({ isESAssetGroup, area }) => {
+    const asset = INVENTORY_MOBILE_ASSETS.find(row => row.area === area);
+    mockLocationState = { projectNo: 'DETAIL-ROLE', scopeRanges: [area], mobileUser: { name: asset.owner, employeeNo: asset.ownerNo, isESAssetGroup } };
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(asset.tagNo) }));
+    ['用途', '公司', '使用说明', '备注'].forEach(label => {
+      if (isESAssetGroup) expect(screen.getByText(label, { exact: true })).toBeInTheDocument();
+      else expect(screen.queryByText(label, { exact: true })).not.toBeInTheDocument();
+    });
+    expect(screen.getByText('资产标签号')).toBeInTheDocument();
+  });
+
+  test('监督计划资产清单不展示审核中资产，不计入已盘组', () => {
+    const employeeAssets = INVENTORY_MOBILE_ASSETS.filter(asset => asset.area === '员工');
+    mockLocationState = { projectNo: 'SUPERVISED-REVIEW', scopeRanges: ['员工'] };
+    employeeAssets.forEach(asset => saveMobileInventoryResult('SUPERVISED-REVIEW', asset.tagNo, { status: '审核中' }));
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: '监督计划' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /员工盘点/ }));
+    expect(screen.getByRole('button', { name: '已盘—共0条' })).toBeInTheDocument();
+    employeeAssets.forEach(asset => expect(screen.queryByRole('button', { name: new RegExp(asset.tagNo) })).not.toBeInTheDocument());
+    expect(screen.queryByText('审核中')).not.toBeInTheDocument();
+  });
+
 });

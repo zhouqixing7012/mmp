@@ -53,7 +53,7 @@ function hasInventoryHistory(row) {
 export default function AssetInventoryProjectListV2({ creator, onCreatorChange, onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview, onCloseProject, statusOverrides = {}, getCloseBlockReason = inventoryProjectCloseBlockReason }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const navigate = useNavigate();
-  const [rows, setRows] = useState(() => PROJECT_LIST_ROWS.map((row) => ({ ...row, status: statusOverrides[row.projectNo] || normalizeStatus(row.status) })));
+  const [rows, setRows] = useState(() => PROJECT_LIST_ROWS.map((row) => ({ ...row, owner: row.creator || '', status: statusOverrides[row.projectNo] || normalizeStatus(row.status) })));
 
   useEffect(() => {
     setRows((current) => current.map((row) => statusOverrides[row.projectNo] ? { ...row, status: statusOverrides[row.projectNo] } : row));

@@ -9,6 +9,7 @@ export const PROJECT_LIST_ROWS = [
     key: 'CP-202607010001',
     relationGroup: '2026年度机房初盘链路',
     projectNo: 'CP-202607010001',
+    creator: '系统管理员',
     projectType: '初盘',
     projectName: '2026年度机房初盘',
     status: '盘点中',
