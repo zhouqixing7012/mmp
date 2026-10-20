@@ -1,3 +1,4 @@
+import accountBookContents from './reference/accountBookContents.json';
 // Mock 数据集中管理，后续接真实接口时只改这一个文件
 
 // 物料大类
@@ -257,9 +258,7 @@ export const mockAssetDepreciationRuleData = [
     { mainCat: 'OFFICE EQUIPMENT', subCat: '摄影摄像-单反机身', originalValue: '5000.0', relation: '>=', years: '4年以上', valueType: '净值' },
   ];
 // yewurules.js 页面 - Account Book Content 表格数据
-export const mockAccountBookContentData = [
-    { id: 1, company: '搜狐干线', plate: 'SAAS', name: '搜狐干线', cnName: '搜狐干线', enName: 'FOCUS XinGanXian' },
-  ];
+export const mockAccountBookContentData = accountBookContents;
 // yewurules.js 页面 - Expense Account Rule 表格数据
 // 成本中心
 export const mockCostCenters = [

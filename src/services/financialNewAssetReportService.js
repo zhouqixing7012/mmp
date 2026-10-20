@@ -1,19 +1,22 @@
 import * as XLSX from 'xlsx-js-style';
 import dayjs from 'dayjs';
 import source from '../data/financialNewAssets.json';
+import companyMapping from '../data/financialReportCompanyMapping.json';
 import { getReportOptions } from './assetReportOptions';
 import definitions from '../pages/assetReports/reportDefinitions.json';
 
-// 原型仅读取附件真实样本；工作表名称原样作为公司标识，不推断财务公司映射。
+// 标签英文名与财务报表Sheet英文名是两套用途，报表只使用财务提供的右侧映射。
 export const financialAssetFields = ['公司', '板块', ...source.fields];
 export const financialAssetExportFields = source.fields;
-export const financialAssetCompanies = source.companies;
+export const financialAssetCompanies = [...source.companies, ...companyMapping.map(item => item.sheetName).filter(name => !source.companies.includes(name))];
+const code = value => String(value ?? '').split('.')[0];
+const matchesCompany = (mapping, selected) => !selected.length || selected.some(value => value === mapping.sheetName || code(value) === code(mapping.company));
 const companyDefinition = definitions.find(row => row.id === 'report-1-1');
 const companyField = companyDefinition.filters.find(field => field.label === '公司');
 export const getFinancialAssetCompanyOptions = () => getReportOptions(companyDefinition, companyField);
 const numericFields = ['数量', '原值', '税金', '含税金额'];
 export function validateFinancialAssetFilters({ companies = [], plates = [], dates = [] } = {}) {
-  if (!Array.isArray(companies) || companies.some(company => !source.companies.includes(company) && !getFinancialAssetCompanyOptions().some(option => option.value === company))) throw new Error('公司不存在');
+  if (!Array.isArray(companies) || companies.some(company => !financialAssetCompanies.includes(company) && !getFinancialAssetCompanyOptions().some(option => option.value === company))) throw new Error('公司不存在');
   if (!Array.isArray(plates) || plates.some(value => typeof value !== 'string' || !value.trim())) throw new Error('板块条件无效');
   if (!Array.isArray(dates) || dates.length > 2) throw new Error('启用日期范围无效');
   dates.forEach(value => {
@@ -24,9 +27,14 @@ export function validateFinancialAssetFilters({ companies = [], plates = [], dat
 export function queryFinancialNewAssets(filters = {}) {
   validateFinancialAssetFilters(filters);
   const { companies = [], plates = [], dates = [] } = filters;
-  if (companies.some(company => !source.companies.includes(company))) throw new Error('附件公司与系统公司尚未建立对应关系，暂不能按系统公司查询');
-  return source.rows.map(row => ({ ...row, values: { 公司: row.company, 板块: null, ...row.values } })).filter(row => (!companies.length || companies.includes(row.company))
-    && (!plates.length || plates.some(plate => plate.split('.')[0] === String(row.values['板块'] ?? '').split('.')[0]))
+  if (companies.some(company => !companyMapping.some(mapping => matchesCompany(mapping, [company])))) throw new Error('所选公司尚未配置报表英文名');
+  return source.rows.map(row => {
+    const mapping = companyMapping.find(item => item.sheetName === row.company);
+    if (!mapping) throw new Error('报表Sheet尚未配置公司与板块映射');
+    // 多板块Sheet不能证明某一明细的板块，缺少快照时保留空值。
+    return { ...row, values: { ...row.values, 公司: mapping.company, 板块: mapping.plates.length === 1 ? mapping.plates[0] : null } };
+  }).filter(row => matchesCompany(companyMapping.find(item => item.sheetName === row.company), companies)
+    && (!plates.length || plates.some(plate => code(plate) === code(row.values['板块'])))
     && (!dates[0] || row.values['启用日期'] >= dates[0]) && (!dates[1] || row.values['启用日期'] <= dates[1]));
 }
 export function totalFinancialNewAssets(rows) {
@@ -39,7 +47,11 @@ export function formatFinancialAssetValue(value, field) {
 }
 export function buildFinancialNewAssetWorkbook(filters = {}) {
   const rows = queryFinancialNewAssets(filters);
-  const companies = filters.companies?.length ? source.companies.filter(company => filters.companies.includes(company)) : source.companies;
+  const companies = financialAssetCompanies.filter(name => {
+    const mapping = companyMapping.find(item => item.sheetName === name);
+    return matchesCompany(mapping, filters.companies || []) && (!filters.plates?.length || mapping.plates.some(plate => filters.plates.some(value => code(value) === code(plate))));
+  });
+  if (!companies.length) throw new Error('所选公司与板块未配置报表Sheet');
   const workbook = XLSX.utils.book_new();
   companies.forEach(company => {
     const companyRows = rows.filter(row => row.company === company);

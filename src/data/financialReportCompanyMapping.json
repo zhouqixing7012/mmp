@@ -1,0 +1,107 @@
+[
+  {
+    "sheetName": "Momentum ENTMT",
+    "company": "112.北京新动力",
+    "plates": [
+      "16.视频"
+    ]
+  },
+  {
+    "sheetName": "ENTMT",
+    "company": "114.新媒体",
+    "plates": [
+      "16.视频"
+    ]
+  },
+  {
+    "sheetName": "ENTMT SH",
+    "company": "115.新媒体-上海",
+    "plates": [
+      "16.视频"
+    ]
+  },
+  {
+    "sheetName": "ENTMT GZ",
+    "company": "116.新媒体-广州",
+    "plates": [
+      "16.视频"
+    ]
+  },
+  {
+    "sheetName": "Fox Info",
+    "company": "123.天津飞狐",
+    "plates": [
+      "16.视频"
+    ]
+  },
+  {
+    "sheetName": "Tianjin Jinhu",
+    "company": "124.天津金狐",
+    "plates": [
+      "16.视频"
+    ]
+  },
+  {
+    "sheetName": "Qianjun",
+    "company": "132.千钧",
+    "plates": [
+      "16.视频"
+    ]
+  },
+  {
+    "sheetName": "Focus Interactive",
+    "company": "201.焦点互动",
+    "plates": [
+      "51.焦点 Corporate",
+      "52.房产",
+      "53.家居"
+    ]
+  },
+  {
+    "sheetName": "SOHUTU",
+    "company": "001.搜狐集团工会",
+    "plates": [
+      "0.缺省"
+    ]
+  },
+  {
+    "sheetName": "ERA",
+    "company": "101.新时代",
+    "plates": [
+      "11.搜狐网-web",
+      "12.搜狐网-mobile",
+      "13.汽车",
+      "17.Corporate"
+    ]
+  },
+  {
+    "sheetName": "Internet",
+    "company": "102.互联网",
+    "plates": [
+      "11.搜狐网-web",
+      "12.搜狐网-mobile",
+      "13.汽车",
+      "17.Corporate"
+    ]
+  },
+  {
+    "sheetName": "Momentum",
+    "company": "112.北京新动力",
+    "plates": [
+      "11.搜狐网-web",
+      "12.搜狐网-mobile",
+      "13.汽车",
+      "17.Corporate"
+    ]
+  },
+  {
+    "sheetName": "Media",
+    "company": "114.新媒体",
+    "plates": [
+      "11.搜狐网-web",
+      "12.搜狐网-mobile",
+      "13.汽车",
+      "17.Corporate"
+    ]
+  }
+]
