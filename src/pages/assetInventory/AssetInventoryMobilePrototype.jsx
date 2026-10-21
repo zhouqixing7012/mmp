@@ -17,6 +17,7 @@ import './assetInventoryMobile.css';
 import InventoryPhotoImage from './InventoryPhotoImage';
 import InventoryMobilePhotoSlot from './InventoryMobilePhotoSlot';
 import { getPhotoReviewResults, savePhotoReviewResult } from './inventoryPhotoReviewStore';
+import { applyPhotoReviewToInventoryAsset, canReportInventoryLoss } from './inventoryLossRules';
 import mobileScanReference from './images/mobile-scan-reference.png';
 import { INVENTORY_MOBILE_ASSETS as DEMO_ASSETS } from '../../mock/inventoryMobileMock';
 import { getAssetMaintenanceRows, updateAssetMaintenanceRow } from '../../services/assetManagementService';
@@ -297,9 +298,7 @@ export default function AssetInventoryMobilePrototype() {
   const [assets, setAssets] = useState(() => loadProjectAssets(previewProjectNo));
   useEffect(() => {
     const results = new Map(getPhotoReviewResults(previewProjectNo).map((entry) => [entry.assetTag, entry]));
-    setAssets(loadProjectAssets(previewProjectNo).map((asset) => results.has(asset.tagNo)
-      ? { ...asset, status: results.get(asset.tagNo).status }
-      : asset));
+    setAssets(loadProjectAssets(previewProjectNo).map((asset) => applyPhotoReviewToInventoryAsset(asset, results.get(asset.tagNo))));
   }, [previewProjectNo, location.key]);
   const [query, setQuery] = useState('');
   const [selectedAssetId, setSelectedAssetId] = useState(null);
@@ -524,9 +523,12 @@ export default function AssetInventoryMobilePrototype() {
     setConfirmLossOpen(true);
   };
 
+  const canReportLoss = (asset) => canReportInventoryLoss(asset,
+    getPhotoReviewResults(previewProjectNo).find((entry) => entry.assetTag === asset?.tagNo));
+
   const confirmReportLoss = () => {
     if (projectClosed) { messageApi.info('项目已关闭，不能提交报失'); return; }
-    if (!selectedAsset || selectedAsset.status !== '未盘' || selectedAsset.lossReported) { messageApi.warning('该资产不能重复报失'); return; }
+    if (!canReportLoss(selectedAsset)) { messageApi.warning('该资产当前不能报失，请先核对盘点状态'); return; }
     saveMobileInventoryResult(previewProjectNo, selectedAsset.tagNo, { status: '报失', resultSource: '狐小e', lossReported: true, inventoryNote: reportReason.trim(), inventoryRemark: reportReason.trim(), lossReason: reportReason.trim(), inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name });
     setAssets((current) => current.map((asset) => (
       asset.id === selectedAsset.id
@@ -734,7 +736,7 @@ export default function AssetInventoryMobilePrototype() {
           <Button onClick={() => { setQuickPhotoMode(false); setScannedDetail(false); setView('quickList'); }}>返回</Button>
           <Button type="primary" className="inventory-mobile-scan-action" onClick={saveQuickPhotos}>{selectedAsset.photoRequired && !editLocation ? '保存图片' : '保存'}</Button>
         </> : <>
-          {selectedAsset.status === '未盘' && !selectedAsset.lossReported && <Button danger className="inventory-mobile-detail-action" disabled={projectClosed} onClick={() => setReportLossOpen(true)}>报失</Button>}
+          {canReportLoss(selectedAsset) && <Button danger className="inventory-mobile-detail-action" disabled={projectClosed} onClick={() => setReportLossOpen(true)}>报失</Button>}
           {canSubmit && <Button type="primary" className="inventory-mobile-scan-action inventory-mobile-detail-action" disabled={projectClosed} onClick={() => scannedDetail ? handleSubmitScan(selectedAsset.ownerNo === currentUser.employeeNo ? 'mine' : 'proxy') : openScan(selectedAsset.id, detailReturnView === 'planDetail' ? activePlanId : null)}>{scannedDetail ? '提交' : '盘点'}</Button>}
         </>}
       </div>}
