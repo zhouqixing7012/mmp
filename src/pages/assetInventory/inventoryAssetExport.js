@@ -9,7 +9,6 @@ export const INVENTORY_ASSET_EXPORT_FIELDS = [
   ['盘点人', 'counter'],
   ['盘点日期', 'inventoryDate'],
   ['资产标签号', 'assetTag'],
-  ['印刷号', 'printNo'],
   ['序列号', 'serialNo'],
   ['资产类别', 'assetCategory'],
   ['资产说明', 'description'],
