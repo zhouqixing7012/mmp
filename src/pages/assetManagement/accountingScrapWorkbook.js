@@ -186,8 +186,8 @@ export function buildAccountingScrapWorkbook(assets, form = {}) {
     merge(sheet, 12, start + 3, totalRow, start + 3);
     XLSX.utils.book_append_sheet(workbook, detailSheet(kind, subset), kind);
   });
-  // 模板示例的净值月份和部门经理没有已确认来源，不填示例值。
-  cell(sheet, totalRow + 2, 1, form.netValueRemark || '', { font: 'Times New Roman', size: 12, bold: true, red: true });
+  // 净值备注按确认后的模板原文固定展示，部门经理由组织数据提供。
+  cell(sheet, totalRow + 2, 1, "Remark：资产净值为Dec.2024US Gaap净值,仅供参考.", { font: 'Times New Roman', size: 12, bold: true, red: true });
   merge(sheet, totalRow + 3, 1, totalRow + 3, 13);
   cell(sheet, totalRow + 4, 1, '审批流程');
   const historyHeader = totalRow + 5;
