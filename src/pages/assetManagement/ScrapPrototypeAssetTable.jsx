@@ -18,6 +18,7 @@ import {
   UploadOutlined,
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
+import { exportAccountingScrapWorkbook } from './accountingScrapWorkbook';
 import SelectModal from '../../components/SelectModal';
 import LookupInput from '../../components/LookupInput';
 import StatusTag from '../../components/StatusTag';
@@ -188,6 +189,14 @@ function requiredTitle(label) {
 }
 
 export function exportScrapPrototypeAssets(assets, type, accountingMethod, disposalSuppliers = {}) {
+  if (type === 'accounting') {
+    try {
+      exportAccountingScrapWorkbook(assets, { ...disposalSuppliers, scrapMethod: accountingMethod });
+    } catch (error) {
+      message.error(error.message || '导出失败，请重试');
+    }
+    return;
+  }
   const rows = assets.map((item, index) => {
     if (type === 'disposal') {
       return {
@@ -216,39 +225,19 @@ export function exportScrapPrototypeAssets(assets, type, accountingMethod, dispo
       };
     }
 
-    if (type === 'crossCompany' || (type === 'accounting' && accountingMethod === '调账')) {
+    if (type === 'crossCompany') {
       return {
-        ...(type === 'accounting' ? {
-          账面报废申请单号: disposalSuppliers.applicationNo,
-          公司: disposalSuppliers.company,
-          板块: item.plate,
-          单据报废方式: accountingMethod,
-          资产报废方式: item.detailScrapMethod,
-          报废类型: item.scrapType,
-          报废原因: item.reason,
-          来源业务: item.sourceBusinessType,
-          来源申请单号: item.sourceBusinessNo,
-          资产编号: item.assetNo,
-          资产卡片数量: item.cardQuantity,
-          报废数量: item.quantity,
-          原值: item.originalValue,
-          净值: item.netValue,
-          累计折旧: item.accumulatedDepreciation,
-          City: item.city,
-          Building: item.building,
-          Floor: item.floor,
-        } : {}),
         资产标签号: item.tagNo,
         资产序列号: item.serialNumber,
         资产类别: [item.majorCategory, item.minorCategory].filter(Boolean).join('.'),
         资产说明: item.description,
-        [type === 'crossCompany' ? '责任人' : '新责任人']: item.newResponsiblePerson,
+        责任人: item.newResponsiblePerson,
         新公司: item.newCompany,
         新板块: item.newPlate,
         新成本中心: item.newCostCenter,
-        [type === 'accounting' ? '新 City' : 'City']: item.targetCity,
-        [type === 'accounting' ? '新 Building' : 'Building']: item.targetBuilding,
-        [type === 'accounting' ? '新 Floor' : 'Floor']: item.targetFloor,
+        City: item.targetCity,
+        Building: item.targetBuilding,
+        Floor: item.targetFloor,
         调账后仓库: item.targetWarehouse,
       };
     }
@@ -274,34 +263,6 @@ export function exportScrapPrototypeAssets(assets, type, accountingMethod, dispo
       };
     }
 
-    if (type === 'accounting') {
-      return {
-        账面报废申请单号: disposalSuppliers.applicationNo,
-        公司: disposalSuppliers.company,
-        板块: item.plate,
-        单据报废方式: accountingMethod,
-        资产报废方式: item.detailScrapMethod,
-        报废类型: item.scrapType,
-        报废原因: item.reason,
-        来源业务: item.sourceBusinessType,
-        来源申请单号: item.sourceBusinessNo,
-        资产类别: [item.majorCategory, item.minorCategory].filter(Boolean).join('.'),
-        资产标签号: item.tagNo,
-        资产编号: item.assetNo,
-        资产说明: item.description,
-        资产关键字: item.assetKeyword,
-        资产卡片数量: item.cardQuantity,
-        报废数量: item.quantity,
-        原值: item.originalValue,
-        累计折旧: item.accumulatedDepreciation,
-        净值: item.netValue,
-        责任人姓名: String(item.responsiblePerson || '').split('-').slice(1).join('-'),
-        责任人工号: String(item.responsiblePerson || '').split('-')[0],
-        City: item.city,
-        Building: item.building,
-        Floor: item.floor,
-      };
-    }
 
     return {
       资产标签号: item.tagNo,
@@ -323,9 +284,7 @@ export function exportScrapPrototypeAssets(assets, type, accountingMethod, dispo
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), '资产明细');
   XLSX.writeFile(
     workbook,
-    type === 'accounting'
-      ? '账面报废资产明细.xlsx'
-      : type === 'scrap'
+    type === 'scrap'
         ? '资产报废明细.xlsx'
         : type === 'disposal'
           ? '资产处置明细.xlsx'
@@ -1504,3 +1463,4 @@ export default function ScrapPrototypeAssetTable({
     </>
   );
 }
+

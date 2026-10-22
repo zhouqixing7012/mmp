@@ -24,6 +24,7 @@ import { getScrapPrototypeApprovalRecords } from './scrapPrototypeApproval';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 import { money } from './scrapPrototypeData';
+import { ACCOUNTING_SUMMARY_PROJECTS, accountingSummaryProject } from './accountingScrapWorkbook';
 import { getDisposalCandidates, validateAccountingAssets, validateDisposalAssets, validateScrapAssets } from '../../services/scrapPrototypeService';
 
 const transferCompanyOptions = Array.from(
@@ -74,21 +75,6 @@ function sectionTitle(title) {
   );
 }
 
-const ACCOUNTING_SUMMARY_PROJECTS = [
-  '主机',
-  '显示器',
-  '主机（配件）',
-  '笔记本',
-  '笔记本（配件）',
-  '办公设备',
-  '办公设备（配件）',
-  '服务器',
-  '服务器（配件）',
-  '网络设备',
-  '网络设备（配件）',
-  '家具',
-  'VEHICLE',
-];
 
 const ACCOUNTING_REASON_DEFAULTS = {
   已到报废期: '已到报废年限，无法使用，申请报废',
@@ -104,32 +90,6 @@ function accountingCompanyDisplayName(company) {
   return name;
 }
 
-function accountingSummaryProject(asset) {
-  const category = String(asset?.majorCategory || '').trim().toUpperCase();
-  const minor = String(asset?.minorCategory || '');
-  const description = String(asset?.description || '');
-  const accessory = Boolean(
-    asset?.parentAssetTag
-    || asset?.mainAssetTag
-    || asset?.mainTagNo
-    || asset?.mainTag
-    || asset?.isAccessory
-    || /配件/.test(minor)
-    || /配件/.test(description)
-  );
-  let base = category;
-  if (category === 'PC') base = '主机';
-  else if (category === 'DISPLAY' || /显示器/.test(minor) || /显示器/.test(description)) base = '显示器';
-  else if (category === 'NOTEBOOK') base = '笔记本';
-  else if (category === 'OFFICE EQUIPMENT') base = '办公设备';
-  else if (category === 'SERVER') base = '服务器';
-  else if (category === 'NET EQUIPMENT') base = '网络设备';
-  else if (category === 'FURNITURE') base = '家具';
-  else if (category === 'VEHICLE') base = 'VEHICLE';
-  return accessory && ['主机', '笔记本', '办公设备', '服务器', '网络设备'].includes(base)
-    ? `${base}（配件）`
-    : base;
-}
 
 export default function ScrapPrototypeEditor({
   type,
@@ -717,8 +677,16 @@ export default function ScrapPrototypeEditor({
     || (['scrap', 'disposal'].includes(type) && form.documentStatus === '审批中')
   );
   const showPageExport = (type === 'scrap' && approvalView)
-    || (type === 'accounting' && (approvalView || previewView))
+    || (type === 'accounting' && (readOnly || approvalView || previewView))
     || (type === 'disposal' && (approvalPage || previewView));
+  const exportForm = type === 'accounting'
+    ? {
+        ...(readOnly || approvalPage
+          ? { ...form, scrapFormName: form.scrapFormName || accountingFormName, scrapPeriod: form.scrapPeriod || accountingScrapPeriod }
+          : prepareSavePayload().nextForm),
+        approvalRecords,
+      }
+    : form;
 
   const disposalSummary = Array.from(assets.reduce((groups, asset) => {
     const key = JSON.stringify([asset.city || '', asset.majorCategory || '']);
@@ -1257,7 +1225,7 @@ export default function ScrapPrototypeEditor({
               <Button
                 icon={<DownloadOutlined />}
                 disabled={assets.length === 0}
-                onClick={() => exportScrapPrototypeAssets(assets, type, form.scrapMethod, form)}
+                onClick={() => exportScrapPrototypeAssets(assets, type, form.scrapMethod, exportForm)}
               >
                 导出
               </Button>
@@ -1587,7 +1555,7 @@ export default function ScrapPrototypeEditor({
           onReplace={handleAssetReplace}
           scrapMethod={form.scrapMethod}
           accountingMethod={form.scrapMethod}
-          disposalSuppliers={form}
+          disposalSuppliers={exportForm}
         />}
       </Card>
 
@@ -1739,3 +1707,4 @@ export default function ScrapPrototypeEditor({
     </div>
   );
 }
+
