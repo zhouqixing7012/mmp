@@ -24,9 +24,9 @@ test('查询编辑后执行才更新列表，详情返回保留查询，进度�
   render(<ApplicationQueriesContent activeSubMenu="退库单" />);
   const input = screen.getByRole('textbox', { name: '申请单号' });
   fireEvent.change(input, { target: { value: 'NO-MATCH' } });
-  expect(screen.queryByText('暂无数据')).not.toBeInTheDocument();
+  expect(screen.queryByText('暂无符合条件的退库单')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: /查\s*询/ }));
-  expect(screen.getByText('暂无数据')).toBeInTheDocument();
+  expect(screen.getByText('暂无符合条件的退库单')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: /重\s*置/ }));
   const number = queryApplications('return')[0].values.applicationNo;
   fireEvent.click(screen.getByRole('button', { name: number }));

@@ -34,7 +34,7 @@ test('更换分别展示退回待发放鉴定和进度，不出现办理按钮',
 test('部件入口只读取对应资产部件', () => {
   const record = employeeApplicationRows.find(row => row.kind === 'replacement');
   render(<EmployeeApplicationDetail definition={employeeApplicationDefinitions[1]} record={record} onBack={jest.fn()} onProgress={jest.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: '1' }));
+  fireEvent.click(screen.getByRole('button', { name: /查看.+的配件（1件）/ }));
   expect(screen.getByRole('dialog', { name: '部件明细' })).toBeInTheDocument();
   expect(screen.getByText(record.lines[0].accessories[0].tag)).toBeInTheDocument();
 });

@@ -20,7 +20,7 @@ test('借用逐资产详情及配件链接绑定当前行', async () => {
   const record = { ...source, lines: source.lines.map((line, index) => ({ ...line, accessories: index === 1 ? [{ ...source.lines[0].accessories[0], id: 'second-part', tag: 'SECOND-PART', quantity: 2 }] : line.accessories })) };
   render(<LegacyApplicationDetail definition={legacyDefinitions.find(item => item.id === 'borrow')} record={record} onBack={jest.fn()} onProgress={jest.fn()} />);
   record.lines.forEach(line => expect(screen.getByText(line.tag)).toBeInTheDocument());
-  fireEvent.click(screen.getByRole('button', { name: '2' }));
+  fireEvent.click(screen.getByRole('button', { name: /查看.+的配件（2件）/ }));
   const dialog = await screen.findByRole('dialog');
   expect(within(dialog).getByText('SECOND-PART')).toBeInTheDocument();
   expect(within(dialog).queryByText(record.lines[0].accessories[0].tag)).not.toBeInTheDocument();

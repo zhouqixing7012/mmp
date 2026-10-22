@@ -37,7 +37,7 @@ test('退库详情只显示首条主资产，配件与附属耗材来自该条�
   expect(screen.getByRole('button', { name: record.lines[0].tag })).toBeInTheDocument();
   expect(screen.queryByText(record.lines[1].tag)).not.toBeInTheDocument();
   expect(screen.getByText('附属耗材')).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: '1' }));
+  fireEvent.click(screen.getByRole('button', { name: /查看.+的配件（1件）/ }));
   const dialog = await screen.findByRole('dialog');
   expect(within(dialog).getByText(record.lines[0].accessories[0].tag)).toBeInTheDocument();
 });

@@ -1,0 +1,14 @@
+/* 申请详情弹窗统一由内容区承载纵向滚动，宽表只在表格内部横向滚动。 */
+.mmp-application-modal .ant-modal-body {
+  max-height: calc(100dvh - 180px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.mmp-application-modal .ant-table-wrapper {
+  overflow: visible;
+}
+
+.mmp-application-modal .ant-table-content {
+  overflow-y: hidden;
+}

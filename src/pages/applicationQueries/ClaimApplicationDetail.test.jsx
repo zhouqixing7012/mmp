@@ -73,6 +73,6 @@ test('资产领用可打开真实目录配件，领用与采购均展示资产�
   expect(row.lines[0].componentQuantity).toBe(1);
   expect(row.lines[0].components[0]).toEqual(expect.objectContaining(materialCatalog.find(item => item.materialCode === '228001598002000')));
   render(<ClaimApplicationDetail definition={byKind('asset')} record={row} onBack={() => {}} />);
-  fireEvent.click(screen.getByRole('button', { name: '1' }));
+  fireEvent.click(screen.getByRole('button', { name: /查看.+的配件（1件）/ }));
   expect(within(screen.getByRole('dialog', { name: '配件明细' })).getByText('228001598002000')).toBeInTheDocument();
 });
