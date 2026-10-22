@@ -384,16 +384,16 @@ test('资产和耗材PO行仅有剩余可接收数量时展示编辑且草稿引
   expect(assetReceiptSource).toContain("row.receiptStatus === '待接收' && availableQty(row) > 0");
   expect(assetReceiptSource).not.toContain('(availableQty(row) > 0 || draftReference)');
   expect(assetReceiptSource).toContain('const locked = Boolean(draftReference)');
-  expect(assetReceiptSource).toContain('const delta = qty - previousQty');
-  expect(assetReceiptSource).toContain('reconcileMaintenanceForReceipt(nextReceipt)');
+  expect(assetReceiptSource).not.toContain('const delta = qty - previousQty');
+  expect(assetReceiptSource).toContain('return availableQty(currentItem)');
   expect(assetReceiptSource).toContain("? <div className=\"mt-1\"><Readonly>{editDraft.config}</Readonly></div>");
 
   expect(consumableReceiptSource).toContain('const getDraftReceiptLineReference = (poNo, itemId)');
   expect(consumableReceiptSource).toContain("activePO?.receiptStatus !== '已入库' && remainingQty(row) > 0");
   expect(consumableReceiptSource).not.toContain("(remainingQty(row) > 0 || getDraftReceiptLineReference(activePO?.poNo, row.id))");
   expect(consumableReceiptSource).toContain('const locked = Boolean(draftReference)');
-  expect(consumableReceiptSource).toContain('const delta = qty - previousDraftQty');
-  expect(consumableReceiptSource).toContain('actualReceiveQty: qty');
+  expect(consumableReceiptSource).not.toContain('const delta = qty - previousDraftQty');
+  expect(consumableReceiptSource).toContain('const maxQty = remainingQty(currentItem)');
   expect(consumableReceiptSource).toContain("editingPoItemLocked\n                  ? <div className=\"mt-1\"><Readonly>{editDraft.config}</Readonly></div>");
 });
 

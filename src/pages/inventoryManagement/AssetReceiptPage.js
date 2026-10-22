@@ -550,14 +550,13 @@ export default function AssetReceiptPage() {
   };
 
   const editAvailableQty = (item) => {
-    const draftReference = getDraftReceiptItemReference(activePO?.poNo, item?.id);
-    return availableQty(item) + Number(draftReference?.item?.currentReceiptQty || 0);
+    const currentItem = getEffectivePoItems(activePO).find((row) => row.id === item?.id);
+    return availableQty(currentItem);
   };
 
   const openItemEditor = (row) => {
     const partQuantity = row.partQuantity === '-' ? 0 : Number(row.partQuantity || 0);
-    const draftReference = getDraftReceiptItemReference(activePO?.poNo, row.id);
-    const editableQty = Number(draftReference?.item?.currentReceiptQty || row.currentReceiptQty || 0);
+    const editableQty = Number(row.currentReceiptQty || 0);
     setEditItem(row);
     setEditDraft({
       ...row,
@@ -593,35 +592,16 @@ export default function AssetReceiptPage() {
       return messageApi.error('请输入 2～100 之间的整数！');
     }
 
-    if (draftReference) {
-      const previousQty = Number(draftReference.item.currentReceiptQty || 0);
-      const delta = qty - previousQty;
-      const nextItems = getReceiptItems(draftReference.receipt).map((item) => (
-        item.id === editItem.id ? { ...item, currentReceiptQty: qty } : item
-      ));
-      const nextReceipt = { ...draftReference.receipt, itemIds: nextItems.map((item) => item.id), items: nextItems };
-      setReceiptRows((current) => current.map((receipt) => receipt.id === nextReceipt.id ? nextReceipt : receipt));
-      if (activeReceipt?.id === nextReceipt.id) setActiveReceipt(nextReceipt);
-      setPoItemValues(activePO.poNo, {
-        [editItem.id]: (previous) => {
-          const nextDraft = Math.max(0, Number(previous.draftQty || 0) + delta);
-          const remaining = Math.max(0, Number(previous.purchaseQty || 0) - Number(previous.receivedQty || 0) - nextDraft);
-          return { ...previous, draftQty: nextDraft, currentReceiptQty: remaining, editable: remaining > 0 };
+    setPoItemValues(activePO.poNo, {
+      [editItem.id]: locked
+        ? { currentReceiptQty: qty }
+        : {
+          ...editDraft,
+          currentReceiptQty: qty,
+          partQuantity: editDraft.isPart ? Number(editDraft.partQuantity) : '-',
+          partDesc: editDraft.isPart ? (editDraft.partDescriptions || []).join('@') : '-',
         },
-      });
-      reconcileMaintenanceForReceipt(nextReceipt);
-    } else {
-      setPoItemValues(activePO.poNo, {
-        [editItem.id]: locked
-          ? { currentReceiptQty: qty }
-          : {
-            ...editDraft,
-            currentReceiptQty: qty,
-            partQuantity: editDraft.isPart ? Number(editDraft.partQuantity) : '-',
-            partDesc: editDraft.isPart ? (editDraft.partDescriptions || []).join('@') : '-',
-          },
-      });
-    }
+    });
 
     setEditItem(null);
     setEditDraft(null);
@@ -634,9 +614,11 @@ export default function AssetReceiptPage() {
     if (selectedItemKeys.length === 0) return messageApi.warning('请选择要接收的物料！');
     if (!detailPlate) return messageApi.warning('请选择板块！');
     const selectedItems = getEffectivePoItems(activePO).filter((item) => selectedItemKeys.includes(item.id));
+    if (selectedItems.some((item) => !Number.isInteger(Number(item.currentReceiptQty)) || Number(item.currentReceiptQty) <= 0 || Number(item.currentReceiptQty) > availableQty(item))) {
+      return messageApi.error('本次接收数量必须为正整数且不能超过当前剩余可接收数量，请重新编辑');
+    }
     const receiptItems = selectedItems.map((item) => {
-      const maxQty = availableQty(item);
-      const qty = Math.min(Number(item.currentReceiptQty || 0), maxQty);
+      const qty = Number(item.currentReceiptQty || 0);
       return { ...item, currentReceiptQty: qty };
     }).filter((item) => Number(item.currentReceiptQty || 0) > 0);
     if (!receiptItems.length) return messageApi.warning('所选资产当前没有可接收数量');

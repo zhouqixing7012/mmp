@@ -389,11 +389,10 @@ export default function ConsumableReceiptPage() {
   };
 
   const openItemEditor = (row) => {
-    const draftReference = getDraftReceiptLineReference(activePO?.poNo, row.id);
     setEditItem(row);
     setEditDraft({
       ...row,
-      currentReceiveQty: Number(draftReference?.line?.actualReceiveQty || row.currentReceiveQty || 1),
+      currentReceiveQty: Number(row.currentReceiveQty || 1),
     });
   };
 
@@ -401,47 +400,20 @@ export default function ConsumableReceiptPage() {
     const draftReference = getDraftReceiptLineReference(activePO?.poNo, editItem?.id);
     const locked = Boolean(draftReference);
     const qty = Number(editDraft?.currentReceiveQty || 0);
-    const previousDraftQty = Number(draftReference?.line?.actualReceiveQty || 0);
-    const maxQty = remainingQty(editItem) + previousDraftQty;
+    const currentItem = (poItems[activePO?.poNo] || []).find((item) => item.id === editItem?.id);
+    if (!currentItem) return messageApi.error('当前 PO 行已不存在，请重新打开');
+    const maxQty = remainingQty(currentItem);
     if (!Number.isInteger(qty) || qty <= 0) return messageApi.error('接收数量必须为大于 0 的整数');
     if (qty > maxQty) return messageApi.error(`接收数量不能超过可接收数量（当前可调整上限为 ${maxQty}）`);
 
-    if (draftReference) {
-      const delta = qty - previousDraftQty;
-      const nextLines = (draftReference.receipt.lines || []).map((line) => {
-        if (line.sourceItemId !== editItem.id) return line;
-        const calc = lineMoney(line, qty);
-        return {
-          ...line,
-          actualReceiveQty: qty,
-          untaxedAmount: calc.untaxedAmount,
-          taxAmount: calc.taxAmount,
-          taxedUnitPrice: calc.taxedUnit,
-          taxedAmount: calc.taxedAmount,
-        };
-      });
-      const nextReceiptBase = { ...draftReference.receipt, lines: nextLines };
-      const nextReceipt = { ...nextReceiptBase, details: buildDetailsForReceipt(nextReceiptBase) };
-      setReceipts((list) => list.map((receipt) => receipt.receiptNo === nextReceipt.receiptNo ? nextReceipt : receipt));
-      setPoItems((current) => ({
-        ...current,
-        [activePO.poNo]: current[activePO.poNo].map((item) => {
-          if (item.id !== editItem.id) return item;
-          const nextDraft = Math.max(0, Number(item.draftQty || 0) + delta);
-          const next = { ...item, draftQty: nextDraft };
-          return { ...next, currentReceiveQty: remainingQty(next) };
-        }),
-      }));
-    } else {
-      setPoItems((current) => ({
-        ...current,
-        [activePO.poNo]: current[activePO.poNo].map((item) => (
-          item.id === editItem.id
-            ? (locked ? { ...item, currentReceiveQty: qty } : { ...item, ...editDraft, currentReceiveQty: qty })
-            : item
-        )),
-      }));
-    }
+    setPoItems((current) => ({
+      ...current,
+      [activePO.poNo]: current[activePO.poNo].map((item) => (
+        item.id === editItem.id
+          ? (locked ? { ...item, currentReceiveQty: qty } : { ...item, ...editDraft, currentReceiveQty: qty })
+          : item
+      )),
+    }));
     setEditItem(null);
     setEditDraft(null);
     messageApi.success('接收信息已保存');
@@ -451,7 +423,11 @@ export default function ConsumableReceiptPage() {
   const createReceipt = () => {
     if (!selectedPoItems.length) return messageApi.warning('请选择要接收的物料！');
     if (!String(activePO?.plate || '').trim()) return messageApi.warning('请选择板块！');
-    const source = activeItems.filter((item) => selectedPoItems.includes(item.id) && Number(item.currentReceiveQty || 0) > 0 && remainingQty(item) > 0);
+    const selectedItems = activeItems.filter((item) => selectedPoItems.includes(item.id));
+    if (selectedItems.some((item) => !Number.isInteger(Number(item.currentReceiveQty)) || Number(item.currentReceiveQty) <= 0 || Number(item.currentReceiveQty) > remainingQty(item))) {
+      return messageApi.error('本次接收数量必须为正整数且不能超过当前剩余可接收数量，请重新编辑');
+    }
+    const source = selectedItems;
     if (!source.length) return messageApi.warning('所选物资当前没有可接收数量');
     const lines = source.map((item, index) => {
       const calc = lineMoney(item, item.currentReceiveQty);
@@ -1123,7 +1099,7 @@ export default function ConsumableReceiptPage() {
               </div>
               <div>
                 <Typography.Text>接收数量</Typography.Text>
-                <InputNumber className="mt-1 w-full" min={1} max={remainingQty(editItem) + Number(getDraftReceiptLineReference(activePO?.poNo, editItem?.id)?.line?.actualReceiveQty || 0)} precision={0} value={editDraft.currentReceiveQty} onChange={(value) => setEditDraft((item) => ({ ...item, currentReceiveQty: value }))} />
+                <InputNumber className="mt-1 w-full" min={1} max={remainingQty((poItems[activePO?.poNo] || []).find((item) => item.id === editItem?.id) || {})} precision={0} value={editDraft.currentReceiveQty} onChange={(value) => setEditDraft((item) => ({ ...item, currentReceiveQty: value }))} />
               </div>
             </Space>
           )}
