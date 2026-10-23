@@ -1,4 +1,5 @@
 // 资产盘点原型演示数据。字段与规则来自《资产盘点》需求，样例值沿用现有操作轨迹中的可确认数据。
+import { NON_ROOM_REPLAY_DEMO_PROJECT } from '../../mock/inventoryNonRoomReplayDemo';
 
 export const PROJECT_INFO = {
   projectNo: 'CP-202608180002',
@@ -116,6 +117,7 @@ export const PROJECT_ROWS = [
     planStatus: '',
     imageApproval: true,
   },
+  { ...NON_ROOM_REPLAY_DEMO_PROJECT },
 ];
 
 export const INVENTORY_RANGE_METHOD_ROWS = [

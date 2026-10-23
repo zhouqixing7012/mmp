@@ -10,8 +10,8 @@ import StatusTag from '../../components/StatusTag';
 import { PROJECT_LIST_ROWS } from './projectListMockData';
 import SectionCardTitle from './SectionCardTitle';
 import { INVENTORY_CREATORS, allowedProjectTypes } from './inventoryCreatorPermissions';
-import { replayCloseBlockReason } from './inventoryCloseRules';
 
+const EMPTY_STATUS_OVERRIDES = Object.freeze({});
 const EMPTY_FILTERS = {
   projectNo: '', projectName: '', status: '', owner: '', startFrom: '', startTo: '', type: '', createdFrom: '', createdTo: '',
 };
@@ -50,7 +50,7 @@ function hasInventoryHistory(row) {
 }
 
 
-export default function AssetInventoryProjectListV2({ creator, onCreatorChange, onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview, onCloseProject, statusOverrides = {}, getCloseBlockReason = inventoryProjectCloseBlockReason }) {
+export default function AssetInventoryProjectListV2({ creator, onCreatorChange, onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview, onCloseProject, statusOverrides = EMPTY_STATUS_OVERRIDES, getCloseBlockReason = inventoryProjectCloseBlockReason }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const navigate = useNavigate();
   const [rows, setRows] = useState(() => PROJECT_LIST_ROWS.map((row) => ({ ...row, owner: row.creator || '', status: statusOverrides[row.projectNo] || normalizeStatus(row.status) })));
@@ -115,13 +115,6 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
     if (selectedKeys.length !== 1) { messageApi.warning('请选择一个需要关闭的盘点项目'); return; }
     const row = rows.find((item) => item.key === selectedKeys[0]);
     if (!row) return;
-    if (row.status !== '盘点中') { messageApi.warning('只有盘点中的项目可以手动关闭'); return; }
-    if (row.projectType === '初盘' && row.generationSource === '系统生成' && row.scopeRanges?.includes('机房')) {
-      messageApi.info('机房初盘进度达到100%后由系统自动关闭');
-      return;
-    }
-    const replayBlockReason = replayCloseBlockReason(row);
-    if (replayBlockReason) { messageApi.warning(replayBlockReason); return; }
     const closeBlockReason = getCloseBlockReason(row);
     if (closeBlockReason) { messageApi.warning(closeBlockReason); return; }
     Modal.confirm({
@@ -130,6 +123,8 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
       okText: '关闭项目',
       cancelText: '取消',
       onOk: () => {
+        const latestBlock = getCloseBlockReason(row);
+        if (latestBlock) { messageApi.warning(latestBlock); return; }
         setRows((current) => current.map((item) => item.key === row.key ? { ...item, status: '盘点关闭' } : item));
         onCloseProject?.({ ...row, status: '盘点关闭', closedBy: '手动' });
         setSelectedKeys([]);

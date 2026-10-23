@@ -1,5 +1,12 @@
 import { ASSET_ROWS, INITIAL_PLAN_ROWS } from '../pages/assetInventory/mockData';
 import { INVENTORY_MOBILE_ASSETS } from './inventoryMobileMock';
+import { createNonRoomReplayDemoAssets, createNonRoomReplayDemoPlans, NON_ROOM_REPLAY_DEMO_PROJECT, NON_ROOM_REPLAY_DEMO_PHOTO_CONFIG } from './inventoryNonRoomReplayDemo';
+
+const nonRoomReplayDemoAssets = createNonRoomReplayDemoAssets(ASSET_ROWS);
+// 与计划数据使用同一资产集合，供初盘关联时取得执行范围及图片规则。
+export const PROJECT_PLAN_SNAPSHOTS = {
+  [NON_ROOM_REPLAY_DEMO_PROJECT.projectNo]: { assets: nonRoomReplayDemoAssets, config: NON_ROOM_REPLAY_DEMO_PHOTO_CONFIG },
+};
 
 // 仅为已有演示项目建立明确计划归属，不把未分配或其他项目资产补进进度。
 const warehouseSource = INVENTORY_MOBILE_ASSETS.find(asset => asset.tagNo === '1141300083-P');
@@ -55,6 +62,7 @@ const replayEmployeeAssets = INVENTORY_MOBILE_ASSETS.filter(asset => ['asset-001
 });
 
 export const PROJECT_PLAN_ROWS = {
+  [NON_ROOM_REPLAY_DEMO_PROJECT.projectNo]: createNonRoomReplayDemoPlans(nonRoomReplayDemoAssets),
   'CP-202607010001': [{ ...machinePlan, status: '关闭', assetKeys: ['asset-1', 'asset-2'] }],
   'CP-202608180001': nonRoomPlans('关闭'),
   'DCP-202608180001': nonRoomPlans('盘点中'),
@@ -62,6 +70,7 @@ export const PROJECT_PLAN_ROWS = {
 };
 
 export const PROJECT_PLAN_ASSETS = {
+  [NON_ROOM_REPLAY_DEMO_PROJECT.projectNo]: nonRoomReplayDemoAssets,
   'CP-202607010001': ASSET_ROWS.filter(asset => ['asset-1', 'asset-2'].includes(asset.key)),
   'CP-202608180001': nonRoomAssets,
   'DCP-202608180001': nonRoomAssets.map(asset => ({ ...asset })),

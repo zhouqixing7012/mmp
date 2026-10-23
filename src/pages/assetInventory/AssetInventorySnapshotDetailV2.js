@@ -17,7 +17,7 @@ import {
 import dayjs from 'dayjs';
 import { calculateInventorySnapshotStats } from './inventorySnapshotStats';
 import { serializeInventoryAssetExport, serializeInventorySnapshotExport } from './inventoryAssetExport';
-import { inventoryProjectCloseBlockReason, replayCloseBlockReason } from './inventoryCloseRules';
+import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 import { CheckCircle2, Download, PlayCircle, ScanLine, Trash2, Upload, XCircle } from 'lucide-react';
 import InventoryAssetQuery from './InventoryAssetQuery';
 import { EMPTY_INVENTORY_ASSET_QUERY, filterInventoryAssets } from './inventoryAssetQuery';
@@ -417,12 +417,8 @@ export default function AssetInventorySnapshotDetailV2({
   const initialProjectStatus = project?.status === '草稿' ? '快照生成' : (project?.status || '快照生成');
   const [projectStatus, setProjectStatus] = useState(initialProjectStatus);
   useEffect(() => setProjectStatus(initialProjectStatus), [initialProjectStatus]);
-  const canManuallyClose = projectStatus === '盘点中'
-    && !isSystemRoomInitial
-    && !replayCloseBlockReason(project);
+  const canManuallyClose = !['盘点关闭', '关闭'].includes(projectStatus);
   const handleCloseProject = () => {
-    const replayBlockReason = replayCloseBlockReason(project);
-    if (replayBlockReason) { messageApi.warning(replayBlockReason); return; }
     const closeBlockReason = getCloseBlockReason(project);
     if (closeBlockReason) { messageApi.warning(closeBlockReason); return; }
     Modal.confirm({
@@ -431,6 +427,8 @@ export default function AssetInventorySnapshotDetailV2({
       okText: '关闭项目',
       cancelText: '取消',
       onOk: () => {
+        const latestBlock = getCloseBlockReason({ ...project, status: projectStatus });
+        if (latestBlock) { messageApi.warning(latestBlock); return; }
         setProjectStatus('盘点关闭');
         onCloseProject?.({ ...project, status: '盘点关闭', closedBy: '手动' });
         messageApi.success(project?.projectType === '初盘' ? '初盘项目已关闭，并通过服务号通知财务人员' : '盘点项目已关闭');

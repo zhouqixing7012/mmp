@@ -1,4 +1,5 @@
 // 盘点项目列表专用演示数据。
+import { NON_ROOM_REPLAY_DEMO_PROJECT } from '../../mock/inventoryNonRoomReplayDemo';
 // 业务阶段约束：
 // 1. 初盘项目关闭后，才允许出现同一关联组下的抽盘/复盘项目。
 // 2. 生成过盘点计划后才允许进入计划。
@@ -96,4 +97,5 @@ export const PROJECT_LIST_ROWS = [
     owner: '系统管理员',
     createdAt: '2026-08-17',
   },
+  { ...NON_ROOM_REPLAY_DEMO_PROJECT },
 ];

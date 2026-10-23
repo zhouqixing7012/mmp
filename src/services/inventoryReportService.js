@@ -4,6 +4,7 @@ import { styleInventoryReportWorkbook } from './inventoryReportWorkbookStyles';
 import { inventoryReportTemplate, inventoryReportActuals } from '../mock/businessRulesMock';
 import { ASSET_PLATE_OPTIONS } from '../config/assetPlates';
 import { warehouseCatalog } from '../mock/reference/warehouseCatalog';
+import { mapInventoryReportAsset, summarizeInventoryReportCategory } from './inventoryReportClassification';
 
 export const LOSS_CATEGORIES = ['台式机、显示器', '笔记本', '照摄像器材', '移动数码', '办公设备', '车辆', '电话'];
 export const DETAIL_FIELDS = ['序号', '盘点状态', '资产大类', '资产小类', '资产说明', '数量', '原值', '报失当月资产净值', '是否已赔偿', '赔偿金额', '损失', '标签号', '购买日期', '责任人姓名', '责任人编号', '子公司', '一级部门', '说明'];
@@ -46,7 +47,7 @@ export function getInventoryReport(year) {
   });
   const isTemplateYear = selectedYear === inventoryReportTemplate.year;
   const hasActualDetails = Object.prototype.hasOwnProperty.call(inventoryReportActuals.detailsByYear, selectedYear);
-  const details = filterInventoryReportAssets(hasActualDetails ? inventoryReportActuals.detailsByYear[selectedYear] : isTemplateYear ? inventoryReportTemplate.details : []);
+  const details = filterInventoryReportAssets(hasActualDetails ? inventoryReportActuals.detailsByYear[selectedYear] : isTemplateYear ? inventoryReportTemplate.details : []).map(mapInventoryReportAsset);
   return { ...inventoryReportTemplate, scope: `${inventoryReportTemplate.scope}；新媒体上海分公司、新媒体广州分公司仅包含16.视频板块资产`, year: selectedYear, period: `${selectedYear - 1}年7月—${selectedYear}年7月`, history, indicators,
     distribution: isTemplateYear ? inventoryReportTemplate.distribution : inventoryReportTemplate.demoDistribution,
     companyLoss: hasActualDetails ? getActualCompanyLoss(details, selectedYear) : inventoryReportActuals.companyLoss.filter(row => [selectedYear - 1, selectedYear].includes(row.year)),
@@ -195,20 +196,22 @@ export function getInventoryDetailRows(report) {
 
 export function getInventoryLossCategoryRows(report) {
   return LOSS_CATEGORIES.flatMap((category, index) => [report.year - 1, report.year].map(year => {
-    const entry = inventoryReportActuals.categoryLoss.find(row => row.category === category && row.year === year);
+    const supplied = inventoryReportActuals.categoryLoss.find(row => row.category === category && row.year === year);
+    const entry = supplied || (report.hasActualDetails && year === report.year
+      ? summarizeInventoryReportCategory(filterInventoryReportAssets(report.details).filter(row => row['盘点状态'] === '盘亏'), category) : null);
     return { key: `${index}-${year}`, category, year, quantity: entry ? entry.quantity : null, original: entry ? entry.original : null, net: entry ? entry.net : null };
   }));
 }
 
 // 当前年度由完整明细汇总；上一年度仅使用同名公司真实统计，不猜测合并公司对应关系。
 function getActualCompanyLoss(details, year) {
-  const loss = details.filter(row => row['盘点状态'] === '盘亏');
+  const loss = details.filter(row => row['盘点状态'] === '盘亏').map(mapInventoryReportAsset);
   const companies = [...new Set(loss.map(row => row['子公司']))];
   const keys = { 笔记本: 'notebook', 主机: 'desktop', 显示器: 'display', 办公设备: 'office', 移动数码: 'mobile', 照摄像器材: 'camera', 车辆: 'vehicle' };
   const summarize = rows => ({
     quantity: rows.reduce((sum, row) => sum + row['数量'], 0),
     net: rows.reduce((sum, row) => sum + row['报失当月资产净值'], 0),
-    ...Object.fromEntries(Object.entries(keys).map(([category, key]) => [key, rows.filter(row => row.reportCategory === category).reduce((sum, row) => sum + row['数量'], 0)])),
+    ...Object.fromEntries(Object.entries(keys).map(([category, key]) => [key, rows.filter(row => row.reportCompanyCategory === category).reduce((sum, row) => sum + row['数量'], 0)])),
   });
   const previous = company => inventoryReportActuals.companyLoss.find(row => row.company === company && row.year === year - 1) || { company, year: year - 1 };
   return [...companies.flatMap(company => [previous(company), { company, year, ...summarize(loss.filter(row => row['子公司'] === company)) }]),

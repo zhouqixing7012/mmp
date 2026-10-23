@@ -224,3 +224,21 @@ test('年度报告加载先过滤明细再按公司汇总，源汇总和原始�
     expect(report.history.find(row => row.year === 2026).quantity).toBe(14456);
   } finally { details.pop(); }
 });
+
+test('新分类替换逐资产旧标记并联动公司表导出，用户提供年度汇总保持原值', () => {
+  const source = inventoryReportActuals.detailsByYear[2026];
+  const added = { ...source[0], 标签号: 'CLASSIFICATION-CAMERA', 资产大类: 'OFFICE EQUIPMENT', 资产小类: '数码配件-三脚架', 数量: 4, 子公司: '集团总部', reportCategory: '办公设备' };
+  source.push(added);
+  try {
+    const report = getInventoryReport(2026);
+    expect(report.details.find(row => row['标签号'] === 'CLASSIFICATION-CAMERA')).toMatchObject({ reportCategory: '照摄像器材', minorCategoryA: '数码配件' });
+    expect(report.companyLoss.find(row => row.company === '集团总部' && row.year === 2026)).toMatchObject({ camera: 4, office: 0 });
+    const sheet = buildInventoryReportWorkbook(report).Sheets['盘亏分布'];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    const company = rows.find(row => row[0] === '集团总部' && row[1] === 2026);
+    expect(company[7]).toBe(4);
+    expect(company[5]).toBe(0);
+    expect(getInventoryLossCategoryRows(report).find(row => row.category === '照摄像器材' && row.year === 2026).quantity).toBe(0);
+    expect(added.reportCategory).toBe('办公设备');
+  } finally { source.pop(); }
+});

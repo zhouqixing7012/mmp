@@ -83,3 +83,12 @@ test('机房复盘展示人工图片规则区域，机房初盘不展示人工�
   render(<AssetInventoryVariantProvider allowedRanges={['机房']}><CreateProjectView {...props} initialProject={{ ...props.initialProject, projectType: '初盘' }} /></AssetInventoryVariantProvider>);
   expect(screen.queryByText('图片上传规则配置')).not.toBeInTheDocument();
 });
+
+
+test('关联新非机房初盘后直接带出4条执行范围，生成查询有真实资产可纳入', () => {
+  const { NON_ROOM_REPLAY_DEMO_PROJECT } = require('../../mock/inventoryNonRoomReplayDemo');
+  render(<CreateProjectView creator="冯丽婷" initialProject={{ ...PROJECT_INFO, projectNo: 'RCP-NR-DEMO', projectType: '复盘', initialProjectNo: NON_ROOM_REPLAY_DEMO_PROJECT.projectNo }} onBack={() => {}} onGenerated={() => {}} />);
+  expect(screen.getByText('共 4 条')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
+  expect(screen.getByText('共 4 条')).toBeInTheDocument();
+});

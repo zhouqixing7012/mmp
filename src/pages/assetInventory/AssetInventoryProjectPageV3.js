@@ -5,7 +5,7 @@ import AssetInventoryScopeSelectorV3 from './AssetInventoryScopeSelectorV3';
 import { inventoryProjectScopeSource } from './inventoryProjectScope';
 import { getInventoryPhotoSnapshot } from './inventoryPhotoRules';
 import { ASSET_ROWS } from './mockData';
-import { PROJECT_PLAN_ASSETS } from '../../mock/inventoryProjectPlanMock';
+import { PROJECT_PLAN_ASSETS, PROJECT_PLAN_SNAPSHOTS } from '../../mock/inventoryProjectPlanMock';
 import { AssetInventoryVariantProvider } from './AssetInventoryVariantContext';
 
 const V3_RANGES = ['库房', '公共', '员工'];
@@ -21,7 +21,7 @@ export default function AssetInventoryProjectPageV3() {
   const [scopeAssetKeys, setScopeAssetKeys] = useState(null);
   const [draftProject, setDraftProject] = useState(null);
   const sourceAssets = inventoryProjectScopeSource(draftProject || { projectType: '初盘' }, {
-    allAssets: ASSET_ROWS, initialSnapshot: getInventoryPhotoSnapshot(draftProject?.initialProjectNo),
+    allAssets: ASSET_ROWS, initialSnapshot: getInventoryPhotoSnapshot(draftProject?.initialProjectNo) || PROJECT_PLAN_SNAPSHOTS?.[draftProject?.initialProjectNo],
     initialAssets: PROJECT_PLAN_ASSETS[draftProject?.initialProjectNo],
   });
 

@@ -151,8 +151,9 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     const snapshot = getInventoryPhotoSnapshot(project.projectNo);
     const scope = snapshot?.assets ?? session?.assets ?? PROJECT_PLAN_ASSETS[project.projectNo];
     const tags = new Set((scope || []).map(asset => asset.assetTag));
-    const photoRows = scope ? buildReviewRows(project.projectNo, project.scopeRanges || allowedRanges).filter(row => tags.has(row.asset.assetTag)) : undefined;
-    return inventoryProjectCloseBlockReason({ ...project, replayPlans: plans }, { plans, photoRows, locationRequests: getInventoryLocationChangeRequests(project.projectNo) });
+    const photoRows = scope ? buildReviewRows(project.projectNo, project.scopeRanges || allowedRanges).filter(row => tags.has(row.asset.assetTag))
+      : getPhotoReviewResults(project.projectNo).map(entry => ({ asset: { assetTag: entry.assetTag }, reviewStatus: { 审核中: '待审核', 已盘: '审核通过', 未盘: '审核不通过' }[entry.status] }));
+    return inventoryProjectCloseBlockReason({ ...project, replayPlans: plans }, { plans, photoRows, replaySubmission: getReplaySubmission(project.projectNo), locationRequests: getInventoryLocationChangeRequests(project.projectNo) });
   };
 
   const activePlanNos = new Set(planRows.filter((row) => allowedRanges.includes(row.range)).map((row) => row.planNo));
@@ -546,7 +547,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     {activePlan && <AssetInventoryPlanAssetListV2 currentOperator={creator} plan={planRows.find(row => row.planNo === activePlan.planNo) || activePlan} project={planProject} assets={assetsForPlan(planRows.find(row => row.planNo === activePlan.planNo) || activePlan)} onAssetsChange={(updater) => changePlanAssets(activePlan, updater)} onBack={() => setActivePlan(null)} />}
     {imageReviewOpen && <AssetInventoryImageReviewV2 project={planProject} onBack={() => setImageReviewOpen(false)} />}
     {progressOpen && <AssetInventoryProgressV2 project={planProject} plans={planRows} assetsForPlan={assetsForPlan} onBack={() => setProgressOpen(false)} />}
-    <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage onDraftProjectChange={onDraftProjectChange} creator={creator} scopeAssetKeys={scopeAssetKeys} snapshotEditRequest={snapshotEditRequest} onProjectGenerated={(project) => {
+    <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage getCloseBlockReason={closeBlockReasonForProject} onCloseProject={handleProjectClose} onDraftProjectChange={onDraftProjectChange} creator={creator} scopeAssetKeys={scopeAssetKeys} snapshotEditRequest={snapshotEditRequest} onProjectGenerated={(project) => {
       setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '快照生成' }));
       setPlanProject(project);
       setPlanRows([]);

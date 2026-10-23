@@ -1,9 +1,10 @@
+import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 import { getInventoryPeriodOptions, inventoryProjectScopeSource, inheritInitialInventoryPeriod } from './inventoryProjectScope';
-import { PROJECT_PLAN_ASSETS } from '../../mock/inventoryProjectPlanMock';
+import { PROJECT_PLAN_ASSETS, PROJECT_PLAN_SNAPSHOTS } from '../../mock/inventoryProjectPlanMock';
 import InventoryPhotoRuleEditor from './InventoryPhotoRuleEditor';
 import { selectInventoryPhotoAssets, saveInventoryPhotoSnapshot, getInventoryPhotoSnapshot, saveInventoryPhotoConfig, getInventoryPhotoConfig, normalizeInventoryPhotoConfig } from './inventoryPhotoRules';
 import { AssetPersonSelect, OwnerLevelSelect, formatAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Button,
@@ -264,7 +265,7 @@ function AssetTable({ rows, rowSelection, columns = SCOPE_ASSET_COLUMNS, paginat
   );
 }
 
-function ProjectListView({ onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview }) {
+function ProjectListView({ getCloseBlockReason = inventoryProjectCloseBlockReason, onCloseProject, onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [rows, setRows] = useState(PROJECT_ROWS);
   const [draftFilters, setDraftFilters] = useState(EMPTY_PROJECT_FILTERS);
@@ -334,25 +335,17 @@ function ProjectListView({ onCreate, onOpenProject, onOpenPlans, onOpenProgress,
     }
     const row = rows.find((item) => item.key === selectedKeys[0]);
     if (!row) return;
-    if (row.status === '暂存' || row.status === '快照生成') {
-      messageApi.warning('当前项目尚未完成盘点计划启动，无法关闭');
-      return;
-    }
-    if (row.imageApproval) {
-      Modal.confirm({
-        title: '关闭盘点项目',
-        content: '关闭前需确认盘点计划均已完成，且不存在未审核图片。确认继续关闭？',
-        okText: '确认关闭',
-        cancelText: '取消',
-        onOk: () => {
-          setRows((current) => current.map((item) => item.key === row.key ? { ...item, status: '盘点关闭' } : item));
-          setSelectedKeys([]);
-          messageApi.success('盘点项目已关闭，关联盘点任务不可继续执行');
-        },
-      });
-      return;
-    }
-    setRows((current) => current.map((item) => item.key === row.key ? { ...item, status: '盘点关闭' } : item));
+    const block = getCloseBlockReason(row);
+    if (block) { messageApi.warning(block); return; }
+    Modal.confirm({ title: '确认关闭盘点项目？', content: '关闭后项目及关联计划只读，不能继续盘点。', okText: '关闭项目', cancelText: '取消',
+      onOk: () => {
+        const latestBlock = getCloseBlockReason(row);
+        if (latestBlock) { messageApi.warning(latestBlock); return; }
+        setRows(current => current.map(item => item.key === row.key ? { ...item, status: '盘点关闭' } : item));
+        onCloseProject?.({ ...row, status: '盘点关闭' });
+        setSelectedKeys([]);
+      },
+    });
   };
 
   const columns = [
@@ -737,7 +730,7 @@ function ImageUploadRuleEditor() {
   );
 }
 
-function ScopeSelector({ projectType, scopeRows, setScopeRows, onPreviewAssets, messageApi }) {
+function ScopeSelector({ projectType, sourceAssets = ASSET_ROWS, scopeRows, setScopeRows, onPreviewAssets, messageApi }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const [filters, setFilters] = useState({
     organization: '',
@@ -782,7 +775,7 @@ function ScopeSelector({ projectType, scopeRows, setScopeRows, onPreviewAssets, 
   ];
 
   const handleGenerate = () => {
-    const matches = selectScopeAssets(ASSET_ROWS.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)), filters, projectType);
+    const matches = selectScopeAssets(sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)), filters, projectType);
     if (!matches.length) { messageApi.warning('当前条件下没有可纳入的资产'); return; }
     const next = {
       key: `scope-${Date.now()}`,
@@ -918,15 +911,24 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     status: '暂存',
     snapshotTime: initialProject?.snapshotTime || '-',
   }));
-  const [scopeRows, setScopeRows] = useState(() => SCOPE_ROWS.map(row => ({ ...row, assetKeys: initialProject?.scopeSnapshotAssetKeys || ASSET_ROWS.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)).map(asset => asset.key) })));
+  const sourceAssets = inventoryProjectScopeSource(project, { allAssets: ASSET_ROWS,
+    initialSnapshot: getInventoryPhotoSnapshot(project.initialProjectNo) || PROJECT_PLAN_SNAPSHOTS?.[project.initialProjectNo], initialAssets: PROJECT_PLAN_ASSETS[project.initialProjectNo] });
+  const [scopeRows, setScopeRows] = useState(() => SCOPE_ROWS.map(row => ({ ...row, assetKeys: initialProject?.scopeSnapshotAssetKeys || sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)).map(asset => asset.key) })));
   const [removedAssetKeys, setRemovedAssetKeys] = useState(initialProject?.scopeRemovedAssetKeys || []);
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [scopeAssetQuery, setScopeAssetQuery] = useState({ assetTag: '', owner: [], ownerLevel: [] });
   const [scopeAssetFilter, setScopeAssetFilter] = useState({ assetTag: '', owner: [], ownerLevel: [] });
   useEffect(() => { onDraftProjectChange?.(project); }, [project, onDraftProjectChange]);
-  const sourceAssets = inventoryProjectScopeSource(project, { allAssets: ASSET_ROWS,
-    initialSnapshot: getInventoryPhotoSnapshot(project.initialProjectNo), initialAssets: PROJECT_PLAN_ASSETS[project.initialProjectNo] });
-  const scopeKeys = scopeAssetKeys ?? [...new Set(scopeRows.flatMap(row => row.assetKeys))];
+  const scopeSource = `${project.projectType}:${project.initialProjectNo || ''}`;
+  const previousScopeSource = useRef(scopeSource);
+  useEffect(() => {
+    if (previousScopeSource.current === scopeSource) return;
+    previousScopeSource.current = scopeSource;
+    setScopeRows([]);
+    setRemovedAssetKeys([]);
+    setSelectedAssets([]);
+  }, [scopeSource]);
+  const scopeKeys = scopeAssetKeys ?? (scopeRows.length ? [...new Set(scopeRows.flatMap(row => row.assetKeys))] : sourceAssets.map(asset => asset.key));
   const scopeAssets = sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges) && scopeKeys.includes(asset.key) && !removedAssetKeys.includes(asset.key));
   const filteredScopeAssets = scopeAssets.filter((asset) =>
     String(asset.assetTag || '').includes(scopeAssetFilter.assetTag.trim()) && matchesQuerySelection(asset.owner, scopeAssetFilter.owner) && matchesQuerySelection(asset.ownerLevel, scopeAssetFilter.ownerLevel));
@@ -1002,6 +1004,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
       <ProjectBasicInfoEditor project={project} setProject={setProject} creator={creator} isEditing={Boolean(initialProject)} />
       <InventoryRuleEditor messageApi={messageApi} />
       <ScopeSelector
+        sourceAssets={sourceAssets}
         projectType={project.projectType}
         scopeRows={scopeRows}
         setScopeRows={setScopeRows}
@@ -2130,7 +2133,7 @@ function ProgressView({ project, onBack }) {
   );
 }
 
-export default function AssetInventoryProjectPage({ creator = '213852-孙志强', scopeAssetKeys, snapshotEditRequest, onProjectGenerated, onDraftProjectChange }) {
+export default function AssetInventoryProjectPage({ creator = '213852-孙志强', scopeAssetKeys, snapshotEditRequest, onProjectGenerated, onDraftProjectChange, getCloseBlockReason, onCloseProject }) {
   const [view, setView] = useState('list');
   const [activeProject, setActiveProject] = useState(PROJECT_INFO);
   const [activePlan, setActivePlan] = useState(INITIAL_PLAN_ROWS[0]);
@@ -2216,7 +2219,7 @@ export default function AssetInventoryProjectPage({ creator = '213852-孙志强'
   }
 
   return (
-    <ProjectListView
+    <ProjectListView getCloseBlockReason={getCloseBlockReason} onCloseProject={onCloseProject}
       onCreate={() => {
         setActiveProject(null);
         setProjectStatus('暂存');
