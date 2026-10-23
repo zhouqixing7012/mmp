@@ -1,3 +1,5 @@
+import { getMobileInventoryResults } from './inventoryMobileResultStore';
+import { inventoryResultSource } from './inventoryResultSource';
 import { getInventoryPhotoSnapshot } from './inventoryPhotoRules';
 import React, { useMemo, useRef, useState } from 'react';
 import { Button, Card, DatePicker, Input, Modal, Radio, Select, Space, Statistic, Table, Tooltip, Typography, message as antdMessage } from 'antd';
@@ -139,7 +141,11 @@ export function buildReviewRows(projectNo, allowedRanges) {
       photos: submittedPhotos });
   });
 
-  return sortInventoryReviewRows(rows);
+  const effectiveResults = getMobileInventoryResults(projectNo);
+  return sortInventoryReviewRows(rows.filter(row => {
+    const current = effectiveResults[row.asset.assetTag];
+    return !(['扫码枪', '人工导入'].includes(inventoryResultSource(current)) && ['待审核', '审核不通过'].includes(row.reviewStatus));
+  }));
 }
 
 export function sortInventoryReviewRows(rows) {

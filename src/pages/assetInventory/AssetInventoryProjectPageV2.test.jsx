@@ -33,15 +33,17 @@ jest.mock('./AssetInventoryProjectPage', () => ({ onProjectGenerated, snapshotEd
 });
 jest.mock('./AssetInventoryPlansV2Refined', () => ({ project, projectAssets, rows, onPlansStarted, onBack }) => <div data-testid="opened-plan-project">
   {project.projectNo}|{project.projectType}
-  <span data-testid="plan-rows">{rows.map(row => `${row.planNo}:${row.status}`).join(",")}</span>
+  <span data-testid="plan-names">{rows.map(row => row.planName).join(",")}</span><span data-testid="plan-rows">{rows.map(row => `${row.planNo}:${row.status}`).join(",")}</span>
   <span data-testid="location-project-assets">{projectAssets.map(asset => asset.assetTag).join(',')}</span>
   <button onClick={() => onPlansStarted({ ...project, status: '盘点中' })}>启动计划</button><button onClick={onBack}>退出计划</button>
 </div>);
-jest.mock('./AssetInventoryCustomPlanBuilder', () => () => null);
+jest.mock('./AssetInventoryCustomPlanBuilder', () => ({ initialAssets, onConfirmPlan }) => <div><span data-testid="custom-eligible">{initialAssets.map(asset => asset.assetTag).join(',')}</span><button onClick={() => onConfirmPlan({ planName: '新自定义计划', assets: initialAssets, rows: [] })}>确认自定义计划</button></div>);
 jest.mock('./AssetInventoryImageReviewV2', () => () => null);
 jest.mock('./AssetInventoryProgressV2', () => () => null);
-jest.mock('./AssetInventorySnapshotDetailV2', () => ({ onBack, onDeleteSnapshot, onGenerateDefault, project, assets, onSnapshotRowsChange }) => <section><h1>快照详情</h1><span>{project.status}</span><button onClick={onBack}>返回列表</button><button onClick={() => onDeleteSnapshot(project)}>撤销快照</button><button onClick={onGenerateDefault}>生成默认计划</button><button onClick={() => onSnapshotRowsChange([], assets.filter(asset => project.scopeSnapshotAssetKeys.includes(asset.key)).map(asset => ({ ...asset, executeInventory: false })))}>转移执行资产</button></section>);
+jest.mock('./AssetInventorySnapshotDetailV2', () => ({ onBack, onDeleteSnapshot, onGenerateDefault, onGenerateCustom, project, assets, onSnapshotRowsChange }) => <section><h1>快照详情</h1><span>{project.status}</span><button onClick={onBack}>返回列表</button><button onClick={() => onDeleteSnapshot(project)}>撤销快照</button><button onClick={onGenerateDefault}>生成默认计划</button><button onClick={onGenerateCustom}>生成自定义计划</button><button onClick={() => onSnapshotRowsChange([], assets.filter(asset => project.scopeSnapshotAssetKeys.includes(asset.key)).map(asset => ({ ...asset, executeInventory: false })))}>转移执行资产</button></section>);
 jest.mock('./AssetInventoryPlanViewsV2', () => ({ AssetInventoryPlanAssetListV2: () => null }));
+
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
 
 test('新版列表点击复盘进入计划时父级旧版点击捕获不会改选 CP 项目', () => {
   render(<AssetInventoryProjectPageV2 />);
@@ -122,4 +124,22 @@ test('生成未启动计划后撤销快照，同时撤销草稿计划，可重�
   fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
   fireEvent.click(screen.getByRole('button', { name: '生成默认计划' }));
   expect(screen.getByTestId('plan-rows').textContent).toMatch(/PLAN-\d{8}-0001:草稿/);
+});
+
+
+test('快照自定义确实创建新计划并持久保存名称、分配及逐资产执行人', async () => {
+  const view = render(<AssetInventoryProjectPageV2 />);
+  fireEvent.click(screen.getByRole('button', { name: '新建项目' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: '生成快照' })).toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
+  fireEvent.click(screen.getByRole('button', { name: '生成自定义计划' }));
+  expect(screen.getByTestId('custom-eligible')).toHaveTextContent('3103201755');
+  fireEvent.click(screen.getByRole('button', { name: '确认自定义计划' }));
+  expect(screen.getByTestId('plan-names')).toHaveTextContent('新自定义计划');
+  const saved = JSON.parse(localStorage.getItem('inventory-plan-session:CP-new:库房|公共|机房|员工'));
+  expect(saved.rows).toHaveLength(1);
+  expect(saved.assets.find(asset => asset.key === 'asset-3').executor).toBe('苏伟');
+  expect(saved.assetMap['asset-3']).toBe(saved.rows[0].planNo);
+  view.unmount();
+  expect(JSON.parse(localStorage.getItem('inventory-plan-session:CP-new:库房|公共|机房|员工')).rows[0].planName).toBe('新自定义计划');
 });

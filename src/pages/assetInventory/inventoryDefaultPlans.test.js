@@ -22,7 +22,7 @@ test('机房也跨部门城市合并，子公司或盘点范围不同仍分别�
   const plans = buildDefaultInventoryPlans(project, assets, [], '20261006');
   expect(plans).toHaveLength(3);
   expect(plans[0]).toMatchObject({ organization: 'A', range: '机房', assetCount: 2, city: '北京、上海', department: 'D、E' });
-  expect(plans[0].assets).toEqual(assets.slice(0, 2));
+  expect(plans[0].assets).toEqual(assets.slice(0, 2).map(item => ({ ...item, supervisor: '-', executor: '-' })));
   expect(plans.slice(1).map(plan => [plan.organization, plan.range])).toEqual([['B', '机房'], ['A', '员工']]);
 });
 test('三种计划编号使用创建日和流水号，删除中间计划后不重复编号', () => {

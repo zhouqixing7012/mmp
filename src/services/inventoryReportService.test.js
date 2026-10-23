@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx-js-style';
-import { getInventoryReport, getInventoryReportSummary, getIncrementRows, getInventoryLossCategoryRows, getInventoryDetailRows, getInventoryHistoryChartRows, getGroupedRowSpans, buildInventoryReportWorkbook, DETAIL_FIELDS, companyQuantity, companyAmount, accounting } from './inventoryReportService';
+import { inventoryReportActuals } from '../data/inventoryReportActuals';
+import { isAssetInInventoryReportScope, filterInventoryReportAssets, getInventoryReport, getInventoryReportSummary, getIncrementRows, getInventoryLossCategoryRows, getInventoryDetailRows, getInventoryHistoryChartRows, getGroupedRowSpans, buildInventoryReportWorkbook, DETAIL_FIELDS, companyQuantity, companyAmount, accounting } from './inventoryReportService';
 
 const workbook = year => XLSX.read(XLSX.write(buildInventoryReportWorkbook(getInventoryReport(year)), { type: 'array', bookType: 'xlsx' }), { type: 'array', cellNF: true });
 test('四年真实数据逐项保留且演示明细不能覆盖真实汇总', () => {
@@ -175,4 +176,51 @@ test.each([2025, 2026])('参考样式%s双层表头和当前年灰底无重叠�
   const firstCurrent = rows.findIndex(row => row[0] === '台式机、显示器' && row[1] === year);
   expect(sheet[XLSX.utils.encode_cell({ r: firstCurrent, c: 1 })].s.fill.fgColor.rgb).toBe('D9D9D9');
   expect(sheet.B11.v).toBe(getInventoryReport(year).history.find(row => row.year === year).quantity);
+});
+
+
+test('ES报告只排除新媒体上海广州非视频资产，不按城市或名称片段误排其他公司', () => {
+  const assets = [
+    { 标签号: 'SH-WEB', 子公司: '115.新媒体-上海', 板块: '11.搜狐网-web' },
+    { 标签号: 'GZ-WEB', companyCode: '116', plateCode: '12' },
+    { 标签号: 'SH-VIDEO', 子公司: '新媒体上海分公司', 板块: '16.视频' },
+    { 标签号: 'GZ-VIDEO', 子公司: '新媒体广州', 板块: '视频' },
+    { 标签号: 'SH-OTHER', 子公司: '上海其他公司', 板块: '11.搜狐网-web' },
+    { 标签号: 'GZ-OTHER', 子公司: '广州新媒体服务公司', 板块: '12.搜狐网-mobile' },
+    { 标签号: 'BJ', 子公司: '114.新媒体', 板块: '11.搜狐网-web' },
+  ];
+  expect(filterInventoryReportAssets(assets).map(row => row['标签号'])).toEqual(['SH-VIDEO', 'GZ-VIDEO', 'SH-OTHER', 'GZ-OTHER', 'BJ']);
+  expect(() => isAssetInInventoryReportScope({ 标签号: 'MISSING', 子公司: '新媒体广州分公司' })).toThrow('资产MISSING缺少板块');
+  expect(isAssetInInventoryReportScope({ companyCode: 115, plateCode: 16 })).toBe(true);
+});
+
+test('明细页面与导出共享分公司范围，排除明细不进入小计', () => {
+  const report = getInventoryReport(2026);
+  const source = report.details[0];
+  const excluded = { ...source, 标签号: 'EXCLUDED-SH', 子公司: '新媒体上海分公司', 板块: '11.搜狐网-web' };
+  const included = { ...source, 标签号: 'INCLUDED-GZ-VIDEO', 子公司: '新媒体广州分公司', 板块: '16.视频' };
+  const scoped = { ...report, details: [...report.details, excluded, included] };
+  const rows = getInventoryDetailRows(scoped);
+  expect(rows.filter(row => !row.summary).map(row => row['标签号'])).toEqual(['201132100282', 'NE3737', 'INCLUDED-GZ-VIDEO']);
+  expect(rows.find(row => row.label === '资产盘亏合计')['数量']).toBe(3);
+  const wb = buildInventoryReportWorkbook(scoped);
+  const exported = XLSX.utils.sheet_to_json(wb.Sheets['盘亏资产明细及原因'], { header: 1 });
+  expect(exported.some(row => row.includes('EXCLUDED-SH'))).toBe(false);
+  expect(exported.some(row => row.includes('INCLUDED-GZ-VIDEO'))).toBe(true);
+  expect(report.scope).toContain('新媒体上海分公司、新媒体广州分公司仅包含16.视频板块资产');
+});
+
+
+test('年度报告加载先过滤明细再按公司汇总，源汇总和原始明细不改写', () => {
+  const details = inventoryReportActuals.detailsByYear[2026];
+  const branchAsset = { ...details[0], 标签号: 'EXCLUDED-GZ', 子公司: '116.新媒体-广州', 板块: '17.Corporate' };
+  details.push(branchAsset);
+  try {
+    const report = getInventoryReport(2026);
+    expect(report.details.some(row => row['标签号'] === 'EXCLUDED-GZ')).toBe(false);
+    expect(report.companyLoss.some(row => row.company === '116.新媒体-广州')).toBe(false);
+    expect(report.companyLoss.find(row => row.company === '合计' && row.year === 2026).quantity).toBe(2);
+    expect(inventoryReportActuals.detailsByYear[2026]).toContain(branchAsset);
+    expect(report.history.find(row => row.year === 2026).quantity).toBe(14456);
+  } finally { details.pop(); }
 });

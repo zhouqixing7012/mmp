@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Modal } from 'antd';
 import AssetInventoryPlansV2Refined from './AssetInventoryPlansV2Refined';
+jest.mock('./AssetInventoryImageReviewV2', () => ({ buildReviewRows: () => [] }));
 jest.mock('antd', () => {
   const Box = ({ children }) => <div>{children}</div>;
   return { Alert: Box, Card: Box, Space: Box, Button: ({ children, onClick, disabled }) => <button disabled={disabled} onClick={onClick}>{children}</button>, DatePicker: () => null, Input: () => null, Select: () => null,

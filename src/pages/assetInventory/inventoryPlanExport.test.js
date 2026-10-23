@@ -54,3 +54,10 @@ test('审核存储的盘点状态按项目合并，其他项目审核不影响�
   expect(XLSX.utils.sheet_to_json(p1.Sheets['关联资产清单'])[0]['盘点状态']).toBe('未盘');
   expect(XLSX.utils.sheet_to_json(p2.Sheets['关联资产清单'])[0]['盘点状态']).toBe('已盘');
 });
+
+
+test('新扫码枪结果及再次报失不被旧图片审核覆盖，照片来源保留', () => {
+  const photos = { overall: { id: 'photo-1' } };
+  expect(mergePlanInventoryResult({ assetTag: 'A' }, { status: '代盘', resultSource: '扫码枪', photos }, { status: '未盘' })).toMatchObject({ inventoryStatus: '代盘', photos });
+  expect(mergePlanInventoryResult({ assetTag: 'A' }, { status: '报失', lossReason: '再次报失' }, { status: '未盘' })).toMatchObject({ inventoryStatus: '报失', lossReason: '再次报失' });
+});

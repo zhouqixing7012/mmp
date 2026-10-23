@@ -21,7 +21,7 @@ export default function InventoryProgressAssetsModal({ title, assets, projectNo,
     fixed: field === 'assetTag' ? 'left' : undefined,
     render: (value, row) => field === 'assetCategory' ? formatAssetCategory(row)
       : field === 'inventoryStatus' ? <StatusTag value={value} />
-      : field === 'needPhoto' ? (value === undefined ? '-' : value ? '是' : '否') : value ?? '-',
+      : field === 'uploadedPhoto' ? (value === undefined ? '-' : value ? '是' : '否') : value ?? '-',
   }));
   return <Modal open title={title} width="90vw" footer={<Button onClick={onClose}>关闭</Button>} onCancel={onClose}>
     <Space direction="vertical" size={12} className="w-full">

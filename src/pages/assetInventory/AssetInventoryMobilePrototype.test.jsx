@@ -27,19 +27,34 @@ jest.mock('antd', () => {
   );
   const Input = ({ value, onChange, bordered: _bordered, ...props }) => <input value={value || ''} onChange={onChange} {...props} />;
   Input.TextArea = ({ value, onChange, showCount: _showCount, ...props }) => <textarea value={value || ''} onChange={onChange} {...props} />;
-  const Modal = ({ open, title, children }) => open ? <div role="dialog"><h2>{title}</h2>{children}</div> : null;
+  const Modal = ({ open, title, children, footer }) => open ? <div role="dialog"><h2>{title}</h2>{children}{footer}</div> : null;
   const Tag = ({ children }) => <span>{children}</span>;
   const message = { useMessage: () => [{ warning: mockWarning, info: jest.fn(), success: jest.fn() }, null] };
   return { Button, Input, Modal, Tag, message };
 });
 
 describe('AssetInventoryMobilePrototype', () => {
-  beforeEach(() => { window.sessionStorage.clear(); window.localStorage.clear(); mockLocationState = {}; mockWarning.mockClear(); installInventoryPhotoIndexedDb(); });
+  beforeEach(() => {
+    window.sessionStorage.clear(); window.localStorage.clear(); mockLocationState = {}; mockWarning.mockClear(); installInventoryPhotoIndexedDb();
+    const track = { readyState: 'live', stop: jest.fn() };
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: jest.fn().mockResolvedValue({ getTracks: () => [track], getVideoTracks: () => [track] }) } });
+    jest.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue();
+    jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage: jest.fn() });
+    jest.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => callback(new Blob(['camera-frame'], { type: 'image/jpeg' })));
+  });
+  afterEach(() => jest.restoreAllMocks());
 
   const capturePhotos = async () => {
-    const inputs = screen.getAllByLabelText(/^拍摄/);
-    inputs.forEach((input, index) => fireEvent.change(input, { target: { files: [new File(['photo-' + index], 'capture-' + index + '.png', { type: 'image/png' })] } }));
-    await waitFor(() => expect(screen.getAllByRole('button', { name: '删除' })).toHaveLength(inputs.length));
+    const buttons = screen.getAllByRole('button', { name: '拍照', exact: true });
+    for (let index = 0; index < buttons.length; index += 1) {
+      fireEvent.click(buttons[index]);
+      await waitFor(() => expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(index + 1));
+      const video = screen.getByLabelText(/实时相机画面$/);
+      Object.defineProperties(video, { videoWidth: { configurable: true, value: 1280 }, videoHeight: { configurable: true, value: 720 } });
+      fireEvent.playing(video);
+      fireEvent.click(screen.getByRole('button', { name: '拍摄照片' }));
+      await waitFor(() => expect(screen.getAllByRole('button', { name: '删除' })).toHaveLength(index + 1));
+    }
     await act(async () => {});
   };
 
@@ -285,7 +300,7 @@ describe('AssetInventoryMobilePrototype', () => {
     expect(screen.getByRole('button', { name: '快速扫描' })).toBeInTheDocument();
   });
 
-  test('报失资产可继续盘点，图片审核驳回和重新进入后仍不能二次报失', async () => {
+  test('报失资产可继续盘点，图片审核驳回恢复未盘后允许再次报失', async () => {
     const { unmount } = render(<AssetInventoryMobilePrototype />);
     fireEvent.click(screen.getByRole('button', { name: /惠普.P221显示器/ }));
     expect(screen.getByRole('button', { name: '盘点' })).toBeInTheDocument();
@@ -304,7 +319,7 @@ describe('AssetInventoryMobilePrototype', () => {
     render(<AssetInventoryMobilePrototype />);
     fireEvent.click(screen.getByRole('button', { name: /惠普.P221显示器/ }));
     expect(screen.getByRole('button', { name: '盘点' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '报失' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '报失' })).toBeInTheDocument();
   });
 
   test('复盘仅扫描后可以改地点，提交记录差异但审批前台账保持原位置', async () => {
@@ -443,7 +458,7 @@ describe('AssetInventoryMobilePrototype', () => {
     unmount();render(<AssetInventoryMobilePrototype />);
     fireEvent.click(screen.getByRole('button',{name:/已盘 0/}));
     const photo=await screen.findByAltText('最近一次资产整体照片');
-    expect(photo).toHaveAttribute('src','blob:capture-0.png');
+    expect(photo).toHaveAttribute('src',expect.stringMatching(/^blob:inventory-\d+\.jpg$/));
     expect(photo.closest('button')).toHaveTextContent('盘点日期');
     expect(photo.closest('button')).not.toHaveTextContent('盘点截止日期');
   });

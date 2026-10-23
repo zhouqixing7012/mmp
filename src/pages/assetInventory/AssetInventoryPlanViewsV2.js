@@ -29,8 +29,11 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import { EMPLOYEE_ROWS, INITIAL_PLAN_ROWS } from './mockData';
-import { downloadInventoryPlanAssets } from './inventoryPlanExport';
+import { hasInventoryUploadedPhoto, downloadInventoryPlanAssets } from './inventoryPlanExport';
 import { inventoryResultSource } from './inventoryResultSource';
+import InventoryLabelScanner from './InventoryLabelScanner';
+import { inventoryScannerBlockReason } from './inventoryLabelScan';
+import { inventoryPersonnelCandidates, canEditInventoryPersonnel, applyInventoryPersonnelChange } from './inventoryPlanPersonnel';
 
 const EMPTY_PLAN_FILTERS = {
   planNo: '',
@@ -433,7 +436,7 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
   );
 }
 
-export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, onAssetsChange }) {
+export function AssetInventoryPlanAssetListV2({ plan, project, currentOperator, onBack, assets, onAssetsChange }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const rows = assets;
   const setRows = onAssetsChange;
@@ -441,6 +444,8 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, o
   const [filters, setFilters] = useState(EMPTY_ASSET_FILTERS);
   const [personTarget, setPersonTarget] = useState(null);
   const projectClosed = project?.status === '盘点关闭';
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const canChange = (row, field) => canEditInventoryPersonnel(project, plan, row, field);
 
   const updateDraft = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
 
@@ -463,16 +468,17 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, o
   )), [rows, filters]);
 
   const applyPersonnel = (record) => {
-    if (!personTarget || projectClosed) return;
-    setRows((current) => current.map((row) => (
-      row.key === personTarget.rowKey
-        ? { ...row, [personTarget.field]: record.employeeName }
-        : row
-    )));
-    setPersonTarget(null);
+    if (!personTarget) return;
+    try {
+      setRows(applyInventoryPersonnelChange(project, plan, rows, personTarget.field, record, personTarget.rowKey));
+      setPersonTarget(null);
+    } catch (error) { messageApi.error(error.message); }
   };
 
   const columns = [
+    { title: '计划编号', key: 'planNo', width: 180, render: () => plan.planNo },
+    { title: '计划名称', key: 'planName', width: 180, render: () => plan.planName },
+    ...(project?.projectType === '复盘' ? [{ title: '财务监督人', key: 'financialSupervisor', width: 120, render: () => '徐博' }] : []),
     { title: '盘点范围', dataIndex: 'inventoryRange', width: 100, fixed: 'left' },
     { title: '盘点状态', dataIndex: 'inventoryStatus', width: 100, render: (value) => <StatusTag value={value} /> },
     { title: '结果来源', key: 'resultSource', width: 150, render: (_, row) => inventoryResultSource(row) },
@@ -488,15 +494,15 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, o
     { title: '净值', dataIndex: 'netValue', width: 100, align: 'right', render: formatMoney },
     { title: '使用状态', dataIndex: 'useStatus', width: 140, render: (value) => <StatusTag value={value} /> },
     { title: 'NO位置', dataIndex: 'noLocation', width: 120 },
-    { title: '盘点说明', dataIndex: 'inventoryNote', width: 160 },
+    { title: '盘点备注', key: 'inventoryRemark', width: 160, render: (_, row) => row.inventoryRemark ?? row.lossReason ?? row.inventoryNote ?? '' },
     { title: '使用说明', dataIndex: 'useDescription', width: 160 },
     { title: '备注', dataIndex: 'remark', width: 130 },
     { title: '资产责任人', dataIndex: 'owner', width: 150 },
     { title: '责任人部门', dataIndex: 'ownerDept', width: 200 },
     { title: '责任人职级', dataIndex: 'ownerLevel', width: 110 },
-    { title: '账套', dataIndex: 'organization', width: 120 },
-    { title: '未盘说明', dataIndex: 'inventoryNote', width: 160 },
-    { title: '是否上传图片', dataIndex: 'needPhoto', width: 120, render: (value) => <StatusTag value={value ? '是' : '否'} /> },
+    { title: '账套', dataIndex: 'accountBook', width: 120 },
+    { title: '未盘说明', dataIndex: 'uncountedNote', width: 160 },
+    { title: '是否上传图片', key: 'uploadedPhoto', width: 120, render: (_, row) => <StatusTag value={hasInventoryUploadedPhoto(row) ? '是' : '否'} /> },
     { title: '现资产责任人', dataIndex: 'currentOwner', width: 150 },
     { title: '现资产责任人部门', dataIndex: 'currentOwnerDept', width: 200 },
     { title: 'City', dataIndex: 'city', width: 110 },
@@ -511,14 +517,14 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, o
       dataIndex: 'supervisor',
       width: 170,
       fixed: 'right',
-      render: (value, row) => <PersonnelInput disabled={projectClosed} value={value} onClick={() => setPersonTarget({ rowKey: row.key, field: 'supervisor' })} />,
+      render: (value, row) => <PersonnelInput disabled={!canChange(row, 'supervisor')} value={value} onClick={() => setPersonTarget({ rowKey: row.key, field: 'supervisor' })} />,
     },
     {
       title: '盘点执行人',
       dataIndex: 'executor',
       width: 170,
       fixed: 'right',
-      render: (value, row) => <PersonnelInput disabled={projectClosed} value={value} onClick={() => setPersonTarget({ rowKey: row.key, field: 'executor' })} />,
+      render: (value, row) => <PersonnelInput disabled={!canChange(row, 'executor')} value={value} onClick={() => setPersonTarget({ rowKey: row.key, field: 'executor' })} />,
     },
   ];
 
@@ -551,7 +557,8 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, o
         <QueryItem label="成本中心"><Input value={draftFilters.costCenter} allowClear onChange={(event) => updateDraft('costCenter', event.target.value)} /></QueryItem>
       </QueryBar>
 
-      <Card size="small" title={<CardTitle>资产清单</CardTitle>} extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => { try { downloadInventoryPlanAssets(filteredRows, plan.planNo); } catch (error) { messageApi.error('盘点资产导出失败，请重试'); } }}>导出</Button></Space>}>
+      <Card size="small" title={<CardTitle>资产清单</CardTitle>} extra={<Space>
+        {!inventoryScannerBlockReason(project, plan, currentOperator) && <Button onClick={() => setScannerOpen(true)}>标签扫描</Button>}<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => { try { downloadInventoryPlanAssets(filteredRows, plan.planNo); } catch (error) { messageApi.error('盘点资产导出失败，请重试'); } }}>导出</Button></Space>}>
         <Table
           rowKey="key"
           size="small"
@@ -567,11 +574,19 @@ export function AssetInventoryPlanAssetListV2({ plan, project, onBack, assets, o
         <Button onClick={onBack}>返回</Button>
       </div>
 
+      {scannerOpen && <InventoryLabelScanner open project={project} plan={plan} operator={currentOperator} assets={rows} onClose={() => setScannerOpen(false)} onUploaded={(results) => {
+        const updates = new Map(results.map(item => [item.assetTag, item.result]));
+        setRows(current => current.map(row => {
+          const result = updates.get(row.assetTag);
+          return result ? { ...row, inventoryStatus: result.status, counter: result.inventoryBy, inventoryDate: result.inventoryDate, resultSource: result.resultSource } : row;
+        }));
+        messageApi.success(`已上传 ${results.length} 个标签`);
+      }} />}
       <SelectModal
         open={Boolean(personTarget) && !projectClosed}
         title="用户列表"
         rowKey="id"
-        dataSource={EMPLOYEE_ROWS}
+        dataSource={inventoryPersonnelCandidates(project, personTarget?.field, EMPLOYEE_ROWS)}
         searchFields={[
           { label: '员工编号', name: 'employeeNo', dataIndex: 'employeeNo' },
           { label: '员工姓名', name: 'employeeName', dataIndex: 'employeeName' },

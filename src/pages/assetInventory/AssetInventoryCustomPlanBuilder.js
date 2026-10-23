@@ -22,6 +22,8 @@ import StatusTag from '../../components/StatusTag';
 import { ASSET_ROWS, EMPLOYEE_ROWS } from './mockData';
 import { selectScopeAssets } from './inventoryScopeQuery';
 import { buildInventoryOrganizationTree } from './inventoryOrganizationQuery';
+import { initializeInventoryPlanPersonnel, inventoryPersonnelCandidates, inventoryPersonnelChangeReason } from './inventoryPlanPersonnel';
+import { downloadInventoryPlanAssets } from './inventoryPlanExport';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 
 const RANGE_OPTIONS = ['机房', '公共', '员工', '库房'];
@@ -42,7 +44,7 @@ function PageTitle({ children }) {
 }
 
 
-function PlanInfoModal({ open, onCancel, onConfirm }) {
+function PlanInfoModal({ open, onCancel, onConfirm, project, assets }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const planRangeOptions = PLAN_RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const [planName, setPlanName] = useState('自定义盘点计划');
@@ -52,6 +54,8 @@ function PlanInfoModal({ open, onCancel, onConfirm }) {
 
   const updatePerson = (record) => {
     if (!personTarget) return;
+    const reason = inventoryPersonnelChangeReason(project, { status: '草稿', range: personTarget.rowKey }, { inventoryRange: personTarget.rowKey }, personTarget.field, record);
+    if (reason) { messageApi.warning(reason); return; }
     setRows((current) => current.map((row) => row.key === personTarget.rowKey ? { ...row, [personTarget.field]: record.employeeName } : row));
     setPersonTarget(null);
   };
@@ -61,13 +65,18 @@ function PlanInfoModal({ open, onCancel, onConfirm }) {
       messageApi.warning('请填写计划名称');
       return;
     }
-    onConfirm({ planName, rows });
+    const crossCompanyRange = rows.find(row => new Set(assets.filter(asset => asset.inventoryRange === row.range).map(asset => asset.organization)).size > 1);
+    if (crossCompanyRange) { messageApi.warning('同一范围跨子公司的自定义拆分规则尚未定义，请先按子公司分别创建'); return; }
+    try {
+      const configured = rows.map(row => ({ ...row, assets: initializeInventoryPlanPersonnel(project, assets.filter(asset => asset.inventoryRange === row.range), row, 'custom') }));
+      onConfirm({ planName, rows: configured });
+    } catch (error) { messageApi.warning(error.message); }
   };
 
   const columns = [
     { title: '盘点范围', dataIndex: 'range', width: 110, fixed: 'left' },
-    { title: '盘点监督人', dataIndex: 'supervisor', width: 240, render: (value, row) => <Input readOnly value={value} placeholder="选填" suffix={<Search size={14} className="text-[#1677ff]" />} onClick={() => setPersonTarget({ rowKey: row.key, field: 'supervisor' })} /> },
-    { title: '盘点执行人', dataIndex: 'executor', width: 240, render: (value, row) => <Input readOnly value={value} placeholder="选填" suffix={<Search size={14} className="text-[#1677ff]" />} onClick={() => setPersonTarget({ rowKey: row.key, field: 'executor' })} /> },
+    { title: '盘点监督人', dataIndex: 'supervisor', width: 240, render: (value, row) => project?.projectType === '初盘' && row.range === '机房' ? <Typography.Text>-</Typography.Text> : <Input readOnly value={value} placeholder="选填" suffix={<Search size={14} className="text-[#1677ff]" />} onClick={() => setPersonTarget({ rowKey: row.key, field: 'supervisor' })} /> },
+    { title: '盘点执行人', dataIndex: 'executor', width: 240, render: (value, row) => project?.projectType === '初盘' && row.range === '机房' ? <Typography.Text>{[...new Set(assets.filter(asset => asset.inventoryRange === '机房').map(asset => asset.owner).filter(Boolean))].join('、') || '-'}</Typography.Text> : <Input readOnly value={value} placeholder="选填" suffix={<Search size={14} className="text-[#1677ff]" />} onClick={() => setPersonTarget({ rowKey: row.key, field: 'executor' })} /> },
   ];
 
   return <>
@@ -75,20 +84,22 @@ function PlanInfoModal({ open, onCancel, onConfirm }) {
     <Modal open={open} title="设置计划信息" width={720} okText="确定" cancelText="取消" onCancel={onCancel} onOk={confirm}>
       <Space direction="vertical" size={16} className="w-full">
         <div><Typography.Text type="secondary"><span className="text-red-500 mr-1">*</span>计划名称</Typography.Text><Input value={planName} maxLength={100} onChange={(event) => setPlanName(event.target.value)} /></div>
-        <Table rowKey="key" size="small" bordered columns={columns} dataSource={rows} pagination={false} scroll={{ x: 590 }} />
+        <Table rowKey="key" size="small" bordered columns={columns} dataSource={rows.filter(row => assets.some(asset => asset.inventoryRange === row.range))} pagination={false} scroll={{ x: 590 }} />
       </Space>
     </Modal>
-    <SelectModal open={Boolean(personTarget)} title="用户列表" rowKey="id" dataSource={EMPLOYEE_ROWS} searchFields={[{ label: '员工编号', name: 'employeeNo', dataIndex: 'employeeNo' }, { label: '员工姓名', name: 'employeeName', dataIndex: 'employeeName' }, { label: '部门名称', name: 'department', dataIndex: 'department' }]} columns={[{ title: '员工编号', dataIndex: 'employeeNo' }, { title: '员工姓名', dataIndex: 'employeeName' }, { title: '部门名称', dataIndex: 'department' }]} onCancel={() => setPersonTarget(null)} onConfirm={updatePerson} />
+    <SelectModal open={Boolean(personTarget)} title="用户列表" rowKey="id" dataSource={inventoryPersonnelCandidates(project, personTarget?.field, EMPLOYEE_ROWS)} searchFields={[{ label: '员工编号', name: 'employeeNo', dataIndex: 'employeeNo' }, { label: '员工姓名', name: 'employeeName', dataIndex: 'employeeName' }, { label: '部门名称', name: 'department', dataIndex: 'department' }]} columns={[{ title: '员工编号', dataIndex: 'employeeNo' }, { title: '员工姓名', dataIndex: 'employeeName' }, { title: '部门名称', dataIndex: 'department' }]} onCancel={() => setPersonTarget(null)} onConfirm={updatePerson} />
   </>;
 }
 
-export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan, initialAssets = ASSET_ROWS }) {
+export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan, initialAssets = ASSET_ROWS, project }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [filters, setFilters] = useState({ organizationDepartments: [], plate: '', assetTag: '', category: [], serialNo: '', description: '', status: '', owner: [], ownerLevel: [], costCenter: '', enableFrom: '', enableTo: '', warehouse: '', city: '', building: '', floor: '', ratio: 100, methods: [] });
   const [scopeRows, setScopeRows] = useState([]);
-  const [assetRows, setAssetRows] = useState([]);
+  const [assetRows, setAssetRows] = useState(() => initialAssets.filter(row => isInventoryRangeAllowed(row, allowedRanges)));
+  const [removedAssetKeys, setRemovedAssetKeys] = useState([]);
+  const [scopePreview, setScopePreview] = useState(null);
   const sourceAssets = useMemo(() => initialAssets.filter((row) => isInventoryRangeAllowed(row, allowedRanges)), [initialAssets, allowedRanges]);
   const organizationTree = useMemo(() => buildInventoryOrganizationTree(sourceAssets), [sourceAssets]);
   const [selectedAssetKeys, setSelectedAssetKeys] = useState([]);
@@ -99,6 +110,7 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
   const setFilter = (field, value) => setFilters((current) => ({ ...current, [field]: value }));
 
   const generateScope = () => {
+    if (filters.ratio !== 100) { messageApi.warning('自定义比例抽取规则尚未定义，当前仅支持100%范围'); return; }
     const selectedRanges = filters.methods.filter((range) => allowedRanges.includes(range));
     const matches = selectScopeAssets(sourceAssets, { ...filters, assetCategory: filters.category, assetStatus: [] }, '初盘').filter((asset) =>
       (!selectedRanges.length || selectedRanges.includes(asset.inventoryRange))
@@ -135,7 +147,8 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
       ratio: filters.ratio || 100,
     };
     setScopeRows((current) => [...current, row]);
-    setAssetRows((current) => [...current, ...matches.filter((asset) => !current.some((existing) => existing.key === asset.key)).map((asset) => ({ ...asset }))]);
+    const included = new Set([...scopeRows.flatMap(scope => scope.assetKeys), ...row.assetKeys]);
+    setAssetRows(sourceAssets.filter(asset => included.has(asset.key) && !removedAssetKeys.includes(asset.key)).map(asset => ({ ...asset })));
     messageApi.success('已根据当前条件生成盘点范围明细');
   };
 
@@ -147,12 +160,12 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
 
   const scopeColumns = [
     { title: '公司', dataIndex: 'company', width: 100, fixed: 'left' }, { title: '部门', dataIndex: 'department', width: 190 }, { title: '板块', dataIndex: 'plate', width: 100 }, { title: '资产标签号', dataIndex: 'assetTag', width: 140 }, { title: '资产类别', dataIndex: 'category', width: 150 }, { title: '资产序列号', dataIndex: 'serialNo', width: 140 }, { title: '印刷号', dataIndex: 'printNo', width: 110 }, { title: '说明', dataIndex: 'description', width: 150 }, { title: '资产状态', dataIndex: 'status', width: 120 }, { title: '资产责任人', dataIndex: 'owner', width: 130 }, { title: '责任人职级', dataIndex: 'ownerLevel', width: 110 }, { title: '成本中心', dataIndex: 'costCenter', width: 150 }, { title: '启用日期起', dataIndex: 'enableFrom', width: 120 }, { title: '启用日期止', dataIndex: 'enableTo', width: 120 }, { title: '仓库', dataIndex: 'warehouse', width: 110 }, { title: '城市', dataIndex: 'city', width: 110 }, { title: '地点', dataIndex: 'building', width: 160 }, { title: 'Floor', dataIndex: 'floor', width: 90 }, { title: '盘点范围', dataIndex: 'methods', width: 150, render: (value) => (value || []).join('、') || '-' }, { title: '比例', dataIndex: 'ratio', width: 80, render: (value) => `${value}%` },
-    { title: '清单', width: 80, fixed: 'right', render: () => <Button type="link" className="px-0" onClick={() => messageApi.info('已展示该范围资产清单')}>查看</Button> },
+    { title: '清单', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => setScopePreview({ title: '范围资产清单', assets: assetRows.filter(asset => row.assetKeys.includes(asset.key)) })}>查看</Button> },
     { title: '操作', width: 80, fixed: 'right', render: (_, row) => <Button type="link" danger className="px-0" onClick={() => { const next = scopeRows.filter((item) => item.key !== row.key); setScopeRows(next); const remaining = new Set(next.flatMap((item) => item.assetKeys)); setAssetRows((current) => current.filter((asset) => remaining.has(asset.key))); }}>删除</Button> },
   ];
 
   const assetColumns = [
-    { title: '资产标签号', dataIndex: 'assetTag', width: 140, fixed: 'left' }, { title: '序列号', dataIndex: 'serialNo', width: 130 }, { title: '资产类别', key: 'assetCategory', width: 240, render: (_, row) => formatAssetCategory(row) }, { title: '资产说明', dataIndex: 'description', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 70, align: 'right' }, { title: '原值', dataIndex: 'originalValue', width: 100, align: 'right' }, { title: '使用状态', dataIndex: 'useStatus', width: 130, render: (value) => <StatusTag value={value} /> }, { title: 'NO位置', dataIndex: 'noLocation', width: 120 }, { title: 'NO状态', width: 100, render: () => '-' }, { title: '备注', dataIndex: 'remark', width: 130 }, { title: '资产责任人', dataIndex: 'owner', width: 140 }, { title: '责任人部门', dataIndex: 'ownerDept', width: 200 }, { title: '责任人级别', dataIndex: 'ownerLevel', width: 110 }, { title: 'City', dataIndex: 'city', width: 110 }, { title: 'Building', dataIndex: 'building', width: 160 }, { title: 'Floor', dataIndex: 'floor', width: 90 }, { title: '账套', dataIndex: 'organization', width: 120 }, { title: '成本中心', dataIndex: 'costCenter', width: 160 }, { title: '启用日期', dataIndex: 'enableDate', width: 120 },
+    { title: '资产标签号', dataIndex: 'assetTag', width: 140, fixed: 'left' }, { title: '序列号', dataIndex: 'serialNo', width: 130 }, { title: '资产类别', key: 'assetCategory', width: 240, render: (_, row) => formatAssetCategory(row) }, { title: '资产说明', dataIndex: 'description', width: 180 }, { title: '数量', dataIndex: 'quantity', width: 70, align: 'right' }, { title: '原值', dataIndex: 'originalValue', width: 100, align: 'right' }, { title: '使用状态', dataIndex: 'useStatus', width: 130, render: (value) => <StatusTag value={value} /> }, { title: 'NO位置', dataIndex: 'noLocation', width: 120 }, { title: '备注', dataIndex: 'remark', width: 130 }, { title: '资产责任人', dataIndex: 'owner', width: 140 }, { title: '责任人部门', dataIndex: 'ownerDept', width: 200 }, { title: '责任人级别', dataIndex: 'ownerLevel', width: 110 }, { title: 'City', dataIndex: 'city', width: 110 }, { title: 'Building', dataIndex: 'building', width: 160 }, { title: 'Floor', dataIndex: 'floor', width: 90 }, { title: '账套', dataIndex: 'organization', width: 120 }, { title: '成本中心', dataIndex: 'costCenter', width: 160 }, { title: '启用日期', dataIndex: 'enableDate', width: 120 },
   ];
 
   const queryFields = [['公司及部门', 'organizationDepartments'], ['板块', 'plate'], ['标签号', 'assetTag'], ['资产类别', 'category'], ['资产序列号', 'serialNo'], ['资产说明', 'description'], ['资产状态', 'status'], ['资产责任人', 'owner'], ['资产责任人职级', 'ownerLevel'], ['成本中心', 'costCenter'], ['仓库', 'warehouse'], ['City', 'city'], ['Building', 'building'], ['Floor', 'floor']];
@@ -163,6 +176,7 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
       return;
     }
     const selected = new Set(selectedAssetKeys);
+    setRemovedAssetKeys(current => [...new Set([...current, ...selectedAssetKeys])]);
     setAssetRows((current) => current.filter((row) => !selected.has(row.key)));
     setSelectedAssetKeys([]);
   };
@@ -189,7 +203,7 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
     </Card>
 
     <Card size="small" title={<CardTitle>盘点范围明细</CardTitle>} extra={<Typography.Text type="secondary">共 {scopeRows.length} 条</Typography.Text>}>
-      <div className="mb-3 flex justify-end"><Space><Button icon={<Eye size={14} />} onClick={() => messageApi.info('已展示全部盘点范围资产')}>查看全部</Button><Button danger onClick={() => { setScopeRows([]); setAssetRows([]); setSelectedAssetKeys([]); }}>删除全部</Button></Space></div>
+      <div className="mb-3 flex justify-end"><Space><Button icon={<Eye size={14} />} onClick={() => setScopePreview({ title: '全部范围资产清单', assets: assetRows })}>查看全部</Button><Button danger onClick={() => { setScopeRows([]); setAssetRows([]); setSelectedAssetKeys([]); setRemovedAssetKeys([]); }}>删除全部</Button></Space></div>
       <Table rowKey="key" size="small" bordered columns={scopeColumns} dataSource={scopeRows} scroll={{ x: 2700 }} pagination={false} />
     </Card>
 
@@ -199,11 +213,12 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
         <QueryItem label="资产责任人"><AssetPersonSelect rows={initialAssets} value={assetDraftFilters.owner} onChange={(value) => setAssetDraftFilters((current) => ({ ...current, owner: value }))} /></QueryItem>
         <QueryItem label="责任人职级"><OwnerLevelSelect rows={initialAssets} value={assetDraftFilters.ownerLevel} onChange={(value) => setAssetDraftFilters((current) => ({ ...current, ownerLevel: value }))} /></QueryItem>
       </QueryBar>
-      <div className="mb-3 flex justify-end pr-[2px]"><Space><Button icon={<Download size={14} />} onClick={() => messageApi.success('已导出当前资产清册')}>导出清册</Button><Button danger icon={<Trash2 size={14} />} onClick={handleDeleteAssets}>删除</Button></Space></div>
+      <div className="mb-3 flex justify-end pr-[2px]"><Space><Button icon={<Download size={14} />} onClick={() => { try { downloadInventoryPlanAssets(filteredAssets, project?.projectNo || '自定义计划'); } catch (error) { messageApi.error('资产清册导出失败，请重试'); } }}>导出清册</Button><Button danger icon={<Trash2 size={14} />} onClick={handleDeleteAssets}>删除</Button></Space></div>
       <Table rowKey="key" size="small" bordered columns={assetColumns} dataSource={filteredAssets} rowSelection={{ selectedRowKeys: selectedAssetKeys, onChange: setSelectedAssetKeys }} scroll={{ x: 2450 }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
     </Card>
 
     <div className="flex justify-center pb-2"><Space><Button type="primary" onClick={() => { if (!assetRows.length) { messageApi.warning('请先生成包含资产的盘点范围'); return; } setPlanModalOpen(true); }}>生成计划</Button><Button onClick={onBack}>返回</Button></Space></div>
-    <PlanInfoModal open={planModalOpen} onCancel={() => setPlanModalOpen(false)} onConfirm={(draft) => { setPlanModalOpen(false); onConfirmPlan({ ...draft, assets: assetRows }); }} />
+    <Modal open={Boolean(scopePreview)} title={scopePreview?.title} width={960} footer={<Button onClick={() => setScopePreview(null)}>关闭</Button>} onCancel={() => setScopePreview(null)}><Table rowKey="key" size="small" bordered columns={assetColumns} dataSource={scopePreview?.assets || []} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10 }} /></Modal>
+    <PlanInfoModal project={project} assets={assetRows} open={planModalOpen} onCancel={() => setPlanModalOpen(false)} onConfirm={(draft) => { setPlanModalOpen(false); onConfirmPlan({ ...draft, assets: assetRows }); }} />
   </Space>;
 }

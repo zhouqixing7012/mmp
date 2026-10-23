@@ -1045,7 +1045,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
         <AssetTable rows={filteredScopeAssets} rowSelection={{ selectedRowKeys: selectedAssets, onChange: setSelectedAssets }} />
       </Card>
 
-      <InventoryPhotoRuleEditor config={photoConfig} onChange={setPhotoConfig} />
+      {(project.projectType !== '初盘' || allowedRanges.some(range => range !== '机房')) && <InventoryPhotoRuleEditor config={photoConfig} onChange={setPhotoConfig} />}
 
       <div className="flex justify-center gap-3 pb-2">
         <Button type="primary" icon={<Save size={14} />} onClick={handleSave}>保存</Button>
@@ -1466,7 +1466,7 @@ function PlanAssetListView({ project, plan, onBack }) {
     enableTo: '',
     inventoryStatus: '',
     costCenter: '',
-    noStatus: '',
+
   });
   const [scanOpen, setScanOpen] = useState(false);
   const [scanValue, setScanValue] = useState('');
@@ -1549,7 +1549,7 @@ function PlanAssetListView({ project, plan, onBack }) {
         onQuery={() => setFilters((current) => ({ ...current }))}
         onReset={() => setFilters({
           assetTag: '', category: '', serialNo: '', description: '', useStatus: '', owner: '', ownerDept: '', ownerLevel: '',
-          supervisor: '', executor: '', city: '', building: '', enableFrom: '', enableTo: '', inventoryStatus: '', costCenter: '', noStatus: '',
+          supervisor: '', executor: '', city: '', building: '', enableFrom: '', enableTo: '', inventoryStatus: '', costCenter: '',
         })}
       >
         <QueryItem label="资产标签号"><Input value={filters.assetTag} allowClear onChange={(event) => update('assetTag', event.target.value)} /></QueryItem>
@@ -1568,7 +1568,6 @@ function PlanAssetListView({ project, plan, onBack }) {
         <QueryItem label="启用日期至"><DateFilter value={filters.enableTo} onChange={(value) => update('enableTo', value)} /></QueryItem>
         <QueryItem label="盘点状态"><Select value={filters.inventoryStatus || undefined} allowClear options={['未盘', '已盘', '代盘', '报失'].map((value) => ({ label: value, value }))} onChange={(value) => update('inventoryStatus', value)} /></QueryItem>
         <QueryItem label="成本中心"><Input value={filters.costCenter} allowClear onChange={(event) => update('costCenter', event.target.value)} /></QueryItem>
-        <QueryItem label="NO状态"><Input value={filters.noStatus} allowClear onChange={(event) => update('noStatus', event.target.value)} /></QueryItem>
       </QueryBar>
 
       <Card size="small" title={<CardTitle>资产清单</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
@@ -1700,7 +1699,6 @@ function PlansView({ project, projectStatus, setProjectStatus, onBack, onOpenPla
     ...(project.projectType === '复盘'
       ? [
         { title: '财务监督人', dataIndex: 'financialSupervisor', width: 130, render: (value, row) => <PersonnelInput disabled={!editable(row)} value={value === '-' ? '' : value} onClick={() => openPersonnel(row.key, 'financialSupervisor')} /> },
-        { title: '内审监督人', dataIndex: 'auditSupervisor', width: 130, render: (value, row) => <PersonnelInput disabled={!editable(row)} value={value === '-' ? '' : value} onClick={() => openPersonnel(row.key, 'auditSupervisor')} /> },
       ]
       : []),
     { title: '盘点范围', dataIndex: 'range', width: 100 },
@@ -2046,7 +2044,6 @@ function ProgressView({ project, onBack }) {
     ...(project.projectType === '复盘'
       ? [
         { title: '财务监督人', dataIndex: 'financialSupervisor', width: 130 },
-        { title: '内审监督人', dataIndex: 'auditSupervisor', width: 130 },
       ]
       : [{ title: '计划监督人', dataIndex: 'supervisor', width: 130 }]),
   ];

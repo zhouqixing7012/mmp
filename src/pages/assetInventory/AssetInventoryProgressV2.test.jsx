@@ -30,8 +30,8 @@ test('角色列按项目类型展示，详情分页筛选导出只取匹配记�
   setup('复盘');
   fireEvent.click(screen.getAllByText('查看详情')[1]);
   expect(screen.getByText('财务监督人')).toBeInTheDocument();
-  expect(screen.getByText('内审监督人')).toBeInTheDocument();
-  expect(screen.queryByText('计划监督人')).not.toBeInTheDocument();
+  expect(screen.queryByText('内审监督人')).not.toBeInTheDocument();
+  expect(screen.getByText('计划监督人')).toBeInTheDocument();
   expect(screen.getByText('共 2 条')).toBeInTheDocument();
   fireEvent.click(screen.getByText('筛选已盘1'));
   expect(screen.getByText('共 1 条')).toBeInTheDocument();

@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { initializeInventoryPlanPersonnel, INVENTORY_FINANCIAL_SUPERVISOR } from './inventoryPlanPersonnel';
 
 export function nextInventoryPlanNumber(projectType, existingPlans, offset = 0, date = dayjs().format('YYYYMMDD')) {
   const prefix = { 初盘: 'PLAN', 复盘: 'RCT', 抽盘: 'DCT' }[projectType];
@@ -11,7 +12,7 @@ export function nextInventoryPlanNumber(projectType, existingPlans, offset = 0, 
 // 机房和非机房统一按子公司与盘点范围分组，部门和城市只汇总展示。
 export function buildDefaultInventoryPlans(project, assets, existingPlans = [], date) {
   const groups = new Map();
-  assets.forEach(asset => {
+  initializeInventoryPlanPersonnel(project, assets).forEach(asset => {
     const dimensions = [asset.organization, asset.inventoryRange];
     const key = JSON.stringify(dimensions);
     if (!groups.has(key)) groups.set(key, { dimensions, assets: [] });
@@ -26,7 +27,7 @@ export function buildDefaultInventoryPlans(project, assets, existingPlans = [], 
     return { key: `generated-${project.projectNo}-${planNo}`, planNo, planName: `${city}盘点计划`, status: '草稿', organization, department, city, range,
       assetCount: quantity, uncountedCount: quantity, countedCount: 0,
       startDate: project.startDate, endDate: project.projectType === '复盘' ? project.startDate : project.endDate,
-      supervisor: '-', executor: '-', financialSupervisor: project.projectType === '复盘' ? '徐博' : '-', auditSupervisor: '-', assets: group.assets,
+      supervisor: '-', executor: '-', financialSupervisor: project.projectType === '复盘' ? INVENTORY_FINANCIAL_SUPERVISOR : '-', assets: group.assets,
     };
   });
 }

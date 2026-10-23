@@ -1,6 +1,6 @@
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 import { applyInventoryPhotoSnapshot, saveInventoryPhotoSnapshot, getInventoryPhotoSnapshot } from './inventoryPhotoRules';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal } from 'antd';
 import AssetInventoryProjectPage from './AssetInventoryProjectPage';
 import AssetInventoryCustomPlanBuilder from './AssetInventoryCustomPlanBuilder';
@@ -20,7 +20,9 @@ import { buildDefaultInventoryPlans, nextInventoryPlanNumber } from './inventory
 import { PROJECT_PLAN_ROWS, PROJECT_PLAN_ASSETS } from '../../mock/inventoryProjectPlanMock';
 import { getInventoryLocationChangeRequests } from './inventoryLocationChangeStore';
 import { getImportedInventoryPhotos } from './inventoryPhotoImportStore';
-import { readDemoData } from '../../services/demoStorage';
+import { readDemoData, writeDemoData } from '../../services/demoStorage';
+import { initializeInventoryPlanPersonnel } from './inventoryPlanPersonnel';
+import { applyReplayPlanStatuses, getReplaySubmission } from './inventoryReplayReviewStore';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 
 function getCardTitle(card) {
@@ -68,9 +70,11 @@ function resolveProject(root, sourceElement) {
 
 export default function AssetInventoryProjectPageV2({ variantLabel = '方案二', menuLabel, scopeAssetKeys, onDraftProjectChange } = {}) {
   const { allowedRanges } = useAssetInventoryVariant();
-  const [planProject, setPlanProject] = useState(PROJECT_INFO);
+  const [planProject, setPlanProject] = useState(() => readDemoData(`inventory-plan-session:${PROJECT_INFO.projectNo}:${allowedRanges.join('|')}`, null)?.project || PROJECT_INFO);
   const allowedRangeKey = allowedRanges.join('|');
-  const initialPlanRows = (PROJECT_PLAN_ROWS[PROJECT_INFO.projectNo] || []).filter(row => allowedRanges.includes(row.range));
+  const sessionKey = useCallback(projectNo => `inventory-plan-session:${projectNo}:${allowedRangeKey}`, [allowedRangeKey]);
+  const initialSession = useRef(readDemoData(sessionKey(PROJECT_INFO.projectNo), null)).current;
+  const initialPlanRows = (initialSession?.rows || PROJECT_PLAN_ROWS[PROJECT_INFO.projectNo] || []).filter(row => allowedRanges.includes(row.range));
   const variantMenuLabel = menuLabel || `盘点项目（${variantLabel}）`;
   const rootRef = useRef(null);
   const baseContainerRef = useRef(null);
@@ -99,8 +103,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       window.sessionStorage.setItem('assetInventoryClosedProjectNos', JSON.stringify(closedProjectNos));
     }
   };
-  const [assetPlanMap, setAssetPlanMap] = useState(() => Object.fromEntries(initialPlanRows.flatMap(plan => (plan.assetKeys || []).map(key => [key, plan.planNo]))));
-  const [planAssets, setPlanAssets] = useState(() => (PROJECT_PLAN_ASSETS[PROJECT_INFO.projectNo] || ASSET_ROWS).map(asset => ({ ...asset })));
+  const [assetPlanMap, setAssetPlanMap] = useState(() => initialSession?.assetMap || Object.fromEntries(initialPlanRows.flatMap(plan => (plan.assetKeys || []).map(key => [key, plan.planNo]))));
+  const [planAssets, setPlanAssets] = useState(() => (initialSession?.assets || PROJECT_PLAN_ASSETS[PROJECT_INFO.projectNo] || ASSET_ROWS).map(asset => ({ ...asset })));
   const availableAssets = planAssets.filter((asset) => isInventoryRangeAllowed(asset, allowedRanges)
     && isSnapshotExecutionAsset(asset, planProject));
   // 地点申请取项目范围母集，不能被执行抽样或计划分配缩小；旧快照只有执行清单时按其明确范围。
@@ -110,7 +114,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const projectSessions = useRef(new Map());
   const switchProjectSession = (project) => {
     projectSessions.current.set(planProject.projectNo, { project: planProject, rows: planRows, assetMap: assetPlanMap, assets: planAssets });
-    let session = projectSessions.current.get(project.projectNo);
+    let session = projectSessions.current.get(project.projectNo) || readDemoData(sessionKey(project.projectNo), null);
     if (!session) {
       const rows = (PROJECT_PLAN_ROWS[project.projectNo] || []).filter(row => allowedRanges.includes(row.range)).map(row => ({ ...row, status: row.status === '暂存' ? '草稿' : row.status }));
       const assets = (getInventoryPhotoSnapshot(project.projectNo)?.assets || PROJECT_PLAN_ASSETS[project.projectNo] || ASSET_ROWS).map(asset => ({ ...asset }));
@@ -118,15 +122,20 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
         assetMap: Object.fromEntries(rows.flatMap(row => (row.assetKeys || []).map(key => [key, row.planNo]))) };
     }
     session.assets = applyInventoryPhotoSnapshot(project.projectNo, session.assets);
+    session.rows = applyReplayPlanStatuses(session.rows, getReplaySubmission(project.projectNo));
+    if (session.project.projectType === '初盘') session.assets = session.assets.map(asset => asset.inventoryRange === '机房' ? { ...asset, executor: asset.owner, supervisor: '-' } : asset);
     const nextProject = { ...session.project, status: projectStatusOverrides[project.projectNo] || session.project.status };
     setPlanRows(session.rows); setAssetPlanMap(session.assetMap); setPlanAssets(session.assets); setPlanProject(nextProject);
     return { ...session, project: nextProject };
   };
+  useEffect(() => {
+    writeDemoData(sessionKey(planProject.projectNo), { project: planProject, rows: planRows, assetMap: assetPlanMap, assets: planAssets });
+  }, [planProject, planRows, assetPlanMap, planAssets, sessionKey]);
   const assetsForPlan = (plan) => {
     const results = getMobileInventoryResults(planProject.projectNo);
     const photoReviews = new Map(getPhotoReviewResults(planProject.projectNo).map((review) => [review.assetTag, review]));
-    return planAssets.filter((asset) => assetPlanMap[asset.key] === plan.planNo)
-      .map(asset => mergePlanInventoryResult({ ...asset, planNo: plan.planNo }, results[asset.assetTag], photoReviews.get(asset.assetTag)));
+    return planAssets.filter((asset) => assetPlanMap[asset.key] === plan.planNo && isSnapshotExecutionAsset(asset, planProject))
+      .map(asset => mergePlanInventoryResult({ ...asset, planNo: plan.planNo, planName: plan.planName }, results[asset.assetTag], photoReviews.get(asset.assetTag)));
   };
   const changePlanAssets = (plan, updater) => setPlanAssets((current) => {
     const currentRows = current.filter((asset) => assetPlanMap[asset.key] === plan.planNo);
@@ -138,12 +147,12 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const closeBlockReasonForProject = (project) => {
     const active = project.projectNo === planProject.projectNo;
     const session = active ? { rows: planRows, assets: planAssets } : projectSessions.current.get(project.projectNo);
-    const plans = session?.rows ?? PROJECT_PLAN_ROWS[project.projectNo];
+    const plans = applyReplayPlanStatuses(session?.rows ?? readDemoData(sessionKey(project.projectNo), null)?.rows ?? PROJECT_PLAN_ROWS[project.projectNo] ?? [], getReplaySubmission(project.projectNo));
     const snapshot = getInventoryPhotoSnapshot(project.projectNo);
     const scope = snapshot?.assets ?? session?.assets ?? PROJECT_PLAN_ASSETS[project.projectNo];
     const tags = new Set((scope || []).map(asset => asset.assetTag));
     const photoRows = scope ? buildReviewRows(project.projectNo, project.scopeRanges || allowedRanges).filter(row => tags.has(row.asset.assetTag)) : undefined;
-    return inventoryProjectCloseBlockReason(project, { plans, photoRows, locationRequests: getInventoryLocationChangeRequests(project.projectNo) });
+    return inventoryProjectCloseBlockReason({ ...project, replayPlans: plans }, { plans, photoRows, locationRequests: getInventoryLocationChangeRequests(project.projectNo) });
   };
 
   const activePlanNos = new Set(planRows.filter((row) => allowedRanges.includes(row.range)).map((row) => row.planNo));
@@ -173,6 +182,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       const selectedAssets = session.assets.filter((asset) => (nextProject.snapshotAssetKeys ? nextProject.snapshotAssetKeys.includes(asset.key) : asset.executeInventory) && isInventoryRangeAllowed(asset, allowedRanges));
       const generated = buildDefaultInventoryPlans(nextProject, selectedAssets);
       setPlanRows(generated);
+      const generatedAssets = new Map(generated.flatMap(plan => plan.assets.map(asset => [asset.key, asset])));
+      setPlanAssets(session.assets.map(asset => generatedAssets.get(asset.key) || asset));
       setAssetPlanMap(Object.fromEntries(generated.flatMap(plan => plan.assets.map(asset => [asset.key, plan.planNo]))));
       setProjectStatusOverrides(current => ({ ...current, [nextProject.projectNo]: '生成盘点计划' }));
     } else if (nextProject.projectType === '复盘') {
@@ -272,7 +283,10 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
 
   const createManualPlans = (draft) => {
-    if (planProject?.status === '盘点关闭') return;
+    if (planProject?.status === '盘点关闭') throw new Error('项目已关闭，不能生成计划');
+    const eligible = new Set(unplannedSnapshotAssets.map(asset => asset.key));
+    if ((draft.assets || []).some(asset => !eligible.has(asset.key))) throw new Error('资产范围或分配已变化，请重新选择未分配资产');
+    if (!draft.planName?.trim()) throw new Error('请填写计划名称');
     const assets = (draft.assets || []).filter((asset) => isInventoryRangeAllowed(asset, allowedRanges));
     const groups = new Map();
     assets.forEach((asset) => {
@@ -281,16 +295,18 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       list.push(asset);
       groups.set(range, list);
     });
-    const created = Array.from(groups.entries()).map(([range, rangeAssets], index) => {
+    const created = Array.from(groups.entries()).map(([range, sourceAssets], index) => {
       const personnel = draft.rows?.find((row) => row.range === range) || {};
+      const rangeAssets = initializeInventoryPlanPersonnel(planProject, sourceAssets, personnel, 'custom');
       const planNo = nextInventoryPlanNumber(planProject.projectType, planRows, index);
       return {
         key: `manual-${Date.now()}-${index}`,
         planNo,
         planName: groups.size > 1 ? `${draft.planName}-${range}` : draft.planName,
         status: '草稿',
-        organization: rangeAssets[0]?.organization || '集团',
-        city: rangeAssets[0]?.city || '-',
+        organization: [...new Set(rangeAssets.map(asset => asset.organization).filter(Boolean))].join('、'),
+        city: [...new Set(rangeAssets.map(asset => asset.city).filter(Boolean))].join('、'),
+        department: [...new Set(rangeAssets.map(asset => ['库房', '公共'].includes(asset.inventoryRange) ? '虚拟组织' : String(asset.ownerDept || '').split('.')[0]).filter(Boolean))].join('、'),
         range,
         assetCount: rangeAssets.length,
         uncountedCount: rangeAssets.length,
@@ -303,8 +319,10 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
         assets: rangeAssets,
       };
     });
-    if (!created.length) return;
+    if (!created.length) throw new Error('没有可生成计划的资产');
     setPlanRows((current) => [...current, ...created]);
+    const replacements = new Map(created.flatMap(plan => plan.assets.map(asset => [asset.key, asset])));
+    setPlanAssets(current => current.map(asset => replacements.get(asset.key) || asset));
     setAssetPlanMap((current) => {
       const next = { ...current };
       created.forEach((plan) => plan.assets.forEach((asset) => { next[asset.key] = plan.planNo; }));
@@ -315,36 +333,22 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const generateRemainingDefaultPlans = () => {
     const generated = buildDefaultInventoryPlans(planProject, unplannedSnapshotAssets, planRows);
     setPlanRows(current => [...current, ...generated]);
+    const replacements = new Map(generated.flatMap(plan => plan.assets.map(asset => [asset.key, asset])));
+    setPlanAssets(current => current.map(asset => replacements.get(asset.key) || asset));
     setAssetPlanMap(current => ({ ...current, ...Object.fromEntries(generated.flatMap(plan => plan.assets.map(asset => [asset.key, plan.planNo]))) }));
   };
 
   const handleCustomPlanConfirm = (draft) => {
-    if (planProject?.status === '盘点关闭') { setCustomBuilderOpen(false); return; }
-    if (customBuilderSource === 'snapshot' && planProject?.snapshotAssetKeys && !planRows.length) {
-      plansReturnToSnapshot.current = true;
+    try {
       createManualPlans(draft);
+      if (customBuilderSource === 'snapshot') plansReturnToSnapshot.current = true;
       resetOverlays();
-      setPlanProject((current) => ({ ...current, status: '生成盘点计划' }));
-      setProjectStatusOverrides(current => ({ ...current, [planProject.projectNo]: '生成盘点计划' }));
+      if (!planRows.length) {
+        setPlanProject(current => ({ ...current, status: '生成盘点计划' }));
+        setProjectStatusOverrides(current => ({ ...current, [planProject.projectNo]: '生成盘点计划' }));
+      }
       setPlanViewOpen(true);
-      return;
-    }
-    if (customBuilderSource === 'plans') {
-      createManualPlans(draft);
-      setCustomBuilderOpen(false);
-      setPlanViewOpen(true);
-      return;
-    }
-    setAssetPlanMap((current) => {
-      const next = { ...current };
-      (draft.assets || []).filter((asset) => isInventoryRangeAllowed(asset, allowedRanges)).forEach((asset) => {
-        const targetPlan = planRows.find((plan) => plan.range === asset.inventoryRange);
-        if (targetPlan) next[asset.key] = targetPlan.planNo;
-      });
-      return next;
-    });
-    setCustomBuilderOpen(false);
-    openPlanViewByProject(planProject, true);
+    } catch (error) { Modal.error({ title: '无法生成盘点计划', content: error.message }); }
   };
 
   const interceptNavigation = (event) => {
@@ -522,6 +526,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       assets={planAssets.map(asset => mergePlanInventoryResult({ ...asset, planNo: assetPlanMap[asset.key] || '-' }, getMobileInventoryResults(snapshotProject.projectNo)[asset.assetTag], getPhotoReviewResults(snapshotProject.projectNo).find(review => review.assetTag === asset.assetTag)))}
       onSnapshotRowsChange={(execution, notExecution) => {
         saveInventoryPhotoSnapshot(snapshotProject, [...execution.map(asset => ({ ...asset, executeInventory: true })), ...notExecution.map(asset => ({ ...asset, executeInventory: false }))]);
+        const inactiveKeys = new Set(notExecution.map(asset => asset.key));
+        setAssetPlanMap(current => Object.fromEntries(Object.entries(current).filter(([key]) => !inactiveKeys.has(key))));
         const replacements = new Map([...execution, ...notExecution].map(asset => [asset.key, asset]));
         setPlanAssets(current => [...current.map(asset => replacements.get(asset.key) || asset), ...[...replacements.values()].filter(asset => !current.some(existing => existing.key === asset.key))]);
         setPlanProject(current => ({ ...current, snapshotAssetKeys: execution.map(asset => asset.key), scopeSnapshotAssetKeys: [...execution, ...notExecution].map(asset => asset.key) }));
@@ -535,9 +541,9 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       onGenerateCustom={() => openSnapshotPlanBuilder(snapshotProject)}
     />}
 
-    {customBuilderOpen && <AssetInventoryCustomPlanBuilder initialAssets={customBuilderSource === 'plans' ? unplannedSnapshotAssets : availableAssets} onBack={closeCustomBuilder} onConfirmPlan={handleCustomPlanConfirm} />}
-    {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} projectAssets={locationProjectAssets} onPlansStarted={(project) => { setPlanProject(project); setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '盘点中' })); }} currentOperator={creator} rows={planRows} setRows={setPlanRows} assetsForPlan={assetsForPlan} canManualCreate={canManualCreate && planProject?.status !== '盘点关闭'} onManualCreate={openManualPlanBuilder} onGenerateRemainingDefault={generateRemainingDefaultPlans} onBack={() => { setPlanViewOpen(false); if (plansReturnToSnapshot.current) setSnapshotOpen(true); }} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}
-    {activePlan && <AssetInventoryPlanAssetListV2 plan={activePlan} project={planProject} assets={assetsForPlan(activePlan)} onAssetsChange={(updater) => changePlanAssets(activePlan, updater)} onBack={() => setActivePlan(null)} />}
+    {customBuilderOpen && <AssetInventoryCustomPlanBuilder project={planProject} initialAssets={unplannedSnapshotAssets} onBack={closeCustomBuilder} onConfirmPlan={handleCustomPlanConfirm} />}
+    {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} projectAssets={locationProjectAssets} onPlansStarted={(project) => { setPlanProject(project); setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '盘点中' })); }} currentOperator={creator} onChangePlanAssets={changePlanAssets} rows={planRows} setRows={setPlanRows} assetsForPlan={assetsForPlan} canManualCreate={canManualCreate && planProject?.status !== '盘点关闭'} onManualCreate={openManualPlanBuilder} onGenerateRemainingDefault={generateRemainingDefaultPlans} onBack={() => { setPlanViewOpen(false); if (plansReturnToSnapshot.current) setSnapshotOpen(true); }} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}
+    {activePlan && <AssetInventoryPlanAssetListV2 currentOperator={creator} plan={planRows.find(row => row.planNo === activePlan.planNo) || activePlan} project={planProject} assets={assetsForPlan(planRows.find(row => row.planNo === activePlan.planNo) || activePlan)} onAssetsChange={(updater) => changePlanAssets(activePlan, updater)} onBack={() => setActivePlan(null)} />}
     {imageReviewOpen && <AssetInventoryImageReviewV2 project={planProject} onBack={() => setImageReviewOpen(false)} />}
     {progressOpen && <AssetInventoryProgressV2 project={planProject} plans={planRows} assetsForPlan={assetsForPlan} onBack={() => setProgressOpen(false)} />}
     <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage onDraftProjectChange={onDraftProjectChange} creator={creator} scopeAssetKeys={scopeAssetKeys} snapshotEditRequest={snapshotEditRequest} onProjectGenerated={(project) => {

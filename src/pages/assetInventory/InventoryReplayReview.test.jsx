@@ -1,12 +1,14 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import InventoryReplayReview from './InventoryReplayReview';
+import { submitReplayReview } from './inventoryReplayReviewStore';
 import AssetInventoryPlansV2Refined from './AssetInventoryPlansV2Refined';
+jest.mock('./AssetInventoryImageReviewV2', () => ({ buildReviewRows: () => [] }));
 jest.mock('antd',()=>({
- Alert:()=>null, DatePicker:()=>null, Modal:Object.assign(()=>null,{confirm:jest.fn()}), message:{useMessage:()=>[{warning:jest.fn(),success:jest.fn()},null]},
+ Alert:({message})=><div>{message}</div>, DatePicker:()=>null, Modal:Object.assign(()=>null,{confirm:jest.fn()}), message:{useMessage:()=>[{warning:jest.fn(),success:jest.fn(),error:jest.fn()},null]},
  Button:({children,onClick})=><button onClick={onClick}>{children}</button>,Card:({children,title})=><section>{title}{children}</section>,Space:({children})=><div>{children}</div>,Typography:{Title:({children})=><h1>{children}</h1>,Text:({children})=><span>{children}</span>},
  TreeSelect:Object.assign(()=>null,{SHOW_PARENT:'SHOW_PARENT'}),
- Input:({value,onChange})=><input value={value} onChange={onChange}/>,Select:({value,options,onChange})=><select value={value} onChange={e=>onChange(e.target.value)}><option value=""/>{options.map(o=><option key={o.value}>{o.value}</option>)}</select>,
+ Input:Object.assign(({value,onChange})=><input value={value} onChange={onChange}/>, { TextArea: ({value,onChange,...props}) => <textarea value={value} onChange={onChange} {...props}/> }),Select:({value,options,onChange})=><select value={value} onChange={e=>onChange(e.target.value)}><option value=""/>{options.map(o=><option key={o.value}>{o.value}</option>)}</select>,
  Table:({columns,dataSource})=><table><thead><tr>{columns.map(c=><th key={c.title}>{c.title}</th>)}</tr></thead><tbody>{dataSource.map((r,i)=><tr key={i}>{columns.map(c=><td key={c.title}>{c.render?c.render(r[c.dataIndex],r):r[c.dataIndex]}</td>)}</tr>)}</tbody></table>
 }));
 jest.mock('../../components/QueryBar',()=>({__esModule:true,default:({children,onQuery,onReset})=><div>{children}<button onClick={onQuery}>查询</button><button onClick={onReset}>重置</button></div>,QueryItem:({label,children})=><label>{label}{children}</label>}));
@@ -24,4 +26,37 @@ test('点击不同计划仅展示该计划的资产，监督人固定徐博',()=
 test('复盘计划提交审批后直接打开真实结果审核页并生成待审批记录',()=>{
  function Harness(){const [rows,setRows]=React.useState(plans.map((p,i)=>({...p,key:p.planNo,status:'盘点中',startDate:`2026-09-${i+20}`,endDate:`2026-09-${i+20}`})));return <AssetInventoryPlansV2Refined project={{projectType:'复盘',projectNo:'RCP-test',samplingRatio:1,period:'2026'}} currentOperator="冯丽婷" rows={rows} setRows={setRows} assetsForPlan={assetsForPlan} onBack={()=>{}}/>;}
  const view = render(<Harness/>);expect(screen.getAllByText('徐博')).toHaveLength(2);fireEvent.click(screen.getByRole('button',{name:'提交审批'}));expect(screen.getByRole('heading',{name:'复盘结果审核'})).toBeInTheDocument();expect(screen.getByText('待审批')).toBeInTheDocument();expect(screen.getByText('冯丽婷')).toBeInTheDocument();expect(screen.getByText('财务经理审批')).toBeInTheDocument();expect(screen.getByText('待流转')).toBeInTheDocument();expect(screen.getAllByText('徐博')).toHaveLength(3);view.unmount();render(<Harness/>);fireEvent.click(screen.getByRole('button',{name:'查看审批'}));expect(screen.getByRole('heading',{name:'复盘结果审核'})).toBeInTheDocument();expect(screen.getByText('待审批')).toBeInTheDocument();
+});
+
+
+test('审核页不展示内审监督人，只向当前何文显示审批动作，审批后徐博可接续并刷新', () => {
+ const project = {projectNo:'R-ui',projectType:'复盘',period:'2026'};
+ submitReplayReview({project,plans:plans.map(plan=>({...plan,status:'盘点中'})),assetsForPlan,operator:'冯丽婷'});
+ function Harness({operator}) { const [rows,setRows]=React.useState(plans.map(plan=>({...plan,key:plan.planNo,status:'盘点中'}))); return <AssetInventoryPlansV2Refined project={project} currentOperator={operator} rows={rows} setRows={setRows} assetsForPlan={assetsForPlan}/>; }
+ let view=render(<Harness operator="206984-何文"/>);
+ fireEvent.click(screen.getByRole('button',{name:'查看审批'}));
+ expect(screen.queryByRole('columnheader',{name:'内审监督人'})).toBeNull();
+ fireEvent.change(screen.getByLabelText('复盘审批意见'),{target:{value:'现场复核'}});
+ fireEvent.click(screen.getByRole('button',{name:'同意'}));
+ expect(screen.queryByRole('button',{name:'同意'})).toBeNull();
+ expect(screen.getByText('现场复核')).toBeInTheDocument();
+ view.unmount();
+ view=render(<Harness operator="徐博"/>);
+ fireEvent.click(screen.getByRole('button',{name:'查看审批'}));
+ fireEvent.click(screen.getByRole('button',{name:'同意'}));
+ expect(screen.queryByRole('button',{name:'同意'})).toBeNull();
+ view.unmount();
+ render(<Harness operator="徐博"/>);
+ fireEvent.click(screen.getByRole('button',{name:'查看审批'}));
+ expect(screen.queryByRole('button',{name:'同意'})).toBeNull();
+});
+
+test('关闭项目只读，未知NO节点提示未配置而不提供审批动作',()=>{
+ const project={projectNo:'R-no',projectType:'复盘'};
+ const submission=submitReplayReview({project,plans:[{planNo:'M',range:'机房',status:'盘点中'}],assetsForPlan:()=>[],operator:'冯丽婷'});
+ const view=render(<InventoryReplayReview project={project} plans={submission.plans} submission={submission} assetsForPlan={()=>[]} currentOperator="徐博" onDecide={jest.fn()}/>);
+ expect(screen.getByText('NO领导审批人未配置，无法继续审批')).toBeInTheDocument();
+ expect(screen.queryByRole('button',{name:'同意'})).toBeNull();
+ view.rerender(<InventoryReplayReview project={{...project,status:'盘点关闭'}} plans={submission.plans} submission={submission} assetsForPlan={()=>[]} currentOperator="徐博" onDecide={jest.fn()}/>);
+ expect(screen.queryByRole('button',{name:'驳回'})).toBeNull();
 });

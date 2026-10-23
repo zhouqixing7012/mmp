@@ -5,6 +5,6 @@ export function canReportInventoryLoss(asset, photoReview) {
 }
 
 export function applyPhotoReviewToInventoryAsset(asset, photoReview) {
-  if (!photoReview || asset.status === '报失') return asset;
+  if (!photoReview || asset.status === '报失' || ['扫码枪', '人工导入'].includes(asset.resultSource)) return asset;
   return { ...asset, status: photoReview.status };
 }

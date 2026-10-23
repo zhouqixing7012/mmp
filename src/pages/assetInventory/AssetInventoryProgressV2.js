@@ -89,9 +89,8 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
     },
   ];
 
-  const roleColumns = project?.projectType === '复盘'
-    ? [{ title: '财务监督人', dataIndex: 'financialSupervisor', width: 130 }, { title: '内审监督人', dataIndex: 'auditSupervisor', width: 130 }]
-    : [{ title: '计划监督人', dataIndex: 'supervisor', width: 130 }];
+  const roleColumns = [{ title: '计划监督人', dataIndex: 'supervisor', width: 130 },
+    ...(project?.projectType === '复盘' ? [{ title: '财务监督人', dataIndex: 'financialSupervisor', width: 130 }] : [])];
   const detailColumns = [
     { title: '盘点范围', dataIndex: 'range', width: 100 },
     { title: '子公司', dataIndex: 'organization', width: 140, fixed: 'left' },

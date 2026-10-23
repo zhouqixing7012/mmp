@@ -1,3 +1,4 @@
+import { AssetInventoryVariantProvider } from './AssetInventoryVariantContext';
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { CreateProjectView } from './AssetInventoryProjectPage';
@@ -71,4 +72,14 @@ test('创建复盘快照仅取当前范围并应用必盘规则，保留跨天�
   expect(generated.endDate).toBe('2026-09-03');
   expect(generated.scopeSnapshotAssetKeys).toEqual(chosen.map((asset) => asset.key));
   expect(generated.snapshotAssetKeys).toEqual(chosen.filter((asset) => Number(asset.netValue) > 0).map((asset) => asset.key));
+});
+
+
+test('机房复盘展示人工图片规则区域，机房初盘不展示人工规则', () => {
+  const props = { creator: '冯丽婷', onBack: () => {}, initialProject: { ...PROJECT_INFO, projectNo: 'MR', projectType: '复盘' } };
+  const view = render(<AssetInventoryVariantProvider allowedRanges={['机房']}><CreateProjectView {...props} /></AssetInventoryVariantProvider>);
+  expect(screen.getByText('图片上传规则配置')).toBeInTheDocument();
+  view.unmount();
+  render(<AssetInventoryVariantProvider allowedRanges={['机房']}><CreateProjectView {...props} initialProject={{ ...props.initialProject, projectType: '初盘' }} /></AssetInventoryVariantProvider>);
+  expect(screen.queryByText('图片上传规则配置')).not.toBeInTheDocument();
 });

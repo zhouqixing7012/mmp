@@ -14,13 +14,19 @@ const PLAN_FIELDS = [
   ['盘点结束日期', 'endDate'],
 ];
 
+export function hasInventoryUploadedPhoto(asset) {
+  return Object.values(asset.photos || {}).some(value => Array.isArray(value) ? value.length > 0 : Boolean(value));
+}
+
 export function mergePlanInventoryResult(asset, result, photoReview) {
   if (!result && !photoReview) return asset;
   // 审核记录 status 保存盘点结论（审核中/已盘/未盘），不是页面上的图片审核状态文案。
-  const reviewStatus = photoReview?.status;
+  const exempt = ['扫码枪', '人工导入'].includes(result?.resultSource) || result?.status === '报失';
+  const reviewStatus = exempt ? undefined : photoReview?.status;
   result = result || {};
   return {
     ...asset,
+    ...((result.photos ?? photoReview?.photos) !== undefined ? { photos: result.photos ?? photoReview?.photos } : {}),
     ...(result.status !== undefined ? { inventoryStatus: result.status } : {}),
     ...(result.inventoryBy !== undefined ? { counter: result.inventoryBy } : {}),
     ...(result.inventoryDate !== undefined ? { inventoryDate: result.inventoryDate } : {}),

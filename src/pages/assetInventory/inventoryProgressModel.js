@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { PLAN_ASSET_EXPORT_FIELDS, planAssetExportValues } from './inventoryPlanExport';
+import { PLAN_ASSET_EXPORT_FIELDS, planAssetExportValues, hasInventoryUploadedPhoto } from './inventoryPlanExport';
 
 export const PROGRESS_ASSET_FIELDS = [
   ...PLAN_ASSET_EXPORT_FIELDS,
@@ -7,7 +7,7 @@ export const PROGRESS_ASSET_FIELDS = [
   ['现资产责任人', 'currentOwner'], ['现资产责任人部门', 'currentOwnerDept'],
   ['盘点组织', 'organization'],
   ['盘点监督人', 'supervisor'], ['盘点执行人', 'executor'],
-  ['NO扫描数据核对差异', 'noScanDiff'], ['未盘说明', 'inventoryNote'], ['是否上传图片', 'needPhoto'],
+  ['NO扫描数据核对差异', 'noScanDiff'], ['未盘说明', 'uncountedNote'], ['是否上传图片', 'uploadedPhoto'],
 ];
 
 export const isUncountedProgressAsset = (asset) => !['已盘', '代盘'].includes(asset.inventoryStatus);
@@ -24,11 +24,11 @@ export function buildInventoryProgress(project, allowedRanges, plans, assetsForP
   const assets = plans.filter((plan) => allowedRanges.includes(plan.range)).flatMap((plan) => assetsForPlan(plan)
     .filter((asset) => asset.executeInventory !== false && asset.inventoryStatus !== '未执行盘点')
     .map((asset) => ({
-      ...asset, planNo: plan.planNo, inventoryRange: plan.range,
-      supervisor: plan.supervisor,
-      financialSupervisor: plan.financialSupervisor, auditSupervisor: plan.auditSupervisor,
-      executor: plan.executor,
-      executorDepartment: plan.executorDepartment ?? employees.find((person) => person.employeeName === plan.executor)?.department,
+      ...asset, planNo: plan.planNo, inventoryRange: plan.range, uploadedPhoto: hasInventoryUploadedPhoto(asset),
+      supervisor: asset.supervisor ?? plan.supervisor,
+      financialSupervisor: project.projectType === '复盘' ? '徐博' : plan.financialSupervisor,
+      executor: asset.executor ?? plan.executor,
+      executorDepartment: plan.executorDepartment ?? employees.find((person) => person.employeeName === (asset.executor ?? plan.executor))?.department,
     })));
   const groups = new Map();
   assets.forEach((asset) => {
@@ -36,17 +36,17 @@ export function buildInventoryProgress(project, allowedRanges, plans, assetsForP
       : asset.executorDepartment ? asset.executorDepartment.split('.').slice(0, 2).join('.') : '-';
     const key = [asset.inventoryRange, asset.organization, department, asset.city].join('::');
     if (!groups.has(key)) groups.set(key, { key, range: asset.inventoryRange, organization: asset.organization, department, city: asset.city,
-      expected: 0, counted: 0, assets: [], supervisor: [], financialSupervisor: [], auditSupervisor: [], remainingDays: remainingDays(project, today) });
+      expected: 0, counted: 0, assets: [], supervisor: [], financialSupervisor: [], remainingDays: remainingDays(project, today) });
     const row = groups.get(key);
     row.expected += 1;
     if (['已盘', '代盘'].includes(asset.inventoryStatus)) row.counted += 1;
     row.assets.push(asset);
-    ['supervisor', 'financialSupervisor', 'auditSupervisor'].forEach((field) => {
+    ['supervisor', 'financialSupervisor'].forEach((field) => {
       if (asset[field] && asset[field] !== '-' && !row[field].includes(asset[field])) row[field].push(asset[field]);
     });
   });
   const details = [...groups.values()].map((row) => ({ ...row,
-    ...Object.fromEntries(['supervisor', 'financialSupervisor', 'auditSupervisor'].map((field) => [field, row[field].join('、') || '-'])),
+    ...Object.fromEntries(['supervisor', 'financialSupervisor'].map((field) => [field, row[field].join('、') || '-'])),
     assetTags: row.assets.map((asset) => asset.assetTag), uncounted: row.expected - row.counted,
     progress: row.expected ? Number((row.counted / row.expected * 100).toFixed(1)) : 0,
   }));
@@ -77,7 +77,7 @@ export function createProgressAssetWorkbook(assets) {
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([
     PROGRESS_ASSET_FIELDS.map(([title]) => title),
     ...assets.map((asset) => [...planAssetExportValues(asset), ...PROGRESS_ASSET_FIELDS.slice(PLAN_ASSET_EXPORT_FIELDS.length)
-      .map(([, field]) => field === 'needPhoto' ? (asset.needPhoto === undefined ? '' : asset.needPhoto ? '是' : '否') : asset[field] ?? '')]),
+      .map(([, field]) => field === 'uploadedPhoto' ? (hasInventoryUploadedPhoto(asset) ? '是' : '否') : asset[field] ?? '')]),
   ]), '资产清单');
   return workbook;
 }

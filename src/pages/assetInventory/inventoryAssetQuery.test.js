@@ -3,7 +3,7 @@ import { formatAssetCategory } from '../../components/assetQueryModel';
 import { serializeInventoryAssetExport } from './inventoryAssetExport';
 
 const rows = [
-  { key: 'a', assetTag: 'A1', category: '电脑', subCategory: '笔记本', owner: '甲', ownerLevel: '1', city: '北京', enableDate: '2026-01-01', inventoryStatus: '未盘', inventoryMethod: '扫码枪', noStatus: '正常', executor: '乙', supervisor: '丙', costCenter: '财务' },
+  { key: 'a', assetTag: 'A1', category: '电脑', subCategory: '笔记本', owner: '甲', ownerLevel: '1', city: '北京', enableDate: '2026-01-01', inventoryStatus: '未盘', inventoryMethod: '扫码枪', executor: '乙', supervisor: '丙', costCenter: '财务' },
   { key: 'b', assetTag: 'B1', category: '电脑', subCategory: '台式机', owner: '乙', ownerLevel: '10', city: '上海', enableDate: '2026-06-01', inventoryStatus: '已盘', inventoryMethod: '人工上传盘点结果', noStatus: '异常' },
   { key: 'c', assetTag: 'C1', category: '手机', subCategory: '智能手机', owner: '公共管理员', ownerLevel: '公共', city: '北京', enableDate: '2026-01-01' },
 ];
@@ -21,9 +21,9 @@ test('职级、人员和公共按所选值精确匹配，1不能命中10', () =>
   expect(query({ owner: ['甲', '乙'], city: '北京' })).toEqual(['a']);
 });
 
-test('新增的执行人、监督人、盘点方式、NO状态和日期条件实际筛选', () => {
-  expect(query({ executor: ['乙'], supervisor: ['丙'], inventoryMethod: '扫码枪', noStatus: '正常', enableFrom: '2026-01-01', enableTo: '2026-01-01' })).toEqual(['a']);
-  expect(query({ noStatus: '异常' })).toEqual(['b']);
+test('新增的执行人、监督人、盘点方式和日期条件实际筛选', () => {
+  expect(query({ executor: ['乙'], supervisor: ['丙'], inventoryMethod: '扫码枪', enableFrom: '2026-01-01', enableTo: '2026-01-01' })).toEqual(['a']);
+  expect(EMPTY_INVENTORY_ASSET_QUERY).not.toHaveProperty('noStatus');
   expect(query({ enableFrom: '2026-01-02' })).toEqual(['b']);
   expect(query({})).toEqual(['a', 'b', 'c']);
 });

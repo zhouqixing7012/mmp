@@ -18,7 +18,6 @@ export const INVENTORY_ASSET_EXPORT_FIELDS = [
   ['净值', 'netValue'],
   ['使用状态', 'useStatus'],
   ['NO位置', 'noLocation'],
-  ['NO状态', 'noStatus'],
   ['备注', 'remark'],
   ['使用说明', 'useDescription'],
   ['资产责任人编号', 'ownerNo'],

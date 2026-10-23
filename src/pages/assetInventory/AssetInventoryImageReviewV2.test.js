@@ -1,3 +1,5 @@
+import { saveMobileInventoryResult } from './inventoryMobileResultStore';
+import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 import { saveInventoryPhotoSnapshot } from './inventoryPhotoRules';
 jest.mock('antd', () => ({}));
 import { buildReviewRows, sortInventoryReviewRows } from './AssetInventoryImageReviewV2';
@@ -52,4 +54,16 @@ test('审核结论保存不丢失同次提交的实际照片、盘点人和备�
   const row=buildReviewRows('CAPTURE',['员工']).find(item=>item.asset.assetTag==='TAG');
   expect(row.photos.overall.src).toBe(photos.overall.src);expect(row.asset.counter).toBe('盘点人');expect(row.asset.inventoryNote).toBe('本次备注');
   expect(row.reviewStatus).toBe('审核通过');
+});
+
+
+test('扫码枪已盘后旧照片待审核不再进入当前审批或关闭拦截，原审核记录保留', () => {
+  saveInventoryPhotoSnapshot({ projectNo: 'GUN' }, [{ key: 'a', assetTag: 'A', inventoryRange: '员工', needPhoto: true }]);
+  savePhotoReviewResult('GUN', { assetTag: 'A', inventoryRange: '员工', status: '审核中', photos: { overall: { key: 'old' } } });
+  expect(buildReviewRows('GUN', ['员工'])).toHaveLength(1);
+  saveMobileInventoryResult('GUN', 'A', { status: '代盘', resultSource: '扫码枪' });
+  const photoRows = buildReviewRows('GUN', ['员工']);
+  expect(photoRows).toHaveLength(0);
+  expect(inventoryProjectCloseBlockReason({ projectNo: 'GUN', projectType: '初盘' }, { plans: [{ status: '盘点中' }], photoRows })).toBe('');
+  expect(require('./inventoryPhotoReviewStore').getPhotoReviewResults('GUN')[0].photos.overall.key).toBe('old');
 });

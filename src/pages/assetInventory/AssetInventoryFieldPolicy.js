@@ -3,7 +3,6 @@ import React, { useEffect, useRef } from 'react';
 const REMOVED_FIELD = '内审监督人';
 const RENAMED_FIELD = '盘点组织';
 const RENAMED_FIELD_LABEL = '子公司';
-const PLAN_DETAIL_REMOVED_COLUMNS = new Set(['计划监督人', '盘点执行人', 'City']);
 const COUNT_LABELS = new Set([
   '数量', '资产数量', '资产总量', '执行盘点数量', '盘点资产总量', '未执行盘点数量',
   '应盘数量', '已盘数量', '未盘数量', '报失数量', '盘亏数量', '复盘数量',
@@ -147,21 +146,6 @@ function applyInlineTotalFormats(root) {
   });
 }
 
-function applyPlanDetailPolicy(root) {
-  root.querySelectorAll('.ant-card').forEach((card) => {
-    const title = card.querySelector('.ant-card-head-title')?.textContent?.trim() || '';
-    if (title !== '盘点计划明细') return;
-
-    card.querySelectorAll('th').forEach((header) => {
-      if (PLAN_DETAIL_REMOVED_COLUMNS.has(header.textContent?.trim() || '')) hideTableColumn(header);
-    });
-
-    const cityQuery = card.querySelector('[data-prototype-label="City"]');
-    const cityCol = cityQuery?.closest('.ant-col');
-    if (cityCol) cityCol.style.display = 'none';
-  });
-}
-
 function moveColumnBefore(root, sourceTitle, targetTitle) {
   root.querySelectorAll('table').forEach((table) => {
     const headerRow = table.querySelector('thead tr:last-child');
@@ -198,10 +182,9 @@ function applyFieldPolicy(root) {
   if (!root) return;
 
   root.querySelectorAll('th').forEach((header) => {
-    if (header.textContent?.trim() === REMOVED_FIELD && !header.closest('[data-inventory-review]')) hideTableColumn(header);
+    if (header.textContent?.trim() === REMOVED_FIELD) hideTableColumn(header);
   });
 
-  applyPlanDetailPolicy(root);
   moveColumnBefore(root, '清单', '成本中心');
   applyRenamePolicy(root);
 
@@ -217,7 +200,6 @@ function applyFieldPolicy(root) {
     const parent = textNode.parentElement;
     const original = textNode.nodeValue || '';
     if (!parent) return;
-    if (parent.closest('[data-inventory-review]') && original.includes(REMOVED_FIELD)) return;
     if (original.trim() === REMOVED_FIELD || original.trim() === `${REMOVED_FIELD}：`) {
       removeStandaloneField(parent);
       return;
