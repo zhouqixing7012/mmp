@@ -1,3 +1,4 @@
+import { inventoryRemark } from './inventoryRemark';
 import { getMobileInventoryResults } from './inventoryMobileResultStore';
 import { inventoryResultSource } from './inventoryResultSource';
 import { getInventoryPhotoSnapshot } from './inventoryPhotoRules';
@@ -125,7 +126,7 @@ export function buildReviewRows(projectNo, allowedRanges) {
     const range = entry.inventoryRange ?? sourceAsset?.inventoryRange;
     if (!range || range === '机房' || !allowedRanges.includes(range)) return;
     const existing = rowByTag.get(entry.assetTag);
-    const submittedFields = { inventoryStatus: entry.status, inventoryDate: entry.inventoryDate, counter: entry.counter, inventoryNote: entry.inventoryNote };
+    const submittedFields = { inventoryStatus: entry.status, inventoryDate: entry.inventoryDate, counter: entry.counter, inventoryNote: entry.inventoryNote, inventoryRemark: inventoryRemark(entry) };
     // 移动结果只展示本次提交的照片，缺少照片时保留空值。
     const submittedPhotos = entry.photos || { overall: null, partial: null, gallery: [] };
     if (existing) {
@@ -584,7 +585,7 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
         <div><span className="text-gray-500">实际盘点人：</span>{row.asset.counter}</div>
         <div><span className="text-gray-500">盘点日期：</span>{row.asset.inventoryDate}</div>
         <div><span className="text-gray-500">盘点状态：</span><StatusTag value={row.asset.inventoryStatus} /></div>
-        <div><span className="text-gray-500">盘点备注：</span>{row.asset.inventoryNote}</div>
+        <div><span className="text-gray-500">盘点备注：</span>{inventoryRemark(row.asset)}</div>
       </div>,
     },
     {

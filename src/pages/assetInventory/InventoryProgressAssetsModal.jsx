@@ -1,3 +1,4 @@
+import { inventoryRemark } from './inventoryRemark';
 import React, { useState } from 'react';
 import { Button, Input, Modal, Space, Table } from 'antd';
 import * as XLSX from 'xlsx';
@@ -17,9 +18,10 @@ export default function InventoryProgressAssetsModal({ title, assets, projectNo,
     && matchesAssetCategory(row, applied.category)
     && ['owner', 'ownerLevel', 'inventoryStatus', 'city'].every((field) => matchesQuerySelection(row[field], applied[field])));
   const columns = PROGRESS_ASSET_FIELDS.map(([label, field]) => ({
-    title: label, dataIndex: field, width: ['description', 'ownerDept', 'currentOwnerDept', 'inventoryNote'].includes(field) ? 230 : 150,
+    title: label, dataIndex: field, width: ['description', 'ownerDept', 'currentOwnerDept', 'inventoryRemark', 'uncountedNote'].includes(field) ? 230 : 150,
     fixed: field === 'assetTag' ? 'left' : undefined,
-    render: (value, row) => field === 'assetCategory' ? formatAssetCategory(row)
+    render: (value, row) => field === 'inventoryRemark' ? inventoryRemark(row)
+      : field === 'assetCategory' ? formatAssetCategory(row)
       : field === 'inventoryStatus' ? <StatusTag value={value} />
       : field === 'uploadedPhoto' ? (value === undefined ? '-' : value ? '是' : '否') : value ?? '-',
   }));

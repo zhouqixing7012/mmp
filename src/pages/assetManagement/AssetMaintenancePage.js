@@ -1100,7 +1100,7 @@ export default function AssetMaintenancePage() {
         { title: '盘点项目名称', dataIndex: 'projectName', width: 220 },
         { title: '盘点状态', dataIndex: 'status', width: 120 },
         { title: '盘点时间', dataIndex: 'time', width: 170 },
-        { title: '盘点说明', dataIndex: 'note', width: 200 },
+        { title: '盘点备注', dataIndex: 'note', width: 200 },
         { title: '盘点执行人', dataIndex: 'executor', width: 150 },
         { title: '导入方式', dataIndex: 'importWay', width: 140 },
       ]}

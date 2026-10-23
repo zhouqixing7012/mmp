@@ -1,3 +1,4 @@
+import { inventoryRemark } from './inventoryRemark';
 import * as XLSX from 'xlsx';
 import { parseSnapshotTransferRows } from './inventorySnapshotTransfer';
 import { isSnapshotExecutionAsset, isSnapshotNonExecutionAsset } from './inventorySnapshotAssets';
@@ -97,7 +98,7 @@ function makeAssetColumns({ includeNo = true } = {}) {
     { title: '净值', dataIndex: 'netValue', width: 100, align: 'right', render: formatMoney },
     { title: '使用状态', dataIndex: 'useStatus', width: 140, render: (value) => <StatusTag value={value} /> },
     { title: 'NO位置', dataIndex: 'noLocation', width: 120 },
-    { title: '盘点说明', dataIndex: 'inventoryNote', width: 160 },
+    { title: '盘点备注', key: 'inventoryRemark', width: 160, render: (_, row) => inventoryRemark(row) },
     { title: '使用说明', dataIndex: 'useDescription', width: 160 },
     { title: '备注', dataIndex: 'remark', width: 130 },
     { title: '资产责任人', dataIndex: 'owner', width: 150 },

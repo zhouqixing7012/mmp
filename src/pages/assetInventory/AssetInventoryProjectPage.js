@@ -1,3 +1,4 @@
+import { inventoryRemark } from './inventoryRemark';
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 import { getInventoryPeriodOptions, inventoryProjectScopeSource, inheritInitialInventoryPeriod } from './inventoryProjectScope';
 import { PROJECT_PLAN_ASSETS, PROJECT_PLAN_SNAPSHOTS } from '../../mock/inventoryProjectPlanMock';
@@ -175,7 +176,7 @@ function makeAssetColumns({ includeNo = true, includePlan = false, includeCurren
     { title: '净值', dataIndex: 'netValue', width: 100, align: 'right', render: formatMoney },
     { title: '使用状态', dataIndex: 'useStatus', width: 140, render: (value) => <StatusTag value={value} /> },
     { title: 'NO位置', dataIndex: 'noLocation', width: 120 },
-    { title: '盘点说明', dataIndex: 'inventoryNote', width: 160 },
+    { title: '盘点备注', key: 'inventoryRemark', width: 160, render: (_, row) => inventoryRemark(row) },
     { title: '使用说明', dataIndex: 'useDescription', width: 160 },
     { title: '备注', dataIndex: 'remark', width: 130 },
     { title: '资产责任人', dataIndex: 'owner', width: 150 },
@@ -1913,7 +1914,7 @@ function ImageReviewView({ project, onBack }) {
           <div><span className="text-gray-500">实际盘点人：</span>{row.asset.counter}</div>
           <div><span className="text-gray-500">盘点日期：</span>{row.asset.inventoryDate}</div>
           <div><span className="text-gray-500">盘点状态：</span><StatusTag value={row.asset.inventoryStatus} /></div>
-          <div><span className="text-gray-500">盘点备注：</span>{row.asset.inventoryNote}</div>
+          <div><span className="text-gray-500">盘点备注：</span>{inventoryRemark(row.asset)}</div>
           <div><span className="text-gray-500">计划编号：</span>{row.asset.planNo}</div>
           <div><span className="text-gray-500">计划名称：</span>{row.asset.planName}</div>
         </div>

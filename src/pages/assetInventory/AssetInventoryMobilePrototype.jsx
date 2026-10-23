@@ -1,3 +1,4 @@
+import { inventoryRemark } from './inventoryRemark';
 import { getInventoryPhotoSnapshot } from './inventoryPhotoRules';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -136,7 +137,7 @@ function loadProjectAssets(projectNo) {
     usageStatus: asset.useStatus, category: asset.subCategory,
     address: [asset.city, asset.building, asset.floor].join('-'),
     status: asset.executeInventory ? asset.inventoryStatus : '未执行盘点', photoRequired: asset.needPhoto,
-    inventoryRemark: asset.inventoryRemark ?? asset.inventoryNote ?? '',
+    inventoryRemark: inventoryRemark(asset),
     inventoryBy: asset.inventoryBy ?? asset.counter, inventoryDate: asset.inventoryDate,
     resultSource: asset.resultSource, photos: asset.photos,
   })) : DEMO_ASSETS;
@@ -467,7 +468,7 @@ export default function AssetInventoryMobilePrototype() {
     try {
     if (reviewPending) savePhotoReviewResult(previewProjectNo, {
       assetTag: scanAsset.tagNo, status: '审核中', inventoryRange: scanAsset.area, owner: scanAsset.owner,
-      description: scanAsset.assetDesc, inventoryDate: new Date().toISOString(), counter: currentUser.name, inventoryNote: scanAsset.inventoryRemark ?? scanAsset.inventoryNote ?? '', photoSource: '移动拍照', photos: capturedPhotos(scanAsset),
+      description: scanAsset.assetDesc, inventoryDate: new Date().toISOString(), counter: currentUser.name, inventoryNote: inventoryRemark(scanAsset), photoSource: '移动拍照', photos: capturedPhotos(scanAsset),
     });
     saveMobileInventoryResult(previewProjectNo, scanAsset.tagNo, {
       status: reviewPending ? '审核中' : kind === 'proxy' ? '代盘' : '已盘',
@@ -593,7 +594,7 @@ export default function AssetInventoryMobilePrototype() {
       try {
       success.forEach((tagNo) => {
         const asset = assets.find((item) => item.tagNo === tagNo);
-        if (needsPhotoReview(asset)) savePhotoReviewResult(previewProjectNo, { assetTag: tagNo, status: '审核中', inventoryRange: asset.area, owner: asset.owner, description: asset.assetDesc, inventoryDate: new Date().toISOString(), counter: currentUser.name, inventoryNote: asset.inventoryRemark ?? asset.inventoryNote ?? '', photoSource: '移动拍照', photos: capturedPhotos(asset) });
+        if (needsPhotoReview(asset)) savePhotoReviewResult(previewProjectNo, { assetTag: tagNo, status: '审核中', inventoryRange: asset.area, owner: asset.owner, description: asset.assetDesc, inventoryDate: new Date().toISOString(), counter: currentUser.name, inventoryNote: inventoryRemark(asset), photoSource: '移动拍照', photos: capturedPhotos(asset) });
         saveMobileInventoryResult(previewProjectNo, tagNo, { status: needsPhotoReview(asset) ? '审核中' : asset.ownerNo === currentUser.employeeNo ? '已盘' : '代盘', inventoryDate: new Date().toLocaleString('zh-CN', { hour12: false }), inventoryBy: currentUser.name, resultSource: '狐小e快速扫描', photos: capturedPhotos(asset), lossReported: asset.lossReported, ...(asset.lossReason ? { lossReason: asset.lossReason, inventoryRemark: asset.inventoryRemark } : {}) });
       });
       } catch (error) { messageApi.warning('批量盘点结果保存失败，请保留当前标签和照片后重试：' + error.message); return; }
@@ -709,7 +710,7 @@ export default function AssetInventoryMobilePrototype() {
           {selectedAsset.area !== '员工' && <DetailRow label="盘点范围" value={selectedAsset.area} />}
           <DetailRow label="盘点人" value={selectedAsset.inventoryBy} />
           <DetailRow label="盘点日期" value={selectedAsset.inventoryDate} />
-          {(selectedAsset.inventoryRemark ?? selectedAsset.inventoryNote) && <DetailRow label="盘点备注" value={selectedAsset.inventoryRemark ?? selectedAsset.inventoryNote} />}
+          {inventoryRemark(selectedAsset) && <DetailRow label="盘点备注" value={inventoryRemark(selectedAsset)} />}
           {currentUser.isESAssetGroup === true && <>
             <DetailRow label="用途" value={selectedAsset.purpose} /><DetailRow label="公司" value={selectedAsset.company} />
             <DetailRow label="使用说明" value={selectedAsset.usageNote} /><DetailRow label="备注" value={selectedAsset.remark} />

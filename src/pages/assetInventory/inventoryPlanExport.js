@@ -1,3 +1,4 @@
+import { inventoryRemark } from './inventoryRemark';
 import * as XLSX from 'xlsx';
 import { INVENTORY_ASSET_EXPORT_FIELDS } from './inventoryAssetExport';
 import { formatAssetCategory } from '../../components/assetQueryModel';
@@ -32,7 +33,7 @@ export function mergePlanInventoryResult(asset, result, photoReview) {
     ...(result.inventoryDate !== undefined ? { inventoryDate: result.inventoryDate } : {}),
     ...(result.resultSource !== undefined ? { resultSource: result.resultSource } : {}),
     ...(result.inventoryNote !== undefined ? { inventoryNote: result.inventoryNote } : {}),
-    ...(result.inventoryRemark !== undefined ? { inventoryRemark: result.inventoryRemark } : {}),
+    ...(['inventoryRemark', 'inventoryNote', 'lossReason'].some(key => result[key] != null) ? { inventoryRemark: inventoryRemark(result) } : {}),
     ...(result.lossReason !== undefined ? { lossReason: result.lossReason } : {}),
     ...(reviewStatus !== undefined ? { inventoryStatus: reviewStatus } : {}),
   };
@@ -42,7 +43,7 @@ export function planAssetExportValues(asset) {
   return PLAN_ASSET_EXPORT_FIELDS.map(([, key]) => {
     if (key === 'assetCategory') return formatAssetCategory(asset);
     if (key === 'resultSource') return inventoryResultSource(asset);
-    if (key === 'inventoryRemark') return asset.inventoryRemark ?? asset.lossReason ?? '';
+    if (key === 'inventoryRemark') return inventoryRemark(asset);
     return asset[key] ?? '';
   });
 }
