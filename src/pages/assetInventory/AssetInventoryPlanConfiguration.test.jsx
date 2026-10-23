@@ -5,7 +5,7 @@ const mockWarning = jest.fn();
 jest.mock('antd', () => {
   const Box = ({children}) => <div>{children}</div>;
   return { Alert:Box, Card:Box, Space:Box, Button:({children,onClick,disabled})=><button disabled={disabled} onClick={onClick}>{children}</button>,
-    Input:({onPressEnter,suffix,...props})=><input {...props}/>, Select:()=>null,DatePicker:()=>null,Typography:{Title:Box,Text:Box},
+    Input:({onPressEnter,suffix,...props})=><input {...props}/>, Select:()=>null,DatePicker:({value,onChange,disabledDate,...props})=><input {...props} type="date" value={value?.format('YYYY-MM-DD') || ''} data-later-disabled={disabledDate ? String(disabledDate(require('dayjs')('2026-10-27'))) : undefined} onChange={event=>onChange(event.target.value ? require('dayjs')(event.target.value) : null)}/>,Typography:{Title:Box,Text:Box},
     Modal:Object.assign(()=>null,{confirm:jest.fn()}),message:{useMessage:()=>[{warning:mockWarning,error:mockWarning,success:jest.fn(),info:jest.fn()},null]},
     Table:({columns,dataSource,rowSelection})=><><button onClick={()=>rowSelection?.onChange([dataSource[0].key])}>选择首个计划</button><table><tbody>{dataSource.map(row=><tr key={row.key}>{columns.map((column,index)=><td key={index}>{column.render?column.render(row[column.dataIndex],row):row[column.dataIndex]}</td>)}</tr>)}</tbody></table></>,
   };
@@ -58,4 +58,16 @@ test('盘点中不再提供计划名及人员修改入口',()=>{
  expect(screen.queryByLabelText('P1-盘点执行人')).toBeNull();
  expect(screen.queryByLabelText('P1-盘点监督人')).toBeNull();
  expect(screen.queryByLabelText('P1-计划名称')).toBeNull();
+});
+
+test('复盘日期允许多天，修改开始日不再覆盖结束日，结束日允许稍后日期并可启动',()=>{
+ render(<Harness/>);
+ fireEvent.change(screen.getByLabelText('P1-盘点开始日期'),{target:{value:'2026-10-24'}});
+ expect(screen.getByLabelText('P1-盘点结束日期').value).toBe('2026-10-23');
+ expect(screen.getByLabelText('P1-盘点结束日期')).toHaveAttribute('data-later-disabled','false');
+ fireEvent.change(screen.getByLabelText('P1-盘点结束日期'),{target:{value:'2026-10-26'}});
+ fireEvent.click(screen.getByRole('button',{name:'选择首个计划'}));
+ fireEvent.click(screen.getByRole('button',{name:'启动盘点计划'}));
+ expect(screen.getByRole('status').textContent).toContain('盘点中');
+ expect(screen.getByRole('status').textContent).toContain('2026-10-26');
 });

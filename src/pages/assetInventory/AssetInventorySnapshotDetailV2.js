@@ -127,7 +127,7 @@ function makeAssetColumns({ includeNo = true } = {}) {
   return columns;
 }
 
-export function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows, setOtherRows, onMoveRows, onConfirmRows, messageApi, machineRoomProject = false }) {
+export function SnapshotAssetTab({ project, type, projectStatus, projectNo, rows, setRows, setOtherRows, onMoveRows, onConfirmRows, messageApi, machineRoomProject = false }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const showMachineRoomFeatures = machineRoomProject && allowedRanges.includes('机房');
@@ -145,7 +145,7 @@ export function SnapshotAssetTab({ type, projectStatus, projectNo, rows, setRows
   const filteredRows = useMemo(() => filterInventoryAssets(rows, filters), [rows, filters]);
 
   const exportFilteredRows = () => {
-    const { csv, missingFields } = serializeInventoryAssetExport(filteredRows);
+    const { csv, missingFields } = serializeInventoryAssetExport(filteredRows, { project });
     if (missingFields.length) messageApi.warning(`演示数据缺少${missingFields.join('、')}，对应单元格为空`);
     const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a');
@@ -469,7 +469,7 @@ export default function AssetInventorySnapshotDetailV2({
 
   const exportSnapshot = () => {
     const rows = [...executionRows.map((asset) => ({ ...asset, executeInventory: true })), ...notExecutionRows.map((asset) => ({ ...asset, executeInventory: false }))];
-    const { csv, missingFields } = serializeInventorySnapshotExport(rows);
+    const { csv, missingFields } = serializeInventorySnapshotExport(rows, { project });
     if (missingFields.length) messageApi.warning(`演示数据缺少${missingFields.join('、')}，对应单元格为空`);
     const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a');
@@ -520,17 +520,17 @@ export default function AssetInventorySnapshotDetailV2({
     {
       key: 'execution',
       label: '执行盘点资产清单',
-      children: <SnapshotAssetTab machineRoomProject={machineRoomProject} type="execution" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={executionRows} setRows={setExecutionRows} setOtherRows={setNotExecutionRows} onMoveRows={(selected, moved) => moveSnapshotRows(true, selected, moved)} messageApi={messageApi} />,
+      children: <SnapshotAssetTab project={project} machineRoomProject={machineRoomProject} type="execution" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={executionRows} setRows={setExecutionRows} setOtherRows={setNotExecutionRows} onMoveRows={(selected, moved) => moveSnapshotRows(true, selected, moved)} messageApi={messageApi} />,
     },
     {
       key: 'notExecution',
       label: '未执行盘点资产清单',
-      children: <SnapshotAssetTab machineRoomProject={machineRoomProject} type="notExecution" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={notExecutionRows} setRows={setNotExecutionRows} setOtherRows={setExecutionRows} onMoveRows={(selected, moved) => moveSnapshotRows(false, selected, moved)} onConfirmRows={(updated) => onSnapshotRowsChange?.(executionRows, updated)} messageApi={messageApi} />,
+      children: <SnapshotAssetTab project={project} machineRoomProject={machineRoomProject} type="notExecution" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={notExecutionRows} setRows={setNotExecutionRows} setOtherRows={setExecutionRows} onMoveRows={(selected, moved) => moveSnapshotRows(false, selected, moved)} onConfirmRows={(updated) => onSnapshotRowsChange?.(executionRows, updated)} messageApi={messageApi} />,
     },
     {
       key: 'excluded',
       label: '未包含资产清单',
-      children: <SnapshotAssetTab machineRoomProject={machineRoomProject} type="excluded" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={excludedRows} setRows={setExcludedRows} onMoveRows={moveExcludedRows} messageApi={messageApi} />,
+      children: <SnapshotAssetTab project={project} machineRoomProject={machineRoomProject} type="excluded" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={excludedRows} setRows={setExcludedRows} onMoveRows={moveExcludedRows} messageApi={messageApi} />,
     },
   ];
 

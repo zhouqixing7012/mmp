@@ -10,19 +10,19 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import SectionCardTitle from './SectionCardTitle';
-import { inventoryDateBlockReason } from './inventoryDateRules';
+import { inventoryProjectDateBlockReason } from './inventoryDateRules';
 import { planPersonnelBlockReason } from './inventoryPlanStartRules';
 import { calculateInventorySnapshotStats } from './inventorySnapshotStats';
-import InventoryLocationChangeFlow from './InventoryLocationChangeFlow';
 import InventoryReplayReview from './InventoryReplayReview';
+import InventoryLocationChangeFlow from './InventoryLocationChangeFlow';
 import { buildReviewRows } from './AssetInventoryImageReviewV2';
-import { applyReplayPlanStatuses, decideReplayReview, getReplaySubmission, submitReplayReview, validateReplaySubmission } from './inventoryReplayReviewStore';
-import { canCreateInventoryLocationChange, getInventoryLocationChangeRequests } from './inventoryLocationChangeStore';
+import { applyReplayPlanStatuses, decideReplayReview, getReplaySubmission, replayProjectSubmissionBlockReason, submitReplayProjectReview, submitReplayReview, validateReplaySubmission } from './inventoryReplayReviewStore';
 import { downloadInventoryPlans } from './inventoryPlanExport';
 import { buildReplayPreparationNotices } from './inventoryReplayPreparation';
 import { schedulePreparationNotices } from './inventoryPreparationNoticeStore';
 
 const EMPTY_PLAN_FILTERS = { planNo: '', planName: '', planStatus: '', organization: '', range: '' };
+const planRanges = row => row.ranges || [row.range];
 const RANGE_OPTIONS = ['员工', '库房', '公共', '机房'];
 function includesText(value, query) { if (!query) return true; return String(value || '').toLowerCase().includes(String(query).trim().toLowerCase()); }
 function PageTitle({ children }) { return <Typography.Title level={4} style={{ margin: 0 }}>{children}</Typography.Title>; }
@@ -41,7 +41,7 @@ function ProjectInfoCard({ project }) {
   );
 }
 
-export default function AssetInventoryPlansV2Refined({ project, currentOperator, onBack, onOpenPlanAssets, rows, setRows, assetsForPlan, canManualCreate, onManualCreate, onGenerateRemainingDefault, onPlansStarted, onChangePlanAssets, projectAssets = [] }) {
+export default function AssetInventoryPlansV2Refined({ project, currentOperator, onBack, onOpenPlanAssets, rows, setRows, assetsForPlan, canManualCreate, onManualCreate, onGenerateRemainingDefault, onPlansStarted, onChangePlanAssets, onReviewChanged }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const projectClosed = project?.status === '盘点关闭';
@@ -52,26 +52,17 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   const [batchDateOpen, setBatchDateOpen] = useState(false);
   const [batchDates, setBatchDates] = useState({ startDate: '', endDate: '' });
   const [personTarget, setPersonTarget] = useState(null);
-  const [locationChangeOpen, setLocationChangeOpen] = useState(false);
-  const [locationRequestId, setLocationRequestId] = useState(null);
-  const [locationRecordsOpen, setLocationRecordsOpen] = useState(false);
-  const locationRequests = project?.projectType === '复盘' ? getInventoryLocationChangeRequests(project.projectNo) : [];
-  const canCreateLocationChange = canCreateInventoryLocationChange(project, currentOperator);
-  const openLocationDraft = () => {
-    if (!canCreateLocationChange) { messageApi.warning('仅盘点项目创建人可以发起位置变更'); return; }
-    setLocationRequestId(null);
-    setLocationChangeOpen(true);
-  };
-  const [reviewOpen, setReviewOpen] = useState(false);
+  const [locationPoolOpen, setLocationPoolOpen] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState(null);
   const [submission, setSubmission] = useState(() => getReplaySubmission(project?.projectNo));
-  const visibleRows = applyReplayPlanStatuses(rows, submission).filter(row => allowedRanges.includes(row.range)).map(row => {
+  const visibleRows = applyReplayPlanStatuses(rows, submission).filter(row => planRanges(row).some(range => allowedRanges.includes(range))).map(row => {
     const stats = calculateInventorySnapshotStats(assetsForPlan(row), []);
     const personnel = field => [...new Set(assetsForPlan(row).map(asset => asset[field]).filter(value => value && value !== '-'))].join('、') || '-';
     return { ...row, supervisor: personnel('supervisor'), executor: personnel('executor'), assetCount: stats.execution, countedCount: stats.counted, uncountedCount: stats.uncounted,
       status: projectClosed ? '关闭' : row.status };
   });
   const updateFilter = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
-  const filteredRows = useMemo(() => visibleRows.filter((row) => includesText(row.planNo, appliedFilters.planNo) && includesText(row.planName, appliedFilters.planName) && includesText(row.status, appliedFilters.planStatus) && matchesQuerySelection(row.organization, appliedFilters.organization) && includesText(row.range, appliedFilters.range)), [visibleRows, appliedFilters]);
+  const filteredRows = useMemo(() => visibleRows.filter((row) => includesText(row.planNo, appliedFilters.planNo) && includesText(row.planName, appliedFilters.planName) && includesText(row.status, appliedFilters.planStatus) && matchesQuerySelection(row.organization, appliedFilters.organization) && (!appliedFilters.range || planRanges(row).includes(appliedFilters.range))), [visibleRows, appliedFilters]);
   const editable = (row) => !projectClosed && row.status === '草稿';
   const selectedRows = visibleRows.filter((row) => selectedKeys.includes(row.key));
   const allSelectedDraft = !projectClosed && selectedRows.length > 0 && selectedRows.every((row) => row.status === '草稿');
@@ -87,7 +78,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
         onOk: onGenerateRemainingDefault, onCancel: onManualCreate });
       return;
     }
-    const invalid = selectedRows.map((row) => inventoryDateBlockReason(project?.projectType, row.startDate, row.endDate)).find(Boolean);
+    const invalid = selectedRows.map((row) => inventoryProjectDateBlockReason(row.startDate, row.endDate)).find(Boolean);
     if (invalid) { messageApi.warning(invalid); return; }
     const personnelBlock = selectedRows.map((row) => planPersonnelBlockReason(row, assetsForPlan(row), project)).find(Boolean);
     if (personnelBlock) { messageApi.warning(personnelBlock); return; }
@@ -110,7 +101,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   const exportPlans = () => {
     const exportRows = selectedKeys.length ? filteredRows.filter(row => selectedKeys.includes(row.key)) : filteredRows;
     if (!exportRows.length) { messageApi.warning('没有可导出的盘点计划'); return; }
-    try { downloadInventoryPlans(exportRows, assetsForPlan, project.projectNo); }
+    try { downloadInventoryPlans(exportRows, assetsForPlan, project.projectNo, { project }); }
     catch (error) { messageApi.error('盘点计划导出失败，请重试'); }
   };
 
@@ -133,9 +124,9 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
 
   const saveBatchDates = () => {
     if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
-    const dateBlockReason = inventoryDateBlockReason(project?.projectType, batchDates.startDate, batchDates.endDate);
+    const dateBlockReason = inventoryProjectDateBlockReason(batchDates.startDate, batchDates.endDate);
     if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
-    setRows((current) => current.map((row) => allowedRanges.includes(row.range) && row.status === '草稿' ? { ...row, startDate: batchDates.startDate, endDate: batchDates.endDate } : row));
+    setRows((current) => current.map((row) => planRanges(row).some(range => allowedRanges.includes(range)) && row.status === '草稿' ? { ...row, startDate: batchDates.startDate, endDate: batchDates.endDate } : row));
     setBatchDateOpen(false);
     messageApi.success(`已统一更新 ${visibleRows.filter(row => row.status === '草稿').length} 个草稿盘点计划的盘点日期`);
   };
@@ -143,27 +134,37 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   const syncSubmission = next => {
     setSubmission(next);
     setRows(current => applyReplayPlanStatuses(current, next));
+    onReviewChanged?.(next);
   };
-  const submitReview = () => {
+  const submitReview = plan => {
     const photos = () => buildReviewRows(project.projectNo, allowedRanges);
     const perform = (allowBelowRatio = false) => {
       try {
-        const next = submitReplayReview({ project, plans: visibleRows, assetsForPlan, photoRows: photos(), operator: currentOperator, allowBelowRatio });
+        const next = submitReplayReview({ project, plans: [plan], assetsForPlan, photoRows: photos(), operator: currentOperator, allowBelowRatio });
         syncSubmission(next);
-        setReviewOpen(true);
+        setReviewTarget({ scope: 'plan', planNo: plan.planNo });
       } catch (error) { messageApi.error(error.message); }
     };
     try {
-      const warnings = validateReplaySubmission(project, visibleRows, assetsForPlan, photos());
+      const warnings = validateReplaySubmission(project, [plan], assetsForPlan, photos());
       if (warnings.length) Modal.confirm({ title: '盘点比例未达到设定比例', content: warnings.join('；') + '。是否继续提交复盘结果审批？', okText: '继续提交', cancelText: '取消', onOk: () => perform(true) });
       else perform();
     } catch (error) { messageApi.warning(error.message); }
   };
+  const submitProjectReview = () => {
+    try {
+      const next = submitReplayProjectReview({ project, plans: rows, operator: currentOperator });
+      syncSubmission(next);
+      setReviewTarget({ scope: 'project' });
+    } catch (error) { messageApi.error(error.message); }
+  };
+  const activeReview = reviewTarget?.scope === 'project' ? submission?.projectReview : submission?.planReviews?.[reviewTarget?.planNo];
   const decideReview = (decision, opinion) => {
     try {
-      const next = decideReplayReview({ project, operator: currentOperator, decision, opinion, round: submission.round });
+      const next = decideReplayReview({ project, operator: currentOperator, decision, opinion, scope: reviewTarget.scope, planNo: reviewTarget.planNo, round: activeReview.round });
       syncSubmission(next);
-      messageApi.success(decision === '驳回' ? '复盘结果已驳回，计划恢复盘点中' : next.status === '已审核' ? '复盘审批已全部通过' : '审批已通过，进入下一节点');
+      const review = reviewTarget.scope === 'project' ? next.projectReview : next.planReviews[reviewTarget.planNo];
+      messageApi.success(decision === '驳回' ? '审批已驳回，可修改后重新提交' : review.status === '已审核' ? '审批已通过' : '已记录审批意见，等待其他计划监督人审核');
       return true;
     } catch (error) { messageApi.error(error.message); return false; }
   };
@@ -200,17 +201,21 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     { title: '资产总量', dataIndex: 'assetCount', width: 100, align: 'right' },
     { title: '未盘数量', dataIndex: 'uncountedCount', width: 100, align: 'right' },
     { title: '已盘数量', dataIndex: 'countedCount', width: 100, align: 'right' },
-    { title: '盘点开始日期', dataIndex: 'startDate', width: 145, render: (value, row) => editable(row) ? <DatePicker value={value ? dayjs(value) : null} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, startDate: date ? date.format('YYYY-MM-DD') : '', endDate: project?.projectType === '复盘' ? (date ? date.format('YYYY-MM-DD') : '') : item.endDate } : item))} /> : value },
-    { title: '盘点结束日期', dataIndex: 'endDate', width: 145, render: (value, row) => editable(row) ? <DatePicker value={value ? dayjs(value) : null} disabledDate={(date) => project?.projectType === '复盘' && row.startDate && !date.isSame(dayjs(row.startDate), 'day')} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, endDate: date ? date.format('YYYY-MM-DD') : '' } : item))} /> : value },
+    { title: '盘点开始日期', dataIndex: 'startDate', width: 145, render: (value, row) => editable(row) ? <DatePicker aria-label={`${row.planNo}-盘点开始日期`} value={value ? dayjs(value) : null} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, startDate: date ? date.format('YYYY-MM-DD') : '' } : item))} /> : value },
+    { title: '盘点结束日期', dataIndex: 'endDate', width: 145, render: (value, row) => editable(row) ? <DatePicker aria-label={`${row.planNo}-盘点结束日期`} value={value ? dayjs(value) : null} disabledDate={(date) => row.startDate && date.isBefore(dayjs(row.startDate), 'day')} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, endDate: date ? date.format('YYYY-MM-DD') : '' } : item))} /> : value },
     personnelColumn('盘点监督人', 'supervisor'),
     personnelColumn('盘点执行人', 'executor'),
     ...(project?.projectType === '复盘' ? [{ title: '财务监督人', width: 130, render: () => <Typography.Text>徐博</Typography.Text> }] : []),
+    ...(project?.projectType === '复盘' ? [{ title: '计划审批', width: 210, render: (_, row) => <Space>
+      {!projectClosed && row.status === '盘点中' && <Button type="link" aria-label={`提交计划审批${row.planNo}`} onClick={() => submitReview(row)}>提交计划审批</Button>}
+      {submission?.planReviews?.[row.planNo] && <Button type="link" aria-label={`查看计划审批${row.planNo}`} onClick={() => setReviewTarget({ scope: 'plan', planNo: row.planNo })}>查看计划审批</Button>}
+    </Space> }] : []),
     { title: '资产清单', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => onOpenPlanAssets(row)}>查看</Button> },
   ];
 
-  if (reviewOpen && submission) return <InventoryReplayReview project={project} plans={submission.plans || visibleRows} assetsForPlan={(row) => submission.assetsByPlan?.[row.planNo] || assetsForPlan(row)} submission={submission} currentOperator={currentOperator} onDecide={decideReview} onBack={() => setReviewOpen(false)} />;
+  if (locationPoolOpen) return <InventoryLocationChangeFlow project={project} onBack={() => setLocationPoolOpen(false)} />;
 
-  if (locationChangeOpen) return <InventoryLocationChangeFlow project={project} projectAssets={projectAssets} currentOperator={currentOperator} initialRequestId={locationRequestId} onBack={() => setLocationChangeOpen(false)} />;
+  if (activeReview) return <InventoryReplayReview key={`${activeReview.scope}:${activeReview.planNo || 'project'}:${activeReview.round}`} project={project} plans={activeReview.plans} assetsForPlan={row => activeReview.assetsByPlan[row.planNo] || []} submission={activeReview} currentOperator={currentOperator} onDecide={decideReview} onBack={() => setReviewTarget(null)} />;
 
   return <Space direction="vertical" size={16} className="w-full">
     {contextHolder}<PageTitle>盘点计划</PageTitle><ProjectInfoCard project={project} />
@@ -222,22 +227,16 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
         <QueryItem label="子公司"><AssetValueSelect rows={visibleRows} field="organization" value={draftFilters.organization} onChange={(value) => updateFilter('organization', value)} /></QueryItem>
         <QueryItem label="盘点范围"><Select value={draftFilters.range || undefined} allowClear placeholder="请选择" options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('range', value)} /></QueryItem>
       </QueryBar>
-      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}<Button type="primary" icon={<PlayCircle size={14} />} disabled={projectClosed || allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button><Button danger icon={<Trash2 size={14} />} disabled={!allSelectedDraft} onClick={handleDelete}>删除盘点计划</Button>{!projectClosed && <Button icon={<Upload size={14} />} onClick={() => messageApi.warning('导入模板及处理规则尚未配置，暂不能导入')}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />} onClick={exportPlans}>导出</Button>{canCreateLocationChange && <Button onClick={openLocationDraft}>发起位置变更</Button>}{Boolean(locationRequests.length) && <Button onClick={() => setLocationRecordsOpen(true)}>位置变更记录</Button>}{!projectClosed && project?.projectType === '复盘' && anyStarted && (!submission || submission.status === '已驳回') && <Button type="primary" onClick={submitReview}>提交审批</Button>}{submission && <Button onClick={() => setReviewOpen(true)}>查看审批</Button>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.info('盘点通知服务尚未接入，当前未发送通知或待办')}>发送盘点通知</Button>}</Space></div>
+      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}<Button type="primary" icon={<PlayCircle size={14} />} disabled={projectClosed || allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button><Button danger icon={<Trash2 size={14} />} disabled={!allSelectedDraft} onClick={handleDelete}>删除盘点计划</Button>{!projectClosed && <Button icon={<Upload size={14} />} onClick={() => messageApi.warning('导入模板及处理规则尚未配置，暂不能导入')}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />} onClick={exportPlans}>导出</Button>{project?.projectType === '复盘' && <><Button onClick={() => setLocationPoolOpen(true)}>位置变更池</Button><Button type="primary" disabled={Boolean(replayProjectSubmissionBlockReason(project, rows, submission))} onClick={submitProjectReview}>提交项目审批</Button>{submission?.projectReview && <Button onClick={() => setReviewTarget({ scope: 'project' })}>查看项目审批</Button>}</>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.info('盘点通知服务尚未接入，当前未发送通知或待办')}>发送盘点通知</Button>}</Space></div>
       <Table rowKey="key" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true, getCheckboxProps: () => ({ disabled: projectClosed }) }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
     </Card>
     <div className="flex justify-center pb-2"><Button onClick={onBack}>返回</Button></div>
     <SelectModal open={Boolean(personTarget)} title="用户列表" rowKey="id" dataSource={inventoryPersonnelCandidates(project, personTarget?.field)} onCancel={() => setPersonTarget(null)} onConfirm={choosePerson}
       searchFields={[{ label: '员工编号', name: 'employeeNo', dataIndex: 'employeeNo' }, { label: '员工姓名', name: 'employeeName', dataIndex: 'employeeName' }, { label: '部门名称', name: 'department', dataIndex: 'department' }]}
       columns={[{ title: '员工编号', dataIndex: 'employeeNo' }, { title: '员工姓名', dataIndex: 'employeeName' }, { title: '部门名称', dataIndex: 'department' }]}/>
-    <Modal open={locationRecordsOpen} title="位置变更记录" width={960} footer={null} onCancel={() => setLocationRecordsOpen(false)}>
-      <Table rowKey="id" size="small" pagination={false} dataSource={locationRequests} columns={[
-        {title:'申请单号',dataIndex:'id'}, {title:'申请人',dataIndex:'applicant'}, {title:'申请时间',dataIndex:'appliedAt'}, {title:'审批状态',dataIndex:'status'},
-        {title:'操作',render:(_,row)=><Button type="link" onClick={() => {setLocationRequestId(row.id);setLocationRecordsOpen(false);setLocationChangeOpen(true);}}>查看</Button>},
-      ]}/>
-    </Modal>
     <Modal open={batchDateOpen} title="批量编辑盘点日期" width={560} okText="确定" cancelText="取消" onCancel={() => setBatchDateOpen(false)} onOk={saveBatchDates}>
       <Alert type="info" showIcon className="mb-4" message="保存后将统一修改当前全部盘点计划的盘点开始日期和盘点结束日期。" />
-      <div className="grid grid-cols-2 gap-4 py-2"><div><Typography.Text type="secondary">盘点开始日期</Typography.Text><DatePicker className="w-full" value={batchDates.startDate ? dayjs(batchDates.startDate) : null} onChange={(date) => setBatchDates((current) => ({ ...current, startDate: date ? date.format('YYYY-MM-DD') : '', endDate: project?.projectType === '复盘' ? (date ? date.format('YYYY-MM-DD') : '') : current.endDate }))} /></div><div><Typography.Text type="secondary">盘点结束日期</Typography.Text><DatePicker className="w-full" value={batchDates.endDate ? dayjs(batchDates.endDate) : null} disabledDate={(date) => batchDates.startDate && (project?.projectType === '复盘' ? !date.isSame(dayjs(batchDates.startDate), 'day') : date.isBefore(dayjs(batchDates.startDate), 'day'))} onChange={(date) => setBatchDates((current) => ({ ...current, endDate: date ? date.format('YYYY-MM-DD') : '' }))} /></div></div>
+      <div className="grid grid-cols-2 gap-4 py-2"><div><Typography.Text type="secondary">盘点开始日期</Typography.Text><DatePicker className="w-full" value={batchDates.startDate ? dayjs(batchDates.startDate) : null} onChange={(date) => setBatchDates((current) => ({ ...current, startDate: date ? date.format('YYYY-MM-DD') : '' }))} /></div><div><Typography.Text type="secondary">盘点结束日期</Typography.Text><DatePicker className="w-full" value={batchDates.endDate ? dayjs(batchDates.endDate) : null} disabledDate={(date) => batchDates.startDate && date.isBefore(dayjs(batchDates.startDate), 'day')} onChange={(date) => setBatchDates((current) => ({ ...current, endDate: date ? date.format('YYYY-MM-DD') : '' }))} /></div></div>
     </Modal>
 
   </Space>;

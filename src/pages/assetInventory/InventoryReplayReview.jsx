@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Button, Card, Input, Space, Table, Typography } from 'antd';
+import { Button, Card, Input, Space, Table, Typography } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { AssetCategorySelect, AssetPersonSelect, AssetValueSelect, formatAssetCategory, matchesAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
 import SectionCardTitle from './SectionCardTitle';
@@ -10,7 +10,6 @@ const EMPTY = Object.fromEntries(FIELDS.map(([,key]) => [key, ['category', 'owne
 export default function InventoryReplayReview({ project, plans, assetsForPlan, submission, currentOperator, onDecide, onBack }) {
   const [opinion, setOpinion] = useState('');
   const decisionBlock = replayDecisionBlockReason(project, submission, currentOperator);
-  const pending = submission.records.find(record => record.status === '待审批');
   const [planNo, setPlanNo] = useState(plans[0]?.planNo);
   const [draft, setDraft] = useState(EMPTY);
   const [filters, setFilters] = useState(EMPTY);
@@ -44,7 +43,6 @@ export default function InventoryReplayReview({ project, plans, assetsForPlan, s
       <Table size="small" bordered rowKey="key" scroll={{x:'max-content'}} dataSource={matches} columns={FIELDS.map(([title,dataIndex])=>({title,dataIndex,render:(value,row)=>dataIndex==='category' ? formatAssetCategory(row) || '-' : value || '-'}))} pagination={{pageSize:10,showTotal:total=>`共 ${total} 条`}}/>
     </Card>
     <Card size="small" title={<SectionCardTitle>审批信息</SectionCardTitle>}><Table size="small" bordered pagination={false} rowKey="key" dataSource={submission.records} columns={[['审批环节','node'],['审批人','person'],['代理人','proxy'],['审批状态','status'],['审批时间','time'],['审批意见','opinion']].map(([title,dataIndex])=>({title,dataIndex,render:value=>value || '-'}))}/></Card>
-    {pending && !pending.person && <Alert type="warning" showIcon message={`${pending.node}人未配置，无法继续审批`} />}
     {!decisionBlock && onDecide && <Card size="small" title={<SectionCardTitle>审批意见</SectionCardTitle>}>
       <Input.TextArea aria-label="复盘审批意见" value={opinion} onChange={event => setOpinion(event.target.value)} />
     </Card>}

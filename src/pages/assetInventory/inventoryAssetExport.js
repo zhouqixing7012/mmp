@@ -1,5 +1,7 @@
 import { formatAssetCategory } from '../../components/assetQueryModel';
 import { inventoryResultSource } from './inventoryResultSource';
+import { isInventoryAssetMandatory } from './inventoryMandatoryAssets';
+export const INVENTORY_MANDATORY_EXPORT_FIELD = ['是否必盘', 'isMandatory'];
 // 三类盘点资产清单共用同一套导出字段，字段只从对应资产记录取值。
 export const INVENTORY_ASSET_EXPORT_FIELDS = [
   ['计划编号', 'planNo'],
@@ -37,21 +39,26 @@ export const INVENTORY_ASSET_EXPORT_FIELDS = [
   ['NO扫描位置', 'noScanLocation'],
 ];
 
-function serializeRows(rows, fields) {
+function serializeRows(rows, fields, project) {
   const cell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
   const lines = [fields.map(([label]) => cell(label)).join(',')];
-  rows.forEach((row) => lines.push(fields.map(([, key]) => cell(key === 'resultSource' ? inventoryResultSource(row) : key === 'assetCategory' ? formatAssetCategory(row) : key === 'executeInventory' ? (row.executeInventory ? '是' : '否') : row[key])).join(',')));
+  rows.forEach((row) => lines.push(fields.map(([, key]) => cell(key === 'isMandatory' ? (isInventoryAssetMandatory(row, project) ? '是' : '否') : key === 'resultSource' ? inventoryResultSource(row) : key === 'assetCategory' ? formatAssetCategory(row) : key === 'executeInventory' ? (row.executeInventory ? '是' : '否') : row[key])).join(',')));
   const missingFields = fields
-    .filter(([, key]) => key !== 'resultSource' && rows.some((row) => key === 'assetCategory' ? !row.category || !row.subCategory : !Object.prototype.hasOwnProperty.call(row, key)))
+    .filter(([, key]) => !['resultSource', 'isMandatory'].includes(key) && rows.some((row) => key === 'assetCategory' ? !row.category || !row.subCategory : !Object.prototype.hasOwnProperty.call(row, key)))
     .map(([label]) => label);
   return { csv: lines.join('\r\n'), missingFields };
 }
 
-export function serializeInventoryAssetExport(rows) {
-  return serializeRows(rows, INVENTORY_ASSET_EXPORT_FIELDS);
+function exportFields(options) {
+  return (options.includeMandatory ?? options.project?.projectType === '复盘')
+    ? [...INVENTORY_ASSET_EXPORT_FIELDS, INVENTORY_MANDATORY_EXPORT_FIELD] : INVENTORY_ASSET_EXPORT_FIELDS;
+}
+
+export function serializeInventoryAssetExport(rows, options = {}) {
+  return serializeRows(rows, exportFields(options), options.project);
 }
 
 // 快照包含执行及未执行两类资产，额外保留明确的执行标识。
-export function serializeInventorySnapshotExport(rows) {
-  return serializeRows(rows, [...INVENTORY_ASSET_EXPORT_FIELDS, ['是否执行盘点', 'executeInventory']]);
+export function serializeInventorySnapshotExport(rows, options = {}) {
+  return serializeRows(rows, [...exportFields(options), ['是否执行盘点', 'executeInventory']], options.project);
 }

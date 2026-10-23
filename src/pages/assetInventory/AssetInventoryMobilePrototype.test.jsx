@@ -31,6 +31,7 @@ jest.mock('antd', () => {
   const Tag = ({ children }) => <span>{children}</span>;
   const message = { useMessage: () => [{ warning: mockWarning, info: jest.fn(), success: jest.fn() }, null] };
   return { Button, Input, Modal, Tag, message };
+
 });
 
 describe('AssetInventoryMobilePrototype', () => {
@@ -500,4 +501,25 @@ describe('AssetInventoryMobilePrototype', () => {
     expect(screen.queryByText('审核中')).not.toBeInTheDocument();
   });
 
+  test('移动未盘卡片必盘优先、已盘保留必盘标签，刷新继续读取快照标记', () => {
+    mockLocationState = { projectNo: 'MANDATORY-MOBILE', projectType: '复盘', scopeRanges: ['员工'], mandatoryAssetKeys: ['M0', 'M1'] };
+    const snapshotAssets = INVENTORY_MOBILE_ASSETS.slice(0, 3).map((asset, index) => ({
+      key: `M${index}`, assetTag: asset.tagNo, description: asset.assetDesc, serialNo: asset.serialNo,
+      quantity: 1, owner: asset.owner, ownerNo: asset.ownerNo, inventoryRange: '员工',
+      useStatus: asset.usageStatus, subCategory: asset.category, executeInventory: true,
+      inventoryStatus: index === 2 ? '已盘' : '未盘',
+      ...(index === 0 ? { isMandatory: false } : index === 2 ? { isMandatory: true } : {}),
+    }));
+    saveInventoryPhotoSnapshot({ projectNo: 'MANDATORY-MOBILE', photoConfig: { enabled: false, rules: [] } }, snapshotAssets);
+    const { unmount } = render(<AssetInventoryMobilePrototype />);
+    const uncountedCards = screen.getAllByRole('button', { name: /114121801802|114130000019/ });
+    expect(uncountedCards[0]).toHaveTextContent('114130000019');
+    expect(uncountedCards[0]).toHaveTextContent('必盘');
+    expect(uncountedCards[1]).not.toHaveTextContent('必盘');
+    fireEvent.click(screen.getByRole('button', { name: /^已盘 1$/ }));
+    expect(screen.getByRole('button', { name: /1141100548/ })).toHaveTextContent('必盘');
+    unmount();
+    render(<AssetInventoryMobilePrototype />);
+    expect(screen.getAllByRole('button', { name: /114121801802|114130000019/ })[0]).toHaveTextContent('114130000019');
+  });
 });

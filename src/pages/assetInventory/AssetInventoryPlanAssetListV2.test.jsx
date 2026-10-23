@@ -34,3 +34,9 @@ test('非ES、草稿或项目关闭不开放标签扫描', () => {
   rerender(<AssetInventoryPlanAssetListV2 {...props} project={{ ...props.project, status: '盘点关闭' }} />);
   expect(screen.queryByRole('button', { name: '标签扫描' })).not.toBeInTheDocument();
 });
+
+test('计划资产清单显示是否必盘，兼容历史项目必盘键', () => {
+  render(<AssetInventoryPlanAssetListV2 {...props} project={{ ...props.project, projectType: '复盘', mandatoryAssetKeys: ['a'] }} />);
+  expect(screen.getByText('是否必盘')).toBeInTheDocument();
+  expect(screen.getByText('是', { exact: true })).toBeInTheDocument();
+});

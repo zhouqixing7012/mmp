@@ -31,7 +31,9 @@ import {
 import dayjs from 'dayjs';
 import { allowedProjectTypes } from './inventoryCreatorPermissions';
 import { inventoryProjectDateBlockReason } from './inventoryDateRules';
-import { selectReplaySnapshotAssets } from './inventoryReplaySampling';
+import { markReplayMandatoryAssets, replayMandatoryRuleKeys, selectReplaySnapshotAssets } from './inventoryReplaySampling';
+import { isInventoryAssetMandatory } from './inventoryMandatoryAssets';
+import InventoryMandatoryImport from './InventoryMandatoryImport';
 import { selectScopeAssets } from './inventoryScopeQuery';
 import { serializeInventoryAssetExport } from './inventoryAssetExport';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
@@ -928,12 +930,21 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     setScopeRows([]);
     setRemovedAssetKeys([]);
     setSelectedAssets([]);
+    setProject((current) => ({ ...current, mandatoryAssetOverrides: {}, mandatoryAssetKeys: [] }));
   }, [scopeSource]);
   const scopeKeys = scopeAssetKeys ?? (scopeRows.length ? [...new Set(scopeRows.flatMap(row => row.assetKeys))] : sourceAssets.map(asset => asset.key));
-  const scopeAssets = sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges) && scopeKeys.includes(asset.key) && !removedAssetKeys.includes(asset.key));
+  const scopeCandidates = sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges) && scopeKeys.includes(asset.key) && !removedAssetKeys.includes(asset.key))
+    .map((asset) => Object.prototype.hasOwnProperty.call(project.mandatoryAssetOverrides || {}, asset.key)
+      ? { ...asset, isMandatory: project.mandatoryAssetOverrides[asset.key] } : asset);
+  const scopeAssets = project.projectType === '复盘' ? markReplayMandatoryAssets(scopeCandidates, project) : scopeCandidates;
+  const mandatoryRuleKeys = replayMandatoryRuleKeys(scopeCandidates, project);
+  const scopeAssetColumns = project.projectType === '复盘'
+    ? [...SCOPE_ASSET_COLUMNS, { title: '是否必盘', key: 'isMandatory', width: 100, render: (_, asset) => <StatusTag value={isInventoryAssetMandatory(asset, project) ? '是' : '否'} /> }]
+    : SCOPE_ASSET_COLUMNS;
   const filteredScopeAssets = scopeAssets.filter((asset) =>
     String(asset.assetTag || '').includes(scopeAssetFilter.assetTag.trim()) && matchesQuerySelection(asset.owner, scopeAssetFilter.owner) && matchesQuerySelection(asset.ownerLevel, scopeAssetFilter.ownerLevel));
   const [assetPreviewOpen, setAssetPreviewOpen] = useState(false);
+  const [previewAssetKeys, setPreviewAssetKeys] = useState(null);
   const [photoConfig, setPhotoConfig] = useState(() => normalizeInventoryPhotoConfig(initialProject?.photoConfig || getInventoryPhotoConfig(project.projectNo) || getInventoryPhotoSnapshot(project.projectNo)?.config || { rules: IMAGE_RULE_ROWS.filter(row => allowedRanges.includes(row.range)).map(row => ({ ...row, uploadEnabled: false })) }));
 
   const handleSave = () => {
@@ -991,7 +1002,10 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
       snapshotTime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
     };
     saveInventoryPhotoConfig(project.projectNo, photoConfig);
-    saveInventoryPhotoSnapshot(nextProject, photoAssets.map(asset => ({ ...asset, executeInventory: nextProject.snapshotAssetKeys.includes(asset.key), inventoryStatus: '未盘' })));
+    const sampledByKey = new Map(sampled.assets.map(asset => [asset.key, asset]));
+    saveInventoryPhotoSnapshot(nextProject, photoAssets.map(asset => ({ ...asset,
+      isMandatory: sampledByKey.get(asset.key)?.isMandatory ?? isInventoryAssetMandatory(asset, nextProject),
+      executeInventory: nextProject.snapshotAssetKeys.includes(asset.key), inventoryStatus: '未盘' })));
     setProject(nextProject);
     messageApi.success('盘点快照已生成');
     onGenerated(nextProject);
@@ -1009,7 +1023,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
         projectType={project.projectType}
         scopeRows={scopeRows}
         setScopeRows={setScopeRows}
-        onPreviewAssets={() => setAssetPreviewOpen(true)}
+        onPreviewAssets={(row) => { setPreviewAssetKeys(row?.assetKeys || null); setAssetPreviewOpen(true); }}
         messageApi={messageApi}
       />
 
@@ -1022,12 +1036,15 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
         <div className="mb-3 flex justify-end">
           <Space>
             <Button icon={<Download size={14} />} onClick={() => {
-              const { csv } = serializeInventoryAssetExport(filteredScopeAssets);
+              const { csv } = serializeInventoryAssetExport(filteredScopeAssets, { project });
               const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
               const link = document.createElement('a');
               link.href = url; link.download = `${project.projectNo}-盘点范围资产清单.csv`; link.click(); URL.revokeObjectURL(url);
             }}>导出清单</Button>
             <Button icon={<Upload size={14} />} onClick={() => messageApi.info('请按资产清单模板导入')}>导入清单</Button>
+            {project.projectType === '复盘' && <InventoryMandatoryImport assets={scopeAssets} project={project} requiredKeys={mandatoryRuleKeys} onImport={(changes) => setProject((current) => ({
+              ...current, mandatoryAssetOverrides: { ...current.mandatoryAssetOverrides, ...Object.fromEntries(changes.map(asset => [asset.key, asset.isMandatory])) },
+            }))} />}
             <Button
               danger
               icon={<Trash2 size={14} />}
@@ -1046,7 +1063,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
             <Button icon={<Settings size={14} />}>配置</Button>
           </Space>
         </div>
-        <AssetTable rows={filteredScopeAssets} rowSelection={{ selectedRowKeys: selectedAssets, onChange: setSelectedAssets }} />
+        <AssetTable rows={filteredScopeAssets} columns={scopeAssetColumns} rowSelection={{ selectedRowKeys: selectedAssets, onChange: setSelectedAssets }} />
       </Card>
 
       {(project.projectType !== '初盘' || allowedRanges.some(range => range !== '机房')) && <InventoryPhotoRuleEditor config={photoConfig} onChange={setPhotoConfig} />}
@@ -1064,7 +1081,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
         footer={<Button type="primary" onClick={() => setAssetPreviewOpen(false)}>返回</Button>}
         onCancel={() => setAssetPreviewOpen(false)}
       >
-        <AssetTable rows={ASSET_ROWS} pagination={false} />
+        <AssetTable rows={previewAssetKeys ? scopeAssets.filter(asset => previewAssetKeys.includes(asset.key)) : scopeAssets} columns={scopeAssetColumns} pagination={false} />
       </Modal>
     </Space>
   );

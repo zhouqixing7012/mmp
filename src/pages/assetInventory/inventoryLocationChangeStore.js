@@ -1,15 +1,11 @@
 import dayjs from 'dayjs';
-import { inventoryLocationPhotoBlockReason } from './inventoryLocationPhotoRules';
-import { buildLocationDraft, validateLocation } from './inventoryLocationEdit';
-import { getInventoryLocationOptions } from './inventoryMobileLocationService';
 import { CURRENT_BORROWER } from '../../mock/assetBorrowingMock';
 import { INVENTORY_LOCATION_CHANGE_DEMO } from '../../mock/inventoryLocationChangeMock';
 import { writeDemoData } from '../../services/demoStorage';
-import { applyInventoryLocationApproval, getAssetMaintenanceRows } from '../../services/assetManagementService';
+import { getAssetMaintenanceRows } from '../../services/assetManagementService';
 
 const STORAGE_KEY = 'asset-inventory-location-changes-v1';
 const FIELDS = ['city', 'building', 'floor'];
-const APPROVER = '206984-何文';
 
 const readState = () => {
   if (typeof window === 'undefined') return { changes: [], requests: [] };
@@ -32,10 +28,7 @@ export function getInventoryLocationApplicant(operator) {
   return {value, displayName:name ? `${name} (${id})` : value || '-', department:value === `${CURRENT_BORROWER.id}-${CURRENT_BORROWER.name}` ? CURRENT_BORROWER.department : ''};
 }
 
-export function canCreateInventoryLocationChange(project, operator) {
-  return project?.projectType === '复盘' && project?.status !== '盘点关闭'
-    && Boolean(text(project?.creator)) && text(project.creator) === text(operator);
-}
+export function canCreateInventoryLocationChange() { return false; }
 
 export function getInventoryLocationApprovalRecords(request) {
   if (request.approvalRecords) return request.approvalRecords;
@@ -43,13 +36,6 @@ export function getInventoryLocationApprovalRecords(request) {
   return [
     {key:'start', node:'提交申请', person:request.applicant, status:'已提交', time:request.appliedAt, opinion:request.reason},
     {key:'review', node:'ES主管审批', person:request.approver, status:request.status === '待审批' ? '待审批' : request.status, time:request.approvedAt, opinion:request.opinion},
-  ];
-}
-
-function submissionRecords(applicant, reason, time, round) {
-  return [
-    {key:'start-' + round, node:'提交申请', person:applicant, status:'已提交', time, opinion:reason},
-    {key:'review-' + round, node:'ES主管审批', person:APPROVER, status:'待审批', time:'', opinion:''},
   ];
 }
 
@@ -82,15 +68,12 @@ export function recordInventoryLocationChange({ projectNo, projectType, planNo =
   if (sameLocation(original, target)) return null;
   const asset = requireLedgerAsset(assetTag);
   const state = readState();
-  const existing = state.changes.find((change) => change.projectNo === projectNo && change.assetTag === assetTag && change.status === '待发起');
-  if (state.changes.some((change) => change.projectNo === projectNo && change.assetTag === assetTag && change.status === '待审批')) {
-    throw new Error('该资产的位置变更已提交审批，不能修改');
-  }
+  const existing = state.changes.find(change => change.projectNo === projectNo && change.assetTag === assetTag && change.status === '待变更');
   if (existing) {
-    if (!sameLocation(existing.after, original) && !sameLocation(existing.before, original)) throw new Error('该资产的待发起位置与当前页面不一致，请刷新后重试');
+    if (!sameLocation(existing.after, original) && !sameLocation(existing.before, original)) throw new Error('该资产的待变更位置与当前页面不一致，请刷新后重试');
     if (!sameLocation(asset, existing.before)) throw new Error('资产台账位置已变化，请重新获取当前位置');
     if (sameLocation(existing.before, target)) {
-      throw new Error('新位置与台账位置相同，已有待发起变更须先处理');
+      throw new Error('新位置与台账位置相同，已有待变更记录须先处理');
     }
     const updated = { ...existing, after: target, operator, recordedAt: currentTime() };
     writeState({ ...state, changes: state.changes.map((change) => change.id === existing.id ? updated : change) });
@@ -111,112 +94,53 @@ export function recordInventoryLocationChange({ projectNo, projectType, planNo =
     after: target,
     operator,
     recordedAt: currentTime(),
-    status: '待发起',
+    status: '待变更',
     requestId: '',
   };
   writeState({ ...state, changes: [...state.changes, change] });
   return change;
 }
 
-export function submitInventoryLocationChangeRequest({ projectNo, projectType, projectCreator, projectStatus, requestId = '', reason, applicant, applicantDepartment = '', draftLocations = {}, draftRemarks = {}, addedAssets = [], permittedAssetTags = [], projectAssets = [] }) {
-  if (projectType !== '复盘') throw new Error('只有复盘项目可以发起位置变更');
-  if (!text(projectNo)) throw new Error('缺少盘点项目编号');
-  if (!text(reason)) throw new Error('请填写变更原因');
-  if (!text(applicant)) throw new Error('缺少申请人');
-  if (!canCreateInventoryLocationChange({projectType, creator:projectCreator, status:projectStatus}, applicant)) throw new Error('仅盘点项目创建人可以发起位置变更，已关闭项目不可提交');
-  const state = readState();
-  const previousRequest = requestId ? state.requests.find(item => item.id === requestId) : null;
-  if (requestId && (!previousRequest || previousRequest.projectNo !== projectNo)) throw new Error('位置变更申请不存在或不属于当前项目');
-  if (previousRequest && (previousRequest.status !== '已驳回' || previousRequest.applicant !== text(applicant))) throw new Error('仅原申请人可以修改并重新提交已驳回的位置变更申请');
-  const waiting = state.changes.filter((change) => change.projectNo === projectNo && (previousRequest ? previousRequest.changeIds.includes(change.id) : change.status === '待发起'));
-  if (previousRequest && waiting.length !== previousRequest.changeIds.length) throw new Error('位置变更明细不完整，不能重新提交');
-  const pending = waiting;
-  const tags = new Set(waiting.map(change => change.assetTag));
-  const additions = addedAssets.map(change => {
-    if (!permittedAssetTags.includes(change.assetTag)) throw new Error('添加资产不在当前复盘项目范围');
-    if (tags.has(change.assetTag) || state.changes.some(item => item.projectNo === projectNo && item.assetTag === change.assetTag && item.status === '待审批')) throw new Error('添加资产重复或已提交审批');
-    tags.add(change.assetTag);
-    const asset = requireLedgerAsset(change.assetTag);
-    const draft = buildLocationDraft(asset);
-    if (!sameLocation(change.before, draft.before)) throw new Error(change.assetTag + ' 的台账位置已变化，请重新添加');
-    return {...draft, after:draftLocations[change.id] || change.after, remark:draftRemarks[change.id] ?? change.remark, projectNo, projectType, operator:applicant, recordedAt:currentTime(), id:'inventory-location-' + Date.now() + '-' + Math.random().toString(36).slice(2,8)};
-  });
-  const changes = [...pending, ...additions];
-  if (!changes.length) throw new Error('当前项目没有待发起的位置变更');
-  const prepared = changes.map((change) => {
-    if (state.changes.some(item => item.projectNo === projectNo && item.assetTag === change.assetTag && item.status === '待审批' && item.requestId !== requestId)) throw new Error('该资产的位置变更已提交审批，不能重复提交');
-    const photoBlockReason = inventoryLocationPhotoBlockReason(projectNo, change.assetTag, projectAssets);
-    if (photoBlockReason) throw new Error(photoBlockReason);
-    const target = location(draftLocations[change.id] || change.after);
-    if (FIELDS.some((field) => !target[field])) throw new Error(`${change.assetTag} 的新位置不完整`);
-    validateLocation(target, getInventoryLocationOptions);
-    const asset = requireLedgerAsset(change.assetTag);
-    if (!sameLocation(asset, change.before)) throw new Error(`${change.assetTag} 的台账位置已变化，请核对后再发起`);
-    const remark = text(draftRemarks[change.id] ?? change.remark ?? asset.remarks ?? '');
-    if (Array.from(remark).length > 150) throw new Error(`${change.assetTag} 的备注最多150个字符`);
-    return { ...change, quantity:change.quantity ?? asset.quantity, remark, after: target };
-  }).filter((change) => !sameLocation(change.before, change.after));
-  if (!prepared.length) throw new Error('当前项目没有待发起的位置变更');
-  const appliedAt = currentTime();
-  const previousRecords = previousRequest ? getInventoryLocationApprovalRecords(previousRequest) : [];
-  const request = {
-    id: previousRequest?.id || `ILC-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    projectNo,
-    projectType,
-    reason: text(reason),
-    applicant: text(applicant),
-    applicantDepartment: text(applicantDepartment),
-    appliedAt,
-    approver: APPROVER,
-    status: '待审批',
-    changeIds: prepared.map((change) => change.id),
-    opinion: '',
-    approvedAt: '',
-    approvalRecords: [...previousRecords, ...submissionRecords(text(applicant), text(reason), appliedAt, previousRecords.length / 2 + 1)],
-  };
-  const preparedById = new Map(prepared.map((change) => [change.id, change]));
-  const revertedIds = new Set(changes.filter((change) => !preparedById.has(change.id)).map((change) => change.id));
-  writeState({
-    requests: previousRequest ? state.requests.map(item => item.id === request.id ? request : item) : [...state.requests, request],
-    changes: [...state.changes, ...additions].filter((change) => !revertedIds.has(change.id)).map((change) => preparedById.has(change.id)
-      ? { ...preparedById.get(change.id), status: '待审批', requestId: request.id }
-      : change),
-  });
-  return request;
-}
+// 历史申请仍可查询；已取消的写入口明确拒绝，避免旧调用继续审批或更新台账。
+export function submitInventoryLocationChangeRequest() { throw new Error('盘点位置审批流程已取消，请查看位置变更池'); }
+export function approveInventoryLocationChangeRequest() { throw new Error('盘点位置审批流程已取消，不能通过原申请更新台账'); }
 
-export function approveInventoryLocationChangeRequest(id, { approver, decision, opinion = '' }) {
-  const state = readState();
-  const request = state.requests.find((item) => item.id === id);
-  if (!request) throw new Error('位置变更申请不存在');
-  if (request.status !== '待审批') throw new Error('位置变更申请已处理，不能重复审批');
-  if (text(approver) !== APPROVER) throw new Error('仅何文可以审批位置变更');
-  if (!['同意', '驳回'].includes(decision)) throw new Error('请选择有效审批结果');
-  if (decision === '驳回' && !text(opinion)) throw new Error('驳回时须填写审批意见');
-
-  const changes = state.changes.filter((change) => request.changeIds.includes(change.id));
-  if (changes.length !== request.changeIds.length) throw new Error('位置变更明细不完整，不能审批');
-  if (decision === '同意') applyInventoryLocationApproval({ requestId: id, changes, approver: text(approver) });
-  const status = decision === '同意' ? '已通过' : '已驳回';
-  const approvedAt = currentTime();
-  const records = getInventoryLocationApprovalRecords(request);
-  const next = {
-    changes: state.changes.map((change) => request.changeIds.includes(change.id) ? { ...change, status } : change),
-    requests: state.requests.map((item) => item.id === id
-      ? { ...item, status, opinion: text(opinion), approvedAt, approvalRecords: records.map((record, index) => index === records.length - 1 ? {...record, status, time:approvedAt, opinion:text(opinion)} : record) }
-      : item),
-  };
-  writeState(next);
-  return next.requests.find((item) => item.id === id);
-}
-
-// 演示入口显式创建待发起记录，继续复用正常提交与审批链路。
+// 兼容已有演示调用，只创建位置建议，不再发起审批。
 export function createInventoryLocationChangeDemo(project) {
   if (project?.projectNo !== INVENTORY_LOCATION_CHANGE_DEMO.projectNo || project.projectType !== '复盘') throw new Error('该项目没有位置变更演示数据');
-  const existing = getInventoryLocationChanges(project.projectNo).find(change => change.assetTag === INVENTORY_LOCATION_CHANGE_DEMO.assetTag && ['待发起', '待审批'].includes(change.status));
+  const existing = getInventoryLocationChanges(project.projectNo).find(change => change.assetTag === INVENTORY_LOCATION_CHANGE_DEMO.assetTag && ['待变更', '待发起', '待审批', '已驳回'].includes(change.status));
   if (existing) return existing;
   const asset = requireLedgerAsset(INVENTORY_LOCATION_CHANGE_DEMO.assetTag);
   const target = getAssetMaintenanceRows().find(row => row.city === asset.city && row.building === asset.building && row.floor && row.floor !== asset.floor);
   if (!target) throw new Error('当前台账没有可用于演示的同建筑其他楼层');
   return recordInventoryLocationChange({ ...INVENTORY_LOCATION_CHANGE_DEMO, projectType:'复盘', before:asset, after:target });
+}
+
+// 旧审批记录不迁移或删除；池按资产显示尚未实际更新台账的最新位置建议。
+export function getInventoryLocationChangePool(projectNo) {
+  const latest = new Map();
+  getInventoryLocationChanges(projectNo).forEach(change => latest.set(change.assetTag, change));
+  return [...latest.values()].filter(change => ['待变更', '待发起', '待审批', '已驳回'].includes(change.status))
+    .map(change => ({ ...change, historicalStatus: change.status, status: '待变更' }));
+}
+
+export function getInventoryLocationPoolCloseNotifications(projectNo) {
+  return (readState().notifications || []).filter(item => item.projectNo === projectNo);
+}
+
+export function ensureInventoryLocationPoolCloseNotification(project) {
+  if (project?.projectType !== '复盘') return null;
+  if (!['盘点关闭', '关闭'].includes(project.status)) throw new Error('项目关闭后才可生成位置变更池处理通知');
+  const state = readState();
+  const previous = (state.notifications || []).find(item => item.projectNo === project.projectNo);
+  if (previous) return previous;
+  const changes = getInventoryLocationChangePool(project.projectNo);
+  if (!changes.length) return null;
+  const notice = { id: 'inventory-location-pool-close:' + project.projectNo, projectNo: project.projectNo,
+    projectName: project.projectName || '', recipient: '213852-孙志强', employeeNo: '213852', employeeName: '孙志强',
+    channel: '服务号', status: '待发送', createdAt: currentTime(),
+    assetTags: changes.map(change => change.assetTag), changeIds: changes.map(change => change.id),
+    content: '复盘项目已关闭，请处理位置变更池中的' + changes.length + '项资产位置建议。' };
+  writeState({ ...state, notifications: [...(state.notifications || []), notice] });
+  return notice;
 }

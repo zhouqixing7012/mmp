@@ -1,4 +1,5 @@
 import { inventoryRemark } from './inventoryRemark';
+import { isInventoryAssetMandatory } from './inventoryMandatoryAssets';
 import { AssetCategorySelect, AssetPersonSelect, AssetValueSelect, OwnerLevelSelect, formatAssetCategory, matchesAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
 import React, { useMemo, useState } from 'react';
 import {
@@ -309,7 +310,7 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
       dataIndex: 'startDate',
       width: 145,
       render: (value, row) => editable(row)
-        ? <DatePicker value={value ? dayjs(value) : null} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, startDate: date ? date.format('YYYY-MM-DD') : '', endDate: project?.projectType === '复盘' ? (date ? date.format('YYYY-MM-DD') : '') : item.endDate } : item))} />
+        ? <DatePicker value={value ? dayjs(value) : null} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, startDate: date ? date.format('YYYY-MM-DD') : '' } : item))} />
         : value,
     },
     {
@@ -317,7 +318,7 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
       dataIndex: 'endDate',
       width: 145,
       render: (value, row) => editable(row)
-        ? <DatePicker value={value ? dayjs(value) : null} disabledDate={(date) => project?.projectType === '复盘' && row.startDate && !date.isSame(dayjs(row.startDate), 'day')} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, endDate: date ? date.format('YYYY-MM-DD') : '' } : item))} />
+        ? <DatePicker value={value ? dayjs(value) : null} disabledDate={(date) => Boolean(row.startDate && date.isBefore(dayjs(row.startDate), 'day'))} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, endDate: date ? date.format('YYYY-MM-DD') : '' } : item))} />
         : value,
     },
     ...(project?.projectType === '复盘' ? [] : [{ title: '计划监督人', dataIndex: 'supervisor', width: 160, render: (value, row) => <PersonnelInput disabled={!editable(row)} value={value} onClick={() => openPersonnel(row.key, 'supervisor')} /> }]),
@@ -481,6 +482,7 @@ export function AssetInventoryPlanAssetListV2({ plan, project, currentOperator, 
     { title: '计划名称', key: 'planName', width: 180, render: () => plan.planName },
     ...(project?.projectType === '复盘' ? [{ title: '财务监督人', key: 'financialSupervisor', width: 120, render: () => '徐博' }] : []),
     { title: '盘点范围', dataIndex: 'inventoryRange', width: 100, fixed: 'left' },
+    ...(project?.projectType === '复盘' ? [{ title: '是否必盘', key: 'isMandatory', width: 100, render: (_, row) => <StatusTag value={isInventoryAssetMandatory(row, project) ? '是' : '否'} /> }] : []),
     { title: '盘点状态', dataIndex: 'inventoryStatus', width: 100, render: (value) => <StatusTag value={value} /> },
     { title: '结果来源', key: 'resultSource', width: 150, render: (_, row) => inventoryResultSource(row) },
     { title: '资产盘点人', dataIndex: 'counter', width: 130 },
@@ -559,7 +561,7 @@ export function AssetInventoryPlanAssetListV2({ plan, project, currentOperator, 
       </QueryBar>
 
       <Card size="small" title={<CardTitle>资产清单</CardTitle>} extra={<Space>
-        {!inventoryScannerBlockReason(project, plan, currentOperator) && <Button onClick={() => setScannerOpen(true)}>标签扫描</Button>}<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => { try { downloadInventoryPlanAssets(filteredRows, plan.planNo); } catch (error) { messageApi.error('盘点资产导出失败，请重试'); } }}>导出</Button></Space>}>
+        {!inventoryScannerBlockReason(project, plan, currentOperator) && <Button onClick={() => setScannerOpen(true)}>标签扫描</Button>}<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => { try { downloadInventoryPlanAssets(filteredRows, plan.planNo, { project }); } catch (error) { messageApi.error('盘点资产导出失败，请重试'); } }}>导出</Button></Space>}>
         <Table
           rowKey="key"
           size="small"

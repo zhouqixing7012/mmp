@@ -11,6 +11,14 @@ test('计划导出分别保留资产备注和报失原因，并合并类别', ()
   expect(XLSX.utils.sheet_to_json(workbook.Sheets['计划信息'], { header: 1 })[0]).not.toContain('计划负责人');
 });
 
+test('关联资产导出明确是否必盘，与计划明细使用同一判断和历史键兜底', () => {
+  const workbook = createInventoryPlanWorkbook([{ planNo: 'P' }], () => [{ key: 'a', assetTag: '001', isMandatory: false }, { key: 'b', assetTag: '002' }], { project: { projectType: '复盘', mandatoryAssetKeys: ['a', 'b'] } });
+  const rows = XLSX.utils.sheet_to_json(workbook.Sheets['关联资产清单']);
+  expect(rows.map((row) => row['是否必盘'])).toEqual(['否', '是']);
+  expect(XLSX.utils.sheet_to_json(workbook.Sheets['关联资产清单'], { header: 1 })[0].filter((label) => label === '是否必盘')).toHaveLength(1);
+  expect(PLAN_ASSET_EXPORT_FIELDS.map(([label]) => label)).not.toContain('是否必盘');
+});
+
 test('报失后继续盘点，既有盘点备注仍保留；只导出所传计划', () => {
   const asset = mergePlanInventoryResult({ inventoryRemark:'遗失原因', lossReason:'遗失原因' }, {status:'已盘'});
   expect(asset.inventoryRemark).toBe('遗失原因');

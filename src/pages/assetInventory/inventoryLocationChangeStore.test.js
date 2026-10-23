@@ -1,228 +1,56 @@
-import { savePhotoReviewResult } from './inventoryPhotoReviewStore';
-import { buildLocationDraft } from './inventoryLocationEdit';
 import { getAssetMaintenanceRows } from '../../services/assetManagementService';
-import {
-  createInventoryLocationChangeDemo,
-  approveInventoryLocationChangeRequest,
-  getInventoryLocationChanges,
-  getInventoryLocationChangeRequest,
-  getInventoryLocationChangeRequests,
-  recordInventoryLocationChange,
-  submitInventoryLocationChangeRequest as submitRequest,
-} from './inventoryLocationChangeStore';
-
-const sourceAssets = [{ assetTag: '114121801802', inventoryRange: '员工', needPhoto: true }, { assetTag: '114130000019', inventoryRange: '员工', needPhoto: false }, { assetTag: '114140000031', inventoryRange: '机房', needPhoto: true }];
-const submitInventoryLocationChangeRequest = (args) => submitRequest({ projectCreator:'冯丽婷', projectAssets: sourceAssets, ...args });
-const assetTag = '114121801802';
-const projectNo = 'RCP-202609300001';
+import { recordInventoryLocationChange, getInventoryLocationChanges, getInventoryLocationChangeRequests, getInventoryLocationChangePool, submitInventoryLocationChangeRequest, approveInventoryLocationChangeRequest, ensureInventoryLocationPoolCloseNotification, getInventoryLocationPoolCloseNotifications } from './inventoryLocationChangeStore';
+const project = { projectNo: 'R-POOL', projectType: '复盘', projectName: '复盘位置池', status: '盘点关闭' };
 const before = { city: '北京市', building: '搜狐媒体大厦', floor: '9层' };
-const after = { city: '北京市', building: '搜狐媒体大厦', floor: '8层' };
-const changedAgain = { city: '北京市', building: '搜狐媒体大厦', floor: '7层' };
-const record = (newPlace = after, oldPlace = before) => recordInventoryLocationChange({
-  projectNo, projectType: '复盘', assetTag, planNo: '', before: oldPlace, after: newPlace, operator: '201132000160-孙志强',
-});
-const submit = () => submitInventoryLocationChangeRequest({
-  projectNo, projectType: '复盘', reason: '复盘现场核对位置变化', applicant: '冯丽婷',
-});
+const after = { ...before, floor: '8层' };
+const assetTag = '114121801802';
+const record = target => recordInventoryLocationChange({ projectNo: project.projectNo, projectType: '复盘', assetTag, before, after: target || after, operator: '冯丽婷' });
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
 
-beforeEach(() => { window.localStorage.clear(); window.sessionStorage.clear(); [projectNo, 'RCP-202608180001'].forEach((number) => savePhotoReviewResult(number, { assetTag, status: '已盘' })); });
-
-test('审批前台账不变，何文审批后更新台账和位置变更事务且不能重复审批', () => {
-  record();
-  const request = submit();
-  expect(getAssetMaintenanceRows().find((row) => row.tag === assetTag).floor).toBe('9层');
-  expect(() => approveInventoryLocationChangeRequest(request.id, { approver: '123-别人', decision: '同意' })).toThrow('仅何文');
-  approveInventoryLocationChangeRequest(request.id, { approver: '206984-何文', decision: '同意' });
-  const asset = getAssetMaintenanceRows().find((row) => row.tag === assetTag);
-  expect(asset.floor).toBe('8层');
-  expect(asset.transactionHistory.filter((entry) => entry.operationType === '位置变更' && entry.documentNo === request.id)).toHaveLength(1);
-  expect(() => approveInventoryLocationChangeRequest(request.id, { approver: '206984-何文', decision: '同意' })).toThrow('不能重复审批');
+test('移动位置建议进入池，同资产更新保留初始地点，台账不随建议变化', () => {
+ const first = record();
+ expect(first.status).toBe('待变更');
+ const second = record({ ...after, floor: '7层' });
+ expect(second.id).toBe(first.id);
+ expect(getInventoryLocationChangePool(project.projectNo)).toHaveLength(1);
+ expect(second.before).toEqual(before);
+ expect(second.after.floor).toBe('7层');
+ expect(getAssetMaintenanceRows().find(asset => asset.tag === assetTag).floor).toBe('9层');
+ expect(() => submitInventoryLocationChangeRequest({})).toThrow('审批流程已取消');
+ expect(() => approveInventoryLocationChangeRequest('old', {})).toThrow('审批流程已取消');
 });
 
-test('同资产再次待发起只更新目标位置并保留初始台账位置', () => {
-  const first = record();
-  const second = record(changedAgain);
-  expect(second.id).toBe(first.id);
-  expect(getInventoryLocationChanges(projectNo)).toHaveLength(1);
-  expect(second.before).toEqual(before);
-  expect(second.after).toEqual(changedAgain);
-  expect(getAssetMaintenanceRows().find((row) => row.tag === assetTag).floor).toBe('9层');
+test('历史申请与记录原样保留，旧未处理建议在池可见，已通过不再次待变更', () => {
+ const old = { changes: [
+  { id: 'old', projectNo: project.projectNo, assetTag: 'A', status: '待审批', before, after },
+  { id: 'done', projectNo: project.projectNo, assetTag: 'B', status: '已通过', before, after },
+ ], requests: [{ id: 'request', projectNo: project.projectNo, status: '待审批', changeIds: ['old'] }] };
+ localStorage.setItem('asset-inventory-location-changes-v1', JSON.stringify(old));
+ expect(getInventoryLocationChangePool(project.projectNo)).toEqual([expect.objectContaining({ id: 'old', historicalStatus: '待审批', status: '待变更' })]);
+ expect(getInventoryLocationChanges(project.projectNo)).toEqual(old.changes);
+ expect(getInventoryLocationChangeRequests(project.projectNo)).toEqual(old.requests);
 });
 
-test('多资产申请中第二条地点不完整时不修改任何待发起记录', () => {
-  const first = record();
-  const second = recordInventoryLocationChange({
-    projectNo, projectType: '复盘', assetTag: '114130000019', planNo: '',
-    before, after, operator: '201132000160-孙志强',
-  });
-  const originalChanges = getInventoryLocationChanges(projectNo);
-  expect(() => submitInventoryLocationChangeRequest({
-    projectNo, projectType: '复盘', reason: '核对位置', applicant: '冯丽婷',
-    draftLocations: {
-      [first.id]: after,
-      [second.id]: { city: '北京市', building: '搜狐媒体大厦', floor: '' },
-    },
-  })).toThrow('新位置不完整');
-  expect(getInventoryLocationChanges(projectNo)).toEqual(originalChanges);
-  expect(getInventoryLocationChangeRequests(projectNo)).toHaveLength(0);
+test('关闭有待变更资产时生成一次ES服务号待发送通知，刷新重试不重复', () => {
+ record();
+ const first = ensureInventoryLocationPoolCloseNotification(project);
+ expect(first).toMatchObject({ recipient: '213852-孙志强', employeeNo: '213852', channel: '服务号', status: '待发送', assetTags: [assetTag] });
+ expect(ensureInventoryLocationPoolCloseNotification(project)).toEqual(first);
+ expect(getInventoryLocationPoolCloseNotifications(project.projectNo)).toHaveLength(1);
+ expect(getInventoryLocationChanges(project.projectNo)).toHaveLength(1);
 });
 
-test('台账位置变动时审批失败，申请仍待审批且未写位置变更事务', () => {
-  record();
-  const request = submit();
-  const storageKey = 'asset-management-maintenance-v4';
-  const rows = getAssetMaintenanceRows().map((row) => row.tag === assetTag ? { ...row, floor: '6层' } : row);
-  window.localStorage.setItem(storageKey, JSON.stringify(rows));
-  expect(() => approveInventoryLocationChangeRequest(request.id, { approver: '206984-何文', decision: '同意' })).toThrow('台账位置已变化');
-  expect(getInventoryLocationChangeRequest(request.id).status).toBe('待审批');
-  expect(getAssetMaintenanceRows().find((row) => row.tag === assetTag).transactionHistory.filter((entry) => entry.operationType === '位置变更')).toHaveLength(0);
-});
-
-test('申请状态写入失败后重试审批不重复记台账事务', () => {
-  record();
-  const request = submit();
-  const original = Storage.prototype.setItem;
-  let blocked = false;
-  const setter = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(function setItem(key, value) {
-    if (key === 'asset-inventory-location-changes-v1'
-      && JSON.parse(value).requests.find((item) => item.id === request.id)?.status === '已通过'
-      && !blocked) {
-      blocked = true;
-      throw new Error('模拟申请状态写入失败');
-    }
-    return original.call(this, key, value);
-  });
-  try {
-    expect(() => approveInventoryLocationChangeRequest(request.id, { approver: '206984-何文', decision: '同意' })).toThrow('模拟申请状态写入失败');
-  } finally {
-    setter.mockRestore();
-  }
-  expect(blocked).toBe(true);
-  expect(getInventoryLocationChangeRequest(request.id).status).toBe('待审批');
-  expect(getAssetMaintenanceRows().find((row) => row.tag === assetTag).floor).toBe('8层');
-  approveInventoryLocationChangeRequest(request.id, { approver: '206984-何文', decision: '同意' });
-  const asset = getAssetMaintenanceRows().find((row) => row.tag === assetTag);
-  expect(asset.transactionHistory.filter((entry) => entry.operationType === '位置变更' && entry.documentNo === request.id)).toHaveLength(1);
-});
-
-test('PC位置变更演示复用待发起记录，提交给何文前不改台账', () => {
-  const project = {projectNo:'RCP-202608180001', projectType:'复盘'};
-  const oldFloor = getAssetMaintenanceRows().find(row=>row.tag===assetTag).floor;
-  const change = createInventoryLocationChangeDemo(project);
-  expect(createInventoryLocationChangeDemo(project).id).toBe(change.id);
-  expect(change.after.floor).not.toBe(oldFloor);
-  const request = submitInventoryLocationChangeRequest({...project, reason:'演示现场位置核对', applicant:'冯丽婷'});
-  expect(request.approver).toBe('206984-何文');
-  expect(request.status).toBe('待审批');
-  expect(getAssetMaintenanceRows().find(row=>row.tag===assetTag).floor).toBe(oldFloor);
-});
-
-test('编辑备注与申请人部门随提交保存，数量取台账，审批前不更新台账备注', () => {
- const change=record();
- const original=getAssetMaintenanceRows().find(row=>row.tag===assetTag);
- const request=submitInventoryLocationChangeRequest({projectNo,projectType:'复盘',reason:'地点核对',applicant:'冯丽婷',applicantDepartment:'集团 / 资产管理部 / 员工服务中心',draftRemarks:{[change.id]:'已上架'}});
- expect(request.applicantDepartment).toContain('员工服务中心');
- const saved=getInventoryLocationChanges(projectNo)[0];
- expect(saved.quantity).toBe(original.quantity);
- expect(saved.remark).toBe('已上架');
- expect(getAssetMaintenanceRows().find(row=>row.tag===assetTag).remarks).toBe(original.remarks);
-});
-
-
-test('添加资产草稿提交时使用编辑后的新地点，审批前不改台账，审批后更新',()=>{
- const asset=getAssetMaintenanceRows().find(row=>row.tag===assetTag);
- const draft=buildLocationDraft(asset);
- const request=submitInventoryLocationChangeRequest({projectNo,projectType:'复盘',reason:'新增明细核对',applicant:'冯丽婷',addedAssets:[draft],permittedAssetTags:[assetTag],draftLocations:{[draft.id]:after},draftRemarks:{[draft.id]:'新备注'}});
- const changes=getInventoryLocationChanges(projectNo);expect(changes).toHaveLength(1);expect(changes[0].after).toEqual(after);expect(changes[0].remark).toBe('新备注');expect(getAssetMaintenanceRows().find(row=>row.tag===assetTag).floor).toBe('9层');
- approveInventoryLocationChangeRequest(request.id,{approver:'206984-何文',decision:'同意'});expect(getAssetMaintenanceRows().find(row=>row.tag===assetTag).floor).toBe('8层');
-});
-test('添加资产越出项目范围或重复时整个提交不落库',()=>{
- const draft={...buildLocationDraft(getAssetMaintenanceRows().find(row=>row.tag===assetTag)),after};
- const args={projectNo,projectType:'复盘',reason:'新增核对',applicant:'冯丽婷',addedAssets:[draft],permittedAssetTags:[]};
- expect(()=>submitInventoryLocationChangeRequest(args)).toThrow('当前复盘项目范围');
- expect(()=>submitInventoryLocationChangeRequest({...args,addedAssets:[draft,draft],permittedAssetTags:[assetTag]})).toThrow('重复');expect(getInventoryLocationChanges(projectNo)).toHaveLength(0);expect(getInventoryLocationChangeRequests(projectNo)).toHaveLength(0);
-});
-
-
-test.each(['审核中', '未盘'])('需照片的拟变更可保存，但%s不能越过提交服务发起审批', (status) => {
-  savePhotoReviewResult(projectNo, { assetTag, status });
-  record();
-  const beforeSubmit = getInventoryLocationChanges(projectNo);
-  expect(() => submit()).toThrow('照片须审核通过');
-  expect(getInventoryLocationChangeRequests(projectNo)).toHaveLength(0);
-  expect(getInventoryLocationChanges(projectNo)).toEqual(beforeSubmit);
-  savePhotoReviewResult(projectNo, { assetTag, status: '已盘' });
-  expect(submit().status).toBe('待审批');
-});
-
-test('别的项目审核通过不能放行本项目；手工添加未审核资产整批拒绝', () => {
-  window.localStorage.clear(); window.sessionStorage.clear();
-  savePhotoReviewResult('other-project', { assetTag, status: '已盘' });
-  const draft = { ...buildLocationDraft(getAssetMaintenanceRows().find((asset) => asset.tag === assetTag)), after };
-  expect(() => submitInventoryLocationChangeRequest({ projectNo, projectType: '复盘', reason: '手工准备', applicant: '冯丽婷', addedAssets: [draft], permittedAssetTags: [assetTag] })).toThrow('照片须审核通过');
-  expect(getInventoryLocationChangeRequests(projectNo)).toHaveLength(0);
-  expect(getInventoryLocationChanges(projectNo)).toHaveLength(0);
-});
-
-test('同批含照片未就绪资产时整批拒绝，照片就绪后才可发起且机房免人工审核', () => {
-  savePhotoReviewResult(projectNo, { assetTag, status: '审核中' });
-  record();
-  const second = recordInventoryLocationChange({ projectNo, projectType: '复盘', assetTag: '114130000019', before, after, operator: '冯丽婷' });
-  const original = getInventoryLocationChanges(projectNo);
-  expect(() => submit()).toThrow('照片须审核通过');
-  expect(getInventoryLocationChangeRequests(projectNo)).toHaveLength(0);
-  expect(getInventoryLocationChanges(projectNo)).toEqual(original);
-  savePhotoReviewResult(projectNo, { assetTag, status: '已盘' });
-  const request = submit();
-  expect(request.changeIds).toContain(second.id);
-  expect(request.changeIds).toHaveLength(2);
-  const machine = getAssetMaintenanceRows().find((asset) => asset.tag === '114140000031');
-  const machineDraft = buildLocationDraft(machine);
-  const machineAfter = { ...machineDraft.before, floor: '8层' };
-  expect(submitInventoryLocationChangeRequest({ projectNo, projectType: '复盘', reason: '机房现场核对', applicant: '冯丽婷', addedAssets: [machineDraft], permittedAssetTags: [machine.tag], draftLocations: { [machineDraft.id]: machineAfter } }).status).toBe('待审批');
-});
-
-
-test('绕过页面直接发起时仍必须提供本项目照片规则，不能因缺数据免审', () => {
-  record();
-  expect(() => submitRequest({ projectNo, projectType: '复盘', projectCreator:'冯丽婷', reason: '直接调用', applicant: '冯丽婷' })).toThrow('当前复盘项目资产范围');
-  expect(getInventoryLocationChangeRequests(projectNo)).toHaveLength(0);
-  expect(getInventoryLocationChanges(projectNo)[0].status).toBe('待发起');
-});
-
-
-test('提交层校验项目创建人，创建人缺失、身份不同和关闭时不能提交', () => {
-  record();
-  const args = {projectNo, projectType:'复盘', projectCreator:'冯丽婷', applicant:'冯丽婷', reason:'位置核对', projectAssets:sourceAssets};
-  for (const invalid of [{projectCreator:''}, {applicant:'213852-孙志强'}, {projectStatus:'盘点关闭'}]) {
-    expect(() => submitRequest({...args, ...invalid})).toThrow('仅盘点项目创建人');
-    expect(getInventoryLocationChangeRequests(projectNo)).toHaveLength(0);
-  }
-});
-
-test('驳回后原申请修改再提交，保留原审批意见和记录且不新增单号', () => {
-  const change = record();
-  const first = submit();
-  approveInventoryLocationChangeRequest(first.id, {approver:'206984-何文', decision:'驳回', opinion:'核对后重提'});
-  const revised = submitInventoryLocationChangeRequest({projectNo, projectType:'复盘', projectCreator:'冯丽婷', requestId:first.id, applicant:'冯丽婷', reason:'已重新核对', draftLocations:{[change.id]:after}, draftRemarks:{[change.id]:'复核后重新提交'}});
-  expect(revised.id).toBe(first.id);
-  expect(getInventoryLocationChangeRequests(projectNo)).toHaveLength(1);
-  expect(revised.approvalRecords).toHaveLength(4);
-  expect(revised.approvalRecords[1]).toMatchObject({status:'已驳回', opinion:'核对后重提'});
-  expect(revised.approvalRecords[3].status).toBe('待审批');
-  expect(getInventoryLocationChanges(projectNo)[0]).toMatchObject({after, remark:'复核后重新提交'});
-  approveInventoryLocationChangeRequest(first.id, {approver:'206984-何文', decision:'同意', opinion:'核对一致'});
-  expect(getAssetMaintenanceRows().find(row => row.tag === assetTag).floor).toBe('8层');
-  expect(getInventoryLocationChangeRequest(first.id).approvalRecords[1].opinion).toBe('核对后重提');
-});
-
-
-test('驳回后若该资产另有待审批申请，原申请不能重提造成重复占用', () => {
-  const change = record();
-  const original = submit();
-  approveInventoryLocationChangeRequest(original.id, {approver:'206984-何文', decision:'驳回', opinion:'重新确认'});
-  const draft = buildLocationDraft(getAssetMaintenanceRows().find(row => row.tag === assetTag));
-  submitInventoryLocationChangeRequest({projectNo, projectType:'复盘', applicant:'冯丽婷', reason:'另一申请', addedAssets:[draft], permittedAssetTags:[assetTag], draftLocations:{[draft.id]:after}});
-  expect(() => submitInventoryLocationChangeRequest({projectNo, projectType:'复盘', requestId:original.id, applicant:'冯丽婷', reason:'重新提交', draftLocations:{[change.id]:after}})).toThrow('不能重复提交');
-  expect(getInventoryLocationChangeRequest(original.id).status).toBe('已驳回');
+test('无池记录不生成通知，未关闭拒绝；写入失败明确抛错，重试可恢复', () => {
+ expect(ensureInventoryLocationPoolCloseNotification(project)).toBeNull();
+ expect(() => ensureInventoryLocationPoolCloseNotification({ ...project, status: '盘点中' })).toThrow('关闭后');
+ record();
+ const original = Storage.prototype.setItem;
+ const mock = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(function(key, value) {
+  if (key === 'asset-inventory-location-changes-v1' && JSON.parse(value).notifications?.length) throw new Error('空间不足');
+  return original.call(this, key, value);
+ });
+ expect(() => ensureInventoryLocationPoolCloseNotification(project)).toThrow('空间不足');
+ mock.mockRestore();
+ expect(getInventoryLocationPoolCloseNotifications(project.projectNo)).toHaveLength(0);
+ expect(ensureInventoryLocationPoolCloseNotification(project)).toBeTruthy();
 });

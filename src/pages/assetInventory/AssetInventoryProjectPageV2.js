@@ -16,9 +16,9 @@ import { getMobileInventoryResults } from './inventoryMobileResultStore';
 import { getPhotoReviewResults } from './inventoryPhotoReviewStore';
 import { mergePlanInventoryResult } from './inventoryPlanExport';
 import { isSnapshotExecutionAsset } from './inventorySnapshotAssets';
-import { buildDefaultInventoryPlans, nextInventoryPlanNumber } from './inventoryDefaultPlans';
+import { buildDefaultInventoryPlans, inventoryDefaultPlanBlockReason, nextInventoryPlanNumber } from './inventoryDefaultPlans';
 import { PROJECT_PLAN_ROWS, PROJECT_PLAN_ASSETS } from '../../mock/inventoryProjectPlanMock';
-import { getInventoryLocationChangeRequests } from './inventoryLocationChangeStore';
+import { getInventoryLocationChangeRequests, getInventoryLocationChanges, ensureInventoryLocationPoolCloseNotification } from './inventoryLocationChangeStore';
 import { getImportedInventoryPhotos } from './inventoryPhotoImportStore';
 import { readDemoData, writeDemoData } from '../../services/demoStorage';
 import { initializeInventoryPlanPersonnel } from './inventoryPlanPersonnel';
@@ -74,7 +74,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const allowedRangeKey = allowedRanges.join('|');
   const sessionKey = useCallback(projectNo => `inventory-plan-session:${projectNo}:${allowedRangeKey}`, [allowedRangeKey]);
   const initialSession = useRef(readDemoData(sessionKey(PROJECT_INFO.projectNo), null)).current;
-  const initialPlanRows = (initialSession?.rows || PROJECT_PLAN_ROWS[PROJECT_INFO.projectNo] || []).filter(row => allowedRanges.includes(row.range));
+  const initialPlanRows = (initialSession?.rows || PROJECT_PLAN_ROWS[PROJECT_INFO.projectNo] || []).filter(row => (row.ranges || [row.range]).some(range => allowedRanges.includes(range)));
   const variantMenuLabel = menuLabel || `盘点项目（${variantLabel}）`;
   const rootRef = useRef(null);
   const baseContainerRef = useRef(null);
@@ -96,12 +96,15 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     return Object.fromEntries(closedProjectNos.map((projectNo) => [projectNo, '盘点关闭']));
   });
   const handleProjectClose = (project) => {
-    setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '盘点关闭' }));
+
     if (typeof window !== 'undefined') {
       const closedProjectNos = JSON.parse(window.sessionStorage.getItem('assetInventoryClosedProjectNos') || '[]');
       if (!closedProjectNos.includes(project.projectNo)) closedProjectNos.push(project.projectNo);
       window.sessionStorage.setItem('assetInventoryClosedProjectNos', JSON.stringify(closedProjectNos));
     }
+    setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '盘点关闭' }));
+    try { ensureInventoryLocationPoolCloseNotification({ ...project, status: '盘点关闭' }); }
+    catch (error) { Modal.error({ title: '项目已关闭，位置变更通知记录未保存', content: error.message }); }
   };
   const [assetPlanMap, setAssetPlanMap] = useState(() => initialSession?.assetMap || Object.fromEntries(initialPlanRows.flatMap(plan => (plan.assetKeys || []).map(key => [key, plan.planNo]))));
   const [planAssets, setPlanAssets] = useState(() => (initialSession?.assets || PROJECT_PLAN_ASSETS[PROJECT_INFO.projectNo] || ASSET_ROWS).map(asset => ({ ...asset })));
@@ -116,7 +119,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     projectSessions.current.set(planProject.projectNo, { project: planProject, rows: planRows, assetMap: assetPlanMap, assets: planAssets });
     let session = projectSessions.current.get(project.projectNo) || readDemoData(sessionKey(project.projectNo), null);
     if (!session) {
-      const rows = (PROJECT_PLAN_ROWS[project.projectNo] || []).filter(row => allowedRanges.includes(row.range)).map(row => ({ ...row, status: row.status === '暂存' ? '草稿' : row.status }));
+      const rows = (PROJECT_PLAN_ROWS[project.projectNo] || []).filter(row => (row.ranges || [row.range]).some(range => allowedRanges.includes(range))).map(row => ({ ...row, status: row.status === '暂存' ? '草稿' : row.status }));
       const assets = (getInventoryPhotoSnapshot(project.projectNo)?.assets || PROJECT_PLAN_ASSETS[project.projectNo] || ASSET_ROWS).map(asset => ({ ...asset }));
       session = { project: resolveProjectFromRow(project), rows, assets,
         assetMap: Object.fromEntries(rows.flatMap(row => (row.assetKeys || []).map(key => [key, row.planNo]))) };
@@ -153,10 +156,10 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     const tags = new Set((scope || []).map(asset => asset.assetTag));
     const photoRows = scope ? buildReviewRows(project.projectNo, project.scopeRanges || allowedRanges).filter(row => tags.has(row.asset.assetTag))
       : getPhotoReviewResults(project.projectNo).map(entry => ({ asset: { assetTag: entry.assetTag }, reviewStatus: { 审核中: '待审核', 已盘: '审核通过', 未盘: '审核不通过' }[entry.status] }));
-    return inventoryProjectCloseBlockReason({ ...project, replayPlans: plans }, { plans, photoRows, replaySubmission: getReplaySubmission(project.projectNo), locationRequests: getInventoryLocationChangeRequests(project.projectNo) });
+    return inventoryProjectCloseBlockReason({ ...project, replayPlans: plans }, { plans, photoRows, replaySubmission: getReplaySubmission(project.projectNo) });
   };
 
-  const activePlanNos = new Set(planRows.filter((row) => allowedRanges.includes(row.range)).map((row) => row.planNo));
+  const activePlanNos = new Set(planRows.filter((row) => (row.ranges || [row.range]).some(range => allowedRanges.includes(range))).map((row) => row.planNo));
   const unplannedSnapshotAssets = availableAssets.filter((asset) => !assetPlanMap[asset.key] || !activePlanNos.has(assetPlanMap[asset.key]));
   const canManualCreate = unplannedSnapshotAssets.length > 0;
 
@@ -181,6 +184,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     const nextProject = session.project;
     if (forceGeneratedStatus && !session.rows.length) {
       const selectedAssets = session.assets.filter((asset) => (nextProject.snapshotAssetKeys ? nextProject.snapshotAssetKeys.includes(asset.key) : asset.executeInventory) && isInventoryRangeAllowed(asset, allowedRanges));
+      const reason = inventoryDefaultPlanBlockReason(nextProject, selectedAssets);
+      if (reason) { Modal.warning({ title: '无法生成默认计划', content: reason }); return; }
       const generated = buildDefaultInventoryPlans(nextProject, selectedAssets);
       setPlanRows(generated);
       const generatedAssets = new Map(generated.flatMap(plan => plan.assets.map(asset => [asset.key, asset])));
@@ -188,7 +193,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       setAssetPlanMap(Object.fromEntries(generated.flatMap(plan => plan.assets.map(asset => [asset.key, plan.planNo]))));
       setProjectStatusOverrides(current => ({ ...current, [nextProject.projectNo]: '生成盘点计划' }));
     } else if (nextProject.projectType === '复盘') {
-      setPlanRows((current) => current.map((row) => ({ ...row, endDate: row.startDate, financialSupervisor: '徐博' })));
+      setPlanRows((current) => current.map((row) => ({ ...row, financialSupervisor: '徐博' })));
     }
     resetOverlays();
     setPlanProject(nextProject.status === '盘点关闭' ? nextProject : forceGeneratedStatus ? { ...nextProject, status: '生成盘点计划' } : nextProject);
@@ -239,7 +244,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     // 只处理无后续计划/结果的快照，已有计划的撤销边界尚未确认。
     if (!['快照生成', '生成盘点计划'].includes(project.status) || planRows.some(row => row.status !== '草稿')
       || Object.keys(getMobileInventoryResults(project.projectNo)).length || getPhotoReviewResults(project.projectNo).length
-      || getImportedInventoryPhotos(project.projectNo).length || getInventoryLocationChangeRequests(project.projectNo).length
+      || getImportedInventoryPhotos(project.projectNo).length || getInventoryLocationChangeRequests(project.projectNo).length || getInventoryLocationChanges(project.projectNo).length
       || readDemoData(`inventory-replay-review-${project.projectNo}`, null)) return false;
     const draft = { ...project, status: '草稿', snapshotTime: '-' };
     setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '草稿' }));
@@ -313,7 +318,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
         uncountedCount: rangeAssets.length,
         countedCount: 0,
         startDate: planProject.startDate || PROJECT_INFO.startDate,
-        endDate: planProject.projectType === '复盘' ? (planProject.startDate || PROJECT_INFO.startDate) : (planProject.endDate || PROJECT_INFO.endDate),
+        endDate: planProject.endDate || PROJECT_INFO.endDate,
         supervisor: personnel.supervisor || '-',
         executor: personnel.executor || '-',
         financialSupervisor: planProject.projectType === '复盘' ? '徐博' : '-',
@@ -332,6 +337,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
 
   const generateRemainingDefaultPlans = () => {
+    const reason = inventoryDefaultPlanBlockReason(planProject, unplannedSnapshotAssets);
+    if (reason) { Modal.warning({ title: '无法生成默认计划', content: reason }); return; }
     const generated = buildDefaultInventoryPlans(planProject, unplannedSnapshotAssets, planRows);
     setPlanRows(current => [...current, ...generated]);
     const replacements = new Map(generated.flatMap(plan => plan.assets.map(asset => [asset.key, asset])));

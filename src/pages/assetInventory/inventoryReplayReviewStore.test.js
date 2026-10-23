@@ -1,67 +1,126 @@
-import { applyReplayPlanStatuses, decideReplayReview, getReplaySubmission, replayDecisionBlockReason, submitReplayReview, validateReplaySubmission } from './inventoryReplayReviewStore';
+import { applyReplayPlanStatuses, decideReplayReview, getReplaySubmission, replayDecisionBlockReason, replayProjectSubmissionBlockReason, submitReplayProjectReview, submitReplayReview, validateReplaySubmission } from './inventoryReplayReviewStore';
+import { writeDemoData } from '../../services/demoStorage';
 const project = { projectNo: 'R-test', projectType: '复盘', samplingMode: '百分比', samplingRatio: 50 };
-const plans = [{ planNo: 'P1', range: '员工', status: '盘点中' }, { planNo: 'P2', range: '公共', status: '盘点中' }];
-const assetsForPlan = plan => plan.planNo === 'P1' ? [{ assetTag: 'A', inventoryStatus: '已盘' }] : [{ assetTag: 'B', inventoryStatus: '未盘' }];
-const submit = overrides => submitReplayReview({ project, plans, assetsForPlan, operator: '冯丽婷', allowBelowRatio: true, ...overrides });
-const decide = (operator, decision = '同意', overrides = {}) => decideReplayReview({ project, operator, decision, round: getReplaySubmission(project.projectNo).round, ...overrides });
+const plans = [{ planNo: 'P1', range: '员工', status: '盘点中' }, { planNo: 'P2', range: '机房', status: '盘点中' }];
+const assetsForPlan = plan => [{ assetTag: plan.planNo === 'P1' ? 'A' : 'B', inventoryStatus: plan.planNo === 'P1' ? '已盘' : '未盘', supervisor: plan.planNo === 'P1' ? '冯丽婷' : '徐博', executor: '冯丽婷' }];
+const submit = (planNo = 'P1', overrides = {}) => submitReplayReview({ project, plans: plans.filter(plan => plan.planNo === planNo), assetsForPlan, operator: '冯丽婷', allowBelowRatio: true, ...overrides });
+const decide = (planNo, operator, decision = '同意', overrides = {}) => decideReplayReview({ project, operator, decision, planNo, round: getReplaySubmission(project.projectNo).planReviews[planNo].round, ...overrides });
+const submitProject = () => submitReplayProjectReview({ project, plans, operator: '冯丽婷' });
+const approveAllPlans = () => { submit(); decide('P1', '冯丽婷'); submit('P2'); decide('P2', '徐博'); };
 beforeEach(() => window.localStorage.clear());
-test('逐计划检查状态，不能以其他计划已启动代替', () => {
-  expect(() => submit({ plans: [plans[0], { ...plans[1], status: '草稿' }] })).toThrow('P2');
-  expect(getReplaySubmission(project.projectNo)).toBeNull();
+test('每次仅提交一个盘点中计划，监督人从实际资产读取，机房也不生成ES或NO节点', () => {
+  expect(() => submit('P1', { plans })).toThrow('每次只能提交一个');
+  expect(() => submit('P1', { plans: [{ ...plans[0], status: '草稿' }] })).toThrow('不是盘点中');
+  const state = submit('P2');
+  expect(state.planReviews.P2.records).toEqual([expect.objectContaining({ node: '提交计划审批' }), expect.objectContaining({ node: '计划监督人审批', person: '徐博', status: '待审批' })]);
+  expect(state.projectReview).toBeNull();
 });
-test('逐计划完成比例弱提示，不被其他计划完成率抵消', () => {
-  expect(validateReplaySubmission(project, plans, assetsForPlan)).toEqual([expect.stringContaining('P2')]);
-  expect(() => submit({ allowBelowRatio: false })).toThrow('P2');
-  expect(submit().status).toBe('审核中');
+test('缺少资产监督人不能提交，不用配置汇总或固定何文替代', () => {
+  expect(() => submit('P1', { assetsForPlan: () => [{ assetTag: 'A', supervisor: '-' }] })).toThrow('未配置监督人');
+  expect(() => submit('P1', { assetsForPlan: () => [] })).toThrow('没有资产');
 });
-test('仅百分比抽样检查比例，0比例不被错误替换为100', () => {
-  expect(validateReplaySubmission({ ...project, samplingMode: '全量' }, plans, assetsForPlan)).toEqual([]);
-  expect(validateReplaySubmission({ ...project, samplingRatio: 0 }, plans, assetsForPlan)).toEqual([]);
-  expect(() => validateReplaySubmission(project, plans, () => [])).toThrow('零资产');
+test('仅百分比抽样使用计划比例弱提示，允许确认继续，0不替换为100', () => {
+  expect(validateReplaySubmission(project, [plans[1]], assetsForPlan)).toEqual([expect.stringContaining('P2')]);
+  expect(validateReplaySubmission({ ...project, samplingMode: '全量' }, [plans[1]], assetsForPlan)).toEqual([]);
+  expect(validateReplaySubmission({ ...project, samplingRatio: 0 }, [plans[1]], assetsForPlan)).toEqual([]);
+  expect(() => submit('P2', { allowBelowRatio: false })).toThrow('P2');
+  expect(submit('P2').planReviews.P2.status).toBe('审核中');
 });
-test.each(['待审核', '审核不通过'])('已提交照片%s阻止所属计划整批提交，未提交照片不阻止', reviewStatus => {
-  const photoRows = [{ asset: { assetTag: 'B' }, photos: { overall: { id: 'photo' } }, reviewStatus }];
-  expect(() => submit({ photoRows })).toThrow('P2 资产 B');
-  expect(() => submit({ photoRows: [{ ...photoRows[0], photos: {} }] })).not.toThrow();
+test.each(['待审核', '审核不通过'])('已提交照片%s阻止所属计划，未提交照片不阻止', reviewStatus => {
+  const photoRows = [{ asset: { assetTag: 'A' }, photos: { overall: { id: 'photo' } }, reviewStatus }];
+  expect(() => submit('P1', { photoRows })).toThrow('P1 资产 A');
+  expect(() => submit('P1', { photoRows: [{ ...photoRows[0], photos: {} }] })).not.toThrow();
 });
 test.each(['扫码枪', '人工导入'])('%s无需人工照片审核', resultSource => {
-  const photoRows = [{ asset: { assetTag: 'B' }, photos: { overall: {} }, reviewStatus: '待审核' }];
-  expect(() => submit({ assetsForPlan: plan => assetsForPlan(plan).map(asset => ({ ...asset, resultSource })), photoRows })).not.toThrow();
+  expect(() => submit('P1', { assetsForPlan: plan => assetsForPlan(plan).map(asset => ({ ...asset, resultSource })), photoRows: [{ asset: { assetTag: 'A' }, photos: { overall: {} }, reviewStatus: '待审核' }] })).not.toThrow();
 });
-test('机房不因照片阻止提交，未配置NO审批人明确阻断且不能跳到财务', () => {
-  const saved = submit({ plans: plans.map(plan => ({ ...plan, range: '机房' })), photoRows: [{ asset: { assetTag: 'B' }, photos: { overall: {} }, reviewStatus: '待审核' }] });
-  expect(replayDecisionBlockReason(project, saved, '徐博')).toMatch(/NO领导审批人未配置/);
-  expect(() => decide('徐博')).toThrow('NO领导审批人未配置');
-  expect(getReplaySubmission(project.projectNo).records[2].status).toBe('待流转');
+test('各计划独立审核，通过只清本计划执行人的演示待办，刷新保留且禁止重复审批', () => {
+  submit(); submit('P2');
+  expect(() => decide('P1', '徐博')).toThrow('仅当前待审批人');
+  decide('P1', '冯丽婷', '同意', { opinion: '计划核对完成' });
+  const state = getReplaySubmission(project.projectNo);
+  expect(state.planReviews.P1.status).toBe('已审核');
+  expect(state.planReviews.P2.status).toBe('审核中');
+  expect(state.todoLifecycle).toEqual([expect.objectContaining({ planNo: 'P1', person: '冯丽婷', status: '演示已清除', serviceStatus: '正式服务未接入' })]);
+  expect(() => decide('P1', '冯丽婷')).toThrow('不在审批中');
+  expect(getReplaySubmission(project.projectNo).todoLifecycle).toHaveLength(1);
+  expect(applyReplayPlanStatuses(plans, state).map(plan => plan.status)).toEqual(['已审核', '审核中']);
 });
-test('非机房何文通过后才轮到徐博，全部通过逐计划已审核，刷新结果保留', () => {
+test('计划驳回恢复盘点中，不清待办；重提保留意见并提高轮次', () => {
   submit();
-  expect(() => decide('徐博')).toThrow('仅当前节点');
-  const first = decide('206984-何文', '同意', { opinion: '核实完成' });
-  expect(first.status).toBe('审核中');
-  expect(first.records[1].opinion).toBe('核实完成');
-  expect(first.records[2].status).toBe('待审批');
-  expect(() => decide('206984-何文')).toThrow('仅当前节点');
-  decide('徐博');
-  const reloaded = getReplaySubmission(project.projectNo);
-  expect(reloaded.status).toBe('已审核');
-  expect(applyReplayPlanStatuses(plans, reloaded).every(plan => plan.status === '已审核' && plan.approvalStatus === '已审核')).toBe(true);
-  expect(() => decide('徐博')).toThrow('不在审批中');
-});
-test.each(['206984-何文', '徐博'])('%s驳回回盘点中，可重新提交并保留历史，重新从何文开始', operator => {
+  decide('P1', '冯丽婷', '驳回', { opinion: '重新核实' });
+  const rejected = getReplaySubmission(project.projectNo);
+  expect(rejected.planReviews.P1.plans[0].status).toBe('盘点中');
+  expect(rejected.todoLifecycle).toEqual([]);
   submit();
-  if (operator === '徐博') decide('206984-何文');
-  const rejected = decide(operator, '驳回', { opinion: '请补核' });
-  expect(rejected.plans.every(plan => plan.status === '盘点中' && plan.approvalStatus === '已驳回')).toBe(true);
-  const resubmitted = submit({ plans: applyReplayPlanStatuses(plans, rejected) });
-  expect(resubmitted.round).toBe(2);
-  expect(resubmitted.records.some(record => record.opinion === '请补核')).toBe(true);
-  expect(resubmitted.records.filter(record => record.status === '待审批')).toEqual([expect.objectContaining({ person: '206984-何文' })]);
+  const state = getReplaySubmission(project.projectNo);
+  expect(state.planReviews.P1.round).toBe(2);
+  expect(state.planReviews.P1.records.some(record => record.opinion === '重新核实')).toBe(true);
+  expect(() => decide('P1', '冯丽婷', '同意', { round: 1 })).toThrow('记录已变化');
 });
-test('二次提交、关闭审批、旧版本审批均不能改变已有结果', () => {
+test('全部计划通过后才可项目提交，项目审批仅徐博，保留各计划及清除记录', () => {
+  submit();
+  expect(() => submitProject()).toThrow('全部复盘计划');
+  decide('P1', '冯丽婷');
+  expect(replayProjectSubmissionBlockReason(project, plans, getReplaySubmission(project.projectNo))).toContain('全部复盘计划');
+  submit('P2'); decide('P2', '徐博');
+  const submitted = submitProject();
+  expect(submitted.projectReview.records.filter(record => record.status === '待审批')).toEqual([expect.objectContaining({ person: '徐博', node: '财务经理审批' })]);
+  expect(() => submitProject()).toThrow('不能重复提交');
+  expect(replayDecisionBlockReason(project, submitted.projectReview, '冯丽婷')).toContain('仅当前待审批人');
+  decideReplayReview({ project, operator: '徐博', scope: 'project', round: 1, decision: '同意' });
+  const completed = getReplaySubmission(project.projectNo);
+  expect(completed.projectReview.status).toBe('已审核');
+  expect(completed.todoLifecycle).toHaveLength(2);
+  expect(completed.plans.every(plan => plan.status === '已审核')).toBe(true);
+});
+test('项目驳回不回退计划或恢复待办，重提项目保留历史', () => {
+  approveAllPlans(); submitProject();
+  decideReplayReview({ project, operator: '徐博', scope: 'project', round: 1, decision: '驳回', opinion: '补充项目说明' });
+  expect(getReplaySubmission(project.projectNo).plans.every(plan => plan.status === '已审核')).toBe(true);
+  const state = submitProject();
+  expect(state.projectReview.round).toBe(2);
+  expect(state.projectReview.records.some(record => record.opinion === '补充项目说明')).toBe(true);
+  expect(state.todoLifecycle).toHaveLength(2);
+});
+test('重复提交、关闭后的提交审批都不能改变已有结果', () => {
   submit();
   expect(() => submit()).toThrow('不能重复提交');
-  expect(() => decide('206984-何文', '同意', { round: 0 })).toThrow('记录已变化');
-  expect(() => decide('206984-何文', '同意', { project: { ...project, status: '盘点关闭' } })).toThrow('已关闭');
-  expect(getReplaySubmission(project.projectNo).records[1].status).toBe('待审批');
+  expect(() => decide('P1', '冯丽婷', '同意', { project: { ...project, status: '盘点关闭' } })).toThrow('已关闭');
+  expect(() => submit('P2', { project: { ...project, status: '盘点关闭' } })).toThrow('已关闭');
+  expect(getReplaySubmission(project.projectNo).planReviews.P1.status).toBe('审核中');
+});
+test('旧ES和NO链保留为历史，不冒充新两级审批通过', () => {
+  const legacy = { status: '已审核', records: [{ node: 'ES主管审批', person: '何文', status: '已通过' }] };
+  writeDemoData('inventory-replay-review-R-test', legacy);
+  const state = getReplaySubmission(project.projectNo);
+  expect(state.legacySubmission).toEqual(legacy);
+  expect(state.planReviews).toEqual({});
+  expect(() => submitProject()).toThrow('全部复盘计划');
+});
+
+test('同一计划各监督人会签，全部同意才通过并清除待办，部分通过不可提交项目',()=>{
+ const multiple=plan=>[...assetsForPlan(plan),{assetTag:'C',inventoryStatus:'已盘',supervisor:'徐博',executor:'徐博'}];
+ submit('P1',{assetsForPlan:multiple});
+ decide('P1','冯丽婷');
+ let state=getReplaySubmission(project.projectNo);
+ expect(state.planReviews.P1.status).toBe('审核中');
+ expect(state.todoLifecycle).toEqual([]);
+ expect(()=>submitReplayProjectReview({project,plans:[plans[0]],operator:'冯丽婷'})).toThrow('全部复盘计划');
+ expect(()=>decide('P1','冯丽婷')).toThrow('仅当前待审批人');
+ decide('P1','徐博');
+ state=getReplaySubmission(project.projectNo);
+ expect(state.planReviews.P1.status).toBe('已审核');
+ expect(state.todoLifecycle.map(event=>event.person)).toEqual(['冯丽婷','徐博']);
+ expect(submitReplayProjectReview({project,plans:[plans[0]],operator:'冯丽婷'}).projectReview.status).toBe('审核中');
+});
+
+test('会签任一监督人驳回即计划驳回，重提后全体监督人重新审核',()=>{
+ const multiple=plan=>[...assetsForPlan(plan),{assetTag:'C',inventoryStatus:'已盘',supervisor:'徐博',executor:'徐博'}];
+ submit('P1',{assetsForPlan:multiple});
+ decide('P1','冯丽婷');
+ decide('P1','徐博','驳回');
+ expect(getReplaySubmission(project.projectNo).todoLifecycle).toEqual([]);
+ submit('P1',{assetsForPlan:multiple});
+ expect(getReplaySubmission(project.projectNo).planReviews.P1.records.filter(record=>record.status==='待审批').map(record=>record.person)).toEqual(['冯丽婷','徐博']);
 });

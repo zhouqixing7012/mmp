@@ -1,4 +1,5 @@
 import { inventoryRemark } from './inventoryRemark';
+import { isInventoryAssetMandatory, sortInventoryMandatoryAssets } from './inventoryMandatoryAssets';
 import { getInventoryPhotoSnapshot } from './inventoryPhotoRules';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -125,12 +126,13 @@ function assetLocation(asset) {
   return { city, building, floor };
 }
 
-function loadProjectAssets(projectNo) {
+function loadProjectAssets(projectNo, project = {}) {
   const ledger = new Map(getAssetMaintenanceRows().map((asset) => [asset.tag, asset]));
   const results = getMobileInventoryResults(projectNo);
   const photoSnapshot = getInventoryPhotoSnapshot(projectNo);
   const source = photoSnapshot ? photoSnapshot.assets.map(asset => ({
     ...DEMO_ASSETS.find(row => row.tagNo === asset.assetTag),
+    key: asset.key,
     id: DEMO_ASSETS.find(row => row.tagNo === asset.assetTag)?.id || asset.key,
     tagNo: asset.assetTag, assetDesc: asset.description, serialNo: asset.serialNo, quantity: asset.quantity,
     area: asset.inventoryRange, owner: asset.owner, ownerNo: asset.ownerNo,
@@ -140,10 +142,11 @@ function loadProjectAssets(projectNo) {
     inventoryRemark: inventoryRemark(asset),
     inventoryBy: asset.inventoryBy ?? asset.counter, inventoryDate: asset.inventoryDate,
     resultSource: asset.resultSource, photos: asset.photos,
+    isMandatory: isInventoryAssetMandatory(asset, project),
   })) : DEMO_ASSETS;
   return source.map((asset) => {
     const row = ledger.get(asset.tagNo);
-    return { ...asset, lossReported: asset.status === '报失', ...results[asset.tagNo], address: row ? [row.city, row.building, row.floor].join('-') : asset.address };
+    return { ...asset, lossReported: asset.status === '报失', ...results[asset.tagNo], isMandatory: isInventoryAssetMandatory(asset, project), address: row ? [row.city, row.building, row.floor].join('-') : asset.address };
   });
 }
 
@@ -192,6 +195,7 @@ function AssetCard({ asset, onClick, showOwner = false }) {
         </div>
         <div className="inventory-asset-card-meta">
           <StatusBadge status={asset.status} />
+          {asset.isMandatory && <Tag color="orange">必盘</Tag>}
           <span>{asset.tagNo}</span>
         </div>
         <div className="inventory-asset-card-line">资产小类：{asset.category || '-'}</div>
@@ -296,11 +300,11 @@ export default function AssetInventoryMobilePrototype() {
   const [collapsedPlanSections, setCollapsedPlanSections] = useState([]);
   const [detailReturnView, setDetailReturnView] = useState('workbench');
   const [quickPlanId, setQuickPlanId] = useState(null);
-  const [assets, setAssets] = useState(() => loadProjectAssets(previewProjectNo));
+  const [assets, setAssets] = useState(() => loadProjectAssets(previewProjectNo, location.state));
   useEffect(() => {
     const results = new Map(getPhotoReviewResults(previewProjectNo).map((entry) => [entry.assetTag, entry]));
-    setAssets(loadProjectAssets(previewProjectNo).map((asset) => applyPhotoReviewToInventoryAsset(asset, results.get(asset.tagNo))));
-  }, [previewProjectNo, location.key]);
+    setAssets(loadProjectAssets(previewProjectNo, location.state).map((asset) => applyPhotoReviewToInventoryAsset(asset, results.get(asset.tagNo))));
+  }, [previewProjectNo, location.key, location.state]);
   const [query, setQuery] = useState('');
   const [selectedAssetId, setSelectedAssetId] = useState(null);
   const [locationDraft, setLocationDraft] = useState({ city: '', building: '', floor: '' });
@@ -653,7 +657,8 @@ export default function AssetInventoryMobilePrototype() {
         </div>
         <div className="inventory-mobile-content-list">
           {groups.map((group) => {
-            const groupAssets = filteredAssets.filter((asset) => asset.status === group.key);
+            const matchingAssets = filteredAssets.filter((asset) => asset.status === group.key);
+            const groupAssets = group.key === '未盘' ? sortInventoryMandatoryAssets(matchingAssets) : matchingAssets;
             return (
               <section key={group.key} className="inventory-status-section">
                 <AssetGroupHeading label={group.label} count={groupAssets.length} collapsed={collapsedGroups.includes(group.key)} onToggle={() => setCollapsedGroups((current) => current.includes(group.key) ? current.filter((key) => key !== group.key) : [...current, group.key])} />
@@ -674,7 +679,7 @@ export default function AssetInventoryMobilePrototype() {
     <MobileHeader title={activePlan?.name || '盘点计划'} onBack={goBack} onExit={exitPrototype} right={canQuickScan && <Button type="text" aria-label="快速扫描" icon={<ScanLine size={18} />} onClick={() => openQuickScan(activePlanId)}>快扫</Button>} />
     <div className="inventory-mobile-content inventory-plan-detail">
       {[
-        { key: '未盘', rows: activePlanAssets.filter((asset) => asset.status === '未盘') },
+        { key: '未盘', rows: sortInventoryMandatoryAssets(activePlanAssets.filter((asset) => asset.status === '未盘')) },
         { key: '报失', rows: activePlanAssets.filter((asset) => asset.status === '报失') },
         { key: '已盘', rows: activePlanAssets.filter((asset) => ['已盘', '代盘'].includes(asset.status)) },
       ].map((group) => <section className="inventory-plan-section" key={group.key}>

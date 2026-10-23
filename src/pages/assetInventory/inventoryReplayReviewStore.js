@@ -2,103 +2,136 @@ import dayjs from 'dayjs';
 import { readDemoData, writeDemoData } from '../../services/demoStorage';
 import { inventoryResultSource } from './inventoryResultSource';
 
-export const REPLAY_ES_APPROVER = '206984-何文';
 export const REPLAY_FINANCE_APPROVER = '徐博';
 const keyFor = projectNo => `inventory-replay-review-${projectNo}`;
 const now = () => dayjs().format('YYYY-MM-DD HH:mm:ss');
+const present = value => Boolean(String(value ?? '').trim()) && value !== '-';
+const emptyState = () => ({ version: 2, planReviews: {}, projectReview: null, plans: [], todoLifecycle: [] });
 
 export function getReplaySubmission(projectNo) {
   const saved = readDemoData(keyFor(projectNo), null);
   if (!saved) return null;
-  // 接续既有真实提交记录；仅补齐已明确的节点人员，不制造审批结果。
-  return { ...saved, round: saved.round || 1, status: saved.status || '审核中', records: saved.records.map(record => ({ ...record,
-    person: record.node === 'ES主管审批' ? REPLAY_ES_APPROVER : record.node === '财务经理审批' ? REPLAY_FINANCE_APPROVER : record.person,
-  })) };
+  // 旧审批链只留作历史，不把旧ES/NO结论当作新的计划或项目审批。
+  if (saved.version !== 2) return { ...emptyState(), legacySubmission: saved };
+  return saved;
+}
+
+function saveState(projectNo, state) {
+  const result = { ...state, plans: Object.values(state.planReviews).flatMap(review => review.plans), status: state.projectReview?.status || '未提交' };
+  writeDemoData(keyFor(projectNo), result);
+  return result;
 }
 
 export function applyReplayPlanStatuses(plans, submission) {
   return plans.map(plan => {
-    const saved = submission?.plans?.find(item => item.planNo === plan.planNo);
-    return saved ? { ...plan, status: saved.status, approvalStatus: saved.approvalStatus || submission.status } : plan;
+    const saved = submission?.planReviews?.[plan.planNo]?.plans?.[0];
+    return saved ? { ...plan, status: saved.status, approvalStatus: saved.approvalStatus } : plan;
   });
 }
 
-export function validateReplaySubmission(project, plans, assetsForPlan, photoRows = []) {
-  if (!project.projectNo) throw new Error('缺少盘点项目编号');
-  if (project.projectType !== '复盘') throw new Error('仅复盘项目可以提交复盘审批');
-  if (project.status === '盘点关闭') throw new Error('项目已关闭，不能提交审批');
-  if (!plans.length) throw new Error('没有可提交的复盘计划');
-  const warnings = [];
-  plans.forEach(plan => {
-    if (plan.status !== '盘点中') throw new Error(`计划 ${plan.planNo} 不是盘点中，不能提交审批`);
-    const assets = assetsForPlan(plan);
-    assets.forEach(asset => {
-      if ((asset.inventoryRange || plan.range) === '机房' || ['扫码枪', '人工导入'].includes(inventoryResultSource(asset))) return;
-      const review = photoRows.find(row => row.asset.assetTag === asset.assetTag);
-      const photos = review?.photos;
-      const submitted = photos && (photos.overall || photos.partial || photos.gallery?.length);
-      if (submitted && ['待审核', '审核不通过'].includes(review.reviewStatus)) throw new Error(`计划 ${plan.planNo} 资产 ${asset.assetTag} 的照片${review.reviewStatus}，请先完成照片处理`);
-    });
-    if (project.samplingMode !== '百分比') return;
-    const target = Number(project.samplingRatio);
-    if (project.samplingRatio === '' || project.samplingRatio == null || !Number.isFinite(target) || target < 0 || target > 100) throw new Error('请填写有效的复盘比例');
-    if (!assets.length) throw new Error(`计划 ${plan.planNo} 没有资产，零资产比例校验规则尚未明确`);
-    const ratio = assets.filter(asset => ['已盘', '代盘'].includes(asset.inventoryStatus)).length / assets.length * 100;
-    if (ratio < target) warnings.push(`计划 ${plan.planNo} 当前盘点比例${ratio.toFixed(2)}%，未达到审核比例${target}%`);
-  });
-  return warnings;
-}
-
-export function submitReplayReview({ project, plans, assetsForPlan, photoRows, operator, allowBelowRatio = false }) {
-  const previous = getReplaySubmission(project.projectNo);
-  if (previous && previous.status !== '已驳回') throw new Error('当前复盘结果已提交审批，不能重复提交');
-  if (!operator) throw new Error('缺少当前操作人');
-  const warnings = validateReplaySubmission(project, plans, assetsForPlan, photoRows);
-  if (warnings.length && !allowBelowRatio) throw new Error(warnings.join('；'));
-  const round = (previous?.round || (previous ? 1 : 0)) + 1;
-  const machine = plans.every(plan => plan.range === '机房');
-  if (!machine && plans.some(plan => plan.range === '机房')) throw new Error('机房与非机房审批路径不同，不能合并提交');
-  const submission = {
-    round, status: '审核中',
-    plans: plans.map(plan => ({ ...plan, status: '审核中', approvalStatus: '审核中', financialSupervisor: REPLAY_FINANCE_APPROVER })),
-    assetsByPlan: Object.fromEntries(plans.map(plan => [plan.planNo, assetsForPlan(plan)])),
-    records: [...(previous?.records || []),
-      { key: `start-${round}`, node: '开始', person: operator, status: '已提交', time: now() },
-      { key: `review-${round}`, node: machine ? 'NO领导审批' : 'ES主管审批', person: machine ? '' : REPLAY_ES_APPROVER, status: '待审批' },
-      { key: `finance-${round}`, node: '财务经理审批', person: REPLAY_FINANCE_APPROVER, status: '待流转' },
-    ],
-  };
-  writeDemoData(keyFor(project.projectNo), submission);
-  return submission;
-}
-
-export function replayDecisionBlockReason(project, submission, operator) {
-  if (project.status === '盘点关闭') return '项目已关闭，审批记录只读';
-  if (!submission || submission.status !== '审核中') return '当前申请不在审批中';
-  const pending = submission.records.find(record => record.status === '待审批');
-  if (!pending) return '缺少当前待审批节点';
-  if (!pending.person) return `${pending.node}人未配置，无法继续审批`;
-  if (pending.person !== operator) return '仅当前节点审批人可以操作';
+function projectBlock(project) {
+  if (!project.projectNo) return '缺少盘点项目编号';
+  if (project.projectType !== '复盘') return '仅复盘项目可以提交复盘审批';
+  if (['盘点关闭', '关闭'].includes(project.status)) return '项目已关闭，审批记录只读';
   return '';
 }
 
-export function decideReplayReview({ project, operator, decision, opinion = '', round }) {
-  const submission = getReplaySubmission(project.projectNo);
-  const block = replayDecisionBlockReason(project, submission, operator);
+export function validateReplaySubmission(project, plans, assetsForPlan, photoRows = []) {
+  const block = projectBlock(project);
   if (block) throw new Error(block);
-  if (round !== submission.round) throw new Error('审批记录已变化，请重新打开申请');
+  if (plans.length !== 1) throw new Error('每次只能提交一个复盘计划');
+  const plan = plans[0];
+  if (plan.status !== '盘点中') throw new Error(`计划 ${plan.planNo} 不是盘点中，不能提交审批`);
+  const assets = assetsForPlan(plan);
+  if (!assets.length) throw new Error(`计划 ${plan.planNo} 没有资产，不能确定计划监督人`);
+  if (assets.some(asset => !present(asset.supervisor))) throw new Error(`计划 ${plan.planNo} 存在未配置监督人的资产，请先配置`);
+  assets.forEach(asset => {
+    if ((asset.inventoryRange || plan.range) === '机房' || ['扫码枪', '人工导入'].includes(inventoryResultSource(asset))) return;
+    const review = photoRows.find(row => row.asset.assetTag === asset.assetTag);
+    const photos = review?.photos;
+    const submitted = photos && (photos.overall || photos.partial || photos.gallery?.length);
+    if (submitted && ['待审核', '审核不通过'].includes(review.reviewStatus)) throw new Error(`计划 ${plan.planNo} 资产 ${asset.assetTag} 的照片${review.reviewStatus}，请先完成照片处理`);
+  });
+  if (project.samplingMode !== '百分比') return [];
+  const target = Number(project.samplingRatio);
+  if (project.samplingRatio === '' || project.samplingRatio == null || !Number.isFinite(target) || target < 0 || target > 100) throw new Error('请填写有效的复盘比例');
+  const ratio = assets.filter(asset => ['已盘', '代盘'].includes(asset.inventoryStatus)).length / assets.length * 100;
+  return ratio < target ? [`计划 ${plan.planNo} 当前盘点比例${ratio.toFixed(2)}%，未达到审核比例${target}%`] : [];
+}
+
+export function submitReplayReview({ project, plans, assetsForPlan, photoRows, operator, allowBelowRatio = false }) {
+  const state = getReplaySubmission(project.projectNo) || emptyState();
+  if (!operator) throw new Error('缺少当前操作人');
+  const warnings = validateReplaySubmission(project, plans, assetsForPlan, photoRows);
+  if (warnings.length && !allowBelowRatio) throw new Error(warnings.join('；'));
+  if (state.projectReview && state.projectReview.status !== '已驳回') throw new Error('项目已提交审批，不能重新提交计划');
+  const plan = plans[0];
+  const previous = state.planReviews[plan.planNo];
+  if (previous && previous.status !== '已驳回') throw new Error('该计划已提交审批，不能重复提交');
+  const assets = assetsForPlan(plan);
+  const supervisors = [...new Set(assets.map(asset => asset.supervisor))];
+  const round = (previous?.round || 0) + 1;
+  const review = {
+    scope: 'plan', planNo: plan.planNo, round, status: '审核中',
+    plans: [{ ...plan, status: '审核中', approvalStatus: '审核中' }],
+    assetsByPlan: { [plan.planNo]: assets },
+    records: [...(previous?.records || []), { key: `start-${round}`, node: '提交计划审批', person: operator, status: '已提交', time: now() },
+      ...supervisors.map((person, index) => ({ key: `supervisor-${round}-${index}`, node: '计划监督人审批', person, status: '待审批' }))],
+  };
+  return saveState(project.projectNo, { ...state, planReviews: { ...state.planReviews, [plan.planNo]: review } });
+}
+
+export function replayProjectSubmissionBlockReason(project, plans, state) {
+  const block = projectBlock(project);
+  if (block) return block;
+  if (!plans.length) return '没有可提交的复盘计划';
+  if (plans.some(plan => state?.planReviews?.[plan.planNo]?.status !== '已审核')) return '全部复盘计划审批通过后才能提交项目审批';
+  if (state?.projectReview && state.projectReview.status !== '已驳回') return '项目已提交审批，不能重复提交';
+  return '';
+}
+
+export function submitReplayProjectReview({ project, plans, operator }) {
+  const state = getReplaySubmission(project.projectNo) || emptyState();
+  const block = replayProjectSubmissionBlockReason(project, plans, state);
+  if (block) throw new Error(block);
+  if (!operator) throw new Error('缺少当前操作人');
+  const previous = state.projectReview;
+  const round = (previous?.round || 0) + 1;
+  const reviews = plans.map(plan => state.planReviews[plan.planNo]);
+  const review = { scope: 'project', round, status: '审核中', plans: reviews.flatMap(item => item.plans),
+    assetsByPlan: Object.assign({}, ...reviews.map(item => item.assetsByPlan)),
+    records: [...(previous?.records || []), { key: `project-start-${round}`, node: '提交项目审批', person: operator, status: '已提交', time: now() },
+      { key: `finance-${round}`, node: '财务经理审批', person: REPLAY_FINANCE_APPROVER, status: '待审批' }],
+  };
+  return saveState(project.projectNo, { ...state, projectReview: review });
+}
+
+export function replayDecisionBlockReason(project, review, operator) {
+  const block = projectBlock(project);
+  if (block) return block;
+  if (!review || review.status !== '审核中') return '当前申请不在审批中';
+  if (!review.records.some(record => record.status === '待审批' && record.person === operator)) return '仅当前待审批人可以操作';
+  return '';
+}
+
+export function decideReplayReview({ project, operator, decision, opinion = '', round, planNo, scope = 'plan' }) {
+  const state = getReplaySubmission(project.projectNo);
+  const review = scope === 'project' ? state?.projectReview : state?.planReviews?.[planNo];
+  const block = replayDecisionBlockReason(project, review, operator);
+  if (block) throw new Error(block);
+  if (round !== review.round) throw new Error('审批记录已变化，请重新打开申请');
   if (!['同意', '驳回'].includes(decision)) throw new Error('请选择有效审批结果');
-  const index = submission.records.findIndex(record => record.status === '待审批');
-  const records = submission.records.map((record, i) => i === index ? { ...record, status: decision === '同意' ? '已通过' : '已驳回', time: now(), opinion } : { ...record });
-  let status = '已驳回';
-  if (decision === '同意') {
-    const next = records.findIndex((record, i) => i > index && record.status === '待流转');
-    status = next < 0 ? '已审核' : '审核中';
-    if (next >= 0) records[next].status = '待审批';
-  } else {
-    records.forEach((record, i) => { if (i > index && record.status === '待流转') record.status = '未流转'; });
+  const records = review.records.map(record => record.status === '待审批' && record.person === operator
+    ? { ...record, status: decision === '同意' ? '已通过' : '已驳回', time: now(), opinion } : { ...record });
+  const status = decision === '驳回' ? '已驳回' : records.some(record => record.status === '待审批') ? '审核中' : '已审核';
+  if (decision === '驳回') records.forEach(record => { if (record.status === '待审批') record.status = '未处理'; });
+  const result = { ...review, status, records };
+  if (scope === 'project') return saveState(project.projectNo, { ...state, projectReview: result });
+  result.plans = review.plans.map(plan => ({ ...plan, status: status === '已驳回' ? '盘点中' : status, approvalStatus: status }));
+  const todoLifecycle = [...state.todoLifecycle];
+  if (status === '已审核') {
+    const executors = [...new Set(review.assetsByPlan[planNo].map(asset => asset.executor).filter(present))];
+    executors.forEach(person => todoLifecycle.push({ id: `${planNo}:${round}:${person}:clear`, planNo, round, person, channel: '狐小e', action: '清除盘点待办', status: '演示已清除', serviceStatus: '正式服务未接入', time: now() }));
   }
-  const result = { ...submission, status, records, plans: submission.plans.map(plan => ({ ...plan, status: status === '已驳回' ? '盘点中' : status, approvalStatus: status })) };
-  writeDemoData(keyFor(project.projectNo), result);
-  return result;
+  return saveState(project.projectNo, { ...state, planReviews: { ...state.planReviews, [planNo]: result }, todoLifecycle });
 }
