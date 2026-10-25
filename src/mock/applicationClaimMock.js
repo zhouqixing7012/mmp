@@ -19,9 +19,12 @@ function claim(kind, type, index) {
   const isConsumable = kind === 'consumable', purchase = type === 'PURCHASE', waiting = type === '';
   const material = isConsumable ? consumableMaterial : assetMaterial;
   const store = isConsumable ? consumableWarehouse : warehouse;
-  const id = kind + '-' + index, applicationNo = (isConsumable ? 'CAC' : 'CAA') + '-DEMO-20261013-' + index;
+  const id = kind + '-' + index;
+  const createdAt = '2026-10-' + String(15 - index).padStart(2, '0') + ' 09:30:00';
+  // 资产申请编号依据员工自助PRD 4.1；其余单据等待完整编号规则表，不能猜前缀。
+  const applicationNo = isConsumable ? 'CAC-DEMO-20261013-' + index
+    : 'CA-' + createdAt.slice(0, 10).replaceAll('-', '') + String(index).padStart(5, '0');
   const subNo = waiting ? '' : (purchase ? 'SUMMARY' : 'USE') + '-DEMO-' + kind + '-' + index;
-  const createdAt = '2026-10-' + (15 - index) + ' 09:30:00';
   const outboundNo = purchase || waiting ? '' : 'OS-DEMO-' + kind + '-' + index;
   const quantity = index === 1 ? 3 : 2, executedQuantity = index === 1 ? 2 : 1;
   const unitPrice = isConsumable ? 460 : 5800;
