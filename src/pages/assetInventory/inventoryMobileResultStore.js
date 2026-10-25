@@ -1,5 +1,8 @@
 import { readDemoData, writeDemoData } from '../../services/demoStorage';
 
+// 非照片渠道或报失产生新的有效结果时，不将旧照片带入本次结果。
+const currentResult = result => ['人工导入', '扫码枪'].includes(result.resultSource) || result.status === '报失' ? { ...result, photos: {} } : result;
+
 const key = (projectNo) => `asset-inventory-mobile-results:${projectNo || 'demo'}`;
 
 export function getMobileInventoryResults(projectNo) {
@@ -8,7 +11,7 @@ export function getMobileInventoryResults(projectNo) {
 
 export function saveMobileInventoryResult(projectNo, assetTag, result) {
   const current = getMobileInventoryResults(projectNo);
-  writeDemoData(key(projectNo), { ...current, [assetTag]: { ...current[assetTag], ...result } });
+  writeDemoData(key(projectNo), { ...current, [assetTag]: currentResult({ ...current[assetTag], ...result }) });
 }
 
 // 扫描结果整批构造、一次写入同一结果记录，任意校验或写入错误均不保存部分资产。
@@ -17,6 +20,6 @@ export function saveMobileInventoryResultsBatch(projectNo, buildResults) {
   const raw = window.localStorage.getItem(key(projectNo));
   const current = raw ? JSON.parse(raw) : {};
   if (!current || Array.isArray(current) || typeof current !== 'object') throw new Error('已有盘点结果格式异常，请先核对记录');
-  const next = buildResults(current);
+  const next = Object.fromEntries(Object.entries(buildResults(current)).map(([tag, result]) => [tag, currentResult(result)]));
   return writeDemoData(key(projectNo), next);
 }

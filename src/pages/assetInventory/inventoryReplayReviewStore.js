@@ -1,3 +1,4 @@
+import { sumInventoryQuantity } from './inventoryQuantity';
 import dayjs from 'dayjs';
 import { readDemoData, writeDemoData } from '../../services/demoStorage';
 import { inventoryResultSource } from './inventoryResultSource';
@@ -68,6 +69,7 @@ export function validateReplaySubmission(project, plans, assetsForPlan, photoRow
   const assets = assetsForPlan(plan);
   if (!assets.length) throw new Error(`计划 ${plan.planNo} 没有资产，不能确定计划监督人`);
   if (assets.some(asset => !present(asset.supervisor))) throw new Error(`计划 ${plan.planNo} 存在未配置监督人的资产，请先配置`);
+  if (sumInventoryQuantity(assets) === 0) throw new Error(`计划 ${plan.planNo} 资产数量为零，不能提交审批`);
   assets.forEach(asset => {
     if ((asset.inventoryRange || plan.range) === '机房' || ['扫码枪', '人工导入'].includes(inventoryResultSource(asset))) return;
     const review = photoRows.find(row => row.asset.assetTag === asset.assetTag);
@@ -75,18 +77,13 @@ export function validateReplaySubmission(project, plans, assetsForPlan, photoRow
     const submitted = photos && (photos.overall || photos.partial || photos.gallery?.length);
     if (submitted && ['待审核', '审核不通过'].includes(review.reviewStatus)) throw new Error(`计划 ${plan.planNo} 资产 ${asset.assetTag} 的照片${review.reviewStatus}，请先完成照片处理`);
   });
-  if (project.samplingMode !== '百分比') return [];
-  const target = Number(project.samplingRatio);
-  if (project.samplingRatio === '' || project.samplingRatio == null || !Number.isFinite(target) || target < 0 || target > 100) throw new Error('请填写有效的复盘比例');
-  const ratio = assets.filter(asset => ['已盘', '代盘'].includes(asset.inventoryStatus)).length / assets.length * 100;
-  return ratio < target ? [`计划 ${plan.planNo} 当前盘点比例${ratio.toFixed(2)}%，未达到审核比例${target}%`] : [];
+  return [];
 }
 
-export function submitReplayReview({ project, plans, assetsForPlan, photoRows, operator, allowBelowRatio = false }) {
+export function submitReplayReview({ project, plans, assetsForPlan, photoRows, operator }) {
   let state = getReplaySubmission(project.projectNo) || emptyState();
   if (!operator) throw new Error('缺少当前操作人');
-  const warnings = validateReplaySubmission(project, plans, assetsForPlan, photoRows);
-  if (warnings.length && !allowBelowRatio) throw new Error(warnings.join('；'));
+  validateReplaySubmission(project, plans, assetsForPlan, photoRows);
   const plan = plans[0];
   const stored = state.planReviews[plan.planNo];
   const previous = getReplayReviewForPlan(state, plan, project.projectNo);
@@ -119,6 +116,9 @@ export function replayProjectSubmissionBlockReason(project, plans, state) {
   if (block) return block;
   if (!plans.length) return '没有可提交的复盘计划';
   if (plans.some(plan => getReplayReviewForPlan(state, plan, project.projectNo)?.status !== '已审核')) return '全部复盘计划审批通过后才能提交项目审批';
+  try {
+    if (plans.some(plan => sumInventoryQuantity(getReplayReviewForPlan(state, plan, project.projectNo).assetsByPlan?.[plan.planNo] || []) === 0)) return '存在零资产计划，不能提交项目审批';
+  } catch (error) { return error.message; }
   const current = getReplayProjectReview(state, plans, project.projectNo);
   if (current && current.status !== '已驳回') return '项目已提交审批，不能重复提交';
   return '';
@@ -163,7 +163,17 @@ export function decideReplayReview({ project, operator, decision, opinion = '', 
   const status = decision === '驳回' ? '已驳回' : records.some(record => record.status === '待审批') ? '审核中' : '已审核';
   if (decision === '驳回') records.forEach(record => { if (record.status === '待审批') record.status = '未处理'; });
   const result = { ...review, status, records };
-  if (scope === 'project') return saveState(project.projectNo, { ...state, projectReview: result });
+  if (scope === 'project') {
+    if (status !== '已驳回') return saveState(project.projectNo, { ...state, projectReview: result });
+    // 项目驳回后恢复关联计划执行，修改后的结果重新走计划审批。
+    const planReviews = { ...state.planReviews };
+    review.plans.forEach(plan => {
+      const previous = planReviews[plan.planNo];
+      if (!previous) return;
+      planReviews[plan.planNo] = { ...previous, status: '已驳回', plans: previous.plans.map(item => ({ ...item, status: '盘点中', approvalStatus: '已驳回' })) };
+    });
+    return saveState(project.projectNo, { ...state, projectReview: result, planReviews });
+  }
   result.plans = review.plans.map(plan => ({ ...plan, status: status === '已驳回' ? '盘点中' : status, approvalStatus: status }));
   const todoLifecycle = [...state.todoLifecycle];
   if (status === '已审核') {

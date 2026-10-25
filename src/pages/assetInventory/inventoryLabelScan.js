@@ -1,3 +1,4 @@
+import { inventoryExecutionBlockReason } from './inventoryExecutionRules';
 import { INVENTORY_CREATORS } from './inventoryCreatorPermissions';
 import { getMobileInventoryResults, saveMobileInventoryResult } from './inventoryMobileResultStore';
 
@@ -8,7 +9,8 @@ export function inventoryScannerOperator(operator) {
 }
 
 export function inventoryScannerBlockReason(project, plan, operator) {
-  if (project?.status === '盘点关闭') return '项目已关闭，不能上传盘点结果';
+  const executionBlock = inventoryExecutionBlockReason({ project, plan });
+  if (executionBlock) return executionBlock;
   if (plan?.status !== '盘点中') return '仅盘点中的计划可以使用标签扫描';
   if (!inventoryScannerOperator(operator)) return '标签扫描仅向ES资产组开放';
   return '';

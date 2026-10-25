@@ -1,3 +1,4 @@
+import { sumInventoryQuantity } from './inventoryQuantity';
 import dayjs from 'dayjs';
 import { initializeInventoryPlanPersonnel, INVENTORY_FINANCIAL_SUPERVISOR } from './inventoryPlanPersonnel';
 
@@ -44,7 +45,7 @@ export function buildDefaultInventoryPlans(project, assets, existingPlans = [], 
     const building = replay ? group.dimensions[1] : summarize(group.assets.map(asset => asset.building));
     const floor = replay ? group.dimensions[2] : summarize(group.assets.map(asset => asset.floor));
     const planNo = nextInventoryPlanNumber(project.projectType, existingPlans, index, date);
-    const quantity = group.assets.length;
+    const quantity = sumInventoryQuantity(group.assets);
     return { key: `generated-${project.projectNo}-${planNo}`, planNo,
       planName: replay ? `${city} ${building} ${floor}复盘计划` : `${city}盘点计划`,
       status: '草稿', organization, department, city, building, floor, range, ranges,

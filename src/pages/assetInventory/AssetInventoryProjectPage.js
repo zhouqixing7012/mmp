@@ -1,3 +1,4 @@
+import { sumInventoryQuantity } from './inventoryQuantity';
 import { inventoryRemark } from './inventoryRemark';
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 import { getDefaultInventoryPeriod, getInventoryPeriodOptions, inventoryProjectPeriodBlockReason, inventoryProjectScopeSource, inheritInitialInventoryPeriod } from './inventoryProjectScope';
@@ -1028,6 +1029,9 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     const sampled = selectReplaySnapshotAssets(scopeAssets.filter(asset => asset.executeInventory), project);
     const nextProject = {
       ...project,
+      assetCount: sumInventoryQuantity(scopeAssets),
+      executionCount: sumInventoryQuantity(sampled.assets),
+      notExecutionCount: sumInventoryQuantity(scopeAssets.filter(asset => !sampled.assets.some(item => item.key === asset.key))),
       scopeQueryAssetKeys: scopeQueryKeys,
       scopeImportedAssetKeys: importedScopeAssetKeys,
       scopeSnapshotAssetKeys: scopeAssets.map((asset) => asset.key),
@@ -1061,8 +1065,8 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
         projectType={project.projectType}
         scopeRows={scopeRows}
         setScopeRows={(update) => { setScopeRows(update); setImportedScopeAssetKeys(null); setProject(current => ({ ...current, scopeImportedAssetKeys: undefined })); }}
-        replayCount={scopeAssets.length}
-        initialExecutionCount={sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)).length}
+        replayCount={sumInventoryQuantity(scopeAssets)}
+        initialExecutionCount={sumInventoryQuantity(sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)))}
         onPreviewAssets={(row) => { setPreviewAssetKeys(row?.assetKeys || null); setAssetPreviewOpen(true); }}
         messageApi={messageApi}
       />
@@ -1269,10 +1273,10 @@ function SnapshotAssetTab({ type, projectStatus, rows, setRows, otherRows, setOt
 }
 
 function SnapshotStats({ projectStatus, onOpenPlans }) {
-  const total = ASSET_ROWS.length;
-  const execution = ASSET_ROWS.filter((row) => row.executeInventory).length;
+  const total = sumInventoryQuantity(ASSET_ROWS);
+  const execution = sumInventoryQuantity(ASSET_ROWS.filter((row) => row.executeInventory));
   const notExecution = total - execution;
-  const counted = ASSET_ROWS.filter((row) => row.executeInventory && ['已盘', '代盘'].includes(row.inventoryStatus)).length;
+  const counted = sumInventoryQuantity(ASSET_ROWS.filter((row) => row.executeInventory && ['已盘', '代盘'].includes(row.inventoryStatus)));
   const uncounted = execution - counted;
   const rate = execution ? Number(((counted / execution) * 100).toFixed(1)) : 0;
 
@@ -1904,9 +1908,10 @@ function ImageReviewView({ project, onBack }) {
     category: '', startDate: '', endDate: '', inventoryStatus: '', city: '', building: '', planNo: '', planName: '',
   });
 
-  const reviewed = rows.filter((row) => row.reviewStatus === '审核通过').length;
-  const reviewedPercent = rows.length ? Math.round((reviewed / rows.length) * 100) : 0;
-  const pending = rows.filter((row) => row.reviewStatus !== '审核通过').length;
+  const reviewed = sumInventoryQuantity(rows.filter((row) => row.reviewStatus === '审核通过').map(row => row.asset || row));
+  const reviewTotal = sumInventoryQuantity(rows.map(row => row.asset || row));
+  const reviewedPercent = reviewTotal ? Math.round((reviewed / reviewTotal) * 100) : 0;
+  const pending = sumInventoryQuantity(rows.filter((row) => row.reviewStatus !== '审核通过').map(row => row.asset || row));
 
   const filteredRows = useMemo(() => rows.filter((row) => {
     const asset = row.asset;

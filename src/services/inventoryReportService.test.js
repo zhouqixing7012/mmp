@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx-js-style';
 import { inventoryReportActuals } from '../data/inventoryReportActuals';
-import { getInventoryReport, getInventoryReportSummary, getIncrementRows, getInventoryLossCategoryRows, getInventoryDetailRows, getInventoryHistoryChartRows, getGroupedRowSpans, buildInventoryReportWorkbook, DETAIL_FIELDS, companyQuantity, companyAmount, accounting } from './inventoryReportService';
+import { normalizeInventoryReportDetail, getInventoryReport, getInventoryReportSummary, getIncrementRows, getInventoryLossCategoryRows, getInventoryDetailRows, getInventoryHistoryChartRows, getGroupedRowSpans, buildInventoryReportWorkbook, DETAIL_FIELDS, companyQuantity, companyAmount, accounting } from './inventoryReportService';
 
 const analysisValues = (row, count = 10) => Array.from({ length: count }, (_, index) => row[index === 0 ? 1 : index + 2]);
 const workbook = year => XLSX.read(XLSX.write(buildInventoryReportWorkbook(getInventoryReport(year)), { type: 'array', bookType: 'xlsx' }), { type: 'array', cellNF: true, cellStyles: true });
@@ -273,7 +273,7 @@ test('分析与图表导出按各表精度处理0、负数和缺值，不改计�
 });
 
 
-test('明细普通行保存后仍区分会计0、General数量0及未提供金额', () => {
+test('明细普通行保存后区分会计0、General数量0，赔偿及损失按确认留空', () => {
   const source = getInventoryReport(2026);
   const report = { ...source, details: [{ ...source.details[0], 数量: 0, 原值: 0, 报失当月资产净值: -1234.5, 赔偿金额: 0, 损失: null }] };
   const book = XLSX.read(XLSX.write(buildInventoryReportWorkbook(report), { type: 'array', bookType: 'xlsx' }), { type: 'array', cellNF: true, cellStyles: true });
@@ -283,8 +283,7 @@ test('明细普通行保存后仍区分会计0、General数量0及未提供金�
   expect(sheet.G4.v).toBe(0);
   expect(sheet.G4.w).toBe('-');
   expect(sheet.H4.w).toBe('(1,234.50)');
-  expect(sheet.J4.v).toBe(0);
-  expect(sheet.J4.w).toBe('0.00');
+  expect(sheet.J4.v).toBe('');
   expect(sheet.K4.v).toBe('');
 });
 
@@ -344,4 +343,21 @@ test('导出工作表无演示文案，元数据仅标出具体示例来源而�
   expect(saved.Sheets['资产类型分布'].A1.v).toBe('类别');
   expect(saved.Custprops.demoDataSources).toBe('distribution');
   expect(saved.Custprops.isDemo).toBeUndefined();
+});
+
+test('待查只取报告当年六月，缺少该月来源保持空，不借用报失或其他月份净值', () => {
+  const row = { 盘点状态: '待查', 报失当月资产净值: 99, 赔偿金额: 88, 损失: 77, netValuesByMonth: { '2026-06': 10, '2026-07': 20 } };
+  expect(normalizeInventoryReportDetail(row, 2026)).toMatchObject({ 报失当月资产净值: 10, 赔偿金额: null, 损失: null });
+  expect(normalizeInventoryReportDetail(row, 2025)['报失当月资产净值']).toBeNull();
+  expect(normalizeInventoryReportDetail({ ...row, 盘点状态: '盘亏' }, 2026)['报失当月资产净值']).toBe(99);
+});
+test('页面及导出明细赔偿/损失空白，待查净值与合计采用当年六月', () => {
+  const source = getInventoryReport(2026);
+  const report = { ...source, details: [{ ...source.details[0], 盘点状态: '待查', netValuesByMonth: { '2026-06': 12 }, 赔偿金额: 88, 损失: 77 }] };
+  const rows = getInventoryDetailRows(report);
+  expect(rows.find(row => !row.summary)).toMatchObject({ 报失当月资产净值: 12, 赔偿金额: null, 损失: null });
+  expect(rows.find(row => row.label === '资产待查合计')['报失当月资产净值']).toBe(12);
+  const sheet = buildInventoryReportWorkbook(report).Sheets['盘亏资产明细及原因'];
+  expect(sheet.J5?.v ?? '').toBe('');
+  expect(sheet.K5?.v ?? '').toBe('');
 });

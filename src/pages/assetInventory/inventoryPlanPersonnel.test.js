@@ -53,3 +53,9 @@ test('抽盘和自定义空值不套用未确认库管员默认，员工监督�
   expect(() => initializeInventoryPlanPersonnel(initial, assets, { executor: '丙' }, 'custom')).toThrow('尚未定义');
   expect(initializeInventoryPlanPersonnel(initial, [{ ...assets[0], departmentAssistant: '助理' }], {}, 'custom')[0].supervisor).toBe('助理');
 });
+
+test('自定义库房公共初盘配置空值保持空，有值带入，不继承默认计划旧人员', () => {
+  const rooms = [{ key: 'a', inventoryRange: '库房', warehouseCode: 'I0001', executor: '旧执行', supervisor: '旧监督' }, { key: 'b', inventoryRange: '公共', locationKeeper: '库管' }];
+  expect(initializeInventoryPlanPersonnel(initial, rooms, {}, 'custom').map(asset => [asset.supervisor, asset.executor])).toEqual([['-', '-'], ['-', '-']]);
+  expect(initializeInventoryPlanPersonnel(initial, rooms, { supervisor: '甲', executor: '乙' }, 'custom')[0]).toMatchObject({ supervisor: '甲', executor: '乙' });
+});

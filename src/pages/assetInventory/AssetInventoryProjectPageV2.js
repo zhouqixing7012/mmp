@@ -1,3 +1,4 @@
+import { sumInventoryQuantity } from './inventoryQuantity';
 import { applyInventoryScanResults } from './inventoryScanResultImport';
 import { useInventoryOperator } from './useInventoryOperator';
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
@@ -316,8 +317,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
         city: [...new Set(rangeAssets.map(asset => asset.city).filter(Boolean))].join('、'),
         department: [...new Set(rangeAssets.map(asset => ['库房', '公共'].includes(asset.inventoryRange) ? '虚拟组织' : String(asset.ownerDept || '').split('.')[0]).filter(Boolean))].join('、'),
         range,
-        assetCount: rangeAssets.length,
-        uncountedCount: rangeAssets.length,
+        assetCount: sumInventoryQuantity(rangeAssets),
+        uncountedCount: sumInventoryQuantity(rangeAssets),
         countedCount: 0,
         startDate: planProject.startDate || PROJECT_INFO.startDate,
         endDate: planProject.endDate || PROJECT_INFO.endDate,

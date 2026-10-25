@@ -47,14 +47,14 @@ const sampleAssets = {
 const progressFor = (ranges = ['员工', '公共']) => buildInventoryProgress({ endDate: '2026-09-30' }, ranges, plans,
   (plan) => sampleAssets[plan.planNo], [{ employeeName: '苏伟', department: '搜狐媒体.智能平台.新闻产品中心' }], new Date(2026, 9, 1));
 
-test('不同卡片数量仍各计一条，汇总和下钻未盘包含报失及审核中', () => {
+test('不同卡片数量累计求和，汇总和下钻未盘包含报失及审核中', () => {
   const result = buildInventoryProgress({}, ['员工'], [plans[0]], () => [
     { ...sampleAssets.P1[0], quantity: 5 },
     { ...sampleAssets.P1[1], quantity: 10 },
     { ...sampleAssets.P1[0], assetTag: 'C', quantity: 20, inventoryStatus: '已盘' },
   ]);
-  expect(result.summary[0]).toMatchObject({ expected: 3, counted: 1, uncounted: 2, progress: 33.3 });
-  expect(result.assets.filter(isUncountedProgressAsset)).toHaveLength(result.summary[0].uncounted);
+  expect(result.summary[0]).toMatchObject({ expected: 35, counted: 20, uncounted: 15, progress: 57.1 });
+  expect(result.assets.filter(isUncountedProgressAsset).reduce((total, asset) => total + asset.quantity, 0)).toBe(result.summary[0].uncounted);
   expect(result.summary[0]).not.toHaveProperty('lost');
 });
 
@@ -85,10 +85,10 @@ test('全量资产Excel保留联系字段，缺失邮箱不构造，未执行资
   expect(result.summary[0].expected).toBe(0);
 });
 
-test('进度Excel统计卡片条数，未盘资产Excel仍保留报失及卡片数量', () => {
+test('进度Excel累计资产数量，未盘资产Excel仍保留报失及卡片数量', () => {
   const result = buildInventoryProgress({}, ['员工'], [plans[0]], () => [{ ...sampleAssets.P1[0], quantity: 5 }]);
   const sheet = createProgressWorkbook(result.summary, [['应盘数量', 'expected'], ['已盘数量', 'counted'], ['未盘数量', 'uncounted']], '汇总');
-  expect(XLSX.utils.sheet_to_json(sheet.Sheets['汇总'], { header: 1 })).toEqual([['应盘数量', '已盘数量', '未盘数量'], [1, 0, 1]]);
+  expect(XLSX.utils.sheet_to_json(sheet.Sheets['汇总'], { header: 1 })).toEqual([['应盘数量', '已盘数量', '未盘数量'], [5, 0, 5]]);
   const book = createProgressAssetWorkbook(result.assets.filter(isUncountedProgressAsset));
   const [header, row] = XLSX.utils.sheet_to_json(book.Sheets['资产清单'], { header: 1 });
   expect(row[header.indexOf('盘点状态')]).toBe('报失');

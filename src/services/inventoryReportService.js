@@ -9,6 +9,13 @@ export { amount, accountingAmount, quantity, integer, accounting, historyPercent
 
 export const LOSS_CATEGORIES = ['台式机、显示器', '笔记本', '照摄像器材', '移动数码', '办公设备', '车辆', '电话'];
 export const DETAIL_FIELDS = ['序号', '盘点状态', '资产大类', '资产小类', '资产说明', '数量', '原值', '报失当月资产净值', '是否已赔偿', '赔偿金额', '损失', '标签号', '购买日期', '责任人姓名', '责任人编号', '子公司', '一级部门', '说明'];
+// 待查净值仅认报告当年六月快照，不以报失月份或当前月份替代。
+export function normalizeInventoryReportDetail(row, year) {
+  const month = `${year}-06`;
+  const net = row.netValuesByMonth?.[month] ?? (row.netValueMonth === month ? row['报失当月资产净值'] : null);
+  return { ...row, ...(row['盘点状态'] === '待查' ? { 报失当月资产净值: net } : {}), 赔偿金额: null, 损失: null };
+}
+
 export function getInventoryReport(year) {
   const selectedYear = Number(year);
   if (![inventoryReportTemplate.year, inventoryReportActuals.year].includes(selectedYear)) return null;
@@ -24,7 +31,7 @@ export function getInventoryReport(year) {
   });
   const isTemplateYear = selectedYear === inventoryReportTemplate.year;
   const hasActualDetails = Object.prototype.hasOwnProperty.call(inventoryReportActuals.detailsByYear, selectedYear);
-  const details = (hasActualDetails ? inventoryReportActuals.detailsByYear[selectedYear] : isTemplateYear ? inventoryReportTemplate.details : []).map(mapInventoryReportAsset);
+  const details = (hasActualDetails ? inventoryReportActuals.detailsByYear[selectedYear] : isTemplateYear ? inventoryReportTemplate.details : []).map(row => normalizeInventoryReportDetail(mapInventoryReportAsset(row), selectedYear));
   return { ...inventoryReportTemplate, scope: inventoryReportTemplate.scope, year: selectedYear, period: `${selectedYear - 1}年7月—${selectedYear}年7月`, history, indicators,
     distribution: withInventoryReportQuantityUnits(isTemplateYear ? inventoryReportTemplate.distribution : inventoryReportTemplate.demoDistribution),
     companyLoss: hasActualDetails ? getActualCompanyLoss(details, selectedYear) : inventoryReportActuals.companyLoss.filter(row => [selectedYear - 1, selectedYear].includes(row.year)),
@@ -179,9 +186,10 @@ export function getInventoryDetailRows(report) {
     ...Object.fromEntries(numericFields.map(field => [field, !rows.length ? (report.hasActualDetails ? 0 : null) : rows.every(row => row[field] != null)
       ? rows.reduce((sum, row) => sum + row[field], 0) : null])),
   });
-  const loss = report.details.filter(row => row['盘点状态'] === '盘亏');
-  const pending = report.details.filter(row => row['盘点状态'] === '待查');
-  const detail = rows => rows.map((row, index) => ({ ...row, 序号: index + 1, key: `detail-${row['盘点状态']}-${index}`, summary: false }));
+  const normalized = report.details.map(row => normalizeInventoryReportDetail(row, report.year));
+  const loss = normalized.filter(row => row['盘点状态'] === '盘亏');
+  const pending = normalized.filter(row => row['盘点状态'] === '待查');
+  const detail = rows => rows.map((source, index) => ({ ...source, 序号: index + 1, key: `detail-${source['盘点状态']}-${index}`, summary: false }));
   return [...detail(loss), total('资产盘亏合计', loss), ...detail(pending), total('资产待查合计', pending), total('总计', [...loss, ...pending])];
 }
 
@@ -209,7 +217,7 @@ function getActualCompanyLoss(details, year) {
     previous('合计'), { company: '合计', year, ...summarize(loss) }];
 }
 function getActualPendingSummary(report, current) {
-  const rows = report.details.filter(row => row['盘点状态'] === '待查');
+  const rows = report.details.filter(row => row['盘点状态'] === '待查').map(row => normalizeInventoryReportDetail(row, report.year));
   const sum = field => rows.every(row => row[field] != null) ? rows.reduce((total, row) => total + row[field], 0) : null;
   const quantity = sum('数量'); const original = sum('原值'); const net = sum('报失当月资产净值');
   return { name: '待查资产', quantity, original, net, quantityRate: quantity == null || !current.quantity ? null : quantity / current.quantity, originalRate: original == null || !current.original ? null : original / current.original, netRate: net == null || !current.net ? null : net / current.net };

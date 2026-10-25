@@ -1,3 +1,4 @@
+import { submitReplayReview } from './inventoryReplayReviewStore';
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import AssetInventoryMobilePrototype from './AssetInventoryMobilePrototype';
@@ -63,6 +64,29 @@ describe('AssetInventoryMobilePrototype', () => {
     fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
     fireEvent.click(screen.getByRole('button', { name: '扫描本人资产' }));
   };
+
+  test('项目关闭后保留本人任务查询和详情，隐藏全部写入口', () => {
+    mockLocationState = { projectNo: 'CLOSED-MOBILE', projectType: '初盘', scopeRanges: ['员工'] };
+    sessionStorage.setItem('assetInventoryClosedProjectNos', JSON.stringify(['CLOSED-MOBILE']));
+    render(<AssetInventoryMobilePrototype />);
+    expect(screen.getByLabelText('搜索资产')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '开始盘点' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '快速扫描' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /戴尔.Latitude E7280/ }));
+    expect(screen.getByText('资产标签号')).toBeInTheDocument();
+    for (const action of ['盘点', '提交', '报失', '拍照', '删除']) expect(screen.queryByRole('button', { name: action, exact: true })).not.toBeInTheDocument();
+  });
+  test('已进入审批的资产仍可查看详情，但不能盘点或报失', () => {
+    const asset = INVENTORY_MOBILE_ASSETS[0];
+    const project = { projectNo: 'LOCKED-MOBILE', projectType: '复盘', status: '盘点中' };
+    submitReplayReview({ project, plans: [{ planNo: 'LOCKED-PLAN', status: '盘点中' }], assetsForPlan: () => [{ assetTag: asset.tagNo, quantity: 1, supervisor: '徐博' }], operator: '孙志强' });
+    mockLocationState = { projectNo: project.projectNo, projectType: '复盘', scopeRanges: ['员工'] };
+    render(<AssetInventoryMobilePrototype />);
+    fireEvent.click(screen.getByRole('button', { name: /戴尔.Latitude E7280/ }));
+    expect(screen.getByText('资产标签号')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '盘点', exact: true })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '报失', exact: true })).not.toBeInTheDocument();
+  });
 
   test.each([false, true])('移动扫码按快照照片标记提交，并同步人工审核：%s', async needPhoto => {
     const asset = INVENTORY_MOBILE_ASSETS[0];
@@ -464,9 +488,22 @@ describe('AssetInventoryMobilePrototype', () => {
     expect(photo.closest('button')).not.toHaveTextContent('盘点截止日期');
   });
 
+  test('一张数量10的资产在移动未盘分组统计为10，仍只展示一张资产卡片', () => {
+    const asset = INVENTORY_MOBILE_ASSETS[0];
+    mockLocationState = { projectNo: 'Q10', scopeRanges: ['员工'] };
+    saveInventoryPhotoSnapshot({ projectNo: 'Q10', photoConfig: { enabled: false, rules: [] } }, [{
+      key: 'q10', assetTag: asset.tagNo, description: asset.assetDesc, quantity: 10,
+      inventoryRange: '员工', owner: asset.owner, ownerNo: asset.ownerNo,
+      executeInventory: true, inventoryStatus: '未盘',
+    }]);
+    render(<AssetInventoryMobilePrototype />);
+    expect(screen.getByRole('button', { name: '未盘—共10条' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: new RegExp(asset.tagNo) })).toHaveLength(1);
+  });
+
   test('PC快照里的盘点备注和盘点人显示到移动详情',()=>{
     const asset=INVENTORY_MOBILE_ASSETS[0];mockLocationState={projectNo:'PC-REMARK',scopeRanges:['员工']};
-    saveInventoryPhotoSnapshot({projectNo:'PC-REMARK',photoConfig:{enabled:false,rules:[]}},[{key:'pc-row',assetTag:asset.tagNo,description:asset.assetDesc,inventoryRange:'员工',owner:asset.owner,ownerNo:asset.ownerNo,executeInventory:true,inventoryStatus:'未盘',inventoryRemark:'PC已有备注',counter:'PC盘点人'}]);
+    saveInventoryPhotoSnapshot({projectNo:'PC-REMARK',photoConfig:{enabled:false,rules:[]}},[{key:'pc-row',quantity:asset.quantity,assetTag:asset.tagNo,description:asset.assetDesc,inventoryRange:'员工',owner:asset.owner,ownerNo:asset.ownerNo,executeInventory:true,inventoryStatus:'未盘',inventoryRemark:'PC已有备注',counter:'PC盘点人'}]);
     render(<AssetInventoryMobilePrototype/>);
     fireEvent.click(screen.getByRole('button',{name:/戴尔.Latitude E7280/}));
     expect(screen.getByText('盘点备注')).toBeInTheDocument();expect(screen.getByText('PC已有备注')).toBeInTheDocument();expect(screen.getByText('PC盘点人')).toBeInTheDocument();

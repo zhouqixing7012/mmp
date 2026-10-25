@@ -85,8 +85,18 @@ test('审核存储的盘点状态按项目合并，其他项目审核不影响�
 });
 
 
-test('新扫码枪结果及再次报失不被旧图片审核覆盖，照片来源保留', () => {
+test('新扫码枪结果及再次报失不被旧图片审核覆盖，当前非照片结果不携带旧照片', () => {
   const photos = { overall: { id: 'photo-1' } };
-  expect(mergePlanInventoryResult({ assetTag: 'A' }, { status: '代盘', resultSource: '扫码枪', photos }, { status: '未盘' })).toMatchObject({ inventoryStatus: '代盘', photos });
+  expect(mergePlanInventoryResult({ assetTag: 'A' }, { status: '代盘', resultSource: '扫码枪', photos }, { status: '未盘' })).toMatchObject({ inventoryStatus: '代盘', photos: {} });
   expect(mergePlanInventoryResult({ assetTag: 'A' }, { status: '报失', lossReason: '再次报失' }, { status: '未盘' })).toMatchObject({ inventoryStatus: '报失', lossReason: '再次报失' });
+});
+
+test('是否上传图片只取当前有效结果，不因历史照片或必传要求为是', () => {
+  const { hasInventoryUploadedPhoto } = require('./inventoryPlanExport');
+  const photos = { overall: { photoId: 'p' } };
+  expect(hasInventoryUploadedPhoto({ photos, resultSource: '狐小e', inventoryStatus: '已盘' })).toBe(true);
+  expect(hasInventoryUploadedPhoto({ photos, resultSource: '人工导入', inventoryStatus: '已盘' })).toBe(false);
+  expect(hasInventoryUploadedPhoto({ photos, resultSource: '扫码枪', inventoryStatus: '代盘' })).toBe(false);
+  expect(hasInventoryUploadedPhoto({ photos, resultSource: '狐小e', inventoryStatus: '报失' })).toBe(false);
+  expect(hasInventoryUploadedPhoto({ needPhoto: true, photos: {} })).toBe(false);
 });

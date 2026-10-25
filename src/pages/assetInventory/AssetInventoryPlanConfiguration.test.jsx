@@ -20,7 +20,7 @@ jest.mock('./AssetInventoryImageReviewV2',()=>({buildReviewRows:()=>[]}));
 jest.mock('./InventoryLocationChangeFlow',()=>()=>null);
 jest.mock('./InventoryReplayReview',()=>()=>null);
 const draft = {key:'manual-1',planNo:'P1',planName:'原名',range:'员工',status:'草稿',startDate:'2026-10-23',endDate:'2026-10-23'};
-const originalAssets=[{key:'a',assetTag:'A',inventoryRange:'员工',supervisor:'冯丽婷',executor:'冯丽婷'},{key:'b',assetTag:'B',inventoryRange:'员工',supervisor:'徐博',executor:'徐博'}];
+const originalAssets=[{key:'a',assetTag:'A',quantity:1,inventoryRange:'员工',supervisor:'冯丽婷',executor:'冯丽婷'},{key:'b',assetTag:'B',quantity:1,inventoryRange:'员工',supervisor:'徐博',executor:'徐博'}];
 function Harness({plan=draft,projectType='复盘',initialAssets=originalAssets,onChanged=()=>{}}){
  const [rows,setRows]=React.useState([plan]);const [assets,setAssets]=React.useState(initialAssets);
  return <><AssetInventoryPlansV2Refined project={{projectType,projectNo:'CFG',status:'生成盘点计划'}} rows={rows} setRows={setRows} assetsForPlan={()=>assets} onChangePlanAssets={(row,updater)=>{setAssets(current=>{const next=updater(current);onChanged(next);return next;});}}/><output>{JSON.stringify(rows)}</output></>;

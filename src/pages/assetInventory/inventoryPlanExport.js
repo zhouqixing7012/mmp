@@ -26,6 +26,7 @@ export function selectInventoryExportRows(queryRows, permittedRows, selectedKeys
 }
 
 export function hasInventoryUploadedPhoto(asset) {
+  if (['人工导入', '扫码枪'].includes(inventoryResultSource(asset)) || (asset.inventoryStatus || asset.status) === '报失') return false;
   return Object.values(asset.photos || {}).some(value => Array.isArray(value) ? value.length > 0 : Boolean(value));
 }
 
@@ -35,9 +36,10 @@ export function mergePlanInventoryResult(asset, result, photoReview) {
   const exempt = ['扫码枪', '人工导入'].includes(result?.resultSource) || result?.status === '报失';
   const reviewStatus = exempt ? undefined : photoReview?.status;
   result = result || {};
+  const photos = exempt ? {} : result.photos ?? photoReview?.photos;
   return {
     ...asset,
-    ...((result.photos ?? photoReview?.photos) !== undefined ? { photos: result.photos ?? photoReview?.photos } : {}),
+    ...(photos !== undefined ? { photos } : {}),
     ...(result.status !== undefined ? { inventoryStatus: result.status } : {}),
     ...(result.inventoryBy !== undefined ? { counter: result.inventoryBy } : {}),
     ...(result.inventoryDate !== undefined ? { inventoryDate: result.inventoryDate } : {}),

@@ -1,3 +1,4 @@
+import { inventoryExecutionBlockReason } from './inventoryExecutionRules';
 import InventoryScanResultImport from './InventoryScanResultImport';
 import { applyInventoryScanResults } from './inventoryScanResultImport';
 import { inventoryRemark } from './inventoryRemark';
@@ -227,6 +228,8 @@ export function SnapshotAssetTab({ project, plans, currentOperator, onResultsImp
       return;
     }
     const selected = new Set(selectedKeys);
+    const blocked = rows.filter(row => selected.has(row.key)).map(row => inventoryExecutionBlockReason({ project: { ...project, projectNo, status: projectStatus }, assetTag: row.assetTag })).find(Boolean);
+    if (blocked) { messageApi.warning(blocked); return; }
     const updated = rows.map((row) => selected.has(row.key) ? {
       ...row,
       inventoryStatus: '已盘',
@@ -246,7 +249,9 @@ export function SnapshotAssetTab({ project, plans, currentOperator, onResultsImp
     event.target.value = '';
     if (!files.length) return;
 
-    const result = importInventoryPhotoFiles({ projectNo, files, assets: rows });
+    let result;
+    try { result = importInventoryPhotoFiles({ projectNo, files, assets: rows, project: { ...project, projectNo, status: projectStatus }, plans }); }
+    catch (error) { messageApi.warning(error.message); return; }
     if (!result.matched.length) {
       if (result.unmatched.length) {
         const tags = result.unmatched.map((item) => item.assetTag).filter(Boolean);

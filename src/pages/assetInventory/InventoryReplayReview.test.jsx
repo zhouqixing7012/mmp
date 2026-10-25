@@ -18,7 +18,7 @@ jest.mock('../../components/SelectModal',()=>()=>null);
 jest.mock('./InventoryLocationChangeFlow',()=>()=>null);
 const plans=[{planNo:'P1',planName:'员工',range:'员工'},{planNo:'P2',planName:'公共',range:'公共'}];
 const rawAssetsForPlan=p=>p.planNo==='P1'?[{key:'a',assetTag:'A',description:'笔记本',inventoryStatus:'未盘'},{key:'b',assetTag:'B',description:'手机',inventoryStatus:'已盘'}]:[{key:'c',assetTag:'C',description:'显示器',inventoryStatus:'未盘'}];
-const assetsForPlan = plan => rawAssetsForPlan(plan).map(asset => ({...asset,supervisor: plan.planNo === 'P1' ? '冯丽婷' : '徐博',executor:'冯丽婷'}));
+const assetsForPlan = plan => rawAssetsForPlan(plan).map(asset => ({...asset,quantity:1,supervisor: plan.planNo === 'P1' ? '冯丽婷' : '徐博',executor:'冯丽婷'}));
 beforeEach(()=>window.localStorage.clear());
 const setup=()=>render(<InventoryReplayReview project={{period:'2026'}} plans={plans} assetsForPlan={assetsForPlan} submission={{records:[{key:'start',node:'开始',status:'已提交'}]}} onBack={()=>{}}/>);
 test('复盘审核可按查询条件筛选，并恢复全部当前计划资产',()=>{setup();fireEvent.change(screen.getByLabelText('资产标签号'),{target:{value:'B'}});fireEvent.click(screen.getByText('查询',{selector:'button'}));expect(screen.queryByText('笔记本')).not.toBeInTheDocument();expect(screen.getByText('手机')).toBeInTheDocument();fireEvent.click(screen.getByText('重置'));expect(screen.getByText('笔记本')).toBeInTheDocument();});
@@ -95,13 +95,13 @@ test('关闭项目时计划审批只读',()=>{
 });
 
  test('复盘信息隐藏已盘数量，未盘必盘数量只计必盘且状态未盘的资产', () => {
- const list = [{key:'1',assetTag:'A',inventoryStatus:'未盘',isMandatory:true},{key:'2',assetTag:'B',inventoryStatus:'未盘',isMandatory:false},{key:'3',assetTag:'C',inventoryStatus:'已盘',isMandatory:true},{key:'4',assetTag:'D',inventoryStatus:'报失',isMandatory:true},{key:'5',assetTag:'E',inventoryStatus:'审核中',isMandatory:true}];
+ const list = [{key:'1',assetTag:'A',quantity:10,inventoryStatus:'未盘',isMandatory:true},{key:'2',assetTag:'B',quantity:2,inventoryStatus:'未盘',isMandatory:false},{key:'3',assetTag:'C',quantity:3,inventoryStatus:'已盘',isMandatory:true},{key:'4',assetTag:'D',quantity:4,inventoryStatus:'报失',isMandatory:true},{key:'5',assetTag:'E',quantity:5,inventoryStatus:'审核中',isMandatory:true}];
  render(<InventoryReplayReview project={{period:'2026'}} plans={[plans[0]]} assetsForPlan={()=>list} submission={{records:[]}} onBack={()=>{}}/>);
  expect(screen.queryByRole('columnheader',{name:'已盘数量'})).toBeNull();
  const headers=screen.getAllByRole('columnheader').map(node=>node.textContent);
  expect(headers[headers.indexOf('未盘数量')+1]).toBe('未盘必盘数量');
  const cells=within(screen.getAllByRole('row')[1]).getAllByRole('cell');
- expect(cells[headers.indexOf('未盘必盘数量')]).toHaveTextContent('1');
+ expect(cells[headers.indexOf('未盘必盘数量')]).toHaveTextContent('10');
  });
 
 test('工具栏先选一已启动计划进入编辑，进入和返回都不生成审批记录，明确提交才进入审核',()=>{

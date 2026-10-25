@@ -18,7 +18,7 @@ import { calculateInventorySnapshotStats } from './inventorySnapshotStats';
 import InventoryReplayReview from './InventoryReplayReview';
 import InventoryLocationChangeFlow from './InventoryLocationChangeFlow';
 import { buildReviewRows } from './AssetInventoryImageReviewV2';
-import { applyReplayPlanStatuses, decideReplayReview, getReplaySubmission, getReplayReviewForPlan, getReplayProjectReview, replayProjectSubmissionBlockReason, submitReplayProjectReview, submitReplayReview, validateReplaySubmission } from './inventoryReplayReviewStore';
+import { applyReplayPlanStatuses, decideReplayReview, getReplaySubmission, getReplayReviewForPlan, getReplayProjectReview, replayProjectSubmissionBlockReason, submitReplayProjectReview, submitReplayReview } from './inventoryReplayReviewStore';
 import { downloadInventoryPlans, selectInventoryExportRows } from './inventoryPlanExport';
 import { buildReplayPreparationNotices } from './inventoryReplayPreparation';
 import { schedulePreparationNotices } from './inventoryPreparationNoticeStore';
@@ -145,19 +145,11 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     onReviewChanged?.(next);
   };
   const submitReview = plan => {
-    const photos = () => buildReviewRows(project.projectNo, allowedRanges);
-    const perform = (allowBelowRatio = false) => {
-      try {
-        const next = submitReplayReview({ project, plans: [plan], assetsForPlan, photoRows: photos(), operator: currentOperator, allowBelowRatio });
-        syncSubmission(next);
-        setEditPlanKey(null);
-        setReviewTarget({ scope: 'plan', planNo: plan.planNo, key: plan.key });
-      } catch (error) { messageApi.error(error.message); }
-    };
     try {
-      const warnings = validateReplaySubmission(project, [plan], assetsForPlan, photos());
-      if (warnings.length) Modal.confirm({ title: '盘点比例未达到设定比例', content: warnings.join('；') + '。是否继续提交复盘结果审批？', okText: '继续提交', cancelText: '取消', onOk: () => perform(true) });
-      else perform();
+      const next = submitReplayReview({ project, plans: [plan], assetsForPlan, photoRows: buildReviewRows(project.projectNo, allowedRanges), operator: currentOperator });
+      syncSubmission(next);
+      setEditPlanKey(null);
+      setReviewTarget({ scope: 'plan', planNo: plan.planNo, key: plan.key });
     } catch (error) { messageApi.warning(error.message); }
   };
   const submitProjectReview = () => {

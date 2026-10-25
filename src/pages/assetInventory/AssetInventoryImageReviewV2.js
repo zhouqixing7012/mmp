@@ -1,3 +1,5 @@
+import { inventoryExecutionBlockReason } from './inventoryExecutionRules';
+import { sumInventoryQuantity } from './inventoryQuantity';
 import { inventoryRemark } from './inventoryRemark';
 import { getMobileInventoryResults } from './inventoryMobileResultStore';
 import { inventoryResultSource } from './inventoryResultSource';
@@ -500,6 +502,19 @@ export function PhotoPreviewModal({ open, photos, index, onIndexChange, onClose 
   );
 }
 
+// 审核页可能已打开很久，保存前按最新审批记录重新校验整批资产。
+export function saveInventoryPhotoReviewDecisions(project, rows) {
+  rows.forEach(row => {
+    const blocked = inventoryExecutionBlockReason({ project, assetTag: row.asset.assetTag });
+    if (blocked) throw new Error(blocked);
+  });
+  rows.forEach(row => savePhotoReviewResult(project?.projectNo, {
+    assetTag: row.asset.assetTag, status: row.decision === 'pass' ? '已盘' : '未盘',
+    inventoryRange: row.asset.inventoryRange, owner: row.asset.owner,
+    description: row.asset.description, inventoryDate: row.asset.inventoryDate,
+  }));
+}
+
 export default function AssetInventoryImageReviewV2({ project, onBack }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
@@ -521,9 +536,9 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
   };
 
   const queryAssets = useMemo(() => rows.map((row) => row.asset), [rows]);
-  const pendingCount = rows.filter((row) => row.reviewStatus === '待审核').length;
-  const approvedCount = rows.filter((row) => row.reviewStatus === '审核通过').length;
-  const rejectedCount = rows.filter((row) => row.reviewStatus === '审核不通过').length;
+  const pendingCount = sumInventoryQuantity(rows.filter((row) => row.reviewStatus === '待审核').map(row => row.asset));
+  const approvedCount = sumInventoryQuantity(rows.filter((row) => row.reviewStatus === '审核通过').map(row => row.asset));
+  const rejectedCount = sumInventoryQuantity(rows.filter((row) => row.reviewStatus === '审核不通过').map(row => row.asset));
   const filteredRows = useMemo(() => sortInventoryReviewRows(rows.filter((row) => {
     const asset = row.asset;
     return includesText(asset.assetTag, filters.assetTag)
@@ -551,11 +566,8 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
     const selected = new Set(selectedKeys);
     const pendingSelected = rows.filter((row) => selected.has(row.key) && row.reviewStatus === '待审核');
     if (pendingSelected.find((row) => !row.decision)) { messageApi.warning('所选待审核资产中存在未选择审核结果的分录'); return; }
-    pendingSelected.forEach((row) => {
-      savePhotoReviewResult(project?.projectNo, { assetTag: row.asset.assetTag,
-        status: row.decision === 'pass' ? '已盘' : '未盘', inventoryRange: row.asset.inventoryRange, owner: row.asset.owner,
-        description: row.asset.description, inventoryDate: row.asset.inventoryDate });
-    });
+    try { saveInventoryPhotoReviewDecisions(project, pendingSelected); }
+    catch (error) { messageApi.warning(error.message); return; }
     setRows((current) => current.map((row) => {
       if (!selected.has(row.key) || row.reviewStatus !== '待审核') return row;
       return { ...row, asset: { ...row.asset, inventoryStatus: row.decision === 'pass' ? '已盘' : '未盘' }, reviewStatus: row.decision === 'pass' ? '审核通过' : '审核不通过' };

@@ -1,3 +1,4 @@
+import { sumInventoryQuantity } from './inventoryQuantity';
 import React, { useState } from 'react';
 import { Alert, Button, Card, Checkbox, Input, InputNumber, Select, Space, Statistic, Switch, Table, Tabs, Typography, message as antdMessage } from 'antd';
 import { ASSET_ROWS, IMAGE_RULE_ROWS, INVENTORY_RANGE_METHOD_ROWS, UNINCLUDED_ASSET_ROWS } from './mockData';
@@ -39,9 +40,9 @@ export default function SnapshotView({ project, onBack, onDeleteSnapshot, onGene
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const executeRows = ASSET_ROWS.filter((row) => row.executeInventory);
   const notExecuteRows = ASSET_ROWS.filter((row) => !row.executeInventory);
-  const total = ASSET_ROWS.length;
-  const executeCount = executeRows.length;
-  const counted = executeRows.filter((row) => ['已盘', '代盘'].includes(row.inventoryStatus)).length;
+  const total = sumInventoryQuantity(ASSET_ROWS);
+  const executeCount = sumInventoryQuantity(executeRows);
+  const counted = sumInventoryQuantity(executeRows.filter((row) => ['已盘', '代盘'].includes(row.inventoryStatus)));
   const rate = executeCount ? Math.round((counted / executeCount) * 1000) / 10 : 0;
 
   const tabs = [

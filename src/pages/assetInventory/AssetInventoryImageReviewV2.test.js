@@ -2,7 +2,7 @@ import { saveMobileInventoryResult } from './inventoryMobileResultStore';
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 import { saveInventoryPhotoSnapshot } from './inventoryPhotoRules';
 jest.mock('antd', () => ({}));
-import { buildReviewRows, sortInventoryReviewRows } from './AssetInventoryImageReviewV2';
+import { buildReviewRows, sortInventoryReviewRows, saveInventoryPhotoReviewDecisions } from './AssetInventoryImageReviewV2';
 import { savePhotoReviewResult } from './inventoryPhotoReviewStore';
 
 beforeEach(() => { window.localStorage.clear(); window.sessionStorage.clear(); });
@@ -66,4 +66,11 @@ test('扫码枪已盘后旧照片待审核不再进入当前审批或关闭拦�
   expect(photoRows).toHaveLength(0);
   expect(inventoryProjectCloseBlockReason({ projectNo: 'GUN', projectType: '初盘' }, { plans: [{ status: '盘点中' }], photoRows })).toBe('');
   expect(require('./inventoryPhotoReviewStore').getPhotoReviewResults('GUN')[0].photos.overall.key).toBe('old');
+});
+
+test('旧照片审核页保存前重新检查项目审批锁，不覆盖已锁定结果', () => {
+  const project = { projectNo: 'LOCKED-AUDIT', status: '审核中' };
+  savePhotoReviewResult(project.projectNo, { assetTag: 'A', inventoryRange: '员工', status: '审核中' });
+  expect(() => saveInventoryPhotoReviewDecisions(project, [{ decision: 'pass', asset: { assetTag: 'A', inventoryRange: '员工' } }])).toThrow('不能修改');
+  expect(buildReviewRows(project.projectNo, ['员工']).find(row => row.asset.assetTag === 'A').reviewStatus).toBe('待审核');
 });

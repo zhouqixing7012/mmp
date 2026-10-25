@@ -1,3 +1,4 @@
+import { sumInventoryQuantity } from './inventoryQuantity';
 import React, { useState } from 'react';
 import { Button, Card, Input, Space, Table, Typography } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
@@ -29,8 +30,8 @@ export default function InventoryReplayReview({ project, plans, assetsForPlan, s
     return <Input allowClear value={draft[key]} onChange={(event) => updateDraft(key, event.target.value)} />;
   };
   const summary = plans.map((row) => {
-    const list = assetsForPlan(row); const counted = list.filter((asset) => asset.inventoryStatus === '已盘' || asset.inventoryStatus === '代盘').length;
-    return {...row, period: project.period, financialSupervisor:'徐博', assetCount:list.length, countedCount:counted, uncountedCount:list.length-counted, mandatoryUncountedCount:list.filter(asset => asset.inventoryStatus === '未盘' && isInventoryAssetMandatory(asset, project)).length, ratio:list.length ? `${(counted/list.length*100).toFixed(2)}%` : '-'};
+    const list = assetsForPlan(row); const counted = sumInventoryQuantity(list.filter((asset) => asset.inventoryStatus === '已盘' || asset.inventoryStatus === '代盘')); const total = sumInventoryQuantity(list);
+    return {...row, period: project.period, financialSupervisor:'徐博', assetCount:total, countedCount:counted, uncountedCount:total-counted, mandatoryUncountedCount:sumInventoryQuantity(list.filter(asset => asset.inventoryStatus === '未盘' && isInventoryAssetMandatory(asset, project))), ratio:total ? `${(counted/total*100).toFixed(2)}%` : '-'};
   });
   return <div data-inventory-review><Space direction="vertical" size={16} className="w-full">
     <Typography.Title level={4} style={{margin:0}}>{mode === 'edit' ? '复盘结果编辑' : '复盘结果审核'}</Typography.Title>

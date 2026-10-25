@@ -1,3 +1,4 @@
+import { inventoryExecutionBlockReason } from './inventoryExecutionRules';
 import * as XLSX from 'xlsx';
 import { INVENTORY_CREATORS } from './inventoryCreatorPermissions';
 import { inventoryRemark } from './inventoryRemark';
@@ -25,6 +26,8 @@ const canImportAsset = (context, asset, person) => creator(context.project, pers
 export function inventoryScanResultImportBlockReason(context) {
   const { project, plan, operator, assets = [] } = context;
   if (!project?.projectNo) return '缺少盘点项目编号，不能导入扫描结果';
+  const executionBlock = inventoryExecutionBlockReason({ project, plan });
+  if (executionBlock) return executionBlock;
   if (project.status !== '盘点中') return '仅盘点中的项目可以导入扫描结果';
   if (plan && plan.status !== '盘点中') return '仅盘点中的计划可以导入扫描结果';
   const person = inventoryScanImporter(operator);
@@ -35,6 +38,8 @@ export function inventoryScanResultImportBlockReason(context) {
 }
 
 function assetPlanBlockReason(asset, context) {
+  const executionBlock = inventoryExecutionBlockReason({ project: context.project, plan: context.plan, assetTag: asset.assetTag });
+  if (executionBlock) return executionBlock;
   if (context.plan) return asset.planNo && asset.planNo !== '-' && asset.planNo !== context.plan.planNo ? '资产不属于当前盘点计划' : '';
   const planNo = text(asset.planNo);
   if (!planNo || planNo === '-') return context.entryType === 'notExecution' ? '' : '执行资产尚未进入盘点计划，不能导入扫描结果';

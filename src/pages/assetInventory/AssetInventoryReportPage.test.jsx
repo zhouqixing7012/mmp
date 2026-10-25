@@ -115,14 +115,14 @@ test('分析与年度图表共用四列窄表，不拉伸到整个宽屏', () =>
 });
 
 
-test('明细普通行数量真0、原值会计0短横、净值负括号、赔偿真0两位且未知损失空白', () => {
+test('明细普通行数量真0、原值会计0短横、净值负括号、赔偿及损失按确认留空', () => {
   const detail = { 标签号: 'FORMAT-DETAIL-ZERO', 盘点状态: '盘亏', 数量: 0, 原值: 0, 报失当月资产净值: -1234.5, 赔偿金额: 0, 损失: null };
   render(<DetailTable report={{ details: [detail], hasActualDetails: true }} />);
   const row = screen.getByText('FORMAT-DETAIL-ZERO').closest('tr');
   expect(row.children[5].textContent).toBe('0');
   expect(row.children[6].textContent).toBe('-');
   expect(row.children[7].textContent).toBe('(1,234.50)');
-  expect(row.children[9].textContent).toBe('0.00');
+  expect(row.children[9].textContent).toBe('');
   expect(row.children[10].textContent).toBe('');
 });
 

@@ -61,3 +61,14 @@ test('删除资产后重复生成不补回，导出使用最终资产集合', ()
   fireEvent.click(screen.getByRole('button', { name: '删除全部' }));
   expect(screen.queryByRole('button', { name: '选择-B' })).not.toBeInTheDocument();
 });
+
+test('自定义同范围跨公司保留同一份计划草稿，不阻止或按公司拆分', () => {
+  const onConfirmPlan = jest.fn();
+  const source = [assets[0], { ...assets[1], organization: '公司乙' }];
+  render(<AssetInventoryCustomPlanBuilder initialAssets={source} project={{ projectType: '初盘' }} onConfirmPlan={onConfirmPlan} />);
+  fireEvent.click(screen.getByRole('button', { name: '生成计划' }));
+  fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '确定' }));
+  expect(onConfirmPlan).toHaveBeenCalledTimes(1);
+  expect(onConfirmPlan.mock.calls[0][0].assets).toEqual(source);
+  expect(onConfirmPlan.mock.calls[0][0].rows.find(row => row.range === '员工').assets).toHaveLength(2);
+});

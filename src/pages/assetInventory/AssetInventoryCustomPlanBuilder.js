@@ -65,8 +65,6 @@ function PlanInfoModal({ open, onCancel, onConfirm, project, assets }) {
       messageApi.warning('请填写计划名称');
       return;
     }
-    const crossCompanyRange = rows.find(row => new Set(assets.filter(asset => asset.inventoryRange === row.range).map(asset => asset.organization)).size > 1);
-    if (crossCompanyRange) { messageApi.warning('同一范围跨子公司的自定义拆分规则尚未定义，请先按子公司分别创建'); return; }
     try {
       const configured = rows.map(row => ({ ...row, assets: initializeInventoryPlanPersonnel(project, assets.filter(asset => asset.inventoryRange === row.range), row, 'custom') }));
       onConfirm({ planName, rows: configured });

@@ -1,3 +1,4 @@
+import { inventoryExecutionBlockReason } from './inventoryExecutionRules';
 import { ASSET_ROWS, INITIAL_PLAN_ROWS } from './mockData';
 
 const importedPhotoRecords = [];
@@ -425,8 +426,17 @@ export function parseInventoryPhotoFileName(fileName) {
   };
 }
 
-export function importInventoryPhotoFiles({ projectNo, files, assets }) {
+export function importInventoryPhotoFiles({ projectNo, files, assets, project = { projectNo }, plans = [] }) {
   const assetMap = new Map((assets || []).map((asset) => [String(asset.assetTag || '').trim(), asset]));
+  // 保存前先校验所有已匹配资产的当前审批状态，不让批量上传绕过结果锁定。
+  Array.from(files || []).forEach(file => {
+    const { assetTag } = parseInventoryPhotoFileName(file.name);
+    const asset = assetMap.get(assetTag);
+    if (!asset) return;
+    const plan = plans.find(item => item.planNo === asset.planNo);
+    const blocked = inventoryExecutionBlockReason({ project, plan, assetTag });
+    if (blocked) throw new Error(blocked);
+  });
   const matched = [];
   const unmatched = [];
   const invalid = [];

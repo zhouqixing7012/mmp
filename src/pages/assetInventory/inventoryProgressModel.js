@@ -1,3 +1,4 @@
+import { inventoryAssetQuantity } from './inventoryQuantity';
 import * as XLSX from 'xlsx';
 import { PLAN_ASSET_EXPORT_FIELDS, planAssetExportValues, hasInventoryUploadedPhoto } from './inventoryPlanExport';
 
@@ -38,8 +39,9 @@ export function buildInventoryProgress(project, allowedRanges, plans, assetsForP
     if (!groups.has(key)) groups.set(key, { key, range: asset.inventoryRange, organization: asset.organization, department, city: asset.city,
       expected: 0, counted: 0, assets: [], supervisor: [], financialSupervisor: [], remainingDays: remainingDays(project, today) });
     const row = groups.get(key);
-    row.expected += 1;
-    if (['已盘', '代盘'].includes(asset.inventoryStatus)) row.counted += 1;
+    const quantity = inventoryAssetQuantity(asset);
+    row.expected += quantity;
+    if (['已盘', '代盘'].includes(asset.inventoryStatus)) row.counted += quantity;
     row.assets.push(asset);
     ['supervisor', 'financialSupervisor'].forEach((field) => {
       if (asset[field] && asset[field] !== '-' && !row[field].includes(asset[field])) row[field].push(asset[field]);
