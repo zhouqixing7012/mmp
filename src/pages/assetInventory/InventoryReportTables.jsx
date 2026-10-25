@@ -3,8 +3,14 @@ import AutoWidthTable from '../../components/tableSizing/AutoWidthTable';
 import { Card, Space, Typography, theme } from 'antd';
 import { companyQuantity, companyAmount, amount, accountingAmount, integer, summaryPercent, historyPercent, quantity, accounting, getGroupedRowSpans, getIncrementTitle, DETAIL_FIELDS, getIncrementRows, getInventoryReportSummary, getInventoryDetailRows, getInventoryLossCategoryRows } from '../../services/inventoryReportService';
 
+export function reportColumns(columns) {
+  return columns.map(field => ({ ...field, align: ['number', 'money', 'percent'].includes(field.sizing?.type) ? 'right' : 'center',
+    onHeaderCell: (...args) => { const existing = field.onHeaderCell?.(...args) || {}; return { ...existing, style: { ...existing.style, textAlign: 'center' } }; },
+    ...(field.children ? { children: reportColumns(field.children) } : {}),
+  }));
+}
 export function ReportTable({ columns, rows, rowKey = 'key', ...props }) {
-  return <AutoWidthTable columns={columns} dataSource={rows} rowKey={rowKey} {...props} />;
+  return <AutoWidthTable columns={reportColumns(columns)} dataSource={rows} rowKey={rowKey} {...props} />;
 }
 const column = (title, dataIndex, render = quantity, type = title.includes('占') ? 'percent' : title.includes('（元）') ? 'money' : 'number') => ({
   title, dataIndex, key: dataIndex, render, align: 'right', sizing: { type, format: render },
@@ -67,12 +73,12 @@ export function DetailTable({ report }) {
     : value == null ? '' : ['原值', '报失当月资产净值'].includes(name) ? accountingAmount(value)
       : ['赔偿金额', '损失'].includes(name) ? amount(value) : name === '数量' ? quantity(value) : value;
   return <Card size="small" title="盘亏及待查明细" extra={`共 ${report.details.length} 条`}>
-    <AutoWidthTable rowKey="key" dataSource={rows} columns={DETAIL_FIELDS.map((name, i) => ({
+    <AutoWidthTable rowKey="key" dataSource={rows} columns={reportColumns(DETAIL_FIELDS.map((name, i) => ({
       title: name, dataIndex: name, key: name, ellipsis: ['资产说明', '说明', '子公司', '一级部门'].includes(name),
       sizing: { type: types[name] || 'text', text: row => row.summary && i < 5 ? null : format(name, row[name], row) },
-      align: ['数量', '原值', '报失当月资产净值', '赔偿金额', '损失'].includes(name) ? 'right' : 'left',
+      align: ['数量', '原值', '报失当月资产净值', '赔偿金额', '损失'].includes(name) ? 'right' : 'center',
       onCell: row => row.summary && i < 5 ? { colSpan: i === 0 ? 5 : 0 } : {},
       render: (value, row) => row.summary && i === 0 ? <strong>{row.label}</strong> : format(name, value, row),
-    }))} />
+    })))} />
   </Card>;
 }

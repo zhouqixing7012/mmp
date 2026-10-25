@@ -1,0 +1,5 @@
+/* 只作用于盘点报表，其他模块的卡片与表格不受影响。 */
+.inventory-report .ant-card-head-title { text-align: center; }
+.inventory-report .ant-card-head-wrapper { position: relative; justify-content: center; }
+.inventory-report .ant-card-extra { position: absolute; right: 0; }
+.inventory-report .ant-card-head-title { padding-inline: 80px; }

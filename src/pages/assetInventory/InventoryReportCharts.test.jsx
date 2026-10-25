@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import InventoryReportCharts from './InventoryReportCharts';
 import { getInventoryReport } from '../../services/inventoryReportService';
 // 隔离表格和主题，只验证实际Recharts的SVG轴、点标签和扇区标签。
@@ -25,6 +25,10 @@ test('实际SVG显示折线点数值、整数饼图占比和外侧万元/件数'
     expect(screen.getAllByText('13,317').length).toBeGreaterThan(0);
   }, { timeout: 5000 });
   expect(screen.getAllByText('0.361%').length).toBeGreaterThan(0);
-  expect(await screen.findByText('2700万元(3120件)', {}, { timeout: 5000 })).toBeInTheDocument();
+  const original = within(screen.getByRole('region', { name: '资产类型分布原图' }));
+  expect(await original.findByText('2700万元(3120台)', {}, { timeout: 5000 })).toBeInTheDocument();
+  expect(screen.getByRole('img', { name: '资产类型分布立体对比图' })).toBeInTheDocument();
+  expect(original.getByText('800万元(15辆)')).toBeInTheDocument();
+  expect(original.getByText('277万元(3724部)')).toBeInTheDocument();
   expect(screen.getAllByText('35%').length).toBeGreaterThan(0);
 }, 10000);

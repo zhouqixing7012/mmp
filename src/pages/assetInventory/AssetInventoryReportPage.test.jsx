@@ -140,7 +140,7 @@ test('范围文案、六月净值标题和空备注在两个增量入口一致�
   fireEvent.click(screen.getByRole('tab', { name: '年度报告图表' }));
   const panel = screen.getByRole('tabpanel', { name: '年度报告图表' });
   expect(within(panel).queryByText(/演示数据/)).not.toBeInTheDocument();
-  expect(within(panel).getByText('2,700')).toBeInTheDocument();
-  expect(within(panel).getByText('35%')).toBeInTheDocument();
+  expect(within(panel).getAllByText('2,700')).toHaveLength(2);
+  expect(within(panel).getAllByText('35%').length).toBeGreaterThanOrEqual(2);
   expect(within(panel).queryByText('2,700.00')).not.toBeInTheDocument();
 });

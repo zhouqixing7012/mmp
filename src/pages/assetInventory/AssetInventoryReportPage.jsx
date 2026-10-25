@@ -1,3 +1,4 @@
+import './inventoryReport.css';
 import React, { useState } from 'react';
 import { Button, Card, Empty, Result, Select, Space, Tabs, Typography, message } from 'antd';
 import { exportInventoryReport, getInventoryReport } from '../../services/inventoryReportService';
@@ -20,7 +21,7 @@ function InventoryReportContent() {
     try { exportInventoryReport(report); message.success('已导出盘点报表'); }
     catch (error) { message.error(`导出失败：${error.message}`); }
   };
-  return <div className="flex flex-col gap-4">
+  return <div className="inventory-report flex flex-col gap-4">
     <div className="flex items-center justify-between gap-4 flex-wrap">
       <Typography.Title level={4} className="!mb-0">盘点报表</Typography.Title>
       <Space><Typography.Text>盘点年份</Typography.Text><Select aria-label="盘点年份" style={{ width: 140 }} value={year} onChange={setYear} options={[2022, 2023, 2024, 2025, 2026].map(value => ({ label: `${value}年`, value }))} /></Space>

@@ -1,4 +1,5 @@
 import React from 'react';
+import InventoryDistribution3D from './InventoryDistribution3D';
 import { Card, Empty, Space, Typography, theme } from 'antd';
 import { CartesianGrid, ComposedChart, LabelList, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { percent, integer, quantity, historyPercent, getInventoryHistoryChartRows } from '../../services/inventoryReportService';
@@ -15,9 +16,21 @@ function DistributionLabel({ cx, cy, midAngle, outerRadius, name, value, payload
   const y = cy + (outerRadius + 18) * Math.sin(angle);
   return <text x={x} y={y} textAnchor={x >= cx ? 'start' : 'end'} fill="currentColor" fontSize={12}>
     <tspan x={x} dy="-0.3em">{name}</tspan>
-    <tspan x={x} dy="1.3em">{`${Math.round(value / 10000)}万元(${Math.round(payload.quantity)}件)`}</tspan>
+    <tspan x={x} dy="1.3em">{`${Math.round(value / 10000)}万元(${Math.round(payload.quantity)}${payload.quantityUnit || ''})`}</tspan>
   </text>;
 }
+
+function DistributionTable({ rows, total }) {
+  const pie = rows;
+  const originalTotal = total;
+  return (<ReportTable compact rowKey="category" rows={pie} columns={[
+            { title: '资产类别', dataIndex: 'category', sizing: { type: 'label', text: row => `${row.category}　` }, ellipsis: true, render: (value, row) => <Space><span aria-hidden="true" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: row.fill }} />{value}</Space> },
+            { title: '数量', dataIndex: 'quantity', sizing: { type: 'number', format: quantity }, align: 'right', render: quantity },
+            { title: '原值（万元）', dataIndex: 'original', sizing: { type: 'money', format: distributionAmount }, align: 'right', render: distributionAmount },
+            { title: '原值占比', key: 'ratio', sizing: { type: 'percent', text: row => originalTotal === 0 ? '' : distributionPercent(row.original / originalTotal) }, align: 'right', render: (_, row) => originalTotal === 0 ? '' : distributionPercent(row.original / originalTotal) },
+          ]} />);
+}
+
 export default function InventoryReportCharts({ report }) {
   const { token } = theme.useToken();
   const colors = [token.colorPrimary, token.colorSuccess, token.colorWarning, token.purple, token.cyan, token.colorTextSecondary, token.colorError];
@@ -56,7 +69,7 @@ export default function InventoryReportCharts({ report }) {
         { title: '增长率变化', dataIndex: 'rateChange', sizing: { type: 'percent', format: value => percent(value == null ? null : value / 100) }, align: 'right', render: v => percent(v == null ? null : v / 100) },
       ]} /></div>
     </Card>
-    <Card size="small" title="资产类型分布（按原值）">
+    <Card size="small" title="资产类型分布（按原值）"><section aria-label="资产类型分布原图">
       {!pie.length ? <Empty description="暂无资产类型分布数据" /> :       <div className="flex flex-wrap items-center gap-6">
         <div className="relative" style={{ flex: '1 1 480px', minWidth: 0 }}>
           <ResponsiveContainer width="100%" height={340}>
@@ -72,15 +85,14 @@ export default function InventoryReportCharts({ report }) {
           </div>
         </div>
         <div style={{ flex: '0 1 520px', minWidth: 0, marginLeft: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
-          <ReportTable compact rowKey="category" rows={pie} columns={[
-            { title: '资产类别', dataIndex: 'category', sizing: { type: 'label', text: row => `${row.category}　` }, ellipsis: true, render: (value, row) => <Space><span aria-hidden="true" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: row.fill }} />{value}</Space> },
-            { title: '数量（件）', dataIndex: 'quantity', sizing: { type: 'number', format: quantity }, align: 'right', render: quantity },
-            { title: '原值（万元）', dataIndex: 'original', sizing: { type: 'money', format: distributionAmount }, align: 'right', render: distributionAmount },
-            { title: '原值占比', key: 'ratio', sizing: { type: 'percent', text: row => originalTotal === 0 ? '' : distributionPercent(row.original / originalTotal) }, align: 'right', render: (_, row) => originalTotal === 0 ? '' : distributionPercent(row.original / originalTotal) },
-          ]} />
+          <DistributionTable rows={pie} total={originalTotal} />
         </div>
       </div>}
 
+    </section></Card>
+    <Card size="small" title="资产类型分布（按原值）—立体对比版">
+      <InventoryDistribution3D rows={pie} />
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}><DistributionTable rows={pie} total={originalTotal} /></div>
     </Card>
     <Card size="small" title="资产增量情况" style={{ width: '100%' }}><IncrementTable year={report.year} /></Card>
     <Card size="small" title="资产盘亏趋势">

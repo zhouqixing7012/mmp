@@ -4,6 +4,7 @@ import { styleInventoryReportWorkbook, positionInventoryAnalysisSheet } from './
 import { inventoryReportTemplate, inventoryReportActuals } from '../mock/businessRulesMock';
 import { mapInventoryReportAsset, summarizeInventoryReportCategory } from './inventoryReportClassification';
 import { INVENTORY_REPORT_FORMATS as formats } from './inventoryReportFormats';
+import { withInventoryReportQuantityUnits } from './inventoryReportUnits';
 export { amount, accountingAmount, quantity, integer, accounting, historyPercent, percent, summaryPercent, companyQuantity, companyAmount } from './inventoryReportFormats';
 
 export const LOSS_CATEGORIES = ['台式机、显示器', '笔记本', '照摄像器材', '移动数码', '办公设备', '车辆', '电话'];
@@ -25,7 +26,7 @@ export function getInventoryReport(year) {
   const hasActualDetails = Object.prototype.hasOwnProperty.call(inventoryReportActuals.detailsByYear, selectedYear);
   const details = (hasActualDetails ? inventoryReportActuals.detailsByYear[selectedYear] : isTemplateYear ? inventoryReportTemplate.details : []).map(mapInventoryReportAsset);
   return { ...inventoryReportTemplate, scope: inventoryReportTemplate.scope, year: selectedYear, period: `${selectedYear - 1}年7月—${selectedYear}年7月`, history, indicators,
-    distribution: isTemplateYear ? inventoryReportTemplate.distribution : inventoryReportTemplate.demoDistribution,
+    distribution: withInventoryReportQuantityUnits(isTemplateYear ? inventoryReportTemplate.distribution : inventoryReportTemplate.demoDistribution),
     companyLoss: hasActualDetails ? getActualCompanyLoss(details, selectedYear) : inventoryReportActuals.companyLoss.filter(row => [selectedYear - 1, selectedYear].includes(row.year)),
     details, hasActualDetails,
     detailsAreDemo: isTemplateYear && !hasActualDetails, companyIsDemo: false, distributionIsTemplate: isTemplateYear, distributionIsDemo: !isTemplateYear,
@@ -84,7 +85,7 @@ export function buildInventoryReportWorkbook(report) {
   const pendingStart = detailRows.findIndex(row => row.summary && row.label === '资产盘亏合计') + 1;
   analysisSheet[XLSX.utils.encode_cell({ r: summaryStart + 2, c: 0 })].l = { Target: `#'盘亏资产明细及原因'!A${pendingStart + 4}`, Tooltip: '查看待查明细' };
   const originalTotal = report.distribution.reduce((sum, row) => sum + row.original, 0);
-  const distribution = add('资产类型分布', [[report.distributionIsTemplate ? '类别（模板数据）' : '类别', '数量（件）', '原值（万元）', '原值占比'], ...report.distribution.map(r => [r.category, r.quantity, r.original / 10000, originalTotal === 0 ? null : r.original / originalTotal])]);
+  const distribution = add('资产类型分布', [[report.distributionIsTemplate ? '类别（模板数据）' : '类别', '数量', '原值（万元）', '原值占比'], ...report.distribution.map(r => [r.category, r.quantity, r.original / 10000, originalTotal === 0 ? null : r.original / originalTotal])]);
   const company = add('盘亏分布', [['子公司', '年份', '笔记本', '主机', '显示器', '办公设备', '移动数码', '照摄像器材及配件', '车辆', '数量合计', '净值合计（元）'],
     ...report.companyLoss.map(r => [r.company, r.year, r.notebook, r.desktop, r.display, r.office, r.mobile, r.camera, r.vehicle, r.quantity, r.net])]);
   // 金额和百分比按单元格类型设置，保持可计算的数字而非格式化文本。

@@ -20,7 +20,7 @@ jest.mock('antd', () => {
   Modal.confirm = jest.fn();
   return { Alert: Box, Button: ({ children, onClick }) => <button onClick={onClick}>{children}</button>, Card: Box,
     Checkbox: Object.assign(Box, { Group: Box }), Collapse: Box, DatePicker, Input, InputNumber: () => null, Modal, Progress: Box, Radio: Box,
-    Select: ({ 'aria-label': ariaLabel, value, options, onChange, disabled }) => ariaLabel === '项目类型' ? <select aria-label={ariaLabel} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select> : null,
+    Select: ({ 'aria-label': ariaLabel, value, options, onChange, disabled }) => ['项目类型', '盘点类型', '盘点期间'].includes(ariaLabel) ? <select aria-label={ariaLabel} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select> : null,
     Space: Box, Statistic: Box, Switch: () => null, Tabs: Box, Tag: Box, Typography: { Text: Box, Title: Box },
     Table: ({ columns = [], dataSource = [], rowSelection }) => <table aria-label={columns.some((column) => column.title === '是否必盘') ? '必盘范围资产' : '范围分录'}><thead><tr>{columns.map((column, index) => <th key={index}>{column.title}</th>)}</tr></thead><tbody>{dataSource.map((row) => <tr key={row.key}>{columns.map((column, index) => <td key={index}>{index === 0 && rowSelection && <input type="checkbox" aria-label={`选择资产${row.assetTag || row.key}`} onChange={() => rowSelection.onChange([row.key])} />}{column.render ? column.render(row[column.dataIndex], row) : row[column.dataIndex]}</td>)}</tr>)}</tbody></table>,
     message: { useMessage: () => [{ warning: mockWarning, success: jest.fn(), info: jest.fn() }, null] },
@@ -162,4 +162,39 @@ test('编号预留失败显示错误并阻止无号保存或生成，零初盘�
   render(<CreateProjectView creator="冯丽婷" initialProject={{ ...base, initialProjectNo: 'NO-INITIAL-SOURCE' }} onBack={() => {}} onGenerated={() => {}} />);
   expect(screen.getByRole('group', { name: '初盘执行盘点数量' })).toHaveTextContent(/^0$/);
   expect(screen.getByRole('group', { name: '复盘比例' })).toHaveTextContent(/^-$/);
+});
+
+test('实际新建入口年度默认当前年，类型切换后期间联动且季度月度选项不变', () => {
+  const year = new Date().getFullYear();
+  const onDraftProjectChange = jest.fn();
+  render(<CreateProjectView creator="213852-孙志强" onBack={() => {}} onGenerated={() => {}} onDraftProjectChange={onDraftProjectChange} />);
+  const period = screen.getByLabelText('盘点期间');
+  expect(period).toHaveValue(`${year}年`);
+  expect(within(period).getAllByRole('option')).toHaveLength(year - 2014 + 1);
+  expect(within(period).getByRole('option', { name: '2014年', exact: true })).toBeInTheDocument();
+  expect(within(period).getByRole('option', { name: `${year}年`, exact: true, selected: true })).toBeInTheDocument();
+  expect(onDraftProjectChange.mock.calls.at(-1)[0].projectName).toBe(`${year}年-年度盘点`);
+  fireEvent.change(screen.getByLabelText('盘点类型'), { target: { value: '季度' } });
+  expect(period).toHaveValue(`${year}年Q1`);
+  expect(within(period).getAllByRole('option')).toHaveLength(4);
+  fireEvent.change(screen.getByLabelText('盘点类型'), { target: { value: '月度' } });
+  expect(period).toHaveValue(`${year - 1}年12月`);
+  expect(within(period).getAllByRole('option')).toHaveLength(14);
+  fireEvent.change(screen.getByLabelText('盘点类型'), { target: { value: '年度' } });
+  expect(period).toHaveValue(`${year}年`);
+  expect(onDraftProjectChange.mock.calls.at(-1)[0].period).toBe(`${year}年`);
+});
+
+test.each(['初盘', '抽盘', '复盘'])('实际编辑年度%s保存和快照均拒绝旧季度期间，改成范围内年份后正常保存快照', (projectType) => {
+  const onGenerated = jest.fn();
+  render(<CreateProjectView creator={projectType === '复盘' ? '冯丽婷' : '213852-孙志强'} initialProject={{ ...base, projectType, inventoryType: '年度', period: '2026年Q1' }} scopeAssetKeys={chosen.map((asset) => asset.key)} onBack={() => {}} onGenerated={onGenerated} />);
+  fireEvent.click(screen.getByRole('button', { name: '保存', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
+  expect(mockWarning).toHaveBeenCalledTimes(2);
+  expect(onGenerated).not.toHaveBeenCalled();
+  expect(getInventoryPhotoSnapshot(base.projectNo)).toBeNull();
+  fireEvent.change(screen.getByLabelText('盘点期间'), { target: { value: '2020年' } });
+  fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
+  expect(onGenerated).toHaveBeenCalledTimes(1);
+  expect(onGenerated.mock.calls[0][0].period).toBe('2020年');
 });

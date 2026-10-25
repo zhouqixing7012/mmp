@@ -1,6 +1,6 @@
 import { inventoryRemark } from './inventoryRemark';
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
-import { getInventoryPeriodOptions, inventoryProjectScopeSource, inheritInitialInventoryPeriod } from './inventoryProjectScope';
+import { getDefaultInventoryPeriod, getInventoryPeriodOptions, inventoryProjectPeriodBlockReason, inventoryProjectScopeSource, inheritInitialInventoryPeriod } from './inventoryProjectScope';
 import { PROJECT_PLAN_ASSETS, PROJECT_PLAN_SNAPSHOTS } from '../../mock/inventoryProjectPlanMock';
 import InventoryPhotoRuleEditor from './InventoryPhotoRuleEditor';
 import { selectInventoryPhotoAssets, saveInventoryPhotoSnapshot, getInventoryPhotoSnapshot, saveInventoryPhotoConfig, getInventoryPhotoConfig, normalizeInventoryPhotoConfig } from './inventoryPhotoRules';
@@ -490,7 +490,7 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
   const permittedTypes = allowedProjectTypes(creator);
 
   const changeInventoryType = (value) => {
-    const nextPeriod = getPeriodOptions(value)[0];
+    const nextPeriod = getDefaultInventoryPeriod(value);
     setProject((current) => ({
       ...current,
       inventoryType: value,
@@ -555,11 +555,12 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
         </div>
         <div>
           <Typography.Text type="secondary">盘点类型</Typography.Text>
-          <Select value={project.inventoryType} className="w-full" options={['年度', '季度', '月度'].map((value) => ({ label: value, value }))} onChange={changeInventoryType} />
+          <Select aria-label="盘点类型" value={project.inventoryType} className="w-full" options={['年度', '季度', '月度'].map((value) => ({ label: value, value }))} onChange={changeInventoryType} />
         </div>
         <div>
           <Typography.Text type="secondary">盘点期间</Typography.Text>
           <Select
+            aria-label="盘点期间"
             value={project.period}
             className="w-full"
             options={getPeriodOptions(project.inventoryType).map((value) => ({ label: value, value }))}
@@ -906,7 +907,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const initialInventoryType = initialProject?.inventoryType || '年度';
   const initialPeriod = initialProject?.period && initialProject.period !== '-'
-    ? initialProject.period : getPeriodOptions(initialInventoryType)[0];
+    ? initialProject.period : getDefaultInventoryPeriod(initialInventoryType);
   const [project, setProject] = useState(() => {
     const projectType = initialProject?.projectType || allowedProjectTypes(creator)[0];
     let projectNo = initialProject?.projectNo || '';
@@ -925,7 +926,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
       endDate: initialProject?.endDate || PROJECT_INFO.endDate,
       projectNo,
       numberAllocationError,
-      projectName: initialProject?.projectName || `${getPeriodOptions('年度')[0]}-年度盘点`,
+      projectName: initialProject?.projectName || `${initialPeriod}-${initialInventoryType}盘点`,
       period: initialPeriod,
       creator: initialProject ? initialProject.creator : creator,
       createdAt: initialProject ? initialProject.createdAt : dayjs().format('YYYY-MM-DD'),
@@ -989,6 +990,8 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
       messageApi.warning('请完整填写项目信息');
       return;
     }
+    const periodBlockReason = inventoryProjectPeriodBlockReason(project);
+    if (periodBlockReason) { messageApi.warning(periodBlockReason); return; }
     const dateBlockReason = inventoryProjectDateBlockReason(project.startDate, project.endDate);
     if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
     try { saveInventoryPhotoConfig(project.projectNo, photoConfig); }
@@ -1007,6 +1010,8 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
       messageApi.warning('请选择已关闭的初盘项目');
       return;
     }
+    const periodBlockReason = inventoryProjectPeriodBlockReason(project);
+    if (periodBlockReason) { messageApi.warning(periodBlockReason); return; }
     const dateBlockReason = inventoryProjectDateBlockReason(project.startDate, project.endDate);
     if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
     if (project.projectType === '初盘' && project.inventoryType === '年度' && (!project.createdAt || !dayjs(project.createdAt).isValid())) {
