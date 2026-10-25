@@ -1,4 +1,7 @@
+import InventoryScanResultImport from './InventoryScanResultImport';
+import { applyInventoryScanResults } from './inventoryScanResultImport';
 import { inventoryRemark } from './inventoryRemark';
+import { selectInventoryExportRows } from './inventoryPlanExport';
 import * as XLSX from 'xlsx';
 import { parseSnapshotTransferRows } from './inventorySnapshotTransfer';
 import { isSnapshotExecutionAsset, isSnapshotNonExecutionAsset } from './inventorySnapshotAssets';
@@ -127,7 +130,7 @@ function makeAssetColumns({ includeNo = true } = {}) {
   return columns;
 }
 
-export function SnapshotAssetTab({ project, type, projectStatus, projectNo, rows, setRows, setOtherRows, onMoveRows, onConfirmRows, messageApi, machineRoomProject = false }) {
+export function SnapshotAssetTab({ project, plans, currentOperator, onResultsImported, type, projectStatus, projectNo, rows, setRows, setOtherRows, onMoveRows, onConfirmRows, messageApi, machineRoomProject = false }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const showMachineRoomFeatures = machineRoomProject && allowedRanges.includes('机房');
@@ -145,7 +148,7 @@ export function SnapshotAssetTab({ project, type, projectStatus, projectNo, rows
   const filteredRows = useMemo(() => filterInventoryAssets(rows, filters), [rows, filters]);
 
   const exportFilteredRows = () => {
-    const { csv, missingFields } = serializeInventoryAssetExport(filteredRows, { project });
+    const { csv, missingFields } = serializeInventoryAssetExport(selectInventoryExportRows(filteredRows, rows), { project });
     if (missingFields.length) messageApi.warning(`演示数据缺少${missingFields.join('、')}，对应单元格为空`);
     const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a');
@@ -296,7 +299,7 @@ export function SnapshotAssetTab({ project, type, projectStatus, projectNo, rows
   }
   if (type === 'execution' && during) {
     operations.push(
-      <Button key="importResult" icon={<Upload size={14} />} onClick={() => messageApi.warning('盘点结果导入模板尚未配置，暂不能导入')}>导入盘点结果</Button>,
+      <InventoryScanResultImport key="importResult" project={{ ...project, status: projectStatus }} plans={plans} entryType={type} operator={currentOperator} assets={rows} onImported={updates => { setRows(current => applyInventoryScanResults(current, updates)); onResultsImported?.(updates); }} />,
     );
   }
   if (type === 'execution' && during && showMachineRoomFeatures) {
@@ -311,7 +314,7 @@ export function SnapshotAssetTab({ project, type, projectStatus, projectNo, rows
   if (type === 'notExecution' && during) {
     operations.push(
       <Button key="confirm" type="primary" icon={<CheckCircle2 size={14} />} onClick={confirmSelected}>批量确认</Button>,
-      <Button key="importResult" icon={<Upload size={14} />} onClick={() => messageApi.warning('盘点结果导入模板尚未配置，暂不能导入')}>导入盘点结果</Button>,
+      <InventoryScanResultImport key="importResult" project={{ ...project, status: projectStatus }} plans={plans} entryType={type} operator={currentOperator} assets={rows} onImported={updates => { setRows(current => applyInventoryScanResults(current, updates)); onResultsImported?.(updates); }} />,
     );
   }
   if (type === 'excluded' && beforeStart) {
@@ -402,6 +405,9 @@ export default function AssetInventorySnapshotDetailV2({
   onDeleteSnapshot,
   assets = ASSET_ROWS,
   onSnapshotRowsChange,
+  plans = [],
+  currentOperator,
+  onResultsImported,
   getCloseBlockReason = inventoryProjectCloseBlockReason,
 }) {
   const { allowedRanges: configuredRanges } = useAssetInventoryVariant();
@@ -513,17 +519,17 @@ export default function AssetInventorySnapshotDetailV2({
     {
       key: 'execution',
       label: '执行盘点资产清单',
-      children: <SnapshotAssetTab project={project} machineRoomProject={machineRoomProject} type="execution" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={executionRows} setRows={setExecutionRows} setOtherRows={setNotExecutionRows} onMoveRows={(selected, moved) => moveSnapshotRows(true, selected, moved)} messageApi={messageApi} />,
+      children: <SnapshotAssetTab plans={plans} currentOperator={currentOperator} onResultsImported={onResultsImported} project={project} machineRoomProject={machineRoomProject} type="execution" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={executionRows} setRows={setExecutionRows} setOtherRows={setNotExecutionRows} onMoveRows={(selected, moved) => moveSnapshotRows(true, selected, moved)} messageApi={messageApi} />,
     },
     {
       key: 'notExecution',
       label: '未执行盘点资产清单',
-      children: <SnapshotAssetTab project={project} machineRoomProject={machineRoomProject} type="notExecution" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={notExecutionRows} setRows={setNotExecutionRows} setOtherRows={setExecutionRows} onMoveRows={(selected, moved) => moveSnapshotRows(false, selected, moved)} onConfirmRows={(updated) => onSnapshotRowsChange?.(executionRows, updated)} messageApi={messageApi} />,
+      children: <SnapshotAssetTab plans={plans} currentOperator={currentOperator} onResultsImported={onResultsImported} project={project} machineRoomProject={machineRoomProject} type="notExecution" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={notExecutionRows} setRows={setNotExecutionRows} setOtherRows={setExecutionRows} onMoveRows={(selected, moved) => moveSnapshotRows(false, selected, moved)} onConfirmRows={(updated) => onSnapshotRowsChange?.(executionRows, updated)} messageApi={messageApi} />,
     },
     {
       key: 'excluded',
       label: '未包含资产清单',
-      children: <SnapshotAssetTab project={project} machineRoomProject={machineRoomProject} type="excluded" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={excludedRows} setRows={setExcludedRows} onMoveRows={moveExcludedRows} messageApi={messageApi} />,
+      children: <SnapshotAssetTab plans={plans} currentOperator={currentOperator} onResultsImported={onResultsImported} project={project} machineRoomProject={machineRoomProject} type="excluded" projectStatus={projectStatus} projectNo={project?.projectNo || ''} rows={excludedRows} setRows={setExcludedRows} onMoveRows={moveExcludedRows} messageApi={messageApi} />,
     },
   ];
 

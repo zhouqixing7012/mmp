@@ -1,4 +1,4 @@
-import { INVENTORY_ASSET_EXPORT_FIELDS, serializeInventoryAssetExport, serializeInventorySnapshotExport } from './inventoryAssetExport';
+import { INVENTORY_ASSET_EXPORT_FIELDS, serializeInventoryAssetExport, serializeInventorySnapshotExport, serializeInventoryScopeExport } from './inventoryAssetExport';
 import * as XLSX from 'xlsx';
 
 test('盘点清单分别导出盘点方式和结果来源，不用子公司代替账套', () => {
@@ -24,4 +24,21 @@ test('复盘范围与快照导出带是否必盘，旧无选项调用保持原�
   expect(XLSX.utils.sheet_to_json(snapshot.Sheets[snapshot.SheetNames[0]]).map((row) => [row['是否必盘'], row['是否执行盘点']])).toEqual([['否', '否'], ['是', '是']]);
   expect(serializeInventoryAssetExport(rows).csv.split('\r\n')[0]).not.toContain('是否必盘');
   expect(serializeInventoryAssetExport(rows, options).missingFields).not.toContain('是否必盘');
+});
+
+test('创建范围导出仅标识列，复盘只增加是否必盘，不影响快照和执行清单', () => {
+  const rows = [{ assetTag: '0001', description: '不应导出', isMandatory: true }];
+  expect(serializeInventoryScopeExport(rows).csv).toBe('"资产标签号"\r\n"0001"');
+  expect(serializeInventoryScopeExport(rows, { project: { projectType: '复盘' } }).csv).toBe('"资产标签号","是否必盘"\r\n"0001","是"');
+  expect(serializeInventoryAssetExport(rows).csv).toContain('资产说明');
+});
+
+test('执行清单与快照导出有效盘点备注，独立保留资产备注', () => {
+  const rows = [{ assetTag: 'A', remark: '资产备注', inventoryRemark: '导入的新备注', lossReason: '旧报失原因' }];
+  for (const serialize of [serializeInventoryAssetExport, serializeInventorySnapshotExport]) {
+    const workbook = XLSX.read(serialize(rows).csv, { type: 'string' });
+    const [asset] = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+    expect(asset['备注']).toBe('资产备注');
+    expect(asset['盘点备注']).toBe('导入的新备注');
+  }
 });

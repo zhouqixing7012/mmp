@@ -7,7 +7,7 @@ test('旧结果备注在统一读取、计划导出及进度导出一致，其�
   const asset = { assetTag: 'A', inventoryNote: '旧盘点备注', remark: '资产备注', uncountedNote: '未盘原因', description: '资产说明' };
   expect(inventoryRemark(asset)).toBe('旧盘点备注');
   const plan = createInventoryPlanWorkbook([{ planNo: 'P' }], () => [asset]);
-  const row = XLSX.utils.sheet_to_json(plan.Sheets['关联资产清单'])[0];
+  const row = XLSX.utils.sheet_to_json(plan.Sheets['计划资产清单'])[0];
   expect(row['盘点备注']).toBe(inventoryRemark(asset));
   expect(row['备注']).toBe('资产备注');
   expect(row).not.toHaveProperty('盘点说明');

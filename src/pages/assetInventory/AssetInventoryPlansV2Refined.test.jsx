@@ -4,7 +4,7 @@ import { Modal } from 'antd';
 import { downloadInventoryPlans } from './inventoryPlanExport';
 import { AssetInventoryVariantProvider } from './AssetInventoryVariantContext';
 import AssetInventoryPlansV2Refined from './AssetInventoryPlansV2Refined';
-jest.mock('./inventoryPlanExport', () => ({ downloadInventoryPlans: jest.fn() }));
+jest.mock('./inventoryPlanExport', () => ({ ...jest.requireActual('./inventoryPlanExport'), downloadInventoryPlans: jest.fn() }));
 jest.mock('./AssetInventoryImageReviewV2', () => ({ buildReviewRows: () => [] }));
 jest.mock('antd', () => {
   const Box = ({ children }) => <div>{children}</div>;
@@ -19,6 +19,21 @@ jest.mock('../../components/DetailGrid', () => ({ __esModule: true, default: () 
 jest.mock('../../components/StatusTag', () => () => null);
 jest.mock('./InventoryLocationChangeFlow', () => ({project,onBack}) => <section><h2>位置变更池内容{project.projectNo}</h2><button onClick={onBack}>池返回</button></section>);
 jest.mock('./InventoryReplayReview', () => () => null);
+
+test('计划查询无结果时回退允许范围全部计划，勾选时仍只导出所选', () => {
+  downloadInventoryPlans.mockClear();
+  const rows = [{ key: 'a', planNo: 'A', range: '员工', status: '草稿' }, { key: 'b', planNo: 'B', range: '公共', status: '草稿' }, { key: 'c', planNo: 'C', range: '机房', status: '草稿' }];
+  render(<AssetInventoryVariantProvider allowedRanges={['员工', '公共']}><AssetInventoryPlansV2Refined project={{ projectNo: 'P', projectType: '初盘' }} rows={rows} setRows={jest.fn()} assetsForPlan={() => []} /></AssetInventoryVariantProvider>);
+  fireEvent.change(screen.getByLabelText('计划状态筛选'), { target: { value: '已审核' } });
+  fireEvent.click(screen.getByRole('button', { name: '查询' }));
+  fireEvent.click(screen.getByRole('button', { name: '导出' }));
+  expect(downloadInventoryPlans.mock.calls.at(-1)[0].map(row => row.planNo)).toEqual(['A', 'B']);
+  fireEvent.change(screen.getByLabelText('计划状态筛选'), { target: { value: '草稿' } });
+  fireEvent.click(screen.getByRole('button', { name: '查询' }));
+  fireEvent.click(screen.getByRole('button', { name: '选择计划' }));
+  fireEvent.click(screen.getByRole('button', { name: '导出' }));
+  expect(downloadInventoryPlans.mock.calls.at(-1)[0].map(row => row.planNo)).toEqual(['A']);
+});
 test('启动前发现未分配资产，要求默认补计划或手工创建，不直接启动已选计划', () => {
   const setRows = jest.fn(); const onGenerateRemainingDefault = jest.fn(); const onManualCreate = jest.fn();
   render(<AssetInventoryPlansV2Refined project={{ projectNo: 'P', projectType: '初盘' }} rows={[{ key: 'p1', planNo: 'P1', range: '员工', status: '草稿' }]} setRows={setRows} assetsForPlan={() => [{ quantity: 2, inventoryStatus: '未盘' }]} canManualCreate onGenerateRemainingDefault={onGenerateRemainingDefault} onManualCreate={onManualCreate} />);

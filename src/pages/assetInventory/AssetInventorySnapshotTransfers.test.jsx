@@ -2,6 +2,7 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Modal } from 'antd';
 import * as XLSX from 'xlsx';
+import { serializeInventoryAssetExport } from './inventoryAssetExport';
 import AssetInventorySnapshotDetailV2, { SnapshotAssetTab } from './AssetInventorySnapshotDetailV2';
 
 jest.mock('antd', () => {
@@ -23,11 +24,30 @@ jest.mock('../../components/AssetQueryControls', () => ({ formatAssetCategory: (
 jest.mock('../../components/DetailGrid', () => ({ __esModule: true, default: ({ children }) => <div>{children}</div>, DetailItem: ({ children }) => <div>{children}</div> }));
 jest.mock('../../components/StatusTag', () => ({ value }) => <span>{value}</span>);
 jest.mock('./inventoryPhotoImportStore', () => ({ importInventoryPhotoFiles: jest.fn() }));
+jest.mock('./inventoryAssetExport', () => ({ ...jest.requireActual('./inventoryAssetExport'), serializeInventoryAssetExport: jest.fn(() => ({ csv: '', missingFields: [] })) }));
 
 const assets = Array.from({ length: 25 }, (_, i) => ({ key: `a${i}`, assetTag: `A-${i}`, inventoryRange: '员工', owner: '责任人', inventoryStatus: '未盘' }));
 const makeProps = (extra = {}) => ({ type: 'execution', projectStatus: '快照生成', projectNo: 'CP-1', rows: assets,
   setRows: jest.fn(), setOtherRows: jest.fn(), onMoveRows: jest.fn(),
   messageApi: { warning: jest.fn(), success: jest.fn(), info: jest.fn() }, ...extra });
+
+test('快照清单导出非空查询取匹配全页，空查询回退当前清单全部资产', () => {
+  serializeInventoryAssetExport.mockReturnValue({ csv: '', missingFields: [] });
+  const create = URL.createObjectURL, revoke = URL.revokeObjectURL;
+  URL.createObjectURL = jest.fn(() => 'blob:export'); URL.revokeObjectURL = jest.fn();
+  const click = jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  try {
+    render(<SnapshotAssetTab {...makeProps()} />);
+    fireEvent.change(screen.getByLabelText('标签条件'), { target: { value: 'A-1' } });
+    fireEvent.click(screen.getByText('执行查询'));
+    fireEvent.click(screen.getByRole('button', { name: '导出' }));
+    expect(serializeInventoryAssetExport.mock.calls.at(-1)[0]).toHaveLength(11);
+    fireEvent.change(screen.getByLabelText('标签条件'), { target: { value: '不存在' } });
+    fireEvent.click(screen.getByText('执行查询'));
+    fireEvent.click(screen.getByRole('button', { name: '导出' }));
+    expect(serializeInventoryAssetExport.mock.calls.at(-1)[0]).toEqual(assets);
+  } finally { click.mockRestore(); URL.createObjectURL = create; URL.revokeObjectURL = revoke; }
+});
 
 test.each([['初盘', '是否按子公司＋盘点范围生成盘点计划？'], ['复盘', '是否按楼层汇总生成复盘计划？']])('%s默认生成入口说明实际分组，回调拒绝不更新生成状态', (projectType, content) => {
   Modal.confirm.mockClear();
@@ -85,11 +105,12 @@ test('文件读取期间项目启动，整批模板转移被阻止', async () =>
 });
 
 test('非机房不展示照片导入，机房盘点中保留照片入口', () => {
-  const props = makeProps({ projectStatus: '盘点中' });
+  const props = makeProps({ projectStatus: '盘点中', project: { projectNo: 'CP-1', status: '盘点中', creator: '孙志强' }, currentOperator: '孙志强' });
   const { rerender } = render(<SnapshotAssetTab {...props} />);
   expect(screen.queryByText('导入盘点照片')).not.toBeInTheDocument();
   rerender(<SnapshotAssetTab {...props} machineRoomProject />);
   expect(screen.getByText('导入盘点照片')).toBeInTheDocument();
   fireEvent.click(screen.getByText('导入盘点结果'));
-  expect(props.messageApi.warning).toHaveBeenCalledWith('盘点结果导入模板尚未配置，暂不能导入');
+  expect(screen.getByRole('button', { name: '选择Excel文件' })).toBeInTheDocument();
+  expect(props.messageApi.warning).not.toHaveBeenCalled();
 });

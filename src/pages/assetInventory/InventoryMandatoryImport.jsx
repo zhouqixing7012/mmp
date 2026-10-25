@@ -9,6 +9,7 @@ export default function InventoryMandatoryImport({ assets, candidateAssets = ass
   current.current = { assets, candidateAssets, project, requiredKeys, onImport };
   const mounted = useRef(true);
   const [importing, setImporting] = useState(false);
+  const [errors, setErrors] = useState([]);
   const [messageApi, contextHolder] = antdMessage.useMessage();
   useEffect(() => {
     mounted.current = true;
@@ -24,6 +25,7 @@ export default function InventoryMandatoryImport({ assets, candidateAssets = ass
     if (!file || importing) return;
     const sourceContext = `${project.projectNo}:${project.initialProjectNo || ''}`;
     setImporting(true);
+    setErrors([]);
     try {
       if (!/\.(xlsx|xls|csv)$/i.test(file.name)) throw new Error('请上传xlsx、xls或csv盘点清单');
       const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', raw: true });
@@ -35,13 +37,20 @@ export default function InventoryMandatoryImport({ assets, candidateAssets = ass
       const changes = parseInventoryMandatoryRows(matrix, latest.candidateAssets, latest.requiredKeys);
       latest.onImport(changes);
       messageApi.success(`已按文件替换盘点范围，共 ${changes.length} 条资产`);
-    } catch (error) { if (mounted.current) messageApi.warning(error.message || '清单导入失败，请核对文件后重试'); }
+    } catch (error) { if (mounted.current) { setErrors(error.errors || [{ row: '', assetTag: '', message: error.message }]); messageApi.warning(error.message || '清单导入失败，请核对文件后重试'); } }
     finally { if (mounted.current) setImporting(false); }
   };
   return <>
     {contextHolder}
     <Space>
       <Button disabled={importing} onClick={download}>清单模板</Button>
+      {errors.length > 0 && <Button onClick={() => {
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([
+          ['行号', '资产标签号', '错误原因'], ...errors.map(error => [error.row, error.assetTag, error.message]),
+        ]), '错误明细');
+        XLSX.writeFile(workbook, `${project.projectNo}-范围清单导入错误.xlsx`);
+      }}>下载错误明细</Button>}
       <Button loading={importing} disabled={importing} onClick={() => fileInput.current?.click()}>导入清单</Button>
     </Space>
     <input ref={fileInput} type="file" hidden accept=".xlsx,.xls,.csv" aria-label="导入盘点清单文件" onChange={importFile} />

@@ -1,3 +1,4 @@
+import { applyInventoryScanResults } from './inventoryScanResultImport';
 import { useInventoryOperator } from './useInventoryOperator';
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 import { applyInventoryPhotoSnapshot, saveInventoryPhotoSnapshot, getInventoryPhotoSnapshot } from './inventoryPhotoRules';
@@ -531,6 +532,9 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     {!customBuilderOpen && (snapshotOpen || showBaseSnapshotV2) && <AssetInventorySnapshotDetailV2
       key={snapshotProject.projectNo}
       project={snapshotProject}
+      plans={planRows}
+      currentOperator={creator}
+      onResultsImported={updates => setPlanAssets(current => applyInventoryScanResults(current, updates))}
       assets={planAssets.map(asset => mergePlanInventoryResult({ ...asset, planNo: assetPlanMap[asset.key] || '-' }, getMobileInventoryResults(snapshotProject.projectNo)[asset.assetTag], getPhotoReviewResults(snapshotProject.projectNo).find(review => review.assetTag === asset.assetTag)))}
       onSnapshotRowsChange={(execution, notExecution) => {
         saveInventoryPhotoSnapshot(snapshotProject, [...execution.map(asset => ({ ...asset, executeInventory: true })), ...notExecution.map(asset => ({ ...asset, executeInventory: false }))]);

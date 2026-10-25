@@ -1,3 +1,4 @@
+import { selectInventoryExportRows } from './inventoryPlanExport';
 import React, { useEffect, useState } from 'react';
 import { Button, Card, Progress, Space, Table, Typography } from 'antd';
 import * as XLSX from 'xlsx';
@@ -45,13 +46,15 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
     (project?.projectNo || '盘点项目') + '-' + name + '.xlsx');
   const openAssetView = (uncounted) => {
     const scoped = detailRange ? filteredDetailRows.flatMap((row) => row.assets) : progress.assets;
-    setAssetView({ title: uncounted ? '未盘资产' : '盘点全量资产', assets: uncounted ? scoped.filter(isUncountedProgressAsset) : scoped });
+    const permitted = detailRange ? detailRows.flatMap(row => row.assets) : progress.assets;
+    setAssetView({ title: uncounted ? '未盘资产' : '盘点全量资产', assets: uncounted ? scoped.filter(isUncountedProgressAsset) : scoped,
+      exportAssets: uncounted ? permitted.filter(isUncountedProgressAsset) : permitted });
   };
   const assetTools = <Space>
     <Button onClick={() => openAssetView(false)}>查看盘点全量资产</Button>
     <Button onClick={() => openAssetView(true)}>查看未盘资产</Button>
   </Space>;
-  const assetModal = assetView && <InventoryProgressAssetsModal title={assetView.title} assets={assetView.assets} projectNo={project.projectNo} onClose={() => setAssetView(null)} />;
+  const assetModal = assetView && <InventoryProgressAssetsModal title={assetView.title} assets={assetView.assets} exportAssets={assetView.exportAssets} projectNo={project.projectNo} onClose={() => setAssetView(null)} />;
 
   useEffect(() => {
     const items = detailRange
@@ -115,7 +118,7 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
         <Typography.Title level={4} style={{ margin: 0 }}>进度详情</Typography.Title>
         <ProjectInfoCard project={project} />
         <Space>{assetTools}<Button onClick={() => { setDetailFilters({}); setDetailPage(1); }}>重置筛选</Button></Space>
-        <Card size="small" title={<SectionCardTitle>进度详情</SectionCardTitle>} extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(filteredDetailRows, detailColumns, `${detailRange}进度详情`)}>导出</Button>}>
+        <Card size="small" title={<SectionCardTitle>进度详情</SectionCardTitle>} extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(selectInventoryExportRows(filteredDetailRows, detailRows), detailColumns, `${detailRange}进度详情`)}>导出</Button>}>
           <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={filteredDetailRows} pagination={{ current: detailPage, defaultPageSize: 10, showSizeChanger: true, showTotal: (total) => '共 ' + total + ' 条' }} onChange={(pagination, filters, sorter, extra) => { setDetailFilters(filters); setDetailPage(extra.action === 'filter' ? 1 : pagination.current); }} scroll={{ x: 1350 }} locale={{ emptyText: '暂无该盘点范围的进度详情数据' }} />
         </Card>
         <div className="flex justify-center pb-2">

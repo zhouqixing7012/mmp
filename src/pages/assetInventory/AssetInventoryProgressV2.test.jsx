@@ -13,7 +13,7 @@ jest.mock('antd', () => ({
   Table: ({ columns, dataSource, pagination, onChange }) => <div>
     <div>{columns.map((column) => <span key={column.dataIndex || column.title}>{column.title}</span>)}</div>
     {dataSource.map((row) => <div key={row.key}>{columns.map((column) => <span key={column.dataIndex || column.title}>{column.render ? column.render(row[column.dataIndex], row) : row[column.dataIndex]}</span>)}</div>)}
-    {pagination && <><span>{pagination.showTotal(dataSource.length)}</span><button onClick={() => onChange({ current: 1 }, { counted: [1] }, {}, { action: 'filter' })}>筛选已盘1</button></>}
+    {pagination && <><span>{pagination.showTotal(dataSource.length)}</span><button onClick={() => onChange({ current: 1 }, { counted: [1] }, {}, { action: 'filter' })}>筛选已盘1</button><button onClick={() => onChange({ current: 1 }, { counted: [999] }, {}, { action: 'filter' })}>筛选无结果</button></>}
   </div>,
 }));
 jest.mock('../../components/StatusTag', () => ({ value }) => <span>{value}</span>);
@@ -50,4 +50,14 @@ test('初盘不展示复盘角色，未盘清单含审核中且排除已盘', ()
   fireEvent.click(screen.getAllByText('查看详情')[1]);
   expect(screen.getByText('计划监督人')).toBeInTheDocument();
   expect(screen.queryByText('财务监督人')).not.toBeInTheDocument();
+});
+
+test('进度详情查询无结果时导出本范围权限全部记录', () => {
+  setup('初盘');
+  fireEvent.click(screen.getAllByText('查看详情')[1]);
+  fireEvent.click(screen.getByText('筛选无结果'));
+  expect(screen.getByText('共 0 条')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('导出'));
+  const workbook = XLSX.writeFile.mock.calls.at(-1)[0];
+  expect(XLSX.utils.sheet_to_json(workbook.Sheets['公共进度详情'])).toHaveLength(2);
 });

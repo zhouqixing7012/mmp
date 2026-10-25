@@ -18,6 +18,13 @@ const PLAN_FIELDS = [
   ['盘点结束日期', 'endDate'],
 ];
 
+// 空查询结果回退调用页传入的权限母集；勾选仍限制导出，不扩大为其他项目或范围。
+export function selectInventoryExportRows(queryRows, permittedRows, selectedKeys = [], rowKey = 'key') {
+  const source = queryRows.length ? queryRows : permittedRows;
+  const keys = new Set(selectedKeys);
+  return keys.size ? source.filter(row => keys.has(typeof rowKey === 'function' ? rowKey(row) : row[rowKey])) : source;
+}
+
 export function hasInventoryUploadedPhoto(asset) {
   return Object.values(asset.photos || {}).some(value => Array.isArray(value) ? value.length > 0 : Boolean(value));
 }
@@ -54,14 +61,14 @@ export function planAssetExportValues(asset, project) {
 
 export function createInventoryPlanWorkbook(plans, assetsForPlan, options = {}) {
   const workbook = XLSX.utils.book_new();
+  const fields = [...PLAN_FIELDS.filter(([, key]) => key !== 'planNo'), ...assetExportFields(options.project)];
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([
-    PLAN_FIELDS.map(([label]) => label),
-    ...plans.map(plan => PLAN_FIELDS.map(([, key]) => plan[key] ?? '')),
-  ]), '计划信息');
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([
-    assetExportFields(options.project).map(([label]) => label),
-    ...plans.flatMap(plan => assetsForPlan(plan).map(asset => planAssetExportValues({ ...asset, planNo: plan.planNo }, options.project))),
-  ]), '关联资产清单');
+    fields.map(([label]) => label),
+    ...plans.flatMap(plan => assetsForPlan(plan).map(asset => [
+      ...PLAN_FIELDS.filter(([, key]) => key !== 'planNo').map(([, key]) => plan[key] ?? ''),
+      ...planAssetExportValues({ ...asset, planNo: plan.planNo }, options.project),
+    ])),
+  ]), '计划资产清单');
   return workbook;
 }
 

@@ -23,7 +23,7 @@ import { ASSET_ROWS, EMPLOYEE_ROWS } from './mockData';
 import { selectScopeAssets } from './inventoryScopeQuery';
 import { buildInventoryOrganizationTree } from './inventoryOrganizationQuery';
 import { initializeInventoryPlanPersonnel, inventoryPersonnelCandidates, inventoryPersonnelChangeReason } from './inventoryPlanPersonnel';
-import { downloadInventoryPlanAssets } from './inventoryPlanExport';
+import { downloadInventoryPlanAssets, selectInventoryExportRows } from './inventoryPlanExport';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 
 const RANGE_OPTIONS = ['机房', '公共', '员工', '库房'];
@@ -213,7 +213,7 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
         <QueryItem label="资产责任人"><AssetPersonSelect rows={initialAssets} value={assetDraftFilters.owner} onChange={(value) => setAssetDraftFilters((current) => ({ ...current, owner: value }))} /></QueryItem>
         <QueryItem label="责任人职级"><OwnerLevelSelect rows={initialAssets} value={assetDraftFilters.ownerLevel} onChange={(value) => setAssetDraftFilters((current) => ({ ...current, ownerLevel: value }))} /></QueryItem>
       </QueryBar>
-      <div className="mb-3 flex justify-end pr-[2px]"><Space><Button icon={<Download size={14} />} onClick={() => { try { downloadInventoryPlanAssets(filteredAssets, project?.projectNo || '自定义计划'); } catch (error) { messageApi.error('资产清册导出失败，请重试'); } }}>导出清册</Button><Button danger icon={<Trash2 size={14} />} onClick={handleDeleteAssets}>删除</Button></Space></div>
+      <div className="mb-3 flex justify-end pr-[2px]"><Space><Button icon={<Download size={14} />} onClick={() => { try { downloadInventoryPlanAssets(selectInventoryExportRows(filteredAssets, assetRows), project?.projectNo || '自定义计划', { project }); } catch (error) { messageApi.error('资产清册导出失败，请重试'); } }}>导出清册</Button><Button danger icon={<Trash2 size={14} />} onClick={handleDeleteAssets}>删除</Button></Space></div>
       <Table rowKey="key" size="small" bordered columns={assetColumns} dataSource={filteredAssets} rowSelection={{ selectedRowKeys: selectedAssetKeys, onChange: setSelectedAssetKeys }} scroll={{ x: 2450 }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
     </Card>
 

@@ -36,7 +36,7 @@ import { isInventoryAssetMandatory } from './inventoryMandatoryAssets';
 import InventoryMandatoryImport from './InventoryMandatoryImport';
 import { reserveInventoryProjectNumber } from './inventoryProjectNumberAllocator';
 import { selectScopeAssets } from './inventoryScopeQuery';
-import { serializeInventoryAssetExport } from './inventoryAssetExport';
+import { serializeInventoryScopeExport } from './inventoryAssetExport';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import {
   BellRing,
@@ -1076,12 +1076,12 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
         <div className="mb-3 flex justify-end">
           <Space>
             <Button icon={<Download size={14} />} onClick={() => {
-              const { csv } = serializeInventoryAssetExport(filteredScopeAssets, { project });
+              const { csv } = serializeInventoryScopeExport(filteredScopeAssets.length ? filteredScopeAssets : scopeAssets, { project });
               const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
               const link = document.createElement('a');
               link.href = url; link.download = `${project.projectNo}-盘点范围资产清单.csv`; link.click(); URL.revokeObjectURL(url);
             }}>导出清单</Button>
-            {project.projectType === '复盘' ? <InventoryMandatoryImport assets={filteredScopeAssets} candidateAssets={importCandidates} project={project}
+            {project.projectType === '复盘' ? <InventoryMandatoryImport assets={filteredScopeAssets.length ? filteredScopeAssets : scopeAssets} candidateAssets={importCandidates} project={project}
               requiredKeys={(changes) => replayMandatoryRuleKeys(changes.map(change => importCandidateByKey.get(change.key)), project)}
               onImport={(changes) => {
                 const keys = changes.map(asset => asset.key);

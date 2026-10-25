@@ -21,7 +21,7 @@ export function checkInventoryScannedTag(tag, assets, accepted = []) {
   return '';
 }
 
-// 保存到移动端和PC共用的结果记录，报失原因等历史信息由存储合并保留。
+// 保存到移动端和PC共用的当前结果；未填写新备注时保留原盘点备注。
 export function uploadInventoryScannedTags({ project, plan, operator, assets, tags, now = new Date() }) {
   const blocked = inventoryScannerBlockReason(project, plan, operator);
   if (blocked) throw new Error(blocked);

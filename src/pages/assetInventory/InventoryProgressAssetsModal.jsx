@@ -1,4 +1,5 @@
 import { inventoryRemark } from './inventoryRemark';
+import { selectInventoryExportRows } from './inventoryPlanExport';
 import React, { useState } from 'react';
 import { Button, Input, Modal, Space, Table } from 'antd';
 import * as XLSX from 'xlsx';
@@ -8,7 +9,7 @@ import StatusTag from '../../components/StatusTag';
 import { createProgressAssetWorkbook, PROGRESS_ASSET_FIELDS } from './inventoryProgressModel';
 
 // 进度下钻使用汇总所统计的同一批资产，联系方式只展示资产记录已有值。
-export default function InventoryProgressAssetsModal({ title, assets, projectNo, onClose }) {
+export default function InventoryProgressAssetsModal({ title, assets, exportAssets = assets, projectNo, onClose }) {
   const [query, setQuery] = useState({});
   const [applied, setApplied] = useState({});
   const [page, setPage] = useState(1);
@@ -37,7 +38,7 @@ export default function InventoryProgressAssetsModal({ title, assets, projectNo,
         <QueryItem label="盘点状态"><AssetValueSelect multiple rows={assets} field="inventoryStatus" value={query.inventoryStatus} onChange={(value) => change('inventoryStatus', value)} /></QueryItem>
         <QueryItem label="City"><AssetValueSelect multiple rows={assets} field="city" value={query.city} onChange={(value) => change('city', value)} /></QueryItem>
       </QueryBar>
-      <div><Button onClick={() => XLSX.writeFile(createProgressAssetWorkbook(rows), projectNo + '-' + title + '.xlsx')}>导出</Button></div>
+      <div><Button onClick={() => XLSX.writeFile(createProgressAssetWorkbook(selectInventoryExportRows(rows, exportAssets)), projectNo + '-' + title + '.xlsx')}>导出</Button></div>
       <Table rowKey="assetTag" bordered size="small" columns={columns} dataSource={rows} scroll={{ x: columns.reduce((sum, column) => sum + column.width, 0), y: 420 }}
         pagination={{ current: page, defaultPageSize: 10, showSizeChanger: true, showTotal: (total) => '共 ' + total + ' 条', onChange: setPage }} />
     </Space>

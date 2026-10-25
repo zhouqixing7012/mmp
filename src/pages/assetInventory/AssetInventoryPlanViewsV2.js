@@ -1,3 +1,5 @@
+import InventoryScanResultImport from './InventoryScanResultImport';
+import { applyInventoryScanResults } from './inventoryScanResultImport';
 import { inventoryRemark } from './inventoryRemark';
 import { isInventoryAssetMandatory } from './inventoryMandatoryAssets';
 import { AssetCategorySelect, AssetPersonSelect, AssetValueSelect, OwnerLevelSelect, formatAssetCategory, matchesAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
@@ -31,7 +33,7 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import SelectModal from '../../components/SelectModal';
 import StatusTag from '../../components/StatusTag';
 import { EMPLOYEE_ROWS, INITIAL_PLAN_ROWS } from './mockData';
-import { hasInventoryUploadedPhoto, downloadInventoryPlanAssets } from './inventoryPlanExport';
+import { hasInventoryUploadedPhoto, downloadInventoryPlanAssets, selectInventoryExportRows } from './inventoryPlanExport';
 import { inventoryResultSource } from './inventoryResultSource';
 import InventoryLabelScanner from './InventoryLabelScanner';
 import { inventoryScannerBlockReason } from './inventoryLabelScan';
@@ -560,7 +562,7 @@ export function AssetInventoryPlanAssetListV2({ plan, project, currentOperator, 
       </QueryBar>
 
       <Card size="small" title={<CardTitle>资产清单</CardTitle>} extra={<Space>
-        {!inventoryScannerBlockReason(project, plan, currentOperator) && <Button onClick={() => setScannerOpen(true)}>标签扫描</Button>}<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => { try { downloadInventoryPlanAssets(filteredRows, plan.planNo, { project }); } catch (error) { messageApi.error('盘点资产导出失败，请重试'); } }}>导出</Button></Space>}>
+        {!inventoryScannerBlockReason(project, plan, currentOperator) && <Button onClick={() => setScannerOpen(true)}>标签扫描</Button>}<InventoryScanResultImport project={project} plan={plan} operator={currentOperator} assets={rows} onImported={updates => setRows(current => applyInventoryScanResults(current, updates))} /><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => { try { downloadInventoryPlanAssets(selectInventoryExportRows(filteredRows, rows), plan.planNo, { project }); } catch (error) { messageApi.error('盘点资产导出失败，请重试'); } }}>导出</Button></Space>}>
         <Table
           rowKey="key"
           size="small"

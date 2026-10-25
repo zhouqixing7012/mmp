@@ -3,7 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import AssetInventoryCustomPlanBuilder from './AssetInventoryCustomPlanBuilder';
 import { downloadInventoryPlanAssets } from './inventoryPlanExport';
 
-jest.mock('./inventoryPlanExport', () => ({ downloadInventoryPlanAssets: jest.fn() }));
+jest.mock('./inventoryPlanExport', () => ({ ...jest.requireActual('./inventoryPlanExport'), downloadInventoryPlanAssets: jest.fn() }));
 jest.mock('antd', () => {
   const Box = ({ children, title, extra }) => <section>{title}{extra}{children}</section>;
   const Input = ({ value, onChange, placeholder, readOnly, onClick }) => <input value={value || ''} readOnly={readOnly} onChange={onChange} placeholder={placeholder} onClick={onClick} />;
@@ -15,12 +15,25 @@ jest.mock('antd', () => {
     message: { useMessage: () => [{ warning: jest.fn(), success: jest.fn(), error: jest.fn() }, null] } };
 });
 jest.mock('../../components/AssetQueryControls', () => ({ AssetCategorySelect: () => null, AssetPersonSelect: () => null, AssetValueSelect: () => null, OwnerLevelSelect: () => null, formatAssetCategory: asset => asset.category, matchesQuerySelection: () => true }));
-jest.mock('../../components/QueryBar', () => ({ __esModule: true, default: ({ children }) => <div>{children}</div>, QueryItem: ({ children }) => <div>{children}</div> }));
+jest.mock('../../components/QueryBar', () => ({ __esModule: true, default: ({ children, onQuery }) => <div>{children}<button onClick={onQuery}>清册查询</button></div>, QueryItem: ({ children }) => <div>{children}</div> }));
 jest.mock('../../components/SelectModal', () => () => null);
 jest.mock('../../components/StatusTag', () => () => null);
 
 const assets = [{ key: 'a', assetTag: 'A', owner: '甲', inventoryRange: '员工', organization: '公司甲' }, { key: 'b', assetTag: 'B', owner: '乙', inventoryRange: '员工', organization: '公司甲' }];
 beforeEach(() => jest.clearAllMocks());
+
+test('自定义复盘清册空查询回退本次纳入资产并传递必盘上下文，非空照查询', () => {
+  const project = { projectNo: 'R', projectType: '复盘', mandatoryAssetKeys: ['a'] };
+  render(<AssetInventoryCustomPlanBuilder initialAssets={assets} project={project} />);
+  fireEvent.change(screen.getByPlaceholderText('请输入资产标签号'), { target: { value: 'A' } });
+  fireEvent.click(screen.getByRole('button', { name: '清册查询' }));
+  fireEvent.click(screen.getByRole('button', { name: '导出清册' }));
+  expect(downloadInventoryPlanAssets).toHaveBeenLastCalledWith([assets[0]], 'R', { project });
+  fireEvent.change(screen.getByPlaceholderText('请输入资产标签号'), { target: { value: '不存在' } });
+  fireEvent.click(screen.getByRole('button', { name: '清册查询' }));
+  fireEvent.click(screen.getByRole('button', { name: '导出清册' }));
+  expect(downloadInventoryPlanAssets).toHaveBeenLastCalledWith(assets, 'R', { project });
+});
 
 test('初始资产可见，生成查询后单范围查看及查看全部展示真实匹配清单', () => {
   render(<AssetInventoryCustomPlanBuilder initialAssets={assets} project={{ projectType: '初盘' }} />);
@@ -44,7 +57,7 @@ test('删除资产后重复生成不补回，导出使用最终资产集合', ()
   fireEvent.click(deletes[deletes.length - 1]);
   fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
   fireEvent.click(screen.getByRole('button', { name: '导出清册' }));
-  expect(downloadInventoryPlanAssets).toHaveBeenCalledWith([assets[1]], 'P');
+  expect(downloadInventoryPlanAssets).toHaveBeenCalledWith([assets[1]], 'P', { project: { projectNo: 'P', projectType: '初盘' } });
   fireEvent.click(screen.getByRole('button', { name: '删除全部' }));
   expect(screen.queryByRole('button', { name: '选择-B' })).not.toBeInTheDocument();
 });
