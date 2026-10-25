@@ -1,5 +1,2 @@
-/* 只作用于盘点报表，其他模块的卡片与表格不受影响。 */
-.inventory-report .ant-card-head-title { text-align: center; }
-.inventory-report .ant-card-head-wrapper { position: relative; justify-content: center; }
-.inventory-report .ant-card-extra { position: absolute; right: 0; }
-.inventory-report .ant-card-head-title { padding-inline: 80px; }
+/* 只居中盘点报表的列标题；Card区块标题及右侧附加信息使用原生布局。 */
+.inventory-report .ant-table-thead > tr > th { text-align: center; }

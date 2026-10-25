@@ -7,3 +7,7 @@ final result: blocked
 参考：本轮附件image(1).png。实现：InventoryDistribution3D.jsx；组件直接渲染图见docs/asset-inventory/screenshots/inventory-distribution-3d-20261025.png。已实际查看参考图与组件渲染结果，核对厚度、分离扇区、外部分类/金额/数量、内部比例及图例，修正了长标签裁切和引导线穿越主图的主要问题。该PNG是源组件的SVG渲染，不是浏览器截图。
 
 阻塞：sites-preview已按规定启动，云浏览器访问http://terminal.local:4173/返回ERR_CONNECTION_REFUSED。无法在同一浏览器视口核对整页、表格对齐及交互，不将构建/组件渲染当作浏览器通过。原型代码与数据测试可交付，视觉验收仍待浏览器可用。
+
+## 本轮纠正
+
+用户澄清仅表格列标题居中，Card区块标题已恢复原生对齐；立体版表格居中，原平面版表格靠右。立体外标改按方位分区，上下标签与左右标签分别排列，前侧引导线从侧壁下缘引出。已重新实际查看源组件渲染结果，外标不再跨越图体/内部占比，文字没有重叠。本轮仍不是浏览器页面实拍，final result保持blocked。
