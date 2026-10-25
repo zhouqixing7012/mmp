@@ -49,8 +49,8 @@ test('真实分类编号保留前导零，三页默认排序正常，未命中�
 });
 test('标签模糊查询与公司多选取交集，分类父节点匹配小类', () => {
   const row = assetReportRows['report-1-1'].find(item => item.scope === '集团');
-  expect(query('report-1-1', { '资产标签号': 'asset-0-0', '公司': ['114', '115'] }).map(item => item.id)).toEqual([row.id]);
-  expect(query('report-1-1', { '资产标签号': 'asset-0-0', '公司': ['115'] })).toHaveLength(0);
+  expect(query('report-1-1', { '资产标签号': row.values['资产标签号'], '公司': ['114', '115'] }).map(item => item.id)).toEqual([row.id]);
+  expect(query('report-1-1', { '资产标签号': row.values['资产标签号'], '公司': ['115'] })).toHaveLength(0);
   expect(query('report-1-1', { '公司': ['114', '115'] })).toHaveLength(12);
   const major = row.values['资产大类'];
   expect(query('report-1-1', { '资产类别': [`major:${major}`] }).every(item => item.values['资产大类'] === major)).toBe(true);
@@ -110,13 +110,13 @@ test.each(['report-6-1', 'report-6-2'])('%s拆行共享单头物料，保持来�
   expect(rows.filter(row => row.grain === '资产配给单.物料')).toHaveLength(1);
   expect(same.every(row => row.values['预计采购金额'] === (id === 'report-6-2' ? 2000 : null) && row.values['实际采购金额'] === (id === 'report-6-2' ? 1130 : null))).toBe(true);
 });
-test('采购有PO未领用已拆行，库存领用标签优先于配给标签', () => {
+test('采购有PO未领用已拆行，库存配给与领用使用同一标签', () => {
   const purchased = query('report-6-2').filter(row => row.values['PO单号'] && !row.values['领用出库单号']);
   expect(purchased).toHaveLength(6);
   expect(purchased.every(row => row.values['完成时间'] === '' && row.values['领用数量'] === null)).toBe(true);
   const received = query('report-6-1').filter(row => row.tagSource === '领用单');
   expect(received).toHaveLength(6);
-  expect(received.every(row => row.claimSource.claim.tags.includes(row.values['资产标签号']) && !row.claimSource.line.assignedTags.includes(row.values['资产标签号']) && row.values['领用数量'] === 2)).toBe(true);
+  expect(received.every(row => row.claimSource.claim.tags.includes(row.values['资产标签号']) && (row.matchStatus !== '库存领用' || row.claimSource.line.assignedTags.includes(row.values['资产标签号'])) && row.values['领用数量'] === 2)).toBe(true);
 });
 test('耗材两种粒度齐全，普通耗材不生成卡片标签和EBS净值', () => {
   const rows = query('report-2-1');
@@ -177,7 +177,7 @@ test('报废金额读取已完成账面源快照，导出一致且移除处置�
   });
   expect(rows.some(row => row.accountingSource.assetsSnapshot[0].detailScrapMethod === '部分报废')).toBe(true);
   expect(rows.some(row => row.accountingSource.assetsSnapshot[0].detailScrapMethod === '全部报废')).toBe(true);
-  expect(query('report-8-1', { '资产标签号': 'retired-0' })).toHaveLength(1);
+  expect(query('report-8-1', { '资产标签号': assetReportRows['report-8-1'][0].values['资产标签号'] })).toHaveLength(1);
 });
 test('财务差异及升级金额可见，零和空保留各自含义', () => {
   const row = query('report-1-1').find(item => item.values['是否有差异'] === '是');

@@ -69,7 +69,7 @@ test('耗材标签打开只读详情弹窗', async () => {
   render(<AssetReportPage reportId="report-2-1" />);
   fireEvent.click(screen.getByRole('columnheader', { name: /公司/ }));
   await waitFor(() => expect(screen.queryByText('数据条件未满足，暂无法显示结果')).not.toBeInTheDocument());
-  const links = screen.getAllByRole('button').filter(button => /^CONSUM-/.test(button.textContent));
+  const links = screen.getAllByRole('button').filter(button => /^(QT|P|N)-\d{6}$/.test(button.textContent));
   expect(links.length).toBeGreaterThan(0);
   fireEvent.click(links[0]);
   await waitFor(() => expect(screen.getByText('耗材详情')).toBeInTheDocument());

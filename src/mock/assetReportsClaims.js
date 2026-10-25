@@ -1,3 +1,4 @@
+import { reportTag } from './assetReportTags';
 import { assetMaterials, consumableMaterials, reportWarehouses, consumableWarehouses, fixture, assetReportPresentationSource } from './assetReportsFixtures';
 
 function approval(status) {
@@ -35,15 +36,16 @@ export const newEmployeeClaims = reportWarehouses.flatMap((warehouse, group) => 
 function assetClaimSource(warehouse, group, mode, stage) {
   const purchase = mode === '统一采购', linked = stage !== '待匹配', received = stage === '已领用';
   const material = assetMaterials[0], suffix = `${group}-${mode}-${stage}`;
+  const tags = [1, 2].map(index => reportTag(`claim-${suffix}-${index}`, material, warehouse));
   // 单头、配给物料和联查结果构成同一演示链路，投影行共享此对象。
   return {
     warehouse, material, mode, stage, approval: approval(received ? '已处理' : '处理中'),
     header: { number: `ASSET-CLAIM-DEMO-${suffix}`, applyDate: '2026-10-02 09:00:00', status: received ? '已处理' : '处理中' },
     line: { number: `ASSIGN-DEMO-${suffix}`, quantity: 2, referencePrice: 1000,
-      assignedTags: !purchase && linked ? [`ASSIGN-TAG-${suffix}-1`, `ASSIGN-TAG-${suffix}-2`] : [] },
+      assignedTags: !purchase && linked ? tags : [] },
     summary: purchase && linked ? { number: `SUMMARY-DEMO-${suffix}`, suggestion: '汇总单采购建议', person: '213852.孙志强' } : null,
     procurement: purchase && linked ? { request: `PR-DEMO-${suffix}`, po: `PO-DEMO-${suffix}`, status: '已完成', taxIncludedUnitPrice: 1130 } : null,
-    claim: { abandoned: received ? '否' : '', tags: received ? [`CLAIM-TAG-${suffix}-1`, `CLAIM-TAG-${suffix}-2`] : [] },
+    claim: { abandoned: received ? '否' : '', tags: received ? tags : [] },
     outbound: received ? { number: `OUT-CLAIM-DEMO-${suffix}`, auditedAt: '2026-10-03 09:00:00', quantity: 2, confirmation: '刷卡', handSigned: '否' } : null,
   };
 }

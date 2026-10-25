@@ -1,6 +1,7 @@
 import { materialCatalog } from './reference/materialCatalog';
 import { findMaterialCategory } from './reference/materialCategoryMapping';
 import { warehouseCatalog } from './reference/warehouseCatalog';
+import { reportTag } from './assetReportTags';
 
 // 基础属性逐行取自用户提供的目录；编号、金额和流程日期是明确的业务演示记录。
 export const assetMaterials = materialCatalog.filter(row => row.materialType === '资产');
@@ -20,7 +21,7 @@ export function fixture(id, material, warehouse, overrides = {}, metadata = {}) 
   const scope = scopeOf(warehouse), person = people[scope === '集团' ? 0 : scope === '上海媒体' ? 1 : 2];
   const companyCode = warehouse.company.split('.')[0];
   const department = `演示组织.${scope}.员工服务中心.资产组.台账组.报表组`;
-  const tag = `${material.materialType === '资产' ? 'REPORT' : 'CONSUM'}-${id}`;
+  const tag = reportTag(id, material, warehouse);
   const values = {
     '库房': `${warehouse.warehouseCode}.${warehouse.warehouseDescription}`, '仓库': `${warehouse.warehouseCode}.${warehouse.warehouseDescription}`,
     '资产总类': material.materialType, '资产大类': material.majorCategory, '资产小类': material.minorCategory,
@@ -89,7 +90,6 @@ export const reportAssets = reportWarehouses.flatMap((warehouse, group) => repor
 }));
 export const reportConsumables = consumableWarehouses.flatMap((warehouse, group) => consumableMaterials.slice(0, 6).map((material, index) => {
   const row = fixture(`consumable-${group}-${index}`, material, warehouse, {
-  '耗材标签号': material.materialType === '低值耐用品' ? `CONSUM-${group}-${index}` : '', '资产标签号': material.materialType === '低值耐用品' ? `CONSUM-${group}-${index}` : '',
   '资产状态': '在用', '原值': 100, '净值': null, 'EBS资产原值': null, '累计折旧': null, '折旧月数': null, '折旧年限': null, '折旧剩余月份': null,
   '领用单号': material.materialType === '耗材' ? `CLAIM-CONSUM-${group}-${index}` : '', '数量': material.materialType === '耗材' ? 3 : 1,
 }, { grain: material.materialType === '低值耐用品' ? '耗材卡片.耗材标签号' : '耗材领用单.物料' });
@@ -105,7 +105,7 @@ addedAssets.push({ ...fixture('add-pending', assetMaterials[0], reportWarehouses
 // 字段结构复用现有账面报废模型：已完成单据的assetsSnapshot保存金额，不在报表分摊。
 export const retiredAssets = reportWarehouses.map((warehouse, group) => {
   const retirementSource = { ebsOriginalValue: 1200, assetSystemOriginalValue: 1400 };
-  const tag = `REPORT-retired-${group}`;
+  const tag = reportTag(`retired-${group}`, assetMaterials[group], warehouse);
   const accountingDetail = Object.freeze({ tagNo: tag, materialCode: assetMaterials[group].materialCode,
     cardQuantity: group === 0 ? 4 : 1, requestedScrapQuantity: 1, quantity: 1,
     retirementType: assetReportPresentationSource.retirementTypes[group],
