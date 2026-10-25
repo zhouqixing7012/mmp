@@ -206,11 +206,11 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     personnelColumn('盘点监督人', 'supervisor'),
     personnelColumn('盘点执行人', 'executor'),
     ...(project?.projectType === '复盘' ? [{ title: '财务监督人', width: 130, render: () => <Typography.Text>徐博</Typography.Text> }] : []),
-    ...(project?.projectType === '复盘' ? [{ title: '计划审批', width: 210, render: (_, row) => <Space>
-      {!projectClosed && row.status === '盘点中' && <Button type="link" aria-label={`提交计划审批${row.planNo}`} onClick={() => submitReview(row)}>提交计划审批</Button>}
-      {submission?.planReviews?.[row.planNo] && <Button type="link" aria-label={`查看计划审批${row.planNo}`} onClick={() => setReviewTarget({ scope: 'plan', planNo: row.planNo })}>查看计划审批</Button>}
-    </Space> }] : []),
     { title: '资产清单', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => onOpenPlanAssets(row)}>查看</Button> },
+    ...(project?.projectType === '复盘' ? [{ title: '操作', width: 210, fixed: 'right', render: (_, row) => <Space>
+        {!projectClosed && row.status === '盘点中' && <Button type="link" aria-label={`提交计划审批${row.planNo}`} onClick={() => submitReview(row)}>提交计划审批</Button>}
+        {submission?.planReviews?.[row.planNo] && <Button type="link" aria-label={`查看计划审批${row.planNo}`} onClick={() => setReviewTarget({ scope: 'plan', planNo: row.planNo })}>查看计划审批</Button>}
+    </Space> }] : []),
   ];
 
   if (locationPoolOpen) return <InventoryLocationChangeFlow project={project} onBack={() => setLocationPoolOpen(false)} />;

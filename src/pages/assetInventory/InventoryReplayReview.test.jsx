@@ -81,3 +81,13 @@ test('关闭项目时计划审批只读',()=>{
  expect(screen.queryByRole('button',{name:'同意'})).toBeNull();
  expect(screen.queryByRole('button',{name:'驳回'})).toBeNull();
 });
+
+ test('复盘信息隐藏已盘数量，未盘必盘数量只计必盘且状态未盘的资产', () => {
+ const list = [{key:'1',assetTag:'A',inventoryStatus:'未盘',isMandatory:true},{key:'2',assetTag:'B',inventoryStatus:'未盘',isMandatory:false},{key:'3',assetTag:'C',inventoryStatus:'已盘',isMandatory:true},{key:'4',assetTag:'D',inventoryStatus:'报失',isMandatory:true},{key:'5',assetTag:'E',inventoryStatus:'审核中',isMandatory:true}];
+ render(<InventoryReplayReview project={{period:'2026'}} plans={[plans[0]]} assetsForPlan={()=>list} submission={{records:[]}} onBack={()=>{}}/>);
+ expect(screen.queryByRole('columnheader',{name:'已盘数量'})).toBeNull();
+ const headers=screen.getAllByRole('columnheader').map(node=>node.textContent);
+ expect(headers[headers.indexOf('未盘数量')+1]).toBe('未盘必盘数量');
+ const cells=screen.getAllByRole('row')[1].querySelectorAll('td');
+ expect(cells[headers.indexOf('未盘必盘数量')]).toHaveTextContent('1');
+ });

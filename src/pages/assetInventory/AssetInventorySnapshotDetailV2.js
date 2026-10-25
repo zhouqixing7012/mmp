@@ -455,13 +455,12 @@ export default function AssetInventorySnapshotDetailV2({
   const generatePlans = () => {
     Modal.confirm({
       title: '提示',
-      content: '是否按照默认方式生成盘点计划？',
+      content: project?.projectType === '复盘' ? (machineRoomProject ? '是否按机房汇总生成复盘计划？' : '是否按楼层汇总生成复盘计划？') : '是否按子公司＋盘点范围生成盘点计划？',
       okText: '是',
       cancelText: '否',
       onOk: () => {
+        if (onGenerateDefault?.() === false) return;
         setProjectStatus('生成盘点计划');
-        messageApi.success('已按子公司、盘点范围默认分组生成盘点计划');
-        onGenerateDefault?.();
       },
       onCancel: () => onGenerateCustom?.(),
     });

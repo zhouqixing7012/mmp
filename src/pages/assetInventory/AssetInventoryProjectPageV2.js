@@ -185,7 +185,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     if (forceGeneratedStatus && !session.rows.length) {
       const selectedAssets = session.assets.filter((asset) => (nextProject.snapshotAssetKeys ? nextProject.snapshotAssetKeys.includes(asset.key) : asset.executeInventory) && isInventoryRangeAllowed(asset, allowedRanges));
       const reason = inventoryDefaultPlanBlockReason(nextProject, selectedAssets);
-      if (reason) { Modal.warning({ title: '无法生成默认计划', content: reason }); return; }
+      if (reason) { Modal.warning({ title: '无法生成默认计划', content: reason }); return false; }
       const generated = buildDefaultInventoryPlans(nextProject, selectedAssets);
       setPlanRows(generated);
       const generatedAssets = new Map(generated.flatMap(plan => plan.assets.map(asset => [asset.key, asset])));
@@ -198,6 +198,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     resetOverlays();
     setPlanProject(nextProject.status === '盘点关闭' ? nextProject : forceGeneratedStatus ? { ...nextProject, status: '生成盘点计划' } : nextProject);
     setPlanViewOpen(true);
+    return true;
   };
 
   const openPlanView = (sourceElement, forceGeneratedStatus = false) => {
@@ -338,7 +339,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
 
   const generateRemainingDefaultPlans = () => {
     const reason = inventoryDefaultPlanBlockReason(planProject, unplannedSnapshotAssets);
-    if (reason) { Modal.warning({ title: '无法生成默认计划', content: reason }); return; }
+    if (reason) { Modal.warning({ title: '无法生成默认计划', content: reason }); return false; }
     const generated = buildDefaultInventoryPlans(planProject, unplannedSnapshotAssets, planRows);
     setPlanRows(current => [...current, ...generated]);
     const replacements = new Map(generated.flatMap(plan => plan.assets.map(asset => [asset.key, asset])));

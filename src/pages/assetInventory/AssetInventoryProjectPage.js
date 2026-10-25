@@ -1333,7 +1333,7 @@ function SnapshotView({ project, projectStatus, setProjectStatus, onBack, onOpen
       cancelText: '否',
       onOk: () => {
         setProjectStatus('生成盘点计划');
-        messageApi.success('已按盘点组织、一级部门、City、盘点范围默认拆分生成盘点计划');
+        messageApi.info(project.projectType === '复盘' ? '复盘默认按楼层汇总；机房复盘须具备机房资料' : '初盘、抽盘默认按子公司＋盘点范围分组');
         onOpenPlans();
       },
       onCancel: () => setCustomPlanOpen(true),
