@@ -1713,14 +1713,13 @@ function PlansView({ project, projectStatus, setProjectStatus, onBack, onOpenPla
     { title: '计划编号', dataIndex: 'planNo', width: 170, fixed: 'left' },
     { title: '计划名称', dataIndex: 'planName', width: 190 },
     { title: '计划状态', dataIndex: 'status', width: 100, render: (value) => <StatusTag value={value} /> },
-    { title: '盘点组织', dataIndex: 'organization', width: 120 },
-    { title: 'City', dataIndex: 'city', width: 120 },
+    { title: '子公司', dataIndex: 'organization', width: 120 },
+    { title: '盘点范围', dataIndex: 'range', width: 100 },
     ...(project.projectType === '复盘'
       ? [
         { title: '财务监督人', dataIndex: 'financialSupervisor', width: 130, render: (value, row) => <PersonnelInput disabled={!editable(row)} value={value === '-' ? '' : value} onClick={() => openPersonnel(row.key, 'financialSupervisor')} /> },
       ]
       : []),
-    { title: '盘点范围', dataIndex: 'range', width: 100 },
     { title: '资产总量', dataIndex: 'assetCount', width: 100, align: 'right' },
     { title: '未盘数量', dataIndex: 'uncountedCount', width: 100, align: 'right' },
     { title: '已盘数量', dataIndex: 'countedCount', width: 100, align: 'right' },
