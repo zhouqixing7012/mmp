@@ -17,9 +17,9 @@ test.each([2025, 2026])('%s实际导出四张表隐藏网格线并保留边框�
   workbook.SheetNames.forEach(name => {
     expect(XLSX.utils.sheet_to_json(saved.Sheets[name], { header: 1, defval: null })).toEqual(XLSX.utils.sheet_to_json(workbook.Sheets[name], { header: 1, defval: null }));
   });
-  expect(saved.Sheets['盘点结果比较分析'].A12.l.Target).toBe("#'盘亏资产明细及原因'!A4");
+  expect(saved.Sheets['盘点结果比较分析'].B12.l.Target).toBe("#'盘亏资产明细及原因'!A4");
   expect(saved.Sheets['盘点结果比较分析']['!merges']).toEqual(workbook.Sheets['盘点结果比较分析']['!merges']);
-  expect(saved.Sheets['盘点结果比较分析'].H18.w).toBe('0.008%');
+  expect(saved.Sheets['盘点结果比较分析'].J19.w).toBe('0.008%');
   expect(strFromU8(files['xl/styles.xml'])).toContain('style="thin"');
   expect(saved.Sheets['盘亏分布'].C2.w).toBe('');
 });

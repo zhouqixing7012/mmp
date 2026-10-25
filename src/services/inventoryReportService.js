@@ -1,19 +1,15 @@
 import * as XLSX from 'xlsx-js-style';
 import { downloadInventoryReportFile } from './inventoryReportFile';
-import { styleInventoryReportWorkbook } from './inventoryReportWorkbookStyles';
+import { styleInventoryReportWorkbook, positionInventoryAnalysisSheet } from './inventoryReportWorkbookStyles';
 import { inventoryReportTemplate, inventoryReportActuals } from '../mock/businessRulesMock';
 import { ASSET_PLATE_OPTIONS } from '../config/assetPlates';
 import { warehouseCatalog } from '../mock/reference/warehouseCatalog';
 import { mapInventoryReportAsset, summarizeInventoryReportCategory } from './inventoryReportClassification';
+import { INVENTORY_REPORT_FORMATS as formats } from './inventoryReportFormats';
+export { amount, accountingAmount, quantity, integer, accounting, historyPercent, percent, summaryPercent, companyQuantity, companyAmount } from './inventoryReportFormats';
 
 export const LOSS_CATEGORIES = ['台式机、显示器', '笔记本', '照摄像器材', '移动数码', '办公设备', '车辆', '电话'];
 export const DETAIL_FIELDS = ['序号', '盘点状态', '资产大类', '资产小类', '资产说明', '数量', '原值', '报失当月资产净值', '是否已赔偿', '赔偿金额', '损失', '标签号', '购买日期', '责任人姓名', '责任人编号', '子公司', '一级部门', '说明'];
-export const amount = value => value == null ? '-' : value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-export const accounting = value => value == null || value === 0 ? '-' : value < 0 ? `(${amount(-value)})` : amount(value);
-export const percent = value => value == null ? '-' : `${(value * 100).toFixed(2)}%`;
-export const companyQuantity = value => value == null || value === 0 ? '' : value.toLocaleString('zh-CN');
-export const companyAmount = value => value == null || value === 0 ? '' : amount(value);
-export const quantity = value => value == null ? '-' : String(value);
 // 分公司范围按公司编码或完整名称精确识别，不把其他上海/广州公司一并排除。
 const excludedBranchCodes = new Set(['115', '116']);
 const branchName = value => String(value ?? '').trim().replace(/^\d+\./, '').replace(/-/g, '').replace(/分公司$/, '');
@@ -63,7 +59,6 @@ export function getInventoryReportSummary(report) {
     report.hasActualDetails ? getActualPendingSummary(report, current) : { name: '待查资产', quantity: null, quantityRate: null, original: null, originalRate: null, net: null, netRate: null },
   ];
 }
-export const historyPercent = value => value == null ? '-' : value === 0 ? '0%' : `${(value * 100).toFixed(3)}%`;
 export function buildInventoryReportWorkbook(report) {
   const workbook = XLSX.utils.book_new();
   const add = (name, rows) => {
@@ -76,7 +71,7 @@ export function buildInventoryReportWorkbook(report) {
   const categories = getInventoryLossCategoryRows(report);
   const increments = getIncrementRows(report.year);
   const summaryStart = 10;
-  const historyStart = 17;
+  const historyStart = 18;
   const analysis = [
     [`${report.year}年资产盘点情况汇总（ES管控资产）`], [],
     ['一、资产变化范围：'], ['资产变化周期', report.period], ['资产盘点类别', report.scope], [],
@@ -85,7 +80,7 @@ export function buildInventoryReportWorkbook(report) {
     ['资产情况', '数量', null, '原值', null, `净值（截至${report.year}年6月）`],
     [null, '数量（件）', '在全部盘点资产中占比', '金额（元）', '在全部盘点资产中占比', '金额（元）', '在全部盘点资产中占比'],
     ...getInventoryReportSummary(report).map(r => [r.name, r.quantity, r.quantityRate, r.original, r.originalRate, r.net, r.netRate]),
-    [], ['2. 四年盘点数据对比：'],
+    [], [], ['2. 四年盘点数据对比：'],
     ['年份', '全部盘点资产情况', null, null, '盘亏数量情况', null, '盘亏原值情况', null, '盘亏净值情况'],
     [null, '盘点总数量（件）', '盘点总原值（元）', '盘点总净值（元）', '数量（件）', '在全部盘点资产中占比', '金额（元）', '在全部盘点资产中占比', '金额（元）', '在全部盘点资产中占比'],
     ...report.history.map(r => [r.year, r.quantity, r.original, r.net, r.lossQuantity, r.lossRate, r.lossOriginal, r.lossOriginalRate, r.lossNet, r.lossNetRate]),
@@ -97,7 +92,7 @@ export function buildInventoryReportWorkbook(report) {
   const incrementStart = analysis.length;
   analysis.push(...increments.map(r => [r.category, r.name, r.value]), [], ['年度增长指标'], ['指标', '当前总数', '年度增长量', '年度增长率', '增长率变化']);
   const indicatorStart = analysis.length;
-  analysis.push(...report.indicators.map(r => [r.name, r.total, r.change, r.rate, r.rateChange / 100]));
+  analysis.push(...report.indicators.map(r => [r.name, r.total, r.change, r.rate, r.rateChange == null ? null : r.rateChange / 100]));
   const analysisSheet = add('盘点结果比较分析', analysis);
   const detailRows = getInventoryDetailRows(report);
   const details = add('盘亏资产明细及原因', [[`${report.year}年度资产盘点盘亏及待查统计（ES管控资产）`], report.detailsAreDemo ? ['演示数据'] : [], DETAIL_FIELDS,
@@ -113,8 +108,8 @@ export function buildInventoryReportWorkbook(report) {
     ...report.companyLoss.map(r => [r.company, r.year, r.notebook, r.desktop, r.display, r.office, r.mobile, r.camera, r.vehicle, r.quantity, r.net])]);
   // 金额和百分比按单元格类型设置，保持可计算的数字而非格式化文本。
   const formatCells = (sheet, rows, moneyCols, rateCols = []) => rows.forEach(row => {
-    moneyCols.forEach(col => { const c = sheet[XLSX.utils.encode_cell({ r: row, c: col })]; if (c?.t === 'n') c.z = '#,##0.00'; });
-    rateCols.forEach(col => { const c = sheet[XLSX.utils.encode_cell({ r: row, c: col })]; if (c?.t === 'n') c.z = '0.00%'; });
+    moneyCols.forEach(col => { const c = sheet[XLSX.utils.encode_cell({ r: row, c: col })]; if (c?.t === 'n') c.z = formats.decimal; });
+    rateCols.forEach(col => { const c = sheet[XLSX.utils.encode_cell({ r: row, c: col })]; if (c?.t === 'n') c.z = formats.percentTwo; });
   });
   formatCells(analysisSheet, [summaryStart, summaryStart + 1, summaryStart + 2], [3, 5], [2, 4, 6]);
   const historyRows = report.history.map((_, index) => index + historyStart);
@@ -122,16 +117,19 @@ export function buildInventoryReportWorkbook(report) {
   historyRows.forEach(row => {
     [5, 7, 9].forEach(column => {
       const cell = analysisSheet[XLSX.utils.encode_cell({ r: row, c: column })];
-      if (cell?.t === 'n') cell.z = '0.000%;-0.000%;"0%"';
+      if (cell?.t === 'n') cell.z = formats.percentThree;
     });
     const net = analysisSheet[XLSX.utils.encode_cell({ r: row, c: 8 })];
-    if (net?.t === 'n') net.z = '#,##0.00;(#,##0.00);"-"';
+    if (net?.t === 'n') net.z = formats.accountingInteger;
   });
-  formatCells(analysisSheet, [indicatorStart], [], [3, 4]);
-  formatCells(analysisSheet, [indicatorStart + 1, indicatorStart + 2], [1, 2], [3, 4]);
+  formatCells(analysisSheet, [indicatorStart, indicatorStart + 1, indicatorStart + 2], [], [3, 4]);
+  [indicatorStart, indicatorStart + 1, indicatorStart + 2].forEach(row => [1, 2].forEach(col => {
+    const cell = analysisSheet[XLSX.utils.encode_cell({ r: row, c: col })];
+    if (cell?.t === 'n') cell.z = formats.integerWithZero;
+  }));
   categories.forEach((_, index) => [2, 3, 4].forEach(column => {
     const cell = analysisSheet[XLSX.utils.encode_cell({ r: categoryStart + index, c: column })];
-    if (cell?.t === 'n') cell.z = '#,##0.00;(#,##0.00);"-"';
+    if (cell?.t === 'n') cell.z = formats.accountingInteger;
   }));
   const mergeGroups = (sheet, rows, key, startRow, canMerge) => {
     const spans = getGroupedRowSpans(rows, key, canMerge);
@@ -145,26 +143,35 @@ export function buildInventoryReportWorkbook(report) {
   });
   increments.forEach((_, index) => {
     const cell = analysisSheet[XLSX.utils.encode_cell({ r: incrementStart + index, c: 2 })];
-    if (cell?.t === 'n') cell.z = '#,##0;-#,##0;"-"';
+    if (cell?.t === 'n') cell.z = formats.integer;
   });
   mergeGroups(company, report.companyLoss, 'company', 1);
   formatCells(distribution, report.distribution.map((_, i) => i + 1), [2], [3]);
+  report.distribution.forEach((_, index) => {
+    const cell = distribution[XLSX.utils.encode_cell({ r: index + 1, c: 1 })];
+    if (cell?.t === 'n') cell.z = formats.integerWithZero;
+  });
   // 公司分布的0值留白，数字保留在单元格中用于计算。
   report.companyLoss.forEach((_, index) => {
     for (let column = 2; column <= 10; column += 1) {
       const cell = company[XLSX.utils.encode_cell({ r: index + 1, c: column })];
-      if (cell?.t === 'n') cell.z = column === 10 ? '#,##0.00;(#,##0.00);;' : '#,##0;-#,##0;;';
+      if (cell?.t === 'n') cell.z = formats.companyInteger;
     }
   });
   formatCells(details, detailRows.map((_, i) => i + 3), [6, 7, 9, 10]);
+  detailRows.forEach((_, index) => [5, 6, 7].forEach(column => {
+    const cell = details[XLSX.utils.encode_cell({ r: index + 3, c: column })];
+    if (cell?.t === 'n') cell.z = column === 5 ? formats.integerWithZero : formats.accountingDecimal;
+  }));
   detailRows.forEach((row, index) => {
     if (!row.summary) return;
     [5, 6, 7].forEach(column => {
       const cell = details[XLSX.utils.encode_cell({ r: index + 3, c: column })];
-      if (cell?.t === 'n') cell.z = column === 5 ? '0;-0;"-"' : '#,##0.00;(#,##0.00);"-"';
+      if (cell?.t === 'n') cell.z = column === 5 ? formats.integer : formats.accountingDecimal;
     });
   });
   styleInventoryReportWorkbook(workbook, { summaryStart, historyStart, historyLength: report.history.length, categoryStart, categoryCount: categories.length, incrementStart, increments, indicatorStart, detailRows, detailsAreDemo: report.detailsAreDemo, companyRows: report.companyLoss });
+  positionInventoryAnalysisSheet(workbook);
   return workbook;
 }
 export function exportInventoryReport(report) {
@@ -221,7 +228,7 @@ function getActualPendingSummary(report, current) {
   const rows = filterInventoryReportAssets(report.details).filter(row => row['盘点状态'] === '待查');
   const sum = field => rows.every(row => row[field] != null) ? rows.reduce((total, row) => total + row[field], 0) : null;
   const quantity = sum('数量'); const original = sum('原值'); const net = sum('报失当月资产净值');
-  return { name: '待查资产', quantity, original, net, quantityRate: quantity / current.quantity, originalRate: original == null ? null : original / current.original, netRate: net == null ? null : net / current.net };
+  return { name: '待查资产', quantity, original, net, quantityRate: quantity == null || !current.quantity ? null : quantity / current.quantity, originalRate: original == null || !current.original ? null : original / current.original, netRate: net == null || !current.net ? null : net / current.net };
 }
 
 export const getIncrementTitle = year => `${year}年资产变化情况概述：${year - 1}-${year}年盘点范围内各类资产增量情况`;

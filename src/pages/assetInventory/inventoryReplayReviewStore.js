@@ -12,19 +12,42 @@ export function getReplaySubmission(projectNo) {
   const saved = readDemoData(keyFor(projectNo), null);
   if (!saved) return null;
   // 旧审批链只留作历史，不把旧ES/NO结论当作新的计划或项目审批。
-  if (saved.version !== 2) return { ...emptyState(), legacySubmission: saved };
-  return saved;
+  if (saved.version !== 2 || (saved.projectNo && saved.projectNo !== projectNo)) return { ...emptyState(), projectNo, legacySubmission: saved };
+  return { ...saved, projectNo };
 }
 
 function saveState(projectNo, state) {
-  const result = { ...state, plans: Object.values(state.planReviews).flatMap(review => review.plans), status: state.projectReview?.status || '未提交' };
+  const result = { ...state, projectNo, plans: Object.values(state.planReviews).flatMap(review => review.plans), status: state.projectReview?.status || '未提交' };
   writeDemoData(keyFor(projectNo), result);
   return result;
 }
 
-export function applyReplayPlanStatuses(plans, submission) {
+function samePlanInstance(saved, plan) {
+  if (!saved || saved.planNo !== plan.planNo || ['草稿', '暂存'].includes(plan.status)) return false;
+  if ((saved.key || plan.key) && saved.key !== plan.key) return false;
+  return !(saved.reviewInstanceKey || plan.reviewInstanceKey) || saved.reviewInstanceKey === plan.reviewInstanceKey;
+}
+
+export function getReplayReviewForPlan(state, plan, projectNo = state?.projectNo) {
+  if (state?.projectNo && projectNo && state.projectNo !== projectNo) return null;
+  const review = state?.planReviews?.[plan.planNo];
+  if (!samePlanInstance(review?.plans?.[0], plan) || (review.projectNo && review.projectNo !== projectNo)) return null;
+  if (!review.records?.some(record => record.node === '提交计划审批' && record.status === '已提交')) return null;
+  return review;
+}
+
+export function getReplayProjectReview(state, plans, projectNo = state?.projectNo) {
+  if (state?.projectNo && projectNo && state.projectNo !== projectNo) return null;
+  const review = state?.projectReview;
+  if (!review || (review.projectNo && review.projectNo !== projectNo) || !plans.length || review.plans?.length !== plans.length) return null;
+  if (!plans.every(plan => review.plans.some(saved => samePlanInstance(saved, plan)))) return null;
+  if (!review.records?.some(record => record.node === '提交项目审批' && record.status === '已提交')) return null;
+  return review;
+}
+
+export function applyReplayPlanStatuses(plans, submission, projectNo = submission?.projectNo) {
   return plans.map(plan => {
-    const saved = submission?.planReviews?.[plan.planNo]?.plans?.[0];
+    const saved = getReplayReviewForPlan(submission, plan, projectNo)?.plans[0];
     return saved ? { ...plan, status: saved.status, approvalStatus: saved.approvalStatus } : plan;
   });
 }
@@ -60,19 +83,29 @@ export function validateReplaySubmission(project, plans, assetsForPlan, photoRow
 }
 
 export function submitReplayReview({ project, plans, assetsForPlan, photoRows, operator, allowBelowRatio = false }) {
-  const state = getReplaySubmission(project.projectNo) || emptyState();
+  let state = getReplaySubmission(project.projectNo) || emptyState();
   if (!operator) throw new Error('缺少当前操作人');
   const warnings = validateReplaySubmission(project, plans, assetsForPlan, photoRows);
   if (warnings.length && !allowBelowRatio) throw new Error(warnings.join('；'));
-  if (state.projectReview && state.projectReview.status !== '已驳回') throw new Error('项目已提交审批，不能重新提交计划');
   const plan = plans[0];
-  const previous = state.planReviews[plan.planNo];
+  const stored = state.planReviews[plan.planNo];
+  const previous = getReplayReviewForPlan(state, plan, project.projectNo);
+  if (stored && !previous) {
+    const planReviews = { ...state.planReviews };
+    delete planReviews[plan.planNo];
+    state = { ...state, planReviews, planReviewHistory: [...(state.planReviewHistory || []), stored],
+      projectReviewHistory: [...(state.projectReviewHistory || []), ...(state.projectReview ? [state.projectReview] : [])], projectReview: null };
+  }
+  if (state.projectReview && !state.projectReview.plans?.some(saved => samePlanInstance(saved, plan))) {
+    state = { ...state, projectReviewHistory: [...(state.projectReviewHistory || []), state.projectReview], projectReview: null };
+  }
+  if (state.projectReview && state.projectReview.status !== '已驳回') throw new Error('项目已提交审批，不能重新提交计划');
   if (previous && previous.status !== '已驳回') throw new Error('该计划已提交审批，不能重复提交');
   const assets = assetsForPlan(plan);
   const supervisors = [...new Set(assets.map(asset => asset.supervisor))];
   const round = (previous?.round || 0) + 1;
   const review = {
-    scope: 'plan', planNo: plan.planNo, round, status: '审核中',
+    scope: 'plan', projectNo: project.projectNo, planNo: plan.planNo, round, status: '审核中',
     plans: [{ ...plan, status: '审核中', approvalStatus: '审核中' }],
     assetsByPlan: { [plan.planNo]: assets },
     records: [...(previous?.records || []), { key: `start-${round}`, node: '提交计划审批', person: operator, status: '已提交', time: now() },
@@ -85,8 +118,9 @@ export function replayProjectSubmissionBlockReason(project, plans, state) {
   const block = projectBlock(project);
   if (block) return block;
   if (!plans.length) return '没有可提交的复盘计划';
-  if (plans.some(plan => state?.planReviews?.[plan.planNo]?.status !== '已审核')) return '全部复盘计划审批通过后才能提交项目审批';
-  if (state?.projectReview && state.projectReview.status !== '已驳回') return '项目已提交审批，不能重复提交';
+  if (plans.some(plan => getReplayReviewForPlan(state, plan, project.projectNo)?.status !== '已审核')) return '全部复盘计划审批通过后才能提交项目审批';
+  const current = getReplayProjectReview(state, plans, project.projectNo);
+  if (current && current.status !== '已驳回') return '项目已提交审批，不能重复提交';
   return '';
 }
 
@@ -95,15 +129,16 @@ export function submitReplayProjectReview({ project, plans, operator }) {
   const block = replayProjectSubmissionBlockReason(project, plans, state);
   if (block) throw new Error(block);
   if (!operator) throw new Error('缺少当前操作人');
-  const previous = state.projectReview;
+  const previous = getReplayProjectReview(state, plans, project.projectNo);
+  const projectReviewHistory = [...(state.projectReviewHistory || []), ...(state.projectReview && !previous ? [state.projectReview] : [])];
   const round = (previous?.round || 0) + 1;
   const reviews = plans.map(plan => state.planReviews[plan.planNo]);
-  const review = { scope: 'project', round, status: '审核中', plans: reviews.flatMap(item => item.plans),
+  const review = { scope: 'project', projectNo: project.projectNo, round, status: '审核中', plans: reviews.flatMap(item => item.plans),
     assetsByPlan: Object.assign({}, ...reviews.map(item => item.assetsByPlan)),
     records: [...(previous?.records || []), { key: `project-start-${round}`, node: '提交项目审批', person: operator, status: '已提交', time: now() },
       { key: `finance-${round}`, node: '财务经理审批', person: REPLAY_FINANCE_APPROVER, status: '待审批' }],
   };
-  return saveState(project.projectNo, { ...state, projectReview: review });
+  return saveState(project.projectNo, { ...state, projectReviewHistory, projectReview: review });
 }
 
 export function replayDecisionBlockReason(project, review, operator) {
@@ -114,11 +149,13 @@ export function replayDecisionBlockReason(project, review, operator) {
   return '';
 }
 
-export function decideReplayReview({ project, operator, decision, opinion = '', round, planNo, scope = 'plan' }) {
+export function decideReplayReview({ project, operator, decision, opinion = '', round, planNo, planKey, reviewInstanceKey, plans, scope = 'plan' }) {
   const state = getReplaySubmission(project.projectNo);
   const review = scope === 'project' ? state?.projectReview : state?.planReviews?.[planNo];
   const block = replayDecisionBlockReason(project, review, operator);
   if (block) throw new Error(block);
+  if (scope === 'plan' && ((review.plans[0].key && review.plans[0].key !== planKey) || (review.plans[0].reviewInstanceKey && review.plans[0].reviewInstanceKey !== reviewInstanceKey))) throw new Error('计划实例已变化，请重新打开申请');
+  if (scope === 'project' && plans && !getReplayProjectReview(state, plans, project.projectNo)) throw new Error('项目计划实例已变化，请重新打开申请');
   if (round !== review.round) throw new Error('审批记录已变化，请重新打开申请');
   if (!['同意', '驳回'].includes(decision)) throw new Error('请选择有效审批结果');
   const records = review.records.map(record => record.status === '待审批' && record.person === operator
@@ -131,7 +168,7 @@ export function decideReplayReview({ project, operator, decision, opinion = '', 
   const todoLifecycle = [...state.todoLifecycle];
   if (status === '已审核') {
     const executors = [...new Set(review.assetsByPlan[planNo].map(asset => asset.executor).filter(present))];
-    executors.forEach(person => todoLifecycle.push({ id: `${planNo}:${round}:${person}:clear`, planNo, round, person, channel: '狐小e', action: '清除盘点待办', status: '演示已清除', serviceStatus: '正式服务未接入', time: now() }));
+    executors.forEach(person => todoLifecycle.push({ id: `${project.projectNo}:${review.plans[0].reviewInstanceKey || review.plans[0].key || planNo}:${round}:${person}:clear`, planNo, planKey: review.plans[0].key, reviewInstanceKey: review.plans[0].reviewInstanceKey, round, person, channel: '狐小e', action: '清除盘点待办', status: '演示已清除', serviceStatus: '正式服务未接入', time: now() }));
   }
   return saveState(project.projectNo, { ...state, planReviews: { ...state.planReviews, [planNo]: result }, todoLifecycle });
 }

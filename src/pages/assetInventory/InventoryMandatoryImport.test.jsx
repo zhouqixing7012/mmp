@@ -2,6 +2,8 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import * as XLSX from 'xlsx';
 import InventoryMandatoryImport from './InventoryMandatoryImport';
+import { INVENTORY_MANDATORY_IMPORT_HEADERS as header } from './inventoryMandatoryImport';
+import { serializeInventoryAssetExport } from './inventoryAssetExport';
 
 const mockWarning = jest.fn();
 const mockSuccess = jest.fn();
@@ -9,7 +11,8 @@ jest.mock('antd', () => ({ Space: ({ children }) => <div>{children}</div>, Butto
 jest.mock('xlsx', () => ({ ...jest.requireActual('xlsx'), writeFile: jest.fn() }));
 const assets = [{ key: 'a', assetTag: '001', isMandatory: true }, { key: 'b', assetTag: '002', isMandatory: false }];
 const project = { projectNo: 'R1', projectType: '复盘', initialProjectNo: 'I1', status: '暂存' };
-function fileFor(matrix) {
+function fileFor(inputRows) {
+  const matrix = [header, ...inputRows.slice(1).map(([tag, flag]) => header.map((name) => name === '资产标签号' ? tag : name === '是否必盘' ? flag : ''))];
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(matrix), '必盘标记');
   const buffer = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
@@ -20,22 +23,36 @@ beforeEach(() => jest.clearAllMocks());
 test('下载真实工作簿模板，导入实际工作簿后仅提交已校验标记', async () => {
   const onImport = jest.fn();
   render(<InventoryMandatoryImport assets={assets} project={project} onImport={onImport} />);
-  fireEvent.click(screen.getByRole('button', { name: '必盘标记模板' }));
+  fireEvent.click(screen.getByRole('button', { name: '清单模板' }));
   const [workbook, name] = XLSX.writeFile.mock.calls[0];
-  expect(name).toBe('R1-必盘标记模板.xlsx');
-  expect(XLSX.utils.sheet_to_json(workbook.Sheets['必盘标记'], { header: 1 })).toEqual([['资产标签号', '是否必盘'], ['001', '是'], ['002', '否']]);
-  fireEvent.change(screen.getByLabelText('导入必盘标记文件'), { target: { files: [fileFor([['资产标签号', '是否必盘'], ['001', '否'], ['002', '是']])] } });
+  expect(name).toBe('R1-盘点范围资产清单模板.xlsx');
+  const template = XLSX.utils.sheet_to_json(workbook.Sheets['盘点范围资产清单'], { header: 1 });
+  expect(template[0]).toEqual(header);
+  expect(template[0]).toHaveLength(34);
+  expect(template[1][header.indexOf('资产标签号')]).toBe('001');
+  expect(template[1][header.indexOf('是否必盘')]).toBe('是');
+  fireEvent.change(screen.getByLabelText('导入盘点清单文件'), { target: { files: [fileFor([['资产标签号', '是否必盘'], ['001', '否'], ['002', '是']])] } });
   await waitFor(() => expect(onImport).toHaveBeenCalledWith([{ key: 'a', assetTag: '001', isMandatory: false }, { key: 'b', assetTag: '002', isMandatory: true }]));
-  expect(mockSuccess).toHaveBeenCalledWith('已更新 2 条资产的必盘标记');
+  expect(mockSuccess).toHaveBeenCalledWith('已按文件替换盘点范围，共 2 条资产');
 });
 
 test('有效首行后存在范围外资产时不回填部分标记', async () => {
   const onImport = jest.fn();
   render(<InventoryMandatoryImport assets={assets} project={project} onImport={onImport} />);
-  fireEvent.change(screen.getByLabelText('导入必盘标记文件'), { target: { files: [fileFor([['资产标签号', '是否必盘'], ['001', '否'], ['999', '是']])] } });
-  await waitFor(() => expect(mockWarning).toHaveBeenCalledWith(expect.stringContaining('不在当前盘点范围中')));
+  fireEvent.change(screen.getByLabelText('导入盘点清单文件'), { target: { files: [fileFor([['资产标签号', '是否必盘'], ['001', '否'], ['999', '是']])] } });
+  await waitFor(() => expect(mockWarning).toHaveBeenCalledWith(expect.stringContaining('不在当前项目关联初盘的可选执行资产中')));
   expect(onImport).not.toHaveBeenCalled();
   expect(mockSuccess).not.toHaveBeenCalled();
+});
+
+test('当前导出CSV文件可直接回导，保留前导零标签并匹配可选初盘执行源', async () => {
+  const onImport = jest.fn();
+  const candidateAssets = [...assets, { key: 'c', assetTag: '003', isMandatory: true }];
+  render(<InventoryMandatoryImport assets={assets} candidateAssets={candidateAssets} project={project} onImport={onImport} />);
+  const { csv } = serializeInventoryAssetExport([candidateAssets[2]], { project: { ...project, projectType: '复盘' } });
+  const bytes = Uint8Array.from(Buffer.from('\ufeff' + csv, 'utf8'));
+  fireEvent.change(screen.getByLabelText('导入盘点清单文件'), { target: { files: [{ name: '导出清单.csv', arrayBuffer: async () => bytes.buffer }] } });
+  await waitFor(() => expect(onImport).toHaveBeenCalledWith([{ key: 'c', assetTag: '003', isMandatory: true }]));
 });
 
 test('读取文件期间切换关联初盘，阻止旧文件写入新范围', async () => {
@@ -45,7 +62,7 @@ test('读取文件期间切换关联初盘，阻止旧文件写入新范围', as
   const buffer = await file.arrayBuffer();
   file.arrayBuffer = () => new Promise((resolve) => { completeRead = resolve; });
   const view = render(<InventoryMandatoryImport assets={assets} project={project} onImport={onImport} />);
-  fireEvent.change(screen.getByLabelText('导入必盘标记文件'), { target: { files: [file] } });
+  fireEvent.change(screen.getByLabelText('导入盘点清单文件'), { target: { files: [file] } });
   view.rerender(<InventoryMandatoryImport assets={assets} project={{ ...project, initialProjectNo: 'I2' }} onImport={onImport} />);
   await act(async () => completeRead(buffer));
   expect(mockWarning).toHaveBeenCalledWith('盘点范围或项目状态已变化，请重新核对后导入');

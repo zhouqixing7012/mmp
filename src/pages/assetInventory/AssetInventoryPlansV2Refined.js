@@ -1,5 +1,5 @@
 import { AssetValueSelect, matchesQuerySelection } from '../../components/AssetQueryControls';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import { BellRing, Download, PlayCircle, Plus, Search, Trash2, Upload } from 'lucide-react';
@@ -16,7 +16,7 @@ import { calculateInventorySnapshotStats } from './inventorySnapshotStats';
 import InventoryReplayReview from './InventoryReplayReview';
 import InventoryLocationChangeFlow from './InventoryLocationChangeFlow';
 import { buildReviewRows } from './AssetInventoryImageReviewV2';
-import { applyReplayPlanStatuses, decideReplayReview, getReplaySubmission, replayProjectSubmissionBlockReason, submitReplayProjectReview, submitReplayReview, validateReplaySubmission } from './inventoryReplayReviewStore';
+import { applyReplayPlanStatuses, decideReplayReview, getReplaySubmission, getReplayReviewForPlan, getReplayProjectReview, replayProjectSubmissionBlockReason, submitReplayProjectReview, submitReplayReview, validateReplaySubmission } from './inventoryReplayReviewStore';
 import { downloadInventoryPlans } from './inventoryPlanExport';
 import { buildReplayPreparationNotices } from './inventoryReplayPreparation';
 import { schedulePreparationNotices } from './inventoryPreparationNoticeStore';
@@ -54,8 +54,14 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   const [personTarget, setPersonTarget] = useState(null);
   const [locationPoolOpen, setLocationPoolOpen] = useState(false);
   const [reviewTarget, setReviewTarget] = useState(null);
-  const [submission, setSubmission] = useState(() => getReplaySubmission(project?.projectNo));
-  const visibleRows = applyReplayPlanStatuses(rows, submission).filter(row => planRanges(row).some(range => allowedRanges.includes(range))).map(row => {
+  const [editPlanKey, setEditPlanKey] = useState(null);
+  const [submissionState, setSubmissionState] = useState(() => ({ projectNo: project?.projectNo, value: getReplaySubmission(project?.projectNo) }));
+  const submission = submissionState.projectNo === project?.projectNo ? submissionState.value : getReplaySubmission(project?.projectNo);
+  useEffect(() => {
+    setSubmissionState({ projectNo: project?.projectNo, value: getReplaySubmission(project?.projectNo) });
+    setReviewTarget(null); setEditPlanKey(null); setSelectedKeys([]);
+  }, [project?.projectNo]);
+  const visibleRows = applyReplayPlanStatuses(rows, submission, project?.projectNo).filter(row => planRanges(row).some(range => allowedRanges.includes(range))).map(row => {
     const stats = calculateInventorySnapshotStats(assetsForPlan(row), []);
     const personnel = field => [...new Set(assetsForPlan(row).map(asset => asset[field]).filter(value => value && value !== '-'))].join('、') || '-';
     return { ...row, supervisor: personnel('supervisor'), executor: personnel('executor'), assetCount: stats.execution, countedCount: stats.counted, uncountedCount: stats.uncounted,
@@ -92,7 +98,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
       schedulePreparationNotices(project.projectNo, notices);
     } catch (error) { messageApi.error(error.message); return; }
     const selected = new Set(selectedKeys);
-    setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '盘点中', preparationNoticeDate: notices.find(notice => notice.planNo === row.planNo)?.scheduledDate || '' } : row));
+    setRows((current) => current.map((row) => selected.has(row.key) ? { ...row, status: '盘点中', reviewInstanceKey: row.reviewInstanceKey || `${project.projectNo}:${row.key}:${Date.now()}:${Math.random().toString(36).slice(2)}`, preparationNoticeDate: notices.find(notice => notice.planNo === row.planNo)?.scheduledDate || '' } : row));
     onPlansStarted?.({ ...project, status: '盘点中' });
     setSelectedKeys([]);
     messageApi.success(notices.length ? `盘点计划已启动，已安排 ${notices.length} 条资产准备通知` : '盘点计划已启动');
@@ -132,7 +138,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   };
 
   const syncSubmission = next => {
-    setSubmission(next);
+    setSubmissionState({ projectNo: project.projectNo, value: next });
     setRows(current => applyReplayPlanStatuses(current, next));
     onReviewChanged?.(next);
   };
@@ -142,7 +148,8 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
       try {
         const next = submitReplayReview({ project, plans: [plan], assetsForPlan, photoRows: photos(), operator: currentOperator, allowBelowRatio });
         syncSubmission(next);
-        setReviewTarget({ scope: 'plan', planNo: plan.planNo });
+        setEditPlanKey(null);
+        setReviewTarget({ scope: 'plan', planNo: plan.planNo, key: plan.key });
       } catch (error) { messageApi.error(error.message); }
     };
     try {
@@ -158,10 +165,14 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
       setReviewTarget({ scope: 'project' });
     } catch (error) { messageApi.error(error.message); }
   };
-  const activeReview = reviewTarget?.scope === 'project' ? submission?.projectReview : submission?.planReviews?.[reviewTarget?.planNo];
+  const activePlan = rows.find(plan => plan.planNo === reviewTarget?.planNo && plan.key === reviewTarget?.key);
+  const projectReview = getReplayProjectReview(submission, rows, project.projectNo);
+  const activeReview = reviewTarget?.scope === 'project' ? projectReview : activePlan ? getReplayReviewForPlan(submission, activePlan, project.projectNo) : null;
+  const editingPlan = visibleRows.find(plan => plan.key === editPlanKey);
+  const selectedPlan = selectedRows.length === 1 ? selectedRows[0] : null;
   const decideReview = (decision, opinion) => {
     try {
-      const next = decideReplayReview({ project, operator: currentOperator, decision, opinion, scope: reviewTarget.scope, planNo: reviewTarget.planNo, round: activeReview.round });
+      const next = decideReplayReview({ project, operator: currentOperator, decision, opinion, scope: reviewTarget.scope, planNo: reviewTarget.planNo, planKey: activeReview.plans[0]?.key, reviewInstanceKey: activeReview.plans[0]?.reviewInstanceKey, round: activeReview.round, plans: rows });
       syncSubmission(next);
       const review = reviewTarget.scope === 'project' ? next.projectReview : next.planReviews[reviewTarget.planNo];
       messageApi.success(decision === '驳回' ? '审批已驳回，可修改后重新提交' : review.status === '已审核' ? '审批已通过' : '已记录审批意见，等待其他计划监督人审核');
@@ -191,7 +202,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     : <Typography.Text>{value || '-'}</Typography.Text> });
 
   const columns = [
-    { title: '计划编号', dataIndex: 'planNo', width: 170, fixed: 'left' },
+    { title: '计划编号', dataIndex: 'planNo', width: 170, fixed: 'left', render: (value, row) => getReplayReviewForPlan(submission, row, project.projectNo) ? <Button type="link" onClick={() => setReviewTarget({ scope: 'plan', planNo: row.planNo, key: row.key })}>{value}</Button> : value },
     { title: '计划名称', dataIndex: 'planName', width: 190, render: (value, row) => editable(row) ? <Input aria-label={`${row.planNo}-计划名称`} defaultValue={value} onBlur={event => savePlanName(row, event)} onPressEnter={event => event.target.blur()}/> : value },
     { title: '计划状态', dataIndex: 'status', width: 100, render: (value) => <StatusTag value={value} /> },
     { title: '子公司', dataIndex: 'organization', width: 140 },
@@ -205,13 +216,11 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     personnelColumn('盘点执行人', 'executor'),
     ...(project?.projectType === '复盘' ? [{ title: '财务监督人', width: 130, render: () => <Typography.Text>徐博</Typography.Text> }] : []),
     { title: '资产清单', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => onOpenPlanAssets(row)}>查看</Button> },
-    ...(project?.projectType === '复盘' ? [{ title: '操作', width: 210, fixed: 'right', render: (_, row) => <Space>
-        {!projectClosed && row.status === '盘点中' && <Button type="link" aria-label={`提交计划审批${row.planNo}`} onClick={() => submitReview(row)}>提交计划审批</Button>}
-        {submission?.planReviews?.[row.planNo] && <Button type="link" aria-label={`查看计划审批${row.planNo}`} onClick={() => setReviewTarget({ scope: 'plan', planNo: row.planNo })}>查看计划审批</Button>}
-    </Space> }] : []),
   ];
 
   if (locationPoolOpen) return <InventoryLocationChangeFlow project={project} onBack={() => setLocationPoolOpen(false)} />;
+
+  if (editingPlan) return <InventoryReplayReview project={project} plans={[editingPlan]} assetsForPlan={assetsForPlan} submission={getReplayReviewForPlan(submission, editingPlan, project.projectNo) || { records: [] }} mode="edit" onSubmit={() => submitReview(editingPlan)} onBack={() => setEditPlanKey(null)} />;
 
   if (activeReview) return <InventoryReplayReview key={`${activeReview.scope}:${activeReview.planNo || 'project'}:${activeReview.round}`} project={project} plans={activeReview.plans} assetsForPlan={row => activeReview.assetsByPlan[row.planNo] || []} submission={activeReview} currentOperator={currentOperator} onDecide={decideReview} onBack={() => setReviewTarget(null)} />;
 
@@ -225,7 +234,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
         <QueryItem label="子公司"><AssetValueSelect rows={visibleRows} field="organization" value={draftFilters.organization} onChange={(value) => updateFilter('organization', value)} /></QueryItem>
         <QueryItem label="盘点范围"><Select value={draftFilters.range || undefined} allowClear placeholder="请选择" options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('range', value)} /></QueryItem>
       </QueryBar>
-      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}<Button type="primary" icon={<PlayCircle size={14} />} disabled={projectClosed || allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button><Button danger icon={<Trash2 size={14} />} disabled={!allSelectedDraft} onClick={handleDelete}>删除盘点计划</Button>{!projectClosed && <Button icon={<Upload size={14} />} onClick={() => messageApi.warning('导入模板及处理规则尚未配置，暂不能导入')}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />} onClick={exportPlans}>导出</Button>{project?.projectType === '复盘' && <><Button onClick={() => setLocationPoolOpen(true)}>位置变更池</Button><Button type="primary" disabled={Boolean(replayProjectSubmissionBlockReason(project, rows, submission))} onClick={submitProjectReview}>提交项目审批</Button>{submission?.projectReview && <Button onClick={() => setReviewTarget({ scope: 'project' })}>查看项目审批</Button>}</>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.info('盘点通知服务尚未接入，当前未发送通知或待办')}>发送盘点通知</Button>}</Space></div>
+      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}<Button type="primary" icon={<PlayCircle size={14} />} disabled={projectClosed || allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button><Button danger icon={<Trash2 size={14} />} disabled={!allSelectedDraft} onClick={handleDelete}>删除盘点计划</Button>{!projectClosed && <Button icon={<Upload size={14} />} onClick={() => messageApi.warning('导入模板及处理规则尚未配置，暂不能导入')}>{anyStarted ? '导入盘点结果' : '导入'}</Button>}<Button icon={<Download size={14} />} onClick={exportPlans}>导出</Button>{project?.projectType === '复盘' && <><Button disabled={projectClosed || !selectedPlan || selectedPlan.status !== '盘点中'} onClick={() => setEditPlanKey(selectedPlan.key)}>提交计划审批</Button><Button onClick={() => setLocationPoolOpen(true)}>位置变更池</Button><Button type="primary" disabled={Boolean(replayProjectSubmissionBlockReason(project, rows, submission))} onClick={submitProjectReview}>提交项目审批</Button>{projectReview && <Button onClick={() => setReviewTarget({ scope: 'project' })}>查看项目审批</Button>}</>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.info('盘点通知服务尚未接入，当前未发送通知或待办')}>发送盘点通知</Button>}</Space></div>
       <Table rowKey="key" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true, getCheckboxProps: () => ({ disabled: projectClosed }) }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
     </Card>
     <div className="flex justify-center pb-2"><Button onClick={onBack}>返回</Button></div>

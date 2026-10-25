@@ -1,5 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { submitReplayReview, getReplaySubmission } from './inventoryReplayReviewStore';
 import AssetInventoryPlansV2Refined from './AssetInventoryPlansV2Refined';
 const mockWarning = jest.fn();
 jest.mock('antd', () => {
@@ -70,4 +71,19 @@ test('复盘日期允许多天，修改开始日不再覆盖结束日，结束�
  fireEvent.click(screen.getByRole('button',{name:'启动盘点计划'}));
  expect(screen.getByRole('status').textContent).toContain('盘点中');
  expect(screen.getByRole('status').textContent).toContain('2026-10-26');
+});
+
+test('新草稿与旧审批同编号同key，明确启动后仍盘点中且产生新实例标记',()=>{
+ const project={projectNo:'CFG',projectType:'复盘'};
+ submitReplayReview({project,plans:[{...draft,status:'盘点中'}],assetsForPlan:()=>originalAssets,operator:'冯丽婷'});
+ render(<Harness/>);
+ expect(screen.getByRole('status').textContent).toContain('草稿');
+ fireEvent.click(screen.getByRole('button',{name:'选择首个计划'}));
+ fireEvent.click(screen.getByRole('button',{name:'启动盘点计划'}));
+ expect(screen.getByRole('status').textContent).toContain('盘点中');
+ expect(screen.getByRole('status').textContent).toContain('reviewInstanceKey');
+ fireEvent.click(screen.getByRole('button',{name:'选择首个计划'}));
+ expect(screen.getByRole('button',{name:'提交计划审批'})).toBeEnabled();
+ expect(screen.queryByRole('button',{name:'P1'})).toBeNull();
+ expect(getReplaySubmission('CFG').planReviews.P1.status).toBe('审核中');
 });

@@ -1,4 +1,5 @@
 import { utils } from 'xlsx-js-style';
+import { INVENTORY_REPORT_FORMATS as formats } from './inventoryReportFormats';
 
 // 按用户Excel参考设置外观；数字仍保留为数值，业务合并和内部链接不变。
 export function styleInventoryReportWorkbook(workbook, { summaryStart, historyStart, historyLength, categoryStart, categoryCount, incrementStart, increments, indicatorStart, detailRows, detailsAreDemo, companyRows }) {
@@ -55,8 +56,9 @@ export function styleInventoryReportWorkbook(workbook, { summaryStart, historySt
   for (let row = summaryStart; row < summaryStart + 3; row += 1) {
     if (row > summaryStart) paint(analysis, row, 7, { color: colors.red, borders: true });
     cellAt(analysis, row, 0).s.font = { ...cellAt(analysis, row, 0).s.font, color: { rgb: row === summaryStart + 1 ? '0000FF' : colors.black }, bold: true };
-    format(analysis, row, [1, 3, 5], row === summaryStart ? '#,##0' : '#,##0;(#,##0);"-"');
-    format(analysis, row, [2, 4, 6], row === summaryStart ? '0%' : '0.000%;-0.000%;"-"');
+    format(analysis, row, [1], row === summaryStart ? formats.integer : formats.accountingInteger);
+    format(analysis, row, [3, 5], formats.accountingInteger);
+    format(analysis, row, [2, 4, 6], row === summaryStart ? formats.fullPercent : formats.percentThree);
   }
   heading(analysis, historyStart - 3, 10, false, false);
   table(analysis, historyStart - 2, historyLength, 10, 2);
@@ -64,8 +66,8 @@ export function styleInventoryReportWorkbook(workbook, { summaryStart, historySt
   [[1, 3], [4, 5], [6, 7], [8, 9]].forEach(([start, end]) => merge(analysis, historyStart - 2, start, end));
   for (let row = historyStart; row < historyStart + historyLength; row += 1) {
     format(analysis, row, [0], '0"年"');
-    format(analysis, row, [1, 2, 3, 4, 6], '#,##0');
-    format(analysis, row, [8], '#,##0;(#,##0);"-"');
+    format(analysis, row, [1, 2, 3, 4, 6], formats.integer);
+    format(analysis, row, [8], formats.accountingInteger);
   }
   heading(analysis, categoryStart - 2, 10, false, false);
   table(analysis, categoryStart - 1, categoryCount, 7);
@@ -75,7 +77,7 @@ export function styleInventoryReportWorkbook(workbook, { summaryStart, historySt
     if (index % 2 === 1) paint(analysis, row, 7, { fill: colors.gray, borders: true });
     merge(analysis, row, 5, 6);
     format(analysis, row, [1], '0"年"');
-    format(analysis, row, [2, 3, 4], '#,##0;(#,##0);"-"');
+    format(analysis, row, [2, 3, 4], formats.accountingInteger);
   }
   heading(analysis, incrementStart - 2, 10);
   table(analysis, incrementStart - 1, increments.length, 3);
@@ -105,4 +107,23 @@ export function styleInventoryReportWorkbook(workbook, { summaryStart, historySt
   table(company, 0, companyRows.length, 11);
   company['!rows'][0] = { hpt: 34 };
   companyRows.forEach((row, index) => paint(company, index + 1, 11, { bold: row.company === '合计', fill: index % 2 === 1 ? colors.gray : colors.white, borders: true }));
+}
+
+// 保留模板B列起始位置及隐藏C列；隐藏列不增加可见业务字段。
+export function positionInventoryAnalysisSheet(workbook) {
+  const source = workbook.Sheets['盘点结果比较分析'];
+  const column = value => value === 0 ? 1 : value + 2;
+  const positioned = {};
+  Object.entries(source).forEach(([address, cell]) => {
+    if (address.startsWith('!')) return;
+    const point = utils.decode_cell(address);
+    positioned[utils.encode_cell({ r: point.r, c: point.r === 0 && point.c === 0 ? 0 : column(point.c) })] = cell;
+  });
+  positioned['!rows'] = source['!rows'];
+  positioned['!cols'] = [{ wch: 4.375 }, source['!cols'][0], { wch: 11.5, hidden: true }, ...source['!cols'].slice(1)];
+  positioned['!merges'] = source['!merges'].map(range => ({
+    s: { r: range.s.r, c: range.s.r === 0 && range.s.c === 0 ? 0 : column(range.s.c) }, e: { r: range.e.r, c: column(range.e.c) },
+  }));
+  positioned['!ref'] = utils.encode_range({ s: { r: 0, c: 0 }, e: { r: utils.decode_range(source['!ref']).e.r, c: column(utils.decode_range(source['!ref']).e.c) } });
+  workbook.Sheets['盘点结果比较分析'] = positioned;
 }

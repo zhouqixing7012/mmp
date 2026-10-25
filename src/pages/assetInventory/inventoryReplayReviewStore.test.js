@@ -1,10 +1,10 @@
-import { applyReplayPlanStatuses, decideReplayReview, getReplaySubmission, replayDecisionBlockReason, replayProjectSubmissionBlockReason, submitReplayProjectReview, submitReplayReview, validateReplaySubmission } from './inventoryReplayReviewStore';
+import { applyReplayPlanStatuses, decideReplayReview, getReplaySubmission, getReplayProjectReview, replayDecisionBlockReason, replayProjectSubmissionBlockReason, submitReplayProjectReview, submitReplayReview, validateReplaySubmission } from './inventoryReplayReviewStore';
 import { writeDemoData } from '../../services/demoStorage';
 const project = { projectNo: 'R-test', projectType: '复盘', samplingMode: '百分比', samplingRatio: 50 };
 const plans = [{ planNo: 'P1', range: '员工', status: '盘点中' }, { planNo: 'P2', range: '机房', status: '盘点中' }];
 const assetsForPlan = plan => [{ assetTag: plan.planNo === 'P1' ? 'A' : 'B', inventoryStatus: plan.planNo === 'P1' ? '已盘' : '未盘', supervisor: plan.planNo === 'P1' ? '冯丽婷' : '徐博', executor: '冯丽婷' }];
 const submit = (planNo = 'P1', overrides = {}) => submitReplayReview({ project, plans: plans.filter(plan => plan.planNo === planNo), assetsForPlan, operator: '冯丽婷', allowBelowRatio: true, ...overrides });
-const decide = (planNo, operator, decision = '同意', overrides = {}) => decideReplayReview({ project, operator, decision, planNo, round: getReplaySubmission(project.projectNo).planReviews[planNo].round, ...overrides });
+const decide = (planNo, operator, decision = '同意', overrides = {}) => decideReplayReview({ project, operator, decision, planNo, round: getReplaySubmission(project.projectNo).planReviews[planNo].round, planKey: getReplaySubmission(project.projectNo).planReviews[planNo].plans[0].key, reviewInstanceKey: getReplaySubmission(project.projectNo).planReviews[planNo].plans[0].reviewInstanceKey, ...overrides });
 const submitProject = () => submitReplayProjectReview({ project, plans, operator: '冯丽婷' });
 const approveAllPlans = () => { submit(); decide('P1', '冯丽婷'); submit('P2'); decide('P2', '徐博'); };
 beforeEach(() => window.localStorage.clear());
@@ -123,4 +123,59 @@ test('会签任一监督人驳回即计划驳回，重提后全体监督人重�
  expect(getReplaySubmission(project.projectNo).todoLifecycle).toEqual([]);
  submit('P1',{assetsForPlan:multiple});
  expect(getReplaySubmission(project.projectNo).planReviews.P1.records.filter(record=>record.status==='待审批').map(record=>record.person)).toEqual(['冯丽婷','徐博']);
+});
+
+test('同编号不同实例和新草稿不继承历史审批，原历史保留',()=>{
+ const original={...plans[0],key:'old-key'};
+ submit('P1',{plans:[original]});
+ const state=getReplaySubmission(project.projectNo);
+ expect(applyReplayPlanStatuses([{...original,key:'new-key',status:'草稿'}],state)[0].status).toBe('草稿');
+ expect(applyReplayPlanStatuses([{...original,status:'草稿'}],state)[0].status).toBe('草稿');
+ expect(applyReplayPlanStatuses([{...original,key:'new-key'}],state)[0].status).toBe('盘点中');
+ const next=submit('P1',{plans:[{...original,key:'new-key'}]});
+ expect(next.planReviewHistory[0].plans[0].key).toBe('old-key');
+ expect(next.planReviewHistory[0].status).toBe('审核中');
+ expect(next.planReviews.P1.plans[0].key).toBe('new-key');
+});
+
+test('明确提交的同一实例刷新仍保留审核中；不同项目绑定绝不覆盖',()=>{
+ const original={...plans[0],key:'same-key'};
+ submit('P1',{plans:[original]});
+ const state=getReplaySubmission(project.projectNo);
+ expect(applyReplayPlanStatuses([original],state)[0].status).toBe('审核中');
+ expect(applyReplayPlanStatuses([original],state,'OTHER')[0].status).toBe('盘点中');
+ writeDemoData('inventory-replay-review-OTHER',state);
+ const other=getReplaySubmission('OTHER');
+ expect(other.planReviews).toEqual({});
+ expect(other.legacySubmission.projectNo).toBe(project.projectNo);
+});
+
+test('默认计划重建复用编号和key时，以启动实例标记隔离审批，旧窗口不能批准新实例',()=>{
+ const original={...plans[0],key:'generated-same',reviewInstanceKey:'instance-old'};
+ submit('P1',{plans:[original]});
+ const recreated={...original,status:'盘点中',reviewInstanceKey:'instance-new'};
+ expect(applyReplayPlanStatuses([recreated],getReplaySubmission(project.projectNo))[0].status).toBe('盘点中');
+ submit('P1',{plans:[recreated]});
+ expect(()=>decideReplayReview({project,operator:'冯丽婷',decision:'同意',planNo:'P1',planKey:'generated-same',reviewInstanceKey:'instance-old',round:1})).toThrow('计划实例已变化');
+ expect(getReplaySubmission(project.projectNo).planReviewHistory[0].plans[0].reviewInstanceKey).toBe('instance-old');
+});
+
+test('项目审批匹配当时同批实例；新批次通过计划后可明确提交新项目审批，旧记录归历史',()=>{
+ approveAllPlans();
+ const original=submitProject();
+ expect(getReplayProjectReview(original,plans,project.projectNo)?.status).toBe('审核中');
+ const replaced=plans.map(plan=>({...plan,key:'new-'+plan.planNo,reviewInstanceKey:'new-'+plan.planNo}));
+ expect(getReplayProjectReview(original,replaced,project.projectNo)).toBeNull();
+ expect(getReplayProjectReview(original,[...plans,{planNo:'P3',status:'盘点中'}],project.projectNo)).toBeNull();
+ replaced.forEach(plan=>{
+   submitReplayReview({project,plans:[plan],assetsForPlan,operator:'冯丽婷',allowBelowRatio:true});
+   const review=getReplaySubmission(project.projectNo).planReviews[plan.planNo];
+   decideReplayReview({project,planNo:plan.planNo,planKey:plan.key,reviewInstanceKey:plan.reviewInstanceKey,round:review.round,operator:assetsForPlan(plan)[0].supervisor,decision:'同意'});
+ });
+ const state=getReplaySubmission(project.projectNo);
+ expect(replayProjectSubmissionBlockReason(project,replaced,{...state,projectReview:original.projectReview})).toBe('');
+ const next=submitReplayProjectReview({project,plans:replaced,operator:'冯丽婷'});
+ expect(next.projectReviewHistory[0]).toEqual(original.projectReview);
+ expect(next.projectReview.plans[0].reviewInstanceKey).toBe('new-P1');
+ expect(()=>decideReplayReview({project,scope:'project',plans,operator:'徐博',decision:'同意',round:next.projectReview.round})).toThrow('计划实例已变化');
 });

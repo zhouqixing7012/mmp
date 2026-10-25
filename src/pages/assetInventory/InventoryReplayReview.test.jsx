@@ -1,7 +1,7 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import InventoryReplayReview from './InventoryReplayReview';
-import { submitReplayReview } from './inventoryReplayReviewStore';
+import { getReplaySubmission, submitReplayReview, submitReplayProjectReview, decideReplayReview } from './inventoryReplayReviewStore';
 import AssetInventoryPlansV2Refined from './AssetInventoryPlansV2Refined';
 jest.mock('./AssetInventoryImageReviewV2', () => ({ buildReviewRows: () => [] }));
 jest.mock('antd',()=>({
@@ -9,7 +9,7 @@ jest.mock('antd',()=>({
  Button:({children,onClick,disabled,danger,icon,...props})=><button disabled={disabled} onClick={onClick} {...props}>{children}</button>,Card:({children,title})=><section>{title}{children}</section>,Space:({children})=><div>{children}</div>,Typography:{Title:({children})=><h1>{children}</h1>,Text:({children})=><span>{children}</span>},
  TreeSelect:Object.assign(()=>null,{SHOW_PARENT:'SHOW_PARENT'}),
  Input:Object.assign(({onPressEnter,suffix,allowClear,...props})=><input {...props}/>, { TextArea: ({value,onChange,...props}) => <textarea value={value} onChange={onChange} {...props}/> }),Select:({value,options,onChange})=><select value={value} onChange={e=>onChange(e.target.value)}><option value=""/>{options.map(o=><option key={o.value}>{o.value}</option>)}</select>,
- Table:({columns,dataSource})=><table><thead><tr>{columns.map(c=><th key={c.title}>{c.title}</th>)}</tr></thead><tbody>{dataSource.map((r,i)=><tr key={i}>{columns.map(c=><td key={c.title}>{c.render?c.render(r[c.dataIndex],r):r[c.dataIndex]}</td>)}</tr>)}</tbody></table>
+ Table:({columns,dataSource,rowSelection})=><>{rowSelection && dataSource.map(row=><button key={row.key} onClick={()=>rowSelection.onChange([row.key])}>{`选择${row.planNo}`}</button>)}<table><thead><tr>{columns.map(c=><th key={c.title}>{c.title}</th>)}</tr></thead><tbody>{dataSource.map((r,i)=><tr key={i}>{columns.map(c=><td key={c.title}>{c.render?c.render(r[c.dataIndex],r):r[c.dataIndex]}</td>)}</tr>)}</tbody></table></>
 }));
 jest.mock('../../components/QueryBar',()=>({__esModule:true,default:({children,onQuery,onReset})=><div>{children}<button onClick={onQuery}>查询</button><button onClick={onReset}>重置</button></div>,QueryItem:({label,children})=><label>{label}{children}</label>}));
 jest.mock('../../components/DetailGrid',()=>({__esModule:true,default:({children})=><div>{children}</div>,DetailItem:({children})=><span>{children}</span>}));
@@ -29,7 +29,10 @@ test('逐计划入口仅提交对应计划，全部通过后才开放项目审�
  function Harness({operator}) { const [rows,setRows]=React.useState(plans.map(plan=>({...plan,key:plan.planNo,status:'盘点中'}))); return <AssetInventoryPlansV2Refined project={project} currentOperator={operator} rows={rows} setRows={setRows} assetsForPlan={assetsForPlan}/>; }
  let view=render(<Harness operator="冯丽婷"/>);
  expect(screen.getByRole('button',{name:'提交项目审批'})).toBeDisabled();
- fireEvent.click(screen.getByRole('button',{name:'提交计划审批P1'}));
+ fireEvent.click(screen.getByRole('button',{name:'选择P1'}));
+ fireEvent.click(screen.getByRole('button',{name:'提交计划审批'}));
+ expect(screen.getByRole('heading',{name:'复盘结果编辑'})).toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'提交'}));
  expect(screen.getByRole('heading',{name:'复盘结果审核'})).toBeInTheDocument();
  expect(screen.queryByText('财务经理审批')).toBeNull();
  expect(screen.queryByText('ES主管审批')).toBeNull();
@@ -40,11 +43,14 @@ test('逐计划入口仅提交对应计划，全部通过后才开放项目审�
  expect(screen.queryByText('狐小e待办处理记录')).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'返回'}));
  expect(screen.getByRole('button',{name:'提交项目审批'})).toBeDisabled();
- fireEvent.click(screen.getByRole('button',{name:'提交计划审批P2'}));
+ fireEvent.click(screen.getByRole('button',{name:'选择P2'}));
+ fireEvent.click(screen.getByRole('button',{name:'提交计划审批'}));
+ fireEvent.click(screen.getByRole('button',{name:'提交'}));
  expect(screen.queryByRole('button',{name:'同意'})).toBeNull();
  view.unmount();
  view=render(<Harness operator="徐博"/>);
- fireEvent.click(screen.getByRole('button',{name:'查看计划审批P2'}));
+ fireEvent.click(screen.getByRole('button',{name:'选择P2'}));
+ fireEvent.click(screen.getByRole('button',{name:'P2'}));
  fireEvent.click(screen.getByRole('button',{name:'同意'}));
  fireEvent.click(screen.getByRole('button',{name:'返回'}));
  expect(screen.getByRole('button',{name:'提交项目审批'})).toBeEnabled();
@@ -63,12 +69,18 @@ test('计划驳回后恢复该计划提交入口，重提保留意见',()=>{
  const project={projectNo:'R-reject',projectType:'复盘'};
  function Harness(){ const [rows,setRows]=React.useState([{...plans[0],key:'P1',status:'盘点中'}]);return <AssetInventoryPlansV2Refined project={project} currentOperator="冯丽婷" rows={rows} setRows={setRows} assetsForPlan={assetsForPlan}/>; }
  render(<Harness/>);
- fireEvent.click(screen.getByRole('button',{name:'提交计划审批P1'}));
+ fireEvent.click(screen.getByRole('button',{name:'选择P1'}));
+ fireEvent.click(screen.getByRole('button',{name:'提交计划审批'}));
+ expect(screen.getByRole('heading',{name:'复盘结果编辑'})).toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'提交'}));
  fireEvent.change(screen.getByLabelText('复盘审批意见'),{target:{value:'请补充'}});
  fireEvent.click(screen.getByRole('button',{name:'驳回'}));
  expect(screen.queryByText('演示已清除')).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'返回'}));
- fireEvent.click(screen.getByRole('button',{name:'提交计划审批P1'}));
+ fireEvent.click(screen.getByRole('button',{name:'选择P1'}));
+ fireEvent.click(screen.getByRole('button',{name:'提交计划审批'}));
+ expect(screen.getByRole('heading',{name:'复盘结果编辑'})).toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'提交'}));
  expect(screen.getByText('请补充')).toBeInTheDocument();
  expect(screen.getByRole('button',{name:'同意'})).toBeInTheDocument();
 });
@@ -88,6 +100,58 @@ test('关闭项目时计划审批只读',()=>{
  expect(screen.queryByRole('columnheader',{name:'已盘数量'})).toBeNull();
  const headers=screen.getAllByRole('columnheader').map(node=>node.textContent);
  expect(headers[headers.indexOf('未盘数量')+1]).toBe('未盘必盘数量');
- const cells=screen.getAllByRole('row')[1].querySelectorAll('td');
+ const cells=within(screen.getAllByRole('row')[1]).getAllByRole('cell');
  expect(cells[headers.indexOf('未盘必盘数量')]).toHaveTextContent('1');
  });
+
+test('工具栏先选一已启动计划进入编辑，进入和返回都不生成审批记录，明确提交才进入审核',()=>{
+ const project={projectNo:'R-edit',projectType:'复盘'};
+ function Harness(){const [rows,setRows]=React.useState(plans.map(plan=>({...plan,key:plan.planNo,status:'盘点中'})));return <AssetInventoryPlansV2Refined project={project} currentOperator="冯丽婷" rows={rows} setRows={setRows} assetsForPlan={assetsForPlan}/>;}
+ render(<Harness/>);
+ expect(screen.getByRole('button',{name:'提交计划审批'})).toBeDisabled();
+ expect(screen.queryByRole('columnheader',{name:'操作'})).toBeNull();
+ expect(screen.queryByRole('columnheader',{name:'计划审批'})).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'选择P1'}));
+ fireEvent.click(screen.getByRole('button',{name:'提交计划审批'}));
+ expect(screen.getByRole('heading',{name:'复盘结果编辑'})).toBeInTheDocument();
+ expect(screen.queryByText('审批信息')).toBeNull();
+ expect(getReplaySubmission(project.projectNo)).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'返回'}));
+ expect(getReplaySubmission(project.projectNo)).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'提交计划审批'}));
+ fireEvent.click(screen.getByRole('button',{name:'提交'}));
+ expect(screen.getByRole('heading',{name:'复盘结果审核'})).toBeInTheDocument();
+ expect(getReplaySubmission(project.projectNo).planReviews.P1.records.some(record=>record.node==='提交计划审批')).toBe(true);
+});
+
+test('同一Plans组件切换项目不继承前项目同号计划的审批状态',()=>{
+ const originalProject={projectNo:'R-before',projectType:'复盘'};
+ const currentPlans=[{...plans[0],key:'P1',status:'盘点中'}];
+ submitReplayReview({project:originalProject,plans:currentPlans,assetsForPlan,operator:'冯丽婷'});
+ const props={currentOperator:'冯丽婷',setRows:jest.fn(),assetsForPlan};
+ const view=render(<AssetInventoryPlansV2Refined {...props} project={originalProject} rows={currentPlans}/>);
+ fireEvent.click(screen.getByRole('button',{name:'选择P1'}));
+ expect(screen.getByRole('button',{name:'P1'})).toBeInTheDocument();
+ view.rerender(<AssetInventoryPlansV2Refined {...props} project={{projectNo:'R-after',projectType:'复盘'}} rows={[{...currentPlans[0],status:'草稿'}]}/>);
+ fireEvent.click(screen.getByRole('button',{name:'选择P1'}));
+ expect(screen.queryByRole('button',{name:'P1'})).toBeNull();
+ expect(screen.getByRole('button',{name:'提交计划审批'})).toBeDisabled();
+ expect(getReplaySubmission('R-before').planReviews.P1.status).toBe('审核中');
+ expect(getReplaySubmission('R-after')).toBeNull();
+});
+
+test('旧批次项目审批在重建计划时不显示入口，同一真实批次仍可查看',()=>{
+ const project={projectNo:'R-project-binding',projectType:'复盘'};
+ const oldPlan={...plans[0],key:'same',reviewInstanceKey:'old',status:'盘点中'};
+ submitReplayReview({project,plans:[oldPlan],assetsForPlan,operator:'冯丽婷'});
+ decideReplayReview({project,planNo:oldPlan.planNo,planKey:oldPlan.key,reviewInstanceKey:'old',round:1,operator:'冯丽婷',decision:'同意'});
+ submitReplayProjectReview({project,plans:[oldPlan],operator:'冯丽婷'});
+ const props={project,currentOperator:'徐博',setRows:jest.fn(),assetsForPlan};
+ const view=render(<AssetInventoryPlansV2Refined {...props} rows={[oldPlan]}/>);
+ expect(screen.getByRole('button',{name:'查看项目审批'})).toBeInTheDocument();
+ view.rerender(<AssetInventoryPlansV2Refined {...props} rows={[{...oldPlan,status:'草稿'}]}/>);
+ expect(screen.queryByRole('button',{name:'查看项目审批'})).toBeNull();
+ view.rerender(<AssetInventoryPlansV2Refined {...props} rows={[{...oldPlan,reviewInstanceKey:'new'}]}/>);
+ expect(screen.queryByRole('button',{name:'查看项目审批'})).toBeNull();
+ expect(getReplaySubmission(project.projectNo).projectReview.status).toBe('审核中');
+});

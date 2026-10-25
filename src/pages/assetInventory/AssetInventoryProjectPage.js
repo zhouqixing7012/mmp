@@ -34,6 +34,7 @@ import { inventoryProjectDateBlockReason } from './inventoryDateRules';
 import { markReplayMandatoryAssets, replayMandatoryRuleKeys, selectReplaySnapshotAssets } from './inventoryReplaySampling';
 import { isInventoryAssetMandatory } from './inventoryMandatoryAssets';
 import InventoryMandatoryImport from './InventoryMandatoryImport';
+import { reserveInventoryProjectNumber } from './inventoryProjectNumberAllocator';
 import { selectScopeAssets } from './inventoryScopeQuery';
 import { serializeInventoryAssetExport } from './inventoryAssetExport';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
@@ -499,11 +500,16 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
   };
 
   const changeProjectType = (value) => {
-    const prefix = value === '初盘' ? 'CP' : value === '抽盘' ? 'DCP' : 'RCP';
+    if (isEditing || value === project.projectType) return;
+    let projectNo = '';
+    let numberAllocationError = '';
+    try { projectNo = reserveInventoryProjectNumber(value, PROJECT_ROWS); }
+    catch (error) { numberAllocationError = error.message; }
     setProject((current) => ({
       ...current,
       projectType: value,
-      projectNo: `${prefix}-${dayjs().format('YYYYMMDD')}-0003`,
+      projectNo,
+      numberAllocationError,
       initialProjectNo: '-',
       endDate: current.endDate,
       samplingMode: value === '初盘' ? '-' : '全盘',
@@ -532,7 +538,7 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
         </div>
         <div>
           <Typography.Text type="secondary">项目类型</Typography.Text>
-          <Select value={project.projectType} className="w-full" options={(isEditing ? [project.projectType] : permittedTypes).map((value) => ({ label: value, value }))} onChange={changeProjectType} disabled={isEditing} />
+          <Select aria-label="项目类型" value={project.projectType} className="w-full" options={(isEditing ? [project.projectType] : permittedTypes).map((value) => ({ label: value, value }))} onChange={changeProjectType} disabled={isEditing} />
         </div>
         <div>
           <Typography.Text type="secondary">盘点开始时间</Typography.Text>
@@ -733,7 +739,7 @@ function ImageUploadRuleEditor() {
   );
 }
 
-function ScopeSelector({ projectType, sourceAssets = ASSET_ROWS, scopeRows, setScopeRows, onPreviewAssets, messageApi }) {
+function ScopeSelector({ projectType, sourceAssets = ASSET_ROWS, scopeRows, setScopeRows, onPreviewAssets, messageApi, replayCount = 0, initialExecutionCount = 0 }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const [filters, setFilters] = useState({
     organization: '',
@@ -799,7 +805,7 @@ function ScopeSelector({ projectType, sourceAssets = ASSET_ROWS, scopeRows, setS
     };
     setScopeRows((current) => [...current, next]);
     if (projectType === '复盘') {
-      messageApi.success(`已生成复盘范围，本次复盘比例 ${filters.ratio}%`);
+      messageApi.success('已根据当前查询条件生成复盘范围');
     } else {
       messageApi.success('已根据当前筛选规则生成盘点范围分录');
     }
@@ -847,9 +853,9 @@ function ScopeSelector({ projectType, sourceAssets = ASSET_ROWS, scopeRows, setS
       {projectType === '复盘' && (
         <div className="mt-4">
           <DetailGrid columns={3}>
-            <DetailItem label="复盘数量">4,129</DetailItem>
-            <DetailItem label="复盘比例">{filters.ratio}%</DetailItem>
-            <DetailItem label="初盘执行盘点数量">51,611</DetailItem>
+            <DetailItem label="本次复盘数量">{replayCount.toLocaleString('zh-CN')}</DetailItem>
+            <DetailItem label="复盘比例">{initialExecutionCount > 0 ? `${(replayCount / initialExecutionCount * 100).toLocaleString('zh-CN', { maximumFractionDigits: 2 })}%` : '-'}</DetailItem>
+            <DetailItem label="初盘执行盘点数量">{initialExecutionCount.toLocaleString('zh-CN')}</DetailItem>
           </DetailGrid>
         </div>
       )}
@@ -901,22 +907,36 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   const initialInventoryType = initialProject?.inventoryType || '年度';
   const initialPeriod = initialProject?.period && initialProject.period !== '-'
     ? initialProject.period : getPeriodOptions(initialInventoryType)[0];
-  const [project, setProject] = useState(() => ({
-    ...PROJECT_INFO,
-    ...initialProject,
-    projectType: initialProject?.projectType || allowedProjectTypes(creator)[0],
-    endDate: initialProject?.endDate || PROJECT_INFO.endDate,
-    projectNo: initialProject?.projectNo || `${creator === '冯丽婷' ? 'RCP' : 'CP'}-${dayjs().format('YYYYMMDD')}-0003`,
-    projectName: initialProject?.projectName || `${getPeriodOptions('年度')[0]}-年度盘点`,
-    period: initialPeriod,
-    creator: initialProject ? initialProject.creator : creator,
-    createdAt: initialProject ? initialProject.createdAt : dayjs().format('YYYY-MM-DD'),
-    status: '暂存',
-    snapshotTime: initialProject?.snapshotTime || '-',
-  }));
+  const [project, setProject] = useState(() => {
+    const projectType = initialProject?.projectType || allowedProjectTypes(creator)[0];
+    let projectNo = initialProject?.projectNo || '';
+    let numberAllocationError = '';
+    if (!projectNo) {
+      if (initialProject) numberAllocationError = '原项目缺少编号，请核对项目资料后编辑';
+      else {
+        try { projectNo = reserveInventoryProjectNumber(projectType, PROJECT_ROWS); }
+        catch (error) { numberAllocationError = error.message; }
+      }
+    }
+    return {
+      ...PROJECT_INFO,
+      ...initialProject,
+      projectType,
+      endDate: initialProject?.endDate || PROJECT_INFO.endDate,
+      projectNo,
+      numberAllocationError,
+      projectName: initialProject?.projectName || `${getPeriodOptions('年度')[0]}-年度盘点`,
+      period: initialPeriod,
+      creator: initialProject ? initialProject.creator : creator,
+      createdAt: initialProject ? initialProject.createdAt : dayjs().format('YYYY-MM-DD'),
+      status: '暂存',
+      snapshotTime: initialProject?.snapshotTime || '-',
+    };
+  });
   const sourceAssets = inventoryProjectScopeSource(project, { allAssets: ASSET_ROWS,
     initialSnapshot: getInventoryPhotoSnapshot(project.initialProjectNo) || PROJECT_PLAN_SNAPSHOTS?.[project.initialProjectNo], initialAssets: PROJECT_PLAN_ASSETS[project.initialProjectNo] });
-  const [scopeRows, setScopeRows] = useState(() => SCOPE_ROWS.map(row => ({ ...row, assetKeys: initialProject?.scopeSnapshotAssetKeys || sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)).map(asset => asset.key) })));
+  const [scopeRows, setScopeRows] = useState(() => SCOPE_ROWS.map(row => ({ ...row, assetKeys: initialProject?.scopeQueryAssetKeys || initialProject?.scopeSnapshotAssetKeys || sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)).map(asset => asset.key) })));
+  const [importedScopeAssetKeys, setImportedScopeAssetKeys] = useState(initialProject?.scopeImportedAssetKeys ?? null);
   const [removedAssetKeys, setRemovedAssetKeys] = useState(initialProject?.scopeRemovedAssetKeys || []);
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [scopeAssetQuery, setScopeAssetQuery] = useState({ assetTag: '', owner: [], ownerLevel: [] });
@@ -928,26 +948,35 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     if (previousScopeSource.current === scopeSource) return;
     previousScopeSource.current = scopeSource;
     setScopeRows([]);
+    setImportedScopeAssetKeys(null);
     setRemovedAssetKeys([]);
     setSelectedAssets([]);
-    setProject((current) => ({ ...current, mandatoryAssetOverrides: {}, mandatoryAssetKeys: [] }));
+    setProject((current) => ({ ...current, mandatoryAssetOverrides: {}, mandatoryAssetKeys: [], scopeImportedAssetKeys: undefined, scopeQueryAssetKeys: undefined }));
   }, [scopeSource]);
-  const scopeKeys = scopeAssetKeys ?? (scopeRows.length ? [...new Set(scopeRows.flatMap(row => row.assetKeys))] : sourceAssets.map(asset => asset.key));
-  const scopeCandidates = sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges) && scopeKeys.includes(asset.key) && !removedAssetKeys.includes(asset.key))
+  const scopeQueryKeySet = new Set(scopeRows.flatMap(row => row.assetKeys));
+  const scopeQueryKeys = [...scopeQueryKeySet];
+  const externalScopeKeys = scopeAssetKeys == null ? null : new Set(scopeAssetKeys);
+  const queryCandidates = sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges) && scopeQueryKeySet.has(asset.key) && (externalScopeKeys == null || externalScopeKeys.has(asset.key)));
+  const matchesScopeFilter = (asset) => String(asset.assetTag || '').includes(scopeAssetFilter.assetTag.trim())
+    && matchesQuerySelection(asset.owner, scopeAssetFilter.owner) && matchesQuerySelection(asset.ownerLevel, scopeAssetFilter.ownerLevel);
+  const importCandidates = queryCandidates.filter(matchesScopeFilter);
+  const importCandidateByKey = new Map(importCandidates.map(asset => [asset.key, asset]));
+  const importedKeys = importedScopeAssetKeys == null ? null : new Set(importedScopeAssetKeys);
+  const removedKeys = new Set(removedAssetKeys);
+  const scopeCandidates = queryCandidates.filter(asset => (importedKeys == null || importedKeys.has(asset.key)) && !removedKeys.has(asset.key))
     .map((asset) => Object.prototype.hasOwnProperty.call(project.mandatoryAssetOverrides || {}, asset.key)
       ? { ...asset, isMandatory: project.mandatoryAssetOverrides[asset.key] } : asset);
   const scopeAssets = project.projectType === '复盘' ? markReplayMandatoryAssets(scopeCandidates, project) : scopeCandidates;
-  const mandatoryRuleKeys = replayMandatoryRuleKeys(scopeCandidates, project);
   const scopeAssetColumns = project.projectType === '复盘'
     ? [...SCOPE_ASSET_COLUMNS, { title: '是否必盘', key: 'isMandatory', width: 100, render: (_, asset) => <StatusTag value={isInventoryAssetMandatory(asset, project) ? '是' : '否'} /> }]
     : SCOPE_ASSET_COLUMNS;
-  const filteredScopeAssets = scopeAssets.filter((asset) =>
-    String(asset.assetTag || '').includes(scopeAssetFilter.assetTag.trim()) && matchesQuerySelection(asset.owner, scopeAssetFilter.owner) && matchesQuerySelection(asset.ownerLevel, scopeAssetFilter.ownerLevel));
+  const filteredScopeAssets = scopeAssets.filter(matchesScopeFilter);
   const [assetPreviewOpen, setAssetPreviewOpen] = useState(false);
   const [previewAssetKeys, setPreviewAssetKeys] = useState(null);
   const [photoConfig, setPhotoConfig] = useState(() => normalizeInventoryPhotoConfig(initialProject?.photoConfig || getInventoryPhotoConfig(project.projectNo) || getInventoryPhotoSnapshot(project.projectNo)?.config || { rules: IMAGE_RULE_ROWS.filter(row => allowedRanges.includes(row.range)).map(row => ({ ...row, uploadEnabled: false })) }));
 
   const handleSave = () => {
+    if (!project.projectNo || project.numberAllocationError) { messageApi.warning(project.numberAllocationError || '未取得项目编号，不能保存'); return; }
     if (!initialProject && !allowedProjectTypes(creator).includes(project.projectType)) {
       messageApi.warning('当前操作人无权创建该项目类型');
       return;
@@ -964,11 +993,12 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
     try { saveInventoryPhotoConfig(project.projectNo, photoConfig); }
     catch (error) { messageApi.warning(error.message); return; }
-    setProject(current => ({ ...current, photoConfig }));
+    setProject(current => ({ ...current, photoConfig, scopeQueryAssetKeys: scopeQueryKeys, scopeImportedAssetKeys: importedScopeAssetKeys }));
     messageApi.success('盘点项目已保存为暂存状态');
   };
 
   const handleSnapshot = () => {
+    if (!project.projectNo || project.numberAllocationError) { messageApi.warning(project.numberAllocationError || '未取得项目编号，不能生成快照'); return; }
     if (!initialProject && !allowedProjectTypes(creator).includes(project.projectType)) {
       messageApi.warning('当前操作人无权创建该项目类型');
       return;
@@ -993,6 +1023,8 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     const sampled = selectReplaySnapshotAssets(scopeAssets.filter(asset => asset.executeInventory), project);
     const nextProject = {
       ...project,
+      scopeQueryAssetKeys: scopeQueryKeys,
+      scopeImportedAssetKeys: importedScopeAssetKeys,
       scopeSnapshotAssetKeys: scopeAssets.map((asset) => asset.key),
       scopeRemovedAssetKeys: removedAssetKeys,
       snapshotAssetKeys: sampled.assets.map((asset) => asset.key),
@@ -1015,6 +1047,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
       <PageTitle>{initialProject ? '编辑盘点项目' : '创建盘点项目'}</PageTitle>
+      {project.numberAllocationError && <Alert type="error" showIcon title={project.numberAllocationError} />}
 
       <ProjectBasicInfoEditor project={project} setProject={setProject} creator={creator} isEditing={Boolean(initialProject)} />
       <InventoryRuleEditor messageApi={messageApi} />
@@ -1022,14 +1055,16 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
         sourceAssets={sourceAssets}
         projectType={project.projectType}
         scopeRows={scopeRows}
-        setScopeRows={setScopeRows}
+        setScopeRows={(update) => { setScopeRows(update); setImportedScopeAssetKeys(null); setProject(current => ({ ...current, scopeImportedAssetKeys: undefined })); }}
+        replayCount={scopeAssets.length}
+        initialExecutionCount={sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)).length}
         onPreviewAssets={(row) => { setPreviewAssetKeys(row?.assetKeys || null); setAssetPreviewOpen(true); }}
         messageApi={messageApi}
       />
 
       <Card size="small" title={<CardTitle>盘点资产范围明细</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredScopeAssets.length} 条</Typography.Text>}>
         <QueryBar onQuery={() => setScopeAssetFilter({ ...scopeAssetQuery })} onReset={() => { setScopeAssetQuery({ assetTag: '', owner: [], ownerLevel: [] }); setScopeAssetFilter({ assetTag: '', owner: [], ownerLevel: [] }); }}>
-          <QueryItem label="资产标签号"><Input value={scopeAssetQuery.assetTag} allowClear onChange={(event) => setScopeAssetQuery((current) => ({ ...current, assetTag: event.target.value }))} /></QueryItem>
+          <QueryItem label="资产标签号"><Input aria-label="范围资产标签号" value={scopeAssetQuery.assetTag} allowClear onChange={(event) => setScopeAssetQuery((current) => ({ ...current, assetTag: event.target.value }))} /></QueryItem>
           <QueryItem label="资产责任人"><AssetPersonSelect rows={ASSET_ROWS} value={scopeAssetQuery.owner} onChange={(value) => setScopeAssetQuery((current) => ({ ...current, owner: value }))} /></QueryItem>
           <QueryItem label="责任人职级"><OwnerLevelSelect rows={ASSET_ROWS} value={scopeAssetQuery.ownerLevel} onChange={(value) => setScopeAssetQuery((current) => ({ ...current, ownerLevel: value }))} /></QueryItem>
         </QueryBar>
@@ -1041,10 +1076,18 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
               const link = document.createElement('a');
               link.href = url; link.download = `${project.projectNo}-盘点范围资产清单.csv`; link.click(); URL.revokeObjectURL(url);
             }}>导出清单</Button>
-            <Button icon={<Upload size={14} />} onClick={() => messageApi.info('请按资产清单模板导入')}>导入清单</Button>
-            {project.projectType === '复盘' && <InventoryMandatoryImport assets={scopeAssets} project={project} requiredKeys={mandatoryRuleKeys} onImport={(changes) => setProject((current) => ({
-              ...current, mandatoryAssetOverrides: { ...current.mandatoryAssetOverrides, ...Object.fromEntries(changes.map(asset => [asset.key, asset.isMandatory])) },
-            }))} />}
+            {project.projectType === '复盘' ? <InventoryMandatoryImport assets={filteredScopeAssets} candidateAssets={importCandidates} project={project}
+              requiredKeys={(changes) => replayMandatoryRuleKeys(changes.map(change => importCandidateByKey.get(change.key)), project)}
+              onImport={(changes) => {
+                const keys = changes.map(asset => asset.key);
+                setImportedScopeAssetKeys(keys);
+                setRemovedAssetKeys([]);
+                setSelectedAssets([]);
+                setProject((current) => ({ ...current, scopeImportedAssetKeys: keys, scopeQueryAssetKeys: scopeQueryKeys, scopeRemovedAssetKeys: [],
+                  mandatoryAssetOverrides: Object.fromEntries(changes.map(asset => [asset.key, asset.isMandatory])),
+                  mandatoryAssetKeys: changes.filter(asset => asset.isMandatory).map(asset => asset.key),
+                }));
+              }} /> : <Button icon={<Upload size={14} />} onClick={() => messageApi.info('请按资产清单模板导入')}>导入清单</Button>}
             <Button
               danger
               icon={<Trash2 size={14} />}

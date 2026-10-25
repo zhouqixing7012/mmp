@@ -4,6 +4,7 @@ jest.mock('@rc-component/picker/generate/dayjs', () => jest.requireActual('@rc-c
 import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import AssetInventoryReportPage from './AssetInventoryReportPage';
+import { DetailTable } from './InventoryReportTables';
 beforeEach(() => {
   // JSDOM未提供MessageChannel，按浏览器消息任务语义补齐测试环境。
   window.MessageChannel = class {
@@ -73,7 +74,7 @@ test('范围仅在比较分析中显示，分类和增量按组纵向合并', ()
 
 test('2026显示真实两条明细及真实分类金额，无演示标记', () => {
   render(<AssetInventoryReportPage />);
-  expect(screen.getAllByText('2,813.00').length).toBeGreaterThan(0);
+  expect(screen.getAllByText('2,813').length).toBeGreaterThan(0);
   fireEvent.click(screen.getByRole('tab', { name: '盘亏及待查明细' }));
   const panel = screen.getByRole('tabpanel', { name: '盘亏及待查明细' });
   expect(within(panel).getByText('201132100282')).toBeInTheDocument();
@@ -81,4 +82,46 @@ test('2026显示真实两条明细及真实分类金额，无演示标记', () =
   expect(within(panel).getByText('刘霞')).toBeInTheDocument();
   expect(within(panel).getByText('王紫荆')).toBeInTheDocument();
   expect(within(panel).queryByText(/演示数据/)).not.toBeInTheDocument();
+});
+
+test('汇总和分类数量不带小数，零短横，明细金额保持两位', () => {
+  render(<AssetInventoryReportPage />);
+  const summary = screen.getByText('盘亏资产', { exact: true }).closest('tr');
+  expect(summary.children[1].textContent).toBe('2');
+  expect(summary.children[2].textContent).toBe('0.014%');
+  expect(summary.children[3].textContent).toBe('2,813');
+  const pending = screen.getByText('待查资产', { exact: true }).closest('tr');
+  expect(pending.children[1].textContent).toBe('-');
+  const classification = screen.getByText('2026年资产盘亏统计').closest('.ant-card');
+  const mobileRows = within(classification).getAllByText('2', { exact: true });
+  expect(mobileRows.length).toBeGreaterThan(0);
+  expect(within(classification).queryByText('2.00', { exact: true })).not.toBeInTheDocument();
+  expect(within(classification).queryByText('0.00', { exact: true })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('tab', { name: '盘亏及待查明细' }));
+  const panel = screen.getByRole('tabpanel', { name: '盘亏及待查明细' });
+  expect(within(panel).getByText('1,946.00')).toBeInTheDocument();
+});
+
+test('分析与年度图表共用三列窄表，不拉伸到整个宽屏', () => {
+  render(<AssetInventoryReportPage />);
+  const table = screen.getByTestId('inventory-increment-table');
+  expect(table).toHaveStyle({ width: '100%', maxWidth: '620px', minWidth: '0' });
+  expect(within(table).getAllByRole('columnheader')).toHaveLength(3);
+  fireEvent.click(screen.getByRole('tab', { name: '年度报告图表' }));
+  const chartPanel = screen.getByRole('tabpanel', { name: '年度报告图表' });
+  const chartTable = within(chartPanel).getByTestId('inventory-increment-table');
+  expect(chartTable).toHaveStyle({ width: '100%', maxWidth: '620px' });
+  expect(within(chartTable).getAllByRole('columnheader')).toHaveLength(3);
+});
+
+
+test('明细普通行数量真0、原值会计0短横、净值负括号、赔偿真0两位且未知损失空白', () => {
+  const detail = { 标签号: 'FORMAT-DETAIL-ZERO', 盘点状态: '盘亏', 数量: 0, 原值: 0, 报失当月资产净值: -1234.5, 赔偿金额: 0, 损失: null };
+  render(<DetailTable report={{ details: [detail], hasActualDetails: true }} />);
+  const row = screen.getByText('FORMAT-DETAIL-ZERO').closest('tr');
+  expect(row.children[5].textContent).toBe('0');
+  expect(row.children[6].textContent).toBe('-');
+  expect(row.children[7].textContent).toBe('(1,234.50)');
+  expect(row.children[9].textContent).toBe('0.00');
+  expect(row.children[10].textContent).toBe('');
 });
