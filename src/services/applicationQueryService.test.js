@@ -6,7 +6,7 @@ const exported = (id, filters = {}, page) => {
   const book = buildApplicationWorkbook(id, filters, null, page);
   return XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]], { header: 1, defval: '' });
 };
-test.each(applicationDefinitions.map(definition => [definition.id]))('%s读取独立申请数据源且可查询', id => {
+test.each(applicationDefinitions.map(definition => [definition.id]))('%s读取对应业务单据源且可查询', id => {
   expect(queryApplications(id).length).toBeGreaterThan(0);
   const field = getApplicationDefinition(id).filters.find(item => item.kind === 'text');
   expect(queryApplications(id, { [field.key]: 'NO-MATCH-RECORD' })).toHaveLength(0);

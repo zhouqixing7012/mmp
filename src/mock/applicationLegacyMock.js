@@ -11,9 +11,7 @@ function requiredRow(rows, key, value) {
 }
 const asset = requiredRow(materialCatalog, 'materialCode', '112002002237001');
 const accessory = requiredRow(materialCatalog, 'materialCode', '333006614002000');
-const consumable = requiredRow(materialCatalog, 'materialCode', '324001624003000');
 const from = requiredRow(warehouseCatalog, 'warehouseCode', 'I0001');
-const to = requiredRow(warehouseCatalog, 'warehouseCode', 'I0013');
 const warehouseText = row => row.warehouseCode + '.' + row.warehouseDescription;
 const person = '213852.孙志强';
 const employee = { applicant: person, department: 'D0002.财务中心', officeArea: '', phone: '010-88882852', email: 'sunzhiqiang@sohu-inc.com', company: from.company, subsidiary: '集团' };
@@ -32,13 +30,7 @@ function assetInfo(line) {
   return asPairs({ '资产标签号': isAsset ? line.tag : '', 'SN号': isAsset ? line.sn : '', '物资说明': m.materialDescription, '可用数量': isAsset ? line.quantity : 8, '物资总类': m.materialType, '物资大类': m.majorCategory, '物资小类': m.minorCategory, [isAsset ? '资产数量' : '在库数量']: isAsset ? line.quantity : 10, '仓库': warehouseText(w), '库区': '', '货位': '', '申请批次': 'DEMO-BATCH-20261001', '品牌': m.brand, '规格/型号': m.model, '配置': isAsset ? m.config : '', '计量单位': m.unit, '资产标记': isAsset ? line.mark : '', '原值': 1000, '净值': isAsset ? 900 : '', '资产状态': isAsset ? line.status : '', '公司': w.company, '板块': '', '部门': '', '成本中心': '', '业务线': '', '项目': '', '费用账户': '', '责任人': isAsset ? '213852-孙志强' : '', 'City': w.city, 'Building': w.building, 'Floor': w.floor, 'Room': '', '启用日期': line.enabledDate, '印刷号': '', '用途': isAsset ? '员工用机' : '', '备注': line.note });
 }
 function withDetail(line) { return { ...line, info: assetInfo(line) }; }
-function storageRecord(index, state) {
-  const id = 'storage-' + index, complete = state === 'demo-completed';
-  const lines = [withDetail(baseLine(index + '01', asset, from)), withDetail(baseLine(index + '02', consumable, from, 3))].map((line, i) => ({ ...line, lineNo: i + 10, receiver: to.keeper, receivingAt: complete ? '2026-10-14' : '', outgoingAt: complete ? '2026-10-12' : '', handlingStatus: complete ? '已接收' : '', outboundNote: '计划移库演示', receivingNote: complete ? '已核对数量' : '' }));
-  const createdAt = '2026-10-' + String(10 + index).padStart(2, '0') + ' 09:30:00';
-  const values = { applicationNo: mockDocumentNumber('库存转移', id, createdAt), status: complete ? '已完成' : state === '0' ? '草稿' : state === '1' ? '状态1' : state === '2' ? '状态2' : '处理中', fromWarehouse: warehouseText(from), toWarehouse: warehouseText(to), createdAt, applicant: person, exportApplicant: '213852-孙志强', quantity: lines.reduce((sum, line) => sum + line.quantity, 0), receiver: complete ? person : to.keeper, exportReceiver: complete ? person : to.keeper };
-  return { id, access: { applicant: '213852', department: employee.department, company: employee.company, ledger: '资产台账' }, kind: 'storage', values, filters: { applicationNo: values.applicationNo, status: state, applicant: '213852', createdAt, assetTag: lines.map(line => line.tag) }, statusCode: state, createdAt, lines, history: [], storageType: '计划', from, to, head: asPairs({ '移库单号': values.applicationNo, '单据类型': '移库单', '单据状态': values.status, '出库仓库': values.fromWarehouse, '入库仓库': values.toWarehouse, '制单人': person, '制单时间': createdAt.slice(0, 10), '资产数量': values.quantity, '接收人': values.receiver, '备注': '移库查询只读演示' }), source: LEGACY_APPLICATION_SOURCE };
-}
+
 function ordinaryRecord(kind, index, state, extension = false) {
   const id = kind + '-' + index, complete = state === 'demo-completed';
   const line = withDetail(baseLine(index + '21', asset, from));
@@ -55,4 +47,4 @@ function ordinaryRecord(kind, index, state, extension = false) {
   const detail = line.detail;
   return { id, access: { applicant: '213852', department: employee.department, company: employee.company, ledger: '资产台账' }, kind, values, filters: { applicationNo, inboundNo: values.inboundNo, outboundNo: values.outboundNo, returnType: values.returnType, status: state, assetTag: [line.tag, second.tag], applicant: '213852', warehouse: from.warehouseCode, subsidiary: employee.subsidiary, department: employee.department, createdAt, documentType: extension ? 'ERB' : 'EBA', description: [asset.materialDescription, asset.materialDescription] }, createdAt, statusCode: state, lookupLabels: { warehouse: warehouseText(from), subsidiary: employee.subsidiary, department: employee.department }, lines: [line, second], history: state === '0' ? [] : history(id, complete), head, detail, extension, source: LEGACY_APPLICATION_SOURCE };
 }
-export const legacyApplicationRows = [storageRecord(1, '0'), storageRecord(2, '3'), storageRecord(3, 'demo-completed'), storageRecord(4, '1'), storageRecord(5, '2'), ordinaryRecord('return', 1, '0'), ordinaryRecord('return', 2, '3'), ordinaryRecord('return', 3, 'demo-completed'), ordinaryRecord('borrow', 1, '3'), ordinaryRecord('borrow', 2, 'demo-completed'), ordinaryRecord('borrow', 3, '3', true)];
+export const legacyApplicationRows = [ordinaryRecord('return', 1, '0'), ordinaryRecord('return', 2, '3'), ordinaryRecord('return', 3, 'demo-completed'), ordinaryRecord('borrow', 1, '3'), ordinaryRecord('borrow', 2, 'demo-completed'), ordinaryRecord('borrow', 3, '3', true)];
