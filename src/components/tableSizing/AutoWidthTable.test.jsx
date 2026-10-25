@@ -15,7 +15,7 @@ beforeEach(() => {
   originalCanvas = window.CanvasRenderingContext2D;
   window.CanvasRenderingContext2D = function Canvas() {};
   jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => ({ measureText: text => ({ width: String(text).length * factor }) }));
-  jest.spyOn(window, 'getComputedStyle').mockImplementation(element => ({ fontSize: '14px', fontFamily: 'sans-serif', fontWeight: element.tagName === 'TH' ? '600' : '400', paddingLeft: element.dataset.outer ? '16px' : '8px', paddingRight: element.dataset.outer ? '16px' : '8px' }));
+  jest.spyOn(window, 'getComputedStyle').mockImplementation(element => ({ fontSize: '14px', fontFamily: 'sans-serif', borderRightWidth: '1px', fontWeight: element.tagName === 'TH' ? '600' : '400', paddingLeft: element.dataset.outer ? '16px' : '8px', paddingRight: element.dataset.outer ? '16px' : '8px' }));
   jest.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(400);
   window.ResizeObserver = class { constructor(callback) { resize = callback; } observe() {} disconnect() {} };
   originalFonts = Object.getOwnPropertyDescriptor(document, 'fonts');
@@ -40,11 +40,11 @@ test('可用宽度扣除父级padding，resize不会把上次容器伸展宽度�
 test('字体CSS名称不变但字形变宽后重新实测，紧凑表和分页缓存有效', () => {
   const code = [{ title: '标签', key: 'tag', dataIndex: 'tag', sizing: { type: 'code' } }];
   const view = render(<AutoWidthTable compact columns={code} dataSource={[{ tag: '123456789012345678' }]} />);
-  expect(screen.getByRole('columnheader').style.width).toBe('160px');
+  expect(screen.getByRole('columnheader').style.width).toBe('165px');
   view.rerender(<AutoWidthTable compact columns={code} dataSource={[]} />);
-  expect(screen.getByRole('columnheader').style.width).toBe('160px');
+  expect(screen.getByRole('columnheader').style.width).toBe('165px');
   view.rerender(<AutoWidthTable compact columns={code} dataSource={[{ tag: '123456789012345678' }]} />);
   factor = 12;
   act(() => fontLoaded());
-  expect(screen.getByRole('columnheader').style.width).toBe('232px');
+  expect(screen.getByRole('columnheader').style.width).toBe('237px');
 });

@@ -1,6 +1,7 @@
 // 列类型只定义展示边界，业务页面不再逐列指定像素宽度。
 export const COLUMN_SIZING = {
-  text: { min: 120, max: 280, percentile: 0.95, flex: 1 },
+  text: { min: 120, max: 280, percentile: 0.95 },
+  label: { min: 96, max: 320 },
   description: { min: 180, max: 360, percentile: 0.95, flex: 2 },
   code: { min: 140, max: 280 },
   number: { min: 88, max: 180 },
@@ -55,8 +56,13 @@ export function sizeTableColumns(columns, rows, { measure, measureHeader = measu
       return sizing.format ? sizing.format(value, row) : value;
     });
     const content = percentileWidth(values.filter(value => value != null).map(value => measure(plainText(value))), rule.percentile ?? 1) + padding;
-    const width = Math.ceil(clamp(Math.max(header, content, previous[key] || 0), rule.min, rule.max));
-    const result = { ...column, width };
+    // 完整表头是硬下限，不因类型的内容上限而被截断或挤成逐字换行。
+    const width = Math.ceil(Math.max(header, clamp(Math.max(content, previous[key] || 0), rule.min, rule.max)));
+    const headerCell = column.onHeaderCell;
+    const result = { ...column, width, onHeaderCell: (...args) => {
+      const original = headerCell?.(...args) || {};
+      return { ...original, style: { ...original.style, whiteSpace: 'nowrap' } };
+    } };
     delete result.sizing;
     leaves.push({ column: result, key, rule });
     return result;

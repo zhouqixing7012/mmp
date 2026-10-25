@@ -25,7 +25,7 @@ test('枚举覆盖未出现值，嵌套取值，分组表头按子列总宽补�
   expect(result.columns[0].children.every(c => c.width > 0)).toBe(true);
 });
 test('只给可伸展列分配空余，窄屏保留固有宽度，紧凑表不铺满', () => {
-  const columns = [{ title: '名称', dataIndex: 'name', sizing: { type: 'text' } }, { title: '数量', dataIndex: 'quantity', sizing: { type: 'number' } }];
+  const columns = [{ title: '名称', dataIndex: 'name', sizing: { type: 'text', flex: 1 } }, { title: '数量', dataIndex: 'quantity', sizing: { type: 'number' } }];
   const wide = size(columns, [], { containerWidth: 350 });
   expect(wide.columns[1].width).toBe(88);
   expect(wide.totalWidth).toBe(348);
@@ -47,4 +47,17 @@ test('Canvas按指定字体测量多行文本，估算支持中文', () => {
   expect(createTextMeasurer('14px sans-serif', context)('ab\n1234')).toBe(28);
   expect(context.font).toBe('14px sans-serif');
   expect(createTextMeasurer('14px sans-serif', null)('中文')).toBe(28);
+});
+
+test('普通文字及分类指标不吞剩余空间，英文大类按最长值而非P95', () => {
+  const rows = Array.from({ length: 30 }, (_, i) => ({ name: i === 29 ? 'OFFICE EQUIPMENT' : 'PC' }));
+  const label = size([{ title: '资产大类', dataIndex: 'name', sizing: { type: 'label' } }], rows, { containerWidth: 1200 });
+  expect(label.totalWidth).toBe(176);
+  const text = size([{ title: '资产情况', dataIndex: 'name', sizing: { type: 'text' } }], [{ name: '全部盘点资产' }], { containerWidth: 1200 });
+  expect(text.totalWidth).toBe(120);
+});
+test('超出字段类型上限的表头仍完整保留并禁止逐字换行', () => {
+  const result = size([{ title: '占全部盘点资产', dataIndex: 'rate', sizing: { type: 'percent', max: 50 } }]);
+  expect(result.totalWidth).toBe(86);
+  expect(result.columns[0].onHeaderCell().style.whiteSpace).toBe('nowrap');
 });

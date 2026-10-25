@@ -32,7 +32,7 @@ export default function InventoryReportCharts({ report }) {
         </ComposedChart>
       </ResponsiveContainer>
       <ReportTable rowKey="name" rows={report.indicators} columns={[
-        { title: '指标', dataIndex: 'name', sizing: { type: 'text' }, ellipsis: true },
+        { title: '指标', dataIndex: 'name', sizing: { type: 'label' }, ellipsis: true },
         { title: '当前总数', dataIndex: 'total', sizing: { type: 'number', format: quantity }, align: 'right', render: (v, row) => quantity(v) },
         { title: '年度增长量', dataIndex: 'change', sizing: { type: 'number', format: quantity }, align: 'right', render: (v, row) => quantity(v) },
         { title: '年度增长率', dataIndex: 'rate', sizing: { type: 'percent', format: percent }, align: 'right', render: percent },
@@ -53,7 +53,7 @@ export default function InventoryReportCharts({ report }) {
         </div>
         <div style={{ flex: '2 1 480px', minWidth: 0 }}>
           <ReportTable rowKey="category" rows={pie} columns={[
-            { title: '资产类别', dataIndex: 'category', sizing: { type: 'text', text: row => `${row.category}　` }, ellipsis: true, render: (value, row) => <Space><span aria-hidden="true" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: row.fill }} />{value}</Space> },
+            { title: '资产类别', dataIndex: 'category', sizing: { type: 'label', text: row => `${row.category}　` }, ellipsis: true, render: (value, row) => <Space><span aria-hidden="true" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: row.fill }} />{value}</Space> },
             { title: '数量（件）', dataIndex: 'quantity', sizing: { type: 'number', format: quantity }, align: 'right', render: quantity },
             { title: '原值（万元）', dataIndex: 'original', sizing: { type: 'money', format: value => amount(value / 10000) }, align: 'right', render: value => amount(value / 10000) },
             { title: '原值占比', key: 'ratio', sizing: { type: 'percent', text: row => originalTotal === 0 ? '' : percent(row.original / originalTotal) }, align: 'right', render: (_, row) => originalTotal === 0 ? '' : percent(row.original / originalTotal) },
@@ -62,7 +62,7 @@ export default function InventoryReportCharts({ report }) {
       </div>}
 
     </Card>
-    <Card size="small" title="资产增量情况" style={{ width: '100%', maxWidth: 652 }}><IncrementTable year={report.year} /></Card>
+    <Card size="small" title="资产增量情况" style={{ width: '100%' }}><IncrementTable year={report.year} /></Card>
     <Card size="small" title="资产盘亏趋势">
       <AxisUnits left="盘亏占比（%）" right="盘亏数量（件）" />
       <ResponsiveContainer width="100%" height={300}>

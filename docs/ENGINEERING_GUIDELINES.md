@@ -75,6 +75,6 @@
 
 PC只读表格通过 `src/components/tableSizing/AutoWidthTable.jsx` 使用列宽引擎；本次接入盘点报表，其余既有页面不批量迁移。算法及边界见 UI规范20.0，参数在 `columnSizing.js` 单点维护。
 
-列配置增加 `sizing: { type, format?, text?, enumValues?, headerText? }`：普通值由 dataIndex取得；format接收原值和行并返回实际显示文本；自定义React渲染用text(row)提供纯文本，不能将React对象字符串化测量。枚举通过enumValues提供完整字典；数据源传已加载的全部结果，不只传当前分页。分组children递归处理。`compact`启用紧凑布局。既有render、onCell、行合并及排序规则保持原样。
+列配置增加 `sizing: { type, format?, text?, enumValues?, headerText?, flex? }`：普通值由 dataIndex取得；format接收原值和行并返回实际显示文本；自定义React渲染用text(row)提供纯文本，不能将React对象字符串化测量。枚举通过enumValues提供完整字典；数据源传已加载的全部结果，不只传当前分页。分类/指标使用label按最长值测量；普通text不默认拉伸，只有描述或显式flex列分配剩余宽度。表头加边框及安全余量后作为硬下限，叶子表头单行。分组children递归处理。`compact`启用紧凑布局。既有render、onCell、行合并及排序规则保持原样。
 
 浏览器Canvas按实际正文/表头字体测量，ResizeObserver监听可用容器，字体加载完成和主题字号/字体变化重新计算。无Canvas环境仅提供可复现的初始估算，浏览器挂载后实测。纯算法可注入测量函数验证边界，组件通过实际报表检查合并表头、横向滚动、窄表和格式化结果；页面列宽不写回数据或导出配置。

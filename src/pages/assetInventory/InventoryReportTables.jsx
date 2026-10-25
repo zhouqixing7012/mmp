@@ -37,7 +37,7 @@ export function AnalysisTables({ report }) {
     <Card size="small" title="资产变化范围"><Typography.Paragraph>资产变化周期：{report.period}</Typography.Paragraph><Typography.Paragraph className="!mb-0">资产盘点类别：{report.scope}</Typography.Paragraph></Card>
     <Card size="small" title={`${report.year}年资产盘点情况汇总`}>
       <ReportTable rowKey="name" rows={getInventoryReportSummary(report)} columns={[
-        textColumn('资产情况', 'name'),
+        textColumn('资产情况', 'name', 'label'),
         { title: '数量', children: [column('数量（件）', 'quantity', (value, row) => row.name === '全部盘点资产' ? integer(value) : accounting(value)), column('占全部盘点资产', 'quantityRate', summaryPercent)] },
         { title: '原值', children: [column('金额（元）', 'original', accounting), column('占全部盘点资产', 'originalRate', summaryPercent)] },
         { title: `净值（截至${report.year}年6月30日）`, children: [column('金额（元）', 'net', accounting), column('占全部盘点资产', 'netRate', summaryPercent)] },
@@ -55,12 +55,12 @@ export function AnalysisTables({ report }) {
     <Card size="small" title={`${report.year}年资产盘亏统计`}>
       <ReportTable rows={categories} columns={[{ ...textColumn('资产类别', 'category'), onCell: (_, index) => ({ rowSpan: spans[index] }) }, textColumn('盘点年份', 'year', 'year'), column('盘亏数量（件）', 'quantity', accounting), column('盘亏原值（元）', 'original', accounting), column('盘亏净值（元）', 'net', accounting), { ...textColumn('备注', 'remark', 'description'), render: () => '-', sizing: { type: 'description', text: () => '-' } }]} />
     </Card>
-    <Card size="small" title={<span style={{ whiteSpace: 'normal' }}>{getIncrementTitle(report.year)}</span>} style={{ width: '100%', maxWidth: 652 }}><IncrementTable year={report.year} /></Card>
+    <Card size="small" title={<span style={{ whiteSpace: 'normal' }}>{getIncrementTitle(report.year)}</span>} style={{ width: '100%' }}><IncrementTable year={report.year} /></Card>
   </Space>;
 }
 export function DetailTable({ report }) {
   const rows = getInventoryDetailRows(report);
-  const types = { 序号: 'index', 盘点状态: 'status', 资产说明: 'description', 数量: 'number', 原值: 'money', 报失当月资产净值: 'money', 是否已赔偿: 'status', 赔偿金额: 'money', 损失: 'money', 标签号: 'code', 购买日期: 'date', 责任人编号: 'code', 说明: 'description' };
+  const types = { 序号: 'index', 盘点状态: 'status', 资产大类: 'label', 资产小类: 'label', 资产说明: 'description', 数量: 'number', 原值: 'money', 报失当月资产净值: 'money', 是否已赔偿: 'status', 赔偿金额: 'money', 损失: 'money', 标签号: 'code', 购买日期: 'date', 责任人编号: 'code', 说明: 'description' };
   const format = (name, value, row) => row.summary && value === 0 ? '-'
     : value == null ? '' : ['原值', '报失当月资产净值'].includes(name) ? accountingAmount(value)
       : ['赔偿金额', '损失'].includes(name) ? amount(value) : name === '数量' ? quantity(value) : value;

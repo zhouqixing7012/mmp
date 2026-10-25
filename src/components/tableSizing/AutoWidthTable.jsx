@@ -19,7 +19,10 @@ export default function AutoWidthTable({ columns, dataSource = [], compact = fal
       const bodyStyle = window.getComputedStyle(cell);
       const headerStyle = window.getComputedStyle(header);
       const font = style => `${style.fontWeight || 400} ${style.fontSize || `${token.fontSize}px`} ${style.fontFamily || token.fontFamily}`;
-      const padding = parseFloat(bodyStyle.paddingLeft) + parseFloat(bodyStyle.paddingRight);
+      const number = value => parseFloat(value) || 0;
+      const occupied = style => number(style.paddingLeft) + number(style.paddingRight) + number(style.borderLeftWidth) + number(style.borderRightWidth);
+      // 边框和向上取整的安全余量计入列宽，避免完整表头的最后一字换行。
+      const padding = Math.max(occupied(bodyStyle), occupied(headerStyle), 16) + 4;
       const next = { body: font(bodyStyle), header: font(headerStyle), padding: Number.isFinite(padding) && padding > 0 ? padding : 16 };
       setMetrics(old => {
         const value = { ...next, revision: (old?.revision || 0) + (forceFont === true ? 1 : 0) };
