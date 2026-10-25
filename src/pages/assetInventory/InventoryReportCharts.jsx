@@ -32,11 +32,11 @@ export default function InventoryReportCharts({ report }) {
         </ComposedChart>
       </ResponsiveContainer>
       <ReportTable rowKey="name" rows={report.indicators} columns={[
-        { title: '指标', dataIndex: 'name', width: 200 },
-        { title: '当前总数', dataIndex: 'total', width: 140, align: 'right', render: (v, row) => quantity(v) },
-        { title: '年度增长量', dataIndex: 'change', width: 140, align: 'right', render: (v, row) => quantity(v) },
-        { title: '年度增长率', dataIndex: 'rate', width: 140, align: 'right', render: percent },
-        { title: '增长率变化', dataIndex: 'rateChange', width: 190, align: 'right', render: v => percent(v == null ? null : v / 100) },
+        { title: '指标', dataIndex: 'name', sizing: { type: 'text' }, ellipsis: true },
+        { title: '当前总数', dataIndex: 'total', sizing: { type: 'number', format: quantity }, align: 'right', render: (v, row) => quantity(v) },
+        { title: '年度增长量', dataIndex: 'change', sizing: { type: 'number', format: quantity }, align: 'right', render: (v, row) => quantity(v) },
+        { title: '年度增长率', dataIndex: 'rate', sizing: { type: 'percent', format: percent }, align: 'right', render: percent },
+        { title: '增长率变化', dataIndex: 'rateChange', sizing: { type: 'percent', format: value => percent(value == null ? null : value / 100) }, align: 'right', render: v => percent(v == null ? null : v / 100) },
       ]} />
     </Card>
     <Card size="small" title="资产类型分布（按原值）" extra={report.distributionIsDemo ? <Typography.Text type="secondary">演示数据</Typography.Text> : report.distributionIsTemplate ? <Typography.Text type="secondary">模板数据</Typography.Text> : null}>
@@ -53,10 +53,10 @@ export default function InventoryReportCharts({ report }) {
         </div>
         <div style={{ flex: '2 1 480px', minWidth: 0 }}>
           <ReportTable rowKey="category" rows={pie} columns={[
-            { title: '资产类别', dataIndex: 'category', width: 200, render: (value, row) => <Space><span aria-hidden="true" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: row.fill }} />{value}</Space> },
-            { title: '数量（件）', dataIndex: 'quantity', width: 100, align: 'right', render: quantity },
-            { title: '原值（万元）', dataIndex: 'original', width: 150, align: 'right', render: value => amount(value / 10000) },
-            { title: '原值占比', key: 'ratio', width: 100, align: 'right', render: (_, row) => originalTotal === 0 ? '' : percent(row.original / originalTotal) },
+            { title: '资产类别', dataIndex: 'category', sizing: { type: 'text', text: row => `${row.category}　` }, ellipsis: true, render: (value, row) => <Space><span aria-hidden="true" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: row.fill }} />{value}</Space> },
+            { title: '数量（件）', dataIndex: 'quantity', sizing: { type: 'number', format: quantity }, align: 'right', render: quantity },
+            { title: '原值（万元）', dataIndex: 'original', sizing: { type: 'money', format: value => amount(value / 10000) }, align: 'right', render: value => amount(value / 10000) },
+            { title: '原值占比', key: 'ratio', sizing: { type: 'percent', text: row => originalTotal === 0 ? '' : percent(row.original / originalTotal) }, align: 'right', render: (_, row) => originalTotal === 0 ? '' : percent(row.original / originalTotal) },
           ]} />
         </div>
       </div>}
