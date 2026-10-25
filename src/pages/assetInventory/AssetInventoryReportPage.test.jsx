@@ -102,16 +102,16 @@ test('汇总和分类数量不带小数，零短横，明细金额保持两位',
   expect(within(panel).getByText('1,946.00')).toBeInTheDocument();
 });
 
-test('分析与年度图表共用三列窄表，不拉伸到整个宽屏', () => {
+test('分析与年度图表共用四列窄表，不拉伸到整个宽屏', () => {
   render(<AssetInventoryReportPage />);
   const table = screen.getByTestId('inventory-increment-table');
   expect(table).toHaveStyle({ width: '100%', maxWidth: '620px', minWidth: '0' });
-  expect(within(table).getAllByRole('columnheader')).toHaveLength(3);
+  expect(within(table).getAllByRole('columnheader')).toHaveLength(4);
   fireEvent.click(screen.getByRole('tab', { name: '年度报告图表' }));
   const chartPanel = screen.getByRole('tabpanel', { name: '年度报告图表' });
   const chartTable = within(chartPanel).getByTestId('inventory-increment-table');
   expect(chartTable).toHaveStyle({ width: '100%', maxWidth: '620px' });
-  expect(within(chartTable).getAllByRole('columnheader')).toHaveLength(3);
+  expect(within(chartTable).getAllByRole('columnheader')).toHaveLength(4);
 });
 
 
@@ -124,4 +124,23 @@ test('明细普通行数量真0、原值会计0短横、净值负括号、赔偿
   expect(row.children[7].textContent).toBe('(1,234.50)');
   expect(row.children[9].textContent).toBe('0.00');
   expect(row.children[10].textContent).toBe('');
+});
+
+test('范围文案、六月净值标题和空备注在两个增量入口一致，不出现演示字样', () => {
+  render(<AssetInventoryReportPage />);
+  expect(screen.getByText('资产盘点类别：电脑（笔记本、主机、显示器）、办公设备、车辆、IP电话。（注：楼宇、装修、家具及软件不在盘点范围内）')).toBeInTheDocument();
+  expect(screen.getByRole('columnheader', { name: '净值（截至2026年6月）' })).toBeInTheDocument();
+  const categoryCard = screen.getByText('2026年资产盘亏统计').closest('.ant-card');
+  const currentRows = within(categoryCard).getAllByRole('row').filter(row => within(row).queryByRole('cell', { name: '2026', exact: true }));
+  expect(currentRows).toHaveLength(7);
+  currentRows.forEach(row => within(row).getAllByRole('cell').forEach(cell => expect(cell.style.background).not.toBe('')));
+  const increment = screen.getByTestId('inventory-increment-table');
+  expect(within(increment).getByRole('columnheader', { name: '备注' })).toBeInTheDocument();
+  expect(screen.queryByText(/演示数据/)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('tab', { name: '年度报告图表' }));
+  const panel = screen.getByRole('tabpanel', { name: '年度报告图表' });
+  expect(within(panel).queryByText(/演示数据/)).not.toBeInTheDocument();
+  expect(within(panel).getByText('2,700')).toBeInTheDocument();
+  expect(within(panel).getByText('35%')).toBeInTheDocument();
+  expect(within(panel).queryByText('2,700.00')).not.toBeInTheDocument();
 });

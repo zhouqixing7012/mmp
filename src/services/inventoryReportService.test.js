@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx-js-style';
 import { inventoryReportActuals } from '../data/inventoryReportActuals';
-import { isAssetInInventoryReportScope, filterInventoryReportAssets, getInventoryReport, getInventoryReportSummary, getIncrementRows, getInventoryLossCategoryRows, getInventoryDetailRows, getInventoryHistoryChartRows, getGroupedRowSpans, buildInventoryReportWorkbook, DETAIL_FIELDS, companyQuantity, companyAmount, accounting } from './inventoryReportService';
+import { getInventoryReport, getInventoryReportSummary, getIncrementRows, getInventoryLossCategoryRows, getInventoryDetailRows, getInventoryHistoryChartRows, getGroupedRowSpans, buildInventoryReportWorkbook, DETAIL_FIELDS, companyQuantity, companyAmount, accounting } from './inventoryReportService';
 
 const analysisValues = (row, count = 10) => Array.from({ length: count }, (_, index) => row[index === 0 ? 1 : index + 2]);
 const workbook = year => XLSX.read(XLSX.write(buildInventoryReportWorkbook(getInventoryReport(year)), { type: 'array', bookType: 'xlsx' }), { type: 'array', cellNF: true, cellStyles: true });
@@ -126,7 +126,7 @@ test('2026资产类型分布使用授权演示且单位万元，分项合计与�
   expect(report.distribution.reduce((sum, row) => sum + row.quantity, 0)).toBe(14456);
   expect(report.distribution.reduce((sum, row) => sum + row.original, 0)).toBe(78067413);
   const sheet = workbook(2026).Sheets['资产类型分布'];
-  expect(sheet.A1.v).toBe('类别（演示数据）');
+  expect(sheet.A1.v).toBe('类别');
   expect(sheet.C1.v).toBe('原值（万元）');
   expect(sheet.C2.v).toBe(2700);
 });
@@ -180,47 +180,38 @@ test.each([2025, 2026])('参考样式%s双层表头和当前年灰底无重叠�
 });
 
 
-test('ES报告只排除新媒体上海广州非视频资产，不按城市或名称片段误排其他公司', () => {
-  const assets = [
-    { 标签号: 'SH-WEB', 子公司: '115.新媒体-上海', 板块: '11.搜狐网-web' },
-    { 标签号: 'GZ-WEB', companyCode: '116', plateCode: '12' },
-    { 标签号: 'SH-VIDEO', 子公司: '新媒体上海分公司', 板块: '16.视频' },
-    { 标签号: 'GZ-VIDEO', 子公司: '新媒体广州', 板块: '视频' },
-    { 标签号: 'SH-OTHER', 子公司: '上海其他公司', 板块: '11.搜狐网-web' },
-    { 标签号: 'GZ-OTHER', 子公司: '广州新媒体服务公司', 板块: '12.搜狐网-mobile' },
-    { 标签号: 'BJ', 子公司: '114.新媒体', 板块: '11.搜狐网-web' },
-  ];
-  expect(filterInventoryReportAssets(assets).map(row => row['标签号'])).toEqual(['SH-VIDEO', 'GZ-VIDEO', 'SH-OTHER', 'GZ-OTHER', 'BJ']);
-  expect(() => isAssetInInventoryReportScope({ 标签号: 'MISSING', 子公司: '新媒体广州分公司' })).toThrow('资产MISSING缺少板块');
-  expect(isAssetInInventoryReportScope({ companyCode: 115, plateCode: 16 })).toBe(true);
+test('报告范围采用确认原文，不追加项目创建权限说明', () => {
+  const text = '电脑（笔记本、主机、显示器）、办公设备、车辆、IP电话。（注：楼宇、装修、家具及软件不在盘点范围内）';
+  expect(getInventoryReport(2026).scope).toBe(text);
+  expect(workbook(2026).Sheets['盘点结果比较分析'].D5.v).toBe(text);
 });
 
-test('明细页面与导出共享分公司范围，排除明细不进入小计', () => {
+test('明细及导出不按公司和板块二次裁剪项目来源，普通分公司与缺板块记录均保留', () => {
   const report = getInventoryReport(2026);
   const source = report.details[0];
-  const excluded = { ...source, 标签号: 'EXCLUDED-SH', 子公司: '新媒体上海分公司', 板块: '11.搜狐网-web' };
-  const included = { ...source, 标签号: 'INCLUDED-GZ-VIDEO', 子公司: '新媒体广州分公司', 板块: '16.视频' };
-  const scoped = { ...report, details: [...report.details, excluded, included] };
+  const branchAssets = [
+    { ...source, 标签号: 'SH-WEB', 子公司: '新媒体上海分公司', 板块: '11.搜狐网-web' },
+    { ...source, 标签号: 'GZ-NO-PLATE', 子公司: '新媒体广州分公司', 板块: undefined },
+    { ...source, 标签号: 'GZ-VIDEO', 子公司: '新媒体广州分公司', 板块: '16.视频' },
+  ];
+  const scoped = { ...report, details: [...report.details, ...branchAssets] };
   const rows = getInventoryDetailRows(scoped);
-  expect(rows.filter(row => !row.summary).map(row => row['标签号'])).toEqual(['201132100282', 'NE3737', 'INCLUDED-GZ-VIDEO']);
-  expect(rows.find(row => row.label === '资产盘亏合计')['数量']).toBe(3);
-  const wb = buildInventoryReportWorkbook(scoped);
-  const exported = XLSX.utils.sheet_to_json(wb.Sheets['盘亏资产明细及原因'], { header: 1 });
-  expect(exported.some(row => row.includes('EXCLUDED-SH'))).toBe(false);
-  expect(exported.some(row => row.includes('INCLUDED-GZ-VIDEO'))).toBe(true);
-  expect(report.scope).toContain('新媒体上海分公司、新媒体广州分公司仅包含16.视频板块资产');
+  expect(rows.filter(row => !row.summary).map(row => row['标签号'])).toEqual(['201132100282', 'NE3737', 'SH-WEB', 'GZ-NO-PLATE', 'GZ-VIDEO']);
+  expect(rows.find(row => row.label === '资产盘亏合计')['数量']).toBe(5);
+  const exported = XLSX.utils.sheet_to_json(buildInventoryReportWorkbook(scoped).Sheets['盘亏资产明细及原因'], { header: 1 });
+  expect(exported.filter(row => branchAssets.some(asset => row.includes(asset['标签号'])))).toHaveLength(3);
+  expect(report.details).toHaveLength(2);
 });
 
-
-test('年度报告加载先过滤明细再按公司汇总，源汇总和原始明细不改写', () => {
+test('年度加载保留来源明细后按公司汇总，源明细及已提供年度总量均不改写', () => {
   const details = inventoryReportActuals.detailsByYear[2026];
-  const branchAsset = { ...details[0], 标签号: 'EXCLUDED-GZ', 子公司: '116.新媒体-广州', 板块: '17.Corporate' };
+  const branchAsset = { ...details[0], 标签号: 'SOURCE-GZ', 子公司: '116.新媒体-广州', 板块: '17.Corporate' };
   details.push(branchAsset);
   try {
     const report = getInventoryReport(2026);
-    expect(report.details.some(row => row['标签号'] === 'EXCLUDED-GZ')).toBe(false);
-    expect(report.companyLoss.some(row => row.company === '116.新媒体-广州')).toBe(false);
-    expect(report.companyLoss.find(row => row.company === '合计' && row.year === 2026).quantity).toBe(2);
+    expect(report.details.some(row => row['标签号'] === 'SOURCE-GZ')).toBe(true);
+    expect(report.companyLoss.find(row => row.company === '116.新媒体-广州' && row.year === 2026).quantity).toBe(1);
+    expect(report.companyLoss.find(row => row.company === '合计' && row.year === 2026).quantity).toBe(3);
     expect(inventoryReportActuals.detailsByYear[2026]).toContain(branchAsset);
     expect(report.history.find(row => row.year === 2026).quantity).toBe(14456);
   } finally { details.pop(); }
@@ -270,7 +261,7 @@ test('分析与图表导出按各表精度处理0、负数和缺值，不改计�
   const exported = workbook(2026);
   expect(exported.Sheets['盘亏资产明细及原因'].G4.w).toBe('1,946.00');
   expect(exported.Sheets['盘亏资产明细及原因'].J4?.v ?? '').toBe('');
-  expect(exported.Sheets['资产类型分布'].C2.w).toBe('2,700.00');
+  expect(exported.Sheets['资产类型分布'].C2.w).toBe('2,700');
 
   const modified = { ...report, history: report.history.map(row => row.year === 2026 ? { ...row, lossNet: -1234.5 } : row),
     indicators: report.indicators.map(row => ({ ...row, change: -1234.5, rateChange: null })) };
@@ -295,4 +286,62 @@ test('明细普通行保存后仍区分会计0、General数量0及未提供金�
   expect(sheet.J4.v).toBe(0);
   expect(sheet.J4.w).toBe('0.00');
   expect(sheet.K4.v).toBe('');
+});
+
+test.each([2025, 2026])('增量备注导出%s年位于F列、保持B/D/E和后续指标行，实际文件含备注边框', year => {
+  const report = getInventoryReport(year);
+  const increments = getIncrementRows(year);
+  const incrementStart = 18 + report.history.length + 3 + 14 + 3;
+  const styled = buildInventoryReportWorkbook(report);
+  const sheet = styled.Sheets['盘点结果比较分析'];
+  const row = incrementStart + 1;
+  expect(sheet[`B${incrementStart}`].v).toBe('资产大类');
+  expect(sheet[`D${incrementStart}`].v).toBe('资产细类');
+  expect(sheet[`E${incrementStart}`].v).toBe('汇总');
+  expect(sheet[`F${incrementStart}`].v).toBe('备注');
+  expect(sheet[`B${row}`].v).toBe('台式机');
+  expect(sheet[`D${row}`].v).toBe('PC-主机');
+  expect(sheet[`E${row}`]?.v ?? '').toBe(increments[0].value ?? '');
+  expect(increments.map((_, index) => sheet[`F${row + index}`].v)).toEqual(increments.map(() => ''));
+  expect(sheet[`F${row}`].s.border.bottom.style).toBe('thin');
+  expect(sheet[`F${row + 3}`].s.fill.fgColor.rgb).toBe('B8CCE4');
+  expect(sheet[`F${row + 13}`].s.fill.fgColor.rgb).toBe('BFBFBF');
+  expect(sheet[`F${row + 13}`].s.font.bold).toBe(true);
+  const indicatorStart = incrementStart + increments.length + 3;
+  expect(sheet[`B${indicatorStart}`].v).toBe('指标');
+  expect(sheet[`D${indicatorStart + 1}`].v).toBe(report.indicators[0].total);
+  const saved = XLSX.read(XLSX.write(styled, { type: 'buffer', bookType: 'xlsx' }), { type: 'buffer', cellStyles: true, cellNF: true, bookFiles: true });
+  expect(saved.Sheets['盘点结果比较分析'][`F${incrementStart}`].v).toBe('备注');
+  const sheetXml = new DOMParser().parseFromString(Buffer.from(saved.files['xl/worksheets/sheet1.xml'].content).toString('utf8'), 'application/xml');
+  const styleIndex = Number(sheetXml.querySelector(`c[r="F${row}"]`).getAttribute('s'));
+  const styleXml = new DOMParser().parseFromString(Buffer.from(saved.files['xl/styles.xml'].content).toString('utf8'), 'application/xml');
+  const borderIndex = Number(styleXml.querySelectorAll('cellXfs > xf')[styleIndex].getAttribute('borderId'));
+  expect(styleXml.querySelectorAll('borders > border')[borderIndex].querySelector('bottom').getAttribute('style')).toBe('thin');
+});
+
+test('分布原值万元按整数四舍五入、原值占比按整数百分比展示，源金额和计算比例不提前舍入', () => {
+  const source = getInventoryReport(2026);
+  const distribution = [{ category: '测试甲', quantity: 1, original: 1254999 }, { category: '测试乙', quantity: 1, original: 1255000 }, { category: '测试零值', quantity: 0, original: 0 }];
+  const report = { ...source, distribution };
+  const saved = XLSX.read(XLSX.write(buildInventoryReportWorkbook(report), { type: 'array', bookType: 'xlsx' }), { type: 'array', cellNF: true });
+  const sheet = saved.Sheets['资产类型分布'];
+  expect(sheet.C2.v).toBe(125.4999); expect(sheet.C2.w).toBe('125');
+  expect(sheet.C3.v).toBe(125.5); expect(sheet.C3.w).toBe('126');
+  expect(sheet.C4.v).toBe(0); expect(sheet.C4.w).toBe('0');
+  expect(sheet.C2.z).toBe('#,##0;-#,##0;0');
+  expect(sheet.D2.v).toBe(1254999 / 2509999); expect(sheet.D2.w).toBe('50%');
+  expect(sheet.D2.z).toBe('0%'); expect(sheet.D4.w).toBe('0%');
+  expect(distribution.map(row => row.original)).toEqual([1254999, 1255000, 0]);
+});
+
+test('导出工作表无演示文案，元数据仅标出具体示例来源而不覆盖真实年度信息', () => {
+  const report = getInventoryReport(2026);
+  expect(report.distributionIsDemo).toBe(true);
+  expect(report.detailsAreDemo).toBe(false);
+  const saved = XLSX.read(XLSX.write(buildInventoryReportWorkbook(report), { type: 'buffer', bookType: 'xlsx' }), { type: 'buffer' });
+  const values = Object.values(saved.Sheets).flatMap(sheet => Object.entries(sheet).filter(([address]) => !address.startsWith('!')).map(([, cell]) => cell.v));
+  expect(values.some(value => String(value).includes('演示数据'))).toBe(false);
+  expect(saved.Sheets['资产类型分布'].A1.v).toBe('类别');
+  expect(saved.Custprops.demoDataSources).toBe('distribution');
+  expect(saved.Custprops.isDemo).toBeUndefined();
 });

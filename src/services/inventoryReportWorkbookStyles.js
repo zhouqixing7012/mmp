@@ -80,9 +80,9 @@ export function styleInventoryReportWorkbook(workbook, { summaryStart, historySt
     format(analysis, row, [2, 3, 4], formats.accountingInteger);
   }
   heading(analysis, incrementStart - 2, 10);
-  table(analysis, incrementStart - 1, increments.length, 3);
+  table(analysis, incrementStart - 1, increments.length, 4);
   increments.forEach((row, index) => {
-    if (row.name === '小计' || ['车辆', '电话', '合计'].includes(row.category)) paint(analysis, incrementStart + index, 3, { bold: row.name === '合计', fill: row.name === '合计' ? colors.total : colors.blue, borders: true });
+    if (row.name === '小计' || ['车辆', '电话', '合计'].includes(row.category)) paint(analysis, incrementStart + index, 4, { bold: row.name === '合计', fill: row.name === '合计' ? colors.total : colors.blue, borders: true });
   });
   heading(analysis, indicatorStart - 2, 10);
   table(analysis, indicatorStart - 1, 3, 5);

@@ -3,7 +3,7 @@ import { inventoryReportDetails } from './inventoryReportDetails';
 // 仅保留2025年旧模板分类与用户授权演示；真实年度汇总改从inventoryReportActuals读取。
 export const inventoryReportTemplate = {
   year: 2025,
-  scope: '电脑（笔记本、主机、显示器）、办公设备、车辆、电话；楼宇、装修、家具及软件不在范围内',
+  scope: '电脑（笔记本、主机、显示器）、办公设备、车辆、IP电话。（注：楼宇、装修、家具及软件不在盘点范围内）',
   period: '2024年7月—2025年7月',
   distribution: [
     { category: '笔记本及配件', quantity: 3169, original: 25670000 },

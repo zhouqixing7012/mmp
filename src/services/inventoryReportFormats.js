@@ -21,3 +21,7 @@ export const percent = value => value == null ? '' : `${(value * 100).toFixed(2)
 export const summaryPercent = (value, row) => row.name === '全部盘点资产' ? '100%' : historyPercent(value);
 export const companyQuantity = value => value == null || value === 0 ? '' : quantity(value);
 export const companyAmount = companyQuantity;
+
+// 环图及其分类表单独采用整数万元、整数占比，其他表精度不变。
+export const distributionAmount = value => value == null ? '' : quantity(value / 10000);
+export const distributionPercent = value => value == null ? '' : `${Math.round(value * 100)}%`;

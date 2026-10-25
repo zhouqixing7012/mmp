@@ -20,6 +20,7 @@ export function IncrementTable({ year }) {
       render: (_, row) => isSummary(row) ? row.name === '合计' ? '合计' : `${row.category}小计` : row.category },
     { ...textColumn('资产细类', 'name'), sizing: { type: 'text', text: row => isSummary(row) ? null : row.name }, onCell: row => isSummary(row) ? { colSpan: 0 } : {} },
     { ...column('汇总', 'value', integer), onCell: row => isSummary(row) ? { style: { background: row.name === '合计' ? token.colorPrimaryBg : token.colorFillAlter, fontWeight: 600 } } : {} },
+    { ...textColumn('备注', 'remark'), render: () => '', sizing: { type: 'text', text: () => '' } },
   ]} /></div>;
 }
 export function CompanyLossTable({ report }) {
@@ -31,6 +32,7 @@ export function CompanyLossTable({ report }) {
   ]} />;
 }
 export function AnalysisTables({ report }) {
+  const { token } = theme.useToken();
   const categories = getInventoryLossCategoryRows(report);
   const spans = getGroupedRowSpans(categories, 'category');
   return <Space orientation="vertical" size={16} className="w-full">
@@ -40,7 +42,7 @@ export function AnalysisTables({ report }) {
         textColumn('资产情况', 'name', 'label'),
         { title: '数量', children: [column('数量（件）', 'quantity', (value, row) => row.name === '全部盘点资产' ? integer(value) : accounting(value)), column('占全部盘点资产', 'quantityRate', summaryPercent)] },
         { title: '原值', children: [column('金额（元）', 'original', accounting), column('占全部盘点资产', 'originalRate', summaryPercent)] },
-        { title: `净值（截至${report.year}年6月30日）`, children: [column('金额（元）', 'net', accounting), column('占全部盘点资产', 'netRate', summaryPercent)] },
+        { title: `净值（截至${report.year}年6月）`, children: [column('金额（元）', 'net', accounting), column('占全部盘点资产', 'netRate', summaryPercent)] },
       ]} />
     </Card>
     <Card size="small" title="四年盘点数据对比">
@@ -53,7 +55,7 @@ export function AnalysisTables({ report }) {
       ]} />
     </Card>
     <Card size="small" title={`${report.year}年资产盘亏统计`}>
-      <ReportTable rows={categories} columns={[{ ...textColumn('资产类别', 'category'), onCell: (_, index) => ({ rowSpan: spans[index] }) }, textColumn('盘点年份', 'year', 'year'), column('盘亏数量（件）', 'quantity', accounting), column('盘亏原值（元）', 'original', accounting), column('盘亏净值（元）', 'net', accounting), { ...textColumn('备注', 'remark', 'description'), render: () => '-', sizing: { type: 'description', text: () => '-' } }]} />
+      <ReportTable rows={categories} columns={[{ ...textColumn('资产类别', 'category'), onCell: (_, index) => ({ rowSpan: spans[index] }) }, textColumn('盘点年份', 'year', 'year'), column('盘亏数量（件）', 'quantity', accounting), column('盘亏原值（元）', 'original', accounting), column('盘亏净值（元）', 'net', accounting), { ...textColumn('备注', 'remark', 'description'), render: () => '-', sizing: { type: 'description', text: () => '-' } }].map((field, index) => index === 0 ? field : ({ ...field, onCell: row => ({ style: row.year === report.year ? { background: token.colorFillAlter } : {} }) }))} />
     </Card>
     <Card size="small" title={<span style={{ whiteSpace: 'normal' }}>{getIncrementTitle(report.year)}</span>} style={{ width: '100%' }}><IncrementTable year={report.year} /></Card>
   </Space>;
@@ -64,7 +66,7 @@ export function DetailTable({ report }) {
   const format = (name, value, row) => row.summary && value === 0 ? '-'
     : value == null ? '' : ['原值', '报失当月资产净值'].includes(name) ? accountingAmount(value)
       : ['赔偿金额', '损失'].includes(name) ? amount(value) : name === '数量' ? quantity(value) : value;
-  return <Card size="small" title="盘亏及待查明细" extra={`${report.detailsAreDemo ? "演示数据 · " : ""}共 ${report.details.length} 条`}>
+  return <Card size="small" title="盘亏及待查明细" extra={`共 ${report.details.length} 条`}>
     <AutoWidthTable rowKey="key" dataSource={rows} columns={DETAIL_FIELDS.map((name, i) => ({
       title: name, dataIndex: name, key: name, ellipsis: ['资产说明', '说明', '子公司', '一级部门'].includes(name),
       sizing: { type: types[name] || 'text', text: row => row.summary && i < 5 ? null : format(name, row[name], row) },

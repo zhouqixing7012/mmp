@@ -37,3 +37,14 @@ test('明细原值净值用会计两位，赔偿损失General两位保留真实0
   expect(amount(0)).toBe('0.00');
   expect(amount(null)).toBe('');
 });
+
+// 分布图的精度不传播到其他分析表与年度增长率。
+test('分布整数万元和整数占比四舍五入，保留零与未知的区别', () => {
+  const { distributionAmount, distributionPercent } = require('./inventoryReportFormats');
+  expect(distributionAmount(2767413)).toBe('277');
+  expect(distributionAmount(17645000)).toBe('1,765');
+  expect(distributionPercent(0.3456)).toBe('35%');
+  expect(distributionPercent(0)).toBe('0%');
+  expect(distributionAmount(null)).toBe('');
+  expect(distributionPercent(null)).toBe('');
+});
