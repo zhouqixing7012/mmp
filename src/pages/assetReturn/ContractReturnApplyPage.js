@@ -19,7 +19,11 @@ export default function ContractReturnApplyPage() {
   const location = useLocation();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [version, setVersion] = useState(0);
-  const numbers = useMemo(() => getEmployeeContractNumbers(), [version]);
+  const numbers = useMemo(() => {
+    // 服务读取可变演示存储，版本变化时重新取得快照。
+    void version;
+    return (getEmployeeContractNumbers());
+  }, [version]);
   const applyDate = useMemo(() => todayText(), []);
   const [selectedIds, setSelectedIds] = useState(() => {
     const prefillNumbers = location.state?.prefillContractNumbers || [];

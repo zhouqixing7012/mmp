@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Button, Card } from 'antd';
 import { Search, RefreshCcw } from 'lucide-react';
 

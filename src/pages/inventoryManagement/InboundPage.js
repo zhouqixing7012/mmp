@@ -50,10 +50,7 @@ const WAREHOUSES = [
   'I0013-资产集团前台库（新媒体）',
   'I0022-资产集团前台库（焦点互动）',
 ];
-const PURCHASE_WAREHOUSE_BY_COMPANY = {
-  '114.新媒体': 'I0001-资产集团总库（新媒体）',
-  '115.焦点互动': 'I0022-资产集团前台库（焦点互动）',
-};
+
 const WAREHOUSE_CONTEXT = {
   'I0001-资产集团总库（新媒体）': { city: '010.北京市', building: '129753.搜狐媒体大厦', company: '114.新媒体' },
   'I0013-资产集团前台库（新媒体）': { city: '010.北京市', building: '129753.搜狐媒体大厦', company: '114.新媒体' },
@@ -273,9 +270,7 @@ function isInfraLine(row) {
   return INFRA_ASSET_TYPES.has(row?.assetSubClass);
 }
 
-function resolvePurchaseWarehouse(row) {
-  return row?.targetWarehouse || PURCHASE_WAREHOUSE_BY_COMPANY[row?.company] || '';
-}
+
 
 function PageTitle({ children }) {
   return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;
@@ -974,7 +969,7 @@ function PurchasePendingModal({ open, rows, currentLines, warehouse, editRow, on
     { title: 'PR单/行', dataIndex: 'prLine', width: 150, render: (v) => v || '-' },
   ];
   const selectedRows = data.filter((row) => selected.includes(row.id));
-  useEffect(() => { setSelected(editCandidate ? [editCandidate.id] : []); }, [open, warehouse, editCandidate?.id]);
+  useEffect(() => { setSelected(editCandidate ? [editCandidate.id] : []); }, [open, warehouse, editCandidate.id, editCandidate]);
 
   return (
     <Modal open={open} title="选择待入库物资" width={960} okText="确认" cancelText="取消" onCancel={onCancel} onOk={() => onConfirm(selectedRows)}>

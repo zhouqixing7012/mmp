@@ -24,11 +24,11 @@ export default function ConsumableClaimConfirmPage() {
   const [employeeId, setEmployeeId] = useState('');
   const [confirmedResult, setConfirmedResult] = useState(null);
   const claim = useMemo(
-    () => getConsumableWorkflowState().claims.find((item) => (
-      item.status === '处理中'
-      && item.currentNode === '员工领用确认'
-      && item.confirmationStatus === '待确认'
-    )) || null,
+    () => {
+    // 版本变化时重新读取服务中的可变演示快照。
+    void version;
+    return (getConsumableWorkflowState().claims.find(item => item.status === '处理中' && item.currentNode === '员工领用确认' && item.confirmationStatus === '待确认') || null);
+  },
     [version]
   );
   const current = claim || confirmedResult;

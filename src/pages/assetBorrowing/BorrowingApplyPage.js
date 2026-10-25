@@ -209,7 +209,7 @@ export default function BorrowingApplyPage() {
     {
       title: '资产类别',
       width: 240,
-      render: (_, record) => `${record.category || '-'}\.${record.subCategory || '-'}`,
+      render: (_, record) => `${record.category || '-'}.${record.subCategory || '-'}`,
     },
     {
       title: '借用数量',

@@ -22,7 +22,11 @@ export default function ContractReturnHandlingPage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [version, setVersion] = useState(0);
-  const applications = useMemo(() => getContractReturnApplications(), [version]);
+  const applications = useMemo(() => {
+    // 服务读取可变演示存储，版本变化时重新取得快照。
+    void version;
+    return (getContractReturnApplications());
+  }, [version]);
   const selected = applications.find((item) => item.status === '处理中' && ['号码退库办理', '员工号码退库确认'].includes(item.currentNode)) || null;
   const [warehouse, setWarehouse] = useState('北京总部号码仓');
   const [usageNote, setUsageNote] = useState('');
@@ -34,7 +38,7 @@ export default function ContractReturnHandlingPage() {
     setWarehouse(selected.handling.warehouse || '北京总部号码仓');
     setUsageNote(selected.handling.usageNote || '');
     setOpinion(selected.handling.opinion || '');
-  }, [selected?.id, selected?.handling.confirmationStatus]);
+  }, [selected.id, selected.handling.confirmationStatus, selected]);
 
   const refresh = () => setVersion((value) => value + 1);
 

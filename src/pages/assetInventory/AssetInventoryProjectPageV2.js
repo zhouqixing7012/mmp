@@ -163,14 +163,14 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const unplannedSnapshotAssets = availableAssets.filter((asset) => !assetPlanMap[asset.key] || !activePlanNos.has(assetPlanMap[asset.key]));
   const canManualCreate = unplannedSnapshotAssets.length > 0;
 
-  const resetOverlays = () => {
+  const resetOverlays = useCallback(() => {
     setSnapshotOpen(false);
     setCustomBuilderOpen(false);
     setPlanViewOpen(false);
     setActivePlan(null);
     setImageReviewOpen(false);
     setProgressOpen(false);
-  };
+  }, []);
 
   const openSnapshotByProject = (project) => {
     resetOverlays();
@@ -232,14 +232,14 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     openSnapshotByProject(project);
   };
 
-  const returnToProjectList = () => {
+  const returnToProjectList = useCallback(() => {
     resetOverlays();
     const base = baseContainerRef.current;
     const pageTitle = base?.querySelector('h4.ant-typography')?.textContent?.trim() || '';
     if (!base || pageTitle === '盘点项目') return;
     const returnButton = Array.from(base.querySelectorAll('button')).find((button) => button.textContent?.replace(/\s/g, '') === '返回');
     returnButton?.click();
-  };
+  }, [resetOverlays]);
 
   const restoreSnapshotDraft = (project) => {
     // 只处理无后续计划/结果的快照，已有计划的撤销边界尚未确认。
@@ -473,7 +473,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       const imageSlot = base.querySelector('[data-asset-inventory-v2-image-slot="true"]');
       if (imageSlot) imageSlot.remove();
     };
-  }, [allowedRangeKey]);
+  }, [allowedRangeKey, allowedRanges]);
 
   useEffect(() => {
     const baseItems = [
@@ -501,7 +501,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     }
     const items = tail.length ? [...baseItems, ...tail] : [{ label: '首页' }, { label: '资产盘点' }, { label: variantMenuLabel }];
     window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', { detail: { items } }));
-  }, [activePlan, basePageTitle, customBuilderOpen, customBuilderSource, imageReviewOpen, planViewOpen, progressOpen, snapshotOpen, variantMenuLabel]);
+  }, [activePlan, basePageTitle, customBuilderOpen, customBuilderSource, imageReviewOpen, planViewOpen, progressOpen, returnToProjectList, snapshotOpen, variantMenuLabel]);
 
   useEffect(() => () => {
     window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change', { detail: { items: null } }));

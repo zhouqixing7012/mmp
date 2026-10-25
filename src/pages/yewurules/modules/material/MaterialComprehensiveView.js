@@ -9,7 +9,7 @@ import { createMaterialComprehensiveColumns, initialMaterialComprehensiveForm, m
 import { mockComprehensiveData } from '../../../../mock/businessRulesMock';
 
 const MaterialComprehensiveView = () => {
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [, setSelectedRowKeys] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('add');
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);

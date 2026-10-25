@@ -130,7 +130,11 @@ export default function ConsumableSummaryPage() {
   const [draft, setDraft] = useState(null);
   const [fileList, setFileList] = useState([]);
   const summary = useMemo(
-    () => getConsumableWorkflowState().summaries.find((item) => item.status === '草稿' && item.currentNode === 'ES汇总') || null,
+    () => {
+    // 版本变化时重新读取服务中的可变演示快照。
+    void version;
+    return (getConsumableWorkflowState().summaries.find(item => item.status === '草稿' && item.currentNode === 'ES汇总') || null);
+  },
     [version]
   );
   const current = summary ? { ...summary, ...(draft || {}) } : null;

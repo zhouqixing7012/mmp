@@ -143,10 +143,11 @@ export default function ConsumableSummaryApprovalPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [version, setVersion] = useState(0);
   const [comment, setComment] = useState('');
-  const summary = useMemo(() => (
-    getConsumableWorkflowState().summaries
-      .find((item) => item.status === '处理中' && ['ES主管', 'ES总监'].includes(item.currentNode)) || null
-  ), [version]);
+  const summary = useMemo(() => {
+    // 版本变化时重新读取服务中的可变演示快照。
+    void version;
+    return (getConsumableWorkflowState().summaries.find(item => item.status === '处理中' && ['ES主管', 'ES总监'].includes(item.currentNode)) || null);
+  }, [version]);
 
   const decide = (decision) => {
     if (decision === '驳回' && !comment.trim()) {

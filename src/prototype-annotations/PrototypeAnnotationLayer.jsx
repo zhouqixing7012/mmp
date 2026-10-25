@@ -251,6 +251,7 @@ function PrototypeAnnotationHotspot({
 export default function PrototypeAnnotationLayer() {
   const location = useLocation();
   const ann = usePrototypeAnnotations();
+  const { clearSelection, selectNote, expandedNoteId, updateActiveNotes } = ann;
   const [pageScope, setPageScope] = useState(() => buildRoutePageScope(location.pathname));
   const [pageLabel, setPageLabel] = useState(() => location.pathname || '/');
   const [pageAnnotations, setPageAnnotations] = useState([]);
@@ -301,8 +302,8 @@ export default function PrototypeAnnotationLayer() {
     setPageAnnotations(readAnnotationDraft(pageScope, baseAnnotations, legacyPageKeys));
     setDirty(false);
     setBindingMode(null);
-    ann.clearSelection();
-  }, [ann.clearSelection, baseAnnotations, legacyPageKeys, pageScope]);
+    clearSelection();
+  }, [clearSelection, baseAnnotations, legacyPageKeys, pageScope]);
 
   const updateAnnotations = useCallback((updater) => {
     setPageAnnotations((previous) => (
@@ -312,14 +313,14 @@ export default function PrototypeAnnotationLayer() {
   }, []);
 
   const handleSelectNote = useCallback((noteId, target) => {
-    ann.selectNote(noteId, target);
+    selectNote(noteId, target);
     if (!target) return;
 
     const element = resolvePrototypeTarget(target, pageScope, document);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
     }
-  }, [ann.selectNote, pageScope]);
+  }, [selectNote, pageScope]);
 
   const handleUpdateNote = useCallback((noteId, patch) => {
     updateAnnotations((previous) => previous.map((note) => (
@@ -342,8 +343,8 @@ export default function PrototypeAnnotationLayer() {
 
   const handleDeleteNote = useCallback((noteId) => {
     updateAnnotations((previous) => previous.filter((note) => note.id !== noteId));
-    if (ann.expandedNoteId === noteId) ann.clearSelection();
-  }, [ann.clearSelection, ann.expandedNoteId, updateAnnotations]);
+    if (expandedNoteId === noteId) clearSelection();
+  }, [clearSelection, expandedNoteId, updateAnnotations]);
 
   const handleSave = useCallback(() => {
     const saved = writeAnnotationDraft(pageScope, pageAnnotations);
@@ -355,8 +356,8 @@ export default function PrototypeAnnotationLayer() {
     setPageAnnotations(resetAnnotationDraft(pageScope, baseAnnotations, legacyPageKeys));
     setDirty(false);
     setBindingMode(null);
-    ann.clearSelection();
-  }, [ann.clearSelection, baseAnnotations, legacyPageKeys, pageScope]);
+    clearSelection();
+  }, [clearSelection, baseAnnotations, legacyPageKeys, pageScope]);
 
   const handleImport = useCallback((text) => {
     const payload = JSON.parse(text);
@@ -394,8 +395,8 @@ export default function PrototypeAnnotationLayer() {
   }, [ann.enabled, pageAnnotations, pageScope]);
 
   useEffect(() => {
-    ann.updateActiveNotes(pageAnnotations);
-  }, [ann.updateActiveNotes, pageAnnotations]);
+    updateActiveNotes(pageAnnotations);
+  }, [updateActiveNotes, pageAnnotations]);
 
   useEffect(() => {
     if (!ann.enabled) {
@@ -579,7 +580,7 @@ export default function PrototypeAnnotationLayer() {
           element={element}
           displayElement={getPrototypeDisplayAnchor(element)}
           number={noteNumbers.get(note.id)}
-          selected={ann.expandedNoteId === note.id}
+          selected={expandedNoteId === note.id}
           editMode={editMode}
           layoutVersion={layoutVersion}
           onSelect={handleSelectNote}
@@ -592,7 +593,7 @@ export default function PrototypeAnnotationLayer() {
           notes={pageAnnotations}
           noteNumbers={noteNumbers}
           matchedIds={matchedIds}
-          expandedNoteId={ann.expandedNoteId}
+          expandedNoteId={expandedNoteId}
           onToggleExpand={ann.toggleExpand}
           onSelectNote={handleSelectNote}
           onClose={ann.toggle}

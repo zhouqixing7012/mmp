@@ -15,7 +15,7 @@ const mockRoleData = [
   { id: 5, roleName: '仓库管理员', duty: '管理仓库库存', users: ['周九'], menus: ['资产管理', '资产盘点'], status: '启用' },
 ];
 
-const mockAllMenus = ['资产管理', '资产盘点', '报废管理', '无形资产', '业务配置', '系统配置'];
+
 
 const mockAllUsers = [
   { id: '10001', name: '张三', dept: '集团总部' }, { id: '10002', name: '李四', dept: '集团总部' },
@@ -257,20 +257,9 @@ function PermissionAssignmentPage({ roleName, onClose, onSave }) {
     });
   };
 
-  const isRowAllSelected = (row) =>
-    row.features.every(f => selectedFeatures.has(makeKey(row, f)));
 
-  const toggleRow = (row) => {
-    setSelectedFeatures(prev => {
-      const next = new Set(prev);
-      const allSelected = isRowAllSelected(row);
-      row.features.forEach(f => {
-        if (allSelected) next.delete(makeKey(row, f));
-        else next.add(makeKey(row, f));
-      });
-      return next;
-    });
-  };
+
+
 
   const allVisibleSelected = filteredData.length > 0 &&
     filteredData.every(row => row.features.every(f => selectedFeatures.has(makeKey(row, f))));
@@ -372,7 +361,7 @@ export default function RoleManagementView() {
   const [permRole, setPermRole] = useState(null);
   const [query, setQuery] = useState({ roleName: '', enabled: '' });
   const [filteredData, setFilteredData] = useState(mockRoleData);
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editRecord, setEditRecord] = useState(null);
   const [linkUserRole, setLinkUserRole] = useState(null);
@@ -404,10 +393,7 @@ export default function RoleManagementView() {
     setFilteredData(result);
   };
 
-  const handleReset = () => {
-    setQuery({ roleName: '', enabled: '' });
-    setFilteredData(mockRoleData);
-  };
+
 
   const columns = [
     { title: '角色名称', dataIndex: 'roleName', key: 'roleName', width: 150 },

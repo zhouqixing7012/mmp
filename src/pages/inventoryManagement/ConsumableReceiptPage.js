@@ -201,7 +201,7 @@ export default function ConsumableReceiptPage() {
   const [selectedReceipts, setSelectedReceipts] = useState([]);
   const [selectedLines, setSelectedLines] = useState([]);
   const [selectedDetails, setSelectedDetails] = useState([]);
-  const [maintenanceLineIds, setMaintenanceLineIds] = useState([]);
+  const [, setMaintenanceLineIds] = useState([]);
   const [selectorType, setSelectorType] = useState('');
   const [editItem, setEditItem] = useState(null);
   const [editDraft, setEditDraft] = useState(null);

@@ -3,7 +3,7 @@ import { claimApplicationRows, claimSourceData } from '../mock/applicationClaimM
 import { assetExportSheets, consumableExportColumns } from '../pages/applicationQueries/claimDefinitions';
 
 test('同一耗材申请按物料、子单及实际出库拆行，不丢多次出库', () => {
-  const rows = claimApplicationRows.filter(row => row.values.applicationNo === 'CAC-DEMO-20261013-1');
+  const rows = claimApplicationRows.filter(row => row.values.applicationNo === claimSourceData.applications.find(item => item.id === 'consumable-1').values.applicationNo);
   expect(new Set(rows.map(row => row.originalLineId)).size).toBe(2);
   const issued = rows.filter(row => row.originalLineId.endsWith('-2') && row.filters.subType === 'USE');
   expect(issued).toHaveLength(2);

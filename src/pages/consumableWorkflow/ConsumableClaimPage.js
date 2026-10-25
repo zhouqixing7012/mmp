@@ -35,9 +35,11 @@ export default function ConsumableClaimPage() {
   const [stockOpen, setStockOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const claim = useMemo(
-    () => getConsumableWorkflowState().claims.find((item) => (
-      item.status === '处理中' && ['库管员领用', '员工领用确认'].includes(item.currentNode)
-    )) || null,
+    () => {
+    // 版本变化时重新读取服务中的可变演示快照。
+    void version;
+    return (getConsumableWorkflowState().claims.find(item => item.status === '处理中' && ['库管员领用', '员工领用确认'].includes(item.currentNode)) || null);
+  },
     [version]
   );
   const current = claim ? { ...claim, ...fields } : null;

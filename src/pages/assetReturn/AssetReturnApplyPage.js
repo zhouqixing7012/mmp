@@ -19,7 +19,11 @@ export default function AssetReturnApplyPage() {
   const location = useLocation();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [version, setVersion] = useState(0);
-  const assets = useMemo(() => getAssetReturnAssets(), [version]);
+  const assets = useMemo(() => {
+    // 服务读取可变演示存储，版本变化时重新取得快照。
+    void version;
+    return (getAssetReturnAssets());
+  }, [version]);
   const [selectedIds, setSelectedIds] = useState(() => {
     const prefillAssetTags = location.state?.prefillAssetTags || [];
     if (prefillAssetTags.length) {

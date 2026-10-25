@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { Button, Input, Select, Modal, Table } from 'antd';
-import StatusTag from '../../../../components/StatusTag';
+import { Button, Select, Table } from 'antd';
+
 import QueryBar from '../../../../components/QueryBar';
 import {
-  mockAssetAllocationRuleData, mockReceiptRuleManagementData,
+  mockAssetAllocationRuleData,
 } from '../../../../mock/businessRulesMock';
 
 export const AssetAllocationRuleView = () => {

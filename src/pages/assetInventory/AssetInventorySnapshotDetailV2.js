@@ -435,7 +435,7 @@ export default function AssetInventorySnapshotDetailV2({
     setProjectStatus('盘点关闭');
     onCloseProject?.({ ...project, status: '盘点关闭', closedBy: '系统' });
     messageApi.success('机房初盘进度达到100%，项目已自动关闭，并通过服务号通知财务人员');
-  }, [isSystemRoomInitial, projectStatus, project?.progress, onCloseProject, project]);
+  }, [isSystemRoomInitial, projectStatus, project?.progress, onCloseProject, project, messageApi]);
   const [executionRows, setExecutionRows] = useState(() => assets
     .filter((row) => isInventoryRangeAllowed(row, allowedRanges) && isSnapshotExecutionAsset(row, project))
     .map((row) => normalizeAssetForProjectStage(row, initialProjectStatus)));

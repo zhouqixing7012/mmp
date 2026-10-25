@@ -1,3 +1,4 @@
+import { mockDocumentNumber } from './documentNumbers';
 import { warehouseCatalog } from './reference/warehouseCatalog';
 
 // 交易与流程记录仅作申请查询原型演示；仓库/公司/地点保持参考目录的整行关联。
@@ -10,9 +11,10 @@ const types = [['RETURN', '退库单'], ['BORROW', '借用单'], ['DRAW', '资�
 export const applicationUnfinishedRows = Array.from({ length: 18 }, (_, index) => {
   const warehouse = warehouses[index % warehouses.length];
   const [type, name] = types[index % types.length];
-  const number = `APPLY-PENDING-DEMO-${String(index + 1).padStart(3, '0')}`;
   const applicant = index % 2 ? '213852-孙志强' : '220784-周琦星';
   const createdAt = `2026-10-${String(15 - index % 10).padStart(2, '0')} 09:00:00`;
+  const numberType = { RETURN: '员工退库申请', BORROW: '员工借用申请', DRAW: '员工领用申请', PURCHASE: '统一申请', REC: '接收入库', ED: '员工离职单' };
+  const number = mockDocumentNumber(numberType[type], `unfinished-${index}`, createdAt, warehouse.company);
   const history = [
     { id: `${number}-1`, sequence: '1', node: '申请人提交', approver: applicant, status: '已提交', time: createdAt, opinion: '' },
     { id: `${number}-2`, sequence: '2', node: 'ES主管审批', approver: '213852-孙志强', status: '待审批', time: '', opinion: '', todo: true, account: '213852' },
@@ -23,7 +25,7 @@ export const applicationUnfinishedRows = Array.from({ length: 18 }, (_, index) =
   if (index === 15) history[1].account = 'invalid-1';
   const userStatus = index % 3 === 0 ? null : 'Y';
   return {
-    id: number, kind: 'unfinished', employeeApplication: !['REC', 'ED'].includes(type), access: { applicant: applicant.split('-')[0], department: 'DEMO-DEPT', company: warehouse.company, ledger: '资产台账' }, statusCode: index === 14 ? '1' : '3', createdAt, history,
+    id: `unfinished-${String(index + 1).padStart(3, '0')}`, kind: 'unfinished', employeeApplication: !['REC', 'ED'].includes(type), access: { applicant: applicant.split('-')[0], department: 'DEMO-DEPT', company: warehouse.company, ledger: '资产台账' }, statusCode: index === 14 ? '1' : '3', createdAt, history,
     values: { number, type: name, businessType: type === 'PURCHASE' ? '统一采购' : name,
       status: index === 14 ? '已完成' : '处理中', node: 'ES主管审批', approver: '213852-孙志强',
       applicant, createdAt, company: warehouse.company, plate: '17.Corporate', department: '演示组织.员工服务中心', resigned: userStatus === 'Y' ? '否' : '是' },

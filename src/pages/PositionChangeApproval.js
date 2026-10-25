@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronRight, ChevronDown, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
+import { ChevronRight, ChevronDown, CheckCircle, AlertCircle } from 'lucide-react';
 
 // 模拟来自后端的审批数据，包含原位置和新位置的变更轨迹信息
 const MOCK_APPROVAL_DATA = {

@@ -36,7 +36,11 @@ export default function AssetReturnApprovalPage() {
   const [version, setVersion] = useState(0);
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
-  const applications = useMemo(() => getAssetReturnApplications(), [version]);
+  const applications = useMemo(() => {
+    // 服务读取可变演示存储，版本变化时重新取得快照。
+    void version;
+    return (getAssetReturnApplications());
+  }, [version]);
   const selected = applications.find((item) => item.status === '处理中' && item.currentNode === MIS_NODE) || null;
 
   const refresh = () => setVersion((value) => value + 1);

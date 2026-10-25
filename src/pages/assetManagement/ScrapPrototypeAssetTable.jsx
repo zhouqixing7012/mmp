@@ -23,7 +23,6 @@ import SelectModal from '../../components/SelectModal';
 import LookupInput from '../../components/LookupInput';
 import StatusTag from '../../components/StatusTag';
 import {
-  ACCOUNTING_ASSET_POOL,
   SCRAP_ASSET_POOL,
   SCRAP_TYPE_OPTIONS,
   filterAssetsForScope,
@@ -410,10 +409,10 @@ export default function ScrapPrototypeAssetTable({
     );
   };
 
-  const selectedDisposalCompanies = type === 'disposal'
+  const selectedDisposalCompanies = useMemo(() => type === 'disposal'
     ? (sourceCompanies.length > 0 ? sourceCompanies : (sourceCompany ? [sourceCompany] : []))
-    : [];
-  const selectedDisposalPlates = type === 'disposal' ? sourcePlates.filter(Boolean) : [];
+    : [], [type, sourceCompanies, sourceCompany]);
+  const selectedDisposalPlates = useMemo(() => type === 'disposal' ? sourcePlates.filter(Boolean) : [], [type, sourcePlates]);
   const hasDisposalCompanyRange = selectedDisposalCompanies.length > 0;
 
   const pickerAssets = useMemo(() => {
@@ -483,7 +482,7 @@ export default function ScrapPrototypeAssetTable({
         || (!String(item.status || '').startsWith('已报废') && item.status !== '在库-待报废')
       )
     ));
-  }, [type, assetScope, assetCategory, sourceCompany, sourceCompanies, sourcePlates, accountingMethod, pickerMode, assets, accountingActor, accountingAuthorizationScopes, accountingRecordId, businessRecordId]);
+  }, [type, pickerMode, sourceCompany, accountingActor, accountingAuthorizationScopes, accountingRecordId, businessRecordId, assetScope, assetCategory, assets, accountingMethod, selectedDisposalCompanies, selectedDisposalPlates]);
 
   const addAssets = (selected, isLostAsset = () => pickerMode === 'lost') => {
     const selectedForAdd = type === 'scrap'

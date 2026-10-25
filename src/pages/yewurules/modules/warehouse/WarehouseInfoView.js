@@ -11,7 +11,7 @@ import {
 const WarehouseInfoView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('add');
-  const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
+
   const [formData, setFormData] = useState({
     code: '', desc: '', city: '', building: '', floor: '', address: '', type: '', usage: '',
     company: '', admin: '', isVirtual: '0', isAreaEnabled: '0', isLocationEnabled: '0',

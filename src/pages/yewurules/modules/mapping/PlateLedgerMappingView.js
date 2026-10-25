@@ -29,7 +29,7 @@ const PlateLedgerMappingView = () => {
     { title: '操作', dataIndex: 'action', render: (_, record) => <Button type="link" onClick={() => handleEdit(record)}>编辑</Button> }
   ];
   const data = mockPlateLedgerData;
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [, setSelectedRowKeys] = useState([]);
   return (
     <div className="flex flex-col gap-4">
       <QueryBar>
