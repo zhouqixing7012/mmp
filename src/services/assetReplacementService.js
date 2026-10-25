@@ -182,6 +182,11 @@ export function submitMisDecision(applicationId, values) {
   });
 }
 
+function assertOldAssetInbound(application) {
+  if (application.status !== '处理中') throw new Error('该更换申请已结束，不能继续领取新资产');
+  if (application.returnProcess.inboundStatus !== '已入库') throw new Error('请先完成旧资产入库，再领取新资产');
+}
+
 export function requestReplacementConfirmation(applicationId, scene, method) {
   return updateAssetReplacementApplication(applicationId, (application) => {
     if (scene === '旧资产退回') {
@@ -195,6 +200,7 @@ export function requestReplacementConfirmation(applicationId, scene, method) {
         ],
       };
     }
+    assertOldAssetInbound(application);
     return {
       ...application,
       currentNode: '新资产确认',
@@ -222,6 +228,7 @@ export function confirmReplacementByEmployee(applicationId, scene, method) {
         )),
       };
     }
+    assertOldAssetInbound(application);
     return {
       ...application,
       currentNode: '新资产发放',
@@ -250,7 +257,9 @@ export function executeReplacementInbound(applicationId, warehouse) {
 
 export function executeReplacementOutbound(applicationId, values) {
   const orderNo = buildOrderNo('CK');
-  return updateAssetReplacementApplication(applicationId, (application) => ({
+  return updateAssetReplacementApplication(applicationId, (application) => {
+    assertOldAssetInbound(application);
+    return {
     ...application,
     status: '已完成',
     currentNode: '流程结束',
@@ -260,20 +269,22 @@ export function executeReplacementOutbound(applicationId, values) {
       ...application.history,
       { node: '执行出库', person: 'SOHU01-库房管理员', status: '已完成', time: nowText(), comment: `出库单号：${orderNo}` },
     ],
-  }));
+    };
+  });
 }
 
 export function endReplacementApplication(applicationId, comment) {
   return updateAssetReplacementApplication(applicationId, (application) => {
     const oldAssetReturned = application.returnProcess.inboundStatus === '已入库';
+    const newAssetIssued = application.issueProcess.outboundStatus === '已出库';
     return {
       ...application,
-      status: oldAssetReturned ? '已完成' : '已驳回',
+      status: oldAssetReturned || newAssetIssued ? '已完成' : '已驳回',
       currentNode: '流程结束',
-      newAsset: null,
+      newAsset: newAssetIssued ? application.newAsset : null,
       history: [
         ...application.history,
-        { node: 'ES办理', person: 'SOHU01-库房管理员', status: oldAssetReturned ? '已结束' : '已驳回', time: nowText(), comment },
+        { node: 'ES办理', person: 'SOHU01-库房管理员', status: oldAssetReturned || newAssetIssued ? '已结束' : '已驳回', time: nowText(), comment },
       ],
     };
   });

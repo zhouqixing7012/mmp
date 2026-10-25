@@ -1,5 +1,4 @@
 import * as XLSX from 'xlsx';
-import { applicationQueryRows } from '../mock/businessRulesMock';
 import { applicationDefinitions, applicationProgressRecords, buildApplicationWorkbook, getApplicationDefinition, queryApplications, removeApplicationDrafts } from './applicationQueryService';
 
 const exported = (id, filters = {}, page) => {
@@ -27,18 +26,13 @@ test('退库标签前缀匹配包含整单，列表业务日期和导出创建�
   const index = data[0].indexOf('申请时间');
   expect(data[1][index]).toBe(row.values.createdAt);
 });
-test('退库批删只允许草稿，混选失败不产生部分删除', () => {
-  const rows = queryApplications('return'), draft = rows.find(row => row.statusCode === '0'), other = rows.find(row => row.statusCode !== '0');
-  expect(() => removeApplicationDrafts('return', [draft.id, other.id])).toThrow('只能删除草稿单据');
-  expect(queryApplications('return').some(row => row.id === draft.id)).toBe(true);
-  removeApplicationDrafts('return', [draft.id]);
-  expect(queryApplications('return').some(row => row.id === draft.id)).toBe(false);
-  expect(JSON.parse(sessionStorage.getItem('mmp-application-query-deletions-v1'))).toContain(draft.id);
-  applicationQueryRows.find(row => row.id === draft.id).deleted = false;
-  expect(queryApplications('return').some(row => row.id === draft.id)).toBe(false);
-  sessionStorage.removeItem('mmp-application-query-deletions-v1');
-  // 测试恢复的是测试对象标记，不执行业务删除或覆盖源数据。
-  applicationQueryRows.find(row => row.id === draft.id).deleted = false;
+test('退库查询不提供删除，调用删除也不改变申请或业务锁', () => {
+  const before = queryApplications('return');
+  const snapshot = JSON.stringify(before);
+  expect(getApplicationDefinition('return').actions.remove).toBeUndefined();
+  expect(() => removeApplicationDrafts('return', [before[0].id])).toThrow('此查询不支持删除');
+  expect(JSON.stringify(queryApplications('return'))).toBe(snapshot);
+  expect(sessionStorage.getItem('mmp-application-query-deletions-v1')).toBeNull();
 });
 test('未完成保留全部处理中单据，包括等待与无有效待办；全流程入口可达', () => {
   const rows = queryApplications('unfinished');
@@ -66,5 +60,10 @@ test('资产和耗材预计金额按原申请数量，领用为空；未定义�
     expect(rows.find(row => row.filters.subType === 'USE').values.estimatedAmount).toBeNull();
   }
   expect(() => buildApplicationWorkbook('newEmployee')).toThrow('此查询未定义导出');
-  expect(() => queryApplications('newEmployee', { plate: '17' })).toThrow('板块提交字段');
+  const employee = queryApplications('newEmployee')[0];
+  const filters = { plate: employee.filters.plate, configuration: employee.filters.configuration, statusCode: employee.statusCode };
+  expect(queryApplications('newEmployee', filters).map(row => row.id)).toContain(employee.id);
+  for (const key of Object.keys(filters)) {
+    expect(queryApplications('newEmployee', { ...filters, [key]: 'NO-MATCH' })).toHaveLength(0);
+  }
 });
