@@ -1,3 +1,5 @@
+import { useInventoryOperator } from '../../assetInventory/useInventoryOperator';
+import { inventoryMenuItemsForOperator } from '../../assetInventory/inventoryReportAccess';
 import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, LayoutDashboard, Settings, User } from 'lucide-react';
@@ -15,6 +17,7 @@ function CollapsibleMenu({ open, children }) {
 }
 
 export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, onSubMenuSelect }) {
+  const [inventoryOperator] = useInventoryOperator();
   const location = useLocation();
   const navigate = useNavigate();
   const onMenuToggleRef = useRef(onMenuToggle);
@@ -93,7 +96,7 @@ export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, 
                 </div>
                 <CollapsibleMenu open={isActive}>
                   <div className="bg-[#000c17] py-1">
-                    {item.children.map((subMenu) => (
+                    {(item.key === '资产盘点' ? inventoryMenuItemsForOperator(item.children, inventoryOperator) : item.children).map((subMenu) => (
                       <div
                         key={subMenu}
                         className={`pl-12 pr-5 py-2.5 cursor-pointer text-sm transition-colors ${activeSubMenu === subMenu ? 'text-white bg-[#1677ff]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}

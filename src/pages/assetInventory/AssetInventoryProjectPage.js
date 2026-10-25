@@ -1164,7 +1164,6 @@ function SnapshotAssetTab({ type, projectStatus, rows, setRows, otherRows, setOt
   if (type === 'execution' && beforeStart) {
     operations.push(
       <Button key="move" onClick={() => moveSelected(false)}>批量转移至未执行盘点</Button>,
-      <Button key="queryMove">按查询条件转移至未执行盘点</Button>,
       <Button key="importMove" icon={<Upload size={14} />}>模板转移至未执行盘点</Button>,
       <Button key="no" icon={<ScanLine size={14} />} onClick={() => messageApi.info('NO扫描数据同步逻辑待机房蓝图确认')}>同步NO扫描数据</Button>,
     );
@@ -1178,7 +1177,6 @@ function SnapshotAssetTab({ type, projectStatus, rows, setRows, otherRows, setOt
   if (type === 'notExecution' && beforeStart) {
     operations.push(
       <Button key="move" onClick={() => moveSelected(true)}>批量转移至执行盘点</Button>,
-      <Button key="queryMove">按查询条件转移至执行盘点</Button>,
       <Button key="importMove" icon={<Upload size={14} />}>模板转移至执行盘点</Button>,
     );
   }

@@ -3,6 +3,8 @@ export const INVENTORY_CREATORS = [
   { value: '冯丽婷', label: '财务-冯丽婷', projectTypes: ['复盘'] },
   { value: '徐博', label: '财务经理-徐博', projectTypes: [] },
   { value: '206984-何文', label: 'ES主管-何文', projectTypes: [] },
+  { value: '115720-吕静', label: 'ES-吕静', projectTypes: [] },
+  { value: '穆晓丹', label: 'ES-穆晓丹', projectTypes: [] },
 ];
 
 export function allowedProjectTypes(operator) {

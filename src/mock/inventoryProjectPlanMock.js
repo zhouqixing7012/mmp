@@ -1,5 +1,7 @@
 import { ASSET_ROWS, INITIAL_PLAN_ROWS } from '../pages/assetInventory/mockData';
 import { INVENTORY_MOBILE_ASSETS } from './inventoryMobileMock';
+import { buildDefaultInventoryPlans } from '../pages/assetInventory/inventoryDefaultPlans';
+import { PROJECT_LIST_ROWS } from '../pages/assetInventory/projectListMockData';
 import { createNonRoomReplayDemoAssets, createNonRoomReplayDemoPlans, NON_ROOM_REPLAY_DEMO_PROJECT, NON_ROOM_REPLAY_DEMO_PHOTO_CONFIG } from './inventoryNonRoomReplayDemo';
 
 const nonRoomReplayDemoAssets = createNonRoomReplayDemoAssets(ASSET_ROWS);
@@ -61,12 +63,24 @@ const replayEmployeeAssets = INVENTORY_MOBILE_ASSETS.filter(asset => ['asset-001
   };
 });
 
+// 静态复盘样例与真实默认生成共用楼层分组，仅影响没有已保存会话的演示初值。
+const replayProject = PROJECT_LIST_ROWS.find(project => project.projectNo === 'RCP-202608180001');
+const replayAssets = [...ASSET_ROWS.filter(asset => ['asset-3', 'asset-4'].includes(asset.key)), ...replayEmployeeAssets]
+  .map(asset => asset.executeInventory ? { ...asset, supervisor: '冯丽婷', executor: '冯丽婷' } : { ...asset });
+const replayPlans = buildDefaultInventoryPlans(replayProject, replayAssets.filter(asset => asset.executeInventory), [], '20260818')
+  .map(plan => ({ ...plan, supervisor: '冯丽婷', executor: '冯丽婷', assetKeys: plan.assets.map(asset => asset.key) }));
+const linkedReplayAssets = replayAssets.map(asset => {
+  const plan = replayPlans.find(row => row.assetKeys.includes(asset.key));
+  return { ...asset, planNo: plan?.planNo || '-', planName: plan?.planName || '-' };
+});
+const linkedReplayPlans = replayPlans.map(plan => ({ ...plan, assets: linkedReplayAssets.filter(asset => plan.assetKeys.includes(asset.key)) }));
+
 export const PROJECT_PLAN_ROWS = {
   [NON_ROOM_REPLAY_DEMO_PROJECT.projectNo]: createNonRoomReplayDemoPlans(nonRoomReplayDemoAssets),
   'CP-202607010001': [{ ...machinePlan, status: '关闭', assetKeys: ['asset-1', 'asset-2'] }],
   'CP-202608180001': nonRoomPlans('关闭'),
   'DCP-202608180001': nonRoomPlans('盘点中'),
-  'RCP-202608180001': [{ ...employeePlan, status: '草稿', executor: '冯丽婷', financialSupervisor: '徐博', endDate: employeePlan.startDate, assetKeys: ['asset-3', ...replayEmployeeAssets.map(asset => asset.key)] }],
+  'RCP-202608180001': linkedReplayPlans,
 };
 
 export const PROJECT_PLAN_ASSETS = {
@@ -74,5 +88,5 @@ export const PROJECT_PLAN_ASSETS = {
   'CP-202607010001': ASSET_ROWS.filter(asset => ['asset-1', 'asset-2'].includes(asset.key)),
   'CP-202608180001': nonRoomAssets,
   'DCP-202608180001': nonRoomAssets.map(asset => ({ ...asset })),
-  'RCP-202608180001': [...ASSET_ROWS.filter(asset => ['asset-3', 'asset-4'].includes(asset.key)), ...replayEmployeeAssets],
+  'RCP-202608180001': linkedReplayAssets,
 };

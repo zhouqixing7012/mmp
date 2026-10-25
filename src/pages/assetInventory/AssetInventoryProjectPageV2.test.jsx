@@ -98,7 +98,7 @@ test('无计划结果快照撤销后回到可编辑草稿，并能重新生成',
 test('不同项目计划相互隔离，重新进入保留当前项目状态', () => {
   render(<AssetInventoryProjectPageV2 />);
   fireEvent.click(screen.getByRole('button', { name: '进入计划' }));
-  expect(screen.getByTestId('plan-rows')).toHaveTextContent('PLAN-20260818-0002:草稿');
+  expect(screen.getByTestId('plan-rows')).toHaveTextContent('RCT-20260818-0001:草稿');
   fireEvent.click(screen.getByRole('button', { name: '启动计划' }));
   fireEvent.click(screen.getByRole('button', { name: '退出计划' }));
   fireEvent.click(screen.getByRole('button', { name: '进入初盘' }));

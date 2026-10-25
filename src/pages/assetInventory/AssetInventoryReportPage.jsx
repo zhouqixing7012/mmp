@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
-import { Button, Card, Empty, Select, Space, Tabs, Typography, message } from 'antd';
+import { Button, Card, Empty, Result, Select, Space, Tabs, Typography, message } from 'antd';
 import { exportInventoryReport, getInventoryReport } from '../../services/inventoryReportService';
 import { AnalysisTables, DetailTable } from './InventoryReportTables';
 import InventoryReportCharts from './InventoryReportCharts';
+import { canAccessInventoryReport } from './inventoryReportAccess';
+import { useInventoryOperator } from './useInventoryOperator';
 
 export default function AssetInventoryReportPage() {
+  const [operator] = useInventoryOperator();
+  if (!canAccessInventoryReport(operator)) return <Result status="403" title="无权访问盘点报表" subTitle="仅指定ES人员可查看盘点报表" />;
+  return <InventoryReportContent />;
+}
+
+function InventoryReportContent() {
   const [year, setYear] = useState(2026);
   const [activeTab, setActiveTab] = useState('analysis');
   const report = getInventoryReport(year);

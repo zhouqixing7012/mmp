@@ -171,7 +171,7 @@ export function SnapshotAssetTab({ project, type, projectStatus, projectNo, rows
 
   const moveRows = (sourceRows, targetExecute) => {
     if (!transferAllowed()) return;
-    if (!sourceRows.length) { messageApi.warning('当前查询没有可转移的资产'); return; }
+    if (!sourceRows.length) { messageApi.warning('当前没有可转移的资产'); return; }
     const selected = new Set(sourceRows.map(row => row.key));
     const moved = sourceRows.map(row => ({ ...row, executeInventory: targetExecute }));
     if (onMoveRows) onMoveRows(selected, moved, targetExecute);
@@ -189,8 +189,6 @@ export function SnapshotAssetTab({ project, type, projectStatus, projectNo, rows
     const selected = new Set(selectedKeys);
     moveRows(rows.filter(row => selected.has(row.key)), targetExecute);
   };
-  // 查询转移使用已生效条件下的完整结果，分页和勾选不改变处理范围。
-  const moveByQuery = (targetExecute) => moveRows(filteredRows, targetExecute);
   const openTransferImport = (target) => {
     if (!transferAllowed()) return;
     setTransferTarget(target); setTransferOpen(true);
@@ -290,7 +288,6 @@ export function SnapshotAssetTab({ project, type, projectStatus, projectNo, rows
   if (type === 'execution' && beforeStart) {
     operations.push(
       <Button key="move" onClick={() => moveSelected(false)}>转移至未执行盘点</Button>,
-      <Button key="queryMove" onClick={() => moveByQuery(false)}>按查询条件转移至未执行盘点</Button>,
       <Button key="importMove" icon={<Upload size={14} />} onClick={() => openTransferImport(false)}>模板转移至未执行盘点</Button>,
     );
     if (showMachineRoomFeatures) {
@@ -308,7 +305,6 @@ export function SnapshotAssetTab({ project, type, projectStatus, projectNo, rows
   if (type === 'notExecution' && beforeStart) {
     operations.push(
       <Button key="move" onClick={() => moveSelected(true)}>转移至执行盘点</Button>,
-      <Button key="queryMove" onClick={() => moveByQuery(true)}>按查询条件转移至执行盘点</Button>,
       <Button key="importMove" icon={<Upload size={14} />} onClick={() => openTransferImport(true)}>模板转移至执行盘点</Button>,
     );
   }
@@ -322,8 +318,6 @@ export function SnapshotAssetTab({ project, type, projectStatus, projectNo, rows
     operations.push(
       <Button key="toExecution" onClick={() => moveSelected(true)}>批量转移至执行盘点</Button>,
       <Button key="toNotExecution" onClick={() => moveSelected(false)}>批量转移至未执行盘点</Button>,
-      <Button key="queryToExecution" onClick={() => moveByQuery(true)}>按查询条件转移至执行盘点</Button>,
-      <Button key="queryToNotExecution" onClick={() => moveByQuery(false)}>按查询条件转移至未执行盘点</Button>,
       <Button key="import" icon={<Upload size={14} />} onClick={() => openTransferImport(true)}>批量导入转移</Button>,
     );
   }

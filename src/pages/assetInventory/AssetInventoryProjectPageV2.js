@@ -1,3 +1,4 @@
+import { useInventoryOperator } from './useInventoryOperator';
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 import { applyInventoryPhotoSnapshot, saveInventoryPhotoSnapshot, getInventoryPhotoSnapshot } from './inventoryPhotoRules';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -5,7 +6,6 @@ import { Modal } from 'antd';
 import AssetInventoryProjectPage from './AssetInventoryProjectPage';
 import AssetInventoryCustomPlanBuilder from './AssetInventoryCustomPlanBuilder';
 import AssetInventoryProjectListV2 from './AssetInventoryProjectListV2';
-import { INVENTORY_CREATORS } from './inventoryCreatorPermissions';
 import AssetInventoryPlansV2Refined from './AssetInventoryPlansV2Refined';
 import AssetInventoryImageReviewV2, { buildReviewRows } from './AssetInventoryImageReviewV2';
 import AssetInventoryProgressV2 from './AssetInventoryProgressV2';
@@ -79,7 +79,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const rootRef = useRef(null);
   const baseContainerRef = useRef(null);
   const [basePageTitle, setBasePageTitle] = useState('盘点项目');
-  const [creator, setCreator] = useState(INVENTORY_CREATORS[0].value);
+  const [creator, setCreator] = useInventoryOperator();
   const [snapshotOpen, setSnapshotOpen] = useState(false);
   const [snapshotEditRequest, setSnapshotEditRequest] = useState(null);
   const [customBuilderOpen, setCustomBuilderOpen] = useState(false);
@@ -371,9 +371,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       event.preventDefault();
       event.stopPropagation();
       const project = resolveProject(baseContainerRef.current, button);
-      setPlanProject({ ...project, status: '生成盘点计划' });
       Modal.confirm({
-        title: '提示', content: '是否按照默认方式生成盘点计划？', okText: '是', cancelText: '否',
+        title: '提示', content: project.projectType === '复盘' ? (project.scopeRanges?.includes('机房') ? '是否按机房汇总生成复盘计划？' : '是否按楼层汇总生成复盘计划？') : '是否按子公司＋盘点范围生成盘点计划？', okText: '是', cancelText: '否',
         onOk: () => openPlanViewByProject(project, true),
         onCancel: () => openSnapshotPlanBuilder(project),
       });
