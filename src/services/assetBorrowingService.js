@@ -5,10 +5,11 @@ import {
 import { readDemoData, writeDemoData } from './demoStorage';
 
 export function getAssetBorrowingApplications() {
+  // 兼容旧演示记录，借用结束状态按已确认口径统一展示。
   return readDemoData(
     ASSET_BORROWING_STORAGE_KEY,
     DEFAULT_ASSET_BORROWING_APPLICATIONS
-  );
+  ).map(application => application.status === '已处理' ? { ...application, status: '已完成' } : application);
 }
 
 export function saveAssetBorrowingApplications(applications) {
