@@ -11,20 +11,21 @@ test.each(applicationDefinitions.map(definition => [definition.id]))('%s读取�
   expect(queryApplications(id, { [field.key]: 'NO-MATCH-RECORD' })).toHaveLength(0);
 });
 test('日期单端及全天范围和导出相同，逆序查询立即失败', () => {
-  const row = queryApplications('return')[0], date = row.createdAt.slice(0, 10);
-  const filtered = queryApplications('return', { createdAt: [date, date] });
+  const row = queryApplications('return')[0], date = row.values.applyTime.slice(0, 10);
+  const filtered = queryApplications('return', { applyTime: [date, date] });
   expect(filtered.length).toBeGreaterThan(0);
-  expect(exported('return', { createdAt: [date, date] }).length).toBe(filtered.length + 1);
-  expect(queryApplications('return', { createdAt: [date, null] }).length).toBeGreaterThan(0);
-  expect(() => queryApplications('return', { createdAt: ['2026-10-20', '2026-10-01'] })).toThrow('开始日期不能晚于结束日期');
+  expect(exported('return', { applyTime: [date, date] }).length).toBe(filtered.length + 1);
+  expect(queryApplications('return', { applyTime: [date, null] }).length).toBeGreaterThan(0);
+  expect(() => queryApplications('return', { applyTime: ['2026-10-20', '2026-10-01'] })).toThrow('开始日期不能晚于结束日期');
 });
-test('退库标签前缀匹配包含整单，列表业务日期和导出创建日期分别保留', () => {
+test('退库标签前缀匹配包含整单，导出与详情使用同一申请时间', () => {
   const row = queryApplications('return')[0], tag = row.filters.assetTag[0];
   expect(queryApplications('return', { assetTag: tag.slice(0, 4) }).some(item => item.id === row.id)).toBe(true);
   expect(queryApplications('return', { assetTag: tag.slice(1) }).some(item => item.id === row.id)).toBe(false);
   const data = exported('return');
   const index = data[0].indexOf('申请时间');
-  expect(data[1][index]).toBe(row.values.createdAt);
+  expect(data[1][index]).toBe(row.values.applyTime.slice(0, 10));
+  expect(Object.fromEntries(row.head)['申请时间']).toBe(data[1][index]);
 });
 test('退库查询不提供删除，调用删除也不改变申请或业务锁', () => {
   const before = queryApplications('return');
@@ -65,5 +66,31 @@ test('资产和耗材预计金额按原申请数量，领用为空；未定义�
   expect(queryApplications('newEmployee', filters).map(row => row.id)).toContain(employee.id);
   for (const key of Object.keys(filters)) {
     expect(queryApplications('newEmployee', { ...filters, [key]: 'NO-MATCH' })).toHaveLength(0);
+  }
+});
+
+// 创建时间刻意与申请时间不同，防止同值样本掩盖回退到创建时间的问题。
+test('退库筛选排序和Excel使用原申请时间，不被独立创建时间影响', () => {
+  const rows = queryApplications('return');
+  const row = rows[rows.length - 1], date = row.values.applyTime.slice(0, 10);
+  const before = { createdAt: row.createdAt, value: row.values.createdAt, filter: row.filters.createdAt };
+  try {
+    row.createdAt = '2099-01-01 09:00:00';
+    row.values.createdAt = row.createdAt;
+    row.filters.createdAt = row.createdAt;
+    const matched = queryApplications('return', { applyTime: [date, date] });
+    expect(matched.map(item => item.id)).toContain(row.id);
+    expect(queryApplications('return', { applyTime: ['2099-01-01', '2099-01-01'] })).toHaveLength(0);
+    expect(queryApplications('return')[0].id).toBe(rows[0].id);
+    const data = exported('return', { applicationNo: row.values.applicationNo });
+    expect(data[1][data[0].indexOf('申请时间')]).toBe(date);
+    const definition = getApplicationDefinition('return');
+    expect(definition.sortKey).toBe('applyTime');
+    expect(definition.columns.find(column => column.label === '申请时间').key).toBe('applyTime');
+    expect(Object.fromEntries(row.head)['申请时间']).toBe(date);
+  } finally {
+    row.createdAt = before.createdAt;
+    row.values.createdAt = before.value;
+    row.filters.createdAt = before.filter;
   }
 });

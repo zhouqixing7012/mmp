@@ -55,12 +55,12 @@ test('出库待接收移库单展示源明细的验证结果', () => {
   expect(screen.getAllByText('未验证')).toHaveLength(1);
   expect(screen.getByText('已验证')).toBeInTheDocument();
 });
-test('借用列表数量为所有明细数量合计，退库业务日期与导出创建时间独立', () => {
+test('借用数量按明细合计，退库列表与导出使用同一申请时间', () => {
   const borrow = legacyApplicationRows.find(row => row.id === 'borrow-2');
   expect(borrow.values.quantity).toBe(borrow.lines.reduce((sum, line) => sum + line.quantity, 0));
   const returned = legacyApplicationRows.find(row => row.id === 'return-3');
-  expect(returned.values.applyDate).not.toBe(returned.createdAt.slice(0, 10));
-  expect(legacyDefinitions.find(item => item.id === 'return').exportColumns.find(column => column.label === '申请时间').key).toBe('createdAt');
+  expect(Object.fromEntries(returned.head)['申请时间']).toBe(returned.values.applyTime.slice(0, 10));
+  expect(legacyDefinitions.find(item => item.id === 'return').exportColumns.find(column => column.label === '申请时间').key).toBe('applyTime');
 });
 
 test.each([['出库待接收', undefined, undefined, false], ['出库待接收', true, true, true], ['草稿', true, true, false]])('移库状态%s库区货位开关%s/%s按明确配置显示', async (statusCode, zoneEnabled, binEnabled, visible) => {
