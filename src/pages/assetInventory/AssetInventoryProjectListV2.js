@@ -1,5 +1,6 @@
+import { inventoryManagementBlockReason } from './inventoryManagementPermissions';
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
@@ -53,6 +54,8 @@ function hasInventoryHistory(row) {
 export default function AssetInventoryProjectListV2({ creator, onCreatorChange, onCreate, onOpenProject, onOpenPlans, onOpenProgress, onOpenImageReview, onCloseProject, statusOverrides = EMPTY_STATUS_OVERRIDES, getCloseBlockReason = inventoryProjectCloseBlockReason }) {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const navigate = useNavigate();
+  const operatorRef = useRef(creator); operatorRef.current = creator;
+  const managerBlock = project => inventoryManagementBlockReason(project, operatorRef.current);
   const [rows, setRows] = useState(() => PROJECT_LIST_ROWS.map((row) => ({ ...row, owner: row.creator || '', status: statusOverrides[row.projectNo] || normalizeStatus(row.status) })));
 
   useEffect(() => {
@@ -100,10 +103,14 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
   const handleDelete = () => {
     if (!selectedKeys.length) { messageApi.warning('请先选择需要删除的盘点项目'); return; }
     const selected = rows.filter((row) => selectedKeys.includes(row.key));
+    const blocked = selected.map(managerBlock).find(Boolean);
+    if (blocked) { messageApi.warning(blocked); return; }
     if (selected.some((row) => row.status !== '草稿')) { messageApi.warning('仅草稿状态的盘点项目可删除'); return; }
     Modal.confirm({
       title: '确认删除所选盘点项目？', content: `共选择 ${selectedKeys.length} 个盘点项目。`, okText: '删除', cancelText: '取消', okButtonProps: { danger: true },
       onOk: () => {
+        const blocked = selected.map(managerBlock).find(Boolean);
+        if (blocked) { messageApi.warning(blocked); return; }
         const selectedSet = new Set(selectedKeys);
         setRows((current) => current.filter((row) => !selectedSet.has(row.key)));
         setSelectedKeys([]);
@@ -115,6 +122,8 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
     if (selectedKeys.length !== 1) { messageApi.warning('请选择一个需要关闭的盘点项目'); return; }
     const row = rows.find((item) => item.key === selectedKeys[0]);
     if (!row) return;
+    const blocked = managerBlock(row);
+    if (blocked) { messageApi.warning(blocked); return; }
     const closeBlockReason = getCloseBlockReason(row);
     if (closeBlockReason) { messageApi.warning(closeBlockReason); return; }
     Modal.confirm({
@@ -123,10 +132,12 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
       okText: '关闭项目',
       cancelText: '取消',
       onOk: () => {
+        const denied = managerBlock(row);
+        if (denied) { messageApi.warning(denied); return; }
         const latestBlock = getCloseBlockReason(row);
         if (latestBlock) { messageApi.warning(latestBlock); return; }
+        if (onCloseProject?.({ ...row, status: '盘点关闭', closedBy: '手动' }) === false) return;
         setRows((current) => current.map((item) => item.key === row.key ? { ...item, status: '盘点关闭' } : item));
-        onCloseProject?.({ ...row, status: '盘点关闭', closedBy: '手动' });
         setSelectedKeys([]);
         messageApi.success(row.projectType === '初盘' ? '初盘项目已关闭，并通过服务号通知财务人员' : '盘点项目已关闭');
       },

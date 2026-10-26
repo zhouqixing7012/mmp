@@ -1,3 +1,4 @@
+import { inventoryManagementBlockReason } from './inventoryManagementPermissions';
 import { sumInventoryQuantity } from './inventoryQuantity';
 import { applyInventoryScanResults } from './inventoryScanResultImport';
 import { useInventoryOperator } from './useInventoryOperator';
@@ -82,6 +83,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const baseContainerRef = useRef(null);
   const [basePageTitle, setBasePageTitle] = useState('盘点项目');
   const [creator, setCreator] = useInventoryOperator();
+  const managementOperator = useRef(creator); managementOperator.current = creator;
   const [snapshotOpen, setSnapshotOpen] = useState(false);
   const [snapshotEditRequest, setSnapshotEditRequest] = useState(null);
   const [customBuilderOpen, setCustomBuilderOpen] = useState(false);
@@ -98,6 +100,10 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     return Object.fromEntries(closedProjectNos.map((projectNo) => [projectNo, '盘点关闭']));
   });
   const handleProjectClose = (project) => {
+    if (project.closedBy !== '系统') {
+      const denied = inventoryManagementBlockReason(project, managementOperator.current);
+      if (denied) { Modal.warning({ title: '无法关闭项目', content: denied }); return false; }
+    }
 
     if (typeof window !== 'undefined') {
       const closedProjectNos = JSON.parse(window.sessionStorage.getItem('assetInventoryClosedProjectNos') || '[]');
@@ -181,6 +187,10 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
 
   const openPlanViewByProject = (project, forceGeneratedStatus = false, fromSnapshot = false) => {
+    if (forceGeneratedStatus) {
+      const denied = inventoryManagementBlockReason(project, managementOperator.current);
+      if (denied) { Modal.warning({ title: '无法生成计划', content: denied }); return false; }
+    }
     plansReturnToSnapshot.current = fromSnapshot;
     const session = switchProjectSession(project);
     const nextProject = session.project;
@@ -244,6 +254,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
 
   const restoreSnapshotDraft = (project) => {
+    const denied = inventoryManagementBlockReason(project, managementOperator.current);
+    if (denied) { Modal.warning({ title: '无法删除快照', content: denied }); return false; }
     // 只处理无后续计划/结果的快照，已有计划的撤销边界尚未确认。
     if (!['快照生成', '生成盘点计划'].includes(project.status) || planRows.some(row => row.status !== '草稿')
       || Object.keys(getMobileInventoryResults(project.projectNo)).length || getPhotoReviewResults(project.projectNo).length
@@ -269,6 +281,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
 
   const openManualPlanBuilder = () => {
+    const denied = inventoryManagementBlockReason(planProject, managementOperator.current);
+    if (denied) { Modal.warning({ title: '无法生成计划', content: denied }); return false; }
     if (planProject?.status === '盘点关闭') return;
     resetOverlays();
     setCustomBuilderSource('plans');
@@ -276,6 +290,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
 
   const openSnapshotPlanBuilder = (project) => {
+    const denied = inventoryManagementBlockReason(project, managementOperator.current);
+    if (denied) { Modal.warning({ title: '无法生成计划', content: denied }); return false; }
     if (project?.status === '盘点关闭') return;
     setPlanProject(resolveProjectFromRow(project));
     setPlanViewOpen(false);
@@ -292,6 +308,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
 
   const createManualPlans = (draft) => {
+    const denied = inventoryManagementBlockReason(planProject, managementOperator.current);
+    if (denied) throw new Error(denied);
     if (planProject?.status === '盘点关闭') throw new Error('项目已关闭，不能生成计划');
     const eligible = new Set(unplannedSnapshotAssets.map(asset => asset.key));
     if ((draft.assets || []).some(asset => !eligible.has(asset.key))) throw new Error('资产范围或分配已变化，请重新选择未分配资产');
@@ -340,6 +358,8 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
 
   const generateRemainingDefaultPlans = () => {
+    const denied = inventoryManagementBlockReason(planProject, managementOperator.current);
+    if (denied) { Modal.warning({ title: '无法生成计划', content: denied }); return false; }
     const reason = inventoryDefaultPlanBlockReason(planProject, unplannedSnapshotAssets);
     if (reason) { Modal.warning({ title: '无法生成默认计划', content: reason }); return false; }
     const generated = buildDefaultInventoryPlans(planProject, unplannedSnapshotAssets, planRows);
@@ -538,6 +558,10 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
       onResultsImported={updates => setPlanAssets(current => applyInventoryScanResults(current, updates))}
       assets={planAssets.map(asset => mergePlanInventoryResult({ ...asset, planNo: assetPlanMap[asset.key] || '-' }, getMobileInventoryResults(snapshotProject.projectNo)[asset.assetTag], getPhotoReviewResults(snapshotProject.projectNo).find(review => review.assetTag === asset.assetTag)))}
       onSnapshotRowsChange={(execution, notExecution) => {
+        if (['快照生成', '生成盘点计划'].includes(snapshotProject.status)) {
+          const denied = inventoryManagementBlockReason(snapshotProject, managementOperator.current);
+          if (denied) throw new Error(denied);
+        }
         saveInventoryPhotoSnapshot(snapshotProject, [...execution.map(asset => ({ ...asset, executeInventory: true })), ...notExecution.map(asset => ({ ...asset, executeInventory: false }))]);
         const inactiveKeys = new Set(notExecution.map(asset => asset.key));
         setAssetPlanMap(current => Object.fromEntries(Object.entries(current).filter(([key]) => !inactiveKeys.has(key))));

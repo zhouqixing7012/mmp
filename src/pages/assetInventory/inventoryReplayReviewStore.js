@@ -1,3 +1,4 @@
+import { assertInventoryManagementPermission } from './inventoryManagementPermissions';
 import { sumInventoryQuantity } from './inventoryQuantity';
 import dayjs from 'dayjs';
 import { readDemoData, writeDemoData } from '../../services/demoStorage';
@@ -81,6 +82,7 @@ export function validateReplaySubmission(project, plans, assetsForPlan, photoRow
 }
 
 export function submitReplayReview({ project, plans, assetsForPlan, photoRows, operator }) {
+  assertInventoryManagementPermission(project, operator);
   let state = getReplaySubmission(project.projectNo) || emptyState();
   if (!operator) throw new Error('缺少当前操作人');
   validateReplaySubmission(project, plans, assetsForPlan, photoRows);
@@ -125,6 +127,7 @@ export function replayProjectSubmissionBlockReason(project, plans, state) {
 }
 
 export function submitReplayProjectReview({ project, plans, operator }) {
+  assertInventoryManagementPermission(project, operator);
   const state = getReplaySubmission(project.projectNo) || emptyState();
   const block = replayProjectSubmissionBlockReason(project, plans, state);
   if (block) throw new Error(block);
@@ -158,6 +161,8 @@ export function decideReplayReview({ project, operator, decision, opinion = '', 
   if (scope === 'project' && plans && !getReplayProjectReview(state, plans, project.projectNo)) throw new Error('项目计划实例已变化，请重新打开申请');
   if (round !== review.round) throw new Error('审批记录已变化，请重新打开申请');
   if (!['同意', '驳回'].includes(decision)) throw new Error('请选择有效审批结果');
+  if (decision === '驳回' && !String(opinion || '').trim()) throw new Error('请填写驳回意见');
+  opinion = String(opinion || '').trim();
   const records = review.records.map(record => record.status === '待审批' && record.person === operator
     ? { ...record, status: decision === '同意' ? '已通过' : '已驳回', time: now(), opinion } : { ...record });
   const status = decision === '驳回' ? '已驳回' : records.some(record => record.status === '待审批') ? '审核中' : '已审核';

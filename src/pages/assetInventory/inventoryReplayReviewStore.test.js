@@ -1,10 +1,10 @@
 import { applyReplayPlanStatuses, decideReplayReview, getReplaySubmission, getReplayProjectReview, replayDecisionBlockReason, replayProjectSubmissionBlockReason, submitReplayProjectReview, submitReplayReview, validateReplaySubmission } from './inventoryReplayReviewStore';
 import { writeDemoData } from '../../services/demoStorage';
-const project = { projectNo: 'R-test', projectType: '复盘', samplingMode: '百分比', samplingRatio: 50 };
+const project = { creator: '冯丽婷', projectNo: 'R-test', projectType: '复盘', samplingMode: '百分比', samplingRatio: 50 };
 const plans = [{ planNo: 'P1', range: '员工', status: '盘点中' }, { planNo: 'P2', range: '机房', status: '盘点中' }];
 const assetsForPlan = plan => [{ quantity: 1, assetTag: plan.planNo === 'P1' ? 'A' : 'B', inventoryStatus: plan.planNo === 'P1' ? '已盘' : '未盘', supervisor: plan.planNo === 'P1' ? '冯丽婷' : '徐博', executor: '冯丽婷' }];
 const submit = (planNo = 'P1', overrides = {}) => submitReplayReview({ project, plans: plans.filter(plan => plan.planNo === planNo), assetsForPlan, operator: '冯丽婷', ...overrides });
-const decide = (planNo, operator, decision = '同意', overrides = {}) => decideReplayReview({ project, operator, decision, planNo, round: getReplaySubmission(project.projectNo).planReviews[planNo].round, planKey: getReplaySubmission(project.projectNo).planReviews[planNo].plans[0].key, reviewInstanceKey: getReplaySubmission(project.projectNo).planReviews[planNo].plans[0].reviewInstanceKey, ...overrides });
+const decide = (planNo, operator, decision = '同意', overrides = {}) => decideReplayReview({ project, operator, decision, opinion: decision === '驳回' ? '请复核' : '', planNo, round: getReplaySubmission(project.projectNo).planReviews[planNo].round, planKey: getReplaySubmission(project.projectNo).planReviews[planNo].plans[0].key, reviewInstanceKey: getReplaySubmission(project.projectNo).planReviews[planNo].plans[0].reviewInstanceKey, ...overrides });
 const submitProject = () => submitReplayProjectReview({ project, plans, operator: '冯丽婷' });
 const approveAllPlans = () => { submit(); decide('P1', '冯丽婷'); submit('P2'); decide('P2', '徐博'); };
 beforeEach(() => window.localStorage.clear());

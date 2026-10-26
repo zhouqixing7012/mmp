@@ -23,7 +23,7 @@ jest.mock('./InventoryReplayReview', () => () => null);
 test('计划查询无结果时回退允许范围全部计划，勾选时仍只导出所选', () => {
   downloadInventoryPlans.mockClear();
   const rows = [{ key: 'a', planNo: 'A', range: '员工', status: '草稿' }, { key: 'b', planNo: 'B', range: '公共', status: '草稿' }, { key: 'c', planNo: 'C', range: '机房', status: '草稿' }];
-  render(<AssetInventoryVariantProvider allowedRanges={['员工', '公共']}><AssetInventoryPlansV2Refined project={{ projectNo: 'P', projectType: '初盘' }} rows={rows} setRows={jest.fn()} assetsForPlan={() => []} /></AssetInventoryVariantProvider>);
+  render(<AssetInventoryVariantProvider allowedRanges={['员工', '公共']}><AssetInventoryPlansV2Refined currentOperator="孙志强" project={{ creator: '孙志强', projectNo: 'P', projectType: '初盘' }} rows={rows} setRows={jest.fn()} assetsForPlan={() => []} /></AssetInventoryVariantProvider>);
   fireEvent.change(screen.getByLabelText('计划状态筛选'), { target: { value: '已审核' } });
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
   fireEvent.click(screen.getByRole('button', { name: '导出' }));
@@ -36,7 +36,7 @@ test('计划查询无结果时回退允许范围全部计划，勾选时仍只�
 });
 test('启动前发现未分配资产，要求默认补计划或手工创建，不直接启动已选计划', () => {
   const setRows = jest.fn(); const onGenerateRemainingDefault = jest.fn(); const onManualCreate = jest.fn();
-  render(<AssetInventoryPlansV2Refined project={{ projectNo: 'P', projectType: '初盘' }} rows={[{ key: 'p1', planNo: 'P1', range: '员工', status: '草稿' }]} setRows={setRows} assetsForPlan={() => [{ quantity: 2, inventoryStatus: '未盘' }]} canManualCreate onGenerateRemainingDefault={onGenerateRemainingDefault} onManualCreate={onManualCreate} />);
+  render(<AssetInventoryPlansV2Refined currentOperator="孙志强" project={{ creator: '孙志强', projectNo: 'P', projectType: '初盘' }} rows={[{ key: 'p1', planNo: 'P1', range: '员工', status: '草稿' }]} setRows={setRows} assetsForPlan={() => [{ quantity: 2, inventoryStatus: '未盘' }]} canManualCreate onGenerateRemainingDefault={onGenerateRemainingDefault} onManualCreate={onManualCreate} />);
   fireEvent.click(screen.getByRole('button', { name: '选择计划' }));
   fireEvent.click(screen.getByRole('button', { name: '启动盘点计划' }));
   const options = Modal.confirm.mock.calls[0][0];
@@ -59,7 +59,7 @@ test('复盘仅提供位置变更池入口，不再发起或查看位置审批',
 test('楼层汇总多范围计划可按授权及范围查询展示，批量日期也包含混合范围计划',()=>{
  const rows=[{key:'mixed',planNo:'MIXED',range:'员工、公共',ranges:['员工','公共'],status:'草稿',startDate:'2026-10-25',endDate:'2026-10-28'}, {key:'public',planNo:'PUBLIC',range:'公共',status:'草稿',startDate:'2026-10-20',endDate:'2026-10-22'}, {key:'employee',planNo:'EMPLOYEE',range:'员工',status:'草稿'}];
  const setRows=jest.fn();
- render(<AssetInventoryVariantProvider allowedRanges={['公共']}><AssetInventoryPlansV2Refined project={{projectNo:'R2',projectType:'复盘'}} rows={rows} setRows={setRows} assetsForPlan={()=>[]}/></AssetInventoryVariantProvider>);
+ render(<AssetInventoryVariantProvider allowedRanges={['公共']}><AssetInventoryPlansV2Refined currentOperator="冯丽婷" project={{creator:'冯丽婷',projectNo:'R2',projectType:'复盘'}} rows={rows} setRows={setRows} assetsForPlan={()=>[]}/></AssetInventoryVariantProvider>);
  expect(screen.getByText('MIXED')).toBeInTheDocument();
  expect(screen.queryByText('EMPLOYEE')).toBeNull();
  fireEvent.change(screen.getByLabelText('范围筛选'),{target:{value:'公共'}});

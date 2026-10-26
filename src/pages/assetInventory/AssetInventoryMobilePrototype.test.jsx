@@ -78,7 +78,7 @@ describe('AssetInventoryMobilePrototype', () => {
   });
   test('已进入审批的资产仍可查看详情，但不能盘点或报失', () => {
     const asset = INVENTORY_MOBILE_ASSETS[0];
-    const project = { projectNo: 'LOCKED-MOBILE', projectType: '复盘', status: '盘点中' };
+    const project = { creator: '孙志强', projectNo: 'LOCKED-MOBILE', projectType: '复盘', status: '盘点中' };
     submitReplayReview({ project, plans: [{ planNo: 'LOCKED-PLAN', status: '盘点中' }], assetsForPlan: () => [{ assetTag: asset.tagNo, quantity: 1, supervisor: '徐博' }], operator: '孙志强' });
     mockLocationState = { projectNo: project.projectNo, projectType: '复盘', scopeRanges: ['员工'] };
     render(<AssetInventoryMobilePrototype />);
@@ -559,4 +559,19 @@ describe('AssetInventoryMobilePrototype', () => {
     render(<AssetInventoryMobilePrototype />);
     expect(screen.getAllByRole('button', { name: /114121801802|114130000019/ })[0]).toHaveTextContent('114130000019');
   });
+});
+
+test('退出快扫不保留未提交标签，流程内返回扫码页可继续本次扫描', () => {
+  window.sessionStorage.clear(); window.localStorage.clear();
+  mockLocationState = { scopeRanges: ['机房'] };
+  render(<AssetInventoryMobilePrototype />);
+  fireEvent.click(screen.getByRole('button', { name: '快速扫描' }));
+  fireEvent.click(screen.getByRole('button', { name: '模拟扫描标签' }));
+  fireEvent.click(screen.getByRole('button', { name: '结束扫描' }));
+  expect(screen.getByText('本次扫描标签号—共1条')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '返回' }));
+  expect(screen.getByText(/本次共扫描到资产 1 个/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '返回' }));
+  fireEvent.click(screen.getByRole('button', { name: '快速扫描' }));
+  expect(screen.getByText(/本次共扫描到资产 0 个/)).toBeInTheDocument();
 });

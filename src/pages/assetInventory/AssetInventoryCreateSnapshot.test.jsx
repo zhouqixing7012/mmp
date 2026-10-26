@@ -32,7 +32,7 @@ test('生成快照写入配置抽取标记，关闭上传清除预置标记', ()
   const onGenerated = jest.fn();
   const photoConfig = { enabled: true, rules: [{ range: chosen[0].inventoryRange, percent: 100 }] };
   const view = render(<CreateProjectView creator="213852-孙志强"
-    initialProject={{ ...PROJECT_INFO, createdAt: '2026-08-01', projectNo: 'PHOTO1', photoConfig }}
+    initialProject={{ ...PROJECT_INFO, creator: '213852-孙志强', createdAt: '2026-08-01', projectNo: 'PHOTO1', photoConfig }}
     scopeAssetKeys={chosen.map(asset => asset.key)} onBack={() => {}} onGenerated={onGenerated} />);
   expect(screen.getByText('盘点资产范围明细').compareDocumentPosition(screen.getByText('图片上传规则配置')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
@@ -40,7 +40,7 @@ test('生成快照写入配置抽取标记，关闭上传清除预置标记', ()
   expect(getInventoryPhotoSnapshot('PHOTO1').assets.map(asset => asset.needPhoto)).toEqual(chosen.map(asset => asset.inventoryRange === chosen[0].inventoryRange));
   view.unmount();
   render(<CreateProjectView creator="213852-孙志强"
-    initialProject={{ ...PROJECT_INFO, createdAt: '2026-08-01', projectNo: 'PHOTO2', photoConfig: { ...photoConfig, enabled: false } }}
+    initialProject={{ ...PROJECT_INFO, creator: '213852-孙志强', createdAt: '2026-08-01', projectNo: 'PHOTO2', photoConfig: { ...photoConfig, enabled: false } }}
     scopeAssetKeys={chosen.map(asset => asset.key)} onBack={() => {}} onGenerated={() => {}} />);
   fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
   expect(getInventoryPhotoSnapshot('PHOTO2').assets.every(asset => !asset.needPhoto)).toBe(true);
@@ -61,7 +61,7 @@ test('创建复盘快照仅取当前范围并应用必盘规则，保留跨天�
   const chosen = ASSET_ROWS.slice(2, 4);
   render(<CreateProjectView
     creator="冯丽婷"
-    initialProject={{ ...PROJECT_INFO, createdAt: '2026-08-01', projectType: '复盘', initialProjectNo: 'CP-202608180001', samplingMode: '百分比', samplingRatio: 0, mandatoryNetValueAbove: 0, startDate: '2026-09-01', endDate: '2026-09-03' }}
+    initialProject={{ ...PROJECT_INFO, creator: '冯丽婷', createdAt: '2026-08-01', projectType: '复盘', initialProjectNo: 'CP-202608180001', samplingMode: '百分比', samplingRatio: 0, mandatoryNetValueAbove: 0, startDate: '2026-09-01', endDate: '2026-09-03' }}
     scopeAssetKeys={chosen.map((asset) => asset.key)}
     onBack={() => {}}
     onGenerated={onGenerated}

@@ -1,3 +1,4 @@
+import { inventoryManagementBlockReason } from './inventoryManagementPermissions';
 import InventoryScanResultImport from './InventoryScanResultImport';
 import { applyInventoryScanResults } from './inventoryScanResultImport';
 import { inventoryRemark } from './inventoryRemark';
@@ -448,7 +449,8 @@ export function AssetInventoryPlanAssetListV2({ plan, project, currentOperator, 
   const [personTarget, setPersonTarget] = useState(null);
   const projectClosed = project?.status === '盘点关闭';
   const [scannerOpen, setScannerOpen] = useState(false);
-  const canChange = (row, field) => canEditInventoryPersonnel(project, plan, row, field);
+  const managementBlock = inventoryManagementBlockReason(project, currentOperator);
+  const canChange = (row, field) => !managementBlock && canEditInventoryPersonnel(project, plan, row, field);
 
   const updateDraft = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
 
@@ -471,6 +473,7 @@ export function AssetInventoryPlanAssetListV2({ plan, project, currentOperator, 
   )), [rows, filters]);
 
   const applyPersonnel = (record) => {
+    if (managementBlock) { messageApi.warning(managementBlock); return; }
     if (!personTarget) return;
     try {
       setRows(applyInventoryPersonnelChange(project, plan, rows, personTarget.field, record, personTarget.rowKey));

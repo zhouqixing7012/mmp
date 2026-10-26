@@ -7,7 +7,7 @@ const project = { projectNo: 'R-lock', projectType: '复盘', status: '盘点中
 const plan = { key: 'p', planNo: 'P1', status: '盘点中', endDate: '2000-01-01' };
 const assets = [{ key: 'a', quantity: 1, assetTag: 'A', planNo: 'P1', inventoryRange: '员工', supervisor: '徐博', executor: '孙志强', inventoryStatus: '未盘', isMandatory: true }];
 const submit = () => submitReplayReview({ project, plans: [plan], assetsForPlan: () => assets, operator: '孙志强' });
-const decide = decision => decideReplayReview({ project, operator: '徐博', decision, planNo: 'P1', planKey: 'p', round: getReplaySubmission(project.projectNo).planReviews.P1.round });
+const decide = decision => decideReplayReview({ project, operator: '徐博', decision, opinion: decision === '驳回' ? '请复核' : '', planNo: 'P1', planKey: 'p', round: getReplaySubmission(project.projectNo).planReviews.P1.round });
 beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
 
 test('结束日期已过不影响执行，项目关闭阻止执行', () => {
@@ -35,7 +35,7 @@ test('项目审批中及通过锁定全部资产，项目驳回恢复计划执�
   submitReplayProjectReview({ project, plans: [plan], operator: '孙志强' });
   expect(inventoryExecutionBlockReason({ project, quantity: 1, assetTag: 'A' })).toContain('项目审批');
   let state = getReplaySubmission(project.projectNo);
-  decideReplayReview({ project, operator: '徐博', decision: '驳回', scope: 'project', plans: [plan], round: state.projectReview.round });
+  decideReplayReview({ project, operator: '徐博', decision: '驳回', opinion: '请补充', scope: 'project', plans: [plan], round: state.projectReview.round });
   expect(inventoryExecutionBlockReason({ project, plan })).toBe('');
   state = getReplaySubmission(project.projectNo);
   expect(state.planReviews.P1.status).toBe('已驳回');

@@ -1,3 +1,4 @@
+import { inventoryManagementBlockReason } from './inventoryManagementPermissions';
 import InventoryScanResultImport from './InventoryScanResultImport';
 import { applyInventoryScanResults } from './inventoryScanResultImport';
 import { AssetValueSelect, matchesQuerySelection } from '../../components/AssetQueryControls';
@@ -47,6 +48,8 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   const { allowedRanges } = useAssetInventoryVariant();
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const projectClosed = project?.status === '盘点关闭';
+  const managementBlock = inventoryManagementBlockReason(project, currentOperator);
+  const ensureManager = () => { if (managementBlock) { messageApi.warning(managementBlock); return false; } return true; };
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [draftFilters, setDraftFilters] = useState(EMPTY_PLAN_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_PLAN_FILTERS);
@@ -71,14 +74,15 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   });
   const updateFilter = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value || '' }));
   const filteredRows = useMemo(() => visibleRows.filter((row) => includesText(row.planNo, appliedFilters.planNo) && includesText(row.planName, appliedFilters.planName) && includesText(row.status, appliedFilters.planStatus) && matchesQuerySelection(row.organization, appliedFilters.organization) && (!appliedFilters.range || planRanges(row).includes(appliedFilters.range))), [visibleRows, appliedFilters]);
-  const editable = (row) => !projectClosed && row.status === '草稿';
+  const editable = (row) => !managementBlock && !projectClosed && row.status === '草稿';
   const selectedRows = visibleRows.filter((row) => selectedKeys.includes(row.key));
-  const allSelectedDraft = !projectClosed && selectedRows.length > 0 && selectedRows.every((row) => row.status === '草稿');
+  const allSelectedDraft = !managementBlock && !projectClosed && selectedRows.length > 0 && selectedRows.every((row) => row.status === '草稿');
   const anyStarted = visibleRows.some((row) => row.status === '盘点中');
   const allStarted = visibleRows.length > 0 && visibleRows.every((row) => row.status === '盘点中' || row.status === '关闭');
 
 
   const handleStart = () => {
+    if (!ensureManager()) return;
     if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
     if (!selectedKeys.length) { messageApi.warning('请先选择需要启动的盘点计划'); return; }
     if (canManualCreate) {
@@ -114,6 +118,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   };
 
   const handleDelete = () => {
+    if (!ensureManager()) return;
     if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
     if (!selectedKeys.length) { messageApi.warning('请先选择需要删除的盘点计划'); return; }
     const selected = new Set(selectedKeys);
@@ -124,6 +129,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   };
 
   const openBatchDate = () => {
+    if (!ensureManager()) return;
     if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
     const first = visibleRows[0];
     setBatchDates({ startDate: first?.startDate || '', endDate: first?.endDate || '' });
@@ -131,6 +137,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   };
 
   const saveBatchDates = () => {
+    if (!ensureManager()) return;
     if (projectClosed) { messageApi.warning('项目已关闭，内容只读'); return; }
     const dateBlockReason = inventoryProjectDateBlockReason(batchDates.startDate, batchDates.endDate);
     if (dateBlockReason) { messageApi.warning(dateBlockReason); return; }
@@ -145,6 +152,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     onReviewChanged?.(next);
   };
   const submitReview = plan => {
+    if (!ensureManager()) return;
     try {
       const next = submitReplayReview({ project, plans: [plan], assetsForPlan, photoRows: buildReviewRows(project.projectNo, allowedRanges), operator: currentOperator });
       syncSubmission(next);
@@ -153,6 +161,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     } catch (error) { messageApi.warning(error.message); }
   };
   const submitProjectReview = () => {
+    if (!ensureManager()) return;
     try {
       const next = submitReplayProjectReview({ project, plans: rows, operator: currentOperator });
       syncSubmission(next);
@@ -181,6 +190,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     setRows(current => current.map(plan => plan.key === row.key ? { ...plan, planName: name } : plan));
   };
   const choosePerson = person => {
+    if (!ensureManager()) return;
     if (!personTarget) return;
     const plan = visibleRows.find(row => row.key === personTarget.key);
     try {
@@ -191,7 +201,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
       setPersonTarget(null);
     } catch (error) { messageApi.error(error.message); }
   };
-  const personnelColumn = (title, field) => ({ title, dataIndex: field, width: 180, render: (value, row) => canEditInventoryPersonnel(project, row, null, field)
+  const personnelColumn = (title, field) => ({ title, dataIndex: field, width: 180, render: (value, row) => !managementBlock && canEditInventoryPersonnel(project, row, null, field)
     ? <Input readOnly aria-label={`${row.planNo}-${title}`} value={value === '-' ? '' : value} placeholder="请选择" suffix={<Search size={14}/>} onClick={() => setPersonTarget({ key: row.key, field })}/>
     : <Typography.Text>{value || '-'}</Typography.Text> });
 
@@ -228,7 +238,7 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
         <QueryItem label="子公司"><AssetValueSelect rows={visibleRows} field="organization" value={draftFilters.organization} onChange={(value) => updateFilter('organization', value)} /></QueryItem>
         <QueryItem label="盘点范围"><Select value={draftFilters.range || undefined} allowClear placeholder="请选择" options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => updateFilter('range', value)} /></QueryItem>
       </QueryBar>
-      <div className="mb-3 flex justify-end"><Space wrap>{!projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}<Button type="primary" icon={<PlayCircle size={14} />} disabled={projectClosed || allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button><Button danger icon={<Trash2 size={14} />} disabled={!allSelectedDraft} onClick={handleDelete}>删除盘点计划</Button>{!projectClosed && (anyStarted ? <InventoryScanResultImport project={project} plans={visibleRows} entryType="execution" operator={currentOperator} assets={visibleRows.flatMap(plan => assetsForPlan(plan))} onImported={updates => visibleRows.forEach(plan => onChangePlanAssets?.(plan, current => applyInventoryScanResults(current, updates)))} /> : <Button icon={<Upload size={14} />} onClick={() => messageApi.warning('人员日期导入模板字段尚未配置，暂不能导入')}>导入</Button>)}<Button icon={<Download size={14} />} onClick={exportPlans}>导出</Button>{project?.projectType === '复盘' && <><Button disabled={projectClosed || !selectedPlan || selectedPlan.status !== '盘点中'} onClick={() => setEditPlanKey(selectedPlan.key)}>提交计划审批</Button><Button onClick={() => setLocationPoolOpen(true)}>位置变更池</Button><Button type="primary" disabled={Boolean(replayProjectSubmissionBlockReason(project, rows, submission))} onClick={submitProjectReview}>提交项目审批</Button>{projectReview && <Button onClick={() => setReviewTarget({ scope: 'project' })}>查看项目审批</Button>}</>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.info('盘点通知服务尚未接入，当前未发送通知或待办')}>发送盘点通知</Button>}</Space></div>
+      <div className="mb-3 flex justify-end"><Space wrap>{!managementBlock && !projectClosed && canManualCreate && <Button icon={<Plus size={14} />} onClick={onManualCreate}>手工创建计划</Button>}{!managementBlock && !projectClosed && <Button onClick={openBatchDate}>批量编辑盘点日期</Button>}<Button type="primary" icon={<PlayCircle size={14} />} disabled={Boolean(managementBlock) || projectClosed || allStarted || !allSelectedDraft} onClick={handleStart}>启动盘点计划</Button><Button danger icon={<Trash2 size={14} />} disabled={!allSelectedDraft} onClick={handleDelete}>删除盘点计划</Button>{!projectClosed && (anyStarted ? <InventoryScanResultImport project={project} plans={visibleRows} entryType="execution" operator={currentOperator} assets={visibleRows.flatMap(plan => assetsForPlan(plan))} onImported={updates => visibleRows.forEach(plan => onChangePlanAssets?.(plan, current => applyInventoryScanResults(current, updates)))} /> : <Button icon={<Upload size={14} />} onClick={() => messageApi.warning('人员日期导入模板字段尚未配置，暂不能导入')}>导入</Button>)}<Button icon={<Download size={14} />} onClick={exportPlans}>导出</Button>{project?.projectType === '复盘' && <><Button disabled={Boolean(managementBlock) || projectClosed || !selectedPlan || selectedPlan.status !== '盘点中'} onClick={() => setEditPlanKey(selectedPlan.key)}>提交计划审批</Button><Button onClick={() => setLocationPoolOpen(true)}>位置变更池</Button><Button type="primary" disabled={Boolean(managementBlock || replayProjectSubmissionBlockReason(project, rows, submission))} onClick={submitProjectReview}>提交项目审批</Button>{projectReview && <Button onClick={() => setReviewTarget({ scope: 'project' })}>查看项目审批</Button>}</>}{!projectClosed && anyStarted && <Button icon={<BellRing size={14} />} onClick={() => messageApi.info('盘点通知服务尚未接入，当前未发送通知或待办')}>发送盘点通知</Button>}</Space></div>
       <Table rowKey="key" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true, getCheckboxProps: () => ({ disabled: projectClosed }) }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
     </Card>
     <div className="flex justify-center pb-2"><Button onClick={onBack}>返回</Button></div>

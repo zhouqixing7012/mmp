@@ -30,7 +30,7 @@ jest.mock('../../components/DetailGrid', () => ({ __esModule: true, default: ({ 
 jest.mock('../../components/StatusTag', () => ({ value }) => <span>{value}</span>);
 jest.mock('../../components/AssetQueryControls', () => ({ AssetPersonSelect: () => null, OwnerLevelSelect: () => null, formatAssetCategory: (asset) => asset.subCategory, matchesQuerySelection: () => true }));
 const chosen = ASSET_ROWS.slice(2, 4);
-const base = { ...PROJECT_INFO, projectNo: 'MAND-SCOPE', projectType: '复盘', initialProjectNo: 'CP-202608180001', createdAt: '2026-08-01', samplingMode: '百分比', samplingRatio: 0, mandatoryNetValueAbove: null, mandatoryNetValueTopPercent: null, photoConfig: { rules: [] } };
+const base = { ...PROJECT_INFO, creator: '冯丽婷', projectNo: 'MAND-SCOPE', projectType: '复盘', initialProjectNo: 'CP-202608180001', createdAt: '2026-08-01', samplingMode: '百分比', samplingRatio: 0, mandatoryNetValueAbove: null, mandatoryNetValueTopPercent: null, photoConfig: { rules: [] } };
 beforeEach(() => { window.localStorage.clear(); window.sessionStorage.clear(); mockWarning.mockClear(); XLSX.writeFile.mockClear(); });
 
 function mandatoryCell(assetTag, table = screen.getByRole('table', { name: '必盘范围资产' })) {
@@ -187,7 +187,7 @@ test('实际新建入口年度默认当前年，类型切换后期间联动且�
 
 test.each(['初盘', '抽盘', '复盘'])('实际编辑年度%s保存和快照均拒绝旧季度期间，改成范围内年份后正常保存快照', (projectType) => {
   const onGenerated = jest.fn();
-  render(<CreateProjectView creator={projectType === '复盘' ? '冯丽婷' : '213852-孙志强'} initialProject={{ ...base, projectType, inventoryType: '年度', period: '2026年Q1' }} scopeAssetKeys={chosen.map((asset) => asset.key)} onBack={() => {}} onGenerated={onGenerated} />);
+  render(<CreateProjectView creator={projectType === '复盘' ? '冯丽婷' : '213852-孙志强'} initialProject={{ ...base, creator: projectType === '复盘' ? '冯丽婷' : '213852-孙志强', projectType, inventoryType: '年度', period: '2026年Q1' }} scopeAssetKeys={chosen.map((asset) => asset.key)} onBack={() => {}} onGenerated={onGenerated} />);
   fireEvent.click(screen.getByRole('button', { name: '保存', exact: true }));
   fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
   expect(mockWarning).toHaveBeenCalledTimes(2);

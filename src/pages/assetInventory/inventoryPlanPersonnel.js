@@ -48,10 +48,9 @@ export function applyInventoryPersonnelChange(project, plan, assets, field, pers
 }
 
 function locationKeeper(asset) {
-  if (present(asset.locationKeeper)) return asset.locationKeeper;
-  const code = asset.warehouseCode || asset.warehouse;
+  const code = String(present(asset.warehouseCode) ? asset.warehouseCode : asset.warehouse || '').trim();
   if (!present(code)) return '';
-  const record = warehouseCatalog.find(row => row.warehouseCode === code || row.warehouseDescription === code);
+  const record = warehouseCatalog.find(row => row.warehouseCode === code);
   return record?.keeper || '';
 }
 
@@ -72,7 +71,7 @@ export function initializeInventoryPlanPersonnel(project, assets, configuration 
       return { ...asset, supervisor: isInventoryFinancePerson(supervisor) ? supervisor : '-', executor: isInventoryFinancePerson(executor) ? executor : '-', financialSupervisor: INVENTORY_FINANCIAL_SUPERVISOR };
     }
     if (project?.projectType === '初盘' && range === '机房') return { ...asset, supervisor: '-', executor: present(asset.owner) ? asset.owner : '-' };
-    if (project?.projectType === '初盘' && range === '员工') {
+    if ((project?.projectType === '初盘' || (project?.projectType === '抽盘' && mode === 'default')) && range === '员工') {
       const supervisor = asset.departmentAssistant || '-';
       const executor = asset.owner || '-';
       if (mode === 'custom' && ((present(configuration.supervisor) && configuration.supervisor !== supervisor) || (present(configuration.executor) && configuration.executor !== executor))) throw new Error('员工初盘自定义人员覆盖默认带出规则尚未定义，请清空范围人员配置，生成后按草稿资产清单逐项维护');
@@ -80,9 +79,12 @@ export function initializeInventoryPlanPersonnel(project, assets, configuration 
     }
     // 自定义初盘非员工范围按原需求明细：配置有值带入，无值留空；机房已在前面固定责任人。
     if (mode === 'custom' && project?.projectType === '初盘') return { ...asset, supervisor: configuration.supervisor || '-', executor: configuration.executor || '-' };
-    // 抽盘首次默认带出尚未定义，不套用初盘库管员规则。
-    const keeper = mode === 'default' && project?.projectType === '初盘' && range === '库房' ? locationKeeper(asset) : '';
-    return { ...asset, supervisor: configuration.supervisor || keeper || asset.supervisor || '-', executor: configuration.executor || keeper || asset.executor || '-' };
+    // 默认抽盘员工、库房按初盘同范围规则带出；库房仅按编号关联管理员。
+    if (mode === 'default' && ['初盘', '抽盘'].includes(project?.projectType) && range === '库房') {
+      const keeper = locationKeeper(asset) || '-';
+      return { ...asset, supervisor: keeper, executor: keeper };
+    }
+    return { ...asset, supervisor: configuration.supervisor || asset.supervisor || '-', executor: configuration.executor || asset.executor || '-' };
   });
 }
 

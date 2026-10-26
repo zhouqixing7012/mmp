@@ -27,7 +27,7 @@ jest.mock('./inventoryPhotoImportStore', () => ({ importInventoryPhotoFiles: jes
 jest.mock('./inventoryAssetExport', () => ({ ...jest.requireActual('./inventoryAssetExport'), serializeInventoryAssetExport: jest.fn(() => ({ csv: '', missingFields: [] })) }));
 
 const assets = Array.from({ length: 25 }, (_, i) => ({ key: `a${i}`, assetTag: `A-${i}`, inventoryRange: '员工', owner: '责任人', inventoryStatus: '未盘' }));
-const makeProps = (extra = {}) => ({ type: 'execution', projectStatus: '快照生成', projectNo: 'CP-1', rows: assets,
+const makeProps = (extra = {}) => ({ type: 'execution', projectStatus: '快照生成', projectNo: 'CP-1', project: { projectNo: 'CP-1', creator: '孙志强' }, currentOperator: '孙志强', rows: assets,
   setRows: jest.fn(), setOtherRows: jest.fn(), onMoveRows: jest.fn(),
   messageApi: { warning: jest.fn(), success: jest.fn(), info: jest.fn() }, ...extra });
 
@@ -52,7 +52,7 @@ test('快照清单导出非空查询取匹配全页，空查询回退当前清�
 test.each([['初盘', '是否按子公司＋盘点范围生成盘点计划？'], ['复盘', '是否按楼层汇总生成复盘计划？']])('%s默认生成入口说明实际分组，回调拒绝不更新生成状态', (projectType, content) => {
   Modal.confirm.mockClear();
   const onGenerateDefault = jest.fn(() => false);
-  render(<AssetInventorySnapshotDetailV2 project={{ projectNo: 'GEN', projectType, status: '快照生成', scopeRanges: ['员工'] }} assets={[assets[0]]} onGenerateDefault={onGenerateDefault} />);
+  render(<AssetInventorySnapshotDetailV2 currentOperator="孙志强" project={{ creator: '孙志强', projectNo: 'GEN', projectType, status: '快照生成', scopeRanges: ['员工'] }} assets={[assets[0]]} onGenerateDefault={onGenerateDefault} />);
   fireEvent.click(screen.getByRole('button', { name: '生成盘点计划' }));
   const dialog = Modal.confirm.mock.calls[0][0];
   expect(dialog.content).toBe(content);

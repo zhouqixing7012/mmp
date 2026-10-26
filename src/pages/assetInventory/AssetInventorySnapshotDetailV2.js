@@ -1,3 +1,4 @@
+import { inventoryManagementBlockReason } from './inventoryManagementPermissions';
 import { inventoryExecutionBlockReason } from './inventoryExecutionRules';
 import InventoryScanResultImport from './InventoryScanResultImport';
 import { applyInventoryScanResults } from './inventoryScanResultImport';
@@ -136,6 +137,7 @@ export function SnapshotAssetTab({ project, plans, currentOperator, onResultsImp
   const rangeOptions = RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const showMachineRoomFeatures = machineRoomProject && allowedRanges.includes('机房');
   const photoInputRef = useRef(null);
+  const managementContext = useRef({ project, currentOperator }); managementContext.current = { project, currentOperator };
   const transferInputRef = useRef(null);
   const [transferOpen, setTransferOpen] = useState(false);
   const [transferTarget, setTransferTarget] = useState(true);
@@ -168,6 +170,8 @@ export function SnapshotAssetTab({ project, plans, currentOperator, onResultsImp
   const latestRows = useRef(rows);
   latestRows.current = rows;
   const transferAllowed = () => {
+    const denied = inventoryManagementBlockReason(managementContext.current.project, managementContext.current.currentOperator);
+    if (denied) { messageApi.warning(denied); return false; }
     if (PRE_INVENTORY_STATUSES.has(latestStatus.current)) return true;
     messageApi.warning(latestStatus.current === '盘点关闭' ? '项目已关闭，不能转移资产' : '计划已启动，不能调整盘点范围');
     return false;
@@ -423,8 +427,10 @@ export default function AssetInventorySnapshotDetailV2({
   const initialProjectStatus = project?.status === '草稿' ? '快照生成' : (project?.status || '快照生成');
   const [projectStatus, setProjectStatus] = useState(initialProjectStatus);
   useEffect(() => setProjectStatus(initialProjectStatus), [initialProjectStatus]);
-  const canManuallyClose = !['盘点关闭', '关闭'].includes(projectStatus);
+  const managementBlock = inventoryManagementBlockReason(project, currentOperator);
+  const canManuallyClose = !managementBlock && !['盘点关闭', '关闭'].includes(projectStatus);
   const handleCloseProject = () => {
+    if (managementBlock) { messageApi.warning(managementBlock); return; }
     const closeBlockReason = getCloseBlockReason(project);
     if (closeBlockReason) { messageApi.warning(closeBlockReason); return; }
     Modal.confirm({
@@ -433,10 +439,12 @@ export default function AssetInventorySnapshotDetailV2({
       okText: '关闭项目',
       cancelText: '取消',
       onOk: () => {
+        const denied = inventoryManagementBlockReason(project, currentOperator);
+        if (denied) { messageApi.warning(denied); return; }
         const latestBlock = getCloseBlockReason({ ...project, status: projectStatus });
         if (latestBlock) { messageApi.warning(latestBlock); return; }
+        if (onCloseProject?.({ ...project, status: '盘点关闭', closedBy: '手动' }) === false) return;
         setProjectStatus('盘点关闭');
-        onCloseProject?.({ ...project, status: '盘点关闭', closedBy: '手动' });
         messageApi.success(project?.projectType === '初盘' ? '初盘项目已关闭，并通过服务号通知财务人员' : '盘点项目已关闭');
       },
     });
@@ -458,6 +466,7 @@ export default function AssetInventorySnapshotDetailV2({
     .map((row) => normalizeAssetForProjectStage(row, initialProjectStatus)));
 
   const generatePlans = () => {
+    if (managementBlock) { messageApi.warning(managementBlock); return; }
     Modal.confirm({
       title: '提示',
       content: project?.projectType === '复盘' ? (machineRoomProject ? '是否按机房汇总生成复盘计划？' : '是否按楼层汇总生成复盘计划？') : '是否按子公司＋盘点范围生成盘点计划？',
@@ -484,6 +493,7 @@ export default function AssetInventorySnapshotDetailV2({
   };
 
   const handleDeleteSnapshot = () => {
+    if (managementBlock) { messageApi.warning(managementBlock); return; }
     if (!['快照生成', '生成盘点计划'].includes(projectStatus)) return;
     if (!onDeleteSnapshot) return;
     Modal.confirm({
@@ -547,8 +557,8 @@ export default function AssetInventorySnapshotDetailV2({
 
       <div className="flex justify-center pb-2">
         <Space wrap>
-          {projectStatus === '快照生成' && <Button type="primary" icon={<PlayCircle size={14} />} onClick={generatePlans}>生成盘点计划</Button>}
-          {['快照生成', '生成盘点计划'].includes(projectStatus) && <Button danger icon={<Trash2 size={14} />} onClick={handleDeleteSnapshot}>删除快照</Button>}
+          {!managementBlock && projectStatus === '快照生成' && <Button type="primary" icon={<PlayCircle size={14} />} onClick={generatePlans}>生成盘点计划</Button>}
+          {!managementBlock && ['快照生成', '生成盘点计划'].includes(projectStatus) && <Button danger icon={<Trash2 size={14} />} onClick={handleDeleteSnapshot}>删除快照</Button>}
           <Button icon={<Download size={14} />} onClick={exportSnapshot}>快照导出</Button>
           {canManuallyClose && <Button danger icon={<XCircle size={14} />} onClick={handleCloseProject}>关闭项目</Button>}
           <Button onClick={onBack}>返回</Button>

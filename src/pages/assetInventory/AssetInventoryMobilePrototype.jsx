@@ -324,6 +324,11 @@ export default function AssetInventoryMobilePrototype() {
 
   const executionBlock = asset => inventoryExecutionBlockReason({ project: { projectNo: previewProjectNo, projectType, status: projectClosed ? '盘点关闭' : location.state?.projectStatus }, assetTag: asset?.tagNo });
   const canInventory = asset => canInventoryStatus(asset) && !executionBlock(asset);
+  // 只在本次快扫流程内使用未提交标签，不跨项目或页面会话保留。
+  useEffect(() => {
+    setQuickBatches({}); setQuickLocations({}); setQuickResult(null); setQuickPlanId(null); setQuickScanIndex(0); setPhotoState({});
+  }, [previewProjectNo, location.key, currentUser.employeeNo, currentUser.name]);
+
   const selectedAsset = assets.find((asset) => asset.id === selectedAssetId) || null;
   const projectAssets = assets.filter((asset) => projectRanges.includes(asset.area));
   const filteredAssets = projectAssets.filter((asset) => asset.ownerNo === currentUser.employeeNo && includesQuery(asset, query));
@@ -353,6 +358,10 @@ export default function AssetInventoryMobilePrototype() {
   };
   const canQuickScan = isQuickAuthorized(view === 'planDetail' ? activePlanId : null);
   const quickScope = projectAssets.filter((asset) => (currentUser.isESAssetGroup === true || (asset.area === '机房' && asset.ownerNo === currentUser.employeeNo)) && (!quickPlanId || activePlan?.assetIds.includes(asset.id))).map((asset) => asset.id);
+
+  const discardQuickDraft = () => {
+    setQuickBatches({}); setQuickLocations({}); setQuickResult(null); setQuickPlanId(null); setQuickScanIndex(0); setPhotoState({}); setQuickPhotoMode(false);
+  };
 
   const switchDemoContext = (context) => {
     if (context.id === demoContextId) return;
@@ -384,10 +393,12 @@ export default function AssetInventoryMobilePrototype() {
   };
 
   const returnToProjectList = () => {
+    discardQuickDraft();
     navigate('/yewurules', { state: { returnTo: 'asset-inventory-projects' } });
   };
 
   const exitToAssetManagement = () => {
+    discardQuickDraft();
     navigate('/yewurules', { state: { returnTo: 'asset-management-home' } });
   };
 
@@ -396,6 +407,7 @@ export default function AssetInventoryMobilePrototype() {
       returnToProjectList();
       return;
     }
+    if (view === 'quickScan') discardQuickDraft();
     if (view === 'scan' && scanReturnView === 'detail') setScannedDetail(false);
     setView(view === 'detail' ? (quickPhotoMode ? 'quickList' : scannedDetail ? 'scan' : detailReturnView) : view === 'planDetail' ? 'workbench' : view === 'quickList' ? 'quickScan' : scanReturnView);
     setScanPickerOpen(false);

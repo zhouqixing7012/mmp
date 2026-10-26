@@ -1,3 +1,4 @@
+import { inventoryManagementBlockReason } from './inventoryManagementPermissions';
 import { sumInventoryQuantity } from './inventoryQuantity';
 import { inventoryRemark } from './inventoryRemark';
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
@@ -935,6 +936,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
       snapshotTime: initialProject?.snapshotTime || '-',
     };
   });
+  const managementBlock = inventoryManagementBlockReason(project, creator);
   const sourceAssets = inventoryProjectScopeSource(project, { allAssets: ASSET_ROWS,
     initialSnapshot: getInventoryPhotoSnapshot(project.initialProjectNo) || PROJECT_PLAN_SNAPSHOTS?.[project.initialProjectNo], initialAssets: PROJECT_PLAN_ASSETS[project.initialProjectNo] });
   const [scopeRows, setScopeRows] = useState(() => SCOPE_ROWS.map(row => ({ ...row, assetKeys: initialProject?.scopeQueryAssetKeys || initialProject?.scopeSnapshotAssetKeys || sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)).map(asset => asset.key) })));
@@ -943,7 +945,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [scopeAssetQuery, setScopeAssetQuery] = useState({ assetTag: '', owner: [], ownerLevel: [] });
   const [scopeAssetFilter, setScopeAssetFilter] = useState({ assetTag: '', owner: [], ownerLevel: [] });
-  useEffect(() => { onDraftProjectChange?.(project); }, [project, onDraftProjectChange]);
+  useEffect(() => { if (!managementBlock) onDraftProjectChange?.(project); }, [project, onDraftProjectChange, managementBlock]);
   const scopeSource = `${project.projectType}:${project.initialProjectNo || ''}`;
   const previousScopeSource = useRef(scopeSource);
   useEffect(() => {
@@ -978,6 +980,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   const [photoConfig, setPhotoConfig] = useState(() => normalizeInventoryPhotoConfig(initialProject?.photoConfig || getInventoryPhotoConfig(project.projectNo) || getInventoryPhotoSnapshot(project.projectNo)?.config || { rules: IMAGE_RULE_ROWS.filter(row => allowedRanges.includes(row.range)).map(row => ({ ...row, uploadEnabled: false })) }));
 
   const handleSave = () => {
+    if (managementBlock) { messageApi.warning(managementBlock); return; }
     if (!project.projectNo || project.numberAllocationError) { messageApi.warning(project.numberAllocationError || '未取得项目编号，不能保存'); return; }
     if (!initialProject && !allowedProjectTypes(creator).includes(project.projectType)) {
       messageApi.warning('当前操作人无权创建该项目类型');
@@ -1002,6 +1005,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   };
 
   const handleSnapshot = () => {
+    if (managementBlock) { messageApi.warning(managementBlock); return; }
     if (!project.projectNo || project.numberAllocationError) { messageApi.warning(project.numberAllocationError || '未取得项目编号，不能生成快照'); return; }
     if (!initialProject && !allowedProjectTypes(creator).includes(project.projectType)) {
       messageApi.warning('当前操作人无权创建该项目类型');
@@ -1056,6 +1060,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
       <PageTitle>{initialProject ? '编辑盘点项目' : '创建盘点项目'}</PageTitle>
+      {managementBlock && <Alert type="warning" showIcon title={managementBlock} />}
       {project.numberAllocationError && <Alert type="error" showIcon title={project.numberAllocationError} />}
 
       <ProjectBasicInfoEditor project={project} setProject={setProject} creator={creator} isEditing={Boolean(initialProject)} />
@@ -1088,6 +1093,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
             {project.projectType === '复盘' ? <InventoryMandatoryImport assets={filteredScopeAssets.length ? filteredScopeAssets : scopeAssets} candidateAssets={importCandidates} project={project}
               requiredKeys={(changes) => replayMandatoryRuleKeys(changes.map(change => importCandidateByKey.get(change.key)), project)}
               onImport={(changes) => {
+                if (managementBlock) throw new Error(managementBlock);
                 const keys = changes.map(asset => asset.key);
                 setImportedScopeAssetKeys(keys);
                 setRemovedAssetKeys([]);
@@ -1121,8 +1127,8 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
       {(project.projectType !== '初盘' || allowedRanges.some(range => range !== '机房')) && <InventoryPhotoRuleEditor config={photoConfig} onChange={setPhotoConfig} />}
 
       <div className="flex justify-center gap-3 pb-2">
-        <Button type="primary" icon={<Save size={14} />} onClick={handleSave}>保存</Button>
-        <Button type="primary" onClick={handleSnapshot}>生成快照</Button>
+        <Button type="primary" disabled={Boolean(managementBlock)} icon={<Save size={14} />} onClick={handleSave}>保存</Button>
+        <Button type="primary" disabled={Boolean(managementBlock)} onClick={handleSnapshot}>生成快照</Button>
         <Button onClick={onBack}>返回</Button>
       </div>
 

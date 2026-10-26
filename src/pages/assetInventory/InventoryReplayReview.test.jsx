@@ -25,7 +25,7 @@ test('复盘审核可按查询条件筛选，并恢复全部当前计划资产',
 test('点击不同计划仅展示该计划的资产，监督人固定徐博',()=>{setup();fireEvent.click(screen.getByRole('button',{name:'P2'}));expect(screen.getByText('显示器')).toBeInTheDocument();expect(screen.queryByText('手机')).not.toBeInTheDocument();expect(screen.getAllByText('徐博')).toHaveLength(2);expect(screen.getByRole('columnheader',{name:'责任人部门'})).toBeInTheDocument();expect(screen.queryByRole('columnheader',{name:'计划负责人'})).toBeNull();});
 
 test('逐计划入口仅提交对应计划，全部通过后才开放项目审批，徐博复用审核页完成',()=>{
- const project = {projectType:'复盘',projectNo:'R-ui',period:'2026'};
+ const project = {creator:'冯丽婷',projectType:'复盘',projectNo:'R-ui',period:'2026'};
  function Harness({operator}) { const [rows,setRows]=React.useState(plans.map(plan=>({...plan,key:plan.planNo,status:'盘点中'}))); return <AssetInventoryPlansV2Refined project={project} currentOperator={operator} rows={rows} setRows={setRows} assetsForPlan={assetsForPlan}/>; }
  let view=render(<Harness operator="冯丽婷"/>);
  expect(screen.getByRole('button',{name:'提交项目审批'})).toBeDisabled();
@@ -53,10 +53,17 @@ test('逐计划入口仅提交对应计划，全部通过后才开放项目审�
  fireEvent.click(screen.getByRole('button',{name:'P2'}));
  fireEvent.click(screen.getByRole('button',{name:'同意'}));
  fireEvent.click(screen.getByRole('button',{name:'返回'}));
+ expect(screen.getByRole('button',{name:'提交项目审批'})).toBeDisabled();
+ view.unmount();
+ view=render(<Harness operator="冯丽婷"/>);
  expect(screen.getByRole('button',{name:'提交项目审批'})).toBeEnabled();
  fireEvent.click(screen.getByRole('button',{name:'提交项目审批'}));
  expect(screen.getByRole('heading',{name:'复盘结果审核'})).toBeInTheDocument();
  expect(screen.getByText('财务经理审批')).toBeInTheDocument();
+ expect(screen.queryByRole('button',{name:'同意'})).toBeNull();
+ view.unmount();
+ view=render(<Harness operator="徐博"/>);
+ fireEvent.click(screen.getByRole('button',{name:'查看项目审批'}));
  fireEvent.click(screen.getByRole('button',{name:'同意'}));
  expect(screen.queryByRole('button',{name:'同意'})).toBeNull();
  view.unmount();
@@ -66,7 +73,7 @@ test('逐计划入口仅提交对应计划，全部通过后才开放项目审�
 });
 
 test('计划驳回后恢复该计划提交入口，重提保留意见',()=>{
- const project={projectNo:'R-reject',projectType:'复盘'};
+ const project={creator:'冯丽婷',projectNo:'R-reject',projectType:'复盘'};
  function Harness(){ const [rows,setRows]=React.useState([{...plans[0],key:'P1',status:'盘点中'}]);return <AssetInventoryPlansV2Refined project={project} currentOperator="冯丽婷" rows={rows} setRows={setRows} assetsForPlan={assetsForPlan}/>; }
  render(<Harness/>);
  fireEvent.click(screen.getByRole('button',{name:'选择P1'}));
@@ -86,7 +93,7 @@ test('计划驳回后恢复该计划提交入口，重提保留意见',()=>{
 });
 
 test('关闭项目时计划审批只读',()=>{
- const project={projectNo:'R-close',projectType:'复盘'};
+ const project={creator:'冯丽婷',projectNo:'R-close',projectType:'复盘'};
  const state=submitReplayReview({project,plans:[{...plans[0],status:'盘点中'}],assetsForPlan,operator:'冯丽婷'});
  const review=state.planReviews.P1;
  render(<InventoryReplayReview project={{...project,status:'盘点关闭'}} plans={review.plans} submission={review} assetsForPlan={assetsForPlan} currentOperator="冯丽婷" onDecide={jest.fn()}/>);
@@ -105,7 +112,7 @@ test('关闭项目时计划审批只读',()=>{
  });
 
 test('工具栏先选一已启动计划进入编辑，进入和返回都不生成审批记录，明确提交才进入审核',()=>{
- const project={projectNo:'R-edit',projectType:'复盘'};
+ const project={creator:'冯丽婷',projectNo:'R-edit',projectType:'复盘'};
  function Harness(){const [rows,setRows]=React.useState(plans.map(plan=>({...plan,key:plan.planNo,status:'盘点中'})));return <AssetInventoryPlansV2Refined project={project} currentOperator="冯丽婷" rows={rows} setRows={setRows} assetsForPlan={assetsForPlan}/>;}
  render(<Harness/>);
  expect(screen.getByRole('button',{name:'提交计划审批'})).toBeDisabled();
@@ -125,7 +132,7 @@ test('工具栏先选一已启动计划进入编辑，进入和返回都不生�
 });
 
 test('同一Plans组件切换项目不继承前项目同号计划的审批状态',()=>{
- const originalProject={projectNo:'R-before',projectType:'复盘'};
+ const originalProject={creator:'冯丽婷',projectNo:'R-before',projectType:'复盘'};
  const currentPlans=[{...plans[0],key:'P1',status:'盘点中'}];
  submitReplayReview({project:originalProject,plans:currentPlans,assetsForPlan,operator:'冯丽婷'});
  const props={currentOperator:'冯丽婷',setRows:jest.fn(),assetsForPlan};
@@ -141,7 +148,7 @@ test('同一Plans组件切换项目不继承前项目同号计划的审批状态
 });
 
 test('旧批次项目审批在重建计划时不显示入口，同一真实批次仍可查看',()=>{
- const project={projectNo:'R-project-binding',projectType:'复盘'};
+ const project={creator:'冯丽婷',projectNo:'R-project-binding',projectType:'复盘'};
  const oldPlan={...plans[0],key:'same',reviewInstanceKey:'old',status:'盘点中'};
  submitReplayReview({project,plans:[oldPlan],assetsForPlan,operator:'冯丽婷'});
  decideReplayReview({project,planNo:oldPlan.planNo,planKey:oldPlan.key,reviewInstanceKey:'old',round:1,operator:'冯丽婷',decision:'同意'});

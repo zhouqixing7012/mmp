@@ -44,9 +44,9 @@ export default function InventoryReplayReview({ project, plans, assetsForPlan, s
       <QueryBar onQuery={()=>setFilters({...draft})} onReset={()=>{setDraft(EMPTY);setFilters(EMPTY);}}>{FIELDS.map(([label,key])=><QueryItem label={label} key={key}>{queryControl(key)}</QueryItem>)}</QueryBar>
       <Table size="small" bordered rowKey="key" scroll={{x:'max-content'}} dataSource={matches} columns={FIELDS.map(([title,dataIndex])=>({title,dataIndex,render:(value,row)=>dataIndex==='category' ? formatAssetCategory(row) || '-' : value || '-'}))} pagination={{pageSize:10,showTotal:total=>`共 ${total} 条`}}/>
     </Card>
-    {mode !== 'edit' && <Card size="small" title={<SectionCardTitle>审批信息</SectionCardTitle>}><Table size="small" bordered pagination={false} rowKey="key" dataSource={submission.records} columns={[['审批环节','node'],['审批人','person'],['代理人','proxy'],['审批状态','status'],['审批时间','time'],['审批意见','opinion']].map(([title,dataIndex])=>({title,dataIndex,render:value=>value || '-'}))}/></Card>}
+    {mode !== 'edit' && <Card size="small" title={<SectionCardTitle>审批信息</SectionCardTitle>}><Table size="small" bordered pagination={false} rowKey="key" dataSource={submission.records} columns={[['审批环节','node'],['审批人','person'],['审批状态','status'],['审批时间','time'],['审批意见','opinion']].map(([title,dataIndex])=>({title,dataIndex,render:value=>value || '-'}))}/></Card>}
     {mode !== 'edit' && !decisionBlock && onDecide && <Card size="small" title={<SectionCardTitle>审批意见</SectionCardTitle>}>
-      <Input.TextArea aria-label="复盘审批意见" value={opinion} onChange={event => setOpinion(event.target.value)} />
+      <Input.TextArea aria-label="复盘审批意见" value={opinion} placeholder="驳回时必填" onChange={event => setOpinion(event.target.value)} />
     </Card>}
     <div className="flex justify-center"><Space>
       {mode === 'edit' && <Button type="primary" onClick={onSubmit}>提交</Button>}

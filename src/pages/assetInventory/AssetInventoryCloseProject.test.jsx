@@ -5,8 +5,8 @@ import AssetInventoryProjectListV2 from './AssetInventoryProjectListV2';
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 jest.mock('react-router-dom', () => ({ useNavigate: () => jest.fn() }), { virtual: true });
 jest.mock('./projectListMockData', () => ({ PROJECT_LIST_ROWS: [
- { key: 'draft', projectNo: 'ZERO', projectName: '零计划项目', projectType: '复盘', status: '草稿' },
- { key: 'room', projectNo: 'ROOM', projectName: '机房项目', projectType: '初盘', status: '快照生成', generationSource: '系统生成', scopeRanges: ['机房'] },
+ { creator: '孙志强', key: 'draft', projectNo: 'ZERO', projectName: '零计划项目', projectType: '复盘', status: '草稿' },
+ { creator: '孙志强', key: 'room', projectNo: 'ROOM', projectName: '机房项目', projectType: '初盘', status: '快照生成', generationSource: '系统生成', scopeRanges: ['机房'] },
 ] }));
 jest.mock('antd', () => {
  const Box = ({ children, extra }) => <div>{extra}{children}</div>;
@@ -17,7 +17,7 @@ jest.mock('../../components/QueryBar', () => ({ __esModule: true, default: () =>
 beforeEach(() => jest.clearAllMocks());
 test('零计划草稿选中一个即可关闭，零选或多选不弹确认，机房初盘也可手动关闭', () => {
  const close = jest.fn();
- render(<AssetInventoryProjectListV2 onCloseProject={close} getCloseBlockReason={row => inventoryProjectCloseBlockReason(row, { plans: [], photoRows: [] })} />);
+ render(<AssetInventoryProjectListV2 creator="孙志强" onCloseProject={close} getCloseBlockReason={row => inventoryProjectCloseBlockReason(row, { plans: [], photoRows: [] })} />);
  fireEvent.click(screen.getByRole('button', { name: '关闭项目' }));
  expect(Modal.confirm).not.toHaveBeenCalled();
  fireEvent.click(screen.getByRole('button', { name: '多选项目' }));
@@ -33,9 +33,24 @@ test('零计划草稿选中一个即可关闭，零选或多选不弹确认，�
 });
 test('确认前新产生审核会再次校验并阻止关闭', () => {
  let pending = false;const close = jest.fn();
- render(<AssetInventoryProjectListV2 onCloseProject={close} getCloseBlockReason={row => inventoryProjectCloseBlockReason(row, { photoRows: pending ? [{ reviewStatus: '待审核' }] : [] })} />);
+ render(<AssetInventoryProjectListV2 creator="孙志强" onCloseProject={close} getCloseBlockReason={row => inventoryProjectCloseBlockReason(row, { photoRows: pending ? [{ reviewStatus: '待审核' }] : [] })} />);
  fireEvent.click(screen.getByRole('button', { name: '选中-ZERO' }));
  fireEvent.click(screen.getByRole('button', { name: '关闭项目' }));
  pending = true;Modal.confirm.mock.calls[0][0].onOk();
+ expect(close).not.toHaveBeenCalled();
+});
+
+test('非创建人不能手动关闭，已打开确认框在切换身份后也不能关闭', () => {
+ const close = jest.fn();
+ const props = { onCloseProject: close, getCloseBlockReason: row => inventoryProjectCloseBlockReason(row, { plans: [], photoRows: [] }) };
+ const view = render(<AssetInventoryProjectListV2 {...props} creator="其他人" />);
+ fireEvent.click(screen.getByRole('button', { name: '选中-ZERO' }));
+ fireEvent.click(screen.getByRole('button', { name: '关闭项目' }));
+ expect(Modal.confirm).not.toHaveBeenCalled();
+ view.rerender(<AssetInventoryProjectListV2 {...props} creator="孙志强" />);
+ fireEvent.click(screen.getByRole('button', { name: '关闭项目' }));
+ const confirmation = Modal.confirm.mock.calls[0][0];
+ view.rerender(<AssetInventoryProjectListV2 {...props} creator="其他人" />);
+ confirmation.onOk();
  expect(close).not.toHaveBeenCalled();
 });

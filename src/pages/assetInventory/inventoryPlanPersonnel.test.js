@@ -45,9 +45,9 @@ test('位置库管员仅从明确仓库记录关联，不凭位置文字猜测',
   expect(unknown.executor).toBe('-');
 });
 
-test('抽盘和自定义空值不套用未确认库管员默认，员工监督不猜部门助理', () => {
+test('抽盘默认库房取编号对应管理员，自定义初盘空值和未关联助理不猜测', () => {
   const warehouse = { key: 'w', inventoryRange: '库房', warehouseCode: 'I0001' };
-  expect(initializeInventoryPlanPersonnel({ projectType: '抽盘' }, [warehouse])[0].executor).toBe('-');
+  expect(initializeInventoryPlanPersonnel({ projectType: '抽盘' }, [warehouse])[0].executor).toBe('114111-杨芊');
   expect(initializeInventoryPlanPersonnel(initial, [warehouse], {}, 'custom')[0].executor).toBe('-');
   expect(initializeInventoryPlanPersonnel(initial, assets)[0].supervisor).toBe('-');
   expect(() => initializeInventoryPlanPersonnel(initial, assets, { executor: '丙' }, 'custom')).toThrow('尚未定义');
@@ -69,4 +69,12 @@ test.each(['初盘', '抽盘', '复盘'])('公共%s默认执行人空、监督�
     expect(initializeInventoryPlanPersonnel(project, source, { supervisor: '徐博' }, mode)[0]).toMatchObject({ supervisor: '徐博', executor: '-' });
   }
   expect(initializeInventoryPlanPersonnel(project, source, { executor: '冯丽婷', supervisor: '' }, 'custom')[0]).toMatchObject({ executor: '冯丽婷', supervisor: projectType === '复盘' ? '冯丽婷' : '孙志强' });
+});
+
+test('抽盘员工默认取责任人和部门助理，库房编号是管理员唯一匹配依据', () => {
+  const project = { projectType: '抽盘' };
+  expect(initializeInventoryPlanPersonnel(project, [{ inventoryRange: '员工', owner: '责任人', departmentAssistant: '助理', executor: '旧执行', supervisor: '旧监督' }])[0]).toMatchObject({ executor: '责任人', supervisor: '助理' });
+  expect(initializeInventoryPlanPersonnel(project, [{ inventoryRange: '库房', warehouseCode: 'I0001', locationKeeper: '旧缓存管理员' }])[0]).toMatchObject({ executor: '114111-杨芊', supervisor: '114111-杨芊' });
+  expect(initializeInventoryPlanPersonnel(project, [{ inventoryRange: '库房', warehouse: 'I0001' }])[0].executor).toBe('114111-杨芊');
+  expect(initializeInventoryPlanPersonnel(project, [{ inventoryRange: '库房', warehouseCode: '不存在', locationKeeper: '旧缓存管理员', executor: '旧执行人', supervisor: '旧监督人' }])[0].executor).toBe('-');
 });

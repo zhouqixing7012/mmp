@@ -23,7 +23,7 @@ const draft = {key:'manual-1',planNo:'P1',planName:'原名',range:'员工',statu
 const originalAssets=[{key:'a',assetTag:'A',quantity:1,inventoryRange:'员工',supervisor:'冯丽婷',executor:'冯丽婷'},{key:'b',assetTag:'B',quantity:1,inventoryRange:'员工',supervisor:'徐博',executor:'徐博'}];
 function Harness({plan=draft,projectType='复盘',initialAssets=originalAssets,onChanged=()=>{}}){
  const [rows,setRows]=React.useState([plan]);const [assets,setAssets]=React.useState(initialAssets);
- return <><AssetInventoryPlansV2Refined project={{projectType,projectNo:'CFG',status:'生成盘点计划'}} rows={rows} setRows={setRows} assetsForPlan={()=>assets} onChangePlanAssets={(row,updater)=>{setAssets(current=>{const next=updater(current);onChanged(next);return next;});}}/><output>{JSON.stringify(rows)}</output></>;
+ return <><AssetInventoryPlansV2Refined currentOperator="冯丽婷" project={{creator:'冯丽婷',projectType,projectNo:'CFG',status:'生成盘点计划'}} rows={rows} setRows={setRows} assetsForPlan={()=>assets} onChangePlanAssets={(row,updater)=>{setAssets(current=>{const next=updater(current);onChanged(next);return next;});}}/><output>{JSON.stringify(rows)}</output></>;
 }
 beforeEach(()=>{window.localStorage.clear();mockWarning.mockClear();});
 test('草稿汇总全部资产人员，计划改人同时保存配置并同步全部资产',()=>{
@@ -74,7 +74,7 @@ test('复盘日期允许多天，修改开始日不再覆盖结束日，结束�
 });
 
 test('新草稿与旧审批同编号同key，明确启动后仍盘点中且产生新实例标记',()=>{
- const project={projectNo:'CFG',projectType:'复盘'};
+ const project={creator:'冯丽婷',projectNo:'CFG',projectType:'复盘'};
  submitReplayReview({project,plans:[{...draft,status:'盘点中'}],assetsForPlan:()=>originalAssets,operator:'冯丽婷'});
  render(<Harness/>);
  expect(screen.getByRole('status').textContent).toContain('草稿');
