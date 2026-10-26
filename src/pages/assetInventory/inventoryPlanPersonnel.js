@@ -6,6 +6,10 @@ export const INVENTORY_FINANCIAL_SUPERVISOR = '徐博';
 const present = value => Boolean(String(value ?? '').trim()) && value !== '-';
 const personName = person => typeof person === 'object' && person ? person.employeeName || person.name || '' : String(person || '');
 
+export function inventoryPublicSupervisor(project, configured) {
+  return present(configured) ? personName(configured) : personName(project?.creator).replace(/^\d+-/, '').trim() || '-';
+}
+
 // 财务正式目录尚未接入，仅使用已确认创建权限及财务审批身份，不伪造工号。
 export function inventoryFinancePeople() {
   const names = [...new Set([...INVENTORY_CREATORS.filter(person => person.projectTypes.includes('复盘')).map(person => person.value), INVENTORY_FINANCIAL_SUPERVISOR])];
@@ -54,6 +58,14 @@ function locationKeeper(asset) {
 export function initializeInventoryPlanPersonnel(project, assets, configuration = {}, mode = 'default') {
   return assets.map(asset => {
     const range = asset.inventoryRange || asset.range;
+    // 公共资产不沿用库管员或旧计划人员；自定义监督人优先于项目创建人。
+    if (range === '公共') {
+      return { ...asset,
+        supervisor: inventoryPublicSupervisor(project, configuration.supervisor),
+        executor: present(configuration.executor) ? personName(configuration.executor) : '-',
+        ...(project?.projectType === '复盘' ? { financialSupervisor: INVENTORY_FINANCIAL_SUPERVISOR } : {}),
+      };
+    }
     if (project?.projectType === '复盘') {
       const supervisor = configuration.supervisor ?? asset.supervisor;
       const executor = configuration.executor ?? asset.executor;
@@ -69,7 +81,7 @@ export function initializeInventoryPlanPersonnel(project, assets, configuration 
     // 自定义初盘非员工范围按原需求明细：配置有值带入，无值留空；机房已在前面固定责任人。
     if (mode === 'custom' && project?.projectType === '初盘') return { ...asset, supervisor: configuration.supervisor || '-', executor: configuration.executor || '-' };
     // 抽盘首次默认带出尚未定义，不套用初盘库管员规则。
-    const keeper = mode === 'default' && project?.projectType === '初盘' && ['库房', '公共'].includes(range) ? locationKeeper(asset) : '';
+    const keeper = mode === 'default' && project?.projectType === '初盘' && range === '库房' ? locationKeeper(asset) : '';
     return { ...asset, supervisor: configuration.supervisor || keeper || asset.supervisor || '-', executor: configuration.executor || keeper || asset.executor || '-' };
   });
 }

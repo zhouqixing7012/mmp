@@ -22,7 +22,7 @@ import StatusTag from '../../components/StatusTag';
 import { ASSET_ROWS, EMPLOYEE_ROWS } from './mockData';
 import { selectScopeAssets } from './inventoryScopeQuery';
 import { buildInventoryOrganizationTree } from './inventoryOrganizationQuery';
-import { initializeInventoryPlanPersonnel, inventoryPersonnelCandidates, inventoryPersonnelChangeReason } from './inventoryPlanPersonnel';
+import { inventoryPublicSupervisor, initializeInventoryPlanPersonnel, inventoryPersonnelCandidates, inventoryPersonnelChangeReason } from './inventoryPlanPersonnel';
 import { downloadInventoryPlanAssets, selectInventoryExportRows } from './inventoryPlanExport';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
 
@@ -48,7 +48,7 @@ function PlanInfoModal({ open, onCancel, onConfirm, project, assets }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const planRangeOptions = PLAN_RANGE_OPTIONS.filter((range) => allowedRanges.includes(range));
   const [planName, setPlanName] = useState('自定义盘点计划');
-  const [rows, setRows] = useState(() => planRangeOptions.map((range) => ({ key: range, range, supervisor: '', executor: '' })));
+  const [rows, setRows] = useState(() => planRangeOptions.map((range) => ({ key: range, range, supervisor: range === '公共' ? inventoryPublicSupervisor(project) : '', executor: '' })));
   const [personTarget, setPersonTarget] = useState(null);
   const [messageApi, contextHolder] = antdMessage.useMessage();
 

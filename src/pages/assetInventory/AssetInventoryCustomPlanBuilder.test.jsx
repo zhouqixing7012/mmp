@@ -72,3 +72,14 @@ test('自定义同范围跨公司保留同一份计划草稿，不阻止或按�
   expect(onConfirmPlan.mock.calls[0][0].assets).toEqual(source);
   expect(onConfirmPlan.mock.calls[0][0].rows.find(row => row.range === '员工').assets).toHaveLength(2);
 });
+
+test('自定义公共计划弹窗直接显示创建人为默认监督人，执行人空', () => {
+  const onConfirmPlan = jest.fn();
+  render(<AssetInventoryCustomPlanBuilder initialAssets={[{ ...assets[0], inventoryRange: '公共' }]} project={{ projectType: '初盘', creator: '213852-孙志强' }} onConfirmPlan={onConfirmPlan} />);
+  fireEvent.click(screen.getByRole('button', { name: '生成计划' }));
+  const dialog = screen.getByRole('dialog');
+  expect(within(dialog).getByDisplayValue('孙志强')).toBeInTheDocument();
+  expect(within(dialog).getAllByPlaceholderText('选填').map(input => input.value)).toEqual(['孙志强', '']);
+  fireEvent.click(within(dialog).getByRole('button', { name: '确定' }));
+  expect(onConfirmPlan.mock.calls[0][0].rows.find(row => row.range === '公共').assets[0]).toMatchObject({ supervisor: '孙志强', executor: '-' });
+});
