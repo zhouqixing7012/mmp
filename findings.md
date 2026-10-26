@@ -251,3 +251,5 @@
 - 新版数量展示可追溯至[50377a6](https://github.com/zhouqixing7012/mmp/commit/50377a6c959c340cbf6875c21bb57e889efb548d)：加入“关闭校验通过后弹出确认信息，展示未盘数量和待提交数量”。其父版本同段无该句。
 - 原型[6c80d31](https://github.com/zhouqixing7012/mmp/commit/6c80d31e7f9c9583de82b3fd080abb2b1466199d)只提示未完成不阻止关闭；[e925382](https://github.com/zhouqixing7012/mmp/commit/e925382c2ab761f066fc8aba4a6404836820010a)才加入pendingSubmissionCount数量，缺失显示“待计算”。根代理已直接读回503/e925的提交补丁核实。
 - 未找到用户明确要求展示此数量的原话或原件依据，不能以助手新版/比对报告互相证明需求。用户本轮追问来源，未授权删除，尚未删字段；业务是否保留仅在PRD6.5/INV-15维护，不另外定义统计规则。
+
+后续用户已明确授权删除“待提交数量”，现原型、PRD及当前待办均已移除，完成证据见progress对应条目；上述来源记录只用于追溯。
