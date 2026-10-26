@@ -908,209 +908,155 @@
     "sourceFile": "docs/八项报表独立PRD/02_耗材明细报表PRD.md",
     "filters": [
       {
-        "label": "耗材标签号",
-        "key": "耗材标签号",
-        "type": "text",
-        "match": "prefix",
-        "multiple": false,
-        "optionSet": "资产标签号"
-      },
-      {
-        "label": "公司",
-        "key": "公司",
-        "type": "lookup",
-        "match": "in",
-        "multiple": false,
-        "optionSet": "company"
-      },
-      {
-        "label": "部门",
-        "key": "HR部门",
-        "type": "departmentTreeSelect",
-        "match": "department",
-        "multiple": false,
-        "optionSet": "department"
-      },
-      {
-        "label": "当前责任人",
-        "key": "资产责任人工号",
+        "label": "申请人",
+        "key": "申请人",
         "type": "lookup",
         "match": "in",
         "multiple": true,
         "optionSet": "person"
       },
       {
+        "label": "是否领用",
+        "key": "是否领用",
+        "type": "select",
+        "match": "in",
+        "multiple": false,
+        "optionSet": "是否领用",
+        "options": [
+          "是",
+          "否"
+        ]
+      },
+      {
+        "label": "耗材标签号",
+        "key": "耗材标签号",
+        "type": "text",
+        "match": "contains",
+        "multiple": false,
+        "optionSet": "资产标签号"
+      },
+      {
+        "label": "申请人公司",
+        "key": "申请人公司",
+        "type": "lookup",
+        "match": "in",
+        "multiple": true,
+        "optionSet": "company"
+      },
+      {
+        "label": "是否占用",
+        "key": "是否占用",
+        "type": "select",
+        "match": "in",
+        "multiple": false,
+        "optionSet": "是否占用",
+        "options": [
+          "是",
+          "否"
+        ]
+      },
+      {
         "label": "主资产标签号",
         "key": "主资产标签号",
         "type": "text",
-        "match": "parentOrSelf",
+        "match": "contains",
         "multiple": false,
         "optionSet": "主资产标签号"
       },
       {
-        "label": "耗材说明",
-        "key": "资产说明",
-        "type": "text",
-        "match": "contains",
-        "multiple": false,
-        "optionSet": "资产说明"
-      },
-      {
-        "label": "耗材类别",
-        "key": "资产类别",
-        "type": "treeSelect",
-        "match": "category",
-        "multiple": true,
-        "optionSet": "consumableCategory"
-      },
-      {
-        "label": "耗材状态",
-        "key": "资产状态",
-        "type": "consumableStatusSelect",
-        "match": "in",
-        "multiple": true,
-        "optionSet": "assetStatus"
-      },
-      {
-        "label": "板块",
-        "key": "资产所属板块",
+        "label": "申请人板块",
+        "key": "申请人板块",
         "type": "select",
         "match": "in",
-        "multiple": false,
+        "multiple": true,
         "optionSet": "plate"
       },
       {
-        "label": "PO单号",
-        "key": "PO单号",
+        "label": "耗材物料编码",
+        "key": "物料编码",
         "type": "text",
         "match": "contains",
         "multiple": false,
-        "optionSet": "PO单号"
+        "optionSet": "物料编码"
       },
       {
-        "label": "用途",
-        "key": "资产用途",
-        "type": "select",
-        "match": "in",
-        "multiple": false,
-        "optionSet": "purpose"
-      },
-      {
-        "label": "仓库",
-        "key": "仓库",
+        "label": "耗材责任人公司",
+        "key": "耗材责任人公司",
         "type": "lookup",
         "match": "in",
         "multiple": true,
-        "optionSet": "warehouse"
+        "optionSet": "company"
       },
       {
-        "label": "City",
-        "key": "City",
+        "label": "耗材公司",
+        "key": "耗材公司",
         "type": "lookup",
         "match": "in",
-        "multiple": false,
-        "optionSet": "City"
+        "multiple": true,
+        "optionSet": "company"
       },
       {
-        "label": "Building",
-        "key": "Building",
-        "type": "lookup",
-        "match": "in",
-        "multiple": false,
-        "optionSet": "Building"
-      },
-      {
-        "label": "Floor",
-        "key": "Floor",
-        "type": "select",
-        "match": "in",
-        "multiple": false,
-        "optionSet": "Floor"
-      },
-      {
-        "label": "报废状态",
-        "key": "报废状态",
-        "type": "select",
-        "match": "in",
-        "multiple": false,
-        "optionSet": "报废状态",
-        "options": [
-          "已报废",
-          "未报废"
-        ]
-      },
-      {
-        "label": "新增类型",
-        "key": "新增类型",
-        "type": "select",
-        "match": "in",
-        "multiple": false,
-        "optionSet": "addType"
-      },
-      {
-        "label": "成本中心",
-        "key": "成本中心",
-        "type": "lookup",
-        "match": "in",
-        "multiple": false,
-        "optionSet": "costCenter"
-      },
-      {
-        "label": "报废类型",
-        "key": "报废类型",
-        "type": "select",
-        "match": "in",
-        "multiple": false,
-        "optionSet": "报废类型"
-      },
-      {
-        "label": "采购日期",
-        "key": "采购日期",
-        "type": "daterange",
-        "match": "dateRange",
-        "multiple": false
-      },
-      {
-        "label": "原值自",
-        "key": "原值",
-        "type": "amount",
-        "match": "gteNumber",
-        "multiple": false,
-        "optionSet": "原值"
-      },
-      {
-        "label": "原值至",
-        "key": "原值",
-        "type": "amount",
-        "match": "lteNumber",
-        "multiple": false,
-        "optionSet": "原值"
-      },
-      {
-        "label": "品牌",
-        "key": "品牌",
+        "label": "耗材物料描述",
+        "key": "耗材物料描述",
         "type": "text",
         "match": "contains",
         "multiple": false,
-        "optionSet": "品牌"
+        "optionSet": "物料名称"
       },
       {
-        "label": "启用日期",
-        "key": "启用日期",
-        "type": "daterange",
-        "match": "dateRange",
-        "multiple": false
+        "label": "耗材责任人板块",
+        "key": "耗材责任人板块",
+        "type": "select",
+        "match": "in",
+        "multiple": true,
+        "optionSet": "plate"
       },
       {
-        "label": "PR单号",
-        "key": "PR单号",
-        "type": "text",
-        "match": "contains",
-        "multiple": false,
-        "optionSet": "PR单编号"
+        "label": "耗材大类",
+        "key": "资产大类",
+        "type": "select",
+        "match": "in",
+        "multiple": true,
+        "optionSet": "major"
+      },
+      {
+        "label": "耗材责任人",
+        "key": "耗材责任人查询",
+        "type": "lookup",
+        "match": "in",
+        "multiple": true,
+        "optionSet": "person"
+      },
+      {
+        "label": "耗材责任人部门",
+        "key": "耗材责任人部门",
+        "type": "departmentTreeSelect",
+        "match": "department",
+        "multiple": true,
+        "optionSet": "department"
+      },
+      {
+        "label": "耗材小类",
+        "key": "资产小类",
+        "type": "select",
+        "match": "in",
+        "multiple": true,
+        "optionSet": "minor"
       }
     ],
     "columns": [
+      {
+        "label": "耗材物料编码",
+        "key": "耗材物料编码",
+        "format": "text",
+        "width": 160
+      },
+      {
+        "label": "耗材物料描述",
+        "key": "耗材物料描述",
+        "format": "text",
+        "width": 160
+      },
       {
         "label": "耗材标签号",
         "key": "耗材标签号",
@@ -1118,80 +1064,56 @@
         "width": 210
       },
       {
-        "label": "公司",
-        "key": "公司",
-        "format": "text",
-        "width": 260
-      },
-      {
-        "label": "板块",
-        "key": "板块",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "资产大类",
-        "key": "资产大类",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "资产小类",
-        "key": "资产小类",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "资产说明",
-        "key": "资产说明",
-        "format": "text",
-        "width": 260
-      },
-      {
-        "label": "品牌",
-        "key": "品牌",
-        "format": "text",
-        "width": 160
-      },
-      {
         "label": "主资产标签号",
         "key": "主资产标签号",
         "format": "text",
         "width": 210
       },
       {
-        "label": "数量",
-        "key": "数量",
+        "label": "总类",
+        "key": "总类",
+        "format": "text",
+        "width": 160
+      },
+      {
+        "label": "耗材大类",
+        "key": "耗材大类",
+        "format": "text",
+        "width": 160
+      },
+      {
+        "label": "耗材小类",
+        "key": "耗材小类",
+        "format": "text",
+        "width": 160
+      },
+      {
+        "label": "不含税单价",
+        "key": "不含税单价",
+        "format": "money",
+        "width": 160
+      },
+      {
+        "label": "税金",
+        "key": "税金",
+        "format": "money",
+        "width": 160
+      },
+      {
+        "label": "耗材数量",
+        "key": "耗材数量",
         "format": "integer",
         "width": 110
       },
       {
-        "label": "原值",
-        "key": "原值",
-        "format": "moneyOptional",
-        "width": 160
-      },
-      {
-        "label": "资产责任人编号",
-        "key": "资产责任人编号",
+        "label": "耗材公司",
+        "key": "耗材公司",
         "format": "text",
-        "width": 210
+        "width": 260
       },
       {
-        "label": "资产责任人",
-        "key": "资产责任人",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "资产状态",
-        "key": "资产状态",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "成本中心",
-        "key": "成本中心",
+        "label": "耗材状态",
+        "key": "耗材状态",
         "format": "text",
         "width": 160
       },
@@ -1202,221 +1124,174 @@
         "width": 260
       },
       {
-        "label": "启用日期",
-        "key": "启用日期",
-        "format": "date",
-        "width": 130
+        "label": "耗材责任人",
+        "key": "耗材责任人",
+        "format": "text",
+        "width": 160
+      },
+      {
+        "label": "耗材责任人公司",
+        "key": "耗材责任人公司",
+        "format": "text",
+        "width": 260
+      },
+      {
+        "label": "耗材责任人板块",
+        "key": "耗材责任人板块",
+        "format": "text",
+        "width": 160
+      },
+      {
+        "label": "耗材责任人部门",
+        "key": "耗材责任人部门",
+        "format": "text",
+        "width": 260
+      },
+      {
+        "label": "申请单号",
+        "key": "申请单号",
+        "format": "text",
+        "width": 210
+      },
+      {
+        "label": "申请人",
+        "key": "申请人",
+        "format": "text",
+        "width": 160
+      },
+      {
+        "label": "申请人公司",
+        "key": "申请人公司",
+        "format": "text",
+        "width": 260
+      },
+      {
+        "label": "申请人板块",
+        "key": "申请人板块",
+        "format": "text",
+        "width": 160
+      },
+      {
+        "label": "申请人部门",
+        "key": "申请人部门",
+        "format": "text",
+        "width": 260
+      },
+      {
+        "label": "采购单",
+        "key": "采购单",
+        "format": "text",
+        "width": 160
+      },
+      {
+        "label": "采购申请单号",
+        "key": "采购申请单号",
+        "format": "text",
+        "width": 210
+      },
+      {
+        "label": "耗材领用单号",
+        "key": "耗材领用单号",
+        "format": "text",
+        "width": 210
+      },
+      {
+        "label": "是否领用",
+        "key": "是否领用",
+        "format": "text",
+        "width": 160
+      },
+      {
+        "label": "是否占用",
+        "key": "是否占用",
+        "format": "text",
+        "width": 160
       }
     ],
     "exportColumns": [
       {
-        "label": "仓库",
-        "key": "库房",
+        "label": "耗材物料编码",
+        "key": "耗材物料编码",
         "format": "text"
       },
       {
-        "label": "资产大类",
-        "key": "资产大类",
+        "label": "耗材物料描述",
+        "key": "耗材物料描述",
         "format": "text"
       },
       {
-        "label": "资产小类",
-        "key": "资产小类",
+        "label": "耗材标签号",
+        "key": "耗材标签号",
         "format": "text"
       },
       {
-        "label": "资产小类A",
-        "key": "资产小类A",
+        "label": "主资产标签号",
+        "key": "主资产标签号",
         "format": "text"
       },
       {
-        "label": "资产小类明细",
-        "key": "资产小类明细",
+        "label": "总类",
+        "key": "总类",
         "format": "text"
       },
       {
-        "label": "资产标签号",
-        "key": "资产标签号",
+        "label": "耗材大类",
+        "key": "耗材大类",
         "format": "text"
       },
       {
-        "label": "序列号",
-        "key": "序列号",
+        "label": "耗材小类",
+        "key": "耗材小类",
         "format": "text"
       },
       {
-        "label": "品牌",
-        "key": "品牌",
-        "format": "text"
-      },
-      {
-        "label": "型号",
-        "key": "型号",
-        "format": "text"
-      },
-      {
-        "label": "资产说明",
-        "key": "资产说明",
-        "format": "text"
-      },
-      {
-        "label": "配置",
-        "key": "配置",
-        "format": "text"
-      },
-      {
-        "label": "备注",
-        "key": "备注",
-        "format": "text"
-      },
-      {
-        "label": "数量",
-        "key": "数量",
-        "format": "truncateInteger"
-      },
-      {
-        "label": "单位",
-        "key": "单位",
-        "format": "text"
-      },
-      {
-        "label": "采购日期",
-        "key": "采购日期",
-        "format": "date"
-      },
-      {
-        "label": "启用日期",
-        "key": "启用日期",
-        "format": "date"
-      },
-      {
-        "label": "原值",
-        "key": "原值",
+        "label": "不含税单价",
+        "key": "不含税单价",
         "format": "money"
       },
       {
-        "label": "印刷号",
-        "key": "印刷号",
+        "label": "税金",
+        "key": "税金",
+        "format": "money"
+      },
+      {
+        "label": "耗材数量",
+        "key": "耗材数量",
+        "format": "integer"
+      },
+      {
+        "label": "耗材公司",
+        "key": "耗材公司",
         "format": "text"
       },
       {
-        "label": "折旧月数",
-        "key": "折旧月数",
-        "format": "raw"
-      },
-      {
-        "label": "资产用途",
-        "key": "资产用途",
+        "label": "耗材状态",
+        "key": "耗材状态",
         "format": "text"
       },
       {
-        "label": "使用说明",
-        "key": "使用说明",
+        "label": "仓库",
+        "key": "仓库",
         "format": "text"
       },
       {
-        "label": "资产状态",
-        "key": "资产状态",
+        "label": "耗材责任人",
+        "key": "耗材责任人",
         "format": "text"
       },
       {
-        "label": "资产标记",
-        "key": "资产标记",
+        "label": "耗材责任人公司",
+        "key": "耗材责任人公司",
         "format": "text"
       },
       {
-        "label": "责任人编号",
-        "key": "责任人编号",
+        "label": "耗材责任人板块",
+        "key": "耗材责任人板块",
         "format": "text"
       },
       {
-        "label": "责任人姓名",
-        "key": "责任人姓名",
-        "format": "text"
-      },
-      {
-        "label": "成本中心",
-        "key": "成本中心",
-        "format": "text"
-      },
-      {
-        "label": "公司",
-        "key": "公司",
-        "format": "text"
-      },
-      {
-        "label": "财务核算板块",
-        "key": "财务核算板块",
-        "format": "text"
-      },
-      {
-        "label": "资产所属板块",
-        "key": "资产所属板块",
-        "format": "text"
-      },
-      {
-        "label": "业务线",
-        "key": "业务线",
-        "format": "text"
-      },
-      {
-        "label": "项目",
-        "key": "项目",
-        "format": "text"
-      },
-      {
-        "label": "费用账户",
-        "key": "费用账户",
-        "format": "text"
-      },
-      {
-        "label": "HR一级部门",
-        "key": "HR一级部门",
-        "format": "text"
-      },
-      {
-        "label": "HR二级部门",
-        "key": "HR二级部门",
-        "format": "text"
-      },
-      {
-        "label": "City",
-        "key": "City",
-        "format": "text"
-      },
-      {
-        "label": "Building",
-        "key": "Building",
-        "format": "text"
-      },
-      {
-        "label": "Floor",
-        "key": "Floor",
-        "format": "text"
-      },
-      {
-        "label": "NO位置",
-        "key": "NO位置",
-        "format": "text"
-      },
-      {
-        "label": "服务",
-        "key": "服务",
-        "format": "text"
-      },
-      {
-        "label": "子服务",
-        "key": "子服务",
-        "format": "text"
-      },
-      {
-        "label": "资产账簿",
-        "key": "资产账簿",
-        "format": "text"
-      },
-      {
-        "label": "资产编号",
-        "key": "资产编号",
+        "label": "耗材责任人部门",
+        "key": "耗材责任人部门",
         "format": "text"
       },
       {
@@ -1425,93 +1300,57 @@
         "format": "text"
       },
       {
-        "label": "PO单号",
-        "key": "PO单号",
+        "label": "申请人",
+        "key": "申请人",
         "format": "text"
       },
       {
-        "label": "PR单编号",
-        "key": "PR单编号",
+        "label": "申请人公司",
+        "key": "申请人公司",
         "format": "text"
       },
       {
-        "label": "入库单号",
-        "key": "入库单号",
+        "label": "申请人板块",
+        "key": "申请人板块",
         "format": "text"
       },
       {
-        "label": "批次号",
-        "key": "批次号",
+        "label": "申请人部门",
+        "key": "申请人部门",
         "format": "text"
       },
       {
-        "label": "入库来源类型",
-        "key": "入库来源类型",
+        "label": "采购单",
+        "key": "采购单",
         "format": "text"
       },
       {
-        "label": "新增类型",
-        "key": "新增类型",
+        "label": "采购申请单号",
+        "key": "采购申请单号",
         "format": "text"
       },
       {
-        "label": "主资产标签号",
-        "key": "主资产标签号",
+        "label": "耗材领用单号",
+        "key": "耗材领用单号",
         "format": "text"
       },
       {
-        "label": "物料编码",
-        "key": "物料编码",
+        "label": "是否领用",
+        "key": "是否领用",
         "format": "text"
       },
       {
-        "label": "报废类型",
-        "key": "报废类型",
+        "label": "是否占用",
+        "key": "是否占用",
         "format": "text"
-      },
-      {
-        "label": "报废日期",
-        "key": "报废日期",
-        "format": "date"
-      },
-      {
-        "label": "报废原因",
-        "key": "报废原因",
-        "format": "text"
-      },
-      {
-        "label": "折旧年限",
-        "key": "折旧年限",
-        "format": "raw"
-      },
-      {
-        "label": "折旧剩余月份",
-        "key": "折旧剩余月份",
-        "format": "raw"
-      },
-      {
-        "label": "升级日期",
-        "key": "升级日期",
-        "format": "date"
-      },
-      {
-        "label": "升级金额",
-        "key": "升级金额",
-        "format": "raw",
-        "emptyValue": 0
-      },
-      {
-        "label": "ES实物报废期",
-        "key": "ES实物报废期",
-        "format": "date"
       }
     ],
-    "sheetName": "低值耐用品明细",
-    "moreStart": "City",
-    "selectRows": true,
+    "sheetName": "耗材明细报表",
+    "moreStart": null,
+    "selectRows": false,
     "sortable": true,
     "exportLabel": "导出",
-    "supplemental": true,
+    "supplemental": false,
     "sortKeys": [
       {
         "key": "majorCode",
@@ -4805,472 +4644,6 @@
       }
     ],
     "range": "consumableClaims"
-  },
-  {
-    "id": "report-7-2",
-    "menu": "耗材统一申领报表",
-    "title": "统一申请耗材明细报表",
-    "sourceFile": "docs/八项报表独立PRD/07_耗材统一申领报表PRD.md",
-    "filters": [
-      {
-        "label": "申请人",
-        "key": "申请人",
-        "type": "lookup",
-        "match": "in",
-        "multiple": true,
-        "optionSet": "person"
-      },
-      {
-        "label": "是否领用",
-        "key": "是否领用",
-        "type": "select",
-        "match": "in",
-        "multiple": false,
-        "optionSet": "是否领用",
-        "options": [
-          "是",
-          "否"
-        ]
-      },
-      {
-        "label": "耗材责任人公司",
-        "key": "耗材责任人公司",
-        "type": "lookup",
-        "match": "in",
-        "multiple": true,
-        "optionSet": "company"
-      },
-      {
-        "label": "申请人公司",
-        "key": "申请人公司",
-        "type": "lookup",
-        "match": "in",
-        "multiple": true,
-        "optionSet": "company"
-      },
-      {
-        "label": "是否占有",
-        "key": "是否占用",
-        "type": "select",
-        "match": "in",
-        "multiple": false,
-        "optionSet": "是否占用",
-        "options": [
-          "是",
-          "否"
-        ]
-      },
-      {
-        "label": "耗材责任人板块",
-        "key": "耗材责任人板块",
-        "type": "select",
-        "match": "in",
-        "multiple": true,
-        "optionSet": "plate"
-      },
-      {
-        "label": "申请人板块",
-        "key": "申请人板块",
-        "type": "select",
-        "match": "in",
-        "multiple": true,
-        "optionSet": "plate"
-      },
-      {
-        "label": "耗材物料编码",
-        "key": "物料编码",
-        "type": "text",
-        "match": "contains",
-        "multiple": false,
-        "optionSet": "物料编码"
-      },
-      {
-        "label": "耗材责任人部门",
-        "key": "耗材责任人部门",
-        "type": "departmentTreeSelect",
-        "match": "department",
-        "multiple": true,
-        "optionSet": "department"
-      },
-      {
-        "label": "耗材公司",
-        "key": "耗材公司",
-        "type": "lookup",
-        "match": "in",
-        "multiple": true,
-        "optionSet": "company"
-      },
-      {
-        "label": "耗材物料描述",
-        "key": "耗材物料描述",
-        "type": "text",
-        "match": "contains",
-        "multiple": false,
-        "optionSet": "物料名称"
-      },
-      {
-        "label": "耗材标签号",
-        "key": "耗材标签号",
-        "type": "text",
-        "match": "contains",
-        "multiple": false,
-        "optionSet": "资产标签号"
-      },
-      {
-        "label": "耗材大类",
-        "key": "资产大类",
-        "type": "lookup",
-        "match": "in",
-        "multiple": true,
-        "optionSet": "major"
-      },
-      {
-        "label": "耗材责任人",
-        "key": "耗材责任人查询",
-        "type": "lookup",
-        "match": "in",
-        "multiple": true,
-        "optionSet": "person"
-      },
-      {
-        "label": "主资产标签号",
-        "key": "主资产标签号",
-        "type": "text",
-        "match": "contains",
-        "multiple": false,
-        "optionSet": "主资产标签号"
-      },
-      {
-        "label": "耗材小类",
-        "key": "资产小类",
-        "type": "lookup",
-        "match": "in",
-        "multiple": true,
-        "optionSet": "minor"
-      }
-    ],
-    "columns": [
-      {
-        "label": "耗材物料编码",
-        "key": "耗材物料编码",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "耗材物料描述",
-        "key": "耗材物料描述",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "耗材标签号",
-        "key": "耗材标签号",
-        "format": "text",
-        "width": 210
-      },
-      {
-        "label": "主资产标签号",
-        "key": "主资产标签号",
-        "format": "text",
-        "width": 210
-      },
-      {
-        "label": "总类",
-        "key": "总类",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "耗材大类",
-        "key": "耗材大类",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "耗材小类",
-        "key": "耗材小类",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "不含税单价",
-        "key": "不含税单价",
-        "format": "money",
-        "width": 160
-      },
-      {
-        "label": "税金",
-        "key": "税金",
-        "format": "money",
-        "width": 160
-      },
-      {
-        "label": "耗材数量",
-        "key": "耗材数量",
-        "format": "integer",
-        "width": 110
-      },
-      {
-        "label": "耗材公司",
-        "key": "耗材公司",
-        "format": "text",
-        "width": 260
-      },
-      {
-        "label": "耗材状态",
-        "key": "耗材状态",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "耗材责任人",
-        "key": "耗材责任人",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "仓库",
-        "key": "仓库",
-        "format": "text",
-        "width": 260
-      },
-      {
-        "label": "耗材责任人公司",
-        "key": "耗材责任人公司",
-        "format": "text",
-        "width": 260
-      },
-      {
-        "label": "耗材责任人板块",
-        "key": "耗材责任人板块",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "耗材责任人部门",
-        "key": "耗材责任人部门",
-        "format": "text",
-        "width": 260
-      },
-      {
-        "label": "申请单号",
-        "key": "申请单号",
-        "format": "text",
-        "width": 210
-      },
-      {
-        "label": "申请人",
-        "key": "申请人",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "申请人公司",
-        "key": "申请人公司",
-        "format": "text",
-        "width": 260
-      },
-      {
-        "label": "申请人板块",
-        "key": "申请人板块",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "申请人部门",
-        "key": "申请人部门",
-        "format": "text",
-        "width": 260
-      },
-      {
-        "label": "采购单",
-        "key": "采购单",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "采购申请单号",
-        "key": "采购申请单号",
-        "format": "text",
-        "width": 210
-      },
-      {
-        "label": "是否领用",
-        "key": "是否领用",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "是否占用",
-        "key": "是否占用",
-        "format": "text",
-        "width": 160
-      },
-      {
-        "label": "耗材领用单号",
-        "key": "耗材领用单号",
-        "format": "text",
-        "width": 210
-      }
-    ],
-    "exportColumns": [
-      {
-        "label": "耗材物料编码",
-        "key": "耗材物料编码",
-        "format": "text"
-      },
-      {
-        "label": "耗材物料描述",
-        "key": "耗材物料描述",
-        "format": "text"
-      },
-      {
-        "label": "耗材标签号",
-        "key": "耗材标签号",
-        "format": "text"
-      },
-      {
-        "label": "主资产标签号",
-        "key": "主资产标签号",
-        "format": "text"
-      },
-      {
-        "label": "总类",
-        "key": "总类",
-        "format": "text"
-      },
-      {
-        "label": "耗材大类",
-        "key": "耗材大类",
-        "format": "text"
-      },
-      {
-        "label": "耗材小类",
-        "key": "耗材小类",
-        "format": "text"
-      },
-      {
-        "label": "不含税单价",
-        "key": "不含税单价",
-        "format": "money"
-      },
-      {
-        "label": "税金",
-        "key": "税金",
-        "format": "money"
-      },
-      {
-        "label": "耗材数量",
-        "key": "耗材数量",
-        "format": "raw"
-      },
-      {
-        "label": "耗材公司",
-        "key": "耗材公司",
-        "format": "text"
-      },
-      {
-        "label": "耗材状态",
-        "key": "耗材状态",
-        "format": "text"
-      },
-      {
-        "label": "耗材责任人",
-        "key": "耗材责任人",
-        "format": "text"
-      },
-      {
-        "label": "仓库",
-        "key": "仓库",
-        "format": "text"
-      },
-      {
-        "label": "耗材责任人公司",
-        "key": "耗材责任人公司",
-        "format": "text"
-      },
-      {
-        "label": "耗材责任人板块",
-        "key": "耗材责任人板块",
-        "format": "text"
-      },
-      {
-        "label": "耗材责任人部门",
-        "key": "耗材责任人部门",
-        "format": "text"
-      },
-      {
-        "label": "申请单号",
-        "key": "申请单号",
-        "format": "text"
-      },
-      {
-        "label": "申请人",
-        "key": "申请人",
-        "format": "text"
-      },
-      {
-        "label": "申请人公司",
-        "key": "申请人公司",
-        "format": "text"
-      },
-      {
-        "label": "申请人板块",
-        "key": "申请人板块",
-        "format": "text"
-      },
-      {
-        "label": "申请人部门",
-        "key": "申请人部门",
-        "format": "text"
-      },
-      {
-        "label": "采购单",
-        "key": "采购单",
-        "format": "text"
-      },
-      {
-        "label": "采购申请单号",
-        "key": "采购申请单号",
-        "format": "text"
-      },
-      {
-        "label": "是否领用",
-        "key": "是否领用",
-        "format": "text"
-      },
-      {
-        "label": "是否占用",
-        "key": "是否占用",
-        "format": "text"
-      },
-      {
-        "label": "耗材领用单号",
-        "key": "耗材领用单号",
-        "format": "text"
-      }
-    ],
-    "sheetName": "统一申请耗材明细报表",
-    "moreStart": null,
-    "selectRows": false,
-    "sortable": false,
-    "exportLabel": "导出",
-    "supplemental": true,
-    "sortKeys": [
-      {
-        "key": "claimState",
-        "order": "ascend"
-      },
-      {
-        "key": "materialCode",
-        "order": "ascend"
-      },
-      {
-        "key": "tag",
-        "order": "ascend"
-      }
-    ],
-    "range": "consumableClaimDetails"
   },
   {
     "id": "report-8-1",

@@ -113,14 +113,14 @@ export const consumableClaimDetails = consumableClaims.map((row, index) => {
     inbound: { warehouse: index % 3 === 2 ? null : inboundWarehouse },
     card: row.kind === '低值耐用品' ? { warehouse: index % 3 === 2 ? null : cardWarehouse } : null,
   };
-  const values = { ...row.values, '耗材物料编码': row.values['物料编码'], '耗材物料描述': row.values['耗材名称'],
+  const values = { ...row.values, '净值': null, 'EBS资产原值': null, '累计折旧': null, '耗材物料编码': row.values['物料编码'], '耗材物料描述': row.values['耗材名称'],
     '耗材大类': row.values['耗材大类名称'], '耗材小类': row.values['耗材小类名称'], '总类': row.kind,
     '不含税单价': 50, '税金': source.inboundDetail.taxAmount, '耗材数量': 2, '耗材公司': row.values['公司'], '耗材状态': '在用',
     '耗材责任人': row.values['申请人'], '耗材责任人公司': row.values['公司'], '耗材责任人板块': row.values['板块'],
     '耗材责任人部门': row.values['申请人部门'], '申请人公司': row.values['公司'], '申请人板块': row.values['板块'],
     '是否领用': source.claim.status === 1 ? '是' : '否', '是否占用': source.claim.status === 3 ? '是' : '否',
-    '采购单': row.values['PO单号'], '耗材领用单号': row.values['领用出库单号'] };
-  return { ...row, detailSource: source, flagSource: '领用源状态1为已领用，3为占用', sort: { ...row.sort, claimState: row.documentStatus, materialCode: row.values['物料编码'], tag: row.values['耗材标签号'] }, id: `detail-${row.id}`, values, exports: { ...values }, filters: { ...row.filters,
+    '采购单': row.values['PO单号'], '耗材领用单号': '' };
+  return { ...row, grain: row.kind === '低值耐用品' ? '耗材卡片.耗材标签号' : '耗材领用单.物料', detailSource: source, flagSource: '领用源状态1为已领用，3为占用', sort: { ...row.sort, claimState: row.documentStatus, materialCode: row.values['物料编码'], tag: row.values['耗材标签号'] }, id: `detail-${row.id}`, values, exports: { ...values }, filters: { ...row.filters,
     '耗材公司': row.filters['公司'], '耗材责任人公司': row.filters['公司'], '申请人公司': row.filters['公司'],
     '耗材责任人': row.filters['申请人'], '耗材责任人查询': row.filters['申请人'], '耗材责任人部门': row.filters['申请人部门'],
     '耗材标签号': values['耗材标签号'], '耗材物料编码': values['耗材物料编码'], '是否领用': values['是否领用'], '是否占用': values['是否占用'], '耗材责任人板块': '17', '申请人板块': '17', '耗材物料描述': values['耗材物料描述'],

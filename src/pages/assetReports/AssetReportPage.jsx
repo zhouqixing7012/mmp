@@ -13,7 +13,6 @@ export default function AssetReportPage({ reportId, access = DEFAULT_REPORT_ACCE
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
   const [sort, setSort] = useState(null);
   const [selectedKeys, setSelectedKeys] = useState([]);
-  const [detail, setDetail] = useState(null);
   const queryResult = useMemo(() => {
     try { return { rows: queryReport(reportId, applied, sort, access), error: null }; }
     catch (error) { return { rows: [], error: error.message }; }
@@ -50,9 +49,7 @@ export default function AssetReportPage({ reportId, access = DEFAULT_REPORT_ACCE
       sorter: definition.sortable && !(reportId === 'report-8-1' && ['报废原值', '报废净值'].includes(column.key))
         && !(reportId === 'report-5-1' && ['含税金额', '资产所属板块', '资产账簿'].includes(column.key)),
       sortOrder: sort?.key === column.key ? sort.order : null,
-      render: (value, record) => definition.selectRows && column.key === '耗材标签号'
-        ? <Button type="link" className="!p-0" onClick={() => setDetail(record)}>{value}</Button>
-        : ['审批节点', '当前审批人', '当前审批人名称'].includes(column.key)
+      render: (value) => ['审批节点', '当前审批人', '当前审批人名称'].includes(column.key)
           ? <span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{formatReportValue(value, column.format)}</span>
           : formatReportValue(value, column.format),
     })),
@@ -79,11 +76,5 @@ export default function AssetReportPage({ reportId, access = DEFAULT_REPORT_ACCE
           if (extra.action === 'sort') { setSort(sorter.order ? { key: sorter.columnKey, order: sorter.order } : null); setPagination(previous => ({ ...previous, current: 1 })); }
         }} />
     </Card>
-    <Modal open={Boolean(detail)} title="耗材详情" width={960} onCancel={() => setDetail(null)} footer={null} destroyOnHidden>
-      {detail && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {definition.exportColumns.map(column => <div key={column.label}><Typography.Text type="secondary">{column.label}：</Typography.Text>
-          <Typography.Text>{formatReportValue(detail.exports?.[column.key] ?? detail.values[column.key], column.format)}</Typography.Text></div>)}
-      </div>}
-    </Modal>
   </div>;
 }

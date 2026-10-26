@@ -22,7 +22,7 @@ test('缺少授权立即失败，选中其他台账不能绕过权限', () => {
   expect(() => query('report-1-1', {}, { ...all, canView: false })).toThrow('无台账及卡片查看权限');
   expect(() => exported('report-1-1', {}, [], { ...all, canView: false })).toThrow('无台账及卡片查看权限');
   const outside = assetReportRows['report-2-1'].find(row => row.scope === '上海媒体');
-  expect(exported('report-2-1', {}, [outside.id], permission(['集团']))).toHaveLength(1);
+  expect(exported('report-2-1', {}, [outside.id], permission(['集团']))).toHaveLength(query('report-2-1', {}, permission(['集团'])).length + 1);
 });
 test('卡片授权限制列表和导出', () => {
   const tag = assetReportRows['report-1-1'][0].filters['资产标签号'], access = { ...all, allowedAssetTags: [tag] };
@@ -123,13 +123,12 @@ test('耗材两种粒度齐全，普通耗材不生成卡片标签和EBS净值',
   expect(new Set(rows.map(row => row.kind))).toEqual(new Set(['耗材', '低值耐用品']));
   expect(rows.filter(row => row.kind === '耗材').every(row => row.grain === '耗材领用单.物料' && !row.filters['资产标签号'] && !row.filters['耗材标签号'] && row.values['净值'] === null)).toBe(true);
   expect(rows.filter(row => row.kind === '低值耐用品').every(row => row.grain === '耗材卡片.耗材标签号' && row.values['耗材标签号'])).toBe(true);
-  expect(exported('report-2-1', {}, [rows[0].id])).toHaveLength(2);
+  expect(exported('report-2-1', {}, [rows[0].id])).toHaveLength(rows.length + 1);
   const data = exported('report-2-1', {}, [rows[0].id]);
-  expect(data[1][data[0].indexOf('仓库')]).toBe(rows[0].exports['库房']);
-  expect(data[1][data[0].indexOf('仓库')]).not.toMatch(/^I\d+\./);
+  expect(data[1][data[0].indexOf('仓库')]).toBe(rows[0].values['仓库']);
 });
 test('耗材结果读取领用状态、原税额和仓库，每次查询更新且导出一致', () => {
-  const rows = query('report-7-2');
+  const rows = query('report-2-1');
   expect(rows.some(row => row.detailSource.claim.status === 1 && row.values['是否领用'] === '是' && row.values['是否占用'] === '否')).toBe(true);
   expect(rows.some(row => row.detailSource.claim.status === 3 && row.values['是否领用'] === '否' && row.values['是否占用'] === '是')).toBe(true);
   rows.forEach(row => {
@@ -144,19 +143,19 @@ test('耗材结果读取领用状态、原税额和仓库，每次查询更新�
   const source = ordinary.detailSource, savedTax = source.inboundDetail.taxAmount, savedStatus = source.claim.status;
   try {
     source.inboundDetail.taxAmount = 23.45; source.claim.status = 3;
-    const fresh = query('report-7-2').find(row => row.id === ordinary.id);
+    const fresh = query('report-2-1').find(row => row.id === ordinary.id);
     expect(fresh.values['税金']).toBe(23.45);
     expect(fresh.values['是否领用']).toBe('否'); expect(fresh.values['是否占用']).toBe('是');
     expect(fresh.values['仓库']).toBe(`${source.inbound.warehouse.warehouseCode}.${source.inbound.warehouse.warehouseDescription}`);
-    const data = exported('report-7-2', { '耗材物料编码': fresh.values['耗材物料编码'], '申请人公司': [fresh.filters['申请人公司']] });
+    const data = exported('report-2-1', { '耗材物料编码': fresh.values['耗材物料编码'], '申请人公司': [fresh.filters['申请人公司']] });
     expect(data[1][data[0].indexOf('税金')]).toBe('23.45');
     expect(data[1][data[0].indexOf('仓库')]).toBe(`${source.inbound.warehouse.warehouseCode}.${source.inbound.warehouse.warehouseDescription}`);
   } finally { source.inboundDetail.taxAmount = savedTax; source.claim.status = savedStatus; }
 });
-test('耗材明细列表和选中导出无净值，资产明细净值保留', () => {
+test('耗材明细列表和全部导出无净值，资产明细净值保留', () => {
   expect(getReportDefinition('report-2-1').columns.some(field => field.key === '净值')).toBe(false);
   const rows = queryReport('report-2-1', {}, null, all), data = exported('report-2-1', {}, [rows[0].id]);
-  expect(data).toHaveLength(2); expect(data[0]).not.toContain('净值');
+  expect(data).toHaveLength(rows.length + 1); expect(data[0]).not.toContain('净值');
   expect(getReportDefinition('report-1-1').columns.some(field => field.key === '净值')).toBe(true);
 });
 test('报废金额读取已完成账面源快照，导出一致且移除处置类型', () => {
@@ -243,9 +242,9 @@ test('分隔符和金额缺失保持空值，导出不补值或误判差异', ()
   expect(formatReportValue(row.exports['原值'], 'money')).toBe('');
 });
 test('耗材明细缺领用或入库源保持否和空，卡片仓库空不取入库仓', () => {
-  const base = query('report-7-2').find(row => row.kind === '耗材'), source = base.detailSource;
+  const base = query('report-2-1').find(row => row.kind === '耗材'), source = base.detailSource;
   const saved = { ...source };
-  const read = () => query('report-7-2').find(row => row.id === base.id).values;
+  const read = () => query('report-2-1').find(row => row.id === base.id).values;
   try {
     source.claim = null; source.inbound = null; source.inboundDetail = null; source.card = null;
     expect(read()).toMatchObject({ '是否领用': '否', '是否占用': '否', '仓库': '', '税金': null });
@@ -349,13 +348,13 @@ test("全报表公共查询口径、级别删除、名称与格式保持一致",
   const retired = query("report-8-1");
   expect(retired.map(row => row.values["报废类型"])).toEqual(["已到报废期", "未到报废期", "丢失"]);
   retired.forEach(row => expect(row.values["报废类型"]).toBe(row.accountingSource.assetsSnapshot[0].retirementType));
-  expect(getReportDefinition("report-2-1").filters.find(f => f.label === "部门").multiple).toBe(false);
+  expect(getReportDefinition("report-2-1").filters.find(f => f.label === "耗材责任人部门").multiple).toBe(true);
 });
 
 // 公共基础资料不能缩减为当前报表的少量样本。
 test('板块、用途和新增类型与维护共用完整目录，保留筛选编码', () => {
   const { ASSET_PLATE_OPTIONS } = require('../config/assetPlates');
-  const { ASSET_PURPOSE_OPTIONS, ASSET_ADD_TYPE_OPTIONS, CONSUMABLE_ADD_TYPE_OPTIONS } = require('../config/assetFieldOptions');
+  const { ASSET_PURPOSE_OPTIONS, ASSET_ADD_TYPE_OPTIONS } = require('../config/assetFieldOptions');
   const def = getReportDefinition('report-5-1');
   const plate = def.filters.find(field => field.optionSet === 'plate');
   expect(getReportOptions(def, plate).map(option => option.label)).toEqual(ASSET_PLATE_OPTIONS);
@@ -367,7 +366,8 @@ test('板块、用途和新增类型与维护共用完整目录，保留筛选�
   expect(getReportOptions(asset, asset.filters.find(field => field.optionSet === 'purpose'))).toEqual(ASSET_PURPOSE_OPTIONS);
   expect(queryReport('report-1-1', { '资产所属板块': ['17'], '资产用途': ['70'] }).length).toBeGreaterThan(0);
   const consumable = getReportDefinition('report-2-1');
-  expect(getReportOptions(consumable, consumable.filters.find(field => field.optionSet === 'addType')).map(option => option.value)).toEqual(CONSUMABLE_ADD_TYPE_OPTIONS);
+  expect(consumable.filters.some(field => field.optionSet === 'addType')).toBe(false);
+  expect(getReportOptions(consumable, consumable.filters.find(field => field.label === '申请人板块')).map(option => option.label)).toEqual(ASSET_PLATE_OPTIONS);
 });
 test('成本中心共用维护目录并保留有来源的报表历史引用', () => {
   const { getSharedCostCenters } = require('./assetReferenceOptions');
@@ -386,11 +386,28 @@ test('各角色人员候选共用授权引用，按工号匹配且结果权限�
   expect(optionsFor('report-3-1', '事务执行人')).toEqual(expect.arrayContaining([expect.objectContaining({ value: '213852', name: '孙志强' })]));
   expect(optionsFor('report-1-1', '资产责任人工号').some(option => option.value === '215410')).toBe(false);
   expect(queryReport('report-3-1', { 事务执行人: ['213852'] }).every(row => row.scope === '集团')).toBe(true);
-  expect(queryReport('report-7-2', { 申请人: ['220784'], 耗材责任人: ['220784'] }).length).toBeGreaterThan(0);
+  expect(queryReport('report-2-1', { 申请人: ['220784'], 耗材责任人: ['220784'] }).length).toBeGreaterThan(0);
 });
 
 test('直接调用公共目录也先校验权限契约', () => {
   const { getSharedCostCenters, getSharedPeople } = require('./assetReferenceOptions');
   expect(() => getSharedCostCenters({ userId: 'missing' })).toThrow('缺少台账及卡片权限信息');
   expect(() => getSharedPeople({ userId: 'missing' })).toThrow('缺少台账及卡片权限信息');
+});
+
+
+test('耗材明细按原始图片字段查询导出，统领不再串入明细页', () => {
+  const d = getReportDefinition('report-2-1');
+  expect(d.filters.map(f => f.label)).toEqual(['申请人','是否领用','耗材标签号','申请人公司','是否占用','主资产标签号','申请人板块','耗材物料编码','耗材责任人公司','耗材公司','耗材物料描述','耗材责任人板块','耗材大类','耗材责任人','耗材责任人部门','耗材小类']);
+  expect(d.columns).toHaveLength(27);
+  expect(d.exportColumns.map(c => c.label)).toEqual(d.columns.map(c => c.label));
+  expect(d.selectRows).toBe(false);
+  expect(() => getReportDefinition('report-7-2')).toThrow('未知报表');
+  const rows = query('report-2-1', { 是否领用: '是' }, permission(['集团']));
+  const data = exported('report-2-1', { 是否领用: '是' }, ['stale-selection'], permission(['集团']));
+  expect(data).toHaveLength(rows.length + 1);
+  expect(rows.every(row => row.scope === '集团' && row.values['是否领用'] === '是')).toBe(true);
+  expect(data[0]).not.toContain('原值');
+  expect(data[0]).toContain('不含税单价');
+  rows.forEach(row => expect(row.values['耗材领用单号']).not.toBe(row.values['领用出库单号'] || 'no-outbound'));
 });
