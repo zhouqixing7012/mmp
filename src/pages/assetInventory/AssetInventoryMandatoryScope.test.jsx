@@ -53,7 +53,8 @@ test('复盘创建范围按必盘阈值标记，查看全部只显示当前范�
   render(<CreateProjectView creator="冯丽婷" initialProject={{ ...base, mandatoryNetValueAbove: 0 }} scopeAssetKeys={chosen.map((asset) => asset.key)} onBack={() => {}} onGenerated={() => {}} />);
   chosen.forEach((asset) => expect(mandatoryCell(asset.assetTag)).toHaveTextContent(Number(asset.netValue) > 0 ? '是' : '否'));
   fireEvent.click(screen.getByRole('button', { name: '查看全部' }));
-  expect(within(screen.getByRole('dialog')).getAllByRole('row')).toHaveLength(chosen.length + 1);
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(within(screen.getByRole('table', { name: '必盘范围资产' })).getAllByRole('row')).toHaveLength(chosen.length + 1);
   fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
   expect(getInventoryPhotoSnapshot('MAND-SCOPE').assets.map((asset) => [asset.key, asset.isMandatory])).toEqual(chosen.map((asset) => [asset.key, Number(asset.netValue) > 0]));
 });
@@ -197,4 +198,18 @@ test.each(['初盘', '抽盘', '复盘'])('实际编辑年度%s保存和快照�
   fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
   expect(onGenerated).toHaveBeenCalledTimes(1);
   expect(onGenerated.mock.calls[0][0].period).toBe('2020年');
+});
+
+
+test('清单选择只筛选下方范围明细，查看全部恢复，复盘统计不随查看范围缩小', () => {
+  const props = { initialProject: base, creator: '冯丽婷', onBack: jest.fn(), onGenerated: jest.fn() };
+  const view = render(<CreateProjectView {...props} scopePreviewAssetKeys={[chosen[0].key]} />);
+  expect(screen.queryByRole('dialog')).toBeNull();
+  const table = screen.getByRole('table', { name: '必盘范围资产' });
+  expect(within(table).getByRole('row', { name: new RegExp(chosen[0].assetTag) })).toBeInTheDocument();
+  expect(within(table).queryByRole('row', { name: new RegExp(chosen[1].assetTag) })).toBeNull();
+  const count = screen.getByRole('group', { name: '本次复盘数量' }).textContent;
+  view.rerender(<CreateProjectView {...props} scopePreviewAssetKeys={null} />);
+  expect(within(screen.getByRole('table', { name: '必盘范围资产' })).getByRole('row', { name: new RegExp(chosen[1].assetTag) })).toBeInTheDocument();
+  expect(screen.getByRole('group', { name: '本次复盘数量' }).textContent).toBe(count);
 });

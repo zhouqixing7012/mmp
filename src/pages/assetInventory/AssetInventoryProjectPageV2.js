@@ -71,7 +71,7 @@ function resolveProject(root, sourceElement) {
   return current ? resolveProjectFromRow(current) : resolveProjectFromDetail(root);
 }
 
-export default function AssetInventoryProjectPageV2({ variantLabel = '方案二', menuLabel, scopeAssetKeys, onDraftProjectChange } = {}) {
+export default function AssetInventoryProjectPageV2({ variantLabel = '方案二', menuLabel, scopeAssetKeys, scopePreviewAssetKeys, onDraftProjectChange } = {}) {
   const { allowedRanges } = useAssetInventoryVariant();
   const [planProject, setPlanProject] = useState(() => readDemoData(`inventory-plan-session:${PROJECT_INFO.projectNo}:${allowedRanges.join('|')}`, null)?.project || PROJECT_INFO);
   const allowedRangeKey = allowedRanges.join('|');
@@ -586,7 +586,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     {activePlan && <AssetInventoryPlanAssetListV2 currentOperator={creator} plan={planRows.find(row => row.planNo === activePlan.planNo) || activePlan} project={planProject} assets={assetsForPlan(planRows.find(row => row.planNo === activePlan.planNo) || activePlan)} onAssetsChange={(updater) => changePlanAssets(activePlan, updater)} onBack={() => setActivePlan(null)} />}
     {imageReviewOpen && <AssetInventoryImageReviewV2 project={planProject} onBack={() => setImageReviewOpen(false)} />}
     {progressOpen && <AssetInventoryProgressV2 project={planProject} plans={planRows} assetsForPlan={assetsForPlan} onBack={() => setProgressOpen(false)} />}
-    <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage getCloseBlockReason={closeBlockReasonForProject} onCloseProject={handleProjectClose} onDraftProjectChange={onDraftProjectChange} creator={creator} scopeAssetKeys={scopeAssetKeys} snapshotEditRequest={snapshotEditRequest} onProjectGenerated={(project) => {
+    <div ref={baseContainerRef} style={{ display: overlayOpen || showProjectListV2 ? 'none' : 'block' }}><AssetInventoryProjectPage getCloseBlockReason={closeBlockReasonForProject} onCloseProject={handleProjectClose} onDraftProjectChange={onDraftProjectChange} creator={creator} scopeAssetKeys={scopeAssetKeys} scopePreviewAssetKeys={scopePreviewAssetKeys} snapshotEditRequest={snapshotEditRequest} onProjectGenerated={(project) => {
       setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '快照生成' }));
       setPlanProject(project);
       setPlanRows([]);

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, DatePicker, InputNumber, Modal, Select, Space, Table, TreeSelect, Typography, message as antdMessage } from 'antd';
+import { Button, Card, DatePicker, InputNumber, Select, Space, Table, TreeSelect, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import { Eye, Search, Trash2 } from 'lucide-react';
 import {
@@ -61,7 +61,7 @@ export function getScheme3InventoryDemoOptions(allowedRanges) {
   };
 }
 
-export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', sourceAssets: suppliedAssets = ASSET_ROWS, onScopeAssetsChange }) {
+export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', sourceAssets: suppliedAssets = ASSET_ROWS, onScopeAssetsChange, onPreviewAssets }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const options = useMemo(() => getScheme3InventoryDemoOptions(allowedRanges), [allowedRanges]);
@@ -73,7 +73,6 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
   });
   const [rows, setRows] = useState(() => SCOPE_ROWS.map((row) => ({ ...row })));
   const [selectedKeys, setSelectedKeys] = useState([]);
-  const [previewKeys, setPreviewKeys] = useState(null);
   const updateRows = setRows;
   useEffect(() => {
     onScopeAssetsChange?.([...new Set(rows.flatMap((row) => row.assetKeys || []))]);
@@ -94,7 +93,7 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
     { title: 'Building', dataIndex: 'building', width: 180 },
     { title: 'Floor', dataIndex: 'floor', width: 100 },
     { title: '资产责任人职级', dataIndex: 'ownerLevel', width: 130 },
-    { title: '清单', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => row.assetKeys ? setPreviewKeys(row.assetKeys) : messageApi.warning('历史演示范围未关联资产明细，请重新生成查询')}>查看</Button> },
+    { title: '清单', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => row.assetKeys ? onPreviewAssets?.(row.assetKeys) : messageApi.warning('历史演示范围未关联资产明细，请重新生成查询')}>查看</Button> },
   ];
 
   const generate = () => {
@@ -170,7 +169,7 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
       <div className="mb-3 flex items-center justify-between">
         <Typography.Text strong>盘点范围明细</Typography.Text>
         <Space>
-          <Button icon={<Eye size={14} />} onClick={() => setPreviewKeys([...new Set(rows.flatMap((row) => row.assetKeys || []))])}>查看全部</Button>
+          <Button icon={<Eye size={14} />} onClick={() => onPreviewAssets?.(null)}>查看全部</Button>
           <Button
             danger
             icon={<Trash2 size={14} />}
@@ -200,14 +199,6 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
         scroll={{ x: 1600 }}
         pagination={false}
       />
-      <Modal open={previewKeys !== null} title="盘点范围资产明细" width={900} footer={<Button onClick={() => setPreviewKeys(null)}>返回</Button>} onCancel={() => setPreviewKeys(null)}>
-        <Table rowKey="key" size="small" columns={[
-          { title: '资产标签号', dataIndex: 'assetTag' },
-          { title: '资产说明', dataIndex: 'description' },
-          { title: '原值', dataIndex: 'originalValue' },
-          { title: '净值', dataIndex: 'netValue' },
-        ]} dataSource={sourceAssets.filter((asset) => previewKeys?.includes(asset.key))} pagination={false} />
-      </Modal>
     </Card>
   );
 }

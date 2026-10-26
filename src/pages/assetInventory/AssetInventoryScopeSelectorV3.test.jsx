@@ -22,7 +22,7 @@ jest.mock('antd', () => {
     Card: Box, Space: Box, Typography: { Text: Box }, TreeSelect,
     Button: ({ children, onClick }) => <button onClick={onClick}>{children}</button>,
     Select: () => null, InputNumber: () => null, DatePicker: { RangePicker: () => null }, Modal: () => null,
-    Table: ({ dataSource }) => <div>{dataSource.map(row => <span key={row.key}>{`${row.organization}: ${row.department}`}</span>)}</div>,
+    Table: ({ dataSource, columns }) => <div>{dataSource.map(row => <div key={row.key}><span>{`${row.organization}: ${row.department}`}</span>{columns.find(column => column.title === '清单').render(null, row)}</div>)}</div>,
     message: { useMessage: () => [{ warning: jest.fn(), success: jest.fn() }, null] },
   };
 });
@@ -38,4 +38,17 @@ test('项目只有公司部门合并树，候选受范围限制，选公司生�
   fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
   expect(changed).toHaveBeenLastCalledWith(['a', 'b']);
   expect(screen.getByText('甲公司: 研发部.一组、财务部')).toBeInTheDocument();
+});
+
+
+test('查看范围分录和查看全部通知下方明细切换，不打开清单弹窗', () => {
+  const preview = jest.fn();
+  render(<AssetInventoryScopeSelectorV3 onPreviewAssets={preview} />);
+  fireEvent.click(screen.getByRole('button', { name: '选择甲公司' }));
+  fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
+  fireEvent.click(screen.getByRole('button', { name: '查看' }));
+  expect(preview).toHaveBeenLastCalledWith(['a', 'b']);
+  expect(screen.queryByRole('dialog')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '查看全部' }));
+  expect(preview).toHaveBeenLastCalledWith(null);
 });

@@ -19,11 +19,14 @@ export default function AssetInventoryProjectPageV3() {
   const [scopeSlot, setScopeSlot] = useState(null);
   const [projectType, setProjectType] = useState('初盘');
   const [scopeAssetKeys, setScopeAssetKeys] = useState(null);
+  const [scopePreviewAssetKeys, setScopePreviewAssetKeys] = useState(null);
   const [draftProject, setDraftProject] = useState(null);
   const sourceAssets = inventoryProjectScopeSource(draftProject || { projectType: '初盘' }, {
     allAssets: ASSET_ROWS, initialSnapshot: getInventoryPhotoSnapshot(draftProject?.initialProjectNo) || PROJECT_PLAN_SNAPSHOTS?.[draftProject?.initialProjectNo],
     initialAssets: PROJECT_PLAN_ASSETS[draftProject?.initialProjectNo],
   });
+
+  useEffect(() => { setScopePreviewAssetKeys(null); }, [draftProject?.projectNo, draftProject?.initialProjectNo]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -98,8 +101,8 @@ export default function AssetInventoryProjectPageV3() {
   return (
     <AssetInventoryVariantProvider allowedRanges={V3_RANGES}>
       <div ref={rootRef} className="w-full">
-        <AssetInventoryProjectPageV2 menuLabel="盘点项目" scopeAssetKeys={scopeAssetKeys} onDraftProjectChange={setDraftProject} />
-        {scopeSlot ? createPortal(<AssetInventoryScopeSelectorV3 key={`${draftProject?.projectNo}-${draftProject?.initialProjectNo}-${draftProject?.inventoryType}`} sourceAssets={sourceAssets} projectType={draftProject?.projectType || projectType} onScopeAssetsChange={setScopeAssetKeys} />, scopeSlot) : null}
+        <AssetInventoryProjectPageV2 menuLabel="盘点项目" scopeAssetKeys={scopeAssetKeys} scopePreviewAssetKeys={scopePreviewAssetKeys} onDraftProjectChange={setDraftProject} />
+        {scopeSlot ? createPortal(<AssetInventoryScopeSelectorV3 key={`${draftProject?.projectNo}-${draftProject?.initialProjectNo}-${draftProject?.inventoryType}`} sourceAssets={sourceAssets} projectType={draftProject?.projectType || projectType} onScopeAssetsChange={setScopeAssetKeys} onPreviewAssets={setScopePreviewAssetKeys} />, scopeSlot) : null}
       </div>
     </AssetInventoryVariantProvider>
   );
