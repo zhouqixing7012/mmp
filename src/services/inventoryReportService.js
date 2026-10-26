@@ -16,6 +16,13 @@ export function normalizeInventoryReportDetail(row, year) {
   return { ...row, ...(row['盘点状态'] === '待查' ? { 报失当月资产净值: net } : {}), 赔偿金额: null, 损失: null };
 }
 
+// 年度变化取本年减上年；缺少任一年来源时保留空值。
+export function inventoryYearDifference(current, previous) {
+  if (current == null || previous == null || current === '' || previous === '') return null;
+  if (![current, previous].every(value => Number.isFinite(Number(value)))) throw new Error('年度对比数据不是有效数值');
+  return Number(current) - Number(previous);
+}
+
 export function getInventoryReport(year) {
   const selectedYear = Number(year);
   if (![inventoryReportTemplate.year, inventoryReportActuals.year].includes(selectedYear)) return null;
@@ -27,7 +34,8 @@ export function getInventoryReport(year) {
   const indicators = [['资产数量（件）', 'quantity', 1], ['资产原值（万元）', 'original', 10000], ['资产净值（万元）', 'net', 10000]].map(([name, field, unit]) => {
     const rate = growth(current[field], previous?.[field]);
     const lastRate = previous2 ? growth(previous[field], previous2[field]) : null;
-    return { name, total: current[field] / unit, change: previous ? (current[field] - previous[field]) / unit : null, rate, rateChange: rate == null || lastRate == null ? null : (rate - lastRate) * 100 };
+    const change = previous ? inventoryYearDifference(current[field], previous[field]) : null;
+    return { name, total: current[field] / unit, change: change == null ? null : change / unit, rate, rateChange: rate == null || lastRate == null ? null : (rate - lastRate) * 100 };
   });
   const isTemplateYear = selectedYear === inventoryReportTemplate.year;
   const hasActualDetails = Object.prototype.hasOwnProperty.call(inventoryReportActuals.detailsByYear, selectedYear);
@@ -170,7 +178,11 @@ export function exportInventoryReport(report) {
   downloadInventoryReportFile(buildInventoryReportWorkbook(report), `${report.year}年度资产盘点报告-ES.xlsx`);
 }
 export function getIncrementRows(year = inventoryReportActuals.year) {
-  if (Number(year) === inventoryReportActuals.year) return inventoryReportActuals.increments;
+  if (Number(year) === inventoryReportActuals.year) {
+    const current = inventoryReportActuals.history.find(row => row.year === Number(year));
+    const previous = inventoryReportActuals.history.find(row => row.year === Number(year) - 1);
+    return inventoryReportActuals.increments.map(row => row.category === '合计' ? { ...row, value: inventoryYearDifference(current?.quantity, previous?.quantity) } : row);
+  }
   return [
     ['台式机', 'PC-主机'], ['台式机', 'PC-显示器'], ['台式机', 'PC-配件'], ['台式机', '小计'],
     ['笔记本', '笔记本'], ['笔记本', '笔记本-配件'], ['笔记本', '小计'],

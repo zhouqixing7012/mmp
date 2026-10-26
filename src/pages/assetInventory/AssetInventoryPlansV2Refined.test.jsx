@@ -74,3 +74,14 @@ test('楼层汇总多范围计划可按授权及范围查询展示，批量日�
  fireEvent.click(screen.getByRole('button',{name:'导出'}));
  expect(downloadInventoryPlans).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({planNo:'MIXED'})]),expect.any(Function),'R2',{project:expect.objectContaining({projectType:'复盘'})});
 });
+
+test('部分计划已启动时仍可删除草稿计划，通知父级释放其资产分配', () => {
+  const started = { key: 'a', planNo: 'A', range: '员工', status: '盘点中' };
+  const draft = { key: 'b', planNo: 'B', range: '公共', status: '草稿' };
+  const setRows = jest.fn(); const onPlansDeleted = jest.fn();
+  render(<AssetInventoryPlansV2Refined project={{ creator: '孙志强', projectNo: 'P', projectType: '初盘', status: '盘点中' }} currentOperator="孙志强" rows={[draft, started]} setRows={setRows} assetsForPlan={() => []} onPlansDeleted={onPlansDeleted} />);
+  fireEvent.click(screen.getByRole('button', { name: '选择计划' }));
+  fireEvent.click(screen.getByRole('button', { name: '删除盘点计划' }));
+  expect(onPlansDeleted).toHaveBeenCalledWith([expect.objectContaining(draft)]);
+  expect(setRows.mock.calls[0][0]([draft, started])).toEqual([started]);
+});

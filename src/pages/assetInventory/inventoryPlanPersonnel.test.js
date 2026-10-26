@@ -50,7 +50,7 @@ test('抽盘默认库房取编号对应管理员，自定义初盘空值和未�
   expect(initializeInventoryPlanPersonnel({ projectType: '抽盘' }, [warehouse])[0].executor).toBe('114111-杨芊');
   expect(initializeInventoryPlanPersonnel(initial, [warehouse], {}, 'custom')[0].executor).toBe('-');
   expect(initializeInventoryPlanPersonnel(initial, assets)[0].supervisor).toBe('-');
-  expect(() => initializeInventoryPlanPersonnel(initial, assets, { executor: '丙' }, 'custom')).toThrow('尚未定义');
+  expect(initializeInventoryPlanPersonnel(initial, assets, { executor: '丙' }, 'custom').every(asset => asset.executor === '丙')).toBe(true);
   expect(initializeInventoryPlanPersonnel(initial, [{ ...assets[0], departmentAssistant: '助理' }], {}, 'custom')[0].supervisor).toBe('助理');
 });
 
@@ -77,4 +77,11 @@ test('抽盘员工默认取责任人和部门助理，库房编号是管理员�
   expect(initializeInventoryPlanPersonnel(project, [{ inventoryRange: '库房', warehouseCode: 'I0001', locationKeeper: '旧缓存管理员' }])[0]).toMatchObject({ executor: '114111-杨芊', supervisor: '114111-杨芊' });
   expect(initializeInventoryPlanPersonnel(project, [{ inventoryRange: '库房', warehouse: 'I0001' }])[0].executor).toBe('114111-杨芊');
   expect(initializeInventoryPlanPersonnel(project, [{ inventoryRange: '库房', warehouseCode: '不存在', locationKeeper: '旧缓存管理员', executor: '旧执行人', supervisor: '旧监督人' }])[0].executor).toBe('-');
+});
+
+test('自定义员工初盘指定B优先，未指定的字段继续默认，机房固定人员不受覆盖', () => {
+  const source = [{ inventoryRange: '员工', owner: 'A', departmentAssistant: '助理' }];
+  expect(initializeInventoryPlanPersonnel(initial, source, { executor: 'B' }, 'custom')[0]).toMatchObject({ executor: 'B', supervisor: '助理' });
+  expect(initializeInventoryPlanPersonnel(initial, source, { executor: 'B', supervisor: '监督B' }, 'custom')[0]).toMatchObject({ executor: 'B', supervisor: '监督B' });
+  expect(initializeInventoryPlanPersonnel(initial, [{ ...source[0], inventoryRange: '机房' }], { executor: 'B', supervisor: '监督B' }, 'custom')[0]).toMatchObject({ executor: 'A', supervisor: '-' });
 });

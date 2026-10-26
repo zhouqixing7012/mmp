@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx-js-style';
 import { inventoryReportActuals } from '../data/inventoryReportActuals';
-import { normalizeInventoryReportDetail, getInventoryReport, getInventoryReportSummary, getIncrementRows, getInventoryLossCategoryRows, getInventoryDetailRows, getInventoryHistoryChartRows, getGroupedRowSpans, buildInventoryReportWorkbook, DETAIL_FIELDS, companyQuantity, companyAmount, accounting } from './inventoryReportService';
+import { inventoryYearDifference, normalizeInventoryReportDetail, getInventoryReport, getInventoryReportSummary, getIncrementRows, getInventoryLossCategoryRows, getInventoryDetailRows, getInventoryHistoryChartRows, getGroupedRowSpans, buildInventoryReportWorkbook, DETAIL_FIELDS, companyQuantity, companyAmount, accounting } from './inventoryReportService';
 
 const analysisValues = (row, count = 10) => Array.from({ length: count }, (_, index) => row[index === 0 ? 1 : index + 2]);
 const workbook = year => XLSX.read(XLSX.write(buildInventoryReportWorkbook(getInventoryReport(year)), { type: 'array', bookType: 'xlsx' }), { type: 'array', cellNF: true, cellStyles: true });
@@ -360,4 +360,14 @@ test('页面及导出明细赔偿/损失空白，待查净值与合计采用当�
   const sheet = buildInventoryReportWorkbook(report).Sheets['盘亏资产明细及原因'];
   expect(sheet.J5?.v ?? '').toBe('');
   expect(sheet.K5?.v ?? '').toBe('');
+});
+
+test('年度增量为本年减上年，可为正负或零，缺任一年不补零', () => {
+  expect(inventoryYearDifference(20, 15)).toBe(5);
+  expect(inventoryYearDifference(5, 10)).toBe(-5);
+  expect(inventoryYearDifference(0, 0)).toBe(0);
+  expect(inventoryYearDifference(10, null)).toBeNull();
+  expect(() => inventoryYearDifference('错误', 1)).toThrow('有效数值');
+  expect(getIncrementRows(2026).find(row => row.category === '合计').value).toBe(14456 - 11072);
+  expect(getIncrementRows(2026).find(row => row.category === '电话').value).toBe(3675);
 });

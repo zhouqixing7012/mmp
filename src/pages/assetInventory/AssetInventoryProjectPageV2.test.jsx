@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import AssetInventoryProjectPageV2 from './AssetInventoryProjectPageV2';
+let mockExecutionKeys = ['asset-3'];
 
 jest.mock('./mockData', () => {
   const original = jest.requireActual('./mockData');
@@ -28,13 +29,16 @@ jest.mock('./AssetInventoryProjectPage', () => ({ onProjectGenerated, snapshotEd
   React.useEffect(() => { if (snapshotEditRequest) setPage('编辑盘点项目'); }, [snapshotEditRequest]);
   return <div><h4 className="ant-typography">{page}</h4>
     {page === '盘点项目' ? <button onClick={() => setPage('创建盘点项目')}>创建项目</button>
-      : <><button onClick={() => { setPage('盘点项目详情'); require('./inventoryPhotoRules').saveInventoryPhotoSnapshot({ projectNo: 'CP-new' }, require('./mockData').ASSET_ROWS.filter(asset => ['asset-3','asset-4'].includes(asset.key)).map(asset => ({ ...asset, executeInventory: asset.key === 'asset-3' }))); onProjectGenerated({ creator, projectNo: 'CP-new', projectType: '初盘', status: '快照生成', snapshotAssetKeys: ['asset-3'], scopeSnapshotAssetKeys: ['asset-3','asset-4'] }); }}>生成快照</button><button onClick={() => setPage('盘点项目')}>返 回</button></>}
+      : <><button onClick={() => { setPage('盘点项目详情'); require('./inventoryPhotoRules').saveInventoryPhotoSnapshot({ projectNo: 'CP-new' }, require('./mockData').ASSET_ROWS.filter(asset => ['asset-3','asset-4'].includes(asset.key)).map(asset => ({ ...asset, executeInventory: mockExecutionKeys.includes(asset.key) }))); onProjectGenerated({ creator, projectNo: 'CP-new', projectType: '初盘', status: '快照生成', snapshotAssetKeys: mockExecutionKeys, scopeSnapshotAssetKeys: ['asset-3','asset-4'] }); }}>生成快照</button><button onClick={() => setPage('盘点项目')}>返 回</button></>}
   </div>;
 });
-jest.mock('./AssetInventoryPlansV2Refined', () => ({ project, projectAssets, rows, onPlansStarted, onBack }) => <div data-testid="opened-plan-project">
+jest.mock('./AssetInventoryPlansV2Refined', () => ({ project, projectAssets, rows, setRows, onPlansStarted, onBack, onPlansDeleted, onManualCreate, canManualCreate }) => <div data-testid="opened-plan-project">
   {project.projectNo}|{project.projectType}
   <span data-testid="plan-names">{rows.map(row => row.planName).join(",")}</span><span data-testid="plan-rows">{rows.map(row => `${row.planNo}:${row.status}`).join(",")}</span>
   <span data-testid="location-project-assets">{projectAssets.map(asset => asset.assetTag).join(',')}</span>
+  <button onClick={() => { setRows(current => current.map((plan, i) => i === 0 ? { ...plan, status: '盘点中' } : plan)); onPlansStarted({ ...project, status: '盘点中' }); }}>启动首计划</button>
+  <button onClick={() => { const deleted = rows.filter(plan => plan.status === '草稿'); setRows(current => current.filter(plan => plan.status !== '草稿')); onPlansDeleted(deleted); }}>删除未启动计划</button>
+  <button disabled={!canManualCreate} onClick={onManualCreate}>手工重建计划</button>
   <button onClick={() => onPlansStarted({ ...project, status: '盘点中' })}>启动计划</button><button onClick={onBack}>退出计划</button>
 </div>);
 jest.mock('./AssetInventoryCustomPlanBuilder', () => ({ initialAssets, onConfirmPlan }) => <div><span data-testid="custom-eligible">{initialAssets.map(asset => asset.assetTag).join(',')}</span><button onClick={() => onConfirmPlan({ planName: '新自定义计划', assets: initialAssets, rows: [] })}>确认自定义计划</button></div>);
@@ -43,7 +47,7 @@ jest.mock('./AssetInventoryProgressV2', () => () => null);
 jest.mock('./AssetInventorySnapshotDetailV2', () => ({ onBack, onDeleteSnapshot, onGenerateDefault, onGenerateCustom, project, assets, onSnapshotRowsChange }) => <section><h1>快照详情</h1><span>{project.status}</span><button onClick={onBack}>返回列表</button><button onClick={() => onDeleteSnapshot(project)}>撤销快照</button><button onClick={onGenerateDefault}>生成默认计划</button><button onClick={onGenerateCustom}>生成自定义计划</button><button onClick={() => onSnapshotRowsChange([], assets.filter(asset => project.scopeSnapshotAssetKeys.includes(asset.key)).map(asset => ({ ...asset, executeInventory: false })))}>转移执行资产</button></section>);
 jest.mock('./AssetInventoryPlanViewsV2', () => ({ AssetInventoryPlanAssetListV2: () => null }));
 
-beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); mockExecutionKeys = ['asset-3']; });
 
 test('新版列表点击复盘进入计划时父级旧版点击捕获不会改选 CP 项目', () => {
   render(<AssetInventoryProjectPageV2 />);
@@ -142,4 +146,35 @@ test('快照自定义确实创建新计划并持久保存名称、分配及逐�
   expect(saved.assetMap['asset-3']).toBe(saved.rows[0].planNo);
   view.unmount();
   expect(JSON.parse(localStorage.getItem('inventory-plan-session:CP-new:库房|公共|机房|员工')).rows[0].planName).toBe('新自定义计划');
+});
+
+test('A已启动时删除草稿B，释放B资产再筛选建计划，A及其分配不受影响', async () => {
+  mockExecutionKeys = ['asset-3', 'asset-4'];
+  const { ASSET_ROWS } = require('./mockData');
+  const a = ASSET_ROWS.find(asset => asset.key === 'asset-3');
+  const b = ASSET_ROWS.find(asset => asset.key === 'asset-4');
+  render(<AssetInventoryProjectPageV2 />);
+  fireEvent.click(screen.getByRole('button', { name: '新建项目' }));
+  await screen.findByRole('button', { name: '生成快照' });
+  fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
+  fireEvent.click(screen.getByRole('button', { name: '生成默认计划' }));
+  fireEvent.click(screen.getByRole('button', { name: '启动首计划' }));
+  const storage = 'inventory-plan-session:CP-new:库房|公共|机房|员工';
+  const original = JSON.parse(localStorage.getItem(storage));
+  const aPlan = original.assetMap[a.key];
+  fireEvent.click(screen.getByRole('button', { name: '删除未启动计划' }));
+  const deleted = JSON.parse(localStorage.getItem(storage));
+  expect(deleted.rows).toHaveLength(1);
+  expect(deleted.rows[0]).toMatchObject({ planNo: aPlan, status: '盘点中' });
+  expect(deleted.assetMap[a.key]).toBe(aPlan);
+  expect(deleted.assetMap).not.toHaveProperty(b.key);
+  fireEvent.click(screen.getByRole('button', { name: '手工重建计划' }));
+  expect(screen.getByTestId('custom-eligible')).toHaveTextContent(b.assetTag);
+  expect(screen.getByTestId('custom-eligible')).not.toHaveTextContent(a.assetTag);
+  fireEvent.click(screen.getByRole('button', { name: '确认自定义计划' }));
+  const saved = JSON.parse(localStorage.getItem(storage));
+  expect(saved.rows).toHaveLength(2);
+  expect(saved.rows.find(plan => plan.planNo === aPlan).status).toBe('盘点中');
+  expect(saved.assetMap[a.key]).toBe(aPlan);
+  expect(saved.rows.some(plan => plan.planNo === saved.assetMap[b.key] && plan.status === '草稿')).toBe(true);
 });

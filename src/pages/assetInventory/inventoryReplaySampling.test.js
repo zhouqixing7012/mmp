@@ -54,3 +54,12 @@ test('项目及复盘计划都可跨天', () => {
   expect(inventoryProjectDateBlockReason('2026-09-01', '2026-09-03')).toBe('');
   expect(inventoryDateBlockReason('复盘', '2026-09-01', '2026-09-03')).toBe('');
 });
+
+test('抽样按卡片条数，不按卡片数量求和，也不拆分卡片', () => {
+  const source = [{ key: 'a', assetTag: 'A', quantity: 100 }, { key: 'b', assetTag: 'B', quantity: 2 }, { key: 'c', assetTag: 'C', quantity: 40 }, { key: 'd', assetTag: 'D', quantity: 1 }];
+  const project = { projectType: '复盘', samplingMode: '百分比', samplingRatio: 50 };
+  const result = selectReplaySnapshotAssets(source, project, () => 0.5);
+  expect(result.assets).toHaveLength(2);
+  expect(result.assets.every(asset => source.some(original => original.assetTag === asset.assetTag && original.quantity === asset.quantity))).toBe(true);
+  expect(selectReplaySnapshotAssets(source.map(asset => ({ ...asset, quantity: 999 })), project, () => 0.5).assets.map(asset => asset.assetTag)).toEqual(result.assets.map(asset => asset.assetTag));
+});
