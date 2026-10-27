@@ -1,3 +1,4 @@
+import { inventoryPerson } from '../pages/assetInventory/inventoryPeople';
 import { ASSET_ROWS } from '../pages/assetInventory/mockData';
 
 // 原有移动端盘点演示资产，移动端与资产台账共用同一标签记录。
@@ -11,7 +12,7 @@ export const INVENTORY_MOBILE_ASSETS = [
     quantity: 1,
     usageStatus: '在用-使用中',
     owner: '孙志强',
-    ownerNo: '201132000160',
+    ownerNo: inventoryPerson('孙志强').employeeNo,
     address: '北京市-搜狐媒体大厦-9层',
     category: '笔记本电脑',
     dueDate: '2025-12-26',
@@ -33,7 +34,7 @@ export const INVENTORY_MOBILE_ASSETS = [
     quantity: 1,
     usageStatus: '在用-使用中',
     owner: '孙志强',
-    ownerNo: '201132000160',
+    ownerNo: inventoryPerson('孙志强').employeeNo,
     address: '北京市-搜狐媒体大厦-9层',
     category: '手机',
     dueDate: '2025-12-26',
@@ -55,7 +56,7 @@ export const INVENTORY_MOBILE_ASSETS = [
     quantity: 1,
     usageStatus: '在用-使用中',
     owner: '孙志强',
-    ownerNo: '201132000160',
+    ownerNo: inventoryPerson('孙志强').employeeNo,
     address: '北京市-搜狐媒体大厦-9层',
     category: '显示器',
     dueDate: '2025-12-26',

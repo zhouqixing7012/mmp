@@ -66,7 +66,7 @@ test('只过滤盘点报表，其他菜单及原创建权限不变，未知工�
   expect(allowedProjectTypes('213852-孙志强')).toEqual(['初盘','抽盘']);
   expect(canAccessInventoryReport('999999-孙志强')).toBe(false);
   expect(canAccessInventoryReport('admin')).toBe(false);
-  expect(INVENTORY_REPORT_USERS.find(person=>person.name==='穆晓丹').employeeNo).toBe('');
+  expect(INVENTORY_REPORT_USERS.find(person=>person.name==='穆晓丹').employeeNo).toBe('150690');
 });
 
 test('持久身份未知时直接访问不回退成有权身份', () => {

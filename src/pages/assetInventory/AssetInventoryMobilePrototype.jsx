@@ -1,3 +1,4 @@
+import { inventoryPerson } from './inventoryPeople';
 import { REPLAY_DEMO_MANDATORY_ASSET_KEYS } from '../../mock/inventoryMandatoryDemo';
 import { inventoryExecutionBlockReason } from './inventoryExecutionRules';
 import { sumInventoryQuantity } from './inventoryQuantity';
@@ -32,7 +33,7 @@ import { getMobileInventoryResults, saveMobileInventoryResult } from './inventor
 
 const CURRENT_USER = {
   name: '孙志强',
-  employeeNo: '201132000160',
+  employeeNo: inventoryPerson('孙志强').employeeNo,
   isESAssetGroup: true,
 };
 

@@ -1,5 +1,5 @@
 import { EMPLOYEE_ROWS } from './mockData';
-import { INVENTORY_CREATORS } from './inventoryCreatorPermissions';
+import { INVENTORY_PEOPLE } from './inventoryPeople';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 
 export const INVENTORY_FINANCIAL_SUPERVISOR = '徐博';
@@ -10,10 +10,10 @@ export function inventoryPublicSupervisor(project, configured) {
   return present(configured) ? personName(configured) : personName(project?.creator).replace(/^\d+-/, '').trim() || '-';
 }
 
-// 财务正式目录尚未接入，仅使用已确认创建权限及财务审批身份，不伪造工号。
+// 使用用户确认的财务人员工号和部门，不另造身份。
 export function inventoryFinancePeople() {
-  const names = [...new Set([...INVENTORY_CREATORS.filter(person => person.projectTypes.includes('复盘')).map(person => person.value), INVENTORY_FINANCIAL_SUPERVISOR])];
-  return names.map(name => ({ id: `inventory-finance:${name}`, employeeNo: '', employeeName: name, department: '财务（已确认身份）' }));
+  return INVENTORY_PEOPLE.filter(person => person.department === '财务中心_集团业务支持部')
+    .map(person => ({ ...person, id: person.employeeNo }));
 }
 
 export function isInventoryFinancePerson(person) {

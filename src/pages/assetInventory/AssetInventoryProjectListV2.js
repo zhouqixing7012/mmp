@@ -1,3 +1,4 @@
+import { inventoryPerson } from './inventoryPeople';
 import { inventoryManagementBlockReason } from './inventoryManagementPermissions';
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -178,7 +179,7 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
     },
   ];
 
-  const mobilePreviewUser = creator === '213852-孙志强' ? { name: '孙志强', employeeNo: '201132000160', isESAssetGroup: true } : { name: creator, employeeNo: '', isESAssetGroup: false };
+  const mobilePreviewUser = creator === '213852-孙志强' ? { name: '孙志强', employeeNo: inventoryPerson('孙志强').employeeNo, isESAssetGroup: true } : { name: creator, employeeNo: '', isESAssetGroup: false };
 
   return <Space direction="vertical" size={16} className="w-full">
     {contextHolder}

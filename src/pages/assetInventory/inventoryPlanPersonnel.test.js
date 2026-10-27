@@ -28,7 +28,7 @@ test.each(['盘点中', '审核中', '已审核', '关闭'])('%s人员在保存�
 
 test('复盘监督及执行仅可配置已有明确财务身份，启动再次校验', () => {
   expect(inventoryPersonnelCandidates(replay, 'supervisor').map(person => person.employeeName)).toEqual(expect.arrayContaining(['冯丽婷', '徐博']));
-  expect(inventoryPersonnelCandidates(replay, 'executor').every(person => person.employeeNo === '')).toBe(true);
+  expect(inventoryPersonnelCandidates(replay, 'executor')).toEqual(expect.arrayContaining([expect.objectContaining({ employeeName: '冯丽婷', employeeNo: '220570', department: '财务中心_集团业务支持部' }), expect.objectContaining({ employeeName: '徐博', employeeNo: '115577', department: '财务中心_集团业务支持部' })]));
   expect(() => applyInventoryPersonnelChange(replay, draft, assets, 'supervisor', '部门助理')).toThrow('财务人员');
   expect(inventoryPlanFinanceBlockReason(replay, [{ ...assets[0], executor: '冯丽婷', supervisor: '徐博' }])).toBe('');
   expect(inventoryPlanFinanceBlockReason(replay, [{ ...assets[0], executor: '甲' }])).toContain('财务人员');

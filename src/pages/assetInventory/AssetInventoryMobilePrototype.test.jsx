@@ -442,7 +442,7 @@ describe('AssetInventoryMobilePrototype', () => {
 
   test.each(['扫描范围外资产', '扫描无效二维码'])('本人已无待盘时%s提示收工并回首页', (label) => {
     mockLocationState = { projectNo: 'FINISHED-SCAN', scopeRanges: ['员工'] };
-    INVENTORY_MOBILE_ASSETS.filter(asset => asset.ownerNo === '201132000160').forEach(asset => saveMobileInventoryResult('FINISHED-SCAN', asset.tagNo, {status:'已盘'}));
+    INVENTORY_MOBILE_ASSETS.filter(asset => asset.ownerNo === '213852').forEach(asset => saveMobileInventoryResult('FINISHED-SCAN', asset.tagNo, {status:'已盘'}));
     render(<AssetInventoryMobilePrototype />);
     fireEvent.click(screen.getByRole('button', {name:'开始盘点'}));
     fireEvent.click(screen.getByRole('button', {name:'模拟扫码'}));
