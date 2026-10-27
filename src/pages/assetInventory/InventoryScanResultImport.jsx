@@ -5,7 +5,7 @@ import { importInventoryScanResults, inventoryScanErrorsWorkbook, inventoryScanI
 
 const contextKey = context => { const person = inventoryScanImporter(context.operator); return `${context.project?.projectNo}:${context.plan?.key || context.plan?.planNo || context.entryType || ''}:${person.employeeNo || person.value || person.name}`; };
 
-export default function InventoryScanResultImport({ project, plan, plans, operator, assets, entryType, onImported }) {
+export default function InventoryScanResultImport({ project, plan, plans, operator, assets, entryType, onImported, hideTrigger, openRequest }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState(null);
@@ -16,6 +16,7 @@ export default function InventoryScanResultImport({ project, plan, plans, operat
   const current = useRef(null);
   current.current = { project, plan, plans, operator, assets, entryType, onImported };
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; session.current += 1; }; }, []);
+  useEffect(() => { if (openRequest) { session.current += 1; setOutcome(null); setOpen(true); } }, [openRequest]);
   const close = () => { session.current += 1; processing.current = false; setBusy(false); setOpen(false); };
   const importFile = async event => {
     const file = event.target.files?.[0]; event.target.value = '';
@@ -43,7 +44,7 @@ export default function InventoryScanResultImport({ project, plan, plans, operat
   };
   const blocked = inventoryScanResultImportBlockReason(current.current);
   return <>
-    {!blocked && <Button onClick={() => { session.current += 1; setOutcome(null); setOpen(true); }}>导入盘点结果</Button>}
+    {!hideTrigger && !blocked && <Button onClick={() => { session.current += 1; setOutcome(null); setOpen(true); }}>导入盘点结果</Button>}
     <Modal open={open} title="扫描结果导入" onCancel={close} width={850} footer={<Space>
       {outcome?.errors?.length > 0 && <Button onClick={() => XLSX.writeFile(inventoryScanErrorsWorkbook(outcome.errors), `${project.projectNo}-扫描结果导入错误.xlsx`)}>下载错误结果</Button>}
       <Button type="primary" disabled={busy || Boolean(blocked)} loading={busy} onClick={() => inputRef.current?.click()}>选择Excel文件</Button>

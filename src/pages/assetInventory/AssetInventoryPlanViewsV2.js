@@ -1,7 +1,5 @@
 import './inventoryAuditLayout.css';
 import { inventoryManagementBlockReason } from './inventoryManagementPermissions';
-import InventoryScanResultImport from './InventoryScanResultImport';
-import { applyInventoryScanResults } from './inventoryScanResultImport';
 import { inventoryRemark } from './inventoryRemark';
 import { isInventoryAssetMandatory } from './inventoryMandatoryAssets';
 import { AssetCategorySelect, AssetPersonSelect, AssetValueSelect, OwnerLevelSelect, formatAssetCategory, matchesAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
@@ -566,7 +564,7 @@ export function AssetInventoryPlanAssetListV2({ plan, project, currentOperator, 
       </QueryBar></div>
 
       <Card size="small" title={<CardTitle>资产清单</CardTitle>} extra={<Space>
-        {!inventoryScannerBlockReason(project, plan, currentOperator) && <Button onClick={() => setScannerOpen(true)}>标签扫描</Button>}<InventoryScanResultImport project={project} plan={plan} operator={currentOperator} assets={rows} onImported={updates => setRows(current => applyInventoryScanResults(current, updates))} /><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => { try { downloadInventoryPlanAssets(selectInventoryExportRows(filteredRows, rows), plan.planNo, { project }); } catch (error) { messageApi.error('盘点资产导出失败，请重试'); } }}>导出</Button></Space>}>
+        {!inventoryScannerBlockReason(project, plan, currentOperator) && <Button onClick={() => setScannerOpen(true)}>标签扫描</Button>}<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => { try { downloadInventoryPlanAssets(selectInventoryExportRows(filteredRows, rows), plan.planNo, { project }); } catch (error) { messageApi.error('盘点资产导出失败，请重试'); } }}>导出</Button></Space>}>
         <Table
           rowKey="key"
           size="small"

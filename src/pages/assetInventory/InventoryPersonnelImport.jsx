@@ -9,6 +9,7 @@ export default function InventoryPersonnelImport(props) {
   const input = useRef(null); const processing = useRef(false); const mounted = useRef(true);
   const [open, setOpen] = useState(false); const [busy, setBusy] = useState(false); const [result, setResult] = useState(null);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => { if (props.openRequest) { setResult(null); setOpen(true); } }, [props.openRequest]);
   const block = inventoryManagementBlockReason(props.project, props.operator);
   const download = () => {
     const book = XLSX.utils.book_new();
@@ -43,7 +44,7 @@ export default function InventoryPersonnelImport(props) {
     finally { processing.current = false; if (mounted.current) setBusy(false); }
   };
   return <>
-    <Button disabled={Boolean(block)} onClick={() => { setResult(null); setOpen(true); }}>导入</Button>
+    {!props.hideTrigger && <Button disabled={Boolean(block)} onClick={() => { setResult(null); setOpen(true); }}>导入</Button>}
     <Modal open={open} title="导入盘点人员" footer={null} closable={!busy} maskClosable={!busy} onCancel={() => setOpen(false)} width={760}>
       <Alert type="info" message="按资产标签号匹配，仅修改草稿计划资产。人员填写员工工号-姓名，以工号匹配；人员为空保留原值，错误行跳过。" />
       <Space className="my-3"><Button onClick={download}>下载模板</Button><Button loading={busy} disabled={busy} onClick={() => input.current?.click()}>选择文件导入</Button></Space>

@@ -5,7 +5,7 @@ import AssetInventoryPlansV2Refined from './AssetInventoryPlansV2Refined';
 const mockWarning = jest.fn();
 jest.mock('antd', () => {
   const Box = ({children}) => <div>{children}</div>;
-  return { Alert:Box, Card:Box, Space:Box, Button:({children,onClick,disabled})=><button disabled={disabled} onClick={onClick}>{children}</button>,
+  return { Dropdown: ({children}) => <>{children}</>, Alert:Box, Card:Box, Space:Box, Button:({children,onClick,disabled})=><button disabled={disabled} onClick={onClick}>{children}</button>,
     Input:({onPressEnter,suffix,...props})=><input {...props}/>, Select:()=>null,DatePicker:({value,onChange,disabledDate,...props})=><input {...props} type="date" value={value?.format('YYYY-MM-DD') || ''} data-later-disabled={disabledDate ? String(disabledDate(require('dayjs')('2026-10-27'))) : undefined} onChange={event=>onChange(event.target.value ? require('dayjs')(event.target.value) : null)}/>,Typography:{Title:Box,Text:Box},
     Modal:Object.assign(()=>null,{confirm:jest.fn()}),message:{useMessage:()=>[{warning:mockWarning,error:mockWarning,success:jest.fn(),info:jest.fn()},null]},
     Table:({columns,dataSource,rowSelection})=><><button onClick={()=>rowSelection?.onChange([dataSource[0].key])}>选择首个计划</button><table><tbody>{dataSource.map(row=><tr key={row.key}>{columns.map((column,index)=><td key={index}>{column.render?column.render(row[column.dataIndex],row):row[column.dataIndex]}</td>)}</tr>)}</tbody></table></>,
