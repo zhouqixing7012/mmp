@@ -579,7 +579,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     />}
 
     {customBuilderOpen && <AssetInventoryCustomPlanBuilder project={planProject} initialAssets={unplannedSnapshotAssets} onBack={closeCustomBuilder} onConfirmPlan={handleCustomPlanConfirm} />}
-    {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined project={planProject} projectAssets={locationProjectAssets} onPlansStarted={(project) => { setPlanProject(project); setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '盘点中' })); }} currentOperator={creator} onChangePlanAssets={changePlanAssets} onPlansDeleted={deleted => {
+    {planViewOpen && !activePlan && <AssetInventoryPlansV2Refined allAssetsPlanned={unplannedSnapshotAssets.length === 0} project={planProject} projectAssets={locationProjectAssets} onPlansStarted={(project) => { setPlanProject(project); setProjectStatusOverrides((current) => ({ ...current, [project.projectNo]: '盘点中' })); }} currentOperator={creator} onChangePlanAssets={changePlanAssets} onPlansDeleted={deleted => {
       const numbers = new Set(deleted.map(plan => plan.planNo));
       setAssetPlanMap(current => Object.fromEntries(Object.entries(current).filter(([, planNo]) => !numbers.has(planNo))));
     }} rows={planRows} setRows={setPlanRows} assetsForPlan={assetsForPlan} canManualCreate={canManualCreate && planProject?.status !== '盘点关闭'} onManualCreate={openManualPlanBuilder} onGenerateRemainingDefault={generateRemainingDefaultPlans} onBack={() => { setPlanViewOpen(false); if (plansReturnToSnapshot.current) setSnapshotOpen(true); }} onOpenPlanAssets={(plan) => setActivePlan(plan)} />}

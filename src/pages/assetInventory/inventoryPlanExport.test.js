@@ -48,12 +48,12 @@ test('报失后继续盘点，既有盘点备注仍保留；只导出所传计�
   expect(XLSX.utils.sheet_to_json(workbook.Sheets['计划资产清单'])[0]['资产标签号']).toBe('P2');
 });
 
-test('本次结果来源覆盖旧渠道且导出不把配置方式当执行来源', () => {
+test('本次导入方式覆盖旧渠道且导出不把配置方式当执行来源', () => {
   const asset = mergePlanInventoryResult({ inventoryMethod: '扫码枪', importMode: '手工导入' }, { status: '审核中', resultSource: '狐小e快速扫描' });
   const workbook = createInventoryPlanWorkbook([{ planNo: 'P1' }], () => [asset, { inventoryMethod: '狐小e', importMode: 'APP导入' }]);
   const rows = XLSX.utils.sheet_to_json(workbook.Sheets['计划资产清单'], { defval: '' });
-  expect(rows[0]).toMatchObject({ 盘点方式: '扫码枪', 结果来源: '狐小e快速扫描' });
-  expect(rows[1].结果来源).toBe('');
+  expect(rows[0]).toMatchObject({ 盘点方式: '扫码枪', 导入方式: '狐小e快速扫描' });
+  expect(rows[1].导入方式).toBe('');
 });
 
 test('PC计划列表和导出优先读取同项目照片审核结论并保留盘点备注', () => {

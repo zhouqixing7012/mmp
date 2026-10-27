@@ -8,7 +8,7 @@ export const INVENTORY_MANDATORY_EXPORT_FIELD = ['是否必盘', 'isMandatory'];
 export const INVENTORY_ASSET_EXPORT_FIELDS = [
   ['计划编号', 'planNo'],
   ['盘点方式', 'inventoryMethod'],
-  ['结果来源', 'resultSource'],
+  ['导入方式', 'resultSource'],
   ['盘点状态', 'inventoryStatus'],
   ['盘点人', 'counter'],
   ['盘点日期', 'inventoryDate'],

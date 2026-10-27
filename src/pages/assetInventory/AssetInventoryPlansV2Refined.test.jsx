@@ -1,3 +1,4 @@
+import { submitReplayReview, decideReplayReview, getReplaySubmission } from './inventoryReplayReviewStore';
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Modal } from 'antd';
@@ -47,7 +48,7 @@ test('启动前发现未分配资产，要求默认补计划或手工创建，�
 });
 
 test('复盘仅提供位置变更池入口，不再发起或查看位置审批', () => {
- render(<AssetInventoryPlansV2Refined project={{projectNo:'R1',projectType:'复盘'}} rows={[]} setRows={jest.fn()} assetsForPlan={()=>[]}/>);
+ render(<AssetInventoryPlansV2Refined project={{projectNo:'R1',projectType:'复盘'}} rows={[{key:'p',planNo:'P',range:'员工',status:'盘点中'}]} setRows={jest.fn()} assetsForPlan={()=>[]}/>);
  expect(screen.queryByRole('button',{name:'发起位置变更'})).toBeNull();
  expect(screen.queryByRole('button',{name:'位置变更记录'})).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'位置变更池'}));
@@ -84,4 +85,32 @@ test('部分计划已启动时仍可删除草稿计划，通知父级释放其�
   fireEvent.click(screen.getByRole('button', { name: '删除盘点计划' }));
   expect(onPlansDeleted).toHaveBeenCalledWith([expect.objectContaining(draft)]);
   expect(setRows.mock.calls[0][0]([draft, started])).toEqual([started]);
+});
+
+test('复盘按钮随启动、全部分配及全部计划审批条件展示', () => {
+ window.localStorage.clear();
+ const project = { projectNo: 'BUTTONS', creator: '冯丽婷', projectType: '复盘', status: '盘点中' };
+ const plan = { key: 'p', planNo: 'PB', range: '员工', status: '草稿' };
+ const assetsForPlan = () => [{ key: 'a', assetTag: 'A', quantity: 1, supervisor: '冯丽婷', executor: '冯丽婷' }];
+ const props = { project, currentOperator: '冯丽婷', rows: [plan], setRows: jest.fn(), assetsForPlan };
+ const view = render(<AssetInventoryPlansV2Refined {...props} />);
+ expect(screen.queryByRole('button', { name: '提交计划审批' })).toBeNull();
+ expect(screen.queryByRole('button', { name: '位置变更池' })).toBeNull();
+ expect(screen.queryByRole('button', { name: '提交项目审批' })).toBeNull();
+ const started = { ...plan, status: '盘点中' };
+ view.rerender(<AssetInventoryPlansV2Refined {...props} rows={[started]} allAssetsPlanned />);
+ expect(screen.getByRole('button', { name: '提交计划审批' })).toBeInTheDocument();
+ expect(screen.getByRole('button', { name: '位置变更池' })).toBeInTheDocument();
+ expect(screen.queryByRole('button', { name: '提交项目审批' })).toBeNull();
+ submitReplayReview({ project, plans: [started], assetsForPlan, operator: '冯丽婷' });
+ const review = getReplaySubmission(project.projectNo).planReviews.PB;
+ decideReplayReview({ project, operator: '冯丽婷', decision: '同意', planNo: 'PB', round: review.round, planKey: review.plans[0].key, reviewInstanceKey: review.plans[0].reviewInstanceKey });
+ view.unmount();
+ const approved = render(<AssetInventoryPlansV2Refined {...props} rows={[started]} allAssetsPlanned={false} />);
+ expect(screen.getByRole('button', { name: '位置变更池' })).toBeInTheDocument();
+ expect(screen.queryByRole('button', { name: '提交项目审批' })).toBeNull();
+ approved.rerender(<AssetInventoryPlansV2Refined {...props} rows={[started]} allAssetsPlanned />);
+ expect(screen.getByRole('button', { name: '提交项目审批' })).toBeEnabled();
+ approved.rerender(<AssetInventoryPlansV2Refined {...props} rows={[started, { ...plan, key: 'other', planNo: 'OTHER' }]} allAssetsPlanned />);
+ expect(screen.queryByRole('button', { name: '提交项目审批' })).toBeNull();
 });
