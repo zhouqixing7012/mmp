@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { applicationDefinitions, applicationProgressRecords, buildApplicationWorkbook, getApplicationDefinition, queryApplications, removeApplicationDrafts } from './applicationQueryService';
+import { applicationDefinitions, applicationProgressRecords, buildApplicationWorkbook, getApplicationDefinition, getApplicationOptions, queryApplications, removeApplicationDrafts } from './applicationQueryService';
 
 const exported = (id, filters = {}, page) => {
   const book = buildApplicationWorkbook(id, filters, null, page);
@@ -26,6 +26,31 @@ test('退库标签前缀匹配包含整单，导出与详情使用同一申请�
   const index = data[0].indexOf('申请时间');
   expect(data[1][index]).toBe(row.values.applyTime.slice(0, 10));
   expect(Object.fromEntries(row.head)['申请时间']).toBe(data[1][index]);
+});
+test('申请状态遵循PRD名称，筛选与导出使用一致状态', () => {
+  for (const id of ['return', 'borrow', 'asset', 'consumable', 'newEmployee']) {
+    const definition = getApplicationDefinition(id);
+    const field = definition.filters.find(item => item.label === '单据状态');
+    expect(field.key).toBe('status');
+    expect(getApplicationOptions(id, field).map(item => item.label)).toEqual(['处理中', '已完成', '已驳回']);
+    const rows = queryApplications(id, { status: '处理中' });
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every(row => row.values.status === '处理中')).toBe(true);
+    expect(queryApplications(id, { status: '已驳回' })).toHaveLength(0);
+    if (definition.actions.export) {
+      const sheet = exported(id, { status: '处理中' });
+      expect(sheet.length).toBeGreaterThan(1);
+      const statusColumn = sheet[0].indexOf('单据状态');
+      if (statusColumn >= 0) expect(sheet.slice(1).every(row => row[statusColumn] === '处理中')).toBe(true);
+    }
+  }
+  const employee = queryApplications('newEmployee')[0];
+  expect(employee.head['单据状态']).toBe('处理中');
+  expect(employee.head['资产配置']).toBe('资产配置示例（演示）');
+  const configuration = getApplicationDefinition('newEmployee').filters.find(field => field.key === 'configuration');
+  expect(getApplicationOptions('newEmployee', configuration)).toContainEqual(
+    expect.objectContaining({ value: employee.filters.configuration, label: '资产配置示例（演示）' }),
+  );
 });
 test('退库查询不提供删除，调用删除也不改变申请或业务锁', () => {
   const before = queryApplications('return');
@@ -62,7 +87,7 @@ test('资产和耗材预计金额按原申请数量，领用为空；未定义�
   }
   expect(() => buildApplicationWorkbook('newEmployee')).toThrow('此查询未定义导出');
   const employee = queryApplications('newEmployee')[0];
-  const filters = { plate: employee.filters.plate, configuration: employee.filters.configuration, statusCode: employee.statusCode };
+  const filters = { plate: employee.filters.plate, configuration: employee.filters.configuration, status: employee.values.status };
   expect(queryApplications('newEmployee', filters).map(row => row.id)).toContain(employee.id);
   for (const key of Object.keys(filters)) {
     expect(queryApplications('newEmployee', { ...filters, [key]: 'NO-MATCH' })).toHaveLength(0);

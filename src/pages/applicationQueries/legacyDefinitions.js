@@ -1,6 +1,6 @@
 import { MOVE_DOCUMENT_STATUSES } from '../../mock/inventoryMoveMock';
-// 只绑定 PRD 明确的状态编码；缺少运行字典的名称不猜测。
-const stateOptions = [{ value: '0', label: '草稿' }, { value: '1', label: '状态1' }, { value: '3', label: '处理中' }, { value: '5', label: '状态5' }, { value: '2', label: '状态2' }, { value: 'demo-completed', label: '已完成' }];
+// 按PRD业务状态筛选；演示状态编码不代表正式运行字典。
+const stateOptions = ['处理中', '已完成', '已驳回'].map(value => ({ value, label: value }));
 const filter = (label, key, kind = 'text', match = 'contains', extra = {}) => ({ label, key, kind, match, ...extra });
 const column = (label, key, extra = {}) => ({ label, key, ...extra });
 
@@ -35,7 +35,7 @@ export const legacyDefinitions = [
   },
   {
     id: 'borrow', title: '借用单', sortKey: 'createdAt', actions: { export: true }, exportSheets: completeDocumentSheets,
-    filters: [filter('申请单号', 'applicationNo'), filter('借用出库单号', 'outboundNo', 'text', 'prefix'), filter('单据状态', 'status', 'select', 'exact', { options: stateOptions.filter(option => option.value !== '0') }), filter('资产标签号', 'assetTag', 'text', 'prefix'), filter('资产说明', 'description', 'text', 'prefix'), filter('单据类型', 'documentType', 'select', 'exact', { options: [{ value: 'EBA', label: '借用' }, { value: 'ERB', label: '续借' }] }), filter('申请人', 'applicant', 'lookup', 'exact'), filter('子公司', 'subsidiary', 'lookup', 'exact'), filter('部门', 'department', 'lookup', 'exact'), filter('制单时间', 'createdAt', 'date', 'date')],
+    filters: [filter('申请单号', 'applicationNo'), filter('借用出库单号', 'outboundNo', 'text', 'prefix'), filter('单据状态', 'status', 'select', 'exact', { options: stateOptions }), filter('资产标签号', 'assetTag', 'text', 'prefix'), filter('资产说明', 'description', 'text', 'prefix'), filter('单据类型', 'documentType', 'select', 'exact', { options: [{ value: 'EBA', label: '借用' }, { value: 'ERB', label: '续借' }] }), filter('申请人', 'applicant', 'lookup', 'exact'), filter('子公司', 'subsidiary', 'lookup', 'exact'), filter('部门', 'department', 'lookup', 'exact'), filter('制单时间', 'createdAt', 'date', 'date')],
     columns: [column('申请单号', 'applicationNo', { action: 'detail' }), column('借用出库单号', 'outboundNo'), column('单据类型', 'documentType'), column('单据状态', 'status', { format: 'status' }), column('申请人', 'applicant'), column('申请时间', 'createdAt', { format: 'date' }), column('审批人', 'approver'), column('部门', 'department'), column('数量', 'quantity', { format: 'number' }), column('查看', 'progress', { action: 'progress' })],
   },
 ];

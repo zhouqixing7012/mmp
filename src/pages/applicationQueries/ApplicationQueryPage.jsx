@@ -56,7 +56,6 @@ export default function ApplicationQueryPage({ id }) {
     {detail ? <Detail definition={definition} record={detail.record} view={detail.view} onBack={goBack} onProgress={setProgress} /> : <>
       <Typography.Title level={4} className="!mb-0">{definition.title}</Typography.Title>
       {id === 'unfinished' && <Alert type="info" title={`未完成员工申请周报：每周${'日一二三四五六'[APPLICATION_WEEKLY_RULE.weekday]} ${APPLICATION_WEEKLY_RULE.time}（北京时间），通过${APPLICATION_WEEKLY_RULE.channel}发送给 ${APPLICATION_WEEKLY_RULE.recipients.join('、')}。`} description="原型可查询、导出汇总清单；真实定时发送尚未接入。" />}
-      {definition.knownFilterWarning && <Alert type="info" showIcon title={definition.knownFilterWarning} />}
       <QueryBar labelWidth={112} onQuery={onQuery} onReset={reset}>
         {definition.filters.map(field => <QueryItem key={field.key} label={field.label} labelWidth={112}>
           <ApplicationFilter definition={definition} field={field} value={draft[field.key]} onQuery={onQuery} onChange={value => setDraft(previous => ({ ...previous, [field.key]: value }))} />
