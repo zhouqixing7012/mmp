@@ -208,6 +208,7 @@ describe('AssetInventoryMobilePrototype', () => {
 
   test('各状态分组可折叠，已盘页签隐藏开始盘点', async () => {
     render(<AssetInventoryMobilePrototype />);
+    expect(screen.getByText('惠普.P221显示器').closest('.inventory-asset-card')).not.toHaveTextContent('报失');
     const lossGroup = screen.getByRole('button', { name: '报失—共1条' });
     fireEvent.click(lossGroup);
     expect(screen.queryByText('惠普.P221显示器')).not.toBeInTheDocument();
@@ -428,7 +429,7 @@ describe('AssetInventoryMobilePrototype', () => {
     render(<AssetInventoryMobilePrototype />);
     fireEvent.click(screen.getByRole('button', {name:'监督计划'}));
     fireEvent.click(screen.getByRole('menuitem', {name:/北京市盘点计划-公共盘点/}));
-    fireEvent.click(screen.getByRole('button', {name:/戴尔.24寸显示器 未盘/}));
+    fireEvent.click(screen.getByRole('button', {name:/戴尔.24寸显示器/}));
     fireEvent.click(screen.getByRole('button', {name:'盘点'}));
     fireEvent.click(screen.getByRole('button', {name:'模拟扫码'}));
     fireEvent.click(screen.getByRole('button', {name:'扫描他人资产'}));

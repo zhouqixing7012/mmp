@@ -182,7 +182,7 @@ function StatusBadge({ status }) {
   return <Tag color={STATUS_COLORS[status] || 'default'}>{status}</Tag>;
 }
 
-function AssetCard({ asset, onClick, showOwner = false }) {
+function AssetCard({ asset, onClick, showOwner = false, groupedStatus }) {
   const showDate = ['审核中', '已盘', '代盘'].includes(asset.status)
     ? asset.inventoryDate
     : asset.dueDate;
@@ -197,7 +197,7 @@ function AssetCard({ asset, onClick, showOwner = false }) {
           <ChevronRight size={17} />
         </div>
         <div className="inventory-asset-card-meta">
-          <StatusBadge status={asset.status} />
+          {asset.status !== groupedStatus && <StatusBadge status={asset.status} />}
           {asset.isMandatory && <Tag color="orange">必盘</Tag>}
           <span>{asset.tagNo}</span>
         </div>
@@ -687,7 +687,7 @@ export default function AssetInventoryMobilePrototype() {
               <section key={group.key} className="inventory-status-section">
                 <AssetGroupHeading label={group.label} count={sumInventoryQuantity(groupAssets)} collapsed={collapsedGroups.includes(group.key)} onToggle={() => setCollapsedGroups((current) => current.includes(group.key) ? current.filter((key) => key !== group.key) : [...current, group.key])} />
                 {!collapsedGroups.includes(group.key) && (groupAssets.length ? groupAssets.map((asset) => (
-                  <AssetCard key={asset.id} asset={asset} onClick={() => openDetail(asset)} />
+                  <AssetCard key={asset.id} asset={asset} groupedStatus={group.key} onClick={() => openDetail(asset)} />
                 )) : (
                   <div className="inventory-empty">当前分类暂无资产</div>
                 ))}
@@ -709,7 +709,7 @@ export default function AssetInventoryMobilePrototype() {
       ].map((group) => <section className="inventory-plan-section" key={group.key}>
         <AssetGroupHeading label={group.key} count={sumInventoryQuantity(group.rows)} collapsed={collapsedPlanSections.includes(group.key)} onToggle={() => setCollapsedPlanSections((current) => current.includes(group.key) ? current.filter((item) => item !== group.key) : [...current, group.key])} />
         {!collapsedPlanSections.includes(group.key) && <div className="inventory-plan-assets">
-          {group.rows.length ? group.rows.map((asset) => <AssetCard key={asset.id} asset={asset} showOwner onClick={() => openDetail(asset)} />) : <div className="inventory-empty">暂无{group.key}资产</div>}
+          {group.rows.length ? group.rows.map((asset) => <AssetCard key={asset.id} asset={asset} groupedStatus={group.key} showOwner onClick={() => openDetail(asset)} />) : <div className="inventory-empty">暂无{group.key}资产</div>}
         </div>}
       </section>)}
     </div>

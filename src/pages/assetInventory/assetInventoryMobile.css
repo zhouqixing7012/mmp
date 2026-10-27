@@ -768,6 +768,9 @@
 }
 
 .inventory-asset-group-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   width: 100%;
   min-height: 42px;
@@ -777,7 +780,7 @@
   border: 0;
   border-bottom: 1px solid #dfe6ee;
   border-radius: 0;
-  background: transparent;
+  background: #f4f7fa;
   padding: 6px 2px 10px;
   color: #334155;
   font-size: 14px;
