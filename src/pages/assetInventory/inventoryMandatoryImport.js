@@ -1,14 +1,11 @@
-import * as XLSX from 'xlsx';
-import { serializeInventoryScopeExport } from './inventoryAssetExport';
+import { isInventoryAssetMandatory } from './inventoryMandatoryAssets';
 
-// 清单导入、模板和导出使用同一字段定义，不维护另一套必盘标记模板。
+// 复盘范围导入模板仅维护标签和必盘标记，与全字段导出分别定义。
 export const INVENTORY_MANDATORY_IMPORT_HEADERS = ['资产标签号', '是否必盘'];
 const text = (value) => String(value ?? '').trim();
 
 export function inventoryMandatoryTemplateRows(assets, project) {
-  const { csv } = serializeInventoryScopeExport(assets, { project, includeMandatory: true });
-  const workbook = XLSX.read(csv, { type: 'string', raw: true });
-  return XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, defval: '', raw: false });
+  return [INVENTORY_MANDATORY_IMPORT_HEADERS, ...assets.map(asset => [String(asset.assetTag ?? ''), isInventoryAssetMandatory(asset, project) ? '是' : '否'])];
 }
 
 // 以关联初盘执行源匹配资产，只维护范围及是否必盘。

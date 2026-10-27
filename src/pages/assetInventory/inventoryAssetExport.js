@@ -2,6 +2,7 @@ import { formatAssetCategory } from '../../components/assetQueryModel';
 import { inventoryResultSource } from './inventoryResultSource';
 import { inventoryRemark } from './inventoryRemark';
 import { isInventoryAssetMandatory } from './inventoryMandatoryAssets';
+import { scopeAssetOwner, scopeAssetDepartment } from './inventoryScopeAssetDisplay';
 export const INVENTORY_MANDATORY_EXPORT_FIELD = ['是否必盘', 'isMandatory'];
 // 三类盘点资产清单共用同一套导出字段，字段只从对应资产记录取值。
 export const INVENTORY_ASSET_EXPORT_FIELDS = [
@@ -65,9 +66,20 @@ export function serializeInventorySnapshotExport(rows, options = {}) {
   return serializeRows(rows, [...exportFields(options), ['是否执行盘点', 'executeInventory']], options.project);
 }
 
-// 创建范围只输出导入所需的标识；复盘同时维护是否必盘。
+// 范围导出与本位置列表字段一致；导入模板另外提供。
+export const INVENTORY_SCOPE_EXPORT_FIELDS = [
+  ['资产标签号', 'assetTag'], ['序列号', 'serialNo'], ['资产类别', 'assetCategory'],
+  ['资产说明', 'description'], ['数量', 'quantity'], ['原值', 'originalValue'], ['净值', 'netValue'],
+  ['状态', 'useStatus'], ['NO位置', 'noLocation'], ['备注', 'remark'], ['资产责任人', 'owner'],
+  ['责任人部门', 'ownerDept'], ['责任人职级', 'ownerLevel'], ['City', 'city'],
+  ['Building', 'building'], ['Floor', 'floor'], ['盘点组织', 'organization'],
+  ['成本中心', 'costCenter'], ['启用日期', 'enableDate'],
+];
 export function serializeInventoryScopeExport(rows, options = {}) {
-  const fields = [['资产标签号', 'assetTag']];
+  const fields = [...INVENTORY_SCOPE_EXPORT_FIELDS];
   if (options.project?.projectType === '复盘' || options.includeMandatory) fields.push(INVENTORY_MANDATORY_EXPORT_FIELD);
-  return serializeRows(rows, fields, options.project);
+  const displayRows = rows.map(row => ({ ...row, owner: scopeAssetOwner(row, options.people), ownerDept: scopeAssetDepartment(row, options.people) }));
+  const result = serializeRows(displayRows, fields, options.project);
+  const matrix = [fields.map(([label]) => label), ...displayRows.map(row => fields.map(([, key]) => key === 'assetCategory' ? formatAssetCategory(row) : key === 'isMandatory' ? (isInventoryAssetMandatory(row, options.project) ? '是' : '否') : row[key] ?? ''))];
+  return { ...result, matrix };
 }

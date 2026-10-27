@@ -1,5 +1,4 @@
 import * as XLSX from 'xlsx';
-import { serializeInventoryScopeExport } from './inventoryAssetExport';
 import { INVENTORY_MANDATORY_IMPORT_HEADERS as header, inventoryMandatoryTemplateRows, parseInventoryMandatoryRows } from './inventoryMandatoryImport';
 
 const assets = [{ key: 'a', assetTag: '001', description: '原始资产说明' }, { key: 'b', assetTag: '002', isMandatory: true }];
@@ -13,11 +12,8 @@ function matrix(rows) {
   })];
 }
 
-test('统一清单模板两列与复盘范围导出完全一致，CSV可原样回导且保留标签前导零', () => {
-  const exported = serializeInventoryScopeExport(assets, { project: { projectType: '复盘' } });
-  const workbook = XLSX.read(exported.csv, { type: 'string', raw: true });
-  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, defval: '', raw: false });
-  expect(inventoryMandatoryTemplateRows(assets)).toEqual(rows);
+test('复盘导入模板独立保留两列及标签前导零', () => {
+  const rows = inventoryMandatoryTemplateRows(assets);
   expect(rows[0]).toHaveLength(2);
   expect(rows[0]).toEqual(header);
   expect(parseInventoryMandatoryRows(rows, assets)).toEqual([{ key: 'a', assetTag: '001', isMandatory: false }, { key: 'b', assetTag: '002', isMandatory: true }]);

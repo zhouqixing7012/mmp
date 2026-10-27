@@ -78,7 +78,9 @@ test('实际导入只更新必盘标记，零比例快照仍纳入人工必盘�
 test('初盘创建范围不增加复盘专属列和必盘导入入口', () => {
   render(<CreateProjectView creator="213852-孙志强" initialProject={{ ...base, projectType: '初盘' }} scopeAssetKeys={chosen.map((asset) => asset.key)} onBack={() => {}} onGenerated={() => {}} />);
   expect(screen.queryByRole('columnheader', { name: '是否必盘' })).not.toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: '清单模板' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '导入模板' }));
+  const [template] = XLSX.writeFile.mock.calls.at(-1);
+  expect(XLSX.utils.sheet_to_json(template.Sheets[template.SheetNames[0]], { header: 1 })[0]).toEqual(['资产标签号']);
 });
 
 test('清单替换整个范围并能重新纳入当前查询内已删除的初盘资产，数量比例同步', async () => {
@@ -105,7 +107,7 @@ test('尚未查询的输入不限制导入，已生效查询限制整批，模�
   importFile(chosen.map((asset) => ({ ...asset, isMandatory: true })));
   await waitFor(() => expect(mandatoryCell(chosen[1].assetTag)).toHaveTextContent('是'));
   fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
-  fireEvent.click(screen.getByRole('button', { name: '清单模板' }));
+  fireEvent.click(screen.getByRole('button', { name: '导入模板' }));
   const workbook = XLSX.writeFile.mock.calls[0][0];
   const rows = XLSX.utils.sheet_to_json(workbook.Sheets['盘点范围资产清单'], { header: 1 });
   expect(rows).toHaveLength(2);
@@ -283,4 +285,34 @@ test('当前V3页面入口生成两条范围后，查看经外层参数切换真
   expect(screen.queryByRole('dialog')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: '查看全部' }));
   await waitFor(() => expect(within(screen.getByRole('table', { name: '必盘范围资产' })).getAllByRole('row')).toHaveLength(3));
+});
+
+test.each(['初盘', '抽盘'])('%s导入重建整个范围，不受旧分录/当前明细查询限制且额外列不反写', async projectType => {
+  const original = chosen[1].description;
+  render(<CreateProjectView creator="冯丽婷" initialProject={{ ...base, projectType, inventoryType: '月度', scopeSnapshotAssetKeys: [chosen[0].key], scopeQueryAssetKeys: [chosen[0].key] }} scopeAssetKeys={[chosen[0].key]} onBack={() => {}} onGenerated={() => {}} />);
+  fireEvent.change(screen.getByLabelText('范围资产标签号'), { target: { value: chosen[0].assetTag } });
+  fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet([['不是固定表头', '说明'], [chosen[1].assetTag, '伪造说明']]), '范围');
+  const bytes = XLSX.write(book, { type: 'array', bookType: 'xlsx' });
+  fireEvent.change(screen.getByLabelText('导入范围Excel文件'), { target: { files: [{ name: '范围.xlsx', arrayBuffer: async () => bytes }] } });
+  await waitFor(() => expect(screen.getByRole('textbox', { name: '范围资产标签号' })).toHaveValue(''));
+  const tables = screen.getAllByRole('table', { name: '范围分录' });
+  const detail = tables.find(table => within(table).queryByRole('columnheader', { name: '资产标签号' }));
+  await waitFor(() => expect(within(detail).getByRole('row', { name: new RegExp(chosen[1].assetTag) })).toBeInTheDocument());
+  expect(within(detail).queryByRole('row', { name: new RegExp(chosen[0].assetTag) })).toBeNull();
+  expect(chosen[1].description).toBe(original);
+});
+
+test.each(['初盘', '抽盘', '复盘'])('%s本位置真实导出xlsx完整表头与当前列表一致，标签号按文本保存', projectType => {
+  render(<CreateProjectView creator="冯丽婷" initialProject={{ ...base, projectType, inventoryType: '月度' }} scopeAssetKeys={chosen.map(asset => asset.key)} onBack={() => {}} onGenerated={() => {}} />);
+  const table = screen.getAllByRole('table').find(item => within(item).queryByRole('columnheader', { name: '资产标签号' }));
+  const headers = within(table).getAllByRole('columnheader').map(item => item.textContent);
+  fireEvent.click(screen.getByRole('button', { name: '导出', exact: true }));
+  const [workbook, name] = XLSX.writeFile.mock.calls.at(-1);
+  expect(name).toMatch(/\.xlsx$/);
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  expect(XLSX.utils.sheet_to_json(sheet, { header: 1 })[0]).toEqual(headers);
+  expect(headers).toHaveLength(projectType === '复盘' ? 20 : 19);
+  expect(sheet.A2.t).toBe('s');
 });

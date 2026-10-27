@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import * as XLSX from 'xlsx';
 import InventoryMandatoryImport from './InventoryMandatoryImport';
 import { INVENTORY_MANDATORY_IMPORT_HEADERS as header } from './inventoryMandatoryImport';
-import { serializeInventoryScopeExport } from './inventoryAssetExport';
+import { inventoryMandatoryTemplateRows } from './inventoryMandatoryImport';
 
 const mockWarning = jest.fn();
 const mockSuccess = jest.fn();
@@ -23,7 +23,7 @@ beforeEach(() => jest.clearAllMocks());
 test('下载真实工作簿模板，导入实际工作簿后仅提交已校验标记', async () => {
   const onImport = jest.fn();
   render(<InventoryMandatoryImport assets={assets} project={project} onImport={onImport} />);
-  fireEvent.click(screen.getByRole('button', { name: '清单模板' }));
+  fireEvent.click(screen.getByRole('button', { name: '导入模板' }));
   const [workbook, name] = XLSX.writeFile.mock.calls[0];
   expect(name).toBe('R1-盘点范围资产清单模板.xlsx');
   const template = XLSX.utils.sheet_to_json(workbook.Sheets['盘点范围资产清单'], { header: 1 });
@@ -45,13 +45,14 @@ test('有效首行后存在范围外资产时不回填部分标记', async () =>
   expect(mockSuccess).not.toHaveBeenCalled();
 });
 
-test('当前导出CSV文件可直接回导，保留前导零标签并匹配可选初盘执行源', async () => {
+test('独立两列导入模板保留前导零标签并匹配可选初盘执行源', async () => {
   const onImport = jest.fn();
   const candidateAssets = [...assets, { key: 'c', assetTag: '003', isMandatory: true }];
   render(<InventoryMandatoryImport assets={assets} candidateAssets={candidateAssets} project={project} onImport={onImport} />);
-  const { csv } = serializeInventoryScopeExport([candidateAssets[2]], { project: { ...project, projectType: '复盘' } });
-  const bytes = Uint8Array.from(Buffer.from('\ufeff' + csv, 'utf8'));
-  fireEvent.change(screen.getByLabelText('导入盘点清单文件'), { target: { files: [{ name: '导出清单.csv', arrayBuffer: async () => bytes.buffer }] } });
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(inventoryMandatoryTemplateRows([candidateAssets[2]], project)), '复盘范围导入');
+  const bytes = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
+  fireEvent.change(screen.getByLabelText('导入盘点清单文件'), { target: { files: [{ name: '导入模板.xlsx', arrayBuffer: async () => bytes }] } });
   await waitFor(() => expect(onImport).toHaveBeenCalledWith([{ key: 'c', assetTag: '003', isMandatory: true }]));
 });
 

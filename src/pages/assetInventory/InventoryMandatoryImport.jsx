@@ -43,7 +43,7 @@ export default function InventoryMandatoryImport({ assets, candidateAssets = ass
   return <>
     {contextHolder}
     <Space>
-      <Button disabled={importing} onClick={download}>清单模板</Button>
+      <Button disabled={importing} onClick={download}>导入模板</Button>
       {errors.length > 0 && <Button onClick={() => {
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([

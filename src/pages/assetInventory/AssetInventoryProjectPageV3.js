@@ -26,7 +26,7 @@ export default function AssetInventoryProjectPageV3() {
     initialAssets: PROJECT_PLAN_ASSETS[draftProject?.initialProjectNo],
   });
 
-  useEffect(() => { setScopePreviewAssetKeys(null); }, [draftProject?.projectNo, draftProject?.initialProjectNo]);
+  useEffect(() => { setScopePreviewAssetKeys(null); }, [draftProject?.projectNo, draftProject?.initialProjectNo, draftProject?.scopeImportRevision]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -102,7 +102,7 @@ export default function AssetInventoryProjectPageV3() {
     <AssetInventoryVariantProvider allowedRanges={V3_RANGES}>
       <div ref={rootRef} className="w-full">
         <AssetInventoryProjectPageV2 menuLabel="盘点项目" scopeAssetKeys={scopeAssetKeys} scopePreviewAssetKeys={scopePreviewAssetKeys} onDraftProjectChange={setDraftProject} />
-        {scopeSlot ? createPortal(<AssetInventoryScopeSelectorV3 key={`${draftProject?.projectNo}-${draftProject?.initialProjectNo}-${draftProject?.inventoryType}`} sourceAssets={sourceAssets} projectType={draftProject?.projectType || projectType} onScopeAssetsChange={setScopeAssetKeys} onPreviewAssets={setScopePreviewAssetKeys} />, scopeSlot) : null}
+        {scopeSlot ? createPortal(<AssetInventoryScopeSelectorV3 key={`${draftProject?.projectNo}-${draftProject?.initialProjectNo}-${draftProject?.inventoryType}-${draftProject?.scopeImportRevision || 0}`} sourceAssets={sourceAssets} projectType={draftProject?.projectType || projectType} initialAssetKeys={draftProject?.scopeLedgerImportKeys} onScopeAssetsChange={setScopeAssetKeys} onPreviewAssets={setScopePreviewAssetKeys} />, scopeSlot) : null}
       </div>
     </AssetInventoryVariantProvider>
   );

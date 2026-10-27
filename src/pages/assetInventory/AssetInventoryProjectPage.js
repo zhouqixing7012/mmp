@@ -1,3 +1,5 @@
+import * as XLSX from 'xlsx';
+import InventoryScopeImport from './InventoryScopeImport';
 import { inventoryManagementBlockReason } from './inventoryManagementPermissions';
 import { sumInventoryQuantity } from './inventoryQuantity';
 import { inventoryRemark } from './inventoryRemark';
@@ -928,8 +930,11 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   const initialAssets = initialSnapshot?.assets ?? PROJECT_PLAN_ASSETS[project.initialProjectNo] ?? [];
   const sourceAssets = inventoryProjectScopeSource(project, { allAssets: ASSET_ROWS, initialSnapshot, initialAssets });
   const [scopeRows, setScopeRows] = useState(() => SCOPE_ROWS.map(row => ({ ...row, assetKeys: initialProject?.scopeQueryAssetKeys || initialProject?.scopeSnapshotAssetKeys || sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)).map(asset => asset.key) })));
-  const [hasLocalScopeEdits, setHasLocalScopeEdits] = useState(false);
-  useEffect(() => { setHasLocalScopeEdits(false); }, [scopeAssetKeys]);
+  const [hasLocalScopeEdits, setHasLocalScopeEdits] = useState(initialProject?.scopeLedgerImportKeys !== undefined);
+  const previousExternalScopeKeys = useRef(scopeAssetKeys);
+  useEffect(() => {
+    if (previousExternalScopeKeys.current !== scopeAssetKeys) { setHasLocalScopeEdits(false); previousExternalScopeKeys.current = scopeAssetKeys; }
+  }, [scopeAssetKeys]);
   const [importedScopeAssetKeys, setImportedScopeAssetKeys] = useState(initialProject?.scopeImportedAssetKeys ?? null);
   const [removedAssetKeys, setRemovedAssetKeys] = useState(initialProject?.scopeRemovedAssetKeys || []);
   const [selectedAssets, setSelectedAssets] = useState([]);
@@ -945,11 +950,11 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     setImportedScopeAssetKeys(null);
     setRemovedAssetKeys([]);
     setSelectedAssets([]);
-    setProject((current) => ({ ...current, mandatoryAssetOverrides: {}, mandatoryAssetKeys: [], scopeImportedAssetKeys: undefined, scopeQueryAssetKeys: undefined }));
+    setProject((current) => ({ ...current, mandatoryAssetOverrides: {}, mandatoryAssetKeys: [], scopeImportedAssetKeys: undefined, scopeQueryAssetKeys: undefined, scopeLedgerImportKeys: undefined }));
   }, [scopeSource]);
   const scopeQueryKeySet = new Set(hasLocalScopeEdits ? scopeRows.flatMap(row => row.assetKeys) : scopeAssetKeys ?? scopeRows.flatMap(row => row.assetKeys));
   const scopeQueryKeys = [...scopeQueryKeySet];
-  const externalScopeKeys = scopeAssetKeys == null ? null : new Set(scopeAssetKeys);
+  const externalScopeKeys = project.scopeLedgerImportKeys !== undefined || scopeAssetKeys == null ? null : new Set(scopeAssetKeys);
   const queryCandidates = sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges) && scopeQueryKeySet.has(asset.key) && (externalScopeKeys == null || externalScopeKeys.has(asset.key)));
   const matchesScopeFilter = (asset) => String(asset.assetTag || '').includes(scopeAssetFilter.assetTag.trim())
     && matchesQuerySelection(asset.owner, scopeAssetFilter.owner) && matchesQuerySelection(asset.ownerLevel, scopeAssetFilter.ownerLevel);
@@ -1088,10 +1093,10 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
         <div className="mb-3 flex justify-end">
           <Space>
             <Button icon={<Download size={14} />} onClick={() => {
-              const { csv } = serializeInventoryScopeExport(filteredScopeAssets.length ? filteredScopeAssets : scopeAssets, { project });
-              const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
-              const link = document.createElement('a');
-              link.href = url; link.download = `${project.projectNo}-盘点范围资产清单.csv`; link.click(); URL.revokeObjectURL(url);
+              const { matrix } = serializeInventoryScopeExport(filteredScopeAssets.length ? filteredScopeAssets : scopeAssets, { project, people: [...EMPLOYEE_ROWS, ...INVENTORY_PEOPLE] });
+              const workbook = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(matrix), '盘点资产范围明细');
+              XLSX.writeFile(workbook, `${project.projectNo}-盘点资产范围明细.xlsx`);
             }}>导出</Button>
             {project.projectType === '复盘' ? <InventoryMandatoryImport importLabel="导入" assets={filteredScopeAssets.length ? filteredScopeAssets : scopeAssets} candidateAssets={importCandidates} project={project}
               requiredKeys={(changes) => replayMandatoryRuleKeys(changes.map(change => importCandidateByKey.get(change.key)), project)}
@@ -1105,7 +1110,19 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
                   mandatoryAssetOverrides: Object.fromEntries(changes.map(asset => [asset.key, asset.isMandatory])),
                   mandatoryAssetKeys: changes.filter(asset => asset.isMandatory).map(asset => asset.key),
                 }));
-              }} /> : <Button icon={<Upload size={14} />} onClick={() => messageApi.info('请按资产清单模板导入')}>导入</Button>}
+              }} /> : <InventoryScopeImport project={project} ledgerAssets={ASSET_ROWS} allowedAssets={sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges))}
+              onClear={() => {
+                if (managementBlock) throw new Error(managementBlock);
+                if (!['暂存', '草稿'].includes(project.status)) throw new Error('仅未生成快照的草稿项目可以导入范围');
+                setScopeRows([]); setHasLocalScopeEdits(true); setImportedScopeAssetKeys(null); setRemovedAssetKeys([]); setSelectedAssets([]); setPreviewAssetKeys(null);
+                setScopeAssetQuery({ assetTag: '', owner: [], ownerLevel: [] }); setScopeAssetFilter({ assetTag: '', owner: [], ownerLevel: [] });
+                setProject(current => ({ ...current, scopeLedgerImportKeys: [], scopeQueryAssetKeys: [], scopeSnapshotAssetKeys: [], snapshotAssetKeys: [], scopeImportedAssetKeys: undefined, scopeRemovedAssetKeys: [], scopeImportRevision: (current.scopeImportRevision || 0) + 1 }));
+              }}
+              onImport={assets => {
+                const keys = assets.map(asset => asset.key);
+                setScopeRows(keys.length ? [{ key: 'scope-import', assetKeys: keys }] : []); setHasLocalScopeEdits(true);
+                setProject(current => ({ ...current, scopeLedgerImportKeys: keys, scopeQueryAssetKeys: keys, scopeImportRevision: (current.scopeImportRevision || 0) + 1 }));
+              }} />}
             <Button
               danger
               icon={<Trash2 size={14} />}

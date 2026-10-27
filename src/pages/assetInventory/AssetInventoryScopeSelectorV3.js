@@ -61,7 +61,7 @@ export function getScheme3InventoryDemoOptions(allowedRanges) {
   };
 }
 
-export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', sourceAssets: suppliedAssets = ASSET_ROWS, onScopeAssetsChange, onPreviewAssets }) {
+export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', sourceAssets: suppliedAssets = ASSET_ROWS, onScopeAssetsChange, onPreviewAssets, initialAssetKeys }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const options = useMemo(() => getScheme3InventoryDemoOptions(allowedRanges), [allowedRanges]);
@@ -71,8 +71,8 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
     organizationDepartments: [], assetCategory: [], assetStatus: [], warehouse: [],
     city: [], building: [], floor: [], owner: [], ownerLevel: [], enableFrom: '', enableTo: '', ratio: 100, netValueTopPercent: null,
   });
-  const [rows, setRows] = useState([]);
-  const [hasScopeSelection, setHasScopeSelection] = useState(false);
+  const [rows, setRows] = useState(() => initialAssetKeys?.length ? [{ key: 'scope-import', assetKeys: initialAssetKeys }] : []);
+  const [hasScopeSelection, setHasScopeSelection] = useState(Array.isArray(initialAssetKeys));
   const [selectedKeys, setSelectedKeys] = useState([]);
   const updateRows = (update) => {
     setHasScopeSelection(true);
