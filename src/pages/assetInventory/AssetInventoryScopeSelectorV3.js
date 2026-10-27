@@ -71,12 +71,17 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
     organizationDepartments: [], assetCategory: [], assetStatus: [], warehouse: [],
     city: [], building: [], floor: [], owner: [], ownerLevel: [], enableFrom: '', enableTo: '', ratio: 100, netValueTopPercent: null,
   });
-  const [rows, setRows] = useState(() => SCOPE_ROWS.map((row) => ({ ...row })));
+  const [rows, setRows] = useState([]);
+  const [hasScopeSelection, setHasScopeSelection] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState([]);
-  const updateRows = setRows;
+  const updateRows = (update) => {
+    setHasScopeSelection(true);
+    setRows(update);
+    onPreviewAssets?.(null);
+  };
   useEffect(() => {
-    onScopeAssetsChange?.([...new Set(rows.flatMap((row) => row.assetKeys || []))]);
-  }, [rows, onScopeAssetsChange]);
+    onScopeAssetsChange?.(hasScopeSelection ? [...new Set(rows.flatMap((row) => row.assetKeys || []))] : null);
+  }, [rows, hasScopeSelection, onScopeAssetsChange]);
 
   const fields = [
     ['资产类别', 'assetCategory'], ['资产状态', 'assetStatus'], ['仓库', 'warehouse'],

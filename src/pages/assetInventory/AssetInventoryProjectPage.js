@@ -933,6 +933,8 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   const initialAssets = initialSnapshot?.assets ?? PROJECT_PLAN_ASSETS[project.initialProjectNo] ?? [];
   const sourceAssets = inventoryProjectScopeSource(project, { allAssets: ASSET_ROWS, initialSnapshot, initialAssets });
   const [scopeRows, setScopeRows] = useState(() => SCOPE_ROWS.map(row => ({ ...row, assetKeys: initialProject?.scopeQueryAssetKeys || initialProject?.scopeSnapshotAssetKeys || sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)).map(asset => asset.key) })));
+  const [hasLocalScopeEdits, setHasLocalScopeEdits] = useState(false);
+  useEffect(() => { setHasLocalScopeEdits(false); }, [scopeAssetKeys]);
   const [importedScopeAssetKeys, setImportedScopeAssetKeys] = useState(initialProject?.scopeImportedAssetKeys ?? null);
   const [removedAssetKeys, setRemovedAssetKeys] = useState(initialProject?.scopeRemovedAssetKeys || []);
   const [selectedAssets, setSelectedAssets] = useState([]);
@@ -950,7 +952,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     setSelectedAssets([]);
     setProject((current) => ({ ...current, mandatoryAssetOverrides: {}, mandatoryAssetKeys: [], scopeImportedAssetKeys: undefined, scopeQueryAssetKeys: undefined }));
   }, [scopeSource]);
-  const scopeQueryKeySet = new Set(scopeRows.flatMap(row => row.assetKeys));
+  const scopeQueryKeySet = new Set(hasLocalScopeEdits ? scopeRows.flatMap(row => row.assetKeys) : scopeAssetKeys ?? scopeRows.flatMap(row => row.assetKeys));
   const scopeQueryKeys = [...scopeQueryKeySet];
   const externalScopeKeys = scopeAssetKeys == null ? null : new Set(scopeAssetKeys);
   const queryCandidates = sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges) && scopeQueryKeySet.has(asset.key) && (externalScopeKeys == null || externalScopeKeys.has(asset.key)));
@@ -1069,7 +1071,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
         sourceAssets={sourceAssets}
         projectType={project.projectType}
         scopeRows={scopeRows}
-        setScopeRows={(update) => { setScopeRows(update); setImportedScopeAssetKeys(null); setProject(current => ({ ...current, scopeImportedAssetKeys: undefined })); }}
+        setScopeRows={(update) => { setHasLocalScopeEdits(true); setScopeRows(update); setImportedScopeAssetKeys(null); setProject(current => ({ ...current, scopeImportedAssetKeys: undefined })); }}
         onPreviewAssets={(row) => { setPreviewAssetKeys(row?.assetKeys || null); }}
         messageApi={messageApi}
       />
@@ -1077,10 +1079,9 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
       <Card size="small" title={<CardTitle>盘点资产范围明细</CardTitle>} extra={<Typography.Text type="secondary">共 {filteredScopeAssets.length} 条</Typography.Text>}>
       {project.projectType === '复盘' && (
         <div className="mt-4">
-          <DetailGrid columns={3}>
+          <DetailGrid columns={2}>
             <DetailItem label="本次复盘数量">{replayScopeStats.count.toLocaleString('zh-CN')}</DetailItem>
             <DetailItem label="复盘比例">{replayScopeStats.ratio}</DetailItem>
-            <DetailItem label="初盘资产明细总条数">{replayScopeStats.total.toLocaleString('zh-CN')}</DetailItem>
           </DetailGrid>
         </div>
       )}
@@ -2238,7 +2239,7 @@ export default function AssetInventoryProjectPage({ creator = '213852-孙志强'
       <CreateProjectView
         creator={creator}
         onDraftProjectChange={onDraftProjectChange}
-        scopeAssetKeys={activeProject?.scopeSnapshotAssetKeys ?? scopeAssetKeys}
+        scopeAssetKeys={scopeAssetKeys ?? activeProject?.scopeSnapshotAssetKeys}
         scopePreviewAssetKeys={scopePreviewAssetKeys}
         initialProject={activeProject?.status === '暂存' ? activeProject : null}
         onBack={() => setView('list')}

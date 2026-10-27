@@ -35,18 +35,26 @@ test('自定义复盘清册空查询回退本次纳入资产并传递必盘上�
   expect(downloadInventoryPlanAssets).toHaveBeenLastCalledWith(assets, 'R', { project });
 });
 
-test('初始资产可见，生成查询后单范围查看及查看全部展示真实匹配清单', () => {
-  render(<AssetInventoryCustomPlanBuilder initialAssets={assets} project={{ projectType: '初盘' }} />);
-  expect(screen.getByRole('button', { name: '选择-A' })).toBeInTheDocument();
+test('范围批次查看直接切换下方清单，查看全部恢复全部批次，生成计划仍取完整范围', () => {
+  const onConfirmPlan = jest.fn();
+  render(<AssetInventoryCustomPlanBuilder initialAssets={assets} project={{ projectType: '初盘' }} onConfirmPlan={onConfirmPlan} />);
   fireEvent.change(screen.getByPlaceholderText('请输入标签号'), { target: { value: 'A' } });
   fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
-  expect(screen.queryByRole('button', { name: '选择-B' })).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: '查看' }));
-  expect(within(screen.getByRole('dialog', { name: '范围资产清单' })).getByText('A')).toBeInTheDocument();
-  expect(within(screen.getByRole('dialog')).queryByText('B')).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: '关闭' }));
+  fireEvent.change(screen.getByPlaceholderText('请输入标签号'), { target: { value: 'B' } });
+  fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
+  fireEvent.click(screen.getAllByRole('button', { name: '查看' })[0]);
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(screen.getByRole('button', { name: '选择-A' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '选择-B' })).toBeNull();
+  fireEvent.click(screen.getAllByRole('button', { name: '查看' })[1]);
+  expect(screen.getByRole('button', { name: '选择-B' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '选择-A' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '生成计划' }));
+  fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '确定' }));
+  expect(onConfirmPlan.mock.calls[0][0].assets).toEqual(assets);
   fireEvent.click(screen.getByRole('button', { name: '查看全部' }));
-  expect(within(screen.getByRole('dialog', { name: '全部范围资产清单' })).getByText('A')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '选择-A' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '选择-B' })).toBeInTheDocument();
 });
 
 test('删除资产后重复生成不补回，导出使用最终资产集合', () => {
@@ -82,4 +90,17 @@ test('自定义公共计划弹窗直接显示创建人为默认监督人，执�
   expect(within(dialog).getAllByPlaceholderText('选填').map(input => input.value)).toEqual(['孙志强', '']);
   fireEvent.click(within(dialog).getByRole('button', { name: '确定' }));
   expect(onConfirmPlan.mock.calls[0][0].rows.find(row => row.range === '公共').assets[0]).toMatchObject({ supervisor: '孙志强', executor: '-' });
+});
+
+
+test('删除正在查看的范围分录后，恢复显示剩余批次资产而不残留旧查看条件', () => {
+  render(<AssetInventoryCustomPlanBuilder initialAssets={assets} project={{ projectType: '初盘' }} />);
+  fireEvent.change(screen.getByPlaceholderText('请输入标签号'), { target: { value: 'A' } });
+  fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
+  fireEvent.change(screen.getByPlaceholderText('请输入标签号'), { target: { value: 'B' } });
+  fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
+  fireEvent.click(screen.getAllByRole('button', { name: '查看' })[0]);
+  fireEvent.click(screen.getAllByRole('button', { name: '删除', exact: true })[0]);
+  expect(screen.queryByRole('button', { name: '选择-A' })).toBeNull();
+  expect(screen.getByRole('button', { name: '选择-B' })).toBeInTheDocument();
 });

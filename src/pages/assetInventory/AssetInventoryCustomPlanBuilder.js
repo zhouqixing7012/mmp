@@ -97,7 +97,13 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
   const [scopeRows, setScopeRows] = useState([]);
   const [assetRows, setAssetRows] = useState(() => initialAssets.filter(row => isInventoryRangeAllowed(row, allowedRanges)));
   const [removedAssetKeys, setRemovedAssetKeys] = useState([]);
-  const [scopePreview, setScopePreview] = useState(null);
+  const [previewAssetKeys, setPreviewAssetKeys] = useState(null);
+  const previewScope = (keys) => {
+    setPreviewAssetKeys(keys);
+    setAssetDraftFilters(EMPTY_ASSET_FILTERS);
+    setAssetFilters(EMPTY_ASSET_FILTERS);
+    setSelectedAssetKeys([]);
+  };
   const sourceAssets = useMemo(() => initialAssets.filter((row) => isInventoryRangeAllowed(row, allowedRanges)), [initialAssets, allowedRanges]);
   const organizationTree = useMemo(() => buildInventoryOrganizationTree(sourceAssets), [sourceAssets]);
   const [selectedAssetKeys, setSelectedAssetKeys] = useState([]);
@@ -145,21 +151,24 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
       ratio: filters.ratio || 100,
     };
     setScopeRows((current) => [...current, row]);
+    previewScope(null);
     const included = new Set([...scopeRows.flatMap(scope => scope.assetKeys), ...row.assetKeys]);
     setAssetRows(sourceAssets.filter(asset => included.has(asset.key) && !removedAssetKeys.includes(asset.key)).map(asset => ({ ...asset })));
     messageApi.success('已根据当前条件生成盘点范围明细');
   };
 
   const filteredAssets = useMemo(() => assetRows.filter((row) => (
+    (previewAssetKeys == null || previewAssetKeys.includes(row.key))
+    &&
     (!assetFilters.assetTag || String(row.assetTag || '').includes(assetFilters.assetTag))
     && matchesQuerySelection(row.owner, assetFilters.owner)
     && matchesQuerySelection(row.ownerLevel, assetFilters.ownerLevel)
-  )), [assetRows, assetFilters]);
+  )), [assetRows, assetFilters, previewAssetKeys]);
 
   const scopeColumns = [
     { title: '公司', dataIndex: 'company', width: 100, fixed: 'left' }, { title: '部门', dataIndex: 'department', width: 190 }, { title: '板块', dataIndex: 'plate', width: 100 }, { title: '资产标签号', dataIndex: 'assetTag', width: 140 }, { title: '资产类别', dataIndex: 'category', width: 150 }, { title: '资产序列号', dataIndex: 'serialNo', width: 140 }, { title: '印刷号', dataIndex: 'printNo', width: 110 }, { title: '说明', dataIndex: 'description', width: 150 }, { title: '资产状态', dataIndex: 'status', width: 120 }, { title: '资产责任人', dataIndex: 'owner', width: 130 }, { title: '责任人职级', dataIndex: 'ownerLevel', width: 110 }, { title: '成本中心', dataIndex: 'costCenter', width: 150 }, { title: '启用日期起', dataIndex: 'enableFrom', width: 120 }, { title: '启用日期止', dataIndex: 'enableTo', width: 120 }, { title: '仓库', dataIndex: 'warehouse', width: 110 }, { title: '城市', dataIndex: 'city', width: 110 }, { title: '地点', dataIndex: 'building', width: 160 }, { title: 'Floor', dataIndex: 'floor', width: 90 }, { title: '盘点范围', dataIndex: 'methods', width: 150, render: (value) => (value || []).join('、') || '-' }, { title: '比例', dataIndex: 'ratio', width: 80, render: (value) => `${value}%` },
-    { title: '清单', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => setScopePreview({ title: '范围资产清单', assets: assetRows.filter(asset => row.assetKeys.includes(asset.key)) })}>查看</Button> },
-    { title: '操作', width: 80, fixed: 'right', render: (_, row) => <Button type="link" danger className="px-0" onClick={() => { const next = scopeRows.filter((item) => item.key !== row.key); setScopeRows(next); const remaining = new Set(next.flatMap((item) => item.assetKeys)); setAssetRows((current) => current.filter((asset) => remaining.has(asset.key))); }}>删除</Button> },
+    { title: '清单', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => previewScope(row.assetKeys)}>查看</Button> },
+    { title: '操作', width: 80, fixed: 'right', render: (_, row) => <Button type="link" danger className="px-0" onClick={() => { const next = scopeRows.filter((item) => item.key !== row.key); setScopeRows(next); previewScope(null); const remaining = new Set(next.flatMap((item) => item.assetKeys)); setAssetRows((current) => current.filter((asset) => remaining.has(asset.key))); }}>删除</Button> },
   ];
 
   const assetColumns = [
@@ -201,7 +210,7 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
     </Card>
 
     <Card size="small" title={<CardTitle>盘点范围明细</CardTitle>} extra={<Typography.Text type="secondary">共 {scopeRows.length} 条</Typography.Text>}>
-      <div className="mb-3 flex justify-end"><Space><Button icon={<Eye size={14} />} onClick={() => setScopePreview({ title: '全部范围资产清单', assets: assetRows })}>查看全部</Button><Button danger onClick={() => { setScopeRows([]); setAssetRows([]); setSelectedAssetKeys([]); setRemovedAssetKeys([]); }}>删除全部</Button></Space></div>
+      <div className="mb-3 flex justify-end"><Space><Button icon={<Eye size={14} />} onClick={() => previewScope(null)}>查看全部</Button><Button danger onClick={() => { setScopeRows([]); setAssetRows([]); previewScope(null); setRemovedAssetKeys([]); }}>删除全部</Button></Space></div>
       <Table rowKey="key" size="small" bordered columns={scopeColumns} dataSource={scopeRows} scroll={{ x: 2700 }} pagination={false} />
     </Card>
 
@@ -216,7 +225,7 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
     </Card>
 
     <div className="flex justify-center pb-2"><Space><Button type="primary" onClick={() => { if (!assetRows.length) { messageApi.warning('请先生成包含资产的盘点范围'); return; } setPlanModalOpen(true); }}>生成计划</Button><Button onClick={onBack}>返回</Button></Space></div>
-    <Modal open={Boolean(scopePreview)} title={scopePreview?.title} width={960} footer={<Button onClick={() => setScopePreview(null)}>关闭</Button>} onCancel={() => setScopePreview(null)}><Table rowKey="key" size="small" bordered columns={assetColumns} dataSource={scopePreview?.assets || []} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10 }} /></Modal>
+
     <PlanInfoModal project={project} assets={assetRows} open={planModalOpen} onCancel={() => setPlanModalOpen(false)} onConfirm={(draft) => { setPlanModalOpen(false); onConfirmPlan({ ...draft, assets: assetRows }); }} />
   </Space>;
 }

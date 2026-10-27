@@ -52,3 +52,15 @@ test('查看范围分录和查看全部通知下方明细切换，不打开清�
   fireEvent.click(screen.getByRole('button', { name: '查看全部' }));
   expect(preview).toHaveBeenLastCalledWith(null);
 });
+
+
+test('初始范围不展示无资产关联的示例查看按钮；生成后可查看，删除全部清空范围', () => {
+  const changed = jest.fn();
+  render(<AssetInventoryScopeSelectorV3 onScopeAssetsChange={changed} />);
+  expect(changed).toHaveBeenLastCalledWith(null);
+  expect(screen.queryByRole('button', { name: '查看', exact: true })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
+  expect(changed).toHaveBeenLastCalledWith(['a', 'b']);
+  fireEvent.click(screen.getByRole('button', { name: '删除全部' }));
+  expect(changed).toHaveBeenLastCalledWith([]);
+});

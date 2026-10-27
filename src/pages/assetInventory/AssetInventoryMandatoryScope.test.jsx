@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import * as XLSX from 'xlsx';
 import { CreateProjectView } from './AssetInventoryProjectPage';
+import AssetInventoryProjectPageV3 from './AssetInventoryProjectPageV3';
 import { ASSET_ROWS, PROJECT_INFO } from './mockData';
 import { getInventoryPhotoSnapshot, saveInventoryPhotoSnapshot } from './inventoryPhotoRules';
 import { INVENTORY_MANDATORY_IMPORT_HEADERS as importHeader } from './inventoryMandatoryImport';
@@ -18,17 +19,18 @@ jest.mock('antd', () => {
   const DatePicker = Object.assign(() => null, { RangePicker: () => null });
   const Modal = ({ open, children }) => open ? <div role="dialog">{children}</div> : null;
   Modal.confirm = jest.fn();
-  return { Alert: Box, Button: ({ children, onClick }) => <button onClick={onClick}>{children}</button>, Card: Box,
+  const Card = ({ children, title, extra }) => <div className="ant-card"><div className="ant-card-head-title">{title}</div>{extra}{children}</div>;
+  return { Alert: Box, TreeSelect: ({ treeData, onChange }) => <div>{treeData.map(node => <button key={node.value} onClick={() => onChange([node.value])}>{`筛选组织${node.title}`}</button>)}</div>, Button: ({ children, onClick }) => <button onClick={onClick}>{children}</button>, Card,
     Checkbox: Object.assign(Box, { Group: Box }), Collapse: Box, DatePicker, Input, InputNumber: () => null, Modal, Progress: Box, Radio: Box,
     Select: ({ 'aria-label': ariaLabel, value, options, onChange, disabled }) => ['项目类型', '盘点类型', '盘点期间'].includes(ariaLabel) ? <select aria-label={ariaLabel} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select> : null,
-    Space: Box, Statistic: Box, Switch: () => null, Tabs: Box, Tag: Box, Typography: { Text: Box, Title: Box },
+    Space: Box, Statistic: Box, Switch: () => null, Tabs: Box, Tag: Box, Typography: { Text: Box, Title: ({ children }) => <h4 className="ant-typography">{children}</h4> },
     Table: ({ columns = [], dataSource = [], rowSelection }) => <table aria-label={columns.some((column) => column.title === '是否必盘') ? '必盘范围资产' : '范围分录'}><thead><tr>{columns.map((column, index) => <th key={index}>{column.title}</th>)}</tr></thead><tbody>{dataSource.map((row) => <tr key={row.key}>{columns.map((column, index) => <td key={index}>{index === 0 && rowSelection && <input type="checkbox" aria-label={`选择资产${row.assetTag || row.key}`} onChange={() => rowSelection.onChange([row.key])} />}{column.render ? column.render(row[column.dataIndex], row) : row[column.dataIndex]}</td>)}</tr>)}</tbody></table>,
     message: { useMessage: () => [{ warning: mockWarning, success: jest.fn(), info: jest.fn() }, null] },
   };
 });
 jest.mock('../../components/DetailGrid', () => ({ __esModule: true, default: ({ children }) => <div>{children}</div>, DetailItem: ({ children, label }) => <div role="group" aria-label={label}>{children}</div> }));
 jest.mock('../../components/StatusTag', () => ({ value }) => <span>{value}</span>);
-jest.mock('../../components/AssetQueryControls', () => ({ AssetPersonSelect: () => null, OwnerLevelSelect: () => null, formatAssetCategory: (asset) => asset.subCategory, matchesQuerySelection: () => true }));
+jest.mock('../../components/AssetQueryControls', () => ({ AssetCategorySelect: () => null, AssetPersonSelect: () => null, OwnerLevelSelect: () => null, formatAssetCategory: (asset) => asset.subCategory, matchesQuerySelection: () => true }));
 const chosen = ASSET_ROWS.slice(2, 4);
 const base = { ...PROJECT_INFO, creator: '冯丽婷', projectNo: 'MAND-SCOPE', projectType: '复盘', initialProjectNo: 'CP-202608180001', createdAt: '2026-08-01', samplingMode: '百分比', samplingRatio: 0, mandatoryNetValueAbove: null, mandatoryNetValueTopPercent: null, photoConfig: { rules: [] } };
 beforeEach(() => { window.localStorage.clear(); window.sessionStorage.clear(); mockWarning.mockClear(); XLSX.writeFile.mockClear(); });
@@ -90,7 +92,6 @@ test('清单替换整个范围并能重新纳入当前查询内已删除的初�
   expect(within(screen.getByRole('table', { name: '必盘范围资产' })).queryByRole('row', { name: new RegExp(chosen[0].assetTag) })).not.toBeInTheDocument();
   expect(screen.getByRole('group', { name: '本次复盘数量' })).toHaveTextContent(/^1$/);
   const initialCount = require('../../mock/inventoryProjectPlanMock').PROJECT_PLAN_ASSETS[base.initialProjectNo].length;
-  expect(screen.getByRole('group', { name: '初盘资产明细总条数' })).toHaveTextContent(String(initialCount));
   expect(screen.getByRole('group', { name: '复盘比例' })).toHaveTextContent(`${(100 / initialCount).toFixed(2)}%`);
   importFile([{ ...chosen[0], isMandatory: true }]);
   await waitFor(() => expect(mandatoryCell(chosen[0].assetTag)).toHaveTextContent('是'));
@@ -161,7 +162,6 @@ test('编号预留失败显示错误并阻止无号保存或生成，零初盘�
   expect(onGenerated).not.toHaveBeenCalled();
   view.unmount();
   render(<CreateProjectView creator="冯丽婷" initialProject={{ ...base, initialProjectNo: 'NO-INITIAL-SOURCE' }} onBack={() => {}} onGenerated={() => {}} />);
-  expect(screen.getByRole('group', { name: '初盘资产明细总条数' })).toHaveTextContent(/^0$/);
   expect(screen.getByRole('group', { name: '复盘比例' })).toHaveTextContent(/^0%$/);
 });
 
@@ -227,7 +227,6 @@ test('批次查询统计卡片而非数量，初盘全部明细含未执行和�
   const props = { initialProject: { ...base, initialProjectNo: initialNo }, creator: '冯丽婷', onBack: jest.fn(), onGenerated };
   const view = render(<CreateProjectView {...props} scopePreviewAssetKeys={null} />);
   expect(screen.getByRole('group', { name: '本次复盘数量' })).toHaveTextContent(/^2$/);
-  expect(screen.getByRole('group', { name: '初盘资产明细总条数' })).toHaveTextContent(/^3$/);
   expect(screen.getByRole('group', { name: '复盘比例' })).toHaveTextContent(/^66.67%$/);
   view.rerender(<CreateProjectView {...props} scopePreviewAssetKeys={['card-a', 'card-b']} />);
   fireEvent.change(screen.getByLabelText('范围资产标签号'), { target: { value: 'CARD-B' } });
@@ -242,4 +241,45 @@ test('批次查询统计卡片而非数量，初盘全部明细含未执行和�
   expect(screen.getByRole('group', { name: '本次复盘数量' })).toHaveTextContent(/^2$/);
   fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
   expect(getInventoryPhotoSnapshot(base.projectNo).assets.map(asset => asset.key)).toEqual(['card-a', 'card-b']);
+});
+
+
+test('编辑项目生成的新范围优先于旧范围，查看该批次下方资产可见且没有额外初盘统计字段', () => {
+  render(<CreateProjectView creator="冯丽婷" initialProject={{ ...base, scopeSnapshotAssetKeys: [chosen[0].key], scopeQueryAssetKeys: [chosen[0].key] }} scopeAssetKeys={chosen.map(asset => asset.key)} scopePreviewAssetKeys={[chosen[1].key]} onBack={() => {}} onGenerated={() => {}} />);
+  const table = screen.getByRole('table', { name: '必盘范围资产' });
+  expect(within(table).getByRole('row', { name: new RegExp(chosen[1].assetTag) })).toBeInTheDocument();
+  expect(within(table).queryByRole('row', { name: new RegExp(chosen[0].assetTag) })).toBeNull();
+  expect(screen.queryByRole('group', { name: '初盘资产明细总条数' })).toBeNull();
+  expect(screen.queryByRole('group', { name: '初盘执行盘点数量' })).toBeNull();
+});
+
+
+jest.mock('./AssetInventoryProjectPageV2', () => {
+  const { CreateProjectView } = jest.requireActual('./AssetInventoryProjectPage');
+  return (props) => <CreateProjectView {...props} creator="冯丽婷" initialProject={{ projectNo: 'INTEGRATION-REPLAY', projectType: '复盘', initialProjectNo: 'INTEGRATION-SOURCE', creator: '冯丽婷', inventoryType: '年度', period: '2026年', samplingMode: '全盘' }} onBack={() => {}} onGenerated={() => {}} />;
+});
+
+test('当前V3页面入口生成两条范围后，查看经外层参数切换真实下方表，查看全部恢复', async () => {
+  saveInventoryPhotoSnapshot({ projectNo: 'INTEGRATION-SOURCE' }, [
+    { ...chosen[0], key: 'v3-a', assetTag: 'V3-A', organization: '公司甲', executeInventory: true },
+    { ...chosen[1], key: 'v3-b', assetTag: 'V3-B', organization: '公司乙', executeInventory: true },
+  ]);
+  render(<AssetInventoryProjectPageV3 />);
+  await waitFor(() => expect(screen.getByRole('button', { name: '筛选组织公司甲' })).toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: '筛选组织公司甲' }));
+  fireEvent.click(screen.getByRole('button', { name: '生成查询', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: '筛选组织公司乙' }));
+  fireEvent.click(screen.getByRole('button', { name: '生成查询', exact: true }));
+  fireEvent.click(screen.getAllByRole('button', { name: '查看', exact: true })[0]);
+  await waitFor(() => {
+    const table = screen.getByRole('table', { name: '必盘范围资产' });
+    expect(within(table).getByRole('row', { name: /V3-A/ })).toBeInTheDocument();
+    expect(within(table).queryByRole('row', { name: /V3-B/ })).toBeNull();
+  });
+  fireEvent.click(screen.getAllByRole('button', { name: '查看', exact: true })[1]);
+  await waitFor(() => expect(within(screen.getByRole('table', { name: '必盘范围资产' })).getByRole('row', { name: /V3-B/ })).toBeInTheDocument());
+  expect(within(screen.getByRole('table', { name: '必盘范围资产' })).queryByRole('row', { name: /V3-A/ })).toBeNull();
+  expect(screen.queryByRole('dialog')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '查看全部' }));
+  await waitFor(() => expect(within(screen.getByRole('table', { name: '必盘范围资产' })).getAllByRole('row')).toHaveLength(3));
 });
