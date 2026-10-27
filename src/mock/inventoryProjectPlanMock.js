@@ -66,7 +66,7 @@ const replayEmployeeAssets = INVENTORY_MOBILE_ASSETS.filter(asset => ['asset-001
 // 静态复盘样例与真实默认生成共用楼层分组，仅影响没有已保存会话的演示初值。
 const replayProject = PROJECT_LIST_ROWS.find(project => project.projectNo === 'RCP-202608180001');
 const replayAssets = [...ASSET_ROWS.filter(asset => ['asset-3', 'asset-4'].includes(asset.key)), ...replayEmployeeAssets]
-  .map(asset => asset.executeInventory ? { ...asset, supervisor: '冯丽婷', executor: '冯丽婷' } : { ...asset });
+  .map(asset => asset.executeInventory ? { ...asset, isMandatory: replayProject.mandatoryAssetKeys.includes(asset.key), supervisor: '冯丽婷', executor: '冯丽婷' } : { ...asset });
 const replayPlans = buildDefaultInventoryPlans(replayProject, replayAssets.filter(asset => asset.executeInventory), [], '20260818')
   .map(plan => ({ ...plan, supervisor: '冯丽婷', executor: '冯丽婷', assetKeys: plan.assets.map(asset => asset.key) }));
 const linkedReplayAssets = replayAssets.map(asset => {

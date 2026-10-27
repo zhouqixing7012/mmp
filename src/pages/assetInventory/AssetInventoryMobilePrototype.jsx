@@ -1,3 +1,4 @@
+import { REPLAY_DEMO_MANDATORY_ASSET_KEYS } from '../../mock/inventoryMandatoryDemo';
 import { inventoryExecutionBlockReason } from './inventoryExecutionRules';
 import { sumInventoryQuantity } from './inventoryQuantity';
 import { inventoryRemark } from './inventoryRemark';
@@ -38,7 +39,7 @@ const CURRENT_USER = {
 const DEMO_CONTEXTS = [
   { id: 'initial', label: '初盘演示', projectNo: '', projectType: '初盘', scopeRanges: ['员工', '库房', '机房'] },
   { id: 'public', label: '公共地点演示', projectNo: 'CP-202608180002', projectType: '初盘', scopeRanges: ['公共'] },
-  { id: 'review', label: '复盘地点演示', projectNo: 'RCP-202608180001', projectType: '复盘', scopeRanges: ['员工', '公共', '库房'] },
+  { id: 'review', mandatoryAssetKeys: REPLAY_DEMO_MANDATORY_ASSET_KEYS, label: '复盘地点演示', projectNo: 'RCP-202608180001', projectType: '复盘', scopeRanges: ['员工', '公共', '库房'] },
 ];
 
 // 原型演示计划与资产关联，仅用于展示当前用户作为监督人的计划入口。
@@ -302,11 +303,11 @@ export default function AssetInventoryMobilePrototype() {
   const [collapsedPlanSections, setCollapsedPlanSections] = useState([]);
   const [detailReturnView, setDetailReturnView] = useState('workbench');
   const [quickPlanId, setQuickPlanId] = useState(null);
-  const [assets, setAssets] = useState(() => loadProjectAssets(previewProjectNo, location.state));
+  const [assets, setAssets] = useState(() => loadProjectAssets(previewProjectNo, hasRouteProject ? location.state : demoContext));
   useEffect(() => {
     const results = new Map(getPhotoReviewResults(previewProjectNo).map((entry) => [entry.assetTag, entry]));
-    setAssets(loadProjectAssets(previewProjectNo, location.state).map((asset) => applyPhotoReviewToInventoryAsset(asset, results.get(asset.tagNo))));
-  }, [previewProjectNo, location.key, location.state]);
+    setAssets(loadProjectAssets(previewProjectNo, hasRouteProject ? location.state : demoContext).map((asset) => applyPhotoReviewToInventoryAsset(asset, results.get(asset.tagNo))));
+  }, [previewProjectNo, location.key, location.state, hasRouteProject, demoContext]);
   const [query, setQuery] = useState('');
   const [selectedAssetId, setSelectedAssetId] = useState(null);
   const [locationDraft, setLocationDraft] = useState({ city: '', building: '', floor: '' });
@@ -366,7 +367,7 @@ export default function AssetInventoryMobilePrototype() {
   const switchDemoContext = (context) => {
     if (context.id === demoContextId) return;
     setDemoContextId(context.id);
-    setAssets(loadProjectAssets(context.projectNo));
+    setAssets(loadProjectAssets(context.projectNo, context));
     setView('workbench');
     setActiveTab('unscanned');
     setCollapsedGroups([]);

@@ -1,3 +1,4 @@
+import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 import { applyReplayPlanStatuses, decideReplayReview, getReplaySubmission, getReplayProjectReview, replayDecisionBlockReason, replayProjectSubmissionBlockReason, submitReplayProjectReview, submitReplayReview, validateReplaySubmission } from './inventoryReplayReviewStore';
 import { writeDemoData } from '../../services/demoStorage';
 const project = { creator: '冯丽婷', projectNo: 'R-test', projectType: '复盘', samplingMode: '百分比', samplingRatio: 50 };
@@ -187,4 +188,17 @@ test('审批同意意见可空，驳回意见必填，意见最多400字', () =>
   expect(() => decide('P1', '冯丽婷', '驳回', { opinion: '   ' })).toThrow('请填写驳回意见');
   expect(() => decide('P1', '冯丽婷', '同意', { opinion: '字'.repeat(401) })).toThrow('审批意见不能超过400字');
   expect(() => decide('P1', '冯丽婷', '同意', { opinion: '' })).not.toThrow();
+});
+
+
+test('项目审批通过后项目保持盘点中，审批记录已审核且满足条件可关闭', () => {
+  const started = { ...project, status: '盘点中' };
+  approveAllPlans();
+  submitReplayProjectReview({ project: started, plans, operator: '冯丽婷' });
+  expect(started.status).toBe('盘点中');
+  expect(inventoryProjectCloseBlockReason(started, { plans: applyReplayPlanStatuses(plans, getReplaySubmission(project.projectNo)), assets: plans.flatMap(plan => assetsForPlan(plan).map(asset => ({ ...asset, planNo: plan.planNo }))), replaySubmission: getReplaySubmission(project.projectNo) })).toMatch(/未结束/);
+  const state = decideReplayReview({ project: started, operator: '徐博', scope: 'project', round: 1, decision: '同意' });
+  expect(state.projectReview.status).toBe('已审核');
+  expect(started.status).toBe('盘点中');
+  expect(inventoryProjectCloseBlockReason(started, { plans: applyReplayPlanStatuses(plans, state), assets: plans.flatMap(plan => assetsForPlan(plan).map(asset => ({ ...asset, planNo: plan.planNo }))), replaySubmission: state })).toBe('');
 });

@@ -413,6 +413,7 @@ describe('AssetInventoryMobilePrototype', () => {
     render(<AssetInventoryMobilePrototype />);
     fireEvent.click(screen.getByRole('button', { name: '监督计划' }));
     fireEvent.click(screen.getByRole('menuitem', { name: /北京市复盘计划/ }));
+    expect(screen.getByRole('button', { name: /114121801802/ })).toHaveTextContent('必盘');
     fireEvent.click(screen.getByRole('button', { name: '盘点' }));
     fireEvent.click(screen.getByRole('button', { name: '模拟扫码' }));
     fireEvent.click(screen.getByRole('button', { name: '扫描本人资产' }));

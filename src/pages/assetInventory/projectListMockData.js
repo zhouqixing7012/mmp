@@ -1,3 +1,4 @@
+import { REPLAY_DEMO_MANDATORY_ASSET_KEYS } from '../../mock/inventoryMandatoryDemo';
 // 盘点项目列表专用演示数据。
 import { NON_ROOM_REPLAY_DEMO_PROJECT } from '../../mock/inventoryNonRoomReplayDemo';
 // 业务阶段约束：
@@ -56,6 +57,7 @@ export const PROJECT_LIST_ROWS = [
   },
   {
     key: 'RCP-202608180001',
+    mandatoryAssetKeys: REPLAY_DEMO_MANDATORY_ASSET_KEYS,
     relationGroup: '2026年度盘点链路',
     projectNo: 'RCP-202608180001',
     creator: '冯丽婷',

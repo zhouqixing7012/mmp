@@ -32,3 +32,12 @@ test('初盘演示每条计划仅一种子公司及范围，未按部门或City�
     groups.add(dimension);
   });
 });
+
+
+test('复盘演示计划含未盘、已盘必盘资产，资产关联到实际计划', () => {
+ const no = 'RCP-202608180001';
+ const mandatory = PROJECT_PLAN_ASSETS[no].filter(asset => asset.isMandatory);
+ expect(mandatory.map(asset => asset.assetTag)).toEqual(['114121801802', '114120800238']);
+ expect(mandatory.map(asset => asset.inventoryStatus)).toEqual(['未盘', '已盘']);
+ mandatory.forEach(asset => expect(PROJECT_PLAN_ROWS[no].some(plan => plan.assetKeys.includes(asset.key))).toBe(true));
+});
