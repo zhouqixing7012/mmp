@@ -2,7 +2,7 @@ import { inventoryManagementBlockReason } from './inventoryManagementPermissions
 import { sumInventoryQuantity } from './inventoryQuantity';
 import { inventoryRemark } from './inventoryRemark';
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
-import { getDefaultInventoryPeriod, getInventoryPeriodOptions, inventoryProjectPeriodBlockReason, inventoryProjectScopeSource, inheritInitialInventoryPeriod } from './inventoryProjectScope';
+import { getDefaultInventoryPeriod, getInventoryPeriodOptions, inventoryProjectPeriodBlockReason, inventoryProjectScopeSource, inheritInitialInventoryPeriod, inventoryReplayScopeStatistics } from './inventoryProjectScope';
 import { PROJECT_PLAN_ASSETS, PROJECT_PLAN_SNAPSHOTS } from '../../mock/inventoryProjectPlanMock';
 import InventoryPhotoRuleEditor from './InventoryPhotoRuleEditor';
 import { selectInventoryPhotoAssets, saveInventoryPhotoSnapshot, getInventoryPhotoSnapshot, saveInventoryPhotoConfig, getInventoryPhotoConfig, normalizeInventoryPhotoConfig } from './inventoryPhotoRules';
@@ -929,8 +929,9 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
     };
   });
   const managementBlock = inventoryManagementBlockReason(project, creator);
-  const sourceAssets = inventoryProjectScopeSource(project, { allAssets: ASSET_ROWS,
-    initialSnapshot: getInventoryPhotoSnapshot(project.initialProjectNo) || PROJECT_PLAN_SNAPSHOTS?.[project.initialProjectNo], initialAssets: PROJECT_PLAN_ASSETS[project.initialProjectNo] });
+  const initialSnapshot = getInventoryPhotoSnapshot(project.initialProjectNo) || PROJECT_PLAN_SNAPSHOTS?.[project.initialProjectNo];
+  const initialAssets = initialSnapshot?.assets ?? PROJECT_PLAN_ASSETS[project.initialProjectNo] ?? [];
+  const sourceAssets = inventoryProjectScopeSource(project, { allAssets: ASSET_ROWS, initialSnapshot, initialAssets });
   const [scopeRows, setScopeRows] = useState(() => SCOPE_ROWS.map(row => ({ ...row, assetKeys: initialProject?.scopeQueryAssetKeys || initialProject?.scopeSnapshotAssetKeys || sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)).map(asset => asset.key) })));
   const [importedScopeAssetKeys, setImportedScopeAssetKeys] = useState(initialProject?.scopeImportedAssetKeys ?? null);
   const [removedAssetKeys, setRemovedAssetKeys] = useState(initialProject?.scopeRemovedAssetKeys || []);
@@ -962,7 +963,6 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   const scopeCandidates = queryCandidates.filter(asset => (importedKeys == null || importedKeys.has(asset.key)) && !removedKeys.has(asset.key))
     .map((asset) => Object.prototype.hasOwnProperty.call(project.mandatoryAssetOverrides || {}, asset.key)
       ? { ...asset, isMandatory: project.mandatoryAssetOverrides[asset.key] } : asset);
-  const initialExecutionCount = sumInventoryQuantity(sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)));
   const scopeAssets = project.projectType === '复盘' ? markReplayMandatoryAssets(scopeCandidates, project) : scopeCandidates;
   const scopeAssetColumns = project.projectType === '复盘'
     ? [...SCOPE_ASSET_COLUMNS, { title: '是否必盘', key: 'isMandatory', width: 100, render: (_, asset) => <StatusTag value={isInventoryAssetMandatory(asset, project) ? '是' : '否'} /> }]
@@ -971,6 +971,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   const visibleScopeKeys = scopePreviewAssetKeys === undefined ? previewAssetKeys : scopePreviewAssetKeys;
   const displayedScopeAssets = visibleScopeKeys == null ? scopeAssets : scopeAssets.filter(asset => visibleScopeKeys.includes(asset.key));
   const filteredScopeAssets = displayedScopeAssets.filter(matchesScopeFilter);
+  const replayScopeStats = inventoryReplayScopeStatistics(visibleScopeKeys == null ? scopeAssets : filteredScopeAssets, initialAssets);
   useEffect(() => {
     setScopeAssetQuery({ assetTag: '', owner: [], ownerLevel: [] });
     setScopeAssetFilter({ assetTag: '', owner: [], ownerLevel: [] });
@@ -1077,9 +1078,9 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
       {project.projectType === '复盘' && (
         <div className="mt-4">
           <DetailGrid columns={3}>
-            <DetailItem label="本次复盘数量">{sumInventoryQuantity(scopeAssets).toLocaleString('zh-CN')}</DetailItem>
-            <DetailItem label="复盘比例">{initialExecutionCount > 0 ? `${(sumInventoryQuantity(scopeAssets) / initialExecutionCount * 100).toLocaleString('zh-CN', { maximumFractionDigits: 2 })}%` : '-'}</DetailItem>
-            <DetailItem label="初盘执行盘点数量">{initialExecutionCount.toLocaleString('zh-CN')}</DetailItem>
+            <DetailItem label="本次复盘数量">{replayScopeStats.count.toLocaleString('zh-CN')}</DetailItem>
+            <DetailItem label="复盘比例">{replayScopeStats.ratio}</DetailItem>
+            <DetailItem label="初盘资产明细总条数">{replayScopeStats.total.toLocaleString('zh-CN')}</DetailItem>
           </DetailGrid>
         </div>
       )}

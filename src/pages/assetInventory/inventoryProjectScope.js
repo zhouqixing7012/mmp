@@ -34,3 +34,11 @@ export function inheritInitialInventoryPeriod(project, initialProject) {
   return { ...project, initialProjectNo: initialProject.projectNo, inventoryType: initialProject.inventoryType,
     period: initialProject.period, projectName: `${initialProject.period}-${initialProject.inventoryType}盘点` };
 }
+
+// 复盘范围占比按卡片条数计算，分母包含关联初盘的全部明细。
+export function inventoryReplayScopeStatistics(replayAssets, initialAssets) {
+  const count = replayAssets.length;
+  const total = initialAssets.length;
+  const percent = total === 0 ? 0 : Number((count / total * 100).toFixed(2));
+  return { count, total, ratio: `${percent === 0 || percent === 100 ? percent : percent.toFixed(2)}%` };
+}

@@ -1,4 +1,4 @@
-import { getDefaultInventoryPeriod, getInventoryPeriodOptions, inventoryProjectPeriodBlockReason, inventoryProjectScopeSource, inheritInitialInventoryPeriod } from './inventoryProjectScope';
+import { getDefaultInventoryPeriod, getInventoryPeriodOptions, inventoryProjectPeriodBlockReason, inventoryProjectScopeSource, inheritInitialInventoryPeriod, inventoryReplayScopeStatistics } from './inventoryProjectScope';
 
 test('年度期间从2014年逐年到当前年，年度默认当前年而不是首项', () => {
   expect(getInventoryPeriodOptions('年度', 2026)).toEqual(['2014年', '2015年', '2016年', '2017年', '2018年', '2019年', '2020年', '2021年', '2022年', '2023年', '2024年', '2025年', '2026年']);
@@ -37,4 +37,19 @@ test('年度初盘严格截止创建年7月1日，季度月度不额外截止', 
   expect(inventoryProjectScopeSource({ projectType: '初盘', inventoryType: '年度', createdAt: '2025-08-01' }, { allAssets })).toEqual([allAssets[0]]);
   expect(inventoryProjectScopeSource({ projectType: '初盘', inventoryType: '季度' }, { allAssets })).toEqual(allAssets);
   expect(inventoryProjectScopeSource({ projectType: '初盘', inventoryType: '年度' }, { allAssets })).toEqual([]);
+});
+
+
+test('复盘范围200/1000及批次50/1000按卡片计数，不汇总数量字段', () => {
+  const initial = Array.from({ length: 1000 }, (_, i) => ({ key: i, quantity: i + 10, executeInventory: i < 200 }));
+  expect(inventoryReplayScopeStatistics(initial.slice(0, 200), initial)).toEqual({ count: 200, total: 1000, ratio: '20.00%' });
+  expect(inventoryReplayScopeStatistics(initial.slice(0, 50), initial)).toEqual({ count: 50, total: 1000, ratio: '5.00%' });
+});
+
+test('复盘范围百分比零分母、空批次、100%及普通比例显示', () => {
+  const assets = [{ quantity: 99 }, { quantity: 1 }, { quantity: 500 }];
+  expect(inventoryReplayScopeStatistics([], []).ratio).toBe('0%');
+  expect(inventoryReplayScopeStatistics([], assets).ratio).toBe('0%');
+  expect(inventoryReplayScopeStatistics(assets, assets).ratio).toBe('100%');
+  expect(inventoryReplayScopeStatistics(assets.slice(0, 1), assets).ratio).toBe('33.33%');
 });

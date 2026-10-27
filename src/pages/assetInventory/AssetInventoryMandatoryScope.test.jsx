@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import * as XLSX from 'xlsx';
 import { CreateProjectView } from './AssetInventoryProjectPage';
 import { ASSET_ROWS, PROJECT_INFO } from './mockData';
-import { getInventoryPhotoSnapshot } from './inventoryPhotoRules';
+import { getInventoryPhotoSnapshot, saveInventoryPhotoSnapshot } from './inventoryPhotoRules';
 import { INVENTORY_MANDATORY_IMPORT_HEADERS as importHeader } from './inventoryMandatoryImport';
 import { INVENTORY_PROJECT_NUMBER_KEY } from './inventoryProjectNumberAllocator';
 
@@ -89,9 +89,9 @@ test('清单替换整个范围并能重新纳入当前查询内已删除的初�
   await waitFor(() => expect(mandatoryCell(chosen[1].assetTag)).toHaveTextContent('是'));
   expect(within(screen.getByRole('table', { name: '必盘范围资产' })).queryByRole('row', { name: new RegExp(chosen[0].assetTag) })).not.toBeInTheDocument();
   expect(screen.getByRole('group', { name: '本次复盘数量' })).toHaveTextContent(/^1$/);
-  const initialCount = require('../../mock/inventoryProjectPlanMock').PROJECT_PLAN_ASSETS[base.initialProjectNo].filter((asset) => asset.executeInventory).length;
-  expect(screen.getByRole('group', { name: '初盘执行盘点数量' })).toHaveTextContent(String(initialCount));
-  expect(screen.getByRole('group', { name: '复盘比例' })).toHaveTextContent(`${(100 / initialCount).toLocaleString('zh-CN', { maximumFractionDigits: 2 })}%`);
+  const initialCount = require('../../mock/inventoryProjectPlanMock').PROJECT_PLAN_ASSETS[base.initialProjectNo].length;
+  expect(screen.getByRole('group', { name: '初盘资产明细总条数' })).toHaveTextContent(String(initialCount));
+  expect(screen.getByRole('group', { name: '复盘比例' })).toHaveTextContent(`${(100 / initialCount).toFixed(2)}%`);
   importFile([{ ...chosen[0], isMandatory: true }]);
   await waitFor(() => expect(mandatoryCell(chosen[0].assetTag)).toHaveTextContent('是'));
   expect(within(screen.getByRole('table', { name: '必盘范围资产' })).queryByRole('row', { name: new RegExp(chosen[1].assetTag) })).not.toBeInTheDocument();
@@ -161,8 +161,8 @@ test('编号预留失败显示错误并阻止无号保存或生成，零初盘�
   expect(onGenerated).not.toHaveBeenCalled();
   view.unmount();
   render(<CreateProjectView creator="冯丽婷" initialProject={{ ...base, initialProjectNo: 'NO-INITIAL-SOURCE' }} onBack={() => {}} onGenerated={() => {}} />);
-  expect(screen.getByRole('group', { name: '初盘执行盘点数量' })).toHaveTextContent(/^0$/);
-  expect(screen.getByRole('group', { name: '复盘比例' })).toHaveTextContent(/^-$/);
+  expect(screen.getByRole('group', { name: '初盘资产明细总条数' })).toHaveTextContent(/^0$/);
+  expect(screen.getByRole('group', { name: '复盘比例' })).toHaveTextContent(/^0%$/);
 });
 
 test('实际新建入口年度默认当前年，类型切换后期间联动且季度月度选项不变', () => {
@@ -201,15 +201,45 @@ test.each(['初盘', '抽盘', '复盘'])('实际编辑年度%s保存和快照�
 });
 
 
-test('清单选择只筛选下方范围明细，查看全部恢复，复盘统计不随查看范围缩小', () => {
+test('清单选择更新范围卡片条数及占比，查看全部恢复项目范围统计', () => {
   const props = { initialProject: base, creator: '冯丽婷', onBack: jest.fn(), onGenerated: jest.fn() };
   const view = render(<CreateProjectView {...props} scopePreviewAssetKeys={[chosen[0].key]} />);
   expect(screen.queryByRole('dialog')).toBeNull();
   const table = screen.getByRole('table', { name: '必盘范围资产' });
   expect(within(table).getByRole('row', { name: new RegExp(chosen[0].assetTag) })).toBeInTheDocument();
   expect(within(table).queryByRole('row', { name: new RegExp(chosen[1].assetTag) })).toBeNull();
-  const count = screen.getByRole('group', { name: '本次复盘数量' }).textContent;
+  expect(screen.getByRole('group', { name: '本次复盘数量' })).toHaveTextContent(/^1$/);
   view.rerender(<CreateProjectView {...props} scopePreviewAssetKeys={null} />);
   expect(within(screen.getByRole('table', { name: '必盘范围资产' })).getByRole('row', { name: new RegExp(chosen[1].assetTag) })).toBeInTheDocument();
-  expect(screen.getByRole('group', { name: '本次复盘数量' }).textContent).toBe(count);
+  expect(screen.getByRole('group', { name: '本次复盘数量' })).toHaveTextContent(String(require('../../mock/inventoryProjectPlanMock').PROJECT_PLAN_ASSETS[base.initialProjectNo].filter(asset => asset.executeInventory).length));
+});
+
+
+test('批次查询统计卡片而非数量，初盘全部明细含未执行和已盘记录，查看全部不改保存范围', () => {
+  const initialNo = 'INITIAL-ALL-CARDS';
+  const assets = [
+    { ...chosen[0], key: 'card-a', assetTag: 'CARD-A', quantity: 100, executeInventory: true },
+    { ...chosen[1], key: 'card-b', assetTag: 'CARD-B', quantity: 20, executeInventory: true },
+    { ...chosen[0], key: 'card-c', assetTag: 'CARD-C', quantity: 999, executeInventory: false, inventoryStatus: '已盘' },
+  ];
+  saveInventoryPhotoSnapshot({ projectNo: initialNo }, assets);
+  const onGenerated = jest.fn();
+  const props = { initialProject: { ...base, initialProjectNo: initialNo }, creator: '冯丽婷', onBack: jest.fn(), onGenerated };
+  const view = render(<CreateProjectView {...props} scopePreviewAssetKeys={null} />);
+  expect(screen.getByRole('group', { name: '本次复盘数量' })).toHaveTextContent(/^2$/);
+  expect(screen.getByRole('group', { name: '初盘资产明细总条数' })).toHaveTextContent(/^3$/);
+  expect(screen.getByRole('group', { name: '复盘比例' })).toHaveTextContent(/^66.67%$/);
+  view.rerender(<CreateProjectView {...props} scopePreviewAssetKeys={['card-a', 'card-b']} />);
+  fireEvent.change(screen.getByLabelText('范围资产标签号'), { target: { value: 'CARD-B' } });
+  fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
+  expect(screen.getByRole('group', { name: '本次复盘数量' })).toHaveTextContent(/^1$/);
+  expect(screen.getByRole('group', { name: '复盘比例' })).toHaveTextContent(/^33.33%$/);
+  fireEvent.change(screen.getByLabelText('范围资产标签号'), { target: { value: 'NO-MATCH' } });
+  fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
+  expect(screen.getByRole('group', { name: '本次复盘数量' })).toHaveTextContent(/^0$/);
+  expect(screen.getByRole('group', { name: '复盘比例' })).toHaveTextContent(/^0%$/);
+  view.rerender(<CreateProjectView {...props} scopePreviewAssetKeys={null} />);
+  expect(screen.getByRole('group', { name: '本次复盘数量' })).toHaveTextContent(/^2$/);
+  fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
+  expect(getInventoryPhotoSnapshot(base.projectNo).assets.map(asset => asset.key)).toEqual(['card-a', 'card-b']);
 });
