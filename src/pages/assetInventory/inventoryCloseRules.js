@@ -21,9 +21,24 @@ export function replayCloseBlockReason(project, submission) {
     ? '复盘计划仍有未结束的审核，请结束审核后再关闭项目' : '';
 }
 
-export function inventoryProjectCloseBlockReason(project, { plans, photoRows = [], replaySubmission } = {}) {
+export function inventoryProjectCloseBlockReason(project, { plans, assets, photoRows = [], replaySubmission } = {}) {
   if (['盘点关闭', '关闭'].includes(project?.status)) return '项目已关闭，不能重复关闭';
+  if (Number(project?.unfinishedReviewCount || 0) > 0) return '审核未结束数量大于零，请结束审核后再关闭项目';
   const pendingPhoto = photoRows.find(row => unfinished(row.reviewStatus));
   if (pendingPhoto) return `资产 ${pendingPhoto.asset?.assetTag || ''} 的盘点图片待审核，请结束审核后再关闭项目`;
-  return replayCloseBlockReason({ ...project, replayPlans: Array.isArray(plans) ? plans : project?.replayPlans }, replaySubmission);
+  const currentPlans = Array.isArray(plans) ? plans : project?.replayPlans;
+  const reviewBlock = replayCloseBlockReason({ ...project, replayPlans: currentPlans }, replaySubmission);
+  if (reviewBlock) return reviewBlock;
+  if (['初盘', '复盘'].includes(project?.projectType) && !['盘点中', '已启动', '启动'].includes(project?.status)) return '还未开启盘点或已关闭';
+  if (project?.projectType !== '复盘') return '';
+  if (!Array.isArray(currentPlans) || !Array.isArray(assets)) return '缺少复盘范围或计划明细，无法校验关闭条件';
+  const assignedKeys = new Set(currentPlans.flatMap(plan => plan.assetKeys || []));
+  const assignedTags = new Set(currentPlans.flatMap(plan => (plan.assets || []).map(asset => asset.assetTag || asset.tagNo)).filter(Boolean));
+  const planNos = new Set(currentPlans.map(plan => plan.planNo).filter(Boolean));
+  if (assets.some(asset => !assignedKeys.has(asset.key) && !assignedTags.has(asset.assetTag || asset.tagNo) && !(asset.planNo && planNos.has(asset.planNo)))) return '存在未创建计划的资产，请先创建盘点计划';
+  const unapproved = currentPlans.find(plan => {
+    const review = replaySubmission?.version === 2 ? getReplayReviewForPlan(replaySubmission, plan, project.projectNo) : null;
+    return (review?.status ?? plan.approvalStatus ?? plan.status) !== '已审核';
+  });
+  return unapproved ? `盘点计划 ${unapproved.planNo || ''} 未通过审批，请先完成计划审批` : '';
 }

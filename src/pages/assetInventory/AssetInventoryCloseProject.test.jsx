@@ -5,8 +5,8 @@ import AssetInventoryProjectListV2 from './AssetInventoryProjectListV2';
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 jest.mock('react-router-dom', () => ({ useNavigate: () => jest.fn() }), { virtual: true });
 jest.mock('./projectListMockData', () => ({ PROJECT_LIST_ROWS: [
- { creator: '孙志强', key: 'draft', projectNo: 'ZERO', projectName: '零计划项目', projectType: '复盘', status: '草稿' },
- { creator: '孙志强', key: 'room', projectNo: 'ROOM', projectName: '机房项目', projectType: '初盘', status: '快照生成', generationSource: '系统生成', scopeRanges: ['机房'] },
+ { creator: '孙志强', key: 'draft', projectNo: 'ZERO', projectName: '零计划项目', projectType: '初盘', status: '盘点中' },
+ { creator: '孙志强', key: 'room', projectNo: 'ROOM', projectName: '机房项目', projectType: '初盘', status: '盘点中', generationSource: '系统生成', scopeRanges: ['机房'] },
 ] }));
 jest.mock('antd', () => {
  const Box = ({ children, extra }) => <div>{extra}{children}</div>;
@@ -15,7 +15,7 @@ jest.mock('antd', () => {
 });
 jest.mock('../../components/QueryBar', () => ({ __esModule: true, default: () => null, QueryItem: () => null }));
 beforeEach(() => jest.clearAllMocks());
-test('零计划草稿选中一个即可关闭，零选或多选不弹确认，机房初盘也可手动关闭', () => {
+test('初盘已启动后单选可关闭，零选或多选不弹确认，机房初盘也可手动关闭', () => {
  const close = jest.fn();
  render(<AssetInventoryProjectListV2 creator="孙志强" onCloseProject={close} getCloseBlockReason={row => inventoryProjectCloseBlockReason(row, { plans: [], photoRows: [] })} />);
  fireEvent.click(screen.getByRole('button', { name: '关闭项目' }));

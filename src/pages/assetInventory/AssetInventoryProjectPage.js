@@ -519,13 +519,7 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
     }));
   };
 
-  const linkedInitialProjects = new Set(PROJECT_ROWS.filter((row) => row.projectType === project.projectType && row.projectNo !== project.projectNo)
-    .map((row) => row.initialProjectNo && row.initialProjectNo !== '-'
-      ? row.initialProjectNo
-      : PROJECT_ROWS.find((initial) => initial.projectType === '初盘' && initial.relationGroup === row.relationGroup)?.projectNo)
-    .filter(Boolean));
-  const initialProjectOptions = PROJECT_ROWS.filter((row) => row.projectType === '初盘'
-    && row.status === '盘点关闭' && !linkedInitialProjects.has(row.projectNo));
+  const initialProjectOptions = PROJECT_ROWS.filter((row) => row.projectType === '初盘' && row.status === '盘点关闭');
 
   return (
     <Card size="small" title={<CardTitle>基本信息</CardTitle>}>
@@ -576,7 +570,7 @@ function ProjectBasicInfoEditor({ project, setProject, creator, isEditing }) {
               <Select
                 value={project.initialProjectNo === '-' ? undefined : project.initialProjectNo}
                 className="w-full"
-                 placeholder="请选择已关闭且未被同类型关联的初盘项目"
+                 placeholder="请选择一个已关闭的初盘项目"
                  options={initialProjectOptions.map((row) => ({ label: `${row.projectNo} ${row.projectName}`, value: row.projectNo }))}
                 onChange={(value) => {
                   const initial = initialProjectOptions.find(row => row.projectNo === value);

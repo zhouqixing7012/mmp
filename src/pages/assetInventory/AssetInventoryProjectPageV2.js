@@ -160,11 +160,11 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     const session = active ? { rows: planRows, assets: planAssets } : projectSessions.current.get(project.projectNo);
     const plans = applyReplayPlanStatuses(session?.rows ?? readDemoData(sessionKey(project.projectNo), null)?.rows ?? PROJECT_PLAN_ROWS[project.projectNo] ?? [], getReplaySubmission(project.projectNo));
     const snapshot = getInventoryPhotoSnapshot(project.projectNo);
-    const scope = snapshot?.assets ?? session?.assets ?? PROJECT_PLAN_ASSETS[project.projectNo];
+    const scope = snapshot?.assets ?? session?.assets ?? readDemoData(sessionKey(project.projectNo), null)?.assets ?? PROJECT_PLAN_ASSETS[project.projectNo];
     const tags = new Set((scope || []).map(asset => asset.assetTag));
     const photoRows = scope ? buildReviewRows(project.projectNo, project.scopeRanges || allowedRanges).filter(row => tags.has(row.asset.assetTag))
       : getPhotoReviewResults(project.projectNo).map(entry => ({ asset: { assetTag: entry.assetTag }, reviewStatus: { 审核中: '待审核', 已盘: '审核通过', 未盘: '审核不通过' }[entry.status] }));
-    return inventoryProjectCloseBlockReason({ ...project, replayPlans: plans }, { plans, photoRows, replaySubmission: getReplaySubmission(project.projectNo) });
+    return inventoryProjectCloseBlockReason({ ...project, replayPlans: plans }, { plans, assets: scope?.filter(asset => isSnapshotExecutionAsset(asset, project)), photoRows, replaySubmission: getReplaySubmission(project.projectNo) });
   };
 
   const activePlanNos = new Set(planRows.filter((row) => (row.ranges || [row.range]).some(range => allowedRanges.includes(range))).map((row) => row.planNo));
