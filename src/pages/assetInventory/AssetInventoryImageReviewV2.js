@@ -1,3 +1,5 @@
+import './inventoryAuditLayout.css';
+import { ProjectInfoCard } from './AssetInventoryProjectV2Common';
 import { inventoryExecutionBlockReason } from './inventoryExecutionRules';
 import { sumInventoryQuantity } from './inventoryQuantity';
 import { inventoryRemark } from './inventoryRemark';
@@ -53,9 +55,6 @@ function PageTitle({ children }) {
   return <Typography.Title level={4} style={{ margin: 0 }}>{children}</Typography.Title>;
 }
 
-function DateFilter({ value, onChange }) {
-  return <DatePicker value={value ? dayjs(value) : null} format="YYYY-MM-DD" style={{ width: '100%' }} onChange={(date) => onChange(date ? date.format('YYYY-MM-DD') : '')} />;
-}
 
 function toImportedPhoto(record) {
   if (!record) return null;
@@ -159,7 +158,7 @@ export function sortInventoryReviewRows(rows) {
 function PhotoThumbnail({ photo, onOpen }) {
   return (
     <Button type="text" className="h-auto p-0" onClick={onOpen}>
-      <div className="group relative h-32 w-36 overflow-hidden rounded-lg border border-[#d9d9d9] bg-[#f5f5f5] shadow-sm transition hover:border-[#1677ff] hover:shadow-md">
+      <div className="group relative h-32 w-32 overflow-hidden rounded-lg border border-[#d9d9d9] bg-[#f5f5f5] shadow-sm transition hover:border-[#1677ff] hover:shadow-md">
         <InventoryPhotoImage photo={photo} alt={photo.label} className="h-full w-full object-contain transition duration-200 group-hover:scale-[1.03]" />
         <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-gradient-to-t from-black/70 to-transparent pb-2 pt-6 text-xs text-white opacity-90">
           <Maximize2 size={13} />
@@ -578,8 +577,8 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
 
   const columns = [
     {
-      title: '资产信息', width: 330,
-      render: (_, row) => <div className="text-sm leading-6">
+      title: '资产信息', width: 220,
+      render: (_, row) => <div className="text-sm leading-6 break-words">
         <div><span className="text-gray-500">资产标签号：</span>{row.asset.assetTag}</div>
         <div><span className="text-gray-500">序列号：</span>{row.asset.serialNo}</div>
         <div><span className="text-gray-500">资产类别：</span>{formatAssetCategory(row.asset) || '-'}</div>
@@ -590,8 +589,8 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
       </div>,
     },
     {
-      title: '盘点信息', width: 330,
-      render: (_, row) => <div className="text-sm leading-6">
+      title: '盘点信息', width: 220,
+      render: (_, row) => <div className="text-sm leading-6 break-words">
         <div><span className="text-gray-500">资产责任人：</span>{row.asset.owner}</div>
         <div><span className="text-gray-500">资产数量：</span>{row.asset.quantity}</div>
         <div><span className="text-gray-500">实际盘点人：</span>{row.asset.counter}</div>
@@ -601,21 +600,21 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
       </div>,
     },
     {
-      title: '整体照片', width: 180, align: 'center',
+      title: '整体照片', width: 160, align: 'center',
       render: (_, row) => row.photos?.overall
         ? <PhotoThumbnail photo={row.photos.overall} onOpen={() => openPreview(row.photos, 'overall')} />
         : <Typography.Text type="secondary">-</Typography.Text>,
     },
     {
-      title: '部分照片', width: 180, align: 'center',
+      title: '部分照片', width: 160, align: 'center',
       render: (_, row) => row.photos?.partial
         ? <PhotoThumbnail photo={row.photos.partial} onOpen={() => openPreview(row.photos, 'partial')} />
         : <Typography.Text type="secondary">-</Typography.Text>,
     },
     {
-      title: '审核结果', width: 220, fixed: 'right',
+      title: '审核结果', width: 160, fixed: 'right',
       render: (_, row) => row.reviewStatus === '待审核'
-        ? <Radio.Group disabled={projectClosed} value={row.decision} onChange={(event) => setDecision(row.key, event.target.value)} options={[{ label: '审核通过', value: 'pass' }, { label: '审核不通过', value: 'fail' }]} />
+        ? <Radio.Group style={{ display: 'flex', flexDirection: 'column', gap: 8 }} disabled={projectClosed} value={row.decision} onChange={(event) => setDecision(row.key, event.target.value)} options={[{ label: '审核通过', value: 'pass' }, { label: '审核不通过', value: 'fail' }]} />
         : <StatusTag value={row.reviewStatus} />,
     },
   ];
@@ -623,6 +622,7 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
   return <Space direction="vertical" size={16} className="w-full">
     {contextHolder}
     <PageTitle>图片审核</PageTitle>
+    {project && <ProjectInfoCard project={project} />}
     <Card size="small" title={<SectionCardTitle>审核概览</SectionCardTitle>}>
       <div className="grid grid-cols-3 gap-6">
         <div className="min-w-0">
@@ -637,7 +637,7 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
       </div>
     </Card>
 
-    <QueryBar onQuery={() => setFilters({ ...draftFilters })} onReset={() => { setDraftFilters(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setSelectedKeys([]); }}>
+    <div className="inventory-range-query"><QueryBar onQuery={() => setFilters({ ...draftFilters })} onReset={() => { setDraftFilters(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setSelectedKeys([]); }}>
       <QueryItem label="资产标签号"><Input value={draftFilters.assetTag} allowClear onChange={(event) => updateDraft('assetTag', event.target.value)} /></QueryItem>
       <QueryItem label="资产说明"><Input value={draftFilters.description} allowClear onChange={(event) => updateDraft('description', event.target.value)} /></QueryItem>
       <QueryItem label="图片审核状态"><Select value={draftFilters.reviewStatus || undefined} allowClear options={['待审核', '审核不通过', '审核通过'].map((value) => ({ label: value, value }))} onChange={(value) => updateDraft('reviewStatus', value)} /></QueryItem>
@@ -645,12 +645,11 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
       <QueryItem label="公司"><AssetValueSelect rows={queryAssets} field="organization" value={draftFilters.company} onChange={(value) => updateDraft('company', value)} /></QueryItem>
       <QueryItem label="部门"><AssetValueSelect rows={queryAssets} field="ownerDept" value={draftFilters.department} onChange={(value) => updateDraft('department', value)} /></QueryItem>
       <QueryItem label="资产类别"><AssetCategorySelect rows={queryAssets} value={draftFilters.category} onChange={(value) => updateDraft('category', value)} /></QueryItem>
-      <QueryItem label="盘点开始时间"><DateFilter value={draftFilters.startDate} onChange={(value) => updateDraft('startDate', value)} /></QueryItem>
-      <QueryItem label="盘点结束时间"><DateFilter value={draftFilters.endDate} onChange={(value) => updateDraft('endDate', value)} /></QueryItem>
+      <QueryItem label="盘点起止时间"><DatePicker.RangePicker className="w-full" allowEmpty={[true, true]} format="YYYY-MM-DD" value={[draftFilters.startDate ? dayjs(draftFilters.startDate) : null, draftFilters.endDate ? dayjs(draftFilters.endDate) : null]} onChange={(dates) => setDraftFilters(current => ({ ...current, startDate: dates?.[0]?.format('YYYY-MM-DD') || '', endDate: dates?.[1]?.format('YYYY-MM-DD') || '' }))} /></QueryItem>
       <QueryItem label="盘点状态"><Select value={draftFilters.inventoryStatus || undefined} allowClear options={['未盘', '审核中', '已盘', '代盘', '报失'].map((value) => ({ label: value, value }))} onChange={(value) => updateDraft('inventoryStatus', value)} /></QueryItem>
       <QueryItem label="City"><AssetValueSelect rows={queryAssets} field="city" value={draftFilters.city} onChange={(value) => updateDraft('city', value)} /></QueryItem>
       <QueryItem label="Building"><AssetValueSelect rows={queryAssets} field="building" value={draftFilters.building} onChange={(value) => updateDraft('building', value)} /></QueryItem>
-    </QueryBar>
+    </QueryBar></div>
 
     <Card
       size="small"
@@ -664,7 +663,8 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
         columns={columns}
         dataSource={filteredRows}
         rowSelection={{ selectedRowKeys: selectedKeys, onChange: (keys) => { if (!projectClosed) setSelectedKeys(keys); }, getCheckboxProps: (record) => ({ disabled: projectClosed || record.reviewStatus !== '待审核' }) }}
-        scroll={{ x: 'max-content' }}
+        scroll={{ x: 960 }}
+        tableLayout="fixed"
         pagination={{ pageSize: 5, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
       />
     </Card>

@@ -1,0 +1,6 @@
+/* 双日期区间在有两列以上的查询栏中占两格，窄屏仍为单列。 */
+@container mmp-query (min-width: 504px) {
+  .inventory-range-query .mmp-query-field:has(.ant-picker-range) {
+    grid-column: span 2;
+  }
+}

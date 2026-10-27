@@ -1,3 +1,4 @@
+import './inventoryAuditLayout.css';
 import { inventoryManagementBlockReason } from './inventoryManagementPermissions';
 import InventoryScanResultImport from './InventoryScanResultImport';
 import { applyInventoryScanResults } from './inventoryScanResultImport';
@@ -540,7 +541,7 @@ export function AssetInventoryPlanAssetListV2({ plan, project, currentOperator, 
       {contextHolder}
       <PageTitle>盘点计划资产清单</PageTitle>
 
-      <QueryBar
+      <div className="inventory-range-query"><QueryBar
         onQuery={() => setFilters({ ...draftFilters })}
         onReset={() => {
           setDraftFilters(EMPTY_ASSET_FILTERS);
@@ -562,7 +563,7 @@ export function AssetInventoryPlanAssetListV2({ plan, project, currentOperator, 
         <QueryItem label="启用日期"><DatePicker.RangePicker className="w-full" value={draftFilters.enableFrom && draftFilters.enableTo ? [dayjs(draftFilters.enableFrom), dayjs(draftFilters.enableTo)] : null} onChange={(dates) => setDraftFilters((current) => ({ ...current, enableFrom: dates?.[0]?.format('YYYY-MM-DD') || '', enableTo: dates?.[1]?.format('YYYY-MM-DD') || '' }))} /></QueryItem>
         <QueryItem label="盘点状态"><Select value={draftFilters.inventoryStatus || undefined} allowClear options={['未盘', '审核中', '已盘', '代盘', '报失'].map((value) => ({ label: value, value }))} onChange={(value) => updateDraft('inventoryStatus', value)} /></QueryItem>
         <QueryItem label="成本中心"><Input value={draftFilters.costCenter} allowClear onChange={(event) => updateDraft('costCenter', event.target.value)} /></QueryItem>
-      </QueryBar>
+      </QueryBar></div>
 
       <Card size="small" title={<CardTitle>资产清单</CardTitle>} extra={<Space>
         {!inventoryScannerBlockReason(project, plan, currentOperator) && <Button onClick={() => setScannerOpen(true)}>标签扫描</Button>}<InventoryScanResultImport project={project} plan={plan} operator={currentOperator} assets={rows} onImported={updates => setRows(current => applyInventoryScanResults(current, updates))} /><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => { try { downloadInventoryPlanAssets(selectInventoryExportRows(filteredRows, rows), plan.planNo, { project }); } catch (error) { messageApi.error('盘点资产导出失败，请重试'); } }}>导出</Button></Space>}>

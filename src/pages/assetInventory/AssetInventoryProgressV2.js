@@ -139,7 +139,7 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
         title={<SectionCardTitle>项目进度</SectionCardTitle>}
         extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(progressRows, progressColumns, '项目进度')}>导出</Button>}
       >
-        <Table rowKey="key" size="small" bordered columns={progressColumns} dataSource={progressRows} pagination={false} scroll={{ x: 1250 }} />
+        <Table rowKey="key" size="small" bordered columns={progressColumns} dataSource={progressRows} pagination={false} scroll={{ x: 950 }} />
       </Card>
       <div className="flex justify-center pb-2">
         <Button onClick={onBack}>返回</Button>

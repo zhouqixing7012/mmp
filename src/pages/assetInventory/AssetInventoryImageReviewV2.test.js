@@ -64,7 +64,7 @@ test('扫码枪已盘后旧照片待审核不再进入当前审批或关闭拦�
   saveMobileInventoryResult('GUN', 'A', { status: '代盘', resultSource: '扫码枪' });
   const photoRows = buildReviewRows('GUN', ['员工']);
   expect(photoRows).toHaveLength(0);
-  expect(inventoryProjectCloseBlockReason({ projectNo: 'GUN', projectType: '初盘' }, { plans: [{ status: '盘点中' }], photoRows })).toBe('');
+  expect(inventoryProjectCloseBlockReason({ projectNo: 'GUN', projectType: '初盘', status: '盘点中' }, { plans: [{ status: '盘点中' }], photoRows })).toBe('');
   expect(require('./inventoryPhotoReviewStore').getPhotoReviewResults('GUN')[0].photos.overall.key).toBe('old');
 });
 
