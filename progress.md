@@ -1150,3 +1150,10 @@ PRD可见51184→50808，减少376（0.73%），主要为已确认事项从6.5�
 2026-10-27：按用户要求统一快照三清单启动前/后及分批启动的17项查询（原16项加盘点范围），项目及自定义计划范围分录未筛选列留空，公司/部门只展示所选节点。PRD4.1.3.4/4.1.5.1及4.2.7同步，INV-63收口，余40项。定向30通过0失败；部署命令构建通过（已有警告），产物main.535b6d6a.js；浏览器及线上未验证。PRD50808→50517（-291，-0.57%），主要合并重复查询表和删除已确认待问。
 
 验证：InventoryAssetQuery、inventoryAssetQuery、SnapshotTransfers、ScopeSelectorV3、CustomPlanBuilder共5套30个不同用例通过；补充无筛选留空与17项统一展示断言。构建命令：CI=false PUBLIC_URL=/mmp/ npm run build。保留实际assetKeys关联，查看、删除及生成计划的数据范围不因展示留空而改变。未执行浏览器、线上验证；原始PRD未修改。
+
+
+## 2026-10-27 关闭入口限定列表与移动必盘检查
+
+2026-10-27：用户明确仅保留项目列表关闭按钮；快照详情移除手动关闭入口和处理函数，机房数量100%自动关闭保留，PRD4.1.1/4.11同步。移动必盘标签已在卡片状态旁实现，默认inventoryMobileMock无必盘标记；补列表移动预览传递mandatoryAssetKeys，兼容仅存项目名单的记录。3套61通过0失败，部署命令构建通过（已有警告）；浏览器及线上未验证。PRD50517→50506（-11，-0.02%）。
+
+测试：AssetInventoryCloseProject、AssetInventoryMobilePrototype（含未盘必盘排序、已盘保留及刷新标记）、AssetInventorySnapshotTransfers。构建：CI=false PUBLIC_URL=/mmp/ npm run build。源码复核详情关闭按钮消除，列表关闭入口保留；不添加无来源必盘样本，未宣称用户当前浏览器资产已命中必盘。

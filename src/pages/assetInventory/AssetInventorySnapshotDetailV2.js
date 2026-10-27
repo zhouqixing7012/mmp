@@ -23,8 +23,7 @@ import {
 import dayjs from 'dayjs';
 import { calculateInventorySnapshotStats } from './inventorySnapshotStats';
 import { serializeInventoryAssetExport, serializeInventorySnapshotExport } from './inventoryAssetExport';
-import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
-import { CheckCircle2, Download, PlayCircle, ScanLine, Trash2, Upload, XCircle } from 'lucide-react';
+import { CheckCircle2, Download, PlayCircle, ScanLine, Trash2, Upload } from 'lucide-react';
 import InventoryAssetQuery from './InventoryAssetQuery';
 import { EMPTY_INVENTORY_ASSET_QUERY, filterInventoryAssets } from './inventoryAssetQuery';
 import { formatAssetCategory } from '../../components/AssetQueryControls';
@@ -424,7 +423,6 @@ export default function AssetInventorySnapshotDetailV2({
   plans = [],
   currentOperator,
   onResultsImported,
-  getCloseBlockReason = inventoryProjectCloseBlockReason,
 }) {
   const { allowedRanges: configuredRanges } = useAssetInventoryVariant();
   const allowedRanges = project?.scopeRanges?.length ? project.scopeRanges : configuredRanges;
@@ -435,27 +433,6 @@ export default function AssetInventorySnapshotDetailV2({
   const [projectStatus, setProjectStatus] = useState(initialProjectStatus);
   useEffect(() => setProjectStatus(initialProjectStatus), [initialProjectStatus]);
   const managementBlock = inventoryManagementBlockReason(project, currentOperator);
-  const canManuallyClose = !managementBlock && !['盘点关闭', '关闭'].includes(projectStatus);
-  const handleCloseProject = () => {
-    if (managementBlock) { messageApi.warning(managementBlock); return; }
-    const closeBlockReason = getCloseBlockReason(project);
-    if (closeBlockReason) { messageApi.warning(closeBlockReason); return; }
-    Modal.confirm({
-      title: '确认关闭盘点项目？',
-      content: `项目关闭后，移动端待办将结束，不能继续扫码或提交。未盘资产 ${project?.unscannedCount ?? '待计算'} 项；未盘资产不阻止关闭。`,
-      okText: '关闭项目',
-      cancelText: '取消',
-      onOk: () => {
-        const denied = inventoryManagementBlockReason(project, currentOperator);
-        if (denied) { messageApi.warning(denied); return; }
-        const latestBlock = getCloseBlockReason({ ...project, status: projectStatus });
-        if (latestBlock) { messageApi.warning(latestBlock); return; }
-        if (onCloseProject?.({ ...project, status: '盘点关闭', closedBy: '手动' }) === false) return;
-        setProjectStatus('盘点关闭');
-        messageApi.success(project?.projectType === '初盘' ? '初盘项目已关闭，并通过服务号通知财务人员' : '盘点项目已关闭');
-      },
-    });
-  };
   useEffect(() => {
     if (!isSystemRoomInitial || projectStatus !== '盘点中' || !(Number(project?.progress) >= 100)) return;
     setProjectStatus('盘点关闭');
@@ -567,7 +544,6 @@ export default function AssetInventorySnapshotDetailV2({
           {!managementBlock && projectStatus === '快照生成' && <Button type="primary" icon={<PlayCircle size={14} />} onClick={generatePlans}>生成盘点计划</Button>}
           {!managementBlock && ['快照生成', '生成盘点计划'].includes(projectStatus) && <Button danger icon={<Trash2 size={14} />} onClick={handleDeleteSnapshot}>删除快照</Button>}
           <Button icon={<Download size={14} />} onClick={exportSnapshot}>快照导出</Button>
-          {canManuallyClose && <Button danger icon={<XCircle size={14} />} onClick={handleCloseProject}>关闭项目</Button>}
           <Button onClick={onBack}>返回</Button>
         </Space>
       </div>
