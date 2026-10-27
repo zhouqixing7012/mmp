@@ -727,7 +727,7 @@ export default function AssetInventoryMobilePrototype() {
     return <>
       <MobileHeader title={selectedAsset.assetDesc} onBack={goBack} onExit={exitPrototype} />
       <div className="inventory-mobile-content inventory-detail-content">
-        <div className="inventory-detail-header"><span className="inventory-detail-category">{selectedAsset.category}</span><StatusBadge status={selectedAsset.status} /></div>
+        <div className="inventory-detail-header"><span className="inventory-detail-category">{selectedAsset.category}</span><div className="inventory-detail-badges"><StatusBadge status={selectedAsset.status} />{selectedAsset.isMandatory && <Tag color="orange">必盘</Tag>}</div></div>
         <div className="inventory-detail-card">
           <DetailRow label="资产标签号" value={selectedAsset.tagNo} />
           <DetailRow label="序列号" value={selectedAsset.serialNo} />
