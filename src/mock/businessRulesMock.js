@@ -335,3 +335,6 @@ export { inventoryReportTemplate } from './inventoryReportTemplate';
 
 // 用户提供的真实年度汇总，与交易演示明细分别保留来源。
 export { inventoryReportActuals } from '../data/inventoryReportActuals';
+
+// 无形资产IP：用户提供截图的只读演示资料。
+export { intangibleIPRows, intangibleIPTypes } from './intangibleIPMock';

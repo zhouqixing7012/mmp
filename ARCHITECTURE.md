@@ -348,3 +348,7 @@ Refined启动校验后调用准备通知模型/安排存储，再改变计划状
 ### 业务字段候选复用
 
 `src/config/assetFieldOptions.js`维护用途与新增类型字典，`assetPlates.js`维护板块字典；维护查询、维护编辑校验、入库与资产报表引用共同来源。`src/services/assetReferenceOptions.js`集中读取有来源的维护记录及业务引用，提供人员/成本中心候选、编码及选择列定义；报表调用时传入台账/卡片权限，维护表单保留原可选范围。`AssetPersonSelect`复用人员弹窗，显式options模式回填工号，原盘点rows模式保持原契约。报表的角色字段只决定匹配位置，不新建候选数组；正式主数据尚未接入。
+
+## 无形资产IP（2026-10-27）
+
+`yewurules` 的无形资产/IP菜单接入 `intangibleAssets/IPManagement`；查询与详情经 `intangibleIPService` 读取 `businessRulesMock` 统一导出的截图样例。只读展示，无数据写入和流程服务。字段配置归 `ipFields`，表格、查询和详情复用公共组件。

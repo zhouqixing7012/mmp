@@ -1,3 +1,4 @@
+import IPManagement from './intangibleAssets/IPManagement';
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Search } from 'lucide-react';
@@ -50,12 +51,13 @@ const NOServiceView = () => {
 
 export default function App() {
   const location = useLocation();
+  const showIP = new URLSearchParams(location.search).get('module') === 'ip';
   const workspaceQuery = new URLSearchParams(location.search).get('workspace');
   const workspaceState = location.state?.workspace || workspaceQuery;
   const returnToInventoryProjects = location.state?.returnTo === 'asset-inventory-projects';
   const returnToAssetManagementHome = location.state?.returnTo === 'asset-management-home';
-  const [activeMenu, setActiveMenu] = useState(returnToInventoryProjects ? '资产盘点' : returnToAssetManagementHome ? '资产管理' : workspaceState ? '个人工作台' : '库存管理');
-  const [activeSubMenu, setActiveSubMenu] = useState(returnToInventoryProjects ? '盘点项目' : returnToAssetManagementHome ? '资产维护' : workspaceState || '资产接收');
+  const [activeMenu, setActiveMenu] = useState(showIP ? '无形资产' : returnToInventoryProjects ? '资产盘点' : returnToAssetManagementHome ? '资产管理' : workspaceState ? '个人工作台' : '库存管理');
+  const [activeSubMenu, setActiveSubMenu] = useState(showIP ? 'IP' : returnToInventoryProjects ? '盘点项目' : returnToAssetManagementHome ? '资产维护' : workspaceState || '资产接收');
   const [activeTab, setActiveTab] = useState(workspaceState && !returnToInventoryProjects && !returnToAssetManagementHome ? workspaceState : '');
   const tabs = getTabsBySubMenu(activeSubMenu);
 
@@ -82,6 +84,10 @@ export default function App() {
     const isClosing = collapsible && activeMenu === menuKey;
     if (menuKey === '资产管理' && !isClosing) {
       setActiveSubMenu('资产维护');
+      setActiveTab('');
+    }
+    if (menuKey === '无形资产' && !isClosing) {
+      setActiveSubMenu('IP');
       setActiveTab('');
     }
     if (menuKey === '库存管理' && !isClosing) {
@@ -123,6 +129,7 @@ export default function App() {
           {activeMenu === '库存管理' && <InventoryManagementContent activeSubMenu={activeSubMenu} />}
           {activeMenu === '资产盘点' && <AssetInventoryContent activeSubMenu={activeSubMenu} />}
           {activeMenu === '申请' && <ApplicationQueriesContent activeSubMenu={activeSubMenu} />}
+          {activeMenu === '无形资产' && activeSubMenu === 'IP' && <IPManagement />}
           {activeMenu === '资产报表' && <AssetReportsContent activeSubMenu={activeSubMenu} activeTab={activeTab} />}
           {activeMenu === '后台基础配置' && activeTab === '物料维度组合' && <MaterialComprehensiveView />}
           {activeMenu === '后台基础配置' && activeTab === '物料大类' && <MaterialCategoryView />}
