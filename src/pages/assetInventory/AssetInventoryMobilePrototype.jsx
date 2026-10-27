@@ -194,11 +194,10 @@ function AssetCard({ asset, onClick, showOwner = false, groupedStatus }) {
       <div className="inventory-asset-card-body">
         <div className="inventory-asset-card-title">
           <span>{asset.assetDesc}</span>
-          <ChevronRight size={17} />
+          <div className="inventory-asset-card-affixes">{asset.isMandatory && <Tag color="orange">必盘</Tag>}<ChevronRight size={17} /></div>
         </div>
         <div className="inventory-asset-card-meta">
           {asset.status !== groupedStatus && <StatusBadge status={asset.status} />}
-          {asset.isMandatory && <Tag color="orange">必盘</Tag>}
           <span>{asset.tagNo}</span>
         </div>
         <div className="inventory-asset-card-line">资产小类：{asset.category || '-'}</div>

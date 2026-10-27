@@ -845,3 +845,7 @@
 }
 
 .inventory-search-wrap .ant-input::placeholder { color: #64748b; opacity: 1; }
+
+.inventory-asset-card-affixes { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.inventory-asset-card-affixes .ant-tag { margin-inline-end: 0; }
+.inventory-asset-card-title > span:first-child { min-width: 0; }
