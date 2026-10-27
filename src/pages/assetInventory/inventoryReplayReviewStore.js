@@ -161,6 +161,7 @@ export function decideReplayReview({ project, operator, decision, opinion = '', 
   if (scope === 'project' && plans && !getReplayProjectReview(state, plans, project.projectNo)) throw new Error('项目计划实例已变化，请重新打开申请');
   if (round !== review.round) throw new Error('审批记录已变化，请重新打开申请');
   if (!['同意', '驳回'].includes(decision)) throw new Error('请选择有效审批结果');
+  if (String(opinion || '').length > 400) throw new Error('审批意见不能超过400字');
   if (decision === '驳回' && !String(opinion || '').trim()) throw new Error('请填写驳回意见');
   opinion = String(opinion || '').trim();
   const records = review.records.map(record => record.status === '待审批' && record.person === operator

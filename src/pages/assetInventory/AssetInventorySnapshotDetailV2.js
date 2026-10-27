@@ -32,7 +32,7 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { ASSET_ROWS, UNINCLUDED_ASSET_ROWS } from './mockData';
 import { isInventoryRangeAllowed, useAssetInventoryVariant } from './AssetInventoryVariantContext';
-import { importInventoryPhotoFiles } from './inventoryPhotoImportStore';
+import { importInventoryPhotoFiles, inventoryPhotoUploadBlockReason } from './inventoryPhotoImportStore';
 
 const RANGE_OPTIONS = ['库房', '公共', '机房', '员工'];
 const EMPTY_FILTERS = EMPTY_INVENTORY_ASSET_QUERY;
@@ -247,14 +247,15 @@ export function SnapshotAssetTab({ project, plans, currentOperator, onResultsImp
   };
 
   const handlePhotoImport = (event) => {
-    if (!showMachineRoomFeatures || latestStatus.current !== '盘点中') { event.target.value = ''; messageApi.warning('当前项目或状态不允许导入盘点照片'); return; }
-    if (projectClosed) { event.target.value = ''; messageApi.info('项目已关闭，内容只读'); return; }
+    if (!showMachineRoomFeatures) { event.target.value = ''; messageApi.warning('当前项目不允许导入机房照片'); return; }
+    const photoExecutionBlock = inventoryExecutionBlockReason({ project: { ...project, status: latestStatus.current } });
+    if (photoExecutionBlock) { event.target.value = ''; messageApi.warning(photoExecutionBlock); return; }
     const files = Array.from(event.target.files || []);
     event.target.value = '';
     if (!files.length) return;
 
     let result;
-    try { result = importInventoryPhotoFiles({ projectNo, files, assets: rows, project: { ...project, projectNo, status: projectStatus }, plans }); }
+    try { result = importInventoryPhotoFiles({ projectNo, files, assets: rows, operator: currentOperator, project: { ...project, projectNo, status: projectStatus }, plans }); }
     catch (error) { messageApi.warning(error.message); return; }
     if (!result.matched.length) {
       if (result.unmatched.length) {
@@ -265,21 +266,21 @@ export function SnapshotAssetTab({ project, plans, currentOperator, onResultsImp
             <Space direction="vertical" size={6}>
               <Typography.Text>文件名格式已识别，但其中的资产标签号未在当前“执行盘点资产清单”中找到，请核对标签号是否正确。</Typography.Text>
               {!!tags.length && <Typography.Text type="secondary">未匹配标签号：{tags.slice(0, 5).join('、')}{tags.length > 5 ? ' 等' : ''}</Typography.Text>}
-              <Typography.Text type="secondary">支持：资产标签号.jpg、资产标签号_整体.jpg、资产标签号_部分.jpg、资产标签号_局部.jpg。</Typography.Text>
+              <Typography.Text type="secondary">请检查文件名中的资产标签号。</Typography.Text>
             </Space>
           ),
         });
       } else {
         Modal.warning({
           title: '未识别到可导入的图片',
-          content: '请选择 JPG、PNG、WEBP 等图片文件后重新导入。',
+          content: '请选择 JPG、JPEG 或 PNG 图片文件后重新导入。',
         });
       }
       return;
     }
 
     if (!result.unmatched.length && !result.invalid.length) {
-      messageApi.success(`已导入 ${result.matched.length} 张盘点照片，并按资产标签号完成匹配，可前往图片审核处理`);
+      messageApi.success(`已导入 ${result.matched.length} 张盘点照片，并按资产标签号完成匹配`);
       return;
     }
 
@@ -289,13 +290,15 @@ export function SnapshotAssetTab({ project, plans, currentOperator, onResultsImp
         <Space direction="vertical" size={6}>
           <Typography.Text>成功匹配：{result.matched.length} 张</Typography.Text>
           {!!result.unmatched.length && <Typography.Text type="warning">未匹配：{result.unmatched.length} 张（文件名中的资产标签号不在当前执行盘点资产清单）</Typography.Text>}
-          {!!result.invalid.length && <Typography.Text type="warning">非图片文件：{result.invalid.length} 个</Typography.Text>}
-          <Typography.Text type="secondary">命名支持：资产标签号.jpg、资产标签号_整体.jpg、资产标签号_部分.jpg、资产标签号_局部.jpg。</Typography.Text>
+          {!!result.invalid.length && <Typography.Text type="warning">不支持的文件：{result.invalid.length} 个</Typography.Text>}
+          <Typography.Text type="secondary">命名请检查文件名中的资产标签号。</Typography.Text>
         </Space>
       ),
     });
   };
 
+  const photoProjectBlock = inventoryExecutionBlockReason({ project: { ...project, status: projectStatus } });
+  const canShowPhotoUpload = type === 'execution' && showMachineRoomFeatures && !photoProjectBlock;
   const operations = [];
   if (type === 'execution' && beforeStart) {
     operations.push(
@@ -311,8 +314,12 @@ export function SnapshotAssetTab({ project, plans, currentOperator, onResultsImp
       <InventoryScanResultImport key="importResult" project={{ ...project, status: projectStatus }} plans={plans} entryType={type} operator={currentOperator} assets={rows} onImported={updates => { setRows(current => applyInventoryScanResults(current, updates)); onResultsImported?.(updates); }} />,
     );
   }
-  if (type === 'execution' && during && showMachineRoomFeatures) {
-    operations.push(<Button key="importPhoto" icon={<Upload size={14} />} onClick={() => photoInputRef.current?.click()}>导入盘点照片</Button>);
+  if (canShowPhotoUpload) {
+    const photoBlock = inventoryPhotoUploadBlockReason({ project, operator: currentOperator, assets: rows, plans });
+    operations.push(<Button key="importPhoto" icon={<Upload size={14} />} onClick={() => {
+      if (photoBlock) { messageApi.warning(photoBlock); return; }
+      photoInputRef.current?.click();
+    }}>导入盘点照片</Button>);
   }
   if (type === 'notExecution' && beforeStart) {
     operations.push(
@@ -357,8 +364,8 @@ export function SnapshotAssetTab({ project, plans, currentOperator, onResultsImp
           <Space><Button onClick={downloadTransferTemplate}>下载模板</Button><Button type="primary" loading={transferring} onClick={() => transferInputRef.current?.click()}>选择文件并转移</Button></Space>
         </Space>
       </Modal>
-      {type === 'execution' && during && showMachineRoomFeatures && (
-        <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoImport} />
+      {canShowPhotoUpload && (
+        <input ref={photoInputRef} type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" multiple className="hidden" onChange={handlePhotoImport} />
       )}
       <InventoryAssetQuery rows={rows} filters={draftFilters} onChange={setDraftFilters} started={!PRE_INVENTORY_STATUSES.has(projectStatus)} onQuery={() => { setFilters({ ...draftFilters }); setSelectedKeys([]); setCurrentPage(1); }} onReset={() => { setDraftFilters(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setSelectedKeys([]); setCurrentPage(1); }} rangeOptions={rangeOptions} />
       <div className="mb-3 flex justify-end"><Space wrap>{operations}</Space></div>

@@ -23,7 +23,7 @@ jest.mock('./InventoryAssetQuery', () => ({ __esModule: true, default: ({ filter
 jest.mock('../../components/AssetQueryControls', () => ({ formatAssetCategory: () => '' }));
 jest.mock('../../components/DetailGrid', () => ({ __esModule: true, default: ({ children }) => <div>{children}</div>, DetailItem: ({ children }) => <div>{children}</div> }));
 jest.mock('../../components/StatusTag', () => ({ value }) => <span>{value}</span>);
-jest.mock('./inventoryPhotoImportStore', () => ({ importInventoryPhotoFiles: jest.fn() }));
+jest.mock('./inventoryPhotoImportStore', () => ({ ...jest.requireActual('./inventoryPhotoImportStore'), importInventoryPhotoFiles: jest.fn() }));
 jest.mock('./inventoryAssetExport', () => ({ ...jest.requireActual('./inventoryAssetExport'), serializeInventoryAssetExport: jest.fn(() => ({ csv: '', missingFields: [] })) }));
 
 const assets = Array.from({ length: 25 }, (_, i) => ({ key: `a${i}`, assetTag: `A-${i}`, inventoryRange: '员工', owner: '责任人', inventoryStatus: '未盘' }));
@@ -113,4 +113,20 @@ test('非机房不展示照片导入，机房盘点中保留照片入口', () =>
   fireEvent.click(screen.getByText('导入盘点结果'));
   expect(screen.getByRole('button', { name: '选择Excel文件' })).toBeInTheDocument();
   expect(props.messageApi.warning).not.toHaveBeenCalled();
+});
+
+
+test('机房项目快照生成及盘点中展示照片上传，审批中和关闭时不展示', () => {
+  const roomAsset = { key: 'room', assetTag: 'ROOM-1', inventoryRange: '机房', planNo: 'P1', executor: '200-执行人' };
+  const props = makeProps({ projectStatus: '快照生成', project: { projectNo: 'ROOM-ENTRY', creator: '100-创建人', scopeRanges: ['机房'] }, currentOperator: '200-执行人', rows: [roomAsset], plans: [{ planNo: 'P1', status: '暂存' }], machineRoomProject: true });
+  const { rerender } = render(<SnapshotAssetTab {...props} />);
+  expect(screen.getByText('导入盘点照片')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('导入盘点照片'));
+  expect(props.messageApi.warning).not.toHaveBeenCalled();
+  rerender(<SnapshotAssetTab {...props} projectStatus="盘点中" />);
+  expect(screen.getByText('导入盘点照片')).toBeInTheDocument();
+  rerender(<SnapshotAssetTab {...props} projectStatus="审核中" />);
+  expect(screen.queryByText('导入盘点照片')).toBeNull();
+  rerender(<SnapshotAssetTab {...props} projectStatus="盘点关闭" />);
+  expect(screen.queryByText('导入盘点照片')).toBeNull();
 });

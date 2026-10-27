@@ -371,3 +371,33 @@ test('年度增量为本年减上年，可为正负或零，缺任一年不补�
   expect(getIncrementRows(2026).find(row => row.category === '合计').value).toBe(14456 - 11072);
   expect(getIncrementRows(2026).find(row => row.category === '电话').value).toBe(3675);
 });
+
+test('按年度列出有独立关联信息且已关闭的年度初盘项目', () => {
+  const { inventoryReportActuals } = require('../mock/businessRulesMock');
+  const { getInventoryReportProjects } = require('./inventoryReportService');
+  const saved = inventoryReportActuals.projectReports;
+  try {
+    const base = { year: 2026, projectType: '初盘', inventoryType: '年度', status: '盘点关闭', projectName: '年度盘点' };
+    inventoryReportActuals.projectReports = [
+      { ...base, projectNo: 'P-A' }, { ...base, projectNo: 'P-B' },
+      { ...base, projectNo: 'P-R', projectType: '复盘' }, { ...base, projectNo: 'P-OPEN', status: '盘点中' },
+      { ...base, projectNo: 'P-MONTH', inventoryType: '月度' }, { ...base, projectNo: 'P-OTHER', year: 2025 },
+      { ...base, projectNo: '' },
+    ];
+    expect(getInventoryReportProjects(2026).map(entry => entry.projectNo)).toEqual(['P-A', 'P-B']);
+    expect(getInventoryReportProjects(2024)).toEqual([]);
+  } finally {
+    if (saved === undefined) delete inventoryReportActuals.projectReports;
+    else inventoryReportActuals.projectReports = saved;
+  }
+});
+
+test('项目报告分类和增量只读该项目的数据，不借用年度汇总', () => {
+  const { getInventoryReport, getIncrementRows, getInventoryLossCategoryRows } = require('./inventoryReportService');
+  const source = getInventoryReport(2026);
+  const projectReport = { ...source, projectNo: 'P-A', categoryLoss: [{ category: '移动数码', year: 2026, quantity: 99, original: 999, net: 9 }], increments: [{ key: 'x', category: '项目类别', name: '项目数据', value: 123 }] };
+  expect(getInventoryLossCategoryRows(projectReport).find(row => row.category === '移动数码' && row.year === 2026).quantity).toBe(99);
+  expect(getInventoryLossCategoryRows(projectReport).find(row => row.category === '移动数码' && row.year === 2025).quantity).toBeNull();
+  expect(getIncrementRows(2026, projectReport)).toEqual([{ key: 'x', category: '项目类别', name: '项目数据', value: 123 }]);
+  expect(getIncrementRows(2026, { ...projectReport, increments: undefined })).toEqual([]);
+});

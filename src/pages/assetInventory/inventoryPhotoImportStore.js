@@ -426,7 +426,40 @@ export function parseInventoryPhotoFileName(fileName) {
   };
 }
 
-export function importInventoryPhotoFiles({ projectNo, files, assets, project = { projectNo }, plans = [] }) {
+// 有员工编号时按编号判断身份；编号缺失时不以同名人员代替，等待正式人员资料。
+function photoIdentityNumber(person) {
+  if (person && typeof person === 'object') return String(person.employeeNo || person.executorNo || '').trim() || photoIdentityNumber(person.value);
+  const match = String(person || '').trim().match(/^([A-Za-z0-9]+)-(.+)$/);
+  return match ? match[1] : '';
+}
+
+export function inventoryPhotoUploadBlockReason({ project, operator, assets = [], plans = [] }) {
+  const ranges = project?.scopeRanges;
+  const isRoom = Array.isArray(ranges) && ranges.length ? ranges.every(range => range === '机房')
+    : assets.length > 0 && assets.every(asset => asset.inventoryRange === '机房');
+  if (!isRoom) return '无法核验机房项目范围，不能上传机房照片';
+  const operatorNo = photoIdentityNumber(operator);
+  if (!operatorNo) return '无法核实当前操作人的员工编号，不能上传盘点照片';
+  if (photoIdentityNumber(project?.creator) === operatorNo) return '';
+  const planNos = new Set(plans.map(plan => String(plan.planNo || '').trim()).filter(Boolean));
+  const executor = assets.some(asset => asset.inventoryRange === '机房' && planNos.has(String(asset.planNo || '').trim())
+    && photoIdentityNumber(asset.executorNo ? { employeeNo: asset.executorNo } : asset.executor) === operatorNo);
+  if (!executor) return '仅项目创建人或机房盘点计划执行人可以上传照片；缺少人员编号时请核对人员资料';
+  return '';
+}
+
+function isSupportedPhoto(file) {
+  const extension = String(file.name || '').toLowerCase().match(/\.(jpg|jpeg|png)$/)?.[1];
+  if (!extension) return false;
+  const expected = extension === 'png' ? 'image/png' : 'image/jpeg';
+  return !file.type || file.type.toLowerCase() === expected;
+}
+
+export function importInventoryPhotoFiles({ projectNo, files, assets, operator, project = { projectNo }, plans = [] }) {
+  const blocked = inventoryPhotoUploadBlockReason({ project, operator, assets, plans });
+  if (blocked) throw new Error(blocked);
+  const projectBlock = inventoryExecutionBlockReason({ project });
+  if (projectBlock) throw new Error(projectBlock);
   const assetMap = new Map((assets || []).map((asset) => [String(asset.assetTag || '').trim(), asset]));
   // 保存前先校验所有已匹配资产的当前审批状态，不让批量上传绕过结果锁定。
   Array.from(files || []).forEach(file => {
@@ -437,12 +470,22 @@ export function importInventoryPhotoFiles({ projectNo, files, assets, project = 
     const blocked = inventoryExecutionBlockReason({ project, plan, assetTag });
     if (blocked) throw new Error(blocked);
   });
+  // 照片替换及同批重复处理尚未确认，不允许静默覆盖现有记录。
+  const seen = new Set(importedPhotoRecords.filter(record => record.projectNo === projectNo).map(record => `${record.assetTag}\u0000${record.photoType}`));
+  Array.from(files || []).forEach(file => {
+    if (!isSupportedPhoto(file)) return;
+    const { assetTag, photoType } = parseInventoryPhotoFileName(file.name);
+    if (!assetMap.has(assetTag)) return;
+    const key = `${assetTag}\u0000${photoType}`;
+    if (seen.has(key)) throw new Error('照片替换规则待确认，不能覆盖已有照片或重复上传同类照片');
+    seen.add(key);
+  });
   const matched = [];
   const unmatched = [];
   const invalid = [];
 
   Array.from(files || []).forEach((file) => {
-    if (!file.type?.startsWith('image/')) {
+    if (!isSupportedPhoto(file)) {
       invalid.push(file.name);
       return;
     }
@@ -454,11 +497,6 @@ export function importInventoryPhotoFiles({ projectNo, files, assets, project = 
       return;
     }
 
-    const existingIndex = importedPhotoRecords.findIndex((record) => (
-      record.projectNo === projectNo
-      && record.assetTag === assetTag
-      && record.photoType === photoType
-    ));
     const src = URL.createObjectURL(file);
     const record = {
       key: `${projectNo || 'project'}-${assetTag}-${photoType}`,
@@ -471,13 +509,7 @@ export function importInventoryPhotoFiles({ projectNo, files, assets, project = 
       importedAt: Date.now(),
     };
 
-    if (existingIndex >= 0) {
-      const previous = importedPhotoRecords[existingIndex];
-      if (previous?.src?.startsWith('blob:')) URL.revokeObjectURL(previous.src);
-      importedPhotoRecords.splice(existingIndex, 1, record);
-    } else {
-      importedPhotoRecords.push(record);
-    }
+    importedPhotoRecords.push(record);
     matched.push(record);
   });
 

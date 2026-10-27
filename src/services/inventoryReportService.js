@@ -23,6 +23,15 @@ export function inventoryYearDifference(current, previous) {
   return Number(current) - Number(previous);
 }
 
+// 仅使用已绑定项目的完整报告；没有映射时不将年度汇总冒充某项目报告。
+export function getInventoryReportProjects(year) {
+  const entries = inventoryReportActuals.projectReports;
+  if (!Array.isArray(entries)) return [];
+  return entries.filter(entry => Number(entry.year) === Number(year)
+    && entry.projectNo && entry.projectName && entry.projectType === '初盘'
+    && entry.inventoryType === '年度' && entry.status === '盘点关闭');
+}
+
 export function getInventoryReport(year) {
   const selectedYear = Number(year);
   if (![inventoryReportTemplate.year, inventoryReportActuals.year].includes(selectedYear)) return null;
@@ -66,7 +75,7 @@ export function buildInventoryReportWorkbook(report) {
   };
   const current = report.history.find(row => row.year === report.year);
   const categories = getInventoryLossCategoryRows(report);
-  const increments = getIncrementRows(report.year);
+  const increments = getIncrementRows(report.year, report);
   const summaryStart = 10;
   const historyStart = 18;
   const analysis = [
@@ -177,7 +186,13 @@ export function buildInventoryReportWorkbook(report) {
 export function exportInventoryReport(report) {
   downloadInventoryReportFile(buildInventoryReportWorkbook(report), `${report.year}年度资产盘点报告-ES.xlsx`);
 }
-export function getIncrementRows(year = inventoryReportActuals.year) {
+export function getIncrementRows(year = inventoryReportActuals.year, report) {
+  if (report?.projectNo) {
+    const current = report.history?.find?.(row => row.year === Number(year));
+    const previous = report.history?.find?.(row => row.year === Number(year) - 1);
+    return (report.increments || []).map(row => row.category === '合计'
+      ? { ...row, value: inventoryYearDifference(current?.quantity, previous?.quantity) } : row);
+  }
   if (Number(year) === inventoryReportActuals.year) {
     const current = inventoryReportActuals.history.find(row => row.year === Number(year));
     const previous = inventoryReportActuals.history.find(row => row.year === Number(year) - 1);
@@ -207,7 +222,8 @@ export function getInventoryDetailRows(report) {
 
 export function getInventoryLossCategoryRows(report) {
   return LOSS_CATEGORIES.flatMap((category, index) => [report.year - 1, report.year].map(year => {
-    const supplied = inventoryReportActuals.categoryLoss.find(row => row.category === category && row.year === year);
+    const sourceRows = report.projectNo ? (report.categoryLoss || []) : inventoryReportActuals.categoryLoss;
+    const supplied = sourceRows.find(row => row.category === category && row.year === year);
     const entry = supplied || (report.hasActualDetails && year === report.year
       ? summarizeInventoryReportCategory(report.details.filter(row => row['盘点状态'] === '盘亏'), category) : null);
     return { key: `${index}-${year}`, category, year, quantity: entry ? entry.quantity : null, original: entry ? entry.original : null, net: entry ? entry.net : null };

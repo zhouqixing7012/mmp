@@ -94,7 +94,7 @@ export default function InventoryReportCharts({ report }) {
       <InventoryDistribution3D rows={pie} />
       <div style={{ display: 'flex', justifyContent: 'center' }}><DistributionTable rows={pie} total={originalTotal} /></div>
     </Card>
-    <Card size="small" title="资产增量情况" style={{ width: '100%' }}><IncrementTable year={report.year} /></Card>
+    <Card size="small" title="资产增量情况" style={{ width: '100%' }}><IncrementTable year={report.year} report={report} /></Card>
     <Card size="small" title="资产盘亏趋势">
       <AxisUnits left="盘亏占比（%）" right="盘亏数量（件）" />
       <ResponsiveContainer width="100%" height={340}>

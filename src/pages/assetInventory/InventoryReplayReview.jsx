@@ -46,7 +46,7 @@ export default function InventoryReplayReview({ project, plans, assetsForPlan, s
     </Card>
     {mode !== 'edit' && <Card size="small" title={<SectionCardTitle>审批信息</SectionCardTitle>}><Table size="small" bordered pagination={false} rowKey="key" dataSource={submission.records} columns={[['审批环节','node'],['审批人','person'],['审批状态','status'],['审批时间','time'],['审批意见','opinion']].map(([title,dataIndex])=>({title,dataIndex,render:value=>value || '-'}))}/></Card>}
     {mode !== 'edit' && !decisionBlock && onDecide && <Card size="small" title={<SectionCardTitle>审批意见</SectionCardTitle>}>
-      <Input.TextArea aria-label="复盘审批意见" value={opinion} placeholder="驳回时必填" onChange={event => setOpinion(event.target.value)} />
+      <Input.TextArea aria-label="复盘审批意见" maxLength={400} showCount value={opinion} placeholder="驳回时必填" onChange={event => setOpinion(event.target.value)} />
     </Card>}
     <div className="flex justify-center"><Space>
       {mode === 'edit' && <Button type="primary" onClick={onSubmit}>提交</Button>}

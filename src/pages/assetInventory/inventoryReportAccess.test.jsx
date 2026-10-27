@@ -10,7 +10,7 @@ import { getInventoryReport } from '../../services/inventoryReportService';
 import { writeDemoData } from '../../services/demoStorage';
 
 jest.mock('react-router-dom', () => ({ useLocation: () => ({pathname:'/yewurules',search:'',state:null,key:'test'}), useNavigate: () => jest.fn() }), {virtual:true});
-jest.mock('../../services/inventoryReportService', () => ({ getInventoryReport: jest.fn(() => null), exportInventoryReport: jest.fn() }));
+jest.mock('../../services/inventoryReportService', () => ({ getInventoryReport: jest.fn(() => null), getInventoryReportProjects: jest.fn(() => []), exportInventoryReport: jest.fn() }));
 jest.mock('./InventoryReportTables', () => ({ AnalysisTables: () => null, DetailTable: () => null }));
 jest.mock('./InventoryReportCharts', () => () => null);
 jest.mock('./AssetInventoryProjectPageV3', () => () => <div>现有盘点项目</div>);
@@ -25,7 +25,7 @@ jest.mock('antd', () => ({
   message: {success:jest.fn(),error:jest.fn()},
 }));
 
-beforeEach(() => { window.localStorage.clear(); jest.clearAllMocks(); });
+beforeEach(() => { window.localStorage.clear(); jest.clearAllMocks(); require('../../services/inventoryReportService').getInventoryReportProjects.mockReturnValue([]); });
 
 test.each(INVENTORY_REPORT_USERS)('仅明确授权身份$name可直接进入盘点报表', person => {
   setInventoryOperator(person.value);

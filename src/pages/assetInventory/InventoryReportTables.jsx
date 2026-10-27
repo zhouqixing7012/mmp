@@ -16,9 +16,9 @@ const column = (title, dataIndex, render = quantity, type = title.includes('占'
   title, dataIndex, key: dataIndex, render, align: 'right', sizing: { type, format: render },
 });
 const textColumn = (title, dataIndex, type = 'text') => ({ title, dataIndex, key: dataIndex, ellipsis: true, sizing: { type } });
-export function IncrementTable({ year }) {
+export function IncrementTable({ year, report }) {
   const { token } = theme.useToken();
-  const rows = getIncrementRows(year);
+  const rows = getIncrementRows(year, report);
   const isSummary = row => row.name === '小计' || row.name === '合计';
   const spans = getGroupedRowSpans(rows, 'category', row => !isSummary(row));
   return <div data-testid="inventory-increment-table" style={{ width: '100%', maxWidth: 620, minWidth: 0 }}><ReportTable compact rows={rows} columns={[
@@ -63,7 +63,7 @@ export function AnalysisTables({ report }) {
     <Card size="small" title={`${report.year}年资产盘亏统计`}>
       <ReportTable rows={categories} columns={[{ ...textColumn('资产类别', 'category'), onCell: (_, index) => ({ rowSpan: spans[index] }) }, textColumn('盘点年份', 'year', 'year'), column('盘亏数量（件）', 'quantity', accounting), column('盘亏原值（元）', 'original', accounting), column('盘亏净值（元）', 'net', accounting), { ...textColumn('备注', 'remark', 'description'), render: () => '-', sizing: { type: 'description', text: () => '-' } }].map((field, index) => index === 0 ? field : ({ ...field, onCell: row => ({ style: row.year === report.year ? { background: token.colorFillAlter } : {} }) }))} />
     </Card>
-    <Card size="small" title={<span style={{ whiteSpace: 'normal' }}>{getIncrementTitle(report.year)}</span>} style={{ width: '100%' }}><IncrementTable year={report.year} /></Card>
+    <Card size="small" title={<span style={{ whiteSpace: 'normal' }}>{getIncrementTitle(report.year)}</span>} style={{ width: '100%' }}><IncrementTable year={report.year} report={report} /></Card>
   </Space>;
 }
 export function DetailTable({ report }) {

@@ -180,3 +180,11 @@ test('项目审批匹配当时同批实例；新批次通过计划后可明确�
  expect(next.projectReview.plans[0].reviewInstanceKey).toBe('new-P1');
  expect(()=>decideReplayReview({project,scope:'project',plans,operator:'徐博',decision:'同意',round:next.projectReview.round})).toThrow('计划实例已变化');
 });
+
+
+test('审批同意意见可空，驳回意见必填，意见最多400字', () => {
+  submit();
+  expect(() => decide('P1', '冯丽婷', '驳回', { opinion: '   ' })).toThrow('请填写驳回意见');
+  expect(() => decide('P1', '冯丽婷', '同意', { opinion: '字'.repeat(401) })).toThrow('审批意见不能超过400字');
+  expect(() => decide('P1', '冯丽婷', '同意', { opinion: '' })).not.toThrow();
+});
