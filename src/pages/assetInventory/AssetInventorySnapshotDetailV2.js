@@ -367,7 +367,7 @@ export function SnapshotAssetTab({ project, plans, currentOperator, onResultsImp
       {canShowPhotoUpload && (
         <input ref={photoInputRef} type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" multiple className="hidden" onChange={handlePhotoImport} />
       )}
-      <InventoryAssetQuery rows={rows} filters={draftFilters} onChange={setDraftFilters} started={!PRE_INVENTORY_STATUSES.has(projectStatus)} onQuery={() => { setFilters({ ...draftFilters }); setSelectedKeys([]); setCurrentPage(1); }} onReset={() => { setDraftFilters(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setSelectedKeys([]); setCurrentPage(1); }} rangeOptions={rangeOptions} />
+      <InventoryAssetQuery rows={rows} filters={draftFilters} onChange={setDraftFilters} onQuery={() => { setFilters({ ...draftFilters }); setSelectedKeys([]); setCurrentPage(1); }} onReset={() => { setDraftFilters(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setSelectedKeys([]); setCurrentPage(1); }} rangeOptions={rangeOptions} />
       <div className="mb-3 flex justify-end"><Space wrap>{operations}</Space></div>
       <Table
         rowKey="key"

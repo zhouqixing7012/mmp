@@ -22,7 +22,7 @@ jest.mock('antd', () => {
     Card: Box, Space: Box, Typography: { Text: Box }, TreeSelect,
     Button: ({ children, onClick }) => <button onClick={onClick}>{children}</button>,
     Select: () => null, InputNumber: () => null, DatePicker: { RangePicker: () => null }, Modal: () => null,
-    Table: ({ dataSource, columns }) => <div>{dataSource.map(row => <div key={row.key}><span>{`${row.organization}: ${row.department}`}</span>{columns.find(column => column.title === '清单').render(null, row)}</div>)}</div>,
+    Table: ({ dataSource, columns }) => <div>{dataSource.map(row => <div key={row.key} data-testid="scope-row" data-row={JSON.stringify(row)}><span>{`${row.organization}: ${row.department}`}</span>{columns.find(column => column.title === '清单').render(null, row)}</div>)}</div>,
     message: { useMessage: () => [{ warning: jest.fn(), success: jest.fn() }, null] },
   };
 });
@@ -37,7 +37,7 @@ test('项目只有公司部门合并树，候选受范围限制，选公司生�
   fireEvent.click(screen.getByRole('button', { name: '选择甲公司' }));
   fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
   expect(changed).toHaveBeenLastCalledWith(['a', 'b']);
-  expect(screen.getByText('甲公司: 研发部.一组、财务部')).toBeInTheDocument();
+  expect(screen.getByText('甲公司:')).toBeInTheDocument();
 });
 
 
@@ -63,4 +63,13 @@ test('初始范围不展示无资产关联的示例查看按钮；生成后可�
   expect(changed).toHaveBeenLastCalledWith(['a', 'b']);
   fireEvent.click(screen.getByRole('button', { name: '删除全部' }));
   expect(changed).toHaveBeenLastCalledWith([]);
+});
+
+
+test('无筛选生成范围时展示列留空，资产关联仍保留', () => {
+  render(<AssetInventoryScopeSelectorV3 />);
+  fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
+  const row = JSON.parse(screen.getByTestId('scope-row').getAttribute('data-row'));
+  ['organization', 'department', 'assetCategory', 'assetStatus', 'warehouse', 'city', 'building', 'floor', 'owner', 'ownerLevel'].forEach(field => expect(row[field]).toBe(''));
+  expect(row.assetKeys).toEqual(['a', 'b']);
 });

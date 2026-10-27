@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { AssetCategorySelect, AssetPersonSelect, AssetValueSelect, OwnerLevelSelect } from '../../components/AssetQueryControls';
 
-export default function InventoryAssetQuery({ rows, filters, onChange, onQuery, onReset, started, rangeOptions }) {
+export default function InventoryAssetQuery({ rows, filters, onChange, onQuery, onReset, rangeOptions }) {
   const update = (field, value) => onChange({ ...filters, [field]: value ?? '' });
   const text = (label, field) => <QueryItem key={field} label={label}><Input value={filters[field]} allowClear onChange={(event) => update(field, event.target.value)} onPressEnter={onQuery} /></QueryItem>;
   const select = (label, field) => <QueryItem key={field} label={label}><AssetValueSelect rows={rows} field={field} value={filters[field]} onChange={(value) => update(field, value)} /></QueryItem>;
@@ -17,7 +17,7 @@ export default function InventoryAssetQuery({ rows, filters, onChange, onQuery, 
   /></QueryItem>;
   const category = <QueryItem key="category" label="资产类别"><AssetCategorySelect rows={rows} value={filters.category} onChange={(value) => update('category', value)} /></QueryItem>;
   return <QueryBar labelWidth={112} onQuery={onQuery} onReset={onReset}>
-    {started ? [
+    {[
       text('资产标签号', 'assetTag'), category, text('序列号', 'serialNo'),
       text('成本中心', 'costCenter'), text('资产说明', 'description'), select('使用状态', 'useStatus'),
       person('资产责任人', 'owner', '选择资产责任人'),
@@ -25,10 +25,7 @@ export default function InventoryAssetQuery({ rows, filters, onChange, onQuery, 
       select('责任人部门', 'ownerDept'), person('执行人', 'executor', '选择盘点执行人'), person('盘点监督人', 'supervisor', '选择盘点监督人'), select('City', 'city'),
       select('Building', 'building'), enableDate,
       select('盘点方式', 'inventoryMethod'), select('盘点状态', 'inventoryStatus'),
-    ] : [
-      text('资产标签号', 'assetTag'), category, select('盘点状态', 'inventoryStatus'),
-      person('资产责任人', 'owner', '选择资产责任人'), select('City', 'city'),
-      <QueryItem key="range" label="盘点范围"><Select style={{ width: '100%' }} allowClear value={filters.range || undefined} options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => update('range', value)} /></QueryItem>,
+      <QueryItem key="range" label="盘点范围"><Select mode="multiple" style={{ width: '100%' }} allowClear value={filters.range || undefined} options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => update('range', value)} /></QueryItem>,
     ]}
   </QueryBar>;
 }
