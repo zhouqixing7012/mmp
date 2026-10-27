@@ -23,10 +23,10 @@ test('车辆与电话采用用户本轮明确的类别展示单位，保留目�
   expect(source[0]).not.toHaveProperty('quantityUnit');
 });
 
-test('用户确认混合类别按件计数，未覆盖照摄像不误判为混合或补件', () => {
+test('用户明确照摄像器材及配件为件，混合类别仍按件计数', () => {
   const rows = withInventoryReportQuantityUnits([{ category: '移动数码' }, { category: '照摄像器材及配件' }, { category: '笔记本及配件' }]);
   expect(rows[0]).toMatchObject({ quantityUnit: '件', quantityUnitStatus: 'mixed-count', quantityUnits: expect.arrayContaining(['台', '部']) });
-  expect(rows[1]).toMatchObject({ quantityUnit: null, quantityUnitStatus: 'missing' });
+  expect(rows[1]).toMatchObject({ quantityUnit: '件', quantityUnitStatus: 'user-confirmed' });
   expect(rows[2]).toMatchObject({ quantityUnit: '台', quantityUnitStatus: 'resolved' });
 });
 

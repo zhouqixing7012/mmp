@@ -25,9 +25,9 @@ export function withInventoryReportQuantityUnits(distribution) {
     const resolved = resolveInventoryReportQuantityUnit(row.category);
     // 用户已确认混合单位类别按件计数；缺少物料覆盖不等于混合，不据此补默认单位。
     const mixedCount = resolved.quantityUnitStatus === 'mixed' && resolved.quantityUnits.length > 1;
-    // 本轮用户明确车辆显示“辆”、电话显示“部”。电话尚未覆盖于67行参考抽样中，
+    // 用户明确车辆为“辆”、电话为“部”、照摄像器材及配件为“件”。电话尚未覆盖于67行参考抽样中，
     // 车辆参考含汽车“辆”和装载机“台”；保留来源差异，不能伪称目录中整个类别只有一种单位。
-    const confirmedUnit = row.category === '车辆' ? '辆' : row.category === '电话' ? '部' : null;
+    const confirmedUnit = row.category === '车辆' ? '辆' : row.category === '电话' ? '部' : normalizedCategory(row.category) === '照摄像器材' ? '件' : null;
     return { ...row, ...resolved, ...(mixedCount ? { quantityUnit: '件', quantityUnitStatus: 'mixed-count' } : {}), ...(confirmedUnit ? {
       quantityUnit: confirmedUnit,
       quantityUnitStatus: 'user-confirmed',
