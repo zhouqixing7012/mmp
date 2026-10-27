@@ -78,8 +78,7 @@ function ProjectInfoCard({ project }) {
         <DetailItem label="快照生成日期">{project?.snapshotTime || '-'}</DetailItem>
         {showSamplingFields && <DetailItem label="初盘项目">{project?.initialProjectNo || '-'}</DetailItem>}
         {showSamplingFields && <DetailItem label="抽样方式">{project?.samplingMode || '-'}</DetailItem>}
-        {showSamplingFields && <DetailItem label="比例">{project?.samplingRatio || '-'}</DetailItem>}
-        {project?.projectType === '复盘' && project?.samplingMode === '百分比' && <><DetailItem label="净值大于多少元必盘">{project.mandatoryNetValueAbove ?? '-'}</DetailItem><DetailItem label="净值前多少百分比必盘">{project.mandatoryNetValueTopPercent == null ? '-' : `${project.mandatoryNetValueTopPercent}%`}</DetailItem></>}
+        {project?.projectType === '抽盘' && <DetailItem label="比例">{project?.samplingRatio || '-'}</DetailItem>}
         <DetailItem label="盘点说明" span={3}>{project?.description || '-'}</DetailItem>
       </DetailGrid>
     </Card>

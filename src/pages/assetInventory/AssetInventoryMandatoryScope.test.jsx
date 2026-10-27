@@ -53,6 +53,9 @@ function importFile(assets) {
 
 test('复盘创建范围按必盘阈值标记，查看全部只显示当前范围，快照保留标记', () => {
   render(<CreateProjectView creator="冯丽婷" initialProject={{ ...base, mandatoryNetValueAbove: 0 }} scopeAssetKeys={chosen.map((asset) => asset.key)} onBack={() => {}} onGenerated={() => {}} />);
+  expect(screen.queryByText('比例（%）')).toBeNull();
+  expect(screen.queryByText('净值大于多少元必盘（可选）')).toBeNull();
+  expect(screen.queryByText('净值前多少百分比必盘（可选）')).toBeNull();
   chosen.forEach((asset) => expect(mandatoryCell(asset.assetTag)).toHaveTextContent(Number(asset.netValue) > 0 ? '是' : '否'));
   fireEvent.click(screen.getByRole('button', { name: '查看全部' }));
   expect(screen.queryByRole('dialog')).toBeNull();

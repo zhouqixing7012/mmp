@@ -11,7 +11,7 @@ jest.mock('antd', () => {
   return { Card: Box, Space: Box, Typography: { Text: Box, Title: Box }, Input, DatePicker, TreeSelect: () => null, InputNumber: () => null, Checkbox: { Group: () => null },
     Button: ({ children, onClick }) => <button onClick={onClick}>{children}</button>,
     Modal: ({ open, children, title, footer, onOk }) => open ? <div role="dialog" aria-label={title}>{children}{footer}{onOk && <button onClick={onOk}>确定</button>}</div> : null,
-    Table: ({ columns, dataSource, rowSelection }) => <div>{dataSource.map(row => <div key={row.key}>{rowSelection && <button onClick={() => rowSelection.onChange([row.key])}>选择-{row.assetTag}</button>}{columns.map((column, index) => <span key={index}>{column.render ? column.render(row[column.dataIndex], row) : row[column.dataIndex]}</span>)}</div>)}</div>,
+    Table: ({ columns, dataSource, rowSelection }) => <div data-testid="custom-table" data-columns={JSON.stringify(columns.map(({title, fixed}) => ({title, fixed})))}>{dataSource.map(row => <div key={row.key}>{rowSelection && <button onClick={() => rowSelection.onChange([row.key])}>选择-{row.assetTag}</button>}{columns.map((column, index) => <span key={index}>{column.render ? column.render(row[column.dataIndex], row) : row[column.dataIndex]}</span>)}</div>)}</div>,
     message: { useMessage: () => [{ warning: jest.fn(), success: jest.fn(), error: jest.fn() }, null] } };
 });
 jest.mock('../../components/AssetQueryControls', () => ({ AssetCategorySelect: () => null, AssetPersonSelect: () => null, AssetValueSelect: () => null, OwnerLevelSelect: () => null, formatAssetCategory: asset => asset.category, matchesQuerySelection: () => true }));
@@ -27,11 +27,11 @@ test('自定义复盘清册空查询回退本次纳入资产并传递必盘上�
   render(<AssetInventoryCustomPlanBuilder initialAssets={assets} project={project} />);
   fireEvent.change(screen.getByPlaceholderText('请输入资产标签号'), { target: { value: 'A' } });
   fireEvent.click(screen.getByRole('button', { name: '清册查询' }));
-  fireEvent.click(screen.getByRole('button', { name: '导出清册' }));
+  fireEvent.click(screen.getByRole('button', { name: '导出' }));
   expect(downloadInventoryPlanAssets).toHaveBeenLastCalledWith([assets[0]], 'R', { project });
   fireEvent.change(screen.getByPlaceholderText('请输入资产标签号'), { target: { value: '不存在' } });
   fireEvent.click(screen.getByRole('button', { name: '清册查询' }));
-  fireEvent.click(screen.getByRole('button', { name: '导出清册' }));
+  fireEvent.click(screen.getByRole('button', { name: '导出' }));
   expect(downloadInventoryPlanAssets).toHaveBeenLastCalledWith(assets, 'R', { project });
 });
 
@@ -64,7 +64,7 @@ test('删除资产后重复生成不补回，导出使用最终资产集合', ()
   const deletes = screen.getAllByRole('button', { name: '删除' });
   fireEvent.click(deletes[deletes.length - 1]);
   fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
-  fireEvent.click(screen.getByRole('button', { name: '导出清册' }));
+  fireEvent.click(screen.getByRole('button', { name: '导出' }));
   expect(downloadInventoryPlanAssets).toHaveBeenCalledWith([assets[1]], 'P', { project: { projectNo: 'P', projectType: '初盘' } });
   fireEvent.click(screen.getByRole('button', { name: '删除全部' }));
   expect(screen.queryByRole('button', { name: '选择-B' })).not.toBeInTheDocument();
@@ -93,14 +93,15 @@ test('自定义公共计划弹窗直接显示创建人为默认监督人，执�
 });
 
 
-test('删除正在查看的范围分录后，恢复显示剩余批次资产而不残留旧查看条件', () => {
-  render(<AssetInventoryCustomPlanBuilder initialAssets={assets} project={{ projectType: '初盘' }} />);
-  fireEvent.change(screen.getByPlaceholderText('请输入标签号'), { target: { value: 'A' } });
-  fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
-  fireEvent.change(screen.getByPlaceholderText('请输入标签号'), { target: { value: 'B' } });
-  fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
-  fireEvent.click(screen.getAllByRole('button', { name: '查看' })[0]);
-  fireEvent.click(screen.getAllByRole('button', { name: '删除', exact: true })[0]);
-  expect(screen.queryByRole('button', { name: '选择-A' })).toBeNull();
-  expect(screen.getByRole('button', { name: '选择-B' })).toBeInTheDocument();
+test('范围明细无删除操作列，清单固定最右，资产列含净值和必盘', () => {
+  render(<AssetInventoryCustomPlanBuilder initialAssets={assets} project={{ projectType: '复盘', mandatoryAssetKeys: ['a'] }} />);
+  const tables = screen.getAllByTestId('custom-table');
+  const scope = JSON.parse(tables[0].getAttribute('data-columns'));
+  expect(scope.at(-1)).toEqual({ title: '清单', fixed: 'right' });
+  expect(scope.map(column => column.title)).not.toEqual(expect.arrayContaining(['印刷号', '操作', '城市', '地点']));
+  expect(scope.map(column => column.title)).toEqual(expect.arrayContaining(['City', 'Building']));
+  const asset = JSON.parse(tables[1].getAttribute('data-columns')).map(column => column.title);
+  expect(asset[asset.indexOf('原值') + 1]).toBe('净值');
+  expect(asset[asset.indexOf('启用日期') + 1]).toBe('是否必盘');
+  expect(tables[1]).toHaveTextContent('是');
 });
