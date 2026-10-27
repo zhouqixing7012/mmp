@@ -21,9 +21,11 @@ test('职级、人员和公共按所选值精确匹配，1不能命中10', () =>
   expect(query({ owner: ['甲', '乙'], city: '北京' })).toEqual(['a']);
 });
 
-test('新增的执行人、监督人、盘点方式和日期条件实际筛选', () => {
-  expect(query({ executor: ['乙'], supervisor: ['丙'], inventoryMethod: '扫码枪', enableFrom: '2026-01-01', enableTo: '2026-01-01' })).toEqual(['a']);
+test('执行人、监督人和日期条件实际筛选，旧方式筛选不再影响结果', () => {
+  expect(query({ executor: ['乙'], supervisor: ['丙'], enableFrom: '2026-01-01', enableTo: '2026-01-01' })).toEqual(['a']);
   expect(EMPTY_INVENTORY_ASSET_QUERY).not.toHaveProperty('noStatus');
+  expect(EMPTY_INVENTORY_ASSET_QUERY).not.toHaveProperty('inventoryMethod');
+  expect(query({ inventoryMethod: '扫码枪' })).toEqual(['a', 'b', 'c']);
   expect(query({ enableFrom: '2026-01-02' })).toEqual(['b']);
   expect(query({})).toEqual(['a', 'b', 'c']);
 });

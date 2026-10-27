@@ -24,7 +24,7 @@ export default function InventoryAssetQuery({ rows, filters, onChange, onQuery, 
       <QueryItem key="ownerLevel" label="资产责任人职级"><OwnerLevelSelect rows={rows} value={filters.ownerLevel} onChange={(value) => update('ownerLevel', value)} /></QueryItem>,
       select('责任人部门', 'ownerDept'), person('执行人', 'executor', '选择盘点执行人'), person('盘点监督人', 'supervisor', '选择盘点监督人'), select('City', 'city'),
       select('Building', 'building'), enableDate,
-      select('盘点方式', 'inventoryMethod'), select('盘点状态', 'inventoryStatus'),
+      select('盘点状态', 'inventoryStatus'),
       <QueryItem key="range" label="盘点范围"><Select mode="multiple" style={{ width: '100%' }} allowClear value={filters.range || undefined} options={rangeOptions.map((value) => ({ label: value, value }))} onChange={(value) => update('range', value)} /></QueryItem>,
     ]}
   </QueryBar>;
