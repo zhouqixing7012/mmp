@@ -97,7 +97,9 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
     { title: 'City', dataIndex: 'city', width: 120 },
     { title: 'Building', dataIndex: 'building', width: 180 },
     { title: 'Floor', dataIndex: 'floor', width: 100 },
+    { title: '资产责任人', dataIndex: 'owner', width: 160 },
     { title: '资产责任人职级', dataIndex: 'ownerLevel', width: 130 },
+    { title: '启用日期', key: 'enableDateRange', width: 240, render: (_, row) => row.enableFrom || row.enableTo ? `${row.enableFrom || ''} ～ ${row.enableTo || ''}` : '' },
     { title: '清单', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => row.assetKeys ? onPreviewAssets?.(row.assetKeys) : messageApi.warning('历史演示范围未关联资产明细，请重新生成查询')}>查看</Button> },
   ];
 
