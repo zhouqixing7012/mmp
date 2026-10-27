@@ -190,9 +190,8 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
               setSelectedKeys([]);
             }}
           >
-            删除所选
+            删除
           </Button>
-          <Button danger onClick={() => { updateRows(() => []); setSelectedKeys([]); }}>删除全部</Button>
         </Space>
       </div>
 

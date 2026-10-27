@@ -3,7 +3,7 @@ import { Button, Space, message as antdMessage } from 'antd';
 import * as XLSX from 'xlsx';
 import { inventoryMandatoryTemplateRows, parseInventoryMandatoryRows } from './inventoryMandatoryImport';
 
-export default function InventoryMandatoryImport({ assets, candidateAssets = assets, project, requiredKeys, onImport }) {
+export default function InventoryMandatoryImport({ assets, candidateAssets = assets, project, requiredKeys, onImport, importLabel = '导入清单' }) {
   const fileInput = useRef(null);
   const current = useRef({ assets, candidateAssets, project, requiredKeys, onImport });
   current.current = { assets, candidateAssets, project, requiredKeys, onImport };
@@ -51,7 +51,7 @@ export default function InventoryMandatoryImport({ assets, candidateAssets = ass
         ]), '错误明细');
         XLSX.writeFile(workbook, `${project.projectNo}-范围清单导入错误.xlsx`);
       }}>下载错误明细</Button>}
-      <Button loading={importing} disabled={importing} onClick={() => fileInput.current?.click()}>导入清单</Button>
+      <Button loading={importing} disabled={importing} onClick={() => fileInput.current?.click()}>{importLabel}</Button>
     </Space>
     <input ref={fileInput} type="file" hidden accept=".xlsx,.xls,.csv" aria-label="导入盘点清单文件" onChange={importFile} />
   </>;

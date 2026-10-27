@@ -83,10 +83,10 @@ test('初盘创建范围不增加复盘专属列和必盘导入入口', () => {
 
 test('清单替换整个范围并能重新纳入当前查询内已删除的初盘资产，数量比例同步', async () => {
   render(<CreateProjectView creator="冯丽婷" initialProject={base} scopeAssetKeys={chosen.map((asset) => asset.key)} onBack={() => {}} onGenerated={() => {}} />);
-  expect(screen.getAllByRole('button', { name: '导入清单', exact: true })).toHaveLength(1);
+  expect(screen.getAllByRole('button', { name: '导入', exact: true })).toHaveLength(1);
   expect(screen.queryByRole('button', { name: '导入必盘标记' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByLabelText(`选择资产${chosen[1].assetTag}`));
-  fireEvent.click(screen.getByRole('button', { name: '删除', exact: true }));
+  fireEvent.click(screen.getAllByRole('button', { name: '删除', exact: true }).at(-1));
   importFile([{ ...chosen[1], isMandatory: true }]);
   await waitFor(() => expect(mandatoryCell(chosen[1].assetTag)).toHaveTextContent('是'));
   expect(within(screen.getByRole('table', { name: '必盘范围资产' })).queryByRole('row', { name: new RegExp(chosen[0].assetTag) })).not.toBeInTheDocument();
@@ -123,7 +123,8 @@ test('清空已生成范围不能回退全初盘源，外部范围约束也不�
   expect(mandatoryCell(chosen[0].assetTag)).toHaveTextContent('否');
   view.unmount(); mockWarning.mockClear();
   render(<CreateProjectView creator="冯丽婷" initialProject={base} scopeAssetKeys={chosen.map((asset) => asset.key)} onBack={() => {}} onGenerated={() => {}} />);
-  fireEvent.click(screen.getByRole('button', { name: '删除全部', exact: true }));
+  fireEvent.click(screen.getByLabelText('选择资产scope-1'));
+  fireEvent.click(screen.getAllByRole('button', { name: '删除', exact: true })[0]);
   expect(screen.getByRole('group', { name: '本次复盘数量' })).toHaveTextContent(/^0$/);
   importFile([{ ...chosen[0], isMandatory: true }]);
   await waitFor(() => expect(mockWarning).toHaveBeenCalledWith(expect.stringContaining('可选执行资产')));

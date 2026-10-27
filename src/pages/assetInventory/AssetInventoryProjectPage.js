@@ -36,6 +36,8 @@ import { inventoryProjectDateBlockReason } from './inventoryDateRules';
 import { markReplayMandatoryAssets, replayMandatoryRuleKeys, selectReplaySnapshotAssets } from './inventoryReplaySampling';
 import { isInventoryAssetMandatory } from './inventoryMandatoryAssets';
 import InventoryMandatoryImport from './InventoryMandatoryImport';
+import { scopeAssetOwner, scopeAssetDepartment } from './inventoryScopeAssetDisplay';
+import { INVENTORY_PEOPLE } from './inventoryPeople';
 import { reserveInventoryProjectNumber } from './inventoryProjectNumberAllocator';
 import { selectScopeAssets } from './inventoryScopeQuery';
 import { serializeInventoryScopeExport } from './inventoryAssetExport';
@@ -242,11 +244,11 @@ const SCOPE_ASSET_COLUMNS = [
   { title: '数量', dataIndex: 'quantity', width: 70, align: 'right' },
   { title: '原值', dataIndex: 'originalValue', width: 110, align: 'right', render: formatMoney },
   { title: '净值', dataIndex: 'netValue', width: 110, align: 'right', render: formatMoney },
-  { title: '使用状态', dataIndex: 'useStatus', width: 140, render: (value) => <StatusTag value={value} /> },
+  { title: '状态', dataIndex: 'useStatus', width: 140, render: (value) => <StatusTag value={value} /> },
   { title: 'NO位置', dataIndex: 'noLocation', width: 120 },
   { title: '备注', dataIndex: 'remark', width: 130 },
-  { title: '资产责任人', dataIndex: 'owner', width: 150 },
-  { title: '责任人部门', dataIndex: 'ownerDept', width: 200 },
+  { title: '资产责任人', dataIndex: 'owner', width: 180, render: (_, row) => scopeAssetOwner(row, [...EMPLOYEE_ROWS, ...INVENTORY_PEOPLE]) },
+  { title: '责任人部门', dataIndex: 'ownerDept', width: 260, render: (_, row) => scopeAssetDepartment(row, [...EMPLOYEE_ROWS, ...INVENTORY_PEOPLE]) },
   { title: '责任人职级', dataIndex: 'ownerLevel', width: 110 },
   { title: 'City', dataIndex: 'city', width: 110 },
   { title: 'Building', dataIndex: 'building', width: 170 },
@@ -870,9 +872,8 @@ function ScopeSelector({ projectType, sourceAssets = ASSET_ROWS, scopeRows, setS
               setSelectedKeys([]);
             }}
           >
-            删除所选
+            删除
           </Button>
-          <Button danger onClick={() => setScopeRows([])}>删除全部</Button>
         </Space>
       </div>
 
@@ -1091,8 +1092,8 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
               const url = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
               const link = document.createElement('a');
               link.href = url; link.download = `${project.projectNo}-盘点范围资产清单.csv`; link.click(); URL.revokeObjectURL(url);
-            }}>导出清单</Button>
-            {project.projectType === '复盘' ? <InventoryMandatoryImport assets={filteredScopeAssets.length ? filteredScopeAssets : scopeAssets} candidateAssets={importCandidates} project={project}
+            }}>导出</Button>
+            {project.projectType === '复盘' ? <InventoryMandatoryImport importLabel="导入" assets={filteredScopeAssets.length ? filteredScopeAssets : scopeAssets} candidateAssets={importCandidates} project={project}
               requiredKeys={(changes) => replayMandatoryRuleKeys(changes.map(change => importCandidateByKey.get(change.key)), project)}
               onImport={(changes) => {
                 if (managementBlock) throw new Error(managementBlock);
@@ -1104,7 +1105,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
                   mandatoryAssetOverrides: Object.fromEntries(changes.map(asset => [asset.key, asset.isMandatory])),
                   mandatoryAssetKeys: changes.filter(asset => asset.isMandatory).map(asset => asset.key),
                 }));
-              }} /> : <Button icon={<Upload size={14} />} onClick={() => messageApi.info('请按资产清单模板导入')}>导入清单</Button>}
+              }} /> : <Button icon={<Upload size={14} />} onClick={() => messageApi.info('请按资产清单模板导入')}>导入</Button>}
             <Button
               danger
               icon={<Trash2 size={14} />}

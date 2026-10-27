@@ -22,7 +22,7 @@ jest.mock('antd', () => {
     Card: Box, Space: Box, Typography: { Text: Box }, TreeSelect,
     Button: ({ children, onClick }) => <button onClick={onClick}>{children}</button>,
     Select: () => null, InputNumber: () => null, DatePicker: { RangePicker: () => null }, Modal: () => null,
-    Table: ({ dataSource, columns }) => <div>{dataSource.map(row => <div key={row.key} data-testid="scope-row" data-row={JSON.stringify(row)}><span>{`${row.organization}: ${row.department}`}</span>{columns.find(column => column.title === '清单').render(null, row)}</div>)}</div>,
+    Table: ({ dataSource, columns, rowSelection }) => <div><button onClick={() => rowSelection.onChange(dataSource.map(row => row.key))}>勾选全部范围</button>{dataSource.map(row => <div key={row.key} data-testid="scope-row" data-row={JSON.stringify(row)}><span>{`${row.organization}: ${row.department}`}</span>{columns.find(column => column.title === '清单').render(null, row)}</div>)}</div>,
     message: { useMessage: () => [{ warning: jest.fn(), success: jest.fn() }, null] },
   };
 });
@@ -61,7 +61,8 @@ test('初始范围不展示无资产关联的示例查看按钮；生成后可�
   expect(screen.queryByRole('button', { name: '查看', exact: true })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
   expect(changed).toHaveBeenLastCalledWith(['a', 'b']);
-  fireEvent.click(screen.getByRole('button', { name: '删除全部' }));
+  fireEvent.click(screen.getByRole('button', { name: '勾选全部范围' }));
+  fireEvent.click(screen.getByRole('button', { name: '删除', exact: true }));
   expect(changed).toHaveBeenLastCalledWith([]);
 });
 
@@ -72,4 +73,23 @@ test('无筛选生成范围时展示列留空，资产关联仍保留', () => {
   const row = JSON.parse(screen.getByTestId('scope-row').getAttribute('data-row'));
   ['organization', 'department', 'assetCategory', 'assetStatus', 'warehouse', 'city', 'building', 'floor', 'owner', 'ownerLevel'].forEach(field => expect(row[field]).toBe(''));
   expect(row.assetKeys).toEqual(['a', 'b']);
+});
+
+
+test('删除按钮按勾选同时删除多条范围，未勾选不删除', () => {
+  let time = 1000;
+  const clock = jest.spyOn(Date, 'now').mockImplementation(() => time++);
+  const changed = jest.fn();
+  try {
+    render(<AssetInventoryScopeSelectorV3 onScopeAssetsChange={changed} />);
+    fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
+    fireEvent.click(screen.getByRole('button', { name: '生成查询' }));
+    expect(screen.getAllByRole('button', { name: '查看', exact: true })).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: '删除', exact: true }));
+    expect(screen.getAllByRole('button', { name: '查看', exact: true })).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: '勾选全部范围' }));
+    fireEvent.click(screen.getByRole('button', { name: '删除', exact: true }));
+    expect(screen.queryByRole('button', { name: '查看', exact: true })).toBeNull();
+    expect(changed).toHaveBeenLastCalledWith([]);
+  } finally { clock.mockRestore(); }
 });
