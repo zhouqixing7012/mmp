@@ -541,7 +541,7 @@ export function AssetInventoryPlanAssetListV2({ plan, project, currentOperator, 
       {contextHolder}
       <PageTitle>盘点计划资产清单</PageTitle>
 
-      <div className="inventory-range-query"><QueryBar
+      <div className="inventory-plan-assets-query"><QueryBar
         onQuery={() => setFilters({ ...draftFilters })}
         onReset={() => {
           setDraftFilters(EMPTY_ASSET_FILTERS);

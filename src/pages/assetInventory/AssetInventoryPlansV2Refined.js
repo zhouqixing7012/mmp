@@ -5,9 +5,8 @@ import { AssetValueSelect, matchesQuerySelection } from '../../components/AssetQ
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
-import { BellRing, Download, PlayCircle, Plus, Search, Trash2, Upload } from 'lucide-react';
-import SelectModal from '../../components/SelectModal';
-import { applyInventoryPersonnelChange, canEditInventoryPersonnel, inventoryPersonnelCandidates, inventoryPlanFinanceBlockReason } from './inventoryPlanPersonnel';
+import { BellRing, Download, PlayCircle, Plus, Trash2, Upload } from 'lucide-react';
+import { inventoryPlanFinanceBlockReason } from './inventoryPlanPersonnel';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
@@ -56,7 +55,6 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [batchDateOpen, setBatchDateOpen] = useState(false);
   const [batchDates, setBatchDates] = useState({ startDate: '', endDate: '' });
-  const [personTarget, setPersonTarget] = useState(null);
   const [locationPoolOpen, setLocationPoolOpen] = useState(false);
   const [reviewTarget, setReviewTarget] = useState(null);
   const [editPlanKey, setEditPlanKey] = useState(null);
@@ -191,22 +189,6 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     if (String(row.key).startsWith('manual-') && !name) { messageApi.warning('自定义计划名称必填'); event.target.value = row.planName || ''; return; }
     setRows(current => current.map(plan => plan.key === row.key ? { ...plan, planName: name } : plan));
   };
-  const choosePerson = person => {
-    if (!ensureManager()) return;
-    if (!personTarget) return;
-    const plan = visibleRows.find(row => row.key === personTarget.key);
-    try {
-      if (!onChangePlanAssets) throw new Error('计划资产人员保存入口尚未接入');
-      const assets = applyInventoryPersonnelChange(project, plan, assetsForPlan(plan), personTarget.field, person);
-      onChangePlanAssets(plan, () => assets);
-      setRows(current => current.map(row => row.key === plan.key ? { ...row, [personTarget.field]: person.employeeName } : row));
-      setPersonTarget(null);
-    } catch (error) { messageApi.error(error.message); }
-  };
-  const personnelColumn = (title, field) => ({ title, dataIndex: field, width: 180, render: (value, row) => !managementBlock && canEditInventoryPersonnel(project, row, null, field)
-    ? <Input readOnly aria-label={`${row.planNo}-${title}`} value={value === '-' ? '' : value} placeholder="请选择" suffix={<Search size={14}/>} onClick={() => setPersonTarget({ key: row.key, field })}/>
-    : <Typography.Text>{value || '-'}</Typography.Text> });
-
   const columns = [
     { title: '计划编号', dataIndex: 'planNo', width: 170, fixed: 'left', render: (value, row) => getReplayReviewForPlan(submission, row, project.projectNo) ? <Button type="link" onClick={() => setReviewTarget({ scope: 'plan', planNo: row.planNo, key: row.key })}>{value}</Button> : value },
     { title: '计划名称', dataIndex: 'planName', width: 190, render: (value, row) => editable(row) ? <Input aria-label={`${row.planNo}-计划名称`} defaultValue={value} onBlur={event => savePlanName(row, event)} onPressEnter={event => event.target.blur()}/> : value },
@@ -218,8 +200,6 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
     { title: '已盘数量', dataIndex: 'countedCount', width: 100, align: 'right' },
     { title: '盘点开始日期', dataIndex: 'startDate', width: 145, render: (value, row) => editable(row) ? <DatePicker aria-label={`${row.planNo}-盘点开始日期`} value={value ? dayjs(value) : null} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, startDate: date ? date.format('YYYY-MM-DD') : '' } : item))} /> : value },
     { title: '盘点结束日期', dataIndex: 'endDate', width: 145, render: (value, row) => editable(row) ? <DatePicker aria-label={`${row.planNo}-盘点结束日期`} value={value ? dayjs(value) : null} disabledDate={(date) => row.startDate && date.isBefore(dayjs(row.startDate), 'day')} onChange={(date) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, endDate: date ? date.format('YYYY-MM-DD') : '' } : item))} /> : value },
-    personnelColumn('盘点监督人', 'supervisor'),
-    personnelColumn('盘点执行人', 'executor'),
     ...(project?.projectType === '复盘' ? [{ title: '财务监督人', width: 130, render: () => <Typography.Text>徐博</Typography.Text> }] : []),
     { title: '资产清单', width: 90, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => onOpenPlanAssets(row)}>查看</Button> },
   ];
@@ -244,9 +224,6 @@ export default function AssetInventoryPlansV2Refined({ project, currentOperator,
       <Table rowKey="key" size="small" bordered columns={columns} dataSource={filteredRows} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys, fixed: true, getCheckboxProps: () => ({ disabled: projectClosed }) }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }} />
     </Card>
     <div className="flex justify-center pb-2"><Button onClick={onBack}>返回</Button></div>
-    <SelectModal open={Boolean(personTarget)} title="用户列表" rowKey="id" dataSource={inventoryPersonnelCandidates(project, personTarget?.field)} onCancel={() => setPersonTarget(null)} onConfirm={choosePerson}
-      searchFields={[{ label: '员工编号', name: 'employeeNo', dataIndex: 'employeeNo' }, { label: '员工姓名', name: 'employeeName', dataIndex: 'employeeName' }, { label: '部门名称', name: 'department', dataIndex: 'department' }]}
-      columns={[{ title: '员工编号', dataIndex: 'employeeNo' }, { title: '员工姓名', dataIndex: 'employeeName' }, { title: '部门名称', dataIndex: 'department' }]}/>
     <Modal open={batchDateOpen} title="批量编辑盘点日期" width={560} okText="确定" cancelText="取消" onCancel={() => setBatchDateOpen(false)} onOk={saveBatchDates}>
       <Alert type="info" showIcon className="mb-4" message="保存后将统一修改当前全部盘点计划的盘点开始日期和盘点结束日期。" />
       <div className="grid grid-cols-2 gap-4 py-2"><div><Typography.Text type="secondary">盘点开始日期</Typography.Text><DatePicker className="w-full" value={batchDates.startDate ? dayjs(batchDates.startDate) : null} onChange={(date) => setBatchDates((current) => ({ ...current, startDate: date ? date.format('YYYY-MM-DD') : '' }))} /></div><div><Typography.Text type="secondary">盘点结束日期</Typography.Text><DatePicker className="w-full" value={batchDates.endDate ? dayjs(batchDates.endDate) : null} disabledDate={(date) => batchDates.startDate && date.isBefore(dayjs(batchDates.startDate), 'day')} onChange={(date) => setBatchDates((current) => ({ ...current, endDate: date ? date.format('YYYY-MM-DD') : '' }))} /></div></div>

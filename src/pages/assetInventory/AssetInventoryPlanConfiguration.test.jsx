@@ -26,15 +26,11 @@ function Harness({plan=draft,projectType='复盘',initialAssets=originalAssets,o
  return <><AssetInventoryPlansV2Refined currentOperator="冯丽婷" project={{creator:'冯丽婷',projectType,projectNo:'CFG',status:'生成盘点计划'}} rows={rows} setRows={setRows} assetsForPlan={()=>assets} onChangePlanAssets={(row,updater)=>{setAssets(current=>{const next=updater(current);onChanged(next);return next;});}}/><output>{JSON.stringify(rows)}</output></>;
 }
 beforeEach(()=>{window.localStorage.clear();mockWarning.mockClear();});
-test('草稿汇总全部资产人员，计划改人同时保存配置并同步全部资产',()=>{
+test('计划明细不展示监督人和执行人，保留资产人员数据',()=>{
  const changed=jest.fn();render(<Harness onChanged={changed}/>);
- expect(screen.getByLabelText('P1-盘点执行人').value).toBe('冯丽婷、徐博');
- fireEvent.click(screen.getByLabelText('P1-盘点执行人'));
- expect(screen.queryByRole('button',{name:'选择李磊'})).toBeNull();
- fireEvent.click(screen.getByRole('button',{name:'选择冯丽婷'}));
- expect(changed.mock.calls.at(-1)[0].every(asset=>asset.executor==='冯丽婷')).toBe(true);
- expect(screen.getByLabelText('P1-盘点执行人').value).toBe('冯丽婷');
- expect(screen.getByRole('status').textContent).toContain('"executor":"冯丽婷"');
+ expect(screen.queryByLabelText('P1-盘点监督人')).toBeNull();
+ expect(screen.queryByLabelText('P1-盘点执行人')).toBeNull();
+ expect(changed).not.toHaveBeenCalled();
 });
 test('计划名可保存修改，自定义空名被拦截并保留原名',()=>{
  render(<Harness/>);const name=screen.getByLabelText('P1-计划名称');
