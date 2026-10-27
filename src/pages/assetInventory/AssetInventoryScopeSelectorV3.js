@@ -1,3 +1,6 @@
+import InventoryScopeImport from './InventoryScopeImport';
+import { inventoryManagementBlockReason } from './inventoryManagementPermissions';
+import { useInventoryOperator } from './useInventoryOperator';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Card, DatePicker, InputNumber, Select, Space, Table, TreeSelect, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
@@ -61,7 +64,9 @@ export function getScheme3InventoryDemoOptions(allowedRanges) {
   };
 }
 
-export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', sourceAssets: suppliedAssets = ASSET_ROWS, onScopeAssetsChange, onPreviewAssets, initialAssetKeys }) {
+export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', sourceAssets: suppliedAssets = ASSET_ROWS, project, onScopeAssetsChange, onPreviewAssets, initialAssetKeys }) {
+  const [operator] = useInventoryOperator();
+  const importBlock = !project || inventoryManagementBlockReason(project, operator);
   const { allowedRanges } = useAssetInventoryVariant();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const options = useMemo(() => getScheme3InventoryDemoOptions(allowedRanges), [allowedRanges]);
@@ -100,14 +105,16 @@ export default function AssetInventoryScopeSelectorV3({ projectType = '初盘', 
     { title: '资产责任人', dataIndex: 'owner', width: 160 },
     { title: '资产责任人职级', dataIndex: 'ownerLevel', width: 130 },
     { title: '启用日期', key: 'enableDateRange', width: 240, render: (_, row) => row.enableFrom || row.enableTo ? `${row.enableFrom || ''} ～ ${row.enableTo || ''}` : '' },
-    { title: '清单', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => row.assetKeys ? onPreviewAssets?.(row.assetKeys) : messageApi.warning('历史演示范围未关联资产明细，请重新生成查询')}>查看</Button> },
+    { title: '清单', width: projectType === '复盘' ? 80 : 240, fixed: 'right', render: (_, row) => <Space><Button type="link" className="px-0" onClick={() => row.assetKeys ? onPreviewAssets?.(row.assetKeys) : messageApi.warning('历史演示范围未关联资产明细，请重新生成查询')}>查看</Button>{projectType !== '复盘' && project && <InventoryScopeImport project={project} rangeKey={row.key} disabled={Boolean(importBlock)} ledgerAssets={ASSET_ROWS} allowedAssets={sourceAssets}
+      onClear={() => { if (importBlock) throw new Error(importBlock); updateRows(current => current.map(item => item.key === row.key ? { ...item, assetKeys: [] } : item)); onPreviewAssets?.([]); }}
+      onImport={assets => { const keys = assets.map(asset => asset.key); updateRows(current => current.map(item => item.key === row.key ? { ...item, assetKeys: keys } : item)); onPreviewAssets?.(keys); }} />}</Space> },
   ];
 
   const generate = () => {
     const matches = selectScopeAssets(sourceAssets, filters, projectType);
     if (!matches.length) { messageApi.warning('当前条件下没有可纳入的资产'); return; }
     updateRows((current) => [...current, {
-      key: `scope-v3-${Date.now()}`,
+      key: `scope-v3-${Date.now()}-${rows.length}`,
       organization: filters.organizationDepartments.filter(value => value.startsWith('org:')).map(value => value.slice(4)).join('、'),
       department: filters.organizationDepartments.filter(value => value.startsWith('dept:')).map(value => value.slice(5).split('::')[1]).join('、'),
       assetCategory: filters.assetCategory.map((value) => value.startsWith('minor:') ? value.slice(6).replace('|', '.') : value.replace('major:', '')).filter(value => value !== '全部').join('、'),

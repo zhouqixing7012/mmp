@@ -169,17 +169,7 @@ export function decideReplayReview({ project, operator, decision, opinion = '', 
   const status = decision === '驳回' ? '已驳回' : records.some(record => record.status === '待审批') ? '审核中' : '已审核';
   if (decision === '驳回') records.forEach(record => { if (record.status === '待审批') record.status = '未处理'; });
   const result = { ...review, status, records };
-  if (scope === 'project') {
-    if (status !== '已驳回') return saveState(project.projectNo, { ...state, projectReview: result });
-    // 项目驳回后恢复关联计划执行，修改后的结果重新走计划审批。
-    const planReviews = { ...state.planReviews };
-    review.plans.forEach(plan => {
-      const previous = planReviews[plan.planNo];
-      if (!previous) return;
-      planReviews[plan.planNo] = { ...previous, status: '已驳回', plans: previous.plans.map(item => ({ ...item, status: '盘点中', approvalStatus: '已驳回' })) };
-    });
-    return saveState(project.projectNo, { ...state, projectReview: result, planReviews });
-  }
+  if (scope === 'project') return saveState(project.projectNo, { ...state, projectReview: result });
   result.plans = review.plans.map(plan => ({ ...plan, status: status === '已驳回' ? '盘点中' : status, approvalStatus: status }));
   const todoLifecycle = [...state.todoLifecycle];
   if (status === '已审核') {

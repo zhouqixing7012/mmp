@@ -30,17 +30,18 @@ test('文件已打开仍不能绕过新提交审批，扫码枪和文件均在�
   expect(result.errors[0].reason).toContain('审批');
   expect(() => uploadInventoryScannedTags({ project, plan, operator: '213852-孙志强', assets, tags: ['A'] })).toThrow('审批');
 });
-test('项目审批中及通过锁定全部资产，项目驳回恢复计划执行并要求重新计划审批', () => {
+test('项目驳回保留计划锁定，直接再次提交项目审批', () => {
   submit(); decide('同意');
   submitReplayProjectReview({ project, plans: [plan], operator: '孙志强' });
   expect(inventoryExecutionBlockReason({ project, quantity: 1, assetTag: 'A' })).toContain('项目审批');
   let state = getReplaySubmission(project.projectNo);
   decideReplayReview({ project, operator: '徐博', decision: '驳回', opinion: '请补充', scope: 'project', plans: [plan], round: state.projectReview.round });
-  expect(inventoryExecutionBlockReason({ project, plan })).toBe('');
+  expect(inventoryExecutionBlockReason({ project, plan })).toContain('计划审批');
+  expect(inventoryExecutionBlockReason({ project, assetTag: 'A' })).toContain('计划审批');
   state = getReplaySubmission(project.projectNo);
-  expect(state.planReviews.P1.status).toBe('已驳回');
+  expect(state.planReviews.P1.status).toBe('已审核');
   expect(state.planReviews.P1.records.some(record => record.status === '已通过')).toBe(true);
-  expect(() => submitReplayProjectReview({ project, plans: [plan], operator: '孙志强' })).toThrow('全部复盘计划');
+  expect(submitReplayProjectReview({ project, plans: [plan], operator: '孙志强' }).projectReview.round).toBe(2);
 });
 test('零计划不可进入项目审批，零资产计划不可提交审批', () => {
   expect(() => submitReplayProjectReview({ project, plans: [], operator: '孙志强' })).toThrow('没有可提交');

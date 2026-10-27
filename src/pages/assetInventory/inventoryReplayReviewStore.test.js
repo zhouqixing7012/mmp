@@ -74,17 +74,26 @@ test('全部计划通过后才可项目提交，项目审批仅徐博，保留�
   expect(completed.todoLifecycle).toHaveLength(2);
   expect(completed.plans.every(plan => plan.status === '已审核')).toBe(true);
 });
-test('项目驳回恢复计划修改，计划重新通过后重提项目并保留历史', () => {
+test('项目驳回保留计划审批通过，可直接重提项目且保留历史', () => {
   approveAllPlans(); submitProject();
+  const before = getReplaySubmission(project.projectNo);
   decideReplayReview({ project, operator: '徐博', scope: 'project', round: 1, decision: '驳回', opinion: '补充项目说明' });
-  expect(getReplaySubmission(project.projectNo).plans.every(plan => plan.status === '盘点中')).toBe(true);
-  expect(() => submitProject()).toThrow('全部复盘计划');
-  approveAllPlans();
+  const rejected = getReplaySubmission(project.projectNo);
+  expect(rejected.projectReview.status).toBe('已驳回');
+  expect(rejected.planReviews).toEqual(before.planReviews);
+  expect(applyReplayPlanStatuses(plans, rejected).every(plan => plan.status === '已审核')).toBe(true);
+  expect(replayProjectSubmissionBlockReason(project, plans, rejected)).toBe('');
+  expect(() => submit('P1')).toThrow('不能重复提交');
   const state = submitProject();
   expect(state.projectReview.round).toBe(2);
   expect(state.projectReview.records.some(record => record.opinion === '补充项目说明')).toBe(true);
-  expect(state.todoLifecycle).toHaveLength(4);
+  expect(state.planReviews).toEqual(before.planReviews);
+  expect(state.todoLifecycle).toEqual(before.todoLifecycle);
+  expect(() => submitProject()).toThrow('不能重复提交');
+  decideReplayReview({ project, operator: '徐博', scope: 'project', round: 2, decision: '同意' });
+  expect(getReplaySubmission(project.projectNo).projectReview.status).toBe('已审核');
 });
+
 test('重复提交、关闭后的提交审批都不能改变已有结果', () => {
   submit();
   expect(() => submit()).toThrow('不能重复提交');

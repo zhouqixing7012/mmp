@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import * as XLSX from 'xlsx';
 import { CreateProjectView } from './AssetInventoryProjectPage';
 import AssetInventoryProjectPageV3 from './AssetInventoryProjectPageV3';
+import AssetInventoryScopeSelectorV3 from './AssetInventoryScopeSelectorV3';
 import { ASSET_ROWS, PROJECT_INFO } from './mockData';
 import { getInventoryPhotoSnapshot, saveInventoryPhotoSnapshot } from './inventoryPhotoRules';
 import { INVENTORY_MANDATORY_IMPORT_HEADERS as importHeader } from './inventoryMandatoryImport';
@@ -140,9 +141,9 @@ test('新建项目编号跨重新进入和类型切换唯一，编辑历史不�
   const firstDraft = jest.fn();
   const { unmount: firstUnmount } = render(<CreateProjectView creator="213852-孙志强" scopeAssetKeys={chosen.map((asset) => asset.key)} onDraftProjectChange={firstDraft} onBack={() => {}} onGenerated={() => {}} />);
   const first = firstDraft.mock.calls.at(-1)[0].projectNo;
-  expect(first).toMatch(/^CP-\d{8}-\d{4}$/);
+  expect(first).toMatch(/^CP-\d{8}\d{4}$/);
   fireEvent.change(screen.getByLabelText('项目类型'), { target: { value: '抽盘' } });
-  expect(firstDraft.mock.calls.at(-1)[0].projectNo).toMatch(/^DCP-\d{8}-\d{4}$/);
+  expect(firstDraft.mock.calls.at(-1)[0].projectNo).toMatch(/^DCP-\d{8}\d{4}$/);
   fireEvent.change(screen.getByLabelText('项目类型'), { target: { value: '初盘' } });
   expect(firstDraft.mock.calls.at(-1)[0].projectNo).not.toBe(first);
   firstUnmount();
@@ -271,7 +272,7 @@ test('当前V3页面入口生成两条范围后，查看经外层参数切换真
     { ...chosen[1], key: 'v3-b', assetTag: 'V3-B', organization: '公司乙', executeInventory: true },
   ]);
   render(<AssetInventoryProjectPageV3 />);
-  await waitFor(() => expect(screen.getByRole('button', { name: '筛选组织公司甲' })).toBeInTheDocument());
+  await screen.findByRole('button', { name: '筛选组织公司甲' });
   fireEvent.click(screen.getByRole('button', { name: '筛选组织公司甲' }));
   fireEvent.click(screen.getByRole('button', { name: '生成查询', exact: true }));
   fireEvent.click(screen.getByRole('button', { name: '筛选组织公司乙' }));
@@ -280,8 +281,8 @@ test('当前V3页面入口生成两条范围后，查看经外层参数切换真
   await waitFor(() => {
     const table = screen.getByRole('table', { name: '必盘范围资产' });
     expect(within(table).getByRole('row', { name: /V3-A/ })).toBeInTheDocument();
-    expect(within(table).queryByRole('row', { name: /V3-B/ })).toBeNull();
   });
+  expect(within(screen.getByRole('table', { name: '必盘范围资产' })).queryByRole('row', { name: /V3-B/ })).toBeNull();
   fireEvent.click(screen.getAllByRole('button', { name: '查看', exact: true })[1]);
   await waitFor(() => expect(within(screen.getByRole('table', { name: '必盘范围资产' })).getByRole('row', { name: /V3-B/ })).toBeInTheDocument());
   expect(within(screen.getByRole('table', { name: '必盘范围资产' })).queryByRole('row', { name: /V3-A/ })).toBeNull();
@@ -290,20 +291,20 @@ test('当前V3页面入口生成两条范围后，查看经外层参数切换真
   await waitFor(() => expect(within(screen.getByRole('table', { name: '必盘范围资产' })).getAllByRole('row')).toHaveLength(3));
 });
 
-test.each(['初盘', '抽盘'])('%s导入重建整个范围，不受旧分录/当前明细查询限制且额外列不反写', async projectType => {
+test.each(['初盘', '抽盘'])('%s导入只覆盖当前查询范围，其他范围及共同资产保留，额外列不反写', async projectType => {
   const original = chosen[1].description;
   render(<CreateProjectView creator="冯丽婷" initialProject={{ ...base, projectType, inventoryType: '月度', scopeSnapshotAssetKeys: [chosen[0].key], scopeQueryAssetKeys: [chosen[0].key] }} scopeAssetKeys={[chosen[0].key]} onBack={() => {}} onGenerated={() => {}} />);
-  fireEvent.change(screen.getByLabelText('范围资产标签号'), { target: { value: chosen[0].assetTag } });
-  fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: '生成查询', exact: true }));
   const book = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet([['不是固定表头', '说明'], [chosen[1].assetTag, '伪造说明']]), '范围');
   const bytes = XLSX.write(book, { type: 'array', bookType: 'xlsx' });
-  fireEvent.change(screen.getByLabelText('导入范围Excel文件'), { target: { files: [{ name: '范围.xlsx', arrayBuffer: async () => bytes }] } });
-  await waitFor(() => expect(screen.getByRole('textbox', { name: '范围资产标签号' })).toHaveValue(''));
-  const tables = screen.getAllByRole('table', { name: '范围分录' });
-  const detail = tables.find(table => within(table).queryByRole('columnheader', { name: '资产标签号' }));
-  await waitFor(() => expect(within(detail).getByRole('row', { name: new RegExp(chosen[1].assetTag) })).toBeInTheDocument());
-  expect(within(detail).queryByRole('row', { name: new RegExp(chosen[0].assetTag) })).toBeNull();
+  fireEvent.change(screen.getAllByLabelText(/^导入范围Excel文件-/)[0], { target: { files: [{ name: '范围.xlsx', arrayBuffer: async () => bytes }] } });
+  const detail = () => screen.getAllByRole('table', { name: '范围分录' }).find(table => within(table).queryByRole('columnheader', { name: '资产标签号' }));
+  await waitFor(() => expect(within(detail()).queryByRole('row', { name: new RegExp(chosen[0].assetTag) })).toBeNull());
+  expect(within(detail()).getByRole('row', { name: new RegExp(chosen[1].assetTag) })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '查看全部', exact: true }));
+  expect(within(detail()).getByRole('row', { name: new RegExp(chosen[0].assetTag) })).toBeInTheDocument();
+  expect(within(detail()).getByRole('row', { name: new RegExp(chosen[1].assetTag) })).toBeInTheDocument();
   expect(chosen[1].description).toBe(original);
 });
 
@@ -318,4 +319,22 @@ test.each(['初盘', '抽盘', '复盘'])('%s本位置真实导出xlsx完整表�
   expect(XLSX.utils.sheet_to_json(sheet, { header: 1 })[0]).toEqual(headers);
   expect(headers).toHaveLength(projectType === '复盘' ? 20 : 19);
   expect(sheet.A2.t).toBe('s');
+});
+
+test('V3范围行导入只覆盖本行，其他行共同资产保留；错误仅清空目标行', async () => {
+  const onChange = jest.fn(); const onPreview = jest.fn();
+  render(<AssetInventoryScopeSelectorV3 project={{ projectNo: 'V3-IMPORT', projectType: '初盘', creator: '孙志强', status: '草稿' }} sourceAssets={chosen} onScopeAssetsChange={onChange} onPreviewAssets={onPreview} />);
+  fireEvent.click(screen.getByRole('button', { name: '生成查询', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: '生成查询', exact: true }));
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([['资产标签号'], [chosen[1].assetTag]]), '范围');
+  const bytes = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
+  fireEvent.change(screen.getAllByLabelText(/^导入范围Excel文件-/)[0], { target: { files: [{ name: '范围.xlsx', arrayBuffer: async () => bytes }] } });
+  await waitFor(() => expect(onPreview).toHaveBeenLastCalledWith([chosen[1].key]));
+  expect(onChange.mock.calls.at(-1)[0]).toEqual(expect.arrayContaining(chosen.map(asset => asset.key)));
+  const bad = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(bad, XLSX.utils.aoa_to_sheet([['资产标签号'], ['UNKNOWN']]), '错误');
+  const badBytes = XLSX.write(bad, { type: 'array', bookType: 'xlsx' });
+  fireEvent.change(screen.getAllByLabelText(/^导入范围Excel文件-/)[0], { target: { files: [{ name: '错误.xlsx', arrayBuffer: async () => badBytes }] } });
+  await waitFor(() => expect(mockWarning).toHaveBeenCalledWith(expect.stringContaining('本条范围已清空')));
+  expect(onChange.mock.calls.at(-1)[0]).toEqual(expect.arrayContaining(chosen.map(asset => asset.key)));
 });

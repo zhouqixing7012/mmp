@@ -740,7 +740,7 @@ function ImageUploadRuleEditor() {
   );
 }
 
-function ScopeSelector({ projectType, sourceAssets = ASSET_ROWS, scopeRows, setScopeRows, onPreviewAssets, messageApi }) {
+function ScopeSelector({ project, operator, projectType, sourceAssets = ASSET_ROWS, scopeRows, setScopeRows, onPreviewAssets, messageApi }) {
   const { allowedRanges } = useAssetInventoryVariant();
   const [filters, setFilters] = useState({
     organization: '',
@@ -781,14 +781,16 @@ function ScopeSelector({ projectType, sourceAssets = ASSET_ROWS, scopeRows, setS
     { title: 'Building', dataIndex: 'building', width: 180 },
     { title: 'Floor', dataIndex: 'floor', width: 90 },
     { title: '资产责任人职级', dataIndex: 'ownerLevel', width: 130 },
-    { title: '清单', width: 80, fixed: 'right', render: (_, row) => <Button type="link" className="px-0" onClick={() => onPreviewAssets(row)}>查看</Button> },
+    { title: '清单', width: projectType === '复盘' ? 80 : 240, fixed: 'right', render: (_, row) => <Space><Button type="link" className="px-0" onClick={() => onPreviewAssets(row)}>查看</Button>{projectType !== '复盘' && <InventoryScopeImport project={project} rangeKey={row.key} disabled={Boolean(inventoryManagementBlockReason(project, operator))} ledgerAssets={ASSET_ROWS} allowedAssets={sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges))}
+      onClear={() => { setScopeRows(current => current.map(item => item.key === row.key ? { ...item, assetKeys: [] } : item)); onPreviewAssets({ ...row, assetKeys: [] }); }}
+      onImport={assets => { const next = { ...row, assetKeys: assets.map(asset => asset.key) }; setScopeRows(current => current.map(item => item.key === row.key ? next : item)); onPreviewAssets(next); }} />}</Space> },
   ];
 
   const handleGenerate = () => {
     const matches = selectScopeAssets(sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges)), filters, projectType);
     if (!matches.length) { messageApi.warning('当前条件下没有可纳入的资产'); return; }
     const next = {
-      key: `scope-${Date.now()}`,
+      key: `scope-${Date.now()}-${scopeRows.length}`,
       assetKeys: matches.map(asset => asset.key),
       organization: filters.organization || '集团',
       department: filters.department || '-',
@@ -954,7 +956,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   }, [scopeSource]);
   const scopeQueryKeySet = new Set(hasLocalScopeEdits ? scopeRows.flatMap(row => row.assetKeys) : scopeAssetKeys ?? scopeRows.flatMap(row => row.assetKeys));
   const scopeQueryKeys = [...scopeQueryKeySet];
-  const externalScopeKeys = project.scopeLedgerImportKeys !== undefined || scopeAssetKeys == null ? null : new Set(scopeAssetKeys);
+  const externalScopeKeys = hasLocalScopeEdits || project.scopeLedgerImportKeys !== undefined || scopeAssetKeys == null ? null : new Set(scopeAssetKeys);
   const queryCandidates = sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges) && scopeQueryKeySet.has(asset.key) && (externalScopeKeys == null || externalScopeKeys.has(asset.key)));
   const matchesScopeFilter = (asset) => String(asset.assetTag || '').includes(scopeAssetFilter.assetTag.trim())
     && matchesQuerySelection(asset.owner, scopeAssetFilter.owner) && matchesQuerySelection(asset.ownerLevel, scopeAssetFilter.ownerLevel);
@@ -1068,6 +1070,8 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
       <ProjectBasicInfoEditor project={project} setProject={setProject} creator={creator} isEditing={Boolean(initialProject)} />
       <InventoryRuleEditor messageApi={messageApi} />
       <ScopeSelector
+        project={project}
+        operator={creator}
         sourceAssets={sourceAssets}
         projectType={project.projectType}
         scopeRows={scopeRows}
@@ -1110,19 +1114,7 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
                   mandatoryAssetOverrides: Object.fromEntries(changes.map(asset => [asset.key, asset.isMandatory])),
                   mandatoryAssetKeys: changes.filter(asset => asset.isMandatory).map(asset => asset.key),
                 }));
-              }} /> : <InventoryScopeImport project={project} ledgerAssets={ASSET_ROWS} allowedAssets={sourceAssets.filter(asset => isInventoryRangeAllowed(asset, allowedRanges))}
-              onClear={() => {
-                if (managementBlock) throw new Error(managementBlock);
-                if (!['暂存', '草稿'].includes(project.status)) throw new Error('仅未生成快照的草稿项目可以导入范围');
-                setScopeRows([]); setHasLocalScopeEdits(true); setImportedScopeAssetKeys(null); setRemovedAssetKeys([]); setSelectedAssets([]); setPreviewAssetKeys(null);
-                setScopeAssetQuery({ assetTag: '', owner: [], ownerLevel: [] }); setScopeAssetFilter({ assetTag: '', owner: [], ownerLevel: [] });
-                setProject(current => ({ ...current, scopeLedgerImportKeys: [], scopeQueryAssetKeys: [], scopeSnapshotAssetKeys: [], snapshotAssetKeys: [], scopeImportedAssetKeys: undefined, scopeRemovedAssetKeys: [], scopeImportRevision: (current.scopeImportRevision || 0) + 1 }));
-              }}
-              onImport={assets => {
-                const keys = assets.map(asset => asset.key);
-                setScopeRows(keys.length ? [{ key: 'scope-import', assetKeys: keys }] : []); setHasLocalScopeEdits(true);
-                setProject(current => ({ ...current, scopeLedgerImportKeys: keys, scopeQueryAssetKeys: keys, scopeImportRevision: (current.scopeImportRevision || 0) + 1 }));
-              }} />}
+              }} /> : null}
             <Button
               danger
               icon={<Trash2 size={14} />}

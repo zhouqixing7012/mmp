@@ -5,6 +5,7 @@ import { getReplaySubmission, submitReplayReview, submitReplayProjectReview, dec
 import AssetInventoryPlansV2Refined from './AssetInventoryPlansV2Refined';
 jest.mock('./AssetInventoryImageReviewV2', () => ({ buildReviewRows: () => [] }));
 jest.mock('antd',()=>({
+ Dropdown:({children})=><>{children}</>,
  Alert:({message})=><div>{message}</div>, DatePicker:()=>null, Modal:Object.assign(()=>null,{confirm:jest.fn()}), message:{useMessage:()=>[{warning:jest.fn(),success:jest.fn(),error:jest.fn()},null]},
  Button:({children,onClick,disabled,danger,icon,...props})=><button disabled={disabled} onClick={onClick} {...props}>{children}</button>,Card:({children,title})=><section>{title}{children}</section>,Space:({children})=><div>{children}</div>,Typography:{Title:({children})=><h1>{children}</h1>,Text:({children})=><span>{children}</span>},
  TreeSelect:Object.assign(()=>null,{SHOW_PARENT:'SHOW_PARENT'}),
@@ -26,9 +27,9 @@ test('点击不同计划仅展示该计划的资产，监督人固定徐博',()=
 
 test('逐计划入口仅提交对应计划，全部通过后才开放项目审批，徐博复用审核页完成',()=>{
  const project = {creator:'冯丽婷',projectType:'复盘',projectNo:'R-ui',period:'2026'};
- function Harness({operator}) { const [rows,setRows]=React.useState(plans.map(plan=>({...plan,key:plan.planNo,status:'盘点中'}))); return <AssetInventoryPlansV2Refined project={project} currentOperator={operator} rows={rows} setRows={setRows} assetsForPlan={assetsForPlan}/>; }
+ function Harness({operator}) { const [rows,setRows]=React.useState(plans.map(plan=>({...plan,key:plan.planNo,status:'盘点中'}))); return <AssetInventoryPlansV2Refined allAssetsPlanned project={project} currentOperator={operator} rows={rows} setRows={setRows} assetsForPlan={assetsForPlan}/>; }
  let view=render(<Harness operator="冯丽婷"/>);
- expect(screen.getByRole('button',{name:'提交项目审批'})).toBeDisabled();
+ expect(screen.queryByRole('button',{name:'提交项目审批'})).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'选择P1'}));
  fireEvent.click(screen.getByRole('button',{name:'提交计划审批'}));
  expect(screen.getByRole('heading',{name:'复盘结果编辑'})).toBeInTheDocument();
@@ -42,7 +43,7 @@ test('逐计划入口仅提交对应计划，全部通过后才开放项目审�
  fireEvent.click(screen.getByRole('button',{name:'同意'}));
  expect(screen.queryByText('狐小e待办处理记录')).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'返回'}));
- expect(screen.getByRole('button',{name:'提交项目审批'})).toBeDisabled();
+ expect(screen.queryByRole('button',{name:'提交项目审批'})).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'选择P2'}));
  fireEvent.click(screen.getByRole('button',{name:'提交计划审批'}));
  fireEvent.click(screen.getByRole('button',{name:'提交'}));
@@ -142,7 +143,7 @@ test('同一Plans组件切换项目不继承前项目同号计划的审批状态
  view.rerender(<AssetInventoryPlansV2Refined {...props} project={{projectNo:'R-after',projectType:'复盘'}} rows={[{...currentPlans[0],status:'草稿'}]}/>);
  fireEvent.click(screen.getByRole('button',{name:'选择P1'}));
  expect(screen.queryByRole('button',{name:'P1'})).toBeNull();
- expect(screen.getByRole('button',{name:'提交计划审批'})).toBeDisabled();
+ expect(screen.queryByRole('button',{name:'提交计划审批'})).toBeNull();
  expect(getReplaySubmission('R-before').planReviews.P1.status).toBe('审核中');
  expect(getReplaySubmission('R-after')).toBeNull();
 });

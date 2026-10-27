@@ -1,3 +1,4 @@
+import { downloadInventoryPhotoReviewExport } from './inventoryPhotoReviewExport';
 import './inventoryAuditLayout.css';
 import { ProjectInfoCard } from './AssetInventoryProjectV2Common';
 import { inventoryExecutionBlockReason } from './inventoryExecutionRules';
@@ -654,7 +655,7 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
     <Card
       size="small"
       title={<SectionCardTitle>图片审核信息</SectionCardTitle>}
-      extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => messageApi.warning('图片审核导出模板字段尚未补齐，暂不能导出')}>导出</Button></Space>}
+      extra={<Space><Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text><Button icon={<Download size={14} />} onClick={() => { try { downloadInventoryPhotoReviewExport(filteredRows, rows, project?.projectNo); } catch (error) { messageApi.error('图片审核导出失败，请重试'); } }}>导出</Button></Space>}
     >
       <Table
         rowKey="key"

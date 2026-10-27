@@ -11,26 +11,26 @@ function file(sheets) {
   return { name: '范围.xlsx', arrayBuffer: async () => XLSX.write(book, { type: 'array', bookType: 'xlsx' }) };
 }
 beforeEach(() => mockWarning.mockClear());
-test('有效Excel先清空全项目缓存再重建，所有Sheet去重并仅读首列', async () => {
+test('有效Excel先清空目标范围再覆盖，所有Sheet去重并仅读首列', async () => {
   const order = [];
   const onImport = jest.fn(value => order.push(value));
-  render(<InventoryScopeImport project={{ projectNo: 'P' }} ledgerAssets={ledger} allowedAssets={ledger} onClear={() => order.push('clear')} onImport={onImport} />);
-  fireEvent.change(screen.getByLabelText('导入范围Excel文件'), { target: { files: [file([[['任意表头'], ['001', '伪造说明']], [['另一个表头'], ['001'], ['002']]])] } });
+  render(<InventoryScopeImport project={{ projectNo: 'P', status: '草稿' }} rangeKey="scope1" ledgerAssets={ledger} allowedAssets={ledger} onClear={() => order.push('clear')} onImport={onImport} />);
+  fireEvent.change(screen.getByLabelText('导入范围Excel文件-scope1'), { target: { files: [file([[['任意表头'], ['001', '伪造说明']], [['另一个表头'], ['001'], ['002']]])] } });
   await waitFor(() => expect(onImport).toHaveBeenCalledWith(ledger));
   expect(order).toEqual(['clear', ledger]);
 });
-test('未知标签是在清空后报错，不恢复旧缓存也不保存已匹配项', async () => {
+test('未知标签清空目标范围后报错，本批匹配项不保存', async () => {
   let cache = ['old'];
   const onImport = jest.fn();
-  render(<InventoryScopeImport project={{ projectNo: 'P' }} ledgerAssets={ledger} allowedAssets={ledger} onClear={() => { cache = []; }} onImport={onImport} />);
-  fireEvent.change(screen.getByLabelText('导入范围Excel文件'), { target: { files: [file([[['表头'], ['001'], ['UNKNOWN']]])] } });
-  await waitFor(() => expect(mockWarning).toHaveBeenCalledWith(expect.stringContaining('原范围已清空')));
+  render(<InventoryScopeImport project={{ projectNo: 'P', status: '草稿' }} rangeKey="scope1" ledgerAssets={ledger} allowedAssets={ledger} onClear={() => { cache = []; }} onImport={onImport} />);
+  fireEvent.change(screen.getByLabelText('导入范围Excel文件-scope1'), { target: { files: [file([[['表头'], ['001'], ['UNKNOWN']]])] } });
+  await waitFor(() => expect(mockWarning).toHaveBeenCalledWith(expect.stringContaining('本条范围已清空')));
   expect(cache).toEqual([]); expect(onImport).not.toHaveBeenCalled();
 });
 test('非Excel或不可读Excel不会先清空缓存', async () => {
   const onClear = jest.fn();
-  render(<InventoryScopeImport project={{ projectNo: 'P' }} ledgerAssets={ledger} allowedAssets={ledger} onClear={onClear} onImport={jest.fn()} />);
-  fireEvent.change(screen.getByLabelText('导入范围Excel文件'), { target: { files: [{ name: '范围.csv', arrayBuffer: async () => new ArrayBuffer(0) }] } });
+  render(<InventoryScopeImport project={{ projectNo: 'P', status: '草稿' }} rangeKey="scope1" ledgerAssets={ledger} allowedAssets={ledger} onClear={onClear} onImport={jest.fn()} />);
+  fireEvent.change(screen.getByLabelText('导入范围Excel文件-scope1'), { target: { files: [{ name: '范围.csv', arrayBuffer: async () => new ArrayBuffer(0) }] } });
   await waitFor(() => expect(mockWarning).toHaveBeenCalledWith(expect.stringContaining('Excel')));
   expect(onClear).not.toHaveBeenCalled();
 });
