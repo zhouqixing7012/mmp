@@ -15,6 +15,7 @@ export const reportTransactions = transactionOptions.flatMap((option, index) => 
   const ruleType = type === '入库单' ? '入库单' : type === '出库单' ? '出库工单'
     : type === '库存转移' ? '库存转移' : type === '资产转移' ? '资产转移'
       : type === '资产报废' ? '资产报废' : option.value === '104' ? '序列号变更'
+        : option.value === '101' ? '资产升级' : option.value === '103' ? '延长报废期'
         : ['93', '105'].includes(option.value) ? '位置变更' : option.value === '92' ? '担保职责转移' : null;
   if (ruleType) values['单据编号'] = mockDocumentNumber(ruleType, `report-transaction-${group}-${option.value}`, values['事务处理日期'], warehouse.company);
   const accountingSource = ['70', '71'].includes(option.value) ? retiredAssets[group].accountingSource : null;
