@@ -22,7 +22,7 @@ function rows(sheet, first, last) {
   }));
 }
 
-export function FinanceSummaryTable({ sheet }) {
+export function FinanceSummaryTable({ sheet, notes }) {
   const { token } = theme.useToken();
   const leaf = (index, title) => column(sheet, index, title, true);
   const metric = (title, start) => ({ title, children: [
@@ -39,14 +39,10 @@ export function FinanceSummaryTable({ sheet }) {
   ];
   return <Space orientation="vertical" size={16} className="w-full">
     <Card size="small" title="盘点报告汇总">
-      <ReportTable aria-label="盘点报告汇总" compact columns={columns} rows={rows(sheet, 5, 23)}
+      <ReportTable aria-label="盘点报告汇总" compact columns={columns} rows={rows(sheet, 5, sheet.totalRow + 1)}
         onRow={row => row.c0 === 'TOTAL' ? { style: { background: token.colorFillAlter, fontWeight: 600 } } : {}} />
     </Card>
-    <Card size="small" title="报告说明">
-      <Typography.Paragraph>统计公司：—　统计截止日期：—　入库截止日期：—</Typography.Paragraph>
-      <Typography.Paragraph>盘点差异统计：C = A − B。</Typography.Paragraph>
-      <Typography.Paragraph className="!mb-0">报告时间：—　编制：—　复核：—　财务签字：—</Typography.Paragraph>
-    </Card>
+    <div>{notes.map(note => <Typography.Paragraph key={note} className="!mb-1">{note}</Typography.Paragraph>)}</div>
   </Space>;
 }
 
