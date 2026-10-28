@@ -7,7 +7,6 @@ export const INVENTORY_MANDATORY_EXPORT_FIELD = ['是否必盘', 'isMandatory'];
 // 三类盘点资产清单共用同一套导出字段，字段只从对应资产记录取值。
 export const INVENTORY_ASSET_EXPORT_FIELDS = [
   ['计划编号', 'planNo'],
-  ['盘点方式', 'inventoryMethod'],
   ['导入方式', 'resultSource'],
   ['盘点状态', 'inventoryStatus'],
   ['盘点人', 'counter'],

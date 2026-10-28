@@ -86,11 +86,16 @@ test('明细筛选与Excel导出使用同一范围，数量保持Excel数值类�
   expect(XLSX.utils.sheet_to_json(readBack.Sheets['进度详情'], { header: 1 })).toEqual([['盘点范围', '应盘数量'], ['员工', 2]]);
 });
 
-test('全量资产Excel保留联系字段，缺失邮箱不构造，未执行资产不计入进度', () => {
+test('进度资产Excel与执行清单字段一致，未执行资产不计入进度', () => {
   const workbook = createProgressAssetWorkbook(progressFor().assets);
-  const [headers, lost, review] = XLSX.utils.sheet_to_json(workbook.Sheets['资产清单'], { header: 1 });
-  expect(lost[headers.indexOf('责任人邮箱')]).toBe('suwei@example.com');
-  expect(review[headers.indexOf('责任人邮箱')]).toBe('');
+  const [headers] = XLSX.utils.sheet_to_json(workbook.Sheets['资产清单'], { header: 1 });
+  expect(headers).toContain('盘点范围');
+  expect(headers).toContain('导入方式');
+  expect(headers).toContain('主资产标签号');
+  expect(headers).not.toContain('盘点方式');
+  expect(headers).not.toContain('责任人邮箱');
+  const [regular] = XLSX.utils.sheet_to_json(createProgressAssetWorkbook([], false).Sheets['资产清单'], { header: 1 });
+  expect(regular).not.toContain('NO扫描资产标签号');
   const result = buildInventoryProgress({}, ['员工'], [plans[0]], () => [{ ...sampleAssets.P1[0], executeInventory: false }]);
   expect(result.assets).toEqual([]);
   expect(result.summary[0].expected).toBe(0);

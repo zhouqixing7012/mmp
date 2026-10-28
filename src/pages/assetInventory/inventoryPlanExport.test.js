@@ -52,7 +52,8 @@ test('本次导入方式覆盖旧渠道且导出不把配置方式当执行来�
   const asset = mergePlanInventoryResult({ inventoryMethod: '扫码枪', importMode: '手工导入' }, { status: '审核中', resultSource: '狐小e快速扫描' });
   const workbook = createInventoryPlanWorkbook([{ planNo: 'P1' }], () => [asset, { inventoryMethod: '狐小e', importMode: 'APP导入' }]);
   const rows = XLSX.utils.sheet_to_json(workbook.Sheets['计划资产清单'], { defval: '' });
-  expect(rows[0]).toMatchObject({ 盘点方式: '扫码枪', 导入方式: '狐小e快速扫描' });
+  expect(rows[0]).toMatchObject({ 导入方式: '狐小e快速扫描' });
+  expect(rows[0]).not.toHaveProperty('盘点方式');
   expect(rows[1].导入方式).toBe('');
 });
 

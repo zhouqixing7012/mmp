@@ -1,8 +1,8 @@
+import { makeAssetColumns } from './inventoryAssetColumns';
 import { inventoryManagementBlockReason } from './inventoryManagementPermissions';
 import { inventoryExecutionBlockReason } from './inventoryExecutionRules';
 import InventoryScanResultImport from './InventoryScanResultImport';
 import { applyInventoryScanResults } from './inventoryScanResultImport';
-import { inventoryRemark } from './inventoryRemark';
 import { selectInventoryExportRows } from './inventoryPlanExport';
 import * as XLSX from 'xlsx';
 import { parseSnapshotTransferRows } from './inventorySnapshotTransfer';
@@ -26,7 +26,6 @@ import { serializeInventoryAssetExport, serializeInventorySnapshotExport } from 
 import { CheckCircle2, Download, PlayCircle, ScanLine, Trash2, Upload } from 'lucide-react';
 import InventoryAssetQuery from './InventoryAssetQuery';
 import { EMPTY_INVENTORY_ASSET_QUERY, filterInventoryAssets } from './inventoryAssetQuery';
-import { formatAssetCategory } from '../../components/AssetQueryControls';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { ASSET_ROWS, UNINCLUDED_ASSET_ROWS } from './mockData';
@@ -36,11 +35,6 @@ import { importInventoryPhotoFiles, inventoryPhotoUploadBlockReason } from './in
 const RANGE_OPTIONS = ['库房', '公共', '机房', '员工'];
 const EMPTY_FILTERS = EMPTY_INVENTORY_ASSET_QUERY;
 const PRE_INVENTORY_STATUSES = new Set(['快照生成', '生成盘点计划']);
-
-function formatMoney(value) {
-  const numeric = Number(value || 0);
-  return numeric.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
 
 function normalizeAssetForProjectStage(asset, projectStatus) {
   if (!PRE_INVENTORY_STATUSES.has(projectStatus)) return { ...asset };
@@ -83,51 +77,6 @@ function ProjectInfoCard({ project }) {
       </DetailGrid>
     </Card>
   );
-}
-
-function makeAssetColumns({ includeNo = true } = {}) {
-  const columns = [
-    { title: '盘点范围', dataIndex: 'inventoryRange', width: 100, fixed: 'left' },
-    { title: '盘点状态', dataIndex: 'inventoryStatus', width: 100, render: (value) => <StatusTag value={value} /> },
-    { title: '资产盘点人', dataIndex: 'counter', width: 130 },
-    { title: '盘点日期', dataIndex: 'inventoryDate', width: 120 },
-    { title: '资产标签号', dataIndex: 'assetTag', width: 150 },
-    { title: '序列号', dataIndex: 'serialNo', width: 140 },
-    { title: '资产类别', key: 'assetCategory', width: 240, render: (_, row) => formatAssetCategory(row) },
-    { title: '资产说明', dataIndex: 'description', width: 180 },
-    { title: '数量', dataIndex: 'quantity', width: 70, align: 'right' },
-    { title: '原值', dataIndex: 'originalValue', width: 110, align: 'right', render: formatMoney },
-    { title: 'EBS原值', dataIndex: 'ebsOriginalValue', width: 110, align: 'right', render: formatMoney },
-    { title: '净值', dataIndex: 'netValue', width: 100, align: 'right', render: formatMoney },
-    { title: '使用状态', dataIndex: 'useStatus', width: 140, render: (value) => <StatusTag value={value} /> },
-    { title: 'NO位置', dataIndex: 'noLocation', width: 120 },
-    { title: '盘点备注', key: 'inventoryRemark', width: 160, render: (_, row) => inventoryRemark(row) },
-    { title: '使用说明', dataIndex: 'useDescription', width: 160 },
-    { title: '备注', dataIndex: 'remark', width: 130 },
-    { title: '资产责任人', dataIndex: 'owner', width: 150 },
-    { title: '责任人部门', dataIndex: 'ownerDept', width: 200 },
-    { title: '责任人职级', dataIndex: 'ownerLevel', width: 110 },
-    { title: 'City', dataIndex: 'city', width: 110 },
-    { title: 'Building', dataIndex: 'building', width: 170 },
-    { title: 'Floor', dataIndex: 'floor', width: 90 },
-    { title: '子公司', dataIndex: 'organization', width: 120 },
-    { title: '成本中心', dataIndex: 'costCenter', width: 180 },
-    { title: '启用日期', dataIndex: 'enableDate', width: 120 },
-    { title: '主资产标签号', dataIndex: 'mainAssetTag', width: 140 },
-  ];
-
-  if (includeNo) {
-    columns.push(
-      { title: 'NO扫描资产标签号', dataIndex: 'noScanAssetTag', width: 160 },
-      { title: 'NO扫描序列号', dataIndex: 'noScanSerialNo', width: 150 },
-      { title: 'NO扫描品牌', dataIndex: 'noScanBrand', width: 120 },
-      { title: 'NO扫描型号', dataIndex: 'noScanModel', width: 140 },
-      { title: 'NO扫描位置', dataIndex: 'noScanLocation', width: 190 },
-      { title: 'NO扫描数据差异', dataIndex: 'noScanDiff', width: 240 },
-    );
-  }
-
-  return columns;
 }
 
 export function SnapshotAssetTab({ project, plans, currentOperator, onResultsImported, type, projectStatus, projectNo, rows, setRows, setOtherRows, onMoveRows, onConfirmRows, messageApi, machineRoomProject = false }) {

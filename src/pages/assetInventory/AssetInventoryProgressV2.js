@@ -62,7 +62,7 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
     <Button onClick={openAssetView}>查看资产清单</Button>
     <Button disabled={!selectedKeys.length || project?.status === '盘点关闭'} onClick={remind}>催盘</Button>
   </Space>;
-  const assetModal = assetView && <InventoryProgressAssetsModal title={assetView.title} assets={assetView.assets} exportAssets={assetView.exportAssets} projectNo={project.projectNo} onClose={() => setAssetView(null)} />;
+  const assetModal = assetView && <InventoryProgressAssetsModal includeNo={scopeRanges.includes('机房') && (project?.scopeRanges?.includes('机房') || progress.assets.some(asset => asset.inventoryRange === '机房'))} title={assetView.title} assets={assetView.assets} exportAssets={assetView.exportAssets} projectNo={project.projectNo} onClose={() => setAssetView(null)} />;
 
   useEffect(() => {
     const items = detailRange

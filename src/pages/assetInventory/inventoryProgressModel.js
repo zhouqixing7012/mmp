@@ -1,16 +1,11 @@
 import { inventoryAssetQuantity } from './inventoryQuantity';
 import { matchesAssetCategory, matchesQuerySelection } from '../../components/assetQueryModel';
 import * as XLSX from 'xlsx';
-import { PLAN_ASSET_EXPORT_FIELDS, planAssetExportValues, hasInventoryUploadedPhoto } from './inventoryPlanExport';
-
-export const PROGRESS_ASSET_FIELDS = [
-  ...PLAN_ASSET_EXPORT_FIELDS,
-  ['责任人办公电话', 'officePhone'], ['责任人邮箱', 'email'],
-  ['现资产责任人', 'currentOwner'], ['现资产责任人部门', 'currentOwnerDept'],
-  ['盘点组织', 'organization'],
-  ['盘点监督人', 'supervisor'], ['盘点执行人', 'executor'],
-  ['NO扫描数据核对差异', 'noScanDiff'], ['未盘说明', 'uncountedNote'], ['是否上传图片', 'uploadedPhoto'],
-];
+import { hasInventoryUploadedPhoto } from './inventoryPlanExport';
+import { executionAssetFields } from './inventoryExecutionAssetFields';
+import { inventoryResultSource } from './inventoryResultSource';
+import { inventoryRemark } from './inventoryRemark';
+import { formatAssetCategory } from '../../components/assetQueryModel';
 
 export const isUncountedProgressAsset = (asset) => !['已盘', '代盘'].includes(asset.inventoryStatus);
 
@@ -87,13 +82,14 @@ export function createProgressWorkbook(rows, columns, sheetName) {
   return workbook;
 }
 
-export function createProgressAssetWorkbook(assets) {
+export function createProgressAssetWorkbook(assets, includeNo = true) {
   const workbook = XLSX.utils.book_new();
+  const fields = executionAssetFields(includeNo);
+  const value = (asset, key) => key === 'assetCategory' ? formatAssetCategory(asset)
+    : key === 'resultSource' ? inventoryResultSource(asset)
+      : key === 'inventoryRemark' ? inventoryRemark(asset) : asset[key] ?? '';
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([
-    PROGRESS_ASSET_FIELDS.map(([title]) => title),
-    ...assets.map((asset) => [...planAssetExportValues(asset), ...PROGRESS_ASSET_FIELDS.slice(PLAN_ASSET_EXPORT_FIELDS.length)
-      .map(([, field]) => field === 'uploadedPhoto' ? (hasInventoryUploadedPhoto(asset) ? '是' : '否') : asset[field] ?? '')]),
+    fields.map(([title]) => title), ...assets.map(asset => fields.map(([, key]) => value(asset, key))),
   ]), '资产清单');
   return workbook;
 }
-
