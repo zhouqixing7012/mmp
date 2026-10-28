@@ -12,5 +12,5 @@ export function canAccessInventoryReport(operator) {
 }
 
 export function inventoryMenuItemsForOperator(items, operator) {
-  return items.filter(item => item !== '盘点报表' || canAccessInventoryReport(operator));
+  return items.filter(item => !['盘点报表', '财务盘点报告'].includes(item) || canAccessInventoryReport(operator));
 }
