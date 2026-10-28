@@ -9,7 +9,6 @@ import { EMPLOYEE_ROWS } from './mockData';
 import { useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import SectionCardTitle from './SectionCardTitle';
 import { buildInventoryProgress, createProgressWorkbook, filterProgressRows, isUncountedProgressAsset } from './inventoryProgressModel';
-import InventoryProgressAssetsModal from './InventoryProgressAssetsModal';
 
 function formatCount(value) {
   return Number(value || 0).toLocaleString('zh-CN');
@@ -35,7 +34,6 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
   const [detailRange, setDetailRange] = useState('');
   const [detailFilters, setDetailFilters] = useState({});
   const [detailPage, setDetailPage] = useState(1);
-  const [assetView, setAssetView] = useState(null);
   const [selectedKeys, setSelectedKeys] = useState([]);
   const scopeRanges = project?.scopeRanges?.length ? allowedRanges.filter((range) => project.scopeRanges.includes(range)) : allowedRanges;
   const progress = buildInventoryProgress(project, scopeRanges, plans, assetsForPlan, EMPLOYEE_ROWS);
@@ -45,11 +43,6 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
   const downloadProgress = (rows, columns, name) => XLSX.writeFile(
     createProgressWorkbook(rows, columns.filter((column) => column.dataIndex).map((column) => [column.title, column.dataIndex]), name),
     (project?.projectNo || '盘点项目') + '-' + name + '.xlsx');
-  const openAssetView = () => {
-    const scoped = detailRange ? filteredDetailRows.flatMap((row) => row.assets) : progress.assets;
-    const permitted = detailRange ? detailRows.flatMap(row => row.assets) : progress.assets;
-    setAssetView({ title: '资产清单', assets: scoped, exportAssets: permitted });
-  };
   const remind = () => {
     const assets = detailRange
       ? filteredDetailRows.filter(row => selectedKeys.includes(row.key)).flatMap(row => row.assets)
@@ -58,11 +51,9 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
     if (!pending.length) { message.warning('所选进度记录没有未盘资产'); return; }
     message.info(`所选记录涉及 ${pending.length} 张未盘资产；催盘通知服务尚未接入，当前未发送消息或邮件`);
   };
-  const assetTools = <Space>
-    <Button onClick={openAssetView}>查看资产清单</Button>
+  const progressTools = <Space>
     <Button disabled={!selectedKeys.length || project?.status === '盘点关闭'} onClick={remind}>催盘</Button>
   </Space>;
-  const assetModal = assetView && <InventoryProgressAssetsModal includeNo={scopeRanges.includes('机房') && (project?.scopeRanges?.includes('机房') || progress.assets.some(asset => asset.inventoryRange === '机房'))} title={assetView.title} assets={assetView.assets} exportAssets={assetView.exportAssets} projectNo={project.projectNo} onClose={() => setAssetView(null)} />;
 
   useEffect(() => {
     const items = detailRange
@@ -122,10 +113,9 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
   if (detailRange) {
     return (
       <Space direction="vertical" size={16} className="w-full">
-        {assetModal}
         <Typography.Title level={4} style={{ margin: 0 }}>进度详情</Typography.Title>
         <ProjectInfoCard project={project} />
-        <Space>{assetTools}</Space>
+        <Space>{progressTools}</Space>
         <Card size="small" title={<SectionCardTitle>进度详情</SectionCardTitle>} extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(selectInventoryExportRows(filteredDetailRows, detailRows), detailColumns, `${detailRange}进度详情`)}>导出</Button>}>
           <Table rowKey="key" size="small" bordered rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys }} columns={detailColumns} dataSource={filteredDetailRows} pagination={{ current: detailPage, defaultPageSize: 10, showSizeChanger: true, showTotal: (total) => '共 ' + total + ' 条' }} onChange={(pagination, filters, sorter, extra) => { setDetailFilters(filters); setSelectedKeys([]); setDetailPage(extra.action === 'filter' ? 1 : pagination.current); }} scroll={{ x: 1350 }} locale={{ emptyText: '暂无该盘点范围的进度详情数据' }} />
         </Card>
@@ -138,10 +128,9 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
 
   return (
     <Space direction="vertical" size={16} className="w-full">
-      {assetModal}
       <Typography.Title level={4} style={{ margin: 0 }}>盘点进度</Typography.Title>
       <ProjectInfoCard project={project} />
-      {assetTools}
+      {progressTools}
       <Card
         size="small"
         title={<SectionCardTitle>项目进度</SectionCardTitle>}

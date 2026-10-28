@@ -20,7 +20,6 @@ jest.mock('antd', () => ({
 }));
 jest.mock('../../components/StatusTag', () => ({ value }) => <span>{value}</span>);
 jest.mock('../../components/DetailGrid', () => ({ __esModule: true, default: ({ children }) => <div>{children}</div>, DetailItem: ({ children }) => <span>{children}</span> }));
-jest.mock('./InventoryProgressAssetsModal', () => ({ title, assets }) => <div role="dialog">{title}|{assets.map((asset) => asset.assetTag).join(',')}</div>);
 const plans = [{ planNo: 'P1', range: '公共', executor: '李磊', supervisor: '韩晓晗', financialSupervisor: '徐博', auditSupervisor: '-' }];
 const assets = [
   { assetTag: '3102200966', inventoryStatus: '已盘', organization: '集团', city: '北京市', quantity: 1 },
@@ -43,16 +42,14 @@ test('角色列按项目类型展示，详情分页筛选导出只取匹配记�
   expect(screen.queryByText('重置筛选')).not.toBeInTheDocument();
 });
 
-test('初盘不展示复盘角色，统一资产清单默认含所有状态', () => {
+test('初盘不展示复盘角色，删除资产清单入口并保留催盘', () => {
   setup('初盘');
   expect(screen.queryByText('查看未盘资产')).not.toBeInTheDocument();
   expect(screen.queryByText('查看盘点全量资产')).not.toBeInTheDocument();
   expect(screen.getByText('催盘')).toBeDisabled();
   fireEvent.click(screen.getByText('勾选全部进度'));
   expect(screen.getByText('催盘')).not.toBeDisabled();
-  fireEvent.click(screen.getByText('查看资产清单'));
-  expect(screen.getByRole('dialog')).toHaveTextContent('114121801802');
-  expect(screen.getByRole('dialog')).toHaveTextContent('3102200966');
+  expect(screen.queryByText('查看资产清单')).not.toBeInTheDocument();
   fireEvent.click(screen.getAllByText('查看详情')[1]);
   expect(screen.getByText('计划监督人')).toBeInTheDocument();
   expect(screen.queryByText('财务监督人')).not.toBeInTheDocument();
@@ -66,4 +63,12 @@ test('进度详情查询无结果时导出本范围权限全部记录', () => {
   fireEvent.click(screen.getByText('导出'));
   const workbook = XLSX.writeFile.mock.calls.at(-1)[0];
   expect(XLSX.utils.sheet_to_json(workbook.Sheets['公共进度详情'])).toHaveLength(2);
+});
+
+ test('项目进度导出仅含七项汇总字段', () => {
+  setup('初盘');
+  fireEvent.click(screen.getByText('导出'));
+  const workbook = XLSX.writeFile.mock.calls.at(-1)[0];
+  const [headers] = XLSX.utils.sheet_to_json(workbook.Sheets['项目进度'], { header: 1 });
+  expect(headers).toEqual(['盘点范围', '启动时间', '结束时间', '应盘数量', '已盘数量', '未盘数量', '数量进度']);
 });
