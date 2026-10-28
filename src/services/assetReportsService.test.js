@@ -3,7 +3,7 @@ import categoryCatalog from '../mock/reference/materialCategoryCatalog.json';
 import { findMaterialCategory } from '../mock/reference/materialCategoryMapping';
 import { fixture, assetMaterials, reportWarehouses } from '../mock/assetReportsFixtures';
 import { assetReportRows } from '../mock/businessRulesMock';
-import { buildReportWorkbook, formatReportValue, getReportDefinition, getReportOptions, queryReport, updateReportFilter } from './assetReportsService';
+import { buildReportWorkbook, matchesReportRow, formatReportValue, getReportDefinition, getReportOptions, queryReport, updateReportFilter } from './assetReportsService';
 const sort = { key: '资产标签号', order: 'ascend' };
 const permission = scopes => ({ userId: 'test-user', canView: true, allowedScopes: scopes });
 const all = permission(['集团', '上海媒体', '广州媒体']);
@@ -59,7 +59,8 @@ test('部门包含下级，邻接名称不能误命中', () => {
   const rows = query('report-1-1', { 'HR部门': ['演示组织.集团'] });
   expect(rows.length).toBeGreaterThan(0);
   expect(rows.every(row => row.values['子公司'] === '集团')).toBe(true);
-  expect(query('report-1-1', { 'HR部门': ['演示组织.集团其他'] })).toHaveLength(0);
+  expect(rows.every(row => !matchesReportRow(getReportDefinition('report-1-1'), row, { 'HR部门': ['演示组织.集团其他'] }))).toBe(true);
+  expect(() => query('report-1-1', { 'HR部门': ['演示组织.集团其他'] })).toThrow('请重新选择');
 });
 test('入职查询与展示日期一致，领用区间包含当天，逆序日期报错', () => {
   const rows = queryReport('report-4-1', { '入职日期': ['2026-09-02', '2026-09-02'] }, null, all);
@@ -410,4 +411,38 @@ test('耗材明细按原始图片字段查询导出，统领不再串入明细�
   expect(data[0]).not.toContain('原值');
   expect(data[0]).toContain('不含税单价');
   rows.forEach(row => expect(row.values['耗材领用单号']).not.toBe(row.values['领用出库单号'] || 'no-outbound'));
+});
+
+test('查询与导出提交时重新校验基础资料，不把失效条件当作无结果', () => {
+  const filters = { 公司: ['deleted-company'] };
+  expect(() => query('report-1-1', filters)).toThrow('公司选项已失效或不在授权范围，请重新选择');
+  expect(() => exported('report-1-1', filters)).toThrow('请重新选择');
+  const definition = getReportDefinition('report-1-1');
+  const warehouseField = definition.filters.find(field => field.optionSet === 'warehouse');
+  const outside = getReportOptions(definition, warehouseField, {}, all).find(option =>
+    !getReportOptions(definition, warehouseField, {}, permission(['集团'])).some(allowed => allowed.value === option.value));
+  expect(outside).toBeDefined();
+  expect(() => query('report-1-1', { 仓库: [outside.value] }, permission(['集团']))).toThrow('请重新选择');
+});
+
+test.each([['101', 'AUG'], ['103', 'AST']])('事务%s使用已提供的%s编号规则', (type, prefix) => {
+  const rows = query('report-3-1', { 事务类型: [type] });
+  expect(rows.length).toBeGreaterThan(0);
+  rows.forEach(row => expect(row.values['单据编号']).toMatch(new RegExp('^' + prefix + '-[0-9]{12}$')));
+  const data = exported('report-3-1', { 事务类型: [type] });
+  expect(data.slice(1).map(row => row[data[0].indexOf('单据编号')])).toEqual(rows.map(row => row.values['单据编号']));
+});
+
+test('ES实物报废期在列表与导出均去掉时分秒', () => {
+  const definition = getReportDefinition('report-1-1');
+  const base = query('report-1-1')[0];
+  const extra = { ...base, id: 'date-format-regression', values: { ...base.values, ES实物报废期: '2028-06-30 12:34:56' },
+    exports: { ...base.exports, ES实物报废期: '2028-06-30 12:34:56' } };
+  assetReportRows['report-1-1'].push(extra);
+  try {
+    const column = definition.columns.find(item => item.key === 'ES实物报废期');
+    expect(formatReportValue(extra.values['ES实物报废期'], column.format)).toBe('2028-06-30');
+    const data = exported('report-1-1');
+    expect(data.slice(1).some(row => row[data[0].indexOf('ES实物报废期')] === '2028-06-30')).toBe(true);
+  } finally { assetReportRows['report-1-1'].pop(); }
 });
