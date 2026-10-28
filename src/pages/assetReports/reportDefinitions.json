@@ -560,7 +560,7 @@
       {
         "label": "ES实物报废期",
         "key": "ES实物报废期",
-        "format": "text",
+        "format": "date",
         "width": 160
       },
       {
@@ -870,7 +870,7 @@
       {
         "label": "ES实物报废期",
         "key": "ES实物报废期",
-        "format": "text"
+        "format": "date"
       },
       {
         "label": "升级金额",
