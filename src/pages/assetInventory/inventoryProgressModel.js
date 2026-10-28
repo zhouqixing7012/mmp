@@ -93,3 +93,17 @@ export function createProgressAssetWorkbook(assets, includeNo = true) {
   ]), '资产清单');
   return workbook;
 }
+
+export function createInventoryProgressExportWorkbook({ summaryRows, summaryColumns = [], detailRows, detailColumns, includeNo = true }) {
+  const workbook = XLSX.utils.book_new();
+  const append = (rows, columns, name) => {
+    const sheet = createProgressWorkbook(rows, columns, name);
+    XLSX.utils.book_append_sheet(workbook, sheet.Sheets[name], name);
+  };
+  if (summaryRows) append(summaryRows, summaryColumns, '项目进度');
+  append(detailRows, detailColumns, '进度详情');
+  const assets = [...new Map(detailRows.flatMap(row => row.assets).map(asset => [asset.assetTag || asset.key || asset, asset])).values()];
+  const assetBook = createProgressAssetWorkbook(assets, includeNo);
+  XLSX.utils.book_append_sheet(workbook, assetBook.Sheets['资产清单'], '资产清单');
+  return workbook;
+}

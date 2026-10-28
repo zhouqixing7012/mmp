@@ -8,7 +8,7 @@ import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import { EMPLOYEE_ROWS } from './mockData';
 import { useAssetInventoryVariant } from './AssetInventoryVariantContext';
 import SectionCardTitle from './SectionCardTitle';
-import { buildInventoryProgress, createProgressWorkbook, filterProgressRows, isUncountedProgressAsset } from './inventoryProgressModel';
+import { buildInventoryProgress, createInventoryProgressExportWorkbook, filterProgressRows, isUncountedProgressAsset } from './inventoryProgressModel';
 
 function formatCount(value) {
   return Number(value || 0).toLocaleString('zh-CN');
@@ -40,9 +40,17 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
   const progressRows = progress.summary;
   const detailRows = progress.details.filter((row) => row.range === detailRange);
   const filteredDetailRows = filterProgressRows(detailRows, detailFilters);
-  const downloadProgress = (rows, columns, name) => XLSX.writeFile(
-    createProgressWorkbook(rows, columns.filter((column) => column.dataIndex).map((column) => [column.title, column.dataIndex]), name),
-    (project?.projectNo || '盘点项目') + '-' + name + '.xlsx');
+  const downloadProgress = (detailOnly = false) => {
+    const fields = columns => columns.filter(column => column.dataIndex).map(column => [column.title, column.dataIndex]);
+    const details = detailOnly ? selectInventoryExportRows(filteredDetailRows, detailRows) : progress.details;
+    const workbook = createInventoryProgressExportWorkbook({
+      summaryRows: detailOnly ? undefined : progressRows,
+      summaryColumns: fields(progressColumns),
+      detailRows: details, detailColumns: fields(detailColumns),
+      includeNo: scopeRanges.includes('机房') && (project?.scopeRanges?.includes('机房') || progress.assets.some(asset => asset.inventoryRange === '机房')),
+    });
+    XLSX.writeFile(workbook, `${project?.projectNo || '盘点项目'}-${detailOnly ? detailRange + '进度详情' : '项目进度'}.xlsx`);
+  };
   const remind = () => {
     const assets = detailRange
       ? filteredDetailRows.filter(row => selectedKeys.includes(row.key)).flatMap(row => row.assets)
@@ -116,7 +124,7 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
         <Typography.Title level={4} style={{ margin: 0 }}>进度详情</Typography.Title>
         <ProjectInfoCard project={project} />
         <Space>{progressTools}</Space>
-        <Card size="small" title={<SectionCardTitle>进度详情</SectionCardTitle>} extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(selectInventoryExportRows(filteredDetailRows, detailRows), detailColumns, `${detailRange}进度详情`)}>导出</Button>}>
+        <Card size="small" title={<SectionCardTitle>进度详情</SectionCardTitle>} extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(true)}>导出</Button>}>
           <Table rowKey="key" size="small" bordered rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys }} columns={detailColumns} dataSource={filteredDetailRows} pagination={{ current: detailPage, defaultPageSize: 10, showSizeChanger: true, showTotal: (total) => '共 ' + total + ' 条' }} onChange={(pagination, filters, sorter, extra) => { setDetailFilters(filters); setSelectedKeys([]); setDetailPage(extra.action === 'filter' ? 1 : pagination.current); }} scroll={{ x: 1350 }} locale={{ emptyText: '暂无该盘点范围的进度详情数据' }} />
         </Card>
         <div className="flex justify-center pb-2">
@@ -134,7 +142,7 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
       <Card
         size="small"
         title={<SectionCardTitle>项目进度</SectionCardTitle>}
-        extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(progressRows, progressColumns, '项目进度')}>导出</Button>}
+        extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress()}>导出</Button>}
       >
         <Table rowKey="key" size="small" bordered rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys }} columns={progressColumns} dataSource={progressRows} pagination={false} scroll={{ x: 950 }} />
       </Card>

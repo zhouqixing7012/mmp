@@ -38,7 +38,10 @@ test('角色列按项目类型展示，详情分页筛选导出只取匹配记�
   expect(screen.getByText('共 1 条')).toBeInTheDocument();
   fireEvent.click(screen.getByText('导出'));
   const workbook = XLSX.writeFile.mock.calls.at(-1)[0];
-  expect(XLSX.utils.sheet_to_json(workbook.Sheets['公共进度详情'])).toEqual([expect.objectContaining({ City: '北京市', 已盘数量: 1 })]);
+  expect(XLSX.utils.sheet_to_json(workbook.Sheets['进度详情'])).toEqual([expect.objectContaining({ City: '北京市', 已盘数量: 1 })]);
+  expect(workbook.SheetNames).toEqual(['进度详情', '资产清单']);
+  expect(XLSX.utils.sheet_to_json(workbook.Sheets['资产清单']).map(row => row['资产标签号'])).toEqual(['3102200966']);
+  expect(XLSX.utils.sheet_to_json(workbook.Sheets['资产清单'], { header: 1 })[0]).toContain('导入方式');
   expect(screen.queryByText('重置筛选')).not.toBeInTheDocument();
 });
 
@@ -62,13 +65,15 @@ test('进度详情查询无结果时导出本范围权限全部记录', () => {
   expect(screen.getByText('共 0 条')).toBeInTheDocument();
   fireEvent.click(screen.getByText('导出'));
   const workbook = XLSX.writeFile.mock.calls.at(-1)[0];
-  expect(XLSX.utils.sheet_to_json(workbook.Sheets['公共进度详情'])).toHaveLength(2);
+  expect(XLSX.utils.sheet_to_json(workbook.Sheets['进度详情'])).toHaveLength(2);
 });
 
- test('项目进度导出仅含七项汇总字段', () => {
+ test('项目进度导出三个Sheet，汇总字段取页面，资产与进度同范围', () => {
   setup('初盘');
   fireEvent.click(screen.getByText('导出'));
   const workbook = XLSX.writeFile.mock.calls.at(-1)[0];
+  expect(workbook.SheetNames).toEqual(['项目进度', '进度详情', '资产清单']);
+  expect(XLSX.utils.sheet_to_json(workbook.Sheets['资产清单']).map(row => row['资产标签号'])).toEqual(['3102200966', '114121801802']);
   const [headers] = XLSX.utils.sheet_to_json(workbook.Sheets['项目进度'], { header: 1 });
   expect(headers).toEqual(['盘点范围', '启动时间', '结束时间', '应盘数量', '已盘数量', '未盘数量', '数量进度']);
 });
