@@ -1,18 +1,21 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, Modal, Space, Table, Typography, message } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { exportReport, formatReportValue, getReportDefinition, queryReport, updateReportFilter } from '../../services/assetReportsService';
 import ReportFilter from './ReportFilter';
 import { DEFAULT_REPORT_ACCESS, assertReportAccess } from '../../services/assetReportAccess';
 
-export default function AssetReportPage({ reportId, access = DEFAULT_REPORT_ACCESS }) {
+export default function AssetReportPage({ reportId, access = DEFAULT_REPORT_ACCESS, initialState = {}, onStateChange }) {
   const definition = getReportDefinition(reportId);
-  const [filters, setFilters] = useState({});
-  const [applied, setApplied] = useState({});
-  const [expanded, setExpanded] = useState(false);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
-  const [sort, setSort] = useState(null);
-  const [selectedKeys, setSelectedKeys] = useState([]);
+  const [filters, setFilters] = useState(() => initialState.filters || {});
+  const [applied, setApplied] = useState(() => initialState.applied || {});
+  const [expanded, setExpanded] = useState(() => initialState.expanded || false);
+  const [pagination, setPagination] = useState(() => initialState.pagination || { current: 1, pageSize: 10 });
+  const [sort, setSort] = useState(() => initialState.sort || null);
+  const [selectedKeys, setSelectedKeys] = useState(() => initialState.selectedKeys || []);
+  useEffect(() => {
+    onStateChange?.(reportId, { filters, applied, expanded, pagination, sort, selectedKeys });
+  }, [reportId, filters, applied, expanded, pagination, sort, selectedKeys, onStateChange]);
   const queryResult = useMemo(() => {
     try { return { rows: queryReport(reportId, applied, sort, access), error: null }; }
     catch (error) { return { rows: [], error: error.message }; }
@@ -39,7 +42,15 @@ export default function AssetReportPage({ reportId, access = DEFAULT_REPORT_ACCE
     try {
       queryReport(reportId, filters, sort, access);
       Modal.confirm({ title: selectedKeys.length && definition.selectRows ? `导出选中的 ${selectedKeys.length} 条记录？` : '导出当前条件下的所有数据到 Excel？',
-        okText: '确定', cancelText: '取消', onOk: () => { exportReport(reportId, filters, selectedKeys, sort, access); message.success('导出完成'); } });
+        okText: '确定', cancelText: '取消', onOk: async () => {
+          try {
+            await exportReport(reportId, filters, selectedKeys, sort, access);
+            message.success('导出完成');
+          } catch (error) {
+            message.error('导出失败，请重试');
+            throw error;
+          }
+        } });
     } catch (error) { message.error(error.message); }
   };
   const columns = [
