@@ -1,0 +1,5 @@
+.finance-template-scroll { width: 100%; overflow: auto; max-height: 68vh; outline-offset: 2px; }
+.finance-template-table { border-collapse: collapse; min-width: 1800px; width: 100%; font-size: 12px; color: var(--ant-color-text, #1d2126); }
+.finance-template-table th, .finance-template-table td { border: 1px solid var(--ant-color-border, #d3d9e5); padding: 8px 10px; min-width: 78px; text-align: center; white-space: nowrap; }
+.finance-template-table thead { background: var(--ant-color-fill-alter, #fafafa); }
+.finance-template-table .finance-template-number { text-align: right; font-variant-numeric: tabular-nums; }
