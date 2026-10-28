@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx-js-style';
 import { buildFinanceInventoryReport, financeAssetClassification } from './inventoryFinanceReportModel';
-import { buildFinanceInventoryWorkbook, formatFinanceTemplateValue } from './inventoryFinanceReportService';
+import { buildFinanceInventoryWorkbook, formatFinanceTemplateValue, selectFinanceInventoryReportInput } from './inventoryFinanceReportService';
 
 const assets = [
   { assetTag: 'A', category: 'PC', subCategory: '主机-技术', quantity: 2, ebsOriginalValue: 100, originalValue: 9999, netValue: 1, inventoryStatus: '已盘' },
@@ -44,4 +44,20 @@ test('生成当前报告三张表，保留真实分类金额、四条说明及Ex
   expect(report.notes).toEqual(['1、以上数据是测试公司的资产盘点信息；', '2、以上数据是截止到2026年10月28日的盘查结果；', '3、盘点资产，为截止到2026年6月30日的入库资产。', '4、盘点表公式关系：C=A-B']);
   const readBack = XLSX.read(XLSX.write(workbook, { type: 'array', bookType: 'xlsx' }), { type: 'array' });
   expect(XLSX.utils.sheet_to_json(readBack.Sheets['盘亏资产明细'], { header: 1 })[2][6]).toBe(50);
+});
+
+test('子公司、板块、年度组合筛选同一数据源，跨年不保留旧资产及旧截止日期', () => {
+  const input = { year: 2026, inventoryDate: '2026年10月28日', assets: [
+    { assetTag: '甲', organization: '001.测试公司', plate: '16.视频' },
+    { assetTag: '乙', organization: '001.测试公司', plate: '17.Corporate' },
+    { assetTag: '丙', organization: '002.其他公司', plate: '16.视频' },
+  ] };
+  const companies = [{ value: '001', label: '001.测试公司' }];
+  const filters = { company: '001', plates: ['16'], year: 2026 };
+  expect(selectFinanceInventoryReportInput(input, filters, companies).assets.map(asset => asset.assetTag)).toEqual(['甲']);
+  expect(selectFinanceInventoryReportInput(input, { ...filters, plates: ['16', '17'] }, companies).assets).toHaveLength(2);
+  const otherYear = selectFinanceInventoryReportInput(input, { ...filters, year: 2027 }, companies);
+  expect(otherYear.assets).toHaveLength(0);
+  expect(otherYear.inventoryDate).toBe('');
+  expect(selectFinanceInventoryReportInput(input, { ...filters, company: '' }, companies).assets).toHaveLength(0);
 });

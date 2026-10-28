@@ -1,7 +1,25 @@
 import template from '../data/inventoryFinanceReportTemplate.json';
 import * as XLSX from 'xlsx-js-style';
 import { accountingAmount, INVENTORY_REPORT_FORMATS } from './inventoryReportFormats';
+import { getFinancialAssetCompanyOptions } from './financialNewAssetReportService';
+import { ASSET_PLATE_OPTIONS } from '../config/assetPlates';
 export { buildFinanceInventoryReport } from './inventoryFinanceReportModel';
+
+export function getFinanceInventoryQueryOptions() {
+  return { companies: getFinancialAssetCompanyOptions(), plates: ASSET_PLATE_OPTIONS.map(label => ({ value: label.split('.')[0], label })) };
+}
+
+export function selectFinanceInventoryReportInput(input = {}, filters, companies) {
+  const company = companies.find(option => option.value === filters.company);
+  const code = value => String(value ?? '').split('.')[0];
+  const companyMatches = asset => [asset.organization, asset.companyCode].some(value => value != null
+    && (code(value) === code(filters.company) || value === company?.label || value === company?.name));
+  const valid = company && filters.plates.length && Number(input.year) === Number(filters.year);
+  return { ...input, year: filters.year, company: company ? (company.name || company.label.replace(/^\d+\./, '')) : '',
+    ...(!valid ? { inventoryDate: '', stockDate: '', reportDate: '' } : {}),
+    assets: valid ? (input.assets || []).filter(asset => companyMatches(asset) && filters.plates.some(plate => code(plate) === code(asset.plate))) : [],
+  };
+}
 
 // 用户提供的空白模板独立于ES年度统计，保持三张表的字段、合并及零值。
 export function getInventoryFinanceReportTemplate() {

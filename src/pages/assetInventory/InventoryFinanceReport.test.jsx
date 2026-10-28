@@ -22,8 +22,13 @@ beforeEach(() => {
 
 test('财务独立页面共用报表表格，保留三表和19列明细，导出当前报告', async () => {
   const download = jest.spyOn(financeService, 'exportFinanceInventoryReport').mockResolvedValue(undefined);
-  render(<InventoryFinanceReport />);
+  const options = financeService.getFinanceInventoryQueryOptions();
+  render(<InventoryFinanceReport reportInput={{ companyCode: options.companies[0].value, plates: [options.plates[0].value], year: 2026, assets: [] }} />);
   const panel = screen.getByRole('main', { name: '财务盘点报告' });
+  expect(within(panel).getByRole('combobox', { name: '子公司' })).toBeInTheDocument();
+  expect(within(panel).getByRole('combobox', { name: '板块' })).toBeInTheDocument();
+  expect(within(panel).getByLabelText('年度')).toBeInTheDocument();
+  expect(within(panel).queryByRole('heading', { name: '财务盘点报告' })).not.toBeInTheDocument();
   expect(within(panel).queryByText(/模板预览/)).not.toBeInTheDocument();
   expect(within(panel).queryByText('报告说明')).not.toBeInTheDocument();
   expect(within(panel).getByText('4、盘点表公式关系：C=A-B')).toBeInTheDocument();
