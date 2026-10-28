@@ -1,9 +1,20 @@
 import * as XLSX from 'xlsx';
-import { buildInventoryProgress, createProgressWorkbook, createProgressAssetWorkbook, filterProgressRows, isUncountedProgressAsset } from './inventoryProgressModel';
+import { buildInventoryProgress, createProgressWorkbook, createProgressAssetWorkbook, filterProgressRows, isUncountedProgressAsset, filterProgressAssets } from './inventoryProgressModel';
 import { INVENTORY_MOBILE_ASSETS } from '../../mock/inventoryMobileMock';
 import { getMobileInventoryResults, saveMobileInventoryResult } from './inventoryMobileResultStore';
 
 // 测试沿用既有移动资产，不在业务模型引入跨项目默认资产。
+test('资产清单四项新增查询取交集，执行人与责任人区分，部门使用执行人一级部门', () => {
+  const rows = [
+    { assetTag: 'A', owner: '责任人甲', executor: '执行人乙', inventoryRange: '员工', organization: '公司甲', executorDepartment: '公司甲.研发部.开发组', inventoryStatus: '未盘' },
+    { assetTag: 'B', owner: '执行人乙', executor: '执行人丙', inventoryRange: '员工', organization: '公司甲', executorDepartment: '公司甲.研发部.测试组', inventoryStatus: '审核中' },
+    { assetTag: 'C', executor: '执行人乙', inventoryRange: '公共', organization: '公司乙', inventoryStatus: '报失' },
+  ];
+  expect(filterProgressAssets(rows, { executor: ['执行人乙'], inventoryRange: ['员工'], organization: ['公司甲'], firstLevelDepartment: ['公司甲.研发部'] }).map(row => row.assetTag)).toEqual(['A']);
+  expect(filterProgressAssets(rows, { firstLevelDepartment: ['虚拟组织'] }).map(row => row.assetTag)).toEqual(['C']);
+  expect(filterProgressAssets(rows, { inventoryStatus: ['未盘', '审核中', '报失'] })).toHaveLength(3);
+  expect(filterProgressAssets(rows, { executor: ['执行人乙'], organization: ['公司甲'], firstLevelDepartment: ['其他部门'] })).toHaveLength(0);
+});
 const mobileFixtureProgress = (project, ranges, assets = INVENTORY_MOBILE_ASSETS, today = new Date(), results = {}) => buildInventoryProgress(project, ranges,
   ranges.map((range) => ({ planNo: range, range })), (plan) => assets.filter((asset) => asset.area === plan.range).map((asset) => ({
     ...asset, assetTag: asset.tagNo, inventoryStatus: results[asset.tagNo]?.status ?? asset.status, organization: asset.company,

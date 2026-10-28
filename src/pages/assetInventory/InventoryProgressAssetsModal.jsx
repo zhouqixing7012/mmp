@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { Button, Input, Modal, Space, Table } from 'antd';
 import * as XLSX from 'xlsx';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
-import { AssetCategorySelect, AssetPersonSelect, AssetValueSelect, OwnerLevelSelect, formatAssetCategory, matchesAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
+import { AssetCategorySelect, AssetPersonSelect, AssetValueSelect, OwnerLevelSelect, formatAssetCategory } from '../../components/AssetQueryControls';
 import StatusTag from '../../components/StatusTag';
-import { createProgressAssetWorkbook, PROGRESS_ASSET_FIELDS } from './inventoryProgressModel';
+import { createProgressAssetWorkbook, PROGRESS_ASSET_FIELDS, progressAssetDepartment, filterProgressAssets } from './inventoryProgressModel';
 
 // 进度下钻使用汇总所统计的同一批资产，联系方式只展示资产记录已有值。
 export default function InventoryProgressAssetsModal({ title, assets, exportAssets = assets, projectNo, onClose }) {
@@ -14,10 +14,8 @@ export default function InventoryProgressAssetsModal({ title, assets, exportAsse
   const [applied, setApplied] = useState({});
   const [page, setPage] = useState(1);
   const change = (field, value) => setQuery((current) => ({ ...current, [field]: value }));
-  const rows = assets.filter((row) => ['assetTag', 'serialNo', 'description'].every((field) => !applied[field]
-    || String(row[field] || '').toLowerCase().includes(applied[field].trim().toLowerCase()))
-    && matchesAssetCategory(row, applied.category)
-    && ['owner', 'ownerLevel', 'inventoryStatus', 'city'].every((field) => matchesQuerySelection(row[field], applied[field])));
+  const queryAssets = assets.map(asset => ({ ...asset, firstLevelDepartment: progressAssetDepartment(asset) }));
+  const rows = filterProgressAssets(assets, applied);
   const columns = PROGRESS_ASSET_FIELDS.map(([label, field]) => ({
     title: label, dataIndex: field, width: ['description', 'ownerDept', 'currentOwnerDept', 'inventoryRemark', 'uncountedNote'].includes(field) ? 230 : 150,
     fixed: field === 'assetTag' ? 'left' : undefined,
@@ -37,6 +35,10 @@ export default function InventoryProgressAssetsModal({ title, assets, exportAsse
         <QueryItem label="责任人职级"><OwnerLevelSelect rows={assets} value={query.ownerLevel} onChange={(value) => change('ownerLevel', value)} /></QueryItem>
         <QueryItem label="盘点状态"><AssetValueSelect multiple rows={assets} field="inventoryStatus" value={query.inventoryStatus} onChange={(value) => change('inventoryStatus', value)} /></QueryItem>
         <QueryItem label="City"><AssetValueSelect multiple rows={assets} field="city" value={query.city} onChange={(value) => change('city', value)} /></QueryItem>
+        <QueryItem label="执行人"><AssetPersonSelect rows={assets} field="executor" title="选择执行人" value={query.executor} onChange={(value) => change('executor', value)} /></QueryItem>
+        <QueryItem label="盘点范围"><AssetValueSelect multiple rows={assets} field="inventoryRange" value={query.inventoryRange} onChange={(value) => change('inventoryRange', value)} /></QueryItem>
+        <QueryItem label="子公司"><AssetValueSelect multiple rows={assets} field="organization" value={query.organization} onChange={(value) => change('organization', value)} /></QueryItem>
+        <QueryItem label="一级部门"><AssetValueSelect multiple rows={queryAssets} field="firstLevelDepartment" value={query.firstLevelDepartment} onChange={(value) => change('firstLevelDepartment', value)} /></QueryItem>
       </QueryBar>
       <div><Button onClick={() => XLSX.writeFile(createProgressAssetWorkbook(selectInventoryExportRows(rows, exportAssets)), projectNo + '-' + title + '.xlsx')}>导出</Button></div>
       <Table rowKey="assetTag" bordered size="small" columns={columns} dataSource={rows} scroll={{ x: columns.reduce((sum, column) => sum + column.width, 0), y: 420 }}

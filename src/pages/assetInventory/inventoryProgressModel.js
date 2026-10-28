@@ -1,4 +1,5 @@
 import { inventoryAssetQuantity } from './inventoryQuantity';
+import { matchesAssetCategory, matchesQuerySelection } from '../../components/assetQueryModel';
 import * as XLSX from 'xlsx';
 import { PLAN_ASSET_EXPORT_FIELDS, planAssetExportValues, hasInventoryUploadedPhoto } from './inventoryPlanExport';
 
@@ -12,6 +13,19 @@ export const PROGRESS_ASSET_FIELDS = [
 ];
 
 export const isUncountedProgressAsset = (asset) => !['已盘', '代盘'].includes(asset.inventoryStatus);
+
+export function progressAssetDepartment(asset) {
+  if (['库房', '公共'].includes(asset.inventoryRange)) return '虚拟组织';
+  return asset.executorDepartment ? asset.executorDepartment.split('.').slice(0, 2).join('.') : '-';
+}
+
+export function filterProgressAssets(assets, query = {}) {
+  return assets.filter(asset => ['assetTag', 'serialNo', 'description'].every(field => !query[field]
+    || String(asset[field] || '').toLowerCase().includes(query[field].trim().toLowerCase()))
+    && matchesAssetCategory(asset, query.category)
+    && ['owner', 'ownerLevel', 'inventoryStatus', 'city', 'executor', 'inventoryRange', 'organization'].every(field => matchesQuerySelection(asset[field], query[field]))
+    && matchesQuerySelection(progressAssetDepartment(asset), query.firstLevelDepartment));
+}
 
 function remainingDays(project, today) {
   if (!project?.endDate) return '-';
@@ -33,8 +47,7 @@ export function buildInventoryProgress(project, allowedRanges, plans, assetsForP
     })));
   const groups = new Map();
   assets.forEach((asset) => {
-    const department = ['库房', '公共'].includes(asset.inventoryRange) ? '虚拟组织'
-      : asset.executorDepartment ? asset.executorDepartment.split('.').slice(0, 2).join('.') : '-';
+    const department = progressAssetDepartment(asset);
     const key = [asset.inventoryRange, asset.organization, department, asset.city].join('::');
     if (!groups.has(key)) groups.set(key, { key, range: asset.inventoryRange, organization: asset.organization, department, city: asset.city,
       expected: 0, counted: 0, assets: [], supervisor: [], financialSupervisor: [], remainingDays: remainingDays(project, today) });

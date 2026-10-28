@@ -1,6 +1,6 @@
 import { selectInventoryExportRows } from './inventoryPlanExport';
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Progress, Space, Table, Typography } from 'antd';
+import { Button, Card, Progress, Space, Table, Typography, message } from 'antd';
 import * as XLSX from 'xlsx';
 import { Download } from 'lucide-react';
 import StatusTag from '../../components/StatusTag';
@@ -36,6 +36,7 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
   const [detailFilters, setDetailFilters] = useState({});
   const [detailPage, setDetailPage] = useState(1);
   const [assetView, setAssetView] = useState(null);
+  const [selectedKeys, setSelectedKeys] = useState([]);
   const scopeRanges = project?.scopeRanges?.length ? allowedRanges.filter((range) => project.scopeRanges.includes(range)) : allowedRanges;
   const progress = buildInventoryProgress(project, scopeRanges, plans, assetsForPlan, EMPLOYEE_ROWS);
   const progressRows = progress.summary;
@@ -44,15 +45,22 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
   const downloadProgress = (rows, columns, name) => XLSX.writeFile(
     createProgressWorkbook(rows, columns.filter((column) => column.dataIndex).map((column) => [column.title, column.dataIndex]), name),
     (project?.projectNo || '盘点项目') + '-' + name + '.xlsx');
-  const openAssetView = (uncounted) => {
+  const openAssetView = () => {
     const scoped = detailRange ? filteredDetailRows.flatMap((row) => row.assets) : progress.assets;
     const permitted = detailRange ? detailRows.flatMap(row => row.assets) : progress.assets;
-    setAssetView({ title: uncounted ? '未盘资产' : '盘点全量资产', assets: uncounted ? scoped.filter(isUncountedProgressAsset) : scoped,
-      exportAssets: uncounted ? permitted.filter(isUncountedProgressAsset) : permitted });
+    setAssetView({ title: '资产清单', assets: scoped, exportAssets: permitted });
+  };
+  const remind = () => {
+    const assets = detailRange
+      ? filteredDetailRows.filter(row => selectedKeys.includes(row.key)).flatMap(row => row.assets)
+      : progress.assets.filter(asset => progressRows.some(row => selectedKeys.includes(row.key) && row.range === asset.inventoryRange));
+    const pending = assets.filter(isUncountedProgressAsset);
+    if (!pending.length) { message.warning('所选进度记录没有未盘资产'); return; }
+    message.info(`所选记录涉及 ${pending.length} 张未盘资产；催盘通知服务尚未接入，当前未发送消息或邮件`);
   };
   const assetTools = <Space>
-    <Button onClick={() => openAssetView(false)}>查看盘点全量资产</Button>
-    <Button onClick={() => openAssetView(true)}>查看未盘资产</Button>
+    <Button onClick={openAssetView}>查看资产清单</Button>
+    <Button disabled={!selectedKeys.length || project?.status === '盘点关闭'} onClick={remind}>催盘</Button>
   </Space>;
   const assetModal = assetView && <InventoryProgressAssetsModal title={assetView.title} assets={assetView.assets} exportAssets={assetView.exportAssets} projectNo={project.projectNo} onClose={() => setAssetView(null)} />;
 
@@ -87,7 +95,7 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
       width: 100,
       fixed: 'right',
       render: (_, row) => ['员工', '库房', '公共'].includes(row.range)
-        ? <Button type="link" className="px-0" onClick={() => { setDetailRange(row.range); setDetailFilters({}); setDetailPage(1); }}>查看详情</Button>
+        ? <Button type="link" className="px-0" onClick={() => { setDetailRange(row.range); setDetailFilters({}); setDetailPage(1); setSelectedKeys([]); }}>查看详情</Button>
         : '-',
     },
   ];
@@ -119,10 +127,10 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
         <ProjectInfoCard project={project} />
         <Space>{assetTools}</Space>
         <Card size="small" title={<SectionCardTitle>进度详情</SectionCardTitle>} extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(selectInventoryExportRows(filteredDetailRows, detailRows), detailColumns, `${detailRange}进度详情`)}>导出</Button>}>
-          <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={filteredDetailRows} pagination={{ current: detailPage, defaultPageSize: 10, showSizeChanger: true, showTotal: (total) => '共 ' + total + ' 条' }} onChange={(pagination, filters, sorter, extra) => { setDetailFilters(filters); setDetailPage(extra.action === 'filter' ? 1 : pagination.current); }} scroll={{ x: 1350 }} locale={{ emptyText: '暂无该盘点范围的进度详情数据' }} />
+          <Table rowKey="key" size="small" bordered rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys }} columns={detailColumns} dataSource={filteredDetailRows} pagination={{ current: detailPage, defaultPageSize: 10, showSizeChanger: true, showTotal: (total) => '共 ' + total + ' 条' }} onChange={(pagination, filters, sorter, extra) => { setDetailFilters(filters); setSelectedKeys([]); setDetailPage(extra.action === 'filter' ? 1 : pagination.current); }} scroll={{ x: 1350 }} locale={{ emptyText: '暂无该盘点范围的进度详情数据' }} />
         </Card>
         <div className="flex justify-center pb-2">
-          <Button onClick={() => setDetailRange('')}>返回</Button>
+          <Button onClick={() => { setDetailRange(''); setSelectedKeys([]); }}>返回</Button>
         </div>
       </Space>
     );
@@ -139,7 +147,7 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
         title={<SectionCardTitle>项目进度</SectionCardTitle>}
         extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(progressRows, progressColumns, '项目进度')}>导出</Button>}
       >
-        <Table rowKey="key" size="small" bordered columns={progressColumns} dataSource={progressRows} pagination={false} scroll={{ x: 950 }} />
+        <Table rowKey="key" size="small" bordered rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys }} columns={progressColumns} dataSource={progressRows} pagination={false} scroll={{ x: 950 }} />
       </Card>
       <div className="flex justify-center pb-2">
         <Button onClick={onBack}>返回</Button>
