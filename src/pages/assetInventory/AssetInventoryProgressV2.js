@@ -117,7 +117,7 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
         {assetModal}
         <Typography.Title level={4} style={{ margin: 0 }}>进度详情</Typography.Title>
         <ProjectInfoCard project={project} />
-        <Space>{assetTools}<Button onClick={() => { setDetailFilters({}); setDetailPage(1); }}>重置筛选</Button></Space>
+        <Space>{assetTools}</Space>
         <Card size="small" title={<SectionCardTitle>进度详情</SectionCardTitle>} extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(selectInventoryExportRows(filteredDetailRows, detailRows), detailColumns, `${detailRange}进度详情`)}>导出</Button>}>
           <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={filteredDetailRows} pagination={{ current: detailPage, defaultPageSize: 10, showSizeChanger: true, showTotal: (total) => '共 ' + total + ' 条' }} onChange={(pagination, filters, sorter, extra) => { setDetailFilters(filters); setDetailPage(extra.action === 'filter' ? 1 : pagination.current); }} scroll={{ x: 1350 }} locale={{ emptyText: '暂无该盘点范围的进度详情数据' }} />
         </Card>
