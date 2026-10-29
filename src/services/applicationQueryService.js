@@ -1,3 +1,4 @@
+import { applicationMoveRows } from './applicationMoveProjection';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
 import { applicationQueryRows, assetReportCatalog } from '../mock/businessRulesMock';
@@ -8,6 +9,7 @@ import { employeeApplicationDefinitions } from '../pages/applicationQueries/empl
 import { DEFAULT_APPLICATION_ACCESS, assertApplicationAccess, canReadApplication } from './applicationAccess';
 
 export const applicationDefinitions = [...legacyDefinitions, ...claimDefinitions, ...employeeApplicationDefinitions, unfinishedDefinition];
+const currentApplicationRows = id => id === 'storage' ? applicationMoveRows() : applicationQueryRows;
 const empty = value => value === '' || value === undefined || value === null || (Array.isArray(value) && !value.length);
 const deletionStorageKey = 'mmp-application-query-deletions-v1';
 function removedIds() {
@@ -50,7 +52,7 @@ export function getApplicationOptions(id, field, access = DEFAULT_APPLICATION_AC
   }
   const found = new Map();
   const deleted = removedIds();
-  applicationQueryRows.filter(row => row.kind === id && !row.deleted && !deleted.has(row.id) && canReadApplication(row, access)).forEach(row => {
+  currentApplicationRows(id).filter(row => row.kind === id && !row.deleted && !deleted.has(row.id) && canReadApplication(row, access)).forEach(row => {
     if (id === 'unfinished' && row.statusCode !== '3') return;
     list(row.filters[field.key]).filter(value => !empty(value)).forEach(value => {
       if (!found.has(String(value))) found.set(String(value), {
@@ -78,7 +80,7 @@ export function queryApplications(id, filters = {}, sort = null, access = DEFAUL
   const definition = getApplicationDefinition(id);
   validateApplicationFilters(definition, filters);
   const deleted = removedIds();
-  const rows = applicationQueryRows.filter(row => row.kind === id && !row.deleted && !deleted.has(row.id) && canReadApplication(row, access)).filter(row => {
+  const rows = currentApplicationRows(id).filter(row => row.kind === id && !row.deleted && !deleted.has(row.id) && canReadApplication(row, access)).filter(row => {
     if (id === 'unfinished' && String(row.statusCode) !== '3') return false;
     return definition.filters.every(field => {
       const selected = filters[field.key];
@@ -103,7 +105,7 @@ export function queryApplications(id, filters = {}, sort = null, access = DEFAUL
     const first = a.values[key] ?? a[key], second = b.values[key] ?? b[key];
     return (typeof first === 'number' && typeof second === 'number' ? first - second : String(first ?? '').localeCompare(String(second ?? ''))) * direction;
   });
-  const allowedOriginalLines = new Set(applicationQueryRows.filter(row => row.kind === id && !row.deleted && !deleted.has(row.id) && canReadApplication(row, access)).map(row => row.originalLineId).filter(Boolean));
+  const allowedOriginalLines = new Set(currentApplicationRows(id).filter(row => row.kind === id && !row.deleted && !deleted.has(row.id) && canReadApplication(row, access)).map(row => row.originalLineId).filter(Boolean));
   const scopedRows = rows.map(row => row.summary ? { ...row, summary: { ...row.summary, lines: row.summary.lines.filter(line => {
     if (!line.originalLineId) throw new Error('汇总明细缺少原申请明细关联');
     return allowedOriginalLines.has(line.originalLineId);
@@ -144,7 +146,7 @@ export function removeApplicationDrafts(id, keys, access = DEFAULT_APPLICATION_A
   if (!definition.actions.remove) throw new Error('此查询不支持删除');
   if (!keys.length) throw new Error('请先选择单据');
   const deleted = removedIds();
-  const rows = keys.map(key => applicationQueryRows.find(row => row.kind === id && row.id === key && !row.deleted && !deleted.has(row.id) && canReadApplication(row, access)));
+  const rows = keys.map(key => currentApplicationRows(id).find(row => row.kind === id && row.id === key && !row.deleted && !deleted.has(row.id) && canReadApplication(row, access)));
   if (rows.some(row => !row || String(row.statusCode) !== '0')) throw new Error('只能删除草稿单据');
   keys.forEach(key => deleted.add(key));
   if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(deletionStorageKey, JSON.stringify([...deleted]));

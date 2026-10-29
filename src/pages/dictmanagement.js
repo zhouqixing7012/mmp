@@ -116,7 +116,7 @@ function DictItemAddModal({ open, onClose, dictCode, dictName }) {
 export default function DictManagementView() {
   const [viewMode, setViewMode] = useState('list');
   const [selectedDict, setSelectedDict] = useState(null);
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [, setSelectedRowKeys] = useState([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addItemModalOpen, setAddItemModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);

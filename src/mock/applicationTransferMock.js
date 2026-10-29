@@ -1,3 +1,4 @@
+import { mockDocumentNumber } from './documentNumbers';
 import { materialCatalog } from './reference/materialCatalog';
 import { warehouseCatalog } from './reference/warehouseCatalog';
 
@@ -24,9 +25,9 @@ const createDetail = asset => ({
   businessLine: people[1].businessLine, project: people[1].project, transferDate: '2026-10-15', reason: '', usageDescription: '',
   newSerial: '', newNoLocation: '', newService: '', newSubService: '',
 });
-const draft = { id: 'transfer-order-1', number: 'ZY202610150001', applicationNo: 'ZYSQ202610140001', company: warehouse.company, creator: 'sunzhq', createdAt: '2026-10-15 09:00:00', status: '草稿', migrationValid: 'Y', type: 'ASSETS_TRANSFER_ORDER', remarks: '办公设备转移', details: [createDetail(assets[0])], revision: 1 };
+const draft = { id: 'transfer-order-1', number: mockDocumentNumber('资产转移', 'transfer-order-1', '2026-10-15'), applicationNo: mockDocumentNumber('员工转移申请', 'transfer-order-1-source', '2026-10-14'), company: warehouse.company, creator: 'sunzhq', createdAt: '2026-10-15 09:00:00', status: '草稿', migrationValid: 'Y', type: 'ASSETS_TRANSFER_ORDER', remarks: '办公设备转移', details: [createDetail(assets[0])], revision: 1 };
 assets[0].lock = draft.id;
-const complete = { ...copy(draft), id: 'transfer-order-2', number: 'ZY202610140002', applicationNo: 'ZYSQ202610130002', status: '已完成', createdAt: '2026-10-14 15:00:00', details: [createDetail(assets[1])] };
+const complete = { ...copy(draft), id: 'transfer-order-2', number: mockDocumentNumber('资产转移', 'transfer-order-2', '2026-10-14'), applicationNo: mockDocumentNumber('员工转移申请', 'transfer-order-2-source', '2026-10-13'), status: '已完成', createdAt: '2026-10-14 15:00:00', details: [createDetail(assets[1])] };
 Object.assign(assets[1], { owner: complete.details[0].recipient, department: complete.details[0].department, costCenter: complete.details[0].costCenter });
 const initial = { orders: [draft, complete], assets, transactions: [], nextNumber: 3 };
 // 以下仅为这三名演示人员的明确结果样例，不代表正式费用账户生成规则。

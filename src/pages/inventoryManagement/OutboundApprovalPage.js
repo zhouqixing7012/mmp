@@ -26,7 +26,7 @@ function approvalRemark(line) {
 
 export default function OutboundApprovalPage({ outbound, onApprove, onReject, onBack }) {
   const source = outbound || {};
-  const lines = source.lines || [];
+  const lines = useMemo(() => outbound?.lines || [], [outbound?.lines]);
   const [opinion, setOpinion] = useState('');
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const canOperate = source.status === '审批中' && typeof onApprove === 'function';

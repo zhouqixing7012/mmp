@@ -223,7 +223,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
 
   const requestNewConfirmation = () => {
     if (!oldInboundDone) {
-      messageApi.warning('请先完成旧资产退库确认');
+      messageApi.warning('请先完成旧资产入库');
       return;
     }
     if (!newAsset) {
@@ -269,7 +269,7 @@ export default function ReplacementHandlingDetail({ application, onBack, onUpdat
 
   const handleIssueConfirm = () => {
     if (!oldInboundDone) {
-      messageApi.warning('请先完成旧资产退库确认');
+      messageApi.warning('请先完成旧资产入库');
       return;
     }
     if (newWaitingConfirmation) {

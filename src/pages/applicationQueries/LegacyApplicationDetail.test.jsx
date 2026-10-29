@@ -7,6 +7,7 @@ import LegacyApplicationDetail from './LegacyApplicationDetail';
 import LegacyStorageDetail from './LegacyStorageDetail';
 import { legacyDefinitions } from './legacyDefinitions';
 import { legacyApplicationRows } from '../../mock/applicationLegacyMock';
+import { queryApplications } from '../../services/applicationQueryService';
 
 beforeEach(() => {
   window.matchMedia = jest.fn().mockImplementation(query => ({ matches: false, media: query, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} }));
@@ -14,11 +15,11 @@ beforeEach(() => {
   window.getComputedStyle = jest.fn().mockReturnValue({ getPropertyValue: () => '', content: '', overflow: '', overflowX: '', overflowY: '' });
 });
 function open(id) {
-  const record = legacyApplicationRows.find(row => row.id === id);
+  const record = id.startsWith('storage-') ? queryApplications('storage').find(row => row.id === id) : legacyApplicationRows.find(row => row.id === id);
   render(<LegacyApplicationDetail definition={legacyDefinitions.find(item => item.id === record.kind)} record={record} onBack={jest.fn()} onProgress={jest.fn()} />);
   return record;
 }
-test('移库从列表记录进入只读详情，资产和耗材使用不同信息区域', async () => {
+test('移库从库存源单进入只读详情，各行展示对应源资产', async () => {
   open('storage-3');
   expect(screen.getByText('移库单信息')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /保存|接收/ })).not.toBeInTheDocument();
@@ -29,8 +30,8 @@ test('移库从列表记录进入只读详情，资产和耗材使用不同信�
   fireEvent.click(within(dialog).getByRole('button', { name: /关\s*闭/ }));
   fireEvent.click(screen.getAllByRole('button', { name: '查看' })[1]);
   dialog = await screen.findByRole('dialog');
-  expect(within(dialog).getByText('耗材信息')).toBeInTheDocument();
-  expect(within(dialog).getByText('懿品佳.230A四色粉盒（国产）')).toBeInTheDocument();
+  expect(within(dialog).getByText('资产信息')).toBeInTheDocument();
+  expect(within(dialog).getByText(queryApplications('storage').find(row => row.id === 'storage-3').lines[1].material.materialDescription)).toBeInTheDocument();
 });
 test('退库详情只显示首条主资产，配件与附属耗材来自该条记录', async () => {
   const record = open('return-3');
@@ -48,22 +49,23 @@ test('续借有独立字段，审批代理人保持空白', () => {
   expect(screen.getByRole('columnheader', { name: '代理人' })).toBeInTheDocument();
   expect(screen.queryByText('借用开始日期')).not.toBeInTheDocument();
 });
-test('移库状态1显示入库验证，其他普通状态不显示验证列', () => {
-  open('storage-4');
+test('出库待接收移库单展示源明细的验证结果', () => {
+  open('storage-3');
   expect(screen.getByRole('columnheader', { name: '资产验证' })).toBeInTheDocument();
-  expect(screen.getAllByText('未验证')).toHaveLength(2);
+  expect(screen.getAllByText('未验证')).toHaveLength(1);
+  expect(screen.getByText('已验证')).toBeInTheDocument();
 });
-test('借用列表数量为所有明细数量合计，退库业务日期与导出创建时间独立', () => {
+test('借用数量按明细合计，退库列表与导出使用同一申请时间', () => {
   const borrow = legacyApplicationRows.find(row => row.id === 'borrow-2');
   expect(borrow.values.quantity).toBe(borrow.lines.reduce((sum, line) => sum + line.quantity, 0));
   const returned = legacyApplicationRows.find(row => row.id === 'return-3');
-  expect(returned.values.applyDate).not.toBe(returned.createdAt.slice(0, 10));
-  expect(legacyDefinitions.find(item => item.id === 'return').exportColumns.find(column => column.label === '申请时间').key).toBe('createdAt');
+  expect(Object.fromEntries(returned.head)['申请时间']).toBe(returned.values.applyTime.slice(0, 10));
+  expect(legacyDefinitions.find(item => item.id === 'return').exportColumns.find(column => column.label === '申请时间').key).toBe('applyTime');
 });
 
-test.each([['3', undefined, undefined, false], ['3', true, true, true], ['2', true, true, false]])('移库状态%s库区货位开关%s/%s按明确配置显示', async (statusCode, zoneEnabled, binEnabled, visible) => {
-  const source = legacyApplicationRows.find(row => row.id === 'storage-2');
-  const record = { ...source, statusCode, to: { ...source.to, zoneEnabled, binEnabled }, lines: source.lines.map(line => ({ ...line, inboundZone: '测试库区', inboundBin: '测试货位' })) };
+test.each([['出库待接收', undefined, undefined, false], ['出库待接收', true, true, true], ['草稿', true, true, false]])('移库状态%s库区货位开关%s/%s按明确配置显示', async (statusCode, zoneEnabled, binEnabled, visible) => {
+  const source = queryApplications('storage').find(row => row.id === 'storage-3');
+  const record = { ...source, values: { ...source.values, status: statusCode }, statusCode, to: { ...source.to, zoneEnabled, binEnabled }, lines: source.lines.map(line => ({ ...line, inboundZone: '测试库区', inboundBin: '测试货位' })) };
   render(<LegacyStorageDetail record={record} />);
   fireEvent.click(screen.getAllByRole('button', { name: '查看' })[0]);
   const dialog = await screen.findByRole('dialog');

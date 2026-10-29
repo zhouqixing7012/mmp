@@ -3,5 +3,5 @@ import { claimApplicationRows } from './applicationClaimMock';
 import { applicationUnfinishedRows } from './applicationUnfinishedMock';
 import { employeeApplicationRows } from './applicationEmployeeMock';
 
-// 申请菜单独立交易演示入口；不把现状查询误接到报表预生成结果表。
+// 其余申请类型的既有演示来源；移库由applicationQueryService直接投影库存移库源单，不在此另造交易。
 export const applicationQueryRows = [...legacyApplicationRows, ...claimApplicationRows, ...applicationUnfinishedRows, ...employeeApplicationRows];

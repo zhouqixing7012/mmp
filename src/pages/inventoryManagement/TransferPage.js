@@ -188,7 +188,7 @@ function validateTransferImportRows(matrix, { company, sourceAssets, existingLin
 
   dataRows.forEach((row, index) => {
     const values = Array.from({ length: TRANSFER_IMPORT_HEADERS.length }, (_, columnIndex) => normalizeImportCell(row[columnIndex]));
-    const [, assetTag, sn, receiverNo, costCenter, city, building, floor, room, transferDateValue, transferReason, purposeValue, businessLine, project, usageDescription] = values;
+    const [, assetTag, sn, receiverNo, , city, building, floor, room, transferDateValue, transferReason, purposeValue, businessLine, project, usageDescription] = values;
     const rowErrors = [];
     const asset = assetTag
       ? sourceAssets.find((item) => item.assetTag === assetTag)

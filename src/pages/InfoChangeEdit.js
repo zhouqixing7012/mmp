@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Upload, Paperclip, FileText, Trash2, ChevronRight, ChevronDown, Search, Plus } from 'lucide-react';
+import { X, Upload, Trash2, ChevronRight, ChevronDown, Search, Plus } from 'lucide-react';
 
 // 模拟可供新增的外部资产库数据
 const MOCK_AVAILABLE_ASSETS = [

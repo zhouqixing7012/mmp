@@ -41,9 +41,10 @@ test('同序号多人和再次办理保留，仅重复记录ID去重，空序号
   ]);
   expect(rows.map(row => row.id)).toEqual(['d', 'a', 'b', 'c']);
 });
-test('周一材料包含全部处理中员工申请和固定五人，不伪称已发送', () => {
+test('周一材料按10点服务号策略发给ES何文，不伪称已发送', () => {
   const result = prepareApplicationWeeklyReport('2026-10-19');
-  expect(result.recipients).toEqual(['杨芊', '王英', '孙志强', '刘建', '何文']);
+  expect(result.recipients).toEqual(['ES-何文']);
+  expect(result).toMatchObject({ time: '10:00', timezone: 'Asia/Shanghai', channel: '服务号' });
   expect(result.rows).toHaveLength(11);
   expect(result.rows.every(row => row.employeeApplication)).toBe(true);
   expect(result.sent).toBe(false);
@@ -65,4 +66,10 @@ test('获权申请打开关联汇总时不泄露未授权原申请明细', () =>
     expect(result.summary.lines.some(line => line.originalLineId === hiddenId)).toBe(false);
     expect(result.summary.lines.length).toBeGreaterThan(0);
   } finally { visible.summary.lines.pop(); applicationQueryRows.pop(); }
+});
+
+test('周报日期按北京时间判断周一，服务号策略仅生成材料不执行投递', () => {
+  const report = prepareApplicationWeeklyReport('2026-10-18T16:30:00Z');
+  expect(report).toMatchObject({ date: '2026-10-19', time: '10:00', timezone: 'Asia/Shanghai', channel: '服务号', recipients: ['ES-何文'], sent: false });
+  expect(() => prepareApplicationWeeklyReport('2026-10-19T16:30:00Z')).toThrow('每周一');
 });

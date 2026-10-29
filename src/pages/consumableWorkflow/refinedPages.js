@@ -132,11 +132,12 @@ export function ConsumableMisApprovalPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [version, setVersion] = useState(0);
   const [values, setValues] = useState({});
-  const application = useMemo(() => (
-    getConsumableWorkflowState().applications
-      .find((item) => item.status === '处理中' && item.currentNode === 'MIS鉴定') || null
-  ), [version]);
-  const visibleItems = application?.items.filter((item) => item.requiresMis && item.lineStatus !== '已驳回') || [];
+  const application = useMemo(() => {
+    // 版本变化时重新读取服务中的可变演示快照。
+    void version;
+    return (getConsumableWorkflowState().applications.find(item => item.status === '处理中' && item.currentNode === 'MIS鉴定') || null);
+  }, [version]);
+  const visibleItems = useMemo(() => application?.items.filter((item) => item.requiresMis && item.lineStatus !== '已驳回') || [], [application]);
   const mergedValues = useMemo(() => Object.fromEntries(visibleItems.map((item) => [
     item.id,
     {
@@ -245,10 +246,11 @@ export function ConsumableLeaderApprovalPage() {
   const [comment, setComment] = useState('');
   const [countersignOpen, setCountersignOpen] = useState(false);
   const [countersignPerson, setCountersignPerson] = useState('');
-  const application = useMemo(() => (
-    getConsumableWorkflowState().applications
-      .find((item) => item.status === '处理中' && item.currentNode === '5级审批') || null
-  ), [version]);
+  const application = useMemo(() => {
+    // 版本变化时重新读取服务中的可变演示快照。
+    void version;
+    return (getConsumableWorkflowState().applications.find(item => item.status === '处理中' && item.currentNode === '5级审批') || null);
+  }, [version]);
 
   const decide = (decision) => {
     if (decision === '驳回' && !comment.trim()) {
@@ -337,9 +339,11 @@ export function ConsumableAllocationPage() {
   const [stockOpen, setStockOpen] = useState(false);
   const [assetsOpen, setAssetsOpen] = useState(false);
   const [countersignOpen, setCountersignOpen] = useState(false);
-  const allocation = useMemo(() => (
-    getConsumableWorkflowState().allocations.find((item) => item.status === '待配给') || null
-  ), [version]);
+  const allocation = useMemo(() => {
+    // 版本变化时重新读取服务中的可变演示快照。
+    void version;
+    return (getConsumableWorkflowState().allocations.find(item => item.status === '待配给') || null);
+  }, [version]);
 
   const reset = () => {
     setMatchingStatus('');
@@ -518,10 +522,11 @@ export function ConsumableClaimPage() {
   const [opinion, setOpinion] = useState('');
   const [stockOpen, setStockOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
-  const claim = useMemo(() => (
-    getConsumableWorkflowState().claims
-      .find((item) => item.status === '处理中' && ['库管员领用', '员工领用确认'].includes(item.currentNode)) || null
-  ), [version]);
+  const claim = useMemo(() => {
+    // 版本变化时重新读取服务中的可变演示快照。
+    void version;
+    return (getConsumableWorkflowState().claims.find(item => item.status === '处理中' && ['库管员领用', '员工领用确认'].includes(item.currentNode)) || null);
+  }, [version]);
   const current = claim ? { ...claim, ...fields } : null;
   const updateField = (field, value) => setFields((state) => ({ ...state, [field]: value }));
 
@@ -794,9 +799,11 @@ export function ConsumableSummaryPage() {
   const [view, setView] = useState('list');
   const [draft, setDraft] = useState(null);
   const [fileList, setFileList] = useState([]);
-  const summary = useMemo(() => (
-    getConsumableWorkflowState().summaries.find((item) => item.status === '草稿' && item.currentNode === 'ES汇总') || null
-  ), [version]);
+  const summary = useMemo(() => {
+    // 版本变化时重新读取服务中的可变演示快照。
+    void version;
+    return (getConsumableWorkflowState().summaries.find(item => item.status === '草稿' && item.currentNode === 'ES汇总') || null);
+  }, [version]);
   const current = summary ? { ...summary, ...(draft || {}) } : null;
   const rows = current?.rows || [];
   const totalQuantity = rows.filter((row) => row.approved).reduce((sum, row) => sum + Number(row.quantity || 0), 0);
@@ -963,10 +970,11 @@ export function ConsumableSummaryApprovalPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [version, setVersion] = useState(0);
   const [comment, setComment] = useState('');
-  const summary = useMemo(() => (
-    getConsumableWorkflowState().summaries
-      .find((item) => item.status === '处理中' && ['ES主管', 'ES总监'].includes(item.currentNode)) || null
-  ), [version]);
+  const summary = useMemo(() => {
+    // 版本变化时重新读取服务中的可变演示快照。
+    void version;
+    return (getConsumableWorkflowState().summaries.find(item => item.status === '处理中' && ['ES主管', 'ES总监'].includes(item.currentNode)) || null);
+  }, [version]);
 
   const decide = (decision) => {
     if (decision === '驳回' && !comment.trim()) {

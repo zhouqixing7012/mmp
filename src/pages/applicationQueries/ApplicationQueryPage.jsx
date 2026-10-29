@@ -1,3 +1,4 @@
+import { APPLICATION_WEEKLY_RULE } from '../../services/applicationWeeklyReport';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, Card, Modal, Space, Table, Typography, message } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
@@ -54,8 +55,7 @@ export default function ApplicationQueryPage({ id }) {
   return <div className="flex flex-col gap-4">
     {detail ? <Detail definition={definition} record={detail.record} view={detail.view} onBack={goBack} onProgress={setProgress} /> : <>
       <Typography.Title level={4} className="!mb-0">{definition.title}</Typography.Title>
-      {id === 'unfinished' && <Alert type="info" title="每周一汇总当前台账的未完成员工申请，通知杨芊、王英、孙志强、刘建、何文。" description="发送时刻和渠道尚未配置；当前可查询、导出汇总清单，未发送实际通知。" />}
-      {definition.knownFilterWarning && <Alert type="info" showIcon title={definition.knownFilterWarning} />}
+      {id === 'unfinished' && <Alert type="info" title={`未完成员工申请周报：每周${'日一二三四五六'[APPLICATION_WEEKLY_RULE.weekday]} ${APPLICATION_WEEKLY_RULE.time}（北京时间），通过${APPLICATION_WEEKLY_RULE.channel}发送给 ${APPLICATION_WEEKLY_RULE.recipients.join('、')}。`} description="原型可查询、导出汇总清单；真实定时发送尚未接入。" />}
       <QueryBar labelWidth={84} onQuery={onQuery} onReset={reset}>
         {definition.filters.map(field => <QueryItem key={field.key} label={field.label} labelWidth={84}>
           <ApplicationFilter definition={definition} field={field} value={draft[field.key]} onQuery={onQuery} onChange={value => setDraft(previous => ({ ...previous, [field.key]: value }))} />

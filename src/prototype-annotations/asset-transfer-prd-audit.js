@@ -45,7 +45,7 @@ const review = (id, source, object, rule, reason, annotationId) => ({
   id, source, object, rule, status: 'review', reason,
   ...(annotationId ? { annotationId } : {}),
 });
-const skip = (id, source, object, rule, reason) => ({ id, source, object, rule, status: 'skip', reason });
+
 
 export const ASSET_TRANSFER_AUDIT_SCOPES = {
   apply: 'route:/People',

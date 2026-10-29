@@ -22,6 +22,8 @@ test.each(APPLICATION_MENU_ITEMS)('%s从实际菜单内容组件可进入', titl
 });
 test('查询编辑后执行才更新列表，详情返回保留查询，进度接收当前业务记录', async () => {
   render(<ApplicationQueriesContent activeSubMenu="退库单" />);
+  expect(screen.queryByRole('button', { name: /删\s*除/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   const input = screen.getByRole('textbox', { name: '申请单号' });
   fireEvent.change(input, { target: { value: 'NO-MATCH' } });
   expect(screen.queryByText('暂无符合条件的退库单')).not.toBeInTheDocument();

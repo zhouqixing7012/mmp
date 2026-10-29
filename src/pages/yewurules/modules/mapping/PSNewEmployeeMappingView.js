@@ -13,7 +13,7 @@ const PSNewEmployeeMappingView = () => {
   const [modalMode, setModalMode] = useState('add');
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
-  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+
   const [isCityModalOpen, setIsCityModalOpen] = useState(false);
   const [formData, setFormData] = useState({ company: '', config: '', city: '', desc: '', qty: '', dept: '', enabled: '' });
   const handleAdd = () => {
@@ -38,7 +38,7 @@ const PSNewEmployeeMappingView = () => {
     { title: '操作', dataIndex: 'action', render: (_, record) => <Button type="link" onClick={() => handleEdit(record)}>编辑</Button> }
   ];
   const data = mockPSNewEmployeeMappingData;
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [, setSelectedRowKeys] = useState([]);
   return (
     <div className="flex flex-col gap-4">
       <QueryBar>

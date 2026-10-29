@@ -1,3 +1,4 @@
+import { mockDocumentNumber } from './documentNumbers';
 import definitions from '../pages/assetReports/reportDefinitions.json';
 import { assetMaterials, reportWarehouses, fixture, completedSnapshot, retiredAssets } from './assetReportsFixtures';
 
@@ -11,8 +12,17 @@ export const reportTransactions = transactionOptions.flatMap((option, index) => 
   const values = { '事务处理日期': `2026-10-${String(14 - (index % 14)).padStart(2, '0')} 09:00:00`,
     '单据编号': ['70', '71'].includes(option.value) ? retiredAssets[group].accountingSource.applicationNo : `CHANGE-DEMO-${group}-${option.value}`, '单据类型': type, '事务类型': option.label,
     '事务执行人': '213852.孙志强', '业务原因': '演示已完成事务' };
+  const ruleType = type === '入库单' ? '入库单' : type === '出库单' ? '出库工单'
+    : type === '库存转移' ? '库存转移' : type === '资产转移' ? '资产转移'
+      : type === '资产报废' ? '资产报废' : option.value === '104' ? '序列号变更'
+        : option.value === '101' ? '资产升级' : option.value === '103' ? '延长报废期'
+        : ['93', '105'].includes(option.value) ? '位置变更' : option.value === '92' ? '担保职责转移' : null;
+  if (ruleType) values['单据编号'] = mockDocumentNumber(ruleType, `report-transaction-${group}-${option.value}`, values['事务处理日期'], warehouse.company);
   const accountingSource = ['70', '71'].includes(option.value) ? retiredAssets[group].accountingSource : null;
-  if (accountingSource) values['资产标签号'] = accountingSource.assetsSnapshot[0].tagNo;
+  if (accountingSource) {
+    values['资产标签号'] = accountingSource.assetsSnapshot[0].tagNo;
+    values['单据编号'] = accountingSource.applicationNo;
+  }
   const pairs = {
     '104': { '原序列号': 'DEMO-SN-BEFORE', '现序列号': 'DEMO-SN-AFTER' },
     '110': { '原资产用途': '部门公用', '现资产用途': '员工用机' },

@@ -102,7 +102,7 @@ export default function ContractNumberWarehousePage() {
     setWarehouse(application.warehouseHandling?.warehouse || '');
     setCity(application.warehouseHandling?.city || '');
     setNote(application.warehouseHandling?.note || '');
-  }, [application?.id]);
+  }, [application, application.id]);
 
   const refresh = () => setApplication(getWarehouseContractNumberAllocation());
 

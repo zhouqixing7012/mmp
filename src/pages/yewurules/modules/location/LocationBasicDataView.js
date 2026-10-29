@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Input, Select } from 'antd';
-import StatusTag from '../../../../components/StatusTag';
+
 import QueryBar, { QueryItem } from '../../../../components/QueryBar';
 import {
   mockLocationBasicDataData,
@@ -8,35 +8,11 @@ import {
 
 const LocationBasicDataView = () => {
   const [expandedKeys, setExpandedKeys] = useState(['1', '2', '3']);
-  const columns = [
-    { title: '城市名称', dataIndex: 'cityName', render: (text, record) => record.children ? <span className="font-medium">{text}</span> : '' },
-    { title: '建筑名称', dataIndex: 'buildingName', render: (text) => text || '-' },
-    { title: '是否启用', dataIndex: 'enabled', render: (val) => <StatusTag value={val} type="enabled" /> }
-  ];
+
   const data = mockLocationBasicDataData;
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+
   // 递归筛选函数：筛选后保留完整树结构
-  const filterTreeData = (treeData, cityNameFilter, buildingNameFilter, enabledFilter) => {
-    return treeData.reduce((acc, node) => {
-      // 检查城市名称是否匹配
-      const cityMatch = !cityNameFilter || node.cityName?.includes(cityNameFilter);
-      // 筛选子节点（建筑）
-      const filteredChildren = node.children?.filter(child => {
-        const buildingMatch = !buildingNameFilter || child.buildingName?.includes(buildingNameFilter);
-        const statusMatch = enabledFilter === '' || enabledFilter === undefined ||
-          (enabledFilter === '1' && child.enabled) || (enabledFilter === '0' && !child.enabled);
-        return buildingMatch && statusMatch;
-      }) || [];
-      // 如果有匹配的子节点，或者城市名称匹配，则保留该节点
-      if (filteredChildren.length > 0 || (cityMatch && (!buildingNameFilter || !node.children?.length))) {
-        acc.push({
-          ...node,
-          children: filteredChildren.length > 0 ? filteredChildren : node.children
-        });
-      }
-      return acc;
-    }, []);
-  };
+
   return (
     <div className="flex flex-col gap-4">
       <QueryBar>

@@ -73,7 +73,7 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
     setRows((current) => current.map((row) => completedRoomProjects.some((project) => project.projectNo === row.projectNo) ? { ...row, status: '盘点关闭' } : row));
     completedRoomProjects.forEach((row) => onCloseProject?.({ ...row, status: '盘点关闭', closedBy: '系统' }));
     messageApi.success('机房初盘已自动关闭，并通过服务号通知财务人员');
-  }, [rows, onCloseProject]);
+  }, [rows, onCloseProject, messageApi]);
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [selectedKeys, setSelectedKeys] = useState([]);

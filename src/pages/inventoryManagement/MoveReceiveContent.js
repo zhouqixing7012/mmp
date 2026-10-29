@@ -552,7 +552,7 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
 }
 
 export default function MoveReceiveContent({ documents, setDocuments, onDetailChange }) {
-  const [messageApi, contextHolder] = antdMessage.useMessage();
+  const [, contextHolder] = antdMessage.useMessage();
   const restoredListState = useMemo(() => readReceiveListState(), []);
   const [draft, setDraft] = useState(() => restoredListState?.draft || EMPTY_FILTERS);
   const [filters, setFilters] = useState(() => restoredListState?.filters || EMPTY_FILTERS);

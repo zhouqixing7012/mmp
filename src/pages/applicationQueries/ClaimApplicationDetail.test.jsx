@@ -63,7 +63,7 @@ test('新员工保留申请与领用数量差异，无独立导出或办理按�
   expect(screen.getByRole('columnheader', { name: '申请数量' })).toBeInTheDocument();
   expect(screen.getByRole('columnheader', { name: '领用数量' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /导\s*出/ })).not.toBeInTheDocument();
-  expect(byKind('newEmployee').filters.filter(item => item.disabledReason)).toHaveLength(2);
+  expect(byKind('newEmployee').filters.filter(item => item.disabledReason)).toHaveLength(0);
 });
 
 test('资产领用可打开真实目录配件，领用与采购均展示资产来源标题', () => {

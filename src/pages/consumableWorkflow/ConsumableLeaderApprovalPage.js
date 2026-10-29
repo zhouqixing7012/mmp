@@ -74,10 +74,11 @@ export default function ConsumableLeaderApprovalPage() {
   const [comment, setComment] = useState('');
   const [countersignOpen, setCountersignOpen] = useState(false);
   const [countersignPerson, setCountersignPerson] = useState('');
-  const application = useMemo(() => (
-    getConsumableWorkflowState().applications
-      .find((item) => item.status === '处理中' && item.currentNode === '5级审批') || null
-  ), [version]);
+  const application = useMemo(() => {
+    // 版本变化时重新读取服务中的可变演示快照。
+    void version;
+    return (getConsumableWorkflowState().applications.find(item => item.status === '处理中' && item.currentNode === '5级审批') || null);
+  }, [version]);
 
   const decide = (decision) => {
     if (decision === '驳回' && !comment.trim()) {

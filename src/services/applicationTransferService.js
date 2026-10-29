@@ -1,3 +1,4 @@
+import { mockDocumentNumber } from '../mock/documentNumbers';
 import dayjs from 'dayjs';
 import { applicationTransferStore } from '../mock/businessRulesMock';
 
@@ -57,7 +58,7 @@ export function createApplicationTransferService(store = applicationTransferStor
       validateDetail(detail);
     });
     const sequence = state.nextNumber;
-    const saved = { ...copy(input), id: input.id || 'transfer-order-' + sequence, number: input.number || 'ZY' + dayjs().format('YYYYMMDD') + String(sequence).padStart(4, '0'), details: details.map(detail => ({ ...copy(detail), original: copy(state.assets.find(asset => asset.id === detail.assetId)) })), revision: (previous?.revision || 0) + 1 };
+    const saved = { ...copy(input), id: input.id || 'transfer-order-' + sequence, number: input.number || mockDocumentNumber('资产转移', input.id || 'transfer-order-' + sequence, input.createdAt, '', state.orders.map(order => order.number)), details: details.map(detail => ({ ...copy(detail), original: copy(state.assets.find(asset => asset.id === detail.assetId)) })), revision: (previous?.revision || 0) + 1 };
     state.assets.forEach(asset => { if (asset.lock === saved.id) asset.lock = ''; });
     saved.details.forEach(detail => { state.assets.find(asset => asset.id === detail.assetId).lock = saved.id; });
     if (!previous) { state.orders.push(saved); state.nextNumber += 1; } else state.orders[state.orders.findIndex(row => row.id === input.id)] = saved;

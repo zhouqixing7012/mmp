@@ -707,7 +707,7 @@ export default function PCSDashboard2() {
                       return (
                         <tr key={cert.id} className="hover:bg-[#F8FBFF] transition-colors bg-white">
                           <td className="px-4 py-4 border-r border-gray-100 text-left">
-                            <a href="#" className="text-[#1E5EFF] hover:text-blue-700 hover:underline transition-colors font-medium">{cert.name}</a>
+                            <span  className="text-[#1E5EFF] hover:text-blue-700 hover:underline transition-colors font-medium">{cert.name}</span>
                           </td>
                           {/* 涵盖域名 列：采用 Popover 展现两列子表格 */}
                           <td className="px-4 py-4 border-r border-gray-100 text-gray-600">

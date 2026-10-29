@@ -21,7 +21,7 @@ const CostCenterSubjectMappingView = () => {
     { title: '是否启用', dataIndex: 'enabled', render: (val) => <StatusTag value={val} type="enabled" /> },
     { title: '操作', render: (_, record) => <Button type="link" onClick={() => handleEdit(record)}>编辑</Button> },
   ];
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [, setSelectedRowKeys] = useState([]);
   return <div className="flex flex-col gap-4">
     <QueryBar>
       <div className="flex items-center gap-2"><span className="w-20 text-right text-sm text-gray-600">大类:</span><Input placeholder="请输入大类" /></div>

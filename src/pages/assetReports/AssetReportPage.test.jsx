@@ -65,15 +65,16 @@ test('更多展开隐藏条件，收起后条件控件离开页面', () => {
   fireEvent.click(screen.getByRole('button', { name: '收起' }));
   expect(screen.queryByRole('textbox', { name: '原值' })).not.toBeInTheDocument();
 });
-test('耗材标签打开只读详情弹窗', async () => {
+test('耗材明细不增加标签详情入口，字段按耗材口径展示', () => {
   render(<AssetReportPage reportId="report-2-1" />);
-  fireEvent.click(screen.getByRole('columnheader', { name: /公司/ }));
-  await waitFor(() => expect(screen.queryByText('数据条件未满足，暂无法显示结果')).not.toBeInTheDocument());
-  const links = screen.getAllByRole('button').filter(button => /^CONSUM-/.test(button.textContent));
-  expect(links.length).toBeGreaterThan(0);
-  fireEvent.click(links[0]);
-  await waitFor(() => expect(screen.getByText('耗材详情')).toBeInTheDocument());
-  expect(screen.queryByText('净值：')).not.toBeInTheDocument();
+  expect(screen.getByRole('columnheader', { name: '不含税单价' })).toBeInTheDocument();
+  expect(screen.getByRole('columnheader', { name: '耗材数量' })).toBeInTheDocument();
+  expect(screen.queryByRole('columnheader', { name: '原值' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('textbox', { name: 'Building' })).not.toBeInTheDocument();
+  const tags = queryReport('report-2-1').map(row => row.values['耗材标签号']).filter(Boolean);
+  expect(tags.length).toBeGreaterThan(0);
+  tags.forEach(tag => expect(screen.queryByRole('button', { name: tag })).not.toBeInTheDocument());
+  expect(screen.queryByText('耗材详情')).not.toBeInTheDocument();
 });
 test.each(['report-1-1', 'report-2-1', 'report-5-1'])('%s接入分类编码后默认查询显示结果并允许导出', id => {
   render(<AssetReportPage reportId={id} />);
@@ -129,7 +130,7 @@ test.each(reportDefinitions.flatMap(d => d.filters.filter(f => ["treeSelect", "d
   expect(screen.getByRole("combobox", { name: label })).toBeInTheDocument();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
-test.each([["report-5-1", "仓库", ["编码", "名称", "公司"]], ["report-8-1", "Building", ["Building名称", "City名称"]], ["report-2-1", "Building", ["Building名称", "City名称"]]])("%s的%s选择列表统一列", async (id, label, titles) => {
+test.each([["report-5-1", "仓库", ["编码", "名称", "公司"]], ["report-8-1", "Building", ["Building名称", "City名称"]]])("%s的%s选择列表统一列", async (id, label, titles) => {
   const definition = reportDefinitions.find(d => d.id === id);
   render(<ReportFilter definition={definition} field={definition.filters.find(f => f.label === label)} filters={{ City: "北京" }} onChange={jest.fn()} onQuery={jest.fn()} />);
   fireEvent.click(screen.getByPlaceholderText("请选择"));
@@ -166,4 +167,26 @@ test('公共人员选择保留同名不同工号，确认返回工号而非姓�
   fireEvent.click(within(dialog).getAllByRole('checkbox')[0]);
   fireEvent.click(within(dialog).getByRole('button', { name: /确.*定/ }));
   expect(change).toHaveBeenCalledWith(['0001', '0002']);
+});
+
+
+test('统一申领页签分别恢复未查询输入与最近查询结果', async () => {
+  const stock = reportDefinitions.find(item => item.id === 'report-6-1');
+  const purchase = reportDefinitions.find(item => item.id === 'report-6-2');
+  const record = queryReport(stock.id)[0].values['申请单号'];
+  const { rerender } = render(<AssetReportsContent activeSubMenu={stock.menu} activeTab={stock.title} />);
+  fireEvent.change(screen.getByRole('textbox', { name: '申请单号' }), { target: { value: record } });
+  fireEvent.click(screen.getByRole('button', { name: /查\s*询/ }));
+  expect(screen.getAllByText(record).length).toBeGreaterThan(0);
+  fireEvent.change(screen.getByRole('textbox', { name: '申请单号' }), { target: { value: 'STOCK-UNAPPLIED' } });
+  rerender(<AssetReportsContent activeSubMenu={purchase.menu} activeTab={purchase.title} />);
+  expect(screen.getByRole('textbox', { name: '申请单号' })).toHaveValue('');
+  fireEvent.change(screen.getByRole('textbox', { name: '申请单号' }), { target: { value: 'PURCHASE-NO-MATCH' } });
+  fireEvent.click(screen.getByRole('button', { name: /查\s*询/ }));
+  rerender(<AssetReportsContent activeSubMenu={stock.menu} activeTab={stock.title} />);
+  expect(screen.getByRole('textbox', { name: '申请单号' })).toHaveValue('STOCK-UNAPPLIED');
+  expect(screen.getAllByText(record).length).toBeGreaterThan(0);
+  rerender(<AssetReportsContent activeSubMenu={purchase.menu} activeTab={purchase.title} />);
+  expect(screen.getByRole('textbox', { name: '申请单号' })).toHaveValue('PURCHASE-NO-MATCH');
+  expect(screen.getByText('暂无数据')).toBeInTheDocument();
 });

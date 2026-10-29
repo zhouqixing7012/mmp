@@ -38,7 +38,11 @@ function buildInventoryPeriodDemo(application) {
 export default function ReplacementHandlingPage() {
   const navigate = useNavigate();
   const [version, setVersion] = useState(0);
-  const applications = useMemo(() => getAssetReplacementApplications(), [version]);
+  const applications = useMemo(() => {
+    // 服务读取可变演示存储，版本变化时重新取得快照。
+    void version;
+    return (getAssetReplacementApplications());
+  }, [version]);
   const selectedApplication = applications.find((application) => (
     application.status === '处理中' && HANDLING_NODES.includes(application.currentNode)
   )) || null;

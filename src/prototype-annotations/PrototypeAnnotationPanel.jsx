@@ -363,7 +363,6 @@ export default function PrototypeAnnotationPanel({
   }, []);
 
   useEffect(() => {
-    if (!manualSize) return;
     setManualSize((previous) => {
       if (!previous) return previous;
       const next = clampPanelSize(previous, viewport);

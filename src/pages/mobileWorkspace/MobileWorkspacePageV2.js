@@ -3,7 +3,6 @@ import {
   ArrowDownToLine,
   ArrowLeft,
   ArrowRightLeft,
-  Check,
   CheckCircle2,
   ChevronRight,
   ClipboardList,

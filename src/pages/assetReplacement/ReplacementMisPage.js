@@ -34,7 +34,11 @@ export default function ReplacementMisPage() {
   const [description, setDescription] = useState('');
   const [comment, setComment] = useState('同意');
   const [submitting, setSubmitting] = useState(false);
-  const selectedApplication = useMemo(() => getPendingMisApplications()[0] || null, [version]);
+  const selectedApplication = useMemo(() => {
+    // 服务读取可变演示存储，版本变化时重新取得快照。
+    void version;
+    return (getPendingMisApplications()[0] || null);
+  }, [version]);
 
   const submitDecision = (decision) => {
     if (!selectedApplication) return;

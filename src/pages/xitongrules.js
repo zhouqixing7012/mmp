@@ -3,27 +3,11 @@ import {
   Search,
   ChevronRight,
   ChevronDown,
-  Menu,
-  Bell,
-  Monitor,
-  Layers,
-  ClipboardList,
-  Settings,
-  ShieldCheck,
-  UserCircle,
-  X,
-  LayoutDashboard,
   Plus,
-  Download,
-  Upload,
-  Network,
   Building2,
   FolderOpen,
-  History,
-  Camera,
   CheckCircle,
   XCircle,
-  Edit,
   Trash2
 } from 'lucide-react';
 import { Input, Select, Button, Modal, Table } from 'antd';
@@ -216,7 +200,7 @@ const SidebarTreeNode = ({ node, level = 0, expandedKeys, toggleExpand, selected
 const OrgManagementView = () => {
   const [tableExpandedKeys, setTableExpandedKeys] = useState(['D0001']);
   const [query, setQuery] = useState({ code: '', name: '', fullName: '', enabled: '' });
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+
   
   const toggleTableExpand = (key) => setTableExpandedKeys(prev => 
     prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
@@ -373,7 +357,7 @@ const UserManagementView = () => {
   // --- 用户管理视图所需 State ---
  const [expandedKeys, setExpandedKeys] = useState(['D0001', 'D0002']);
   const [selectedKey, setSelectedKey] = useState('D0002');
- const [selectedRows, setSelectedRows] = useState([]);
+
   // --- 角色分配弹窗 State ---
   const [roleModalVisible, setRoleModalVisible] = useState(false);
   const [roleView, setRoleView] = useState('list'); // 'list' | 'select'
@@ -492,12 +476,12 @@ if (viewingUserId) {
                         <td className="py-2.5 px-3 text-center"><input type="checkbox" className="rounded border-gray-300" /></td>
                         <td className="py-2.5 px-3">
                           {/* 将工号设置为超链接 */}
-                          <a 
+                          <button type="button"
                             onClick={() => setViewingUserId(user.id)}
                             className="text-[#1677ff] hover:underline cursor-pointer font-medium"
                           >
                             {user.id}
-                          </a>
+                          </button>
                         </td>
                         <td className="py-2.5 px-3 text-gray-800">{user.name}</td>
                         <td className="py-2.5 px-3 text-gray-500">{user.email}</td>
@@ -600,102 +584,7 @@ if (viewingUserId) {
 // ==========================================
 // 4. 主组件：整体系统框架布局 (Layout)
 // ==========================================
-function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [expandedMenus, setExpandedMenus] = useState(['system']);
-  
-  const toggleSidebarMenu = (key) => setExpandedMenus(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
 
-  return (
-    <div className="flex h-screen w-full bg-[#f0f2f5] font-sans overflow-hidden text-gray-800">
-      
-      {/* 侧边栏 Sidebar */}
-      <div className={`${sidebarOpen ? 'w-[220px]' : 'w-16'} transition-all duration-300 bg-[#001529] text-gray-300 flex flex-col z-20 shrink-0`}>
-        {/* Logo 区域 */}
-        <div className="h-14 flex items-center justify-center bg-[#002140] text-white">
-          <div className="w-8 h-8 bg-blue-600 text-white font-bold rounded flex items-center justify-center text-lg shadow-sm">E</div>
-          {sidebarOpen && <span className="ml-3 font-semibold text-sm tracking-wide whitespace-nowrap">企业资产管理系统</span>}
-        </div>
-
-        {/* 导航菜单 */}
-        <div className="flex-1 overflow-y-auto py-2 scrollbar-none mt-4">
-          <div className="px-2 space-y-1">
-            <div className="flex items-center px-3 py-2.5 rounded text-sm hover:text-white hover:bg-[#1677ff]/10 cursor-pointer transition-colors">
-              <LayoutDashboard size={18} className={sidebarOpen ? "mr-3" : "mx-auto"} />
-              {sidebarOpen && <span>个人工作台</span>}
-            </div>
-            {/* ... 其它菜单省略以保持简洁 ... */}
-
-            {/* 系统管理 (展开状态) */}
-            <div>
-              <div 
-                className={`flex items-center justify-between px-3 py-2.5 rounded text-sm cursor-pointer transition-colors
-                  ${expandedMenus.includes('system') ? 'text-white' : 'hover:text-white hover:bg-[#1677ff]/10'}`}
-                onClick={() => toggleSidebarMenu('system')}
-              >
-                <div className="flex items-center">
-                  <ShieldCheck size={18} className={sidebarOpen ? "mr-3 text-blue-500" : "mx-auto text-blue-500"} />
-                  {sidebarOpen && <span className="font-medium">系统管理</span>}
-                </div>
-                {sidebarOpen && <ChevronDown size={14} className={`transform transition-transform ${expandedMenus.includes('system') ? 'rotate-180' : ''}`} />}
-              </div>
-              
-              {/* 子菜单 */}
-              {sidebarOpen && expandedMenus.includes('system') && (
-                <div className="mt-1 mb-2 space-y-1">
-                  <div className="pl-11 pr-3 py-2.5 rounded text-sm cursor-pointer transition-colors bg-[#1677ff] text-white">
-                    组织与用户管理
-                  </div>
-                  <div className="pl-11 pr-3 py-2.5 rounded text-sm text-gray-400 hover:text-white hover:bg-[#1677ff]/10 cursor-pointer">
-                    角色权限管理
-                  </div>
-                </div>
-              )}
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      {/* 右侧主内容区 */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f0f2f5]">
-        
-        {/* 顶部 Header */}
-        <header className="bg-white h-14 flex items-center justify-between px-4 border-b border-gray-200 shadow-sm z-10 shrink-0">
-          <div className="flex items-center">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500 transition-colors mr-4">
-              <Menu size={20} />
-            </button>
-            <div className="hidden sm:flex items-end h-full pt-3 space-x-1">
-              <div className="px-4 py-2 bg-white border border-gray-200 border-b-white rounded-t-md text-sm text-blue-600 font-medium flex items-center cursor-pointer relative top-[1px]">
-                组织与用户管理 <X size={14} className="ml-2 text-blue-400 hover:text-blue-600" />
-                <div className="absolute top-0 left-0 w-full h-[2px] bg-blue-500 rounded-t-md"></div>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">A</div>
-          </div>
-        </header>
-
-        {/* 内容滚动区 */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col">
-          <div className="text-sm text-gray-500 mb-4 flex items-center">
-            <span>首页</span><ChevronRight size={14} className="mx-1" />
-            <span>系统管理</span><ChevronRight size={14} className="mx-1" />
-            <span className="text-gray-800 font-medium">组织与用户管理</span>
-          </div>
-
-          {/* 注入业务组件 */}
-          <div className="flex-1 min-h-[500px]">
-              <UserManagementView />
-          </div>
-        </main>
-
-      </div>
-    </div>
-  );
-}
 
 export { UserManagementView, OrgManagementView };
 

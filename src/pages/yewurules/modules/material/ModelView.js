@@ -11,7 +11,7 @@ const ModelView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('add');
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
-  const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
+  const [, setIsBrandModalOpen] = useState(false);
   const [formData, setFormData] = useState({ brand: '', code: '', desc: '', enabled: '1' });
   const handleAdd = () => {
     setModalMode('add');

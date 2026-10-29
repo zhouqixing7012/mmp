@@ -1,3 +1,5 @@
+import { mockDocumentNumber } from './documentNumbers';
+import { reportTag } from './assetReportTags';
 import { assetMaterials, consumableMaterials, reportWarehouses, consumableWarehouses, fixture, assetReportPresentationSource } from './assetReportsFixtures';
 
 function approval(status) {
@@ -21,11 +23,11 @@ export const newEmployeeClaims = reportWarehouses.flatMap((warehouse, group) => 
   const received = Boolean(confirmation), date = `2026-09-${String(index + 1).padStart(2, '0')}`;
   const row = fixture(`new-${group}-${index}`, assetMaterials[index], warehouse, {
     '费用账户': assetReportPresentationSource.finance.account,
-    '申请单号': `NEW-CLAIM-DEMO-${group}-${index}`, '单据状态': received ? '已处理' : '处理中',
+    '申请单号': mockDocumentNumber('领用申请', `report-new-${group}-${index}`, date), '单据状态': received ? '已处理' : '处理中',
     '领用状态': received ? '领用' : '延期', '入职日期': date, 'PS配置': assetMaterials[index].config,
     '办公地点': `${warehouse.city}.${warehouse.building}`, '是否领用': received ? '是' : '否',
     '领用日期': received ? `2026-10-0${index + 1}` : '', '是否刷卡': confirmation === '刷卡' ? '是' : '否',
-    '员工确认方式': confirmation, '出库单号': received ? `OUT-NEW-DEMO-${group}-${index}` : '',
+    '员工确认方式': confirmation, '出库单号': received ? mockDocumentNumber('出库工单', `report-new-${group}-${index}`, `2026-10-0${index + 1}`) : '',
   });
   row.values['部门'] = row.filters['HR部门']; row.filters['领用日期'] = row.values['领用日期'];
   row.reportRecordId = group * 100 + [21, 3, 12][index]; row.sort.recordId = row.reportRecordId;
@@ -35,16 +37,17 @@ export const newEmployeeClaims = reportWarehouses.flatMap((warehouse, group) => 
 function assetClaimSource(warehouse, group, mode, stage) {
   const purchase = mode === '统一采购', linked = stage !== '待匹配', received = stage === '已领用';
   const material = assetMaterials[0], suffix = `${group}-${mode}-${stage}`;
+  const tags = [1, 2].map(index => reportTag(`claim-${suffix}-${index}`, material, warehouse));
   // 单头、配给物料和联查结果构成同一演示链路，投影行共享此对象。
   return {
     warehouse, material, mode, stage, approval: approval(received ? '已处理' : '处理中'),
-    header: { number: `ASSET-CLAIM-DEMO-${suffix}`, applyDate: '2026-10-02 09:00:00', status: received ? '已处理' : '处理中' },
-    line: { number: `ASSIGN-DEMO-${suffix}`, quantity: 2, referencePrice: 1000,
-      assignedTags: !purchase && linked ? [`ASSIGN-TAG-${suffix}-1`, `ASSIGN-TAG-${suffix}-2`] : [] },
-    summary: purchase && linked ? { number: `SUMMARY-DEMO-${suffix}`, suggestion: '汇总单采购建议', person: '213852.孙志强' } : null,
+    header: { number: mockDocumentNumber('统一申请', `report-claim-${suffix}`, '2026-10-02'), applyDate: '2026-10-02 09:00:00', status: received ? '已处理' : '处理中' },
+    line: { number: mockDocumentNumber('员工领用申请', `report-assign-${suffix}`, '2026-10-02'), quantity: 2, referencePrice: 1000,
+      assignedTags: !purchase && linked ? tags : [] },
+    summary: purchase && linked ? { number: mockDocumentNumber('统一申请', `report-summary-${suffix}`, '2026-10-02'), suggestion: '汇总单采购建议', person: '213852.孙志强' } : null,
     procurement: purchase && linked ? { request: `PR-DEMO-${suffix}`, po: `PO-DEMO-${suffix}`, status: '已完成', taxIncludedUnitPrice: 1130 } : null,
-    claim: { abandoned: received ? '否' : '', tags: received ? [`CLAIM-TAG-${suffix}-1`, `CLAIM-TAG-${suffix}-2`] : [] },
-    outbound: received ? { number: `OUT-CLAIM-DEMO-${suffix}`, auditedAt: '2026-10-03 09:00:00', quantity: 2, confirmation: '刷卡', handSigned: '否' } : null,
+    claim: { abandoned: received ? '否' : '', tags: received ? tags : [] },
+    outbound: received ? { number: mockDocumentNumber('出库工单', `report-claim-${suffix}`, '2026-10-03'), auditedAt: '2026-10-03 09:00:00', quantity: 2, confirmation: '刷卡', handSigned: '否' } : null,
   };
 }
 function projectAssetClaim(source) {
@@ -85,14 +88,14 @@ export const consumableClaims = consumableWarehouses.flatMap((warehouse, group) 
   const row = applicant(fixture(`consumable-claim-${group}-${index}`, material, warehouse, {
     '申请日期': `2026-10-0${index + 1} 09:00:00`, '统一申请单状态': completed ? '已处理' : '处理中',
     '匹配状态': '统一采购', '耗材总类名称': material.materialType, '耗材名称': material.materialDescription,
-    '申请原因': '日常办公', '详细说明': '耗材申领演示', '耗材配给单号': `CONSUM-ASSIGN-DEMO-${group}-${index}`,
-    '配给单审核完成时间': '2026-10-02 09:00:00', '耗材统一汇总单号': `CONSUM-SUMMARY-DEMO-${group}-${index}`,
+    '申请原因': '日常办公', '详细说明': '耗材申领演示', '耗材配给单号': mockDocumentNumber('员工领用申请', `report-consum-assign-${group}-${index}`, `2026-10-0${index + 1}`),
+    '配给单审核完成时间': '2026-10-02 09:00:00', '耗材统一汇总单号': mockDocumentNumber('统一申请', `report-consum-summary-${group}-${index}`, '2026-10-02'),
     '审批节点': completed ? '' : 'ES主管审批', '当前审批人名称': completed ? '' : 'DEMO-HEWEN.何文',
     '申请数量': quantity, '参考单价': price, '预计采购金额': quantity * price, '汇总提交人名称': '213852.孙志强',
     'ES建议': '汇总单建议', '采购申请单号': completed ? `PR-CONSUM-DEMO-${group}-${index}` : '', '采购申请状态': completed ? '已完成' : '',
     'PO单号': completed ? `PO-CONSUM-DEMO-${group}-${index}` : '', 'PO状态': completed ? '已完成' : '',
     '采购数量': completed ? 2 : null, '采购单价': completed ? 56.5 : null, '采购金额': completed ? 113 : null,
-    '是否弃领': completed ? '否' : '', '领用出库单号': completed ? `OUT-CONSUM-DEMO-${group}-${index}` : '',
+    '是否弃领': completed ? '否' : '', '领用出库单号': completed ? mockDocumentNumber('出库工单', `report-consum-${group}-${index}`, '2026-10-03') : '',
     '出库日期': completed ? '2026-10-03 09:00:00' : '', '员工确认方式': completed ? '刷卡' : '',
     '耗材大类名称': material.majorCategory, '耗材小类名称': material.minorCategory, '领用数量': completed ? 2 : null,
   }));
@@ -110,14 +113,14 @@ export const consumableClaimDetails = consumableClaims.map((row, index) => {
     inbound: { warehouse: index % 3 === 2 ? null : inboundWarehouse },
     card: row.kind === '低值耐用品' ? { warehouse: index % 3 === 2 ? null : cardWarehouse } : null,
   };
-  const values = { ...row.values, '耗材物料编码': row.values['物料编码'], '耗材物料描述': row.values['耗材名称'],
+  const values = { ...row.values, '净值': null, 'EBS资产原值': null, '累计折旧': null, '耗材物料编码': row.values['物料编码'], '耗材物料描述': row.values['耗材名称'],
     '耗材大类': row.values['耗材大类名称'], '耗材小类': row.values['耗材小类名称'], '总类': row.kind,
     '不含税单价': 50, '税金': source.inboundDetail.taxAmount, '耗材数量': 2, '耗材公司': row.values['公司'], '耗材状态': '在用',
     '耗材责任人': row.values['申请人'], '耗材责任人公司': row.values['公司'], '耗材责任人板块': row.values['板块'],
     '耗材责任人部门': row.values['申请人部门'], '申请人公司': row.values['公司'], '申请人板块': row.values['板块'],
     '是否领用': source.claim.status === 1 ? '是' : '否', '是否占用': source.claim.status === 3 ? '是' : '否',
-    '采购单': row.values['PO单号'], '耗材领用单号': row.values['领用出库单号'] };
-  return { ...row, detailSource: source, flagSource: '领用源状态1为已领用，3为占用', sort: { ...row.sort, claimState: row.documentStatus, materialCode: row.values['物料编码'], tag: row.values['耗材标签号'] }, id: `detail-${row.id}`, values, exports: { ...values }, filters: { ...row.filters,
+    '采购单': row.values['PO单号'], '耗材领用单号': '' };
+  return { ...row, grain: row.kind === '低值耐用品' ? '耗材卡片.耗材标签号' : '耗材领用单.物料', detailSource: source, flagSource: '领用源状态1为已领用，3为占用', sort: { ...row.sort, claimState: row.documentStatus, materialCode: row.values['物料编码'], tag: row.values['耗材标签号'] }, id: `detail-${row.id}`, values, exports: { ...values }, filters: { ...row.filters,
     '耗材公司': row.filters['公司'], '耗材责任人公司': row.filters['公司'], '申请人公司': row.filters['公司'],
     '耗材责任人': row.filters['申请人'], '耗材责任人查询': row.filters['申请人'], '耗材责任人部门': row.filters['申请人部门'],
     '耗材标签号': values['耗材标签号'], '耗材物料编码': values['耗材物料编码'], '是否领用': values['是否领用'], '是否占用': values['是否占用'], '耗材责任人板块': '17', '申请人板块': '17', '耗材物料描述': values['耗材物料描述'],

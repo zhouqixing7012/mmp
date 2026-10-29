@@ -60,10 +60,7 @@ export default function ScrapProcurement4() {
     setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 4000);
   };
 
-  const handlePaymentChange = (e) => {
-    const { name, value } = e.target;
-    setPaymentConfirmation(prev => ({ ...prev, [name]: value }));
-  };
+
 
   const handlePaymentFileUpload = (e, fieldName) => {
     const file = e.target.files[0];

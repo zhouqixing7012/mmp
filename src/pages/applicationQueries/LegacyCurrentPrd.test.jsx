@@ -28,7 +28,7 @@ test('借用逐资产详情及配件链接绑定当前行', async () => {
 
 test.each(['storage', 'return', 'borrow'])('%s导出保留单头、全部资产及各子集合，不形成重复数量', kind => {
   const definition = legacyDefinitions.find(item => item.id === kind);
-  const records = legacyApplicationRows.filter(row => row.kind === kind);
+  const records = kind === 'storage' ? queryApplications('storage') : legacyApplicationRows.filter(row => row.kind === kind);
   const sheets = definition.exportSheets.map(sheet => ({ ...sheet, rows: sheet.records(records) }));
   expect(sheets.find(sheet => sheet.name === '单据信息').rows).toHaveLength(records.length);
   const assets = sheets.find(sheet => sheet.name === '资产明细').rows;

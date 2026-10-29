@@ -1,0 +1,383 @@
+{
+  "sourceFile": "资产系统单据编号命名规则.csv（附件实际为Excel工作簿）",
+  "rules": [
+    {
+      "type": "员工盘点",
+      "prefix": "PAI",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 5,
+      "description": ""
+    },
+    {
+      "type": "合约机退库",
+      "prefix": "CPR",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "合约机领用",
+      "prefix": "CPU",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "延长报废期",
+      "prefix": "AST",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "资产升级",
+      "prefix": "AUG",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "资产维修更换",
+      "prefix": "CHA",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 5,
+      "description": ""
+    },
+    {
+      "type": "员工领用申请",
+      "prefix": "EUA",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 5,
+      "description": ""
+    },
+    {
+      "type": "自采接收",
+      "prefix": "SR",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "资产赔偿",
+      "prefix": "PF",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "ebs同步批次",
+      "prefix": "MMP",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "资产处置",
+      "prefix": "CZ",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "接收入库",
+      "prefix": "REC",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "领用申请",
+      "prefix": "NE",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "资产标签打印批次",
+      "prefix": "TPB",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "统一申请",
+      "prefix": "CA",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 5,
+      "description": ""
+    },
+    {
+      "type": "物料编码申请",
+      "prefix": "MCA",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "盘点规则",
+      "prefix": "CR",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "盘点差异报表",
+      "prefix": "CRD",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "盘点计划",
+      "prefix": "PLAN",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "盘点方案",
+      "prefix": "CS",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "复盘任务",
+      "prefix": "RCT",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "复盘方案",
+      "prefix": "RCS",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "复盘项目",
+      "prefix": "RCP",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "复盘批次",
+      "prefix": "RE",
+      "separator": "",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "入库单",
+      "prefix": "PI",
+      "separator": "-",
+      "hasCompany": true,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "出库工单",
+      "prefix": "OS",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "资产转移",
+      "prefix": "AT",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "担保职责转移",
+      "prefix": "CAP",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 5,
+      "description": ""
+    },
+    {
+      "type": "盘点项目",
+      "prefix": "CP",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "资产报废",
+      "prefix": "BF",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "库存转移",
+      "prefix": "TS",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "员工转移申请",
+      "prefix": "ETA",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "员工退库申请",
+      "prefix": "ERA",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "员工借用申请",
+      "prefix": "EBA",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "员工续借申请",
+      "prefix": "ERB",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "员工离职单",
+      "prefix": "ED",
+      "separator": "-",
+      "hasCompany": true,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "资产事务自动同步批次",
+      "prefix": "M2E",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": ""
+    },
+    {
+      "type": "主备维护",
+      "prefix": "EMM",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": "Equipment Main Maintenance"
+    },
+    {
+      "type": "序列号变更",
+      "prefix": "ESN",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": "Equipment Serial Number change"
+    },
+    {
+      "type": "位置变更",
+      "prefix": "ELC",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": "Equipment Location Change"
+    },
+    {
+      "type": "跨公司转移",
+      "prefix": "CT",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": "Company Transfer"
+    },
+    {
+      "type": "账面报废",
+      "prefix": "AS",
+      "separator": "-",
+      "hasCompany": false,
+      "dateType": "年月日",
+      "serialDigits": 4,
+      "description": "Accounting Scrap"
+    }
+  ]
+}

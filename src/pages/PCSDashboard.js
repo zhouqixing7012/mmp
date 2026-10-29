@@ -668,7 +668,7 @@ export default function PCSDashboard() {
                           <tr key={`${cert.id}-${subIdx}`}>
                             {subIdx === 0 && (
                               <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white">
-                                <a href="#" className="text-[#1E5EFF] hover:text-blue-700 hover:underline transition-colors font-medium">{cert.name}</a>
+                                <span  className="text-[#1E5EFF] hover:text-blue-700 hover:underline transition-colors font-medium">{cert.name}</span>
                               </td>
                             )}
                             <td className={`px-4 py-3 border-r border-gray-100 text-gray-700 bg-white ${subIdx !== cert.subItems.length - 1 ? 'border-b border-gray-50' : 'border-b border-gray-100'}`}>

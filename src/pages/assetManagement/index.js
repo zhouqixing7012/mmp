@@ -5,9 +5,9 @@ import ConsumableMaintenancePage from './ConsumableMaintenancePage';
 import ContractNumberMaintenancePage from './ContractNumberMaintenancePage';
 import TagPrintingPage from './TagPrintingPage';
 import EmployeeAssetInfoQueryPage from './EmployeeAssetInfoQueryPage';
-import DocumentListPage from './DocumentListPage';
-import AssetDisposalEditPage from './AssetDisposalEditPage';
-import CrossCompanyTransferEditPage from './CrossCompanyTransferEditPage';
+
+
+
 import ScrapPrototypeModule from './ScrapPrototypeModule';
 import { ACCOUNTING_DEMO_ACCESS } from './scrapPrototypeData';
 

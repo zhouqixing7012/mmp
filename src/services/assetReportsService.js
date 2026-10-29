@@ -4,6 +4,7 @@ import { projectCurrentReportRow } from './assetReportProjection';
 import definitions from '../pages/assetReports/reportDefinitions.json';
 import { assetReportRows } from '../mock/businessRulesMock';
 import { DEFAULT_REPORT_ACCESS, assertReportAccess, canReadReportRow } from './assetReportAccess';
+import { getReportOptions } from './assetReportOptions';
 export { getReportOptions, updateReportFilter } from './assetReportOptions';
 
 export const reportDefinitions = definitions;
@@ -15,13 +16,23 @@ export function getReportDefinition(id) {
 export const isReportValueEmpty = value => value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0);
 const selectedValues = value => Array.isArray(value) ? value : [value];
 
-export function validateReportFilters(definition, filters) {
+export function validateReportFilters(definition, filters, access = DEFAULT_REPORT_ACCESS) {
   for (const label of Object.keys(filters)) {
     if (!definition.filters.some(field => field.label === label) && !isReportValueEmpty(filters[label])) throw new Error(`未定义查询条件：${label}`);
   }
   for (const field of definition.filters) {
     const value = filters[field.label];
     if (isReportValueEmpty(value)) continue;
+    if (field.type === 'lookup' || field.type === 'treeSelect' || field.type === 'departmentTreeSelect') {
+      const options = getReportOptions(definition, field, filters, access);
+      const allowed = new Set(options.map(option => String(option.value)));
+      if (field.match === 'category') options.forEach(option => {
+        if (option.parent) allowed.add('major:' + option.parent);
+      });
+      if (selectedValues(value).some(item => !allowed.has(String(item)))) {
+        throw new Error(field.label + '选项已失效或不在授权范围，请重新选择');
+      }
+    }
     if (field.type === 'amount' && !Number.isFinite(Number(String(value).replace(/,/g, '')))) throw new Error(`${field.label}须填写有效金额`);
     if (field.type === 'daterange') {
       if (!Array.isArray(value) || value.length !== 2) throw new Error(`${field.label}须填写日期范围`);

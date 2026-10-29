@@ -439,20 +439,7 @@ export default function AssetReceiptPage() {
     });
   };
 
-  const reconcileMaintenanceForReceipt = (receipt) => {
-    const saved = maintenanceStore[receipt.receiptNo];
-    if (!saved) return;
-    const rebuilt = buildMaintenanceSession(receipt);
-    const existingById = new Map((saved.rows || []).map((row) => [row.id, row]));
-    const rows = rebuilt.rows.map((row) => existingById.has(row.id) ? { ...row, ...existingById.get(row.id) } : row);
-    const next = {
-      rows,
-      tagsGenerated: rows.length > 0 && rows.every((row) => String(row.assetTag || '').trim()),
-      defaultSnApplied: rows.length > 0 && rows.every((row) => normalizeSn(row.sn)),
-    };
-    setMaintenanceStore((store) => ({ ...store, [receipt.receiptNo]: next }));
-    if (activeReceipt?.receiptNo === receipt.receiptNo) setMaintenanceSession(next);
-  };
+
 
   const setPoItemValues = (poNo, updatesById) => {
     setPoItemOverrides((current) => {

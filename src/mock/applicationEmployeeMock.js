@@ -1,3 +1,4 @@
+import { mockDocumentNumber } from './documentNumbers';
 import { materialCatalog } from './reference/materialCatalog';
 import { warehouseCatalog } from './reference/warehouseCatalog';
 
@@ -28,8 +29,8 @@ function line(id, index) {
 function record(kind, index, state) {
   const transfer = kind === 'transfer', id = kind + '-employee-' + index;
   const createdAt = '2026-10-' + String(10 + index).padStart(2, '0') + ' 09:00:00';
-  const applicationNo = (transfer ? 'ETA' : 'EXCHANGE') + '-DEMO-202610-' + index;
-  const executionNo = state === '已完成' ? (transfer ? 'ZY' : 'GH') + '-DEMO-202610-' + index : '';
+  const applicationNo = mockDocumentNumber(transfer ? '员工转移申请' : '资产维修更换', id, createdAt);
+  const executionNo = state === '已完成' ? mockDocumentNumber(transfer ? '资产转移' : '资产维修更换', id + '-execution', '2026-10-14') : '';
   const lines = [line(id, index * 10 + 1), line(id, index * 10 + 2)];
   const values = { applicationNo, transferNo: transfer ? executionNo : '', replacementNo: transfer ? '' : executionNo, status: state,
     applicant: people.sender.name, company, sender: people.sender.name, sourceCompany: company, receiver: people.receiver.name,

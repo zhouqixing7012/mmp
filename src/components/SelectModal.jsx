@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Input, Modal, Space, Table, Typography } from 'antd';
 import QueryBar, { QueryItem } from './QueryBar';
 

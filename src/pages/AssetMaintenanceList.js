@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   User, Calendar, CheckSquare, XSquare, 
   ChevronDown, ChevronRight, BarChart2, Search, 
-  Edit, Download, AlignLeft, Save, X, Settings,
+  Save, X, Settings,
   UserCog, Archive, ClipboardList, Box, PieChart, Link, FileText,
   MapPin, Server, Hash
 } from 'lucide-react';

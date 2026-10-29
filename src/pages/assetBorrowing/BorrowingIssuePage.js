@@ -204,7 +204,7 @@ export default function BorrowingIssuePage() {
         const outOrderNo = createOutOrderNo();
         updateAssetBorrowingApplication(application.id, (record) => ({
           ...record,
-          status: '已处理',
+          status: '已完成',
           result: '正常出库',
           currentNode: '已完成',
           outOrderNo,
@@ -231,7 +231,7 @@ export default function BorrowingIssuePage() {
       onOk: () => {
         updateAssetBorrowingApplication(application.id, (record) => ({
           ...record,
-          status: '已处理',
+          status: '已完成',
           result: '放弃领用',
           currentNode: '已完成',
           completedAt: nowText(),

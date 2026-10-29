@@ -16,7 +16,7 @@ const detailFor = service => {
 
 test('查询按创建日期倒序，范围包含起止整天，数量取明细合计', () => {
   const { service } = setup(); const rows = service.list({ dateRange: ['2026-10-14', '2026-10-15'] });
-  expect(rows.map(row => row.number)).toEqual(['ZY202610150001', 'ZY202610140002']); expect(rows[0].totalQuantity).toBe(1);
+  expect(rows.map(row => row.id)).toEqual(['transfer-order-1', 'transfer-order-2']); expect(rows.every(row => /^AT-\d{12}$/.test(row.number))).toBe(true); expect(rows[0].totalQuantity).toBe(1);
 });
 test('转出条件读取原属性，转入条件读取目标属性且必须同一明细', () => {
   const { service, store } = setup();
@@ -38,7 +38,7 @@ test('转出条件读取原属性，转入条件读取目标属性且必须同�
 });
 test('新建默认公司及制单人，首次保存生成编号，重复保存沿用同号', () => {
   const { service } = setup(); const order = service.create(); expect(order.creator).toBe('sunzhq');
-  const saved = service.save(order); expect(saved.number).toMatch(/^ZY\d{12}$/); expect(service.save(saved).number).toBe(saved.number);
+  const saved = service.save(order); expect(saved.number).toMatch(/^AT-\d{12}$/); expect(service.save(saved).number).toBe(saved.number);
 });
 test('保存资产锁定，删除明细立即解锁', () => {
   const { service, state } = setup(); const saved = service.save(detailFor(service));

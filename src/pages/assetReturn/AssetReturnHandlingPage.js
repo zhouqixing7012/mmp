@@ -38,7 +38,11 @@ export default function AssetReturnHandlingPage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [version, setVersion] = useState(0);
-  const applications = useMemo(() => getAssetReturnApplications(), [version]);
+  const applications = useMemo(() => {
+    // 服务读取可变演示存储，版本变化时重新取得快照。
+    void version;
+    return (getAssetReturnApplications());
+  }, [version]);
   const selected = applications.find((item) => (
     item.status === '处理中' && ['ES退库办理', '员工退库确认'].includes(item.currentNode)
   )) || null;
@@ -55,7 +59,7 @@ export default function AssetReturnHandlingPage() {
     setAssetMark(selected.handling.assetMark || '');
     setUsageNote(selected.handling.usageNote || '');
     setOpinion(selected.handling.opinion || '');
-  }, [selected?.id]);
+  }, [selected, selected.id]);
 
   const refresh = () => setVersion((value) => value + 1);
   const confirmedReturnDate = selected?.handling?.confirmationTime

@@ -15,7 +15,7 @@ import {
   message as antdMessage,
 } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
-import { ASSET_CUSTODY_NOTICE, CURRENT_EMPLOYEE } from '../../mock/employeeSelfServiceClaimMock';
+import { ASSET_CUSTODY_NOTICE } from '../../mock/employeeSelfServiceClaimMock';
 import {
   employeeConfirmClaim,
   ensureStockClaimOrders,

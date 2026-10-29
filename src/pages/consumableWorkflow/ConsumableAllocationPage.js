@@ -78,7 +78,11 @@ export default function ConsumableAllocationPage() {
   const [assetsOpen, setAssetsOpen] = useState(false);
   const [countersignOpen, setCountersignOpen] = useState(false);
   const allocation = useMemo(
-    () => getConsumableWorkflowState().allocations.find((item) => item.status === '待配给') || null,
+    () => {
+    // 版本变化时重新读取服务中的可变演示快照。
+    void version;
+    return (getConsumableWorkflowState().allocations.find(item => item.status === '待配给') || null);
+  },
     [version]
   );
 

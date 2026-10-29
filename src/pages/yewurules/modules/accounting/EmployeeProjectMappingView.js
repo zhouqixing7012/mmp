@@ -5,7 +5,7 @@ import QueryBar from '../../../../components/QueryBar';
 import { mockEmployeeProjectMappingData } from '../../../../mock/businessRulesMock';
 
 const EmployeeProjectMappingView = () => {
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [, setSelectedRowKeys] = useState([]);
   const columns = [
     { title: '序号', dataIndex: 'id' },
     { title: '员工编号', dataIndex: 'empNo' },

@@ -3,7 +3,7 @@ import { claimApplicationRows, claimSourceData } from '../mock/applicationClaimM
 import { assetExportSheets, consumableExportColumns } from '../pages/applicationQueries/claimDefinitions';
 
 test('同一耗材申请按物料、子单及实际出库拆行，不丢多次出库', () => {
-  const rows = claimApplicationRows.filter(row => row.values.applicationNo === 'CAC-DEMO-20261013-1');
+  const rows = claimApplicationRows.filter(row => row.values.applicationNo === claimSourceData.applications.find(item => item.id === 'consumable-1').values.applicationNo);
   expect(new Set(rows.map(row => row.originalLineId)).size).toBe(2);
   const issued = rows.filter(row => row.originalLineId.endsWith('-2') && row.filters.subType === 'USE');
   expect(issued).toHaveLength(2);
@@ -62,4 +62,23 @@ test('一级子单处理中且汇总驳回时选一级子号及其审批，完�
   const normal = assembleClaimRows(claimSourceData).find(item => item.id === row.id);
   expect(normal.values.subNo).toBe(claimSourceData.summaries.find(item => item.id === 'asset-1-summary').number);
   expect(normal.values.node).toBe('ES采购汇总');
+});
+
+test('资产申请单号按CA规则生成，日期与源单一致并传递到查询和汇总', () => {
+  const applications = claimSourceData.applications.filter(row => row.kind === 'asset');
+  expect(applications.length).toBeGreaterThan(0);
+  expect(new Set(applications.map(row => row.values.applicationNo)).size).toBe(applications.length);
+  applications.forEach(application => {
+    const number = application.values.applicationNo;
+    expect(number).toMatch(/^CA-\d{13}$/);
+    expect(number.slice(3, 11)).toBe(application.createdAt.slice(0, 10).replaceAll('-', ''));
+    expect(application.filters.applicationNo).toBe(number);
+    claimApplicationRows.filter(row => row.kind === 'asset' && row.originalLineId === application.id + '-original-line').forEach(row => {
+      expect(row.values.applicationNo).toBe(number);
+      expect(row.filters.applicationNo).toBe(number);
+    });
+    claimSourceData.summaries.flatMap(row => row.detail.lines).filter(line => line.originalLineId === application.id + '-original-line').forEach(line => {
+      expect(line.applicationNo).toBe(number);
+    });
+  });
 });

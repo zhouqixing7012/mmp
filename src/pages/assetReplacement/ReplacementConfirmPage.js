@@ -20,7 +20,11 @@ export default function ReplacementConfirmPage() {
   const [version, setVersion] = useState(0);
   const [employeeId, setEmployeeId] = useState('');
   const [confirmedResult, setConfirmedResult] = useState(null);
-  const applications = useMemo(() => getAssetReplacementApplications(), [version]);
+  const applications = useMemo(() => {
+    // 服务读取可变演示存储，版本变化时重新取得快照。
+    void version;
+    return (getAssetReplacementApplications());
+  }, [version]);
   const requestedScene = location.state?.replacementConfirmScene;
   const requestedId = location.state?.replacementApplicationId;
 

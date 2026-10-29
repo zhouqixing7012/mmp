@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, CheckCircle, XCircle, UserPlus, X, AlertCircle, Eye, ShieldCheck, ShoppingCart, Download, ThumbsUp } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, UserPlus, X, AlertCircle, Eye, ShieldCheck, ShoppingCart, Download } from 'lucide-react';
 
 // --- 模拟已提交的单据数据 (包含了内审部的历史填报数据) ---
 const submittedData = {
@@ -263,7 +263,7 @@ export default function ScrapProcurement2() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {sortedQuotations.map((item, index) => {
-                    const isRecommended = parseFloat(item.quotationAmount) === maxQuotationAmount;
+
                     return (
                     <tr key={item.id} className="hover:bg-gray-50 transition-colors text-gray-700">
                       <td className="p-3 text-center text-gray-400">{index + 1}</td>

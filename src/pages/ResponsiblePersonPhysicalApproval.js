@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Search, ChevronRight, ChevronDown } from 'lucide-react';
+import { FileText, ChevronRight, ChevronDown } from 'lucide-react';
 
 // 通用的区块标题组件
 const SectionHeader = ({ title }) => (

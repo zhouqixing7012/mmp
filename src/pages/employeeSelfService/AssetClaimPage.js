@@ -23,7 +23,6 @@ import {
 import {
   completeClaimOutbound,
   ensureStockClaimOrders,
-  getClaimOrders,
   rejectEmployeeSignature,
   sendClaimNotification,
   updateClaimOrder,
