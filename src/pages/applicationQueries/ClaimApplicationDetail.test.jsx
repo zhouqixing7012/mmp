@@ -37,11 +37,13 @@ test('PO按单号和状态同时去重，导出费用按采购数量计算', () 
   expect(exported[0]['预计费用（元）']).toBe(17400);
   expect(exported[1]['预计费用（元）']).toBe(5800);
 });
-test('详情输入不改变源单据，查询详情只提供返回', () => {
+test('申请详情按既定规则只读展示，源单据与返回操作保持', () => {
   const row = assetPurchase(), initial = JSON.stringify(row), onBack = jest.fn();
   render(<ClaimApplicationDetail definition={byKind('asset')} record={row} onBack={onBack} />);
-  fireEvent.change(screen.getByLabelText('单据备注'), { target: { value: '临时说明' } });
-  fireEvent.change(screen.getByLabelText('使用说明'), { target: { value: '临时用途' } });
+  expect(screen.queryByRole('textbox', { name: '单据备注' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('textbox', { name: '使用说明' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('textbox', { name: '建筑' })).not.toBeInTheDocument();
+  expect(screen.getByLabelText('单据备注')).toHaveTextContent(row.remark || '-');
   expect(JSON.stringify(row)).toBe(initial);
   expect(screen.queryByRole('button', { name: /保\s*存/ })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: /返\s*回/ }));
@@ -53,7 +55,8 @@ test('资产汇总显示两个申请分区和参考用量，项目用途不保�
   expect(screen.getByText('超标申请')).toBeInTheDocument();
   expect(screen.getByText('非超标申请')).toBeInTheDocument();
   expect(screen.getByText('部门现资产参考使用量')).toBeInTheDocument();
-  fireEvent.change(screen.getByLabelText('项目用途说明'), { target: { value: '修改后未保存' } });
+  expect(screen.queryByRole('textbox', { name: '项目用途说明' })).not.toBeInTheDocument();
+  expect(screen.getByLabelText('项目用途说明')).toHaveTextContent(row.summary.projectUsage);
   expect(row.summary.projectUsage).toBe('部门日常办公');
   expect(screen.getByRole('button', { name: '导出申请明细' })).toBeInTheDocument();
 });

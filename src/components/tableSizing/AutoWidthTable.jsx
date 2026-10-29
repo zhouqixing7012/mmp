@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Table, theme } from 'antd';
 import { createTextMeasurer, sizeTableColumns } from './columnSizing';
 
-export default function AutoWidthTable({ columns, dataSource = [], compact = false, rowKey = 'key', ...props }) {
+export default function AutoWidthTable({ columns, dataSource = [], compact = false, rowKey = 'key', pagination = false, ...props }) {
   const { token } = theme.useToken();
   const host = useRef(null);
   const stableWidths = useRef({});
@@ -59,7 +59,7 @@ export default function AutoWidthTable({ columns, dataSource = [], compact = fal
     stableWidths.current = { schema, metrics, widths: sized.intrinsicWidths };
   });
   return <div ref={host} data-auto-width-table style={{ width: '100%', maxWidth: sized.totalWidth + 2, minWidth: 0 }}>
-    <Table {...props} rowKey={rowKey} size="small" bordered pagination={false} columns={sized.columns} dataSource={dataSource}
+    <Table {...props} rowKey={rowKey} size="small" bordered pagination={pagination} columns={sized.columns} dataSource={dataSource}
       tableLayout="fixed" scroll={{ x: sized.totalWidth }} style={{ width: '100%' }} />
   </div>;
 }

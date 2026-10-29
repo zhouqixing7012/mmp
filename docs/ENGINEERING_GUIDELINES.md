@@ -23,6 +23,10 @@
 - 不留下 lorem、TODO 或无行为占位按钮。资料待补时明确未实现范围，不生成随机“导入成功”数据或假接口地址。
 - 用户在本项目要求“展示页面”时，默认在现有页面提供可见演示态；独立 HTML 仅在明确要求时创建。
 
+### 查询与只读表格的共用UI入口
+
+申请、资产报表的结果及明细表使用 `src/components/businessQuery/BusinessTable.jsx`，组合现有Table、AutoWidthTable、TableDensityControl及TableEmptyState；分页、排序、选择、格式化及导出仍由页面业务传入。行高样式只在businessQuery公共出口维护，不向页面复制四套padding；自动列宽仅在已确认只读查询主表显式开启。分区标题复用 `src/components/SectionCardTitle.jsx`，原盘点入口保持兼容转出。
+
 ## 3. 数据访问与一致性
 
 - 演示数据统一放在 `src/mock/`。页面通过 Service 层调用统一演示数据入口 `src/mock/businessRulesMock.js`，不在组件直接操作 localStorage，不直接 import 大块 mock 数组作为最终数据源；JSX 文件内不得写超过 20 条的大型 mock 数组。

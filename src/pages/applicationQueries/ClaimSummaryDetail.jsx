@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Alert, Button, Card, Input, Space, Table, Typography } from 'antd';
+import React from 'react';
+import { Alert, Button, Space } from 'antd';
+import Table, { BusinessCard as Card } from '../../components/businessQuery/BusinessTable';
 import * as XLSX from 'xlsx';
 import { DetailGrid, DetailItem } from '../../components/DetailGrid';
 
@@ -49,7 +50,6 @@ export function summaryExportRows(lines, consumable) {
 }
 export default function ClaimSummaryDetail({ definition, record, onBack }) {
   const { summary } = record, consumable = definition.id === 'consumable';
-  const [usage, setUsage] = useState(summary.projectUsage);
   const groups = claimSummaryGroups(summary.lines, consumable);
   const groupColumns = makeColumns([[consumable ? '部门' : '物资类别', 'name'], ['申请采购数量', 'quantity'], ['预计采购费用（元）', 'amount', true]]);
   const columns = makeColumns([...(consumable ? [['部门', 'department'], ['申请单号', 'applicationNo']] : []), ['申请人', 'applicant'], ['物资类别', 'materialCategory'], ['物料说明', 'materialDescription'], ...(!consumable ? [['配置', 'configuration']] : []), ['采购数量', 'purchaseQuantity'], ['预计费用（元）', 'amount', true], ['申请原因', 'reason'], ...(!consumable ? [['在用资产', 'inUseCount']] : []), ['ES建议', 'suggestion'], ['采购信息', 'purchaseInfo']]);
@@ -61,7 +61,7 @@ export default function ClaimSummaryDetail({ definition, record, onBack }) {
   };
   return <Space orientation="vertical" size={16} style={{ width: '100%' }} data-mmp-page-title={("统一申请汇总详情")}>
     {null}
-    <Card title="汇总信息"><DetailGrid><DetailItem label="ES汇总说明" span={3}><Input.TextArea value={readOnlyValue(summary.esDescription)} readOnly autoSize /></DetailItem><DetailItem label="项目用途说明" span={3}><Input.TextArea aria-label="项目用途说明" value={usage} onChange={event => setUsage(event.target.value)} autoSize /><Typography.Text type="secondary">此信息会同步至PR系统</Typography.Text></DetailItem></DetailGrid></Card>
+    <Card title="汇总信息"><DetailGrid><DetailItem label="ES汇总说明" span={3}><span className="mmp-query-readonly">{readOnlyValue(summary.esDescription)}</span></DetailItem><DetailItem label="项目用途说明" span={3}><span aria-label="项目用途说明" className="mmp-query-readonly">{readOnlyValue(summary.projectUsage)}</span></DetailItem></DetailGrid></Card>
     <Card title="部门汇总信息"><Table rowKey="id" size="small" pagination={false} columns={groupColumns} dataSource={groups} summary={() => summaryTotal(groupColumns, groups, 'quantity', 'amount')} /></Card>
     <Alert type="info" title="此汇总申请中的价格仅供参考，最终采购价格以PR单为准。" />
     {consumable ? detailTable('申请明细', summary.lines, '本批暂无耗材申请明细') : [detailTable('超标申请', summary.lines.filter(line => line.overStandard), '本批暂无超标申请'), detailTable('非超标申请', summary.lines.filter(line => !line.overStandard), '本批暂无非超标申请')]}

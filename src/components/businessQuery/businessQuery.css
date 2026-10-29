@@ -1,0 +1,70 @@
+/* 共用查询表格出口：只控制展示，不改选择、排序和业务数据。 */
+.mmp-business-card,
+.mmp-business-card .ant-card-body,
+.mmp-business-table {
+  min-width: 0;
+  max-width: 100%;
+}
+.mmp-business-card .ant-card-head-wrapper {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.mmp-business-card .ant-card-head-title {
+  flex: 0 1 auto;
+}
+.mmp-business-card .ant-card-extra {
+  margin-inline-start: auto;
+  max-width: 100%;
+}
+.mmp-business-table .ant-table-thead > tr > th,
+.mmp-business-table .ant-table-tbody > tr:not(.ant-table-placeholder) > td {
+  height: var(--mmp-table-row-height, 40px);
+  padding: calc((var(--mmp-table-row-height, 40px) - 22px) / 2) 12px;
+  font-size: 14px;
+  line-height: 20px;
+}
+.mmp-business-table .ant-table-thead > tr > th {
+  white-space: nowrap;
+}
+.mmp-business-cell-value {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mmp-business-table .ant-btn-link {
+  height: auto;
+  padding-block: 0;
+  line-height: 20px;
+  user-select: text;
+}
+.mmp-query-batch-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--ant-color-primary-bg, #e5f1ff);
+  color: var(--ant-color-primary, #145cff);
+  border-radius: 4px;
+}
+.mmp-query-readonly {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mmp-applied-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.mmp-filter-summary-value {
+  display: inline-block;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}

@@ -1,4 +1,4 @@
-import { ClipboardList, Layers, Monitor } from 'lucide-react';
+import { Computer, Copyright, Warehouse, ClipboardCheck, ChartNoAxesCombined, FilePenLine } from 'lucide-react';
 
 export const ASSET_MANAGEMENT_MENU_ITEMS = [
   '资产维护', '耗材维护', '合约号码维护', '标签打印', '跨公司转移', '资产报废', '账面报废', '资产处置', '员工资产信息查询',
@@ -24,12 +24,12 @@ export const APPLICATION_MENU_ITEMS = [
 ];
 
 export const MAIN_MENU_ITEMS = [
-  { key: '资产管理', label: '资产管理', icon: Monitor, children: ASSET_MANAGEMENT_MENU_ITEMS },
-  { key: '无形资产', label: '无形资产', icon: Layers },
-  { key: '库存管理', label: '库存管理', icon: Layers, children: INVENTORY_MANAGEMENT_MENU_ITEMS },
-  { key: '资产盘点', label: '资产盘点', icon: ClipboardList, children: ASSET_INVENTORY_MENU_ITEMS },
-  { key: '资产报表', label: '资产报表', icon: ClipboardList, children: ASSET_REPORT_MENU_ITEMS },
-  { key: '申请', label: '申请', icon: ClipboardList, children: APPLICATION_MENU_ITEMS },
+  { key: '资产管理', label: '资产管理', icon: Computer, children: ASSET_MANAGEMENT_MENU_ITEMS },
+  { key: '无形资产', label: '无形资产', icon: Copyright },
+  { key: '库存管理', label: '库存管理', icon: Warehouse, children: INVENTORY_MANAGEMENT_MENU_ITEMS },
+  { key: '资产盘点', label: '资产盘点', icon: ClipboardCheck, children: ASSET_INVENTORY_MENU_ITEMS },
+  { key: '资产报表', label: '资产报表', icon: ChartNoAxesCombined, children: ASSET_REPORT_MENU_ITEMS },
+  { key: '申请', label: '申请', icon: FilePenLine, children: APPLICATION_MENU_ITEMS },
 ];
 
 export const BACKEND_CONFIG_MENU_ITEMS = [

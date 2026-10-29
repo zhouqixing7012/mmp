@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { Button, Card, Modal, Space, Table } from 'antd';
+import { Button, Modal, Space } from 'antd';
+import Table, { BusinessCard as Card } from '../../components/businessQuery/BusinessTable';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 
@@ -55,7 +56,7 @@ export default function LegacyStorageDetail({ record }) {
       <Card title="移库明细" style={{ marginTop: 16 }}><Table rowKey="id" size="small" columns={columns} dataSource={rows} pagination={false} scroll={{ x: 'max-content' }} /></Card>
     </div>
     {record.values.status === '已完成' && <Space style={{ marginTop: 16 }}><Button onClick={() => printDocument(printable.current, record.values.applicationNo)}>打印</Button></Space>}
-    <Modal className="mmp-application-modal" open={Boolean(selected)} title="移库物资明细" width={1100} onCancel={() => setSelected(null)} footer={<Button onClick={() => setSelected(null)}>关闭</Button>} destroyOnHidden>
+    <Modal className="mmp-application-modal" open={Boolean(selected)} title="移库物资明细" width={960} onCancel={() => setSelected(null)} footer={<Button onClick={() => setSelected(null)}>关闭</Button>} destroyOnHidden>
       {selected && <><LegacyFields fields={modalHead} fullWidthLabels={['移库出库说明', '移库接收说明']} /><Card title={selected.material.materialType === '资产' ? '资产信息' : '耗材信息'} size="small" style={{ marginTop: 16 }}><LegacyFields fields={selected.info} fullWidthLabels={['物资说明', '配置', '备注']} /></Card></>}
     </Modal>
   </>;

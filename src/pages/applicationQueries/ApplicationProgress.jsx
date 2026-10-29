@@ -1,5 +1,6 @@
 import React from 'react';
-import { Alert, Modal, Table, Typography } from 'antd';
+import { Alert, Modal, Typography } from 'antd';
+import Table from '../../components/businessQuery/BusinessTable';
 import { applicationProgressRecords, formatApplicationValue } from '../../services/applicationQueryService';
 
 const readOnlyValue = value => value == null || (typeof value === 'string' && !value.trim()) ? '-' : value;
@@ -17,11 +18,11 @@ export default function ApplicationProgress({ record, onClose }) {
   return <Modal className="mmp-application-modal" title="审批信息" open onCancel={onClose} footer={null} width={900} destroyOnHidden>
     <div className="flex flex-col gap-4">
       {record.progressTitle && <Typography.Text strong>{record.progressTitle}</Typography.Text>}
-      <Table size="small" bordered rowKey="id" columns={columns} dataSource={history} pagination={false} scroll={{ x: 800 }} />
+      <Table size="small" bordered rowKey="id" columns={columns} dataSource={history} pagination={false} scroll={{ x: 'max-content' }} />
       {external.length > 0 && <Alert type="info" title="以下为关联流程演示记录，未连接外部系统。" />}
       {external.map(section => <div key={section.title}>
         <Typography.Text strong>{section.title}</Typography.Text>
-        <Table size="small" bordered rowKey="id" columns={columns} dataSource={section.records} pagination={false} scroll={{ x: 800 }} />
+        <Table size="small" bordered rowKey="id" columns={columns} dataSource={section.records} pagination={false} scroll={{ x: 'max-content' }} />
       </div>)}
     </div>
   </Modal>;

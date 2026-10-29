@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Button, Card, Modal, Space, Table } from 'antd';
+import { Button, Modal, Space } from 'antd';
+import Table, { BusinessCard as Card } from '../../components/businessQuery/BusinessTable';
 import { displayApplicationValue, LegacyFields } from './LegacyStorageDetail';
 
 const historyColumns = [

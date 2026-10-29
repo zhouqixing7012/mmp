@@ -43,3 +43,17 @@ test('键盘可展开菜单并选择子项', async () => {
   fireEvent.keyDown(child, { key: 'Enter', code: 'Enter', keyCode: 13, which: 13 });
   expect(screen.getByRole('status')).toHaveTextContent('资产管理/资产维护');
 });
+
+test('八个一级菜单分别使用不同图标，收折后仍能通过名称识别', () => {
+  render(<Harness />);
+  const names = ['个人工作台', '资产管理', '无形资产', '库存管理', '资产盘点', '资产报表', '申请', '后台基础配置'];
+  const icons = names.map(name => {
+    const item = screen.getByRole('menuitem', { name });
+    const icon = item.querySelector('svg');
+    expect(icon).not.toBeNull();
+    return icon.getAttribute('class');
+  });
+  expect(new Set(icons).size).toBe(names.length);
+  fireEvent.click(screen.getByRole('button', { name: '收起侧栏' }));
+  names.forEach(name => expect(screen.getByRole('menuitem', { name })).toBeInTheDocument());
+});

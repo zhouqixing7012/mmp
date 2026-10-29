@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Button, Card, Modal, Space, Table } from 'antd';
+import { Button, Modal, Space } from 'antd';
+import Table, { BusinessCard as Card } from '../../components/businessQuery/BusinessTable';
 import StatusTag from '../../components/StatusTag';
 import LegacyStorageDetail, { displayApplicationValue, LegacyFields } from './LegacyStorageDetail';
 
@@ -30,7 +31,7 @@ export default function LegacyApplicationDetail({ definition, record, onBack, on
       <Card title="审批记录"><Table rowKey="id" columns={columns} dataSource={record.history} pagination={false} scroll={{ x: 'max-content' }} /></Card>
     </>}
     <Space style={{ display: 'flex', justifyContent: 'center' }}><Button onClick={onBack}>返回</Button>{record.kind !== 'storage' && <Button onClick={() => onProgress(record)}>查看进度</Button>}</Space>
-    <Modal className="mmp-application-modal" open={Boolean(dialog)} title={dialog?.type === 'accessories' ? '配件明细' : '资产明细'} width={1000} footer={null} onCancel={() => setDialog(null)} destroyOnHidden>
+    <Modal className="mmp-application-modal" open={Boolean(dialog)} title={dialog?.type === 'accessories' ? '配件明细' : '资产明细'} width={960} footer={null} onCancel={() => setDialog(null)} destroyOnHidden>
       {dialog?.type === 'asset' && <LegacyFields fields={activeLine.info} fullWidthLabels={['物资说明', '配置', '备注']} />}
       {dialog?.type === 'accessories' && <Table rowKey="id" columns={accessoryColumns} dataSource={activeLine.accessories} pagination={false} scroll={{ x: 'max-content' }} />}
     </Modal>

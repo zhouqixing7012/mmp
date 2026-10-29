@@ -10,6 +10,12 @@ import ReportFilter from './ReportFilter';
 import { queryReport, reportDefinitions } from '../../services/assetReportsService';
 
 beforeEach(() => {
+  window.MessageChannel = class {
+    constructor() {
+      this.port1 = { onmessage: null };
+      this.port2 = { postMessage: () => Promise.resolve().then(() => this.port1.onmessage?.()) };
+    }
+  };
   window.matchMedia = jest.fn().mockImplementation(query => ({ matches: false, media: query, onchange: null, addListener: jest.fn(), removeListener: jest.fn(), addEventListener: jest.fn(), removeEventListener: jest.fn(), dispatchEvent: jest.fn() }));
   window.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
   window.getComputedStyle = jest.fn().mockReturnValue({ getPropertyValue: () => '', content: '', overflow: '', overflowX: '', overflowY: '' });
@@ -26,7 +32,7 @@ test('资产明细类别与状态直接多选下拉，标签是文本，按钮�
   expect(screen.getByRole('button', { name: /重\s*置/ })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /导\s*出/ })).toBeInTheDocument();
   expect(screen.queryByText('采购日期从')).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: '更多' }));
+  fireEvent.click(screen.getByRole('button', { name: '展开更多' }));
   expect(screen.getByRole('textbox', { name: '主资产标签号' })).not.toHaveAttribute('readonly');
   expect(screen.queryByRole('combobox', { name: '级别' })).not.toBeInTheDocument();
   expect(screen.queryByRole('combobox', { name: '报废状态' })).not.toBeInTheDocument();
@@ -61,9 +67,9 @@ test('条件编辑不改变列表，回车执行查询后结果改变', async ()
 test('更多展开隐藏条件，收起后条件控件离开页面', () => {
   render(<AssetReportPage reportId="report-1-1" />);
   expect(screen.queryByRole('textbox', { name: '原值' })).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: '更多' }));
+  fireEvent.click(screen.getByRole('button', { name: '展开更多' }));
   expect(screen.getByRole('textbox', { name: '原值' })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: '收起' }));
+  fireEvent.click(screen.getByRole('button', { name: '收起更多' }));
   expect(screen.queryByRole('textbox', { name: '原值' })).not.toBeInTheDocument();
 });
 test('耗材明细不增加标签详情入口，字段按耗材口径展示', () => {
@@ -190,4 +196,26 @@ test('统一申领页签分别恢复未查询输入与最近查询结果', async
   rerender(<AssetReportsContent activeSubMenu={purchase.menu} activeTab={purchase.title} />);
   expect(screen.getByRole('textbox', { name: '申请单号' })).toHaveValue('PURCHASE-NO-MATCH');
   expect(screen.getByText('暂无数据')).toBeInTheDocument();
+});
+
+test('行高切换保留分页和查询结果，统一申领页签分别保存密度', async () => {
+  const stock = reportDefinitions.find(item => item.id === 'report-6-1');
+  const purchase = reportDefinitions.find(item => item.id === 'report-6-2');
+  const access = { userId: 'density-test', canView: true, allowedScopes: ['集团', '上海媒体', '广州媒体'] };
+  const rows = queryReport(stock.id, {}, null, access);
+  expect(rows.length).toBeGreaterThan(10);
+  const view = render(<AssetReportsContent activeSubMenu={stock.menu} activeTab={stock.title} access={access} />);
+  expect(document.querySelector('.mmp-business-table').style.getPropertyValue('--mmp-table-row-height')).toBe('40px');
+  fireEvent.click(screen.getByTitle('2'));
+  expect(document.querySelector('.ant-pagination-item-active')).toHaveAttribute('title', '2');
+  fireEvent.mouseDown(screen.getByRole('combobox', { name: '表格行高' }));
+  fireEvent.click(await screen.findByText('行高 32px', { selector: '.ant-select-item-option-content' }));
+  expect(document.querySelector('.mmp-business-table').style.getPropertyValue('--mmp-table-row-height')).toBe('32px');
+  expect(document.querySelector('.ant-pagination-item-active')).toHaveAttribute('title', '2');
+  expect(screen.getByText('共 ' + rows.length + ' 条')).toBeInTheDocument();
+  view.rerender(<AssetReportsContent activeSubMenu={purchase.menu} activeTab={purchase.title} access={access} />);
+  expect(document.querySelector('.mmp-business-table').style.getPropertyValue('--mmp-table-row-height')).toBe('40px');
+  view.rerender(<AssetReportsContent activeSubMenu={stock.menu} activeTab={stock.title} access={access} />);
+  expect(document.querySelector('.mmp-business-table').style.getPropertyValue('--mmp-table-row-height')).toBe('32px');
+  expect(document.querySelector('.ant-pagination-item-active')).toHaveAttribute('title', '2');
 });
