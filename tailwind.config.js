@@ -7,27 +7,27 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#1677ff',
-          hover: '#4096ff',
-          bg: '#e6f4ff',
-          border: '#91caff',
+          DEFAULT: '#145CFF',
+          hover: '#0D42D2',
+          bg: '#E5F1FF',
+          border: '#C2DCFF',
         },
         text: {
-          primary: 'rgba(0,0,0,0.88)',
-          secondary: 'rgba(0,0,0,0.65)',
-          tertiary: 'rgba(0,0,0,0.45)',
+          primary: '#1D2126',
+          secondary: '#545B66',
+          tertiary: '#848B99',
           disabled: 'rgba(0,0,0,0.25)',
         },
         border: {
-          DEFAULT: '#f0f0f0',
-          input: '#d9d9d9',
+          DEFAULT: '#E2E6F0',
+          input: '#D3D9E5',
         },
         danger: {
-          DEFAULT: '#ff4d4f',
+          DEFAULT: '#EC221F',
           hover: '#ff7875',
           bg: '#fff1f0',
         },
-        success: '#52c41a',
+        success: '#14AE5C',
       },
     },
   },

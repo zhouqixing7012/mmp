@@ -1,0 +1,36 @@
+.material-comprehensive .material-results {
+  min-width: 0;
+  background: #fff;
+  border: 1px solid #e2e6f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.material-comprehensive .material-toolbar,
+.material-comprehensive .material-batch-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+}
+.material-comprehensive .material-toolbar { justify-content: flex-end; }
+.material-comprehensive .material-batch-bar { background: #e5f1ff; color: #145cff; border-top: 1px solid #c2dcff; }
+.material-comprehensive .material-batch-bar strong { font-weight: 500; margin-right: 8px; }
+.material-comprehensive .ant-table-wrapper .ant-table-thead > tr > th,
+.material-comprehensive .ant-table-wrapper .ant-table-tbody > tr > td {
+  height: var(--material-row-height, 40px);
+  padding: 0 12px;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.material-comprehensive .ant-table-wrapper .ant-table-thead > tr > th { background: #f2f5fa; }
+.material-comprehensive .ant-table-wrapper .ant-table-cell .ant-btn-link { height: 24px; padding: 0; }
+.material-comprehensive .ant-table-wrapper .ant-table-placeholder > td { height: 220px; }
+.material-comprehensive .ant-table-pagination { padding: 0 16px; }
+.material-form-modal .ant-modal-content,
+.material-form-modal .ant-modal-container { display: flex; flex-direction: column; max-height: calc(100dvh - 48px); }
+.material-form-modal .ant-modal-body { overflow-y: auto; min-height: 0; }
+.material-form-modal .ant-modal-header,
+.material-form-modal .ant-modal-footer { flex: 0 0 auto; }
+.material-form-modal .material-form-heading { padding: 8px 0; font-size: 14px; font-weight: 600; color: #1d2126; }

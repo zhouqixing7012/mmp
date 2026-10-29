@@ -21,7 +21,11 @@
   background: rgba(0, 0, 0, 0.45) !important;
 }
 
-.ant-modal .ant-modal-content {
+.ant-modal .ant-modal-content,
+.ant-modal .ant-modal-container {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 32px);
   padding: 0;
   overflow: hidden;
   border-radius: 12px;
@@ -53,7 +57,8 @@
 .ant-modal .ant-modal-body {
   max-width: 100%;
   padding: 16px 20px;
-  overflow: visible;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* 普通业务弹窗不因内容轻微溢出显示纵向滚动条；需要滚动的表格由表格容器自行承载。 */
@@ -78,73 +83,21 @@
   overflow-x: hidden;
 }
 
-/* QueryBar 按自身真实可用宽度切换 1 / 2 / 3 列，不再跟随浏览器断点。 */
-.mmp-query-bar {
-  container-type: inline-size;
-  container-name: mmp-query;
+/* 查询字段与操作组共享栅格；列数由视口上限和真实容器宽度共同决定。 */
+.mmp-query-layout { display: grid; gap: 16px 24px; align-items: start; }
+.mmp-query-field, .mmp-query-item { min-width: 0; }
+.mmp-query-label {
+  width: var(--mmp-query-label-width, 84px) !important;
+  min-width: var(--mmp-query-label-width, 84px) !important;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-
-.mmp-query-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-
-.mmp-query-fields {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px 24px;
-  min-width: 0;
-}
-
-.mmp-query-field,
-.mmp-query-item {
-  min-width: 0;
-}
-
-.mmp-query-field .mmp-query-item > span:first-child {
-  width: var(--mmp-query-label-width, 88px) !important;
-  min-width: var(--mmp-query-label-width, 88px) !important;
-}
-
 .mmp-query-field .ant-input,
 .mmp-query-field .ant-input-affix-wrapper,
 .mmp-query-field .ant-input-number,
 .mmp-query-field .ant-picker,
 .mmp-query-field .ant-select,
-.mmp-query-field .ant-cascader-picker {
-  width: 100% !important;
-  min-width: 0 !important;
-}
-
-.mmp-query-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-@container mmp-query (min-width: 504px) {
-  .mmp-query-fields {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@container mmp-query (min-width: 768px) {
-  .mmp-query-layout {
-    grid-template-columns: minmax(0, 1fr) 90px;
-    gap: 24px;
-  }
-
-  .mmp-query-fields {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .mmp-query-actions {
-    flex-direction: column;
-    justify-content: center;
-  }
-}
+.mmp-query-field .ant-cascader-picker { width: 100% !important; min-width: 0 !important; }
+.mmp-query-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; min-width: 0; }
 
 /* B 端动效只表达状态变化，不做明显弹跳或长距离位移。 */
 .mmp-motion-overlay {
@@ -378,7 +331,7 @@
   height: 14px;
   flex: 0 0 4px;
   border-radius: 9999px;
-  background: #1677ff;
+  background: #145cff;
 }
 
 /* 已按新规范手写 SectionTitle 的页面隐藏内部竖线，避免重复显示。 */
@@ -431,5 +384,18 @@ div.min-h-screen[class*="bg-[#f5f7fa]"] .ant-card-head-title::before {
   height: 20px;
   flex: 0 0 4px;
   border-radius: 9999px;
-  background: #1677ff;
+  background: #145cff;
 }
+/* 弹窗内容在可用视口内居中，长表单只滚动正文，保留标题和操作区。 */
+.ant-modal-wrap { display: flex; align-items: center; justify-content: center; }
+.ant-modal-wrap::before { display: none; }
+.ant-modal-wrap .ant-modal { top: 0; margin: 16px auto; padding-bottom: 0; flex-shrink: 0; }
+
+.ant-modal .ant-modal-header, .ant-modal .ant-modal-footer { flex-shrink: 0; }
+/* 静态确认弹窗的按钮在body内：只让确认文字滚动，操作留在可见区。 */
+.ant-modal-confirm .ant-modal-body { overflow: hidden; }
+.ant-modal-confirm-body-wrapper { display: flex; flex-direction: column; max-height: calc(100dvh - 104px); }
+.ant-modal-confirm-body, .ant-modal-confirm-paragraph { min-height: 0; }
+.ant-modal-confirm-paragraph { display: flex; flex-direction: column; }
+.ant-modal-confirm-content { overflow-y: auto; min-height: 0; }
+.ant-modal-confirm-title, .ant-modal-confirm-btns { flex-shrink: 0; }

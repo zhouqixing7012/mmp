@@ -56,8 +56,8 @@ export default function ApplicationQueryPage({ id }) {
       <Typography.Title level={4} className="!mb-0">{definition.title}</Typography.Title>
       {id === 'unfinished' && <Alert type="info" title="每周一汇总当前台账的未完成员工申请，通知杨芊、王英、孙志强、刘建、何文。" description="发送时刻和渠道尚未配置；当前可查询、导出汇总清单，未发送实际通知。" />}
       {definition.knownFilterWarning && <Alert type="info" showIcon title={definition.knownFilterWarning} />}
-      <QueryBar labelWidth={112} onQuery={onQuery} onReset={reset}>
-        {definition.filters.map(field => <QueryItem key={field.key} label={field.label} labelWidth={112}>
+      <QueryBar labelWidth={84} onQuery={onQuery} onReset={reset}>
+        {definition.filters.map(field => <QueryItem key={field.key} label={field.label} labelWidth={84}>
           <ApplicationFilter definition={definition} field={field} value={draft[field.key]} onQuery={onQuery} onChange={value => setDraft(previous => ({ ...previous, [field.key]: value }))} />
         </QueryItem>)}
       </QueryBar>

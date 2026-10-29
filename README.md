@@ -193,7 +193,7 @@ npm test
 - [个性化指令替换稿](docs/PERSONAL_INSTRUCTIONS.md)：跨项目协作偏好，需手动粘贴到平台设置。
 - [CONTEXT.md](CONTEXT.md)：当前交接摘要，不复制历史记录。
 - `ARCHITECTURE.md`：模块职责和调用关系。
-- `docs/UI_DESIGN_GUIDELINES.md`：ERP Figma × 资产系统 UI 设计规范。
+- `docs/UI_DESIGN_GUIDELINES.md`：ERP Figma × 资产系统 UI 设计规范 V2.3；[设计走查逐项吸收记录](docs/design-review-v0.7-adoption.md)列明公共组件、物料典型页和验证边界。
 - `docs/UI_MOTION_GUIDELINES.md`：B 端统一动效规范和新增页面动效检查清单。
 - `docs/标签打印、打印历史、标签预打印+PRD.md`：标签生成、打印与历史的正式业务规则。
 - `docs/PRD-资产管理-资产维护.md`：资产卡片字段与维护校验规则。

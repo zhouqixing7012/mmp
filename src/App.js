@@ -5,7 +5,13 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import PageMotionBoundary from './components/PageMotionBoundary';
 import routes from './config/routes';
+import erpTheme from './config/erpTheme';
 import PrototypeAnnotationLayer from './prototype-annotations/PrototypeAnnotationLayer';
+
+// 静态Modal/Message/Notification同样使用主题，不依赖业务页自行传色值。
+ConfigProvider.config({
+  holderRender: children => <ConfigProvider locale={zhCN} theme={erpTheme}>{children}</ConfigProvider>,
+});
 
 export function getRouterBasename(publicUrl = process.env.PUBLIC_URL) {
   if (!publicUrl || publicUrl === '.') return undefined;
@@ -38,7 +44,7 @@ export default function App() {
   const routerBasename = getRouterBasename();
 
   return (
-    <ConfigProvider locale={zhCN}>
+    <ConfigProvider locale={zhCN} theme={erpTheme}>
       <BrowserRouter basename={routerBasename}>
         <NavbarGate />
         <AppRoutes />

@@ -6,6 +6,7 @@ import { Button, Input, Select, Modal, Radio, DatePicker } from 'antd';
 const MaterialComprehensiveFormModal = ({
   open,
   onClose,
+  onSave,
   modalMode,
   formData,
   setFormData,
@@ -17,9 +18,9 @@ const MaterialComprehensiveFormModal = ({
   setIsDeptModalOpen,
   setIsEmpModalOpen,
 }) => (
-  <Modal open={open} onCancel={onClose} footer={null} title={modalMode === 'add' ? '新增物料维度组合' : '编辑物料维度组合'} width="1100px">
+  <Modal centered className="material-form-modal" open={open} onCancel={onClose} footer={[<Button key="cancel" onClick={onClose}>返回</Button>, <Button key="save" type="primary" onClick={onSave}>保存</Button>]} title={modalMode === 'add' ? '新增物料维度组合' : '编辑物料维度组合'} width="1100px">
     <div className="mb-4">
-      <div className="bg-[#e6f7ff] border border-[#91d5ff] px-4 py-2 rounded-t text-sm font-medium text-[#1890ff]">核心字段</div>
+      <div className="material-form-heading">核心字段</div>
       <div className="border border-t-0 border-[#e8e8e8] text-sm">
         <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
           <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">维度组合编码</div>
@@ -35,19 +36,19 @@ const MaterialComprehensiveFormModal = ({
               <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>物料大类/小类</div>
               <div className="w-[37.5%] p-2 flex items-center relative cursor-pointer" onClick={() => { if (formData.mainCatDesc) setIsSubCategoryModalOpen(true); else setIsMaterialCategoryModalOpen(true); }}>
                 <Input value={formData.mainCatDesc && formData.subCatDesc ? `${formData.mainCatDesc} / ${formData.subCatDesc}` : ''} placeholder="请先选择物料大类" readOnly className="pointer-events-none" />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary pointer-events-none" />
               </div>
             </div>
             <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
               <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right"><span className="text-red-500 mr-1">*</span>品牌/规格型号</div>
               <div className="w-[37.5%] p-2 border-r border-[#e8e8e8] flex items-center relative cursor-pointer" onClick={() => { if (!formData.brand) setIsBrandModalOpen(true); else setIsModelModalOpen(true); }}>
                 <Input value={formData.brand && formData.modelCode ? `${formData.brand} / ${formData.modelCode}` : ''} placeholder="请先选择品牌" readOnly className="pointer-events-none" />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary pointer-events-none" />
               </div>
               <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">配置描述</div>
               <div className="w-[37.5%] p-2 flex items-center relative cursor-pointer" onClick={() => setIsConfigModalOpen(true)}>
                 <Input value={formData.configDesc || ''} placeholder="请选择配置" readOnly className="pointer-events-none" />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" />
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary pointer-events-none" />
               </div>
             </div>
           </>
@@ -83,7 +84,7 @@ const MaterialComprehensiveFormModal = ({
     </div>
 
     <div className="mb-4">
-      <div className="bg-[#f6ffed] border border-[#b7eb8f] px-4 py-2 rounded-t text-sm font-medium text-[#52c41a]">状态字段</div>
+      <div className="material-form-heading">状态字段</div>
       <div className="border border-t-0 border-[#e8e8e8] text-sm">
         <div className="flex border-b border-[#e8e8e8] min-h-[40px]">
           <div className="w-[12.5%] bg-[#fafafa] p-2 border-r border-[#e8e8e8] flex items-center justify-end font-medium text-gray-700 text-right">是否启用</div>
@@ -101,15 +102,15 @@ const MaterialComprehensiveFormModal = ({
     </div>
 
     <div className="mb-4">
-      <div className="bg-[#fff7e6] border border-[#ffd591] px-4 py-2 rounded-t text-sm font-medium text-[#fa8c16]">业务规则字段</div>
+      <div className="material-form-heading">业务规则字段</div>
       <div className="border border-t-0 border-[#e8e8e8] text-sm">
         {(() => {
           const baseFields = [
             { key: 'formalCanApply', label: '正式员工可申请', content: <div className="flex items-center gap-2 px-3"><Radio checked={formData.formalCanApply === '是'} onChange={() => setFormData({ ...formData, formalCanApply: '是' })}>是</Radio><Radio checked={formData.formalCanApply === '否'} onChange={() => setFormData({ ...formData, formalCanApply: '否' })}>否</Radio><Radio checked={formData.formalCanApply === '临时可申请'} onChange={() => setFormData({ ...formData, formalCanApply: '临时可申请' })}>临时可申请</Radio></div> },
             { key: 'internCanApply', label: '实习生可申请', visible: formData.formalCanApply !== '临时可申请', content: <div className="flex items-center gap-4 px-3"><Radio checked={formData.internCanApply === '是'} onChange={() => setFormData({ ...formData, internCanApply: '是' })}>是</Radio><Radio checked={formData.internCanApply === '否'} onChange={() => setFormData({ ...formData, internCanApply: '否' })}>否</Radio></div> },
             { key: 'tempDateRange', label: '生效时间', visible: formData.formalCanApply === '临时可申请', content: <DatePicker.RangePicker value={formData.tempEffStartDate && formData.tempEffEndDate ? [dayjs(formData.tempEffStartDate), dayjs(formData.tempEffEndDate)] : null} onChange={(_, dateStrings) => setFormData({ ...formData, tempEffStartDate: dateStrings[0], tempEffEndDate: dateStrings[1] })} placeholder={['开始日期', '结束日期']} className="w-full" /> },
-            { key: 'tempDept', label: '可申请部门', visible: formData.formalCanApply === '临时可申请', content: <div className="flex items-center relative w-full cursor-pointer" onClick={() => setIsDeptModalOpen(true)}><Input value={formData.tempDept || ''} placeholder="请选择部门" readOnly className="pointer-events-none bg-white w-full" /><Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" /></div> },
-            { key: 'tempEmployee', label: '可申请员工', visible: formData.formalCanApply === '临时可申请', content: <div className="flex items-center relative w-full cursor-pointer" onClick={() => setIsEmpModalOpen(true)}><Input value={formData.tempEmployee || ''} placeholder="请选择员工" readOnly className="pointer-events-none bg-white w-full" /><Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff] pointer-events-none" /></div> },
+            { key: 'tempDept', label: '可申请部门', visible: formData.formalCanApply === '临时可申请', content: <div className="flex items-center relative w-full cursor-pointer" onClick={() => setIsDeptModalOpen(true)}><Input value={formData.tempDept || ''} placeholder="请选择部门" readOnly className="pointer-events-none bg-white w-full" /><Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary pointer-events-none" /></div> },
+            { key: 'tempEmployee', label: '可申请员工', visible: formData.formalCanApply === '临时可申请', content: <div className="flex items-center relative w-full cursor-pointer" onClick={() => setIsEmpModalOpen(true)}><Input value={formData.tempEmployee || ''} placeholder="请选择员工" readOnly className="pointer-events-none bg-white w-full" /><Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary pointer-events-none" /></div> },
           ];
           const conditionFields = [];
           if (formData.mainCatCode === '1') {
@@ -123,7 +124,7 @@ const MaterialComprehensiveFormModal = ({
               { key: 'misAudit', label: '耗材申请是否需要MIS审核', content: <div className="flex items-center gap-4 px-3"><Radio checked={formData.misAudit === '1'} onChange={() => setFormData({ ...formData, misAudit: '1' })}>是</Radio><Radio checked={formData.misAudit === '0'} onChange={() => setFormData({ ...formData, misAudit: '0' })}>否</Radio></div> },
               { key: 'hasMainAsset', label: '是否关联主资产', content: <div className="flex items-center gap-4 px-3"><Radio checked={formData.hasMainAsset === '1'} onChange={() => setFormData({ ...formData, hasMainAsset: '1' })}>是</Radio><Radio checked={formData.hasMainAsset === '0'} onChange={() => setFormData({ ...formData, hasMainAsset: '0' })}>否</Radio></div> },
             );
-            if (formData.hasMainAsset === '1') conditionFields.push({ key: 'mainAssetSubCat', label: '主资产物料小类', content: <div className="flex items-center relative w-full"><Input value={formData.mainAssetSubCat || ''} onChange={(event) => setFormData({ ...formData, mainAssetSubCat: event.target.value })} placeholder="请选择主资产物料小类" className="w-full" /><Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1677ff]" /></div> });
+            if (formData.hasMainAsset === '1') conditionFields.push({ key: 'mainAssetSubCat', label: '主资产物料小类', content: <div className="flex items-center relative w-full"><Input value={formData.mainAssetSubCat || ''} onChange={(event) => setFormData({ ...formData, mainAssetSubCat: event.target.value })} placeholder="请选择主资产物料小类" className="w-full" /><Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" /></div> });
           }
           const tailFields = [
             { key: 'needCheck', label: '是否需要盘点', content: <div className="flex items-center gap-4 px-3"><Radio checked={formData.needCheck === '是'} onChange={() => setFormData({ ...formData, needCheck: '是' })}>是</Radio><Radio checked={formData.needCheck === '否'} onChange={() => setFormData({ ...formData, needCheck: '否' })}>否</Radio></div> },
@@ -144,10 +145,7 @@ const MaterialComprehensiveFormModal = ({
       </div>
     </div>
 
-    <div className="flex justify-center gap-3 mt-6">
-      <Button type="primary" onClick={onClose} className="px-6">保存</Button>
-      <Button onClick={onClose} className="px-6">返回</Button>
-    </div>
+
   </Modal>
 );
 

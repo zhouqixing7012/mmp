@@ -60,9 +60,9 @@ export default function AssetReportPage({ reportId, access = DEFAULT_REPORT_ACCE
   return <div className="flex flex-col gap-4">
     <Typography.Title level={4} className="!mb-0">{definition.title}</Typography.Title>
     <div onDoubleClick={event => { if (!event.target.closest('button')) clear(); }}>
-      <QueryBar labelWidth={112} buttons={<Space wrap><Button type="primary" onClick={onQuery}>查询</Button><Button onClick={clear}>重置</Button>
-        {moreIndex >= 0 && <Button type="link" onClick={() => setExpanded(value => !value)}>{expanded ? '收起' : '更多'}</Button>}</Space>}>
-        {visibleFilters.map(field => <QueryItem key={field.label} label={field.label} labelWidth={112}>
+      <QueryBar labelWidth={84} buttons={<Space wrap>{moreIndex >= 0 && <Button type="link" onClick={() => setExpanded(value => !value)}>{expanded ? '收起' : '更多'}</Button>}
+        <Button onClick={clear}>重置</Button><Button type="primary" onClick={onQuery}>查询</Button></Space>}>
+        {visibleFilters.map(field => <QueryItem key={field.label} label={field.label} labelWidth={84}>
           <ReportFilter definition={definition} field={field} filters={filters} access={access} onQuery={onQuery}
             onChange={(changed, value) => setFilters(previous => updateReportFilter(definition, previous, changed, value))} />
         </QueryItem>)}

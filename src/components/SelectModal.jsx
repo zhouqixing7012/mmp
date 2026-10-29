@@ -171,7 +171,8 @@ export default function SelectModal({
       {searchFields.length > 0 && (
         <QueryBar onQuery={handleQuery} onReset={handleReset}>
           {searchFields.map((field) => (
-            <QueryItem key={field.name} label={field.label}>
+            <div key={field.name} data-prototype-bindable="selection-search-field" data-prototype-label={field.label}>
+            <QueryItem label={field.label}>
               <Input
                 value={searchDraft[field.name] || ''}
                 allowClear
@@ -180,6 +181,7 @@ export default function SelectModal({
                 onPressEnter={handleQuery}
               />
             </QueryItem>
+            </div>
           ))}
         </QueryBar>
       )}

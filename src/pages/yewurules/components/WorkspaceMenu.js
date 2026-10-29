@@ -9,7 +9,7 @@ export default function WorkspaceMenu({ activeSubMenu, onSelect }) {
           key={item.key}
           className={`pl-12 pr-5 py-2.5 cursor-pointer text-sm transition-colors ${
             activeSubMenu === item.key
-              ? 'text-white bg-[#1677ff]'
+              ? 'text-white bg-primary'
               : 'text-gray-400 hover:text-white hover:bg-white/5'
           }`}
           onClick={() => onSelect(item.key)}

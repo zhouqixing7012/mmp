@@ -1,10 +1,10 @@
-﻿import React from 'react';
-import { Button, Card } from 'antd';
+﻿import React, { useEffect, useRef, useState } from 'react';
+import { Button, Card, Tooltip } from 'antd';
 import { Search, RefreshCcw } from 'lucide-react';
 
 const QUERY_ACTION_LABELS = new Set(['查询', '重置']);
 const QUERY_RESULT_SELECTOR = '[data-mmp-query-result], .ant-table-wrapper, .ant-list';
-const QUERY_SCOPE_SELECTOR = '.ant-modal-content, .ant-drawer-content, [role="dialog"], [data-mmp-page-motion-boundary]';
+const QUERY_SCOPE_SELECTOR = '.ant-modal-container, .ant-modal-content, .ant-drawer-content, [role="dialog"], [data-mmp-page-motion-boundary]';
 const queryResultTimers = new WeakMap();
 
 function normalizeActionLabel(value) {
@@ -59,17 +59,13 @@ function flattenQueryChildren(children) {
   });
 }
 
-/**
- * 查询条件容器组件
- *
- * 布局由 QueryBar 自己根据实际可用宽度决定：
- * < 504px：1 列
- * 504px ～ 767px：2 列
- * >= 768px：3 列
- *
- * 业务页面只提供查询字段，不再自行指定列数。
- */
-export function QueryItem({ label, children, labelWidth = 88 }) {
+/** 页面最多三列；窄容器进一步降列，字段与标签始终整组排列。 */
+export function getQueryColumns(viewportWidth, contentWidth) {
+  const pageColumns = viewportWidth <= 760 ? 1 : viewportWidth <= 1180 ? 2 : 3;
+  return Math.min(pageColumns, Math.max(1, Math.floor((contentWidth + 24) / 280)));
+}
+
+export function QueryItem({ label, children, labelWidth = 84 }) {
   const prototypeLabel = typeof label === 'string' ? label.replace(/[:：]\s*$/, '') : undefined;
 
   return (
@@ -77,13 +73,19 @@ export function QueryItem({ label, children, labelWidth = 88 }) {
       className="mmp-query-item flex items-center gap-2 min-w-0"
       data-prototype-bindable="query-condition"
       data-prototype-label={prototypeLabel}
+      role="group"
+      aria-label={prototypeLabel}
     >
-      <span
-        className="shrink-0 whitespace-nowrap text-right text-sm text-gray-600"
-        style={{ width: labelWidth }}
-      >
-        {label}:
-      </span>
+      <Tooltip title={label}>
+        <span
+          className="mmp-query-label shrink-0 text-right text-sm text-gray-600"
+          style={{ width: labelWidth }}
+          title={prototypeLabel}
+          tabIndex={prototypeLabel?.length > 6 ? 0 : undefined}
+        >
+          {label}
+        </span>
+      </Tooltip>
       <div className="flex-1 min-w-0">
         {children}
       </div>
@@ -94,15 +96,27 @@ export function QueryItem({ label, children, labelWidth = 88 }) {
 export default function QueryBar({
   children,
   buttons,
-  labelWidth = 88,
+  labelWidth = 84,
   onQuery,
   onReset,
 }) {
   const fields = flattenQueryChildren(children);
+  const layoutRef = useRef(null);
+  const [columns, setColumns] = useState(1);
+  useEffect(() => {
+    const layout = layoutRef.current;
+    const update = () => setColumns(getQueryColumns(window.innerWidth, layout?.clientWidth || window.innerWidth));
+    update();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    if (layout) observer?.observe(layout);
+    window.addEventListener('resize', update);
+    return () => { observer?.disconnect(); window.removeEventListener('resize', update); };
+  }, []);
+  const layoutColumns = fields.length === 1 ? 1 : columns;
   const defaultButtons = (
     <>
-      <Button type="primary" icon={<Search size={14} />} onClick={onQuery}>查询</Button>
       <Button icon={<RefreshCcw size={14} />} onClick={onReset}>重置</Button>
+      <Button type="primary" icon={<Search size={14} />} onClick={onQuery}>查询</Button>
     </>
   );
   const finalButtons = buttons !== undefined ? buttons : defaultButtons;
@@ -124,16 +138,14 @@ export default function QueryBar({
       className="mmp-query-bar"
       onClickCapture={handleActionClickCapture}
     >
-      <div className="mmp-query-layout">
-        <div className="mmp-query-fields">
+      <div ref={layoutRef} className="mmp-query-layout" style={{ gridTemplateColumns: `repeat(${layoutColumns}, minmax(0, 1fr))` }}>
           {fields.map((field, index) => (
             <div key={field.key || index} className="mmp-query-field" style={{ '--mmp-query-label-width': `${labelWidth}px` }}>
               {field}
             </div>
           ))}
-        </div>
         {finalButtons && (
-          <div data-mmp-query-actions className="mmp-query-actions">
+          <div data-mmp-query-actions className="mmp-query-actions" style={{ gridColumn: `${fields.length % layoutColumns + 1} / -1` }}>
             {finalButtons}
           </div>
         )}

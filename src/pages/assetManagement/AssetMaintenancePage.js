@@ -1170,8 +1170,6 @@ export default function AssetMaintenancePage() {
         onReset={handleReset}
         buttons={(
           <>
-            <Button type="primary" icon={<Search size={14} />} onClick={handleQuery}>查询</Button>
-            <Button onClick={handleReset}>重置</Button>
             <Button
               type="link"
               icon={moreOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -1179,6 +1177,8 @@ export default function AssetMaintenancePage() {
             >
               {moreOpen ? '收起' : '更多条件'}
             </Button>
+            <Button onClick={handleReset}>重置</Button>
+            <Button type="primary" icon={<Search size={14} />} onClick={handleQuery}>查询</Button>
           </>
         )}
       >

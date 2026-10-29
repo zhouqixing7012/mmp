@@ -16,7 +16,7 @@ export default function InventoryAssetQuery({ rows, filters, onChange, onQuery, 
     onChange={(dates) => onChange({ ...filters, enableFrom: dates?.[0]?.format('YYYY-MM-DD') || '', enableTo: dates?.[1]?.format('YYYY-MM-DD') || '' })}
   /></QueryItem>;
   const category = <QueryItem key="category" label="资产类别"><AssetCategorySelect rows={rows} value={filters.category} onChange={(value) => update('category', value)} /></QueryItem>;
-  return <QueryBar labelWidth={112} onQuery={onQuery} onReset={onReset}>
+  return <QueryBar labelWidth={84} onQuery={onQuery} onReset={onReset}>
     {[
       text('资产标签号', 'assetTag'), category, text('序列号', 'serialNo'),
       text('成本中心', 'costCenter'), text('资产说明', 'description'), select('使用状态', 'useStatus'),
