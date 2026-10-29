@@ -1,20 +1,12 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { Menu, Tooltip } from 'antd';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Settings, User, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useInventoryOperator } from '../../assetInventory/useInventoryOperator';
 import { inventoryMenuItemsForOperator } from '../../assetInventory/inventoryReportAccess';
-import React, { useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, LayoutDashboard, Settings, User } from 'lucide-react';
-import WorkspaceMenu from './WorkspaceMenu';
 import { BACKEND_CONFIG_MENU_ITEMS, MAIN_MENU_ITEMS } from '../config/menuConfig';
-
-function CollapsibleMenu({ open, children }) {
-  return (
-    <div className={`mmp-sidebar-collapse ${open ? 'is-open' : ''}`} aria-hidden={!open}>
-      <div className="min-h-0 overflow-hidden">
-        {children}
-      </div>
-    </div>
-  );
-}
+import { WORKSPACE_MENU_ITEMS } from '../config/workspaceMenuConfig';
+import './adminSidebar.css';
 
 export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, onSubMenuSelect }) {
   const [inventoryOperator] = useInventoryOperator();
@@ -44,111 +36,73 @@ export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, 
     );
   }, [activeMenu, activeSubMenu, location.key, location.pathname, location.search, location.state, navigate]);
 
+  const [collapsed, setCollapsed] = useState(false);
+  const [openKeys, setOpenKeys] = useState([activeMenu]);
+  useEffect(() => { setOpenKeys([activeMenu]); }, [activeMenu]);
+
+  const groups = [
+    { key: '个人工作台', label: '个人工作台', icon: LayoutDashboard, children: WORKSPACE_MENU_ITEMS },
+    ...MAIN_MENU_ITEMS.map(item => ({
+      ...item,
+      children: item.key === '资产盘点'
+        ? inventoryMenuItemsForOperator(item.children, inventoryOperator)
+        : item.children,
+    })),
+    { key: '后台基础配置', label: '后台基础配置', icon: Settings, children: BACKEND_CONFIG_MENU_ITEMS },
+  ];
+  const destinations = new Map();
+  const items = groups.map(({ key, label, icon: Icon, children }) => {
+    const hasChildren = children?.length > 0;
+    if (!hasChildren) destinations.set(key, { parent: key });
+    return {
+      key, label, 'aria-label': label, icon: <Icon size={16} aria-hidden="true" />,
+      children: hasChildren ? children.map(child => {
+        const value = typeof child === 'string' ? child : child.key;
+        const childKey = key + '::' + value;
+        destinations.set(childKey, { parent: key, child: value });
+        return { key: childKey, label: typeof child === 'string' ? child : child.label };
+      }) : undefined,
+    };
+  });
+  const selectedKey = activeMenu + '::' + activeSubMenu;
+  const toggleLabel = collapsed ? '展开侧栏' : '收起侧栏';
+
   return (
-    <div className="w-56 min-h-0 bg-[#001529] text-white flex flex-col shadow-xl z-20 relative">
-      <div className="h-14 shrink-0 flex items-center gap-3 px-4 shadow-[0_1px_2px_rgba(0,0,0,0.3)] z-10 bg-[#002140]">
-        <div className="w-8 h-8 rounded bg-primary text-white flex items-center justify-center font-bold text-lg shadow-sm">E</div>
-        <span className="font-semibold text-base tracking-wide text-white">企业资产管理系统</span>
+    <aside className={'mmp-admin-sidebar' + (collapsed ? ' is-collapsed' : '')} aria-label="后台侧栏">
+      <div className="mmp-admin-sidebar-brand">
+        <span className="mmp-admin-sidebar-logo" aria-hidden="true">E</span>
+        {!collapsed && <span>企业资产管理系统</span>}
       </div>
-
-      <div className="shrink-0 py-4 px-5 border-b border-white/10 flex flex-col gap-1 text-sm bg-[#001529]">
-        <div className="flex items-center gap-2 text-gray-300">
-          <User size={14} />
-          <span className="font-medium text-white">系统管理员 (admin)</span>
-        </div>
-        <div className="text-gray-400 text-xs ml-5">2026年05月27日 星期三</div>
+      <div className="mmp-admin-sidebar-user">
+        <Tooltip title="系统管理员 (admin)" trigger={['hover', 'focus']} placement="right">
+          <span tabIndex={collapsed ? 0 : undefined} aria-label="系统管理员 (admin)"><User size={16} aria-hidden="true" /></span>
+        </Tooltip>
+        {!collapsed && <span>系统管理员 (admin)</span>}
       </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto py-2">
-        <div>
-          <div
-            className="flex items-center justify-between px-5 py-3 cursor-pointer text-sm text-gray-300 transition-colors hover:text-white hover:bg-white/5"
-            onClick={() => onMenuToggle('个人工作台')}
-          >
-            <div className="flex items-center gap-3">
-              <LayoutDashboard size={16} />
-              <span>个人工作台</span>
-            </div>
-            <ChevronDown size={14} className={`mmp-menu-chevron ${activeMenu === '个人工作台' ? 'rotate-180' : ''}`} />
-          </div>
-          <CollapsibleMenu open={activeMenu === '个人工作台'}>
-            <WorkspaceMenu activeSubMenu={activeSubMenu} onSelect={onSubMenuSelect} />
-          </CollapsibleMenu>
-        </div>
-
-        {MAIN_MENU_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const hasChildren = Array.isArray(item.children) && item.children.length > 0;
-          const isActive = activeMenu === item.key;
-
-          if (hasChildren) {
-            return (
-              <div key={item.key}>
-                <div
-                  className={`flex items-center justify-between px-5 py-3 cursor-pointer text-sm transition-colors hover:text-white ${isActive ? 'text-white bg-white/5' : 'text-gray-300 hover:bg-white/5'}`}
-                  onClick={() => onMenuToggle(item.key)}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon size={16} />
-                    <span>{item.label}</span>
-                  </div>
-                  <ChevronDown size={14} className={`mmp-menu-chevron ${isActive ? 'rotate-180' : ''}`} />
-                </div>
-                <CollapsibleMenu open={isActive}>
-                  <div className="bg-[#000c17] py-1">
-                    {(item.key === '资产盘点' ? inventoryMenuItemsForOperator(item.children, inventoryOperator) : item.children).map((subMenu) => (
-                      <div
-                        key={subMenu}
-                        className={`pl-12 pr-5 py-2.5 cursor-pointer text-sm transition-colors ${activeSubMenu === subMenu ? 'text-white bg-primary' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                        onClick={() => onSubMenuSelect(subMenu)}
-                      >
-                        {subMenu}
-                      </div>
-                    ))}
-                  </div>
-                </CollapsibleMenu>
-              </div>
-            );
-          }
-
-          return (
-            <div
-              key={item.key}
-              className={`flex items-center gap-3 px-5 py-3 cursor-pointer text-sm transition-colors hover:text-white ${isActive ? 'text-white bg-primary' : 'text-gray-300 hover:bg-white/5'}`}
-              onClick={() => onMenuToggle(item.key, false)}
-            >
-              <Icon size={16} />
-              <span>{item.label}</span>
-            </div>
-          );
-        })}
-
-        <div className="mt-1">
-          <div
-            className="flex items-center justify-between px-5 py-3 cursor-pointer text-sm text-gray-300 transition-colors hover:text-white hover:bg-white/5"
-            onClick={() => onMenuToggle('后台基础配置')}
-          >
-            <div className="flex items-center gap-3">
-              <Settings size={16} />
-              <span>后台基础配置</span>
-            </div>
-            <ChevronDown size={14} className={`mmp-menu-chevron ${activeMenu === '后台基础配置' ? 'rotate-180' : ''}`} />
-          </div>
-          <CollapsibleMenu open={activeMenu === '后台基础配置'}>
-            <div className="bg-[#000c17] py-1">
-              {BACKEND_CONFIG_MENU_ITEMS.map((subMenu) => (
-                <div
-                  key={subMenu}
-                  className={`pl-12 pr-5 py-2.5 cursor-pointer text-sm transition-colors ${activeSubMenu === subMenu ? 'text-white bg-primary' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                  onClick={() => onSubMenuSelect(subMenu)}
-                >
-                  {subMenu}
-                </div>
-              ))}
-            </div>
-          </CollapsibleMenu>
-        </div>
-      </div>
-    </div>
+      <nav id="admin-sidebar-navigation" className="mmp-admin-sidebar-nav" aria-label="主导航">
+        <Menu
+          tooltip={{ trigger: ['hover', 'focus'] }}
+          mode="inline"
+          inlineCollapsed={collapsed}
+          items={items}
+          selectedKeys={[destinations.has(selectedKey) ? selectedKey : activeMenu]}
+          openKeys={collapsed ? undefined : openKeys}
+          onOpenChange={keys => { if (!collapsed) setOpenKeys(keys); }}
+          onClick={({ key }) => {
+            const destination = destinations.get(key);
+            if (!destination) return;
+            if (!destination.child || destination.parent !== activeMenu) onMenuToggle(destination.parent, false);
+            if (destination.child) onSubMenuSelect(destination.child);
+          }}
+        />
+      </nav>
+      <Tooltip title={toggleLabel} trigger={['hover', 'focus']} placement="right">
+        <button type="button" className="mmp-admin-sidebar-toggle" aria-label={toggleLabel}
+          aria-expanded={!collapsed} aria-controls="admin-sidebar-navigation" onClick={() => setCollapsed(value => !value)}>
+          {collapsed ? <PanelLeftOpen size={18} aria-hidden="true" /> : <PanelLeftClose size={18} aria-hidden="true" />}
+          {!collapsed && <span>收起侧栏</span>}
+        </button>
+      </Tooltip>
+    </aside>
   );
 }

@@ -1,0 +1,60 @@
+.mmp-admin-sidebar {
+  width: 224px;
+  flex: 0 0 224px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  color: #334155;
+  border-right: 1px solid #e5e7eb;
+}
+.mmp-admin-sidebar.is-collapsed { width: 64px; flex-basis: 64px; }
+.mmp-admin-sidebar-brand {
+  height: 56px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  white-space: nowrap;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+}
+.mmp-admin-sidebar-logo {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  color: #fff;
+  background: var(--mmp-color-primary, #1677ff);
+}
+.mmp-admin-sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  font-size: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.mmp-admin-sidebar-user > span:first-child { display: inline-flex; }
+.mmp-admin-sidebar-nav { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 8px 0; }
+.mmp-admin-sidebar-nav .ant-menu { border-inline-end: 0 !important; }
+.mmp-admin-sidebar.is-collapsed .ant-menu-inline-collapsed { width: 64px; }
+.mmp-admin-sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  flex-shrink: 0;
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+}
+.mmp-admin-sidebar-toggle:hover { color: #1677ff; background: #f0f7ff; }
+.mmp-admin-sidebar :focus-visible { outline: 2px solid #1677ff; outline-offset: -2px; }
