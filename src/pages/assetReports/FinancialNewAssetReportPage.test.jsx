@@ -22,7 +22,8 @@ beforeEach(() => {
 test('资产报表菜单可进入新查询页，公司/板块在前且汇总在右上角，重置恢复数据', () => {
   expect(ASSET_REPORT_MENU_ITEMS).toContain('固定资产新增报表');
   render(<AssetReportsContent activeSubMenu="固定资产新增报表" />);
-  expect(screen.getByRole('heading', { name: '固定资产新增报表' })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: '固定资产新增报表' })).not.toBeInTheDocument();
+  expect(screen.getByText('固定资产新增报表')).not.toBeVisible();
   expect(screen.getAllByRole('columnheader')).toHaveLength(15);
   expect(screen.getByText('114122602627')).toBeInTheDocument();
   expect(screen.getByText('11216122601019')).toBeInTheDocument();

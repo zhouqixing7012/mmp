@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Card, Modal, Space, Table, Typography } from 'antd';
+import { Button, Card, Modal, Space, Table } from 'antd';
 import StatusTag from '../../components/StatusTag';
 import LegacyStorageDetail, { displayApplicationValue, LegacyFields } from './LegacyStorageDetail';
 
@@ -11,8 +11,8 @@ export default function LegacyApplicationDetail({ definition, record, onBack, on
   const lines = record.kind === 'borrow' ? record.lines : [record.lines[0]];
   const activeLine = dialog?.line;
   const columns = (record.kind === 'borrow' ? [...historyColumns.slice(0, 2), { title: '代理人', key: 'agent', width: 120, render: () => '-' }, ...historyColumns.slice(2)] : historyColumns).map(column => ({ render: displayApplicationValue, ...column }));
-  return <Space orientation="vertical" size={16} style={{ width: '100%' }}>
-    <Typography.Title level={4} style={{ margin: 0 }}>{record.extension ? '续借申请详情' : definition.title + '详情'}</Typography.Title>
+  return <Space orientation="vertical" size={16} style={{ width: '100%' }} data-mmp-page-title={(record.extension ? '续借申请详情' : definition.title + '详情')}>
+    {null}
     {record.kind === 'storage' ? <LegacyStorageDetail record={record} /> : <>
       <Card title="申请人信息" extra={record.values.applicationNo}><LegacyFields fields={record.head} fullWidthLabels={['退库原因']} /></Card>
       {lines.map((line, index) => <React.Fragment key={line.id}>

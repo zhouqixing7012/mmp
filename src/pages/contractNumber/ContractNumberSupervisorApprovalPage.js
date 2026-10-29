@@ -178,7 +178,7 @@ export default function ContractNumberSupervisorApprovalPage() {
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between">
-          <Typography.Title level={4} className="mb-0">合约号码配给主管审批</Typography.Title>
+          <span hidden data-mmp-page-title>合约号码配给主管审批</span>
           <Typography.Text type="secondary">申请单号：{application.id}</Typography.Text>
         </div>
 

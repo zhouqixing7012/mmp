@@ -1045,9 +1045,9 @@ export default function ConsumableMaintenancePage() {
   ] : [];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("耗材维护")}>
       {contextHolder}
-      <Typography.Title level={4} className="mb-0">耗材维护</Typography.Title>
+      {null}
 
       <QueryBar
         onQuery={handleQuery}

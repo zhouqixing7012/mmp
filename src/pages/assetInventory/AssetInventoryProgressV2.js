@@ -1,6 +1,6 @@
 import { selectInventoryExportRows } from './inventoryPlanExport';
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Progress, Space, Table, Typography, message } from 'antd';
+import { Button, Card, Progress, Space, Table, message } from 'antd';
 import * as XLSX from 'xlsx';
 import { Download } from 'lucide-react';
 import StatusTag from '../../components/StatusTag';
@@ -120,8 +120,8 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
 
   if (detailRange) {
     return (
-      <Space direction="vertical" size={16} className="w-full">
-        <Typography.Title level={4} style={{ margin: 0 }}>进度详情</Typography.Title>
+      <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("进度详情")}>
+        {null}
         <ProjectInfoCard project={project} />
         <Space>{progressTools}</Space>
         <Card size="small" title={<SectionCardTitle>进度详情</SectionCardTitle>} extra={<Button icon={<Download size={14} />} onClick={() => downloadProgress(true)}>导出</Button>}>
@@ -135,8 +135,8 @@ export default function AssetInventoryProgressV2({ project, plans, assetsForPlan
   }
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
-      <Typography.Title level={4} style={{ margin: 0 }}>盘点进度</Typography.Title>
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("盘点进度")}>
+      {null}
       <ProjectInfoCard project={project} />
       {progressTools}
       <Card

@@ -2,7 +2,7 @@ import { sumInventoryQuantity } from './inventoryQuantity';
 import React, { useState } from 'react';
 import { Alert, Button, Card, Checkbox, Input, InputNumber, Select, Space, Statistic, Switch, Table, Tabs, Typography, message as antdMessage } from 'antd';
 import { ASSET_ROWS, IMAGE_RULE_ROWS, INVENTORY_RANGE_METHOD_ROWS, UNINCLUDED_ASSET_ROWS } from './mockData';
-import { CardTitle, PageTitle, ProjectInfoCard, RANGE_OPTIONS, SCAN_METHOD_OPTIONS, assetColumns } from './AssetInventoryProjectV2Common';
+import { CardTitle, ProjectInfoCard, RANGE_OPTIONS, SCAN_METHOD_OPTIONS, assetColumns } from './AssetInventoryProjectV2Common';
 
 function InventoryMethodSettingsCard() {
   const [rows, setRows] = useState(INVENTORY_RANGE_METHOD_ROWS);
@@ -53,9 +53,9 @@ export default function SnapshotView({ project, onBack, onDeleteSnapshot, onGene
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("盘点项目快照（方案二）")}>
       {contextHolder}
-      <PageTitle>盘点项目快照（方案二）</PageTitle>
+      {null}
       <ProjectInfoCard project={{ ...project, status: '快照生成' }} />
       <Alert type="success" showIcon message="快照已生成。方案二从此节点开始维护盘点方式及图片上传规则。" />
       <InventoryMethodSettingsCard />

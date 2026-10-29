@@ -14,7 +14,7 @@ import {
 } from 'antd';
 import StatusTag from '../components/StatusTag';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const approvalData = {
   docNo: 'BF-202310250088',
@@ -257,9 +257,7 @@ export default function ApprovalPage() {
     <div className="pb-24">
       <div className="max-w-[1800px] mx-auto p-5 space-y-4">
         <div className="flex items-start justify-between gap-4 px-1">
-          <div>
-            <Title level={3} className="!mb-0 !text-[22px]">账面报废审批</Title>
-          </div>
+          <span hidden data-mmp-page-title>账面报废审批</span>
           <Space size={12}>
             <Button icon={<Download size={15} />}>导出</Button>
             <StatusTag value={approvalData.status} type="business" />

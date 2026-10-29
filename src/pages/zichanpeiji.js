@@ -277,7 +277,7 @@ export default function AssetAdminApprovalPrototype() {
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-800 tracking-tight leading-tight">统一申请单</h1>
+              <span hidden data-mmp-page-title>统一申请单</span>
               <div className="text-[13px] text-slate-500 mt-0.5">请核对明细并完成审批操作</div>
             </div>
           </div>

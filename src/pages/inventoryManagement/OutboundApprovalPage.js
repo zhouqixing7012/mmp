@@ -93,7 +93,7 @@ export default function OutboundApprovalPage({ outbound, onApprove, onReject, on
     <Space direction="vertical" size={16} className="w-full" data-page-view-key="outbound-approval">
       {contextHolder}
       <div className="flex items-center justify-between gap-4">
-        <Typography.Title level={3} className="!mb-0">物资出库申请</Typography.Title>
+        <span hidden data-mmp-page-title>物资出库申请</span>
         <Typography.Text strong>出库单号：{source.documentNo || '-'}</Typography.Text>
       </div>
 

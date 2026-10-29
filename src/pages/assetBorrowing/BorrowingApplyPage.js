@@ -308,8 +308,8 @@ export default function BorrowingApplyPage() {
   return (
     <>
       {contextHolder}
-      <Space direction="vertical" size={16} className="w-full">
-        <Typography.Title level={4} className="mb-0">资产借用</Typography.Title>
+      <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("资产借用")}>
+        {null}
 
         {!canApply && <Alert type="error" showIcon message="当前员工类型暂不支持资产借用。" />}
 

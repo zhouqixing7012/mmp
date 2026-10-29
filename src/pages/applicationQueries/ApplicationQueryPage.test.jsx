@@ -17,7 +17,8 @@ test('申请菜单紧接资产报表且九个入口均有实际映射', () => {
 });
 test.each(APPLICATION_MENU_ITEMS)('%s从实际菜单内容组件可进入', title => {
   render(<ApplicationQueriesContent activeSubMenu={title} />);
-  expect(screen.getByRole('heading', { name: title })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: title })).not.toBeInTheDocument();
+  expect(screen.getByText(title)).not.toBeVisible();
   expect(screen.getByRole('button', { name: /查\s*询/ })).toBeInTheDocument();
 });
 test('查询编辑后执行才更新列表，详情返回保留查询，进度接收当前业务记录', async () => {
@@ -32,7 +33,8 @@ test('查询编辑后执行才更新列表，详情返回保留查询，进度�
   fireEvent.click(screen.getByRole('button', { name: /重\s*置/ }));
   const number = queryApplications('return')[0].values.applicationNo;
   fireEvent.click(screen.getByRole('button', { name: number }));
-  expect(screen.getByRole('heading', { name: '退库单详情' })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: '退库单详情' })).not.toBeInTheDocument();
+  expect(document.querySelector('[data-mmp-page-title="退库单详情"]')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: /查看进度/ }));
   const dialog = await screen.findByRole('dialog');
   expect(within(dialog).getAllByRole('row').length).toBeGreaterThan(1);

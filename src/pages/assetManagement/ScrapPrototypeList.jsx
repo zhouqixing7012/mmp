@@ -25,7 +25,7 @@ import { canDeleteScrapDraft } from '../../services/scrapPrototypeService';
 import { warehouseCatalog } from '../../mock/reference/warehouseCatalog';
 
 const { RangePicker } = DatePicker;
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const EMPTY_FILTERS = {
   applicationNo: '',
@@ -405,7 +405,7 @@ export default function ScrapPrototypeList({
 
   return (
     <div className="space-y-4">
-      <Title level={4} className="!mb-0">{config.title}</Title>
+      <span hidden data-mmp-page-title>{config.title}</span>
 
       <QueryBar
         onQuery={() => setAppliedFilters({ ...filters })}

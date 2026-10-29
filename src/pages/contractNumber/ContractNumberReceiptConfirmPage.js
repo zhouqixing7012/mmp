@@ -68,7 +68,7 @@ export default function ContractNumberReceiptConfirmPage() {
   ];
 
   return <>{contextHolder}<Space direction="vertical" size={16} className="w-full">
-    <div className="flex items-center justify-between"><Typography.Title level={4} className="mb-0">员工合约号码领取确认</Typography.Title><Typography.Text type="secondary">申请单号：{current.id}</Typography.Text></div>
+    <div className="flex items-center justify-between"><span hidden data-mmp-page-title>员工合约号码领取确认</span><Typography.Text type="secondary">申请单号：{current.id}</Typography.Text></div>
     <Card title={<SectionTitle>领用人信息</SectionTitle>} size="small"><DetailGrid><DetailItem label="使用人">{applicant.id}-{applicant.name}</DetailItem><DetailItem label="联系电话">{applicant.phone || '-'}</DetailItem><DetailItem label="部门">{formatDepartment(applicant.department)}</DetailItem></DetailGrid></Card>
     <Card title={<SectionTitle>领用物资明细</SectionTitle>} size="small"><Table rowKey="id" columns={columns} dataSource={rows} pagination={false} size="small" bordered scroll={{ x: 1080 }} /></Card>
     <Card title={<SectionTitle>保管职责</SectionTitle>} size="small"><Typography.Paragraph type="danger" strong className="mb-3">提示：我已核对并确认领取上述合约号码，已阅读并确认保管职责，特此扫码确认！</Typography.Paragraph><Typography.Text type="danger" strong>保管职责：</Typography.Text><Typography.Paragraph type="danger" className="mt-1 mb-0 leading-7">{RESPONSIBILITY_TEXT}</Typography.Paragraph></Card>

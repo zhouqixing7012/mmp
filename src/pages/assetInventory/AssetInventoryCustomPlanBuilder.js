@@ -40,9 +40,7 @@ function CardTitle({ children }) {
   );
 }
 
-function PageTitle({ children }) {
-  return <Typography.Title level={4} style={{ margin: 0 }}>{children}</Typography.Title>;
-}
+
 
 
 function PlanInfoModal({ open, onCancel, onConfirm, project, assets }) {
@@ -188,9 +186,9 @@ export default function AssetInventoryCustomPlanBuilder({ onBack, onConfirmPlan,
     setSelectedAssetKeys([]);
   };
 
-  return <Space direction="vertical" size={16} className="w-full">
+  return <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("创建盘点计划")}>
     {contextHolder}
-    <PageTitle>创建盘点计划</PageTitle>
+    {null}
 
     <Card size="small" title={<CardTitle>盘点范围筛选</CardTitle>}>
       <div className="grid grid-cols-3 gap-x-6 gap-y-3">

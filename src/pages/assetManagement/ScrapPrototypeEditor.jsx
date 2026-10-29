@@ -1213,11 +1213,11 @@ export default function ScrapPrototypeEditor({
       data-page-view-key={`${type}-${previewView ? 'preview' : approvalView ? 'approval' : readOnly ? 'detail' : 'edit'}`}
     >
       <div className="flex items-center justify-between gap-4">
-        <h3 className="m-0 text-xl font-semibold">
+        <span hidden data-mmp-page-title>
           {previewView
             ? `${config.title}预览`
             : approvalView ? `${config.title}审批` : readOnly ? `${config.title}详情` : config.createLabel}
-        </h3>
+        </span>
         {(approvalView || previewView || showPageExport) && (
           <div className="flex items-center gap-3">
             {(approvalView || previewView) && form.applicationNo && <span className="text-gray-500">申请单号：{form.applicationNo}</span>}

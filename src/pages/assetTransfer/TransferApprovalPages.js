@@ -215,7 +215,7 @@ function TransferPage({ title, approvalRows, approvalStage }) {
   return (
     <Space direction="vertical" size={16} className="w-full">
       <div className="flex items-center justify-between gap-4">
-        <Typography.Title level={4} className="mb-0">{title}</Typography.Title>
+        <span hidden data-mmp-page-title>{title}</span>
         <Typography.Text type="secondary">转移单号：{TRANSFER_ORDER.id}</Typography.Text>
       </div>
 

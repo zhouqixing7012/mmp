@@ -35,14 +35,7 @@ function toSelectData(values) {
   return [...new Set(values.filter(Boolean))].map((name, index) => ({ id: index + 1, name }));
 }
 
-function PageTitle({ children }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div className="h-8 w-1.5 rounded bg-[#1677ff]" />
-      <Typography.Title level={3} className="mb-0">{children}</Typography.Title>
-    </div>
-  );
-}
+
 
 function LookupInput({ value, placeholder, onOpen }) {
   return (
@@ -215,9 +208,9 @@ export function InboundPage() {
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("入库")}>
       {contextHolder}
-      <PageTitle>入库</PageTitle>
+      {null}
       <QueryBar onQuery={() => { setApplied({ ...draft }); setSelectedRowKeys([]); }} onReset={() => { setDraft(EMPTY_INBOUND_FILTERS); setApplied(EMPTY_INBOUND_FILTERS); setSelectedRowKeys([]); }}>
         <QueryItem label="入库单号"><Input value={draft.documentNo} allowClear placeholder="请输入入库单号" onChange={(event) => update('documentNo', event.target.value)} /></QueryItem>
         <QueryItem label="入库类型"><Select value={draft.inboundType || undefined} allowClear placeholder="全部" options={[{ label: '退库入库', value: '退库入库' }]} onChange={(value) => update('inboundType', value)} /></QueryItem>
@@ -284,9 +277,9 @@ export function OutboundPage() {
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("出库")}>
       {contextHolder}
-      <PageTitle>出库</PageTitle>
+      {null}
       <QueryBar onQuery={() => { setApplied({ ...draft }); setSelectedRowKeys([]); }} onReset={() => { setDraft(EMPTY_OUTBOUND_FILTERS); setApplied(EMPTY_OUTBOUND_FILTERS); setSelectedRowKeys([]); }}>
         <QueryItem label="出库单号"><Input value={draft.documentNo} allowClear placeholder="请输入出库单号" onChange={(event) => update('documentNo', event.target.value)} /></QueryItem>
         <QueryItem label="出库类型"><Select value={draft.outboundType || undefined} allowClear placeholder="全部" options={[{ label: '领用出库', value: '领用出库' }, { label: '借用出库', value: '借用出库' }]} onChange={(value) => update('outboundType', value)} /></QueryItem>
@@ -347,9 +340,9 @@ export function MovePage() {
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("移库")}>
       {contextHolder}
-      <PageTitle>移库</PageTitle>
+      {null}
       <Card size="small">
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={[{ key: 'initiated', label: '发起单据' }, { key: 'received', label: '接收单据' }]} />
       </Card>
@@ -427,9 +420,9 @@ export function TransferPage() {
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("转移")}>
       {contextHolder}
-      <PageTitle>转移</PageTitle>
+      {null}
       <QueryBar onQuery={() => { setApplied({ ...draft }); setSelectedRowKeys([]); }} onReset={() => { setDraft(EMPTY_TRANSFER_FILTERS); setApplied(EMPTY_TRANSFER_FILTERS); setSelectedRowKeys([]); }}>
         <QueryItem label="转移单号"><Input value={draft.documentNo} allowClear placeholder="请输入转移单号" onChange={(event) => update('documentNo', event.target.value)} /></QueryItem>
         <QueryItem label="转移原因"><Input value={draft.reason} allowClear placeholder="请输入转移原因" onChange={(event) => update('reason', event.target.value)} /></QueryItem>

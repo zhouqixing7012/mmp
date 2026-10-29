@@ -272,9 +272,7 @@ function isInfraLine(row) {
 
 
 
-function PageTitle({ children }) {
-  return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;
-}
+
 
 function Readonly({ children }) {
   return <Typography.Text>{children === 0 ? 0 : (children || '-')}</Typography.Text>;
@@ -1292,9 +1290,9 @@ function InboundEditor({ source, pendingRows, onBack, onSave, onExecute, onRetry
   const supportsExcelImport = ['新增入库', '退库入库', '借用归还'].includes(inboundType);
 
   return (
-    <Space direction="vertical" size={16} className="w-full" data-page-view-key={`inbound-${editable ? 'edit' : 'detail'}-${inboundType}`}>
+    <Space direction="vertical" size={16} className="w-full" data-page-view-key={`inbound-${editable ? 'edit' : 'detail'}-${inboundType}`} data-mmp-page-title={(!source ? '创建入库单' : editable ? '编辑入库单' : '入库单详情')}>
       {contextHolder}
-      <PageTitle>{!source ? '创建入库单' : editable ? '编辑入库单' : '入库单详情'}</PageTitle>
+      {null}
       <Card
         size="small"
         title="入库单信息"
@@ -1489,9 +1487,9 @@ export default function InboundPage() {
   };
 
   return (
-    <Space direction="vertical" size={16} className="w-full" data-page-view-key="inbound-list">
+    <Space direction="vertical" size={16} className="w-full" data-page-view-key="inbound-list" data-mmp-page-title={("入库")}>
       {contextHolder}
-      <PageTitle>入库</PageTitle>
+      {null}
       <QueryBar onQuery={() => { setFilters({ ...draft }); setSelectedKeys([]); setPage(1); }} onReset={() => { setDraft(emptyFilters); setFilters(emptyFilters); setSelectedKeys([]); setPage(1); }}>
         <QueryItem label="入库单号"><Input value={draft.documentNo} allowClear placeholder="请输入入库单号" onChange={(e) => update('documentNo', e.target.value)} /></QueryItem>
         <QueryItem label="入库类型"><Select className="w-full" value={draft.inboundType || undefined} allowClear placeholder="全部" options={INBOUND_TYPES.map((v) => ({ label: v, value: v }))} onChange={(v) => update('inboundType', v)} /></QueryItem>

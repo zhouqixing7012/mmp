@@ -111,7 +111,7 @@ export default function ReplacementAssetsPage() {
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
-          <Typography.Title level={4} className="mb-0">我的资产</Typography.Title>
+          <span hidden data-mmp-page-title>我的资产</span>
           <Typography.Text type="secondary">资产更换 / 资产退库入口</Typography.Text>
         </div>
 

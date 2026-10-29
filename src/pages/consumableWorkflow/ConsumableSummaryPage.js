@@ -30,7 +30,7 @@ function csvCell(value) {
 function PageHeader({ title, number }) {
   return (
     <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
-      <Typography.Title level={4} className="mb-0">{title}</Typography.Title>
+      <span hidden data-mmp-page-title>{title}</span>
       {number && <Typography.Text type="secondary">汇总单号：{number}</Typography.Text>}
     </div>
   );

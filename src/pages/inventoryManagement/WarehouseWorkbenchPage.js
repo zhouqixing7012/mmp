@@ -25,9 +25,7 @@ const EMPTY_FILTERS = {
   documentType: '',
 };
 
-function PageTitle({ children }) {
-  return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;
-}
+
 
 function includesText(value, query) {
   return String(value || '').toLowerCase().includes(String(query || '').trim().toLowerCase());
@@ -283,9 +281,9 @@ export default function WarehouseWorkbenchPage() {
   }
 
   return (
-    <Space direction="vertical" size={16} className="w-full" data-page-view-key="warehouse-workbench">
+    <Space direction="vertical" size={16} className="w-full" data-page-view-key="warehouse-workbench" data-mmp-page-title={("库管员工作台")}>
       {contextHolder}
-      <PageTitle>库管员工作台</PageTitle>
+      {null}
 
       <div className="flex justify-end">
         <Space wrap>

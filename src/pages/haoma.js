@@ -51,7 +51,7 @@ export default function ContractNumberApplicationPage() {
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between">
-          <Typography.Title level={4} className="mb-0">合约号码申请</Typography.Title>
+          <span hidden data-mmp-page-title>合约号码申请</span>
           <Typography.Text type="secondary">申请单号：PCM202607190001</Typography.Text>
         </div>
 

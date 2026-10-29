@@ -157,9 +157,7 @@ function includesText(value, query) {
   return String(value || '').toLowerCase().includes(String(query).trim().toLowerCase());
 }
 
-function PageTitle({ children }) {
-  return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;
-}
+
 
 function Readonly({ children }) {
   return <Typography.Text>{children === 0 ? 0 : (children || '-')}</Typography.Text>;
@@ -764,9 +762,9 @@ function OutboundEditor({ source, onBack, onSave, onStartApproval, onApprove, on
   };
 
   return (
-    <Space direction="vertical" size={16} className="w-full" data-page-view-key={`outbound-${status}-${outboundType}`}>
+    <Space direction="vertical" size={16} className="w-full" data-page-view-key={`outbound-${status}-${outboundType}`} data-mmp-page-title={(!source ? '创建出库单' : editable ? '编辑出库单' : '出库单详情')}>
       {contextHolder}
-      <PageTitle>{!source ? '创建出库单' : editable ? '编辑出库单' : '出库单详情'}</PageTitle>
+      {null}
       <Card size="small" title="出库单信息" extra={<Space><Typography.Text type="secondary">当前仓库</Typography.Text>{editable ? <Select className="w-[280px]" value={warehouse} options={WAREHOUSES.filter((v) => !v.includes('耗材库')).map((v) => ({ label: v, value: v }))} onChange={changeWarehouse} /> : <Typography.Text>{warehouse}</Typography.Text>}</Space>}>
         <DetailGrid columns={3} labelWidth={112}>
           <EditorField label="出库单号"><Readonly>{documentNo}</Readonly></EditorField>
@@ -1047,9 +1045,9 @@ export default function OutboundPage() {
   };
 
   return (
-    <Space direction="vertical" size={16} className="w-full" data-page-view-key="outbound-list">
+    <Space direction="vertical" size={16} className="w-full" data-page-view-key="outbound-list" data-mmp-page-title={("出库")}>
       {contextHolder}
-      <PageTitle>出库</PageTitle>
+      {null}
       <QueryBar onQuery={() => { setFilters({ ...draft }); setSelectedKeys([]); setPage(1); }} onReset={() => { setDraft(emptyFilters); setFilters(emptyFilters); setSelectedKeys([]); setPage(1); }}>
         <QueryItem label="出库单号"><Input value={draft.documentNo} allowClear placeholder="请输入出库单号" onChange={(e) => update('documentNo', e.target.value)} /></QueryItem>
         <QueryItem label="出库类型"><Select className="w-full" value={draft.outboundType || undefined} allowClear placeholder="全部" options={OUTBOUND_TYPES.map((v) => ({ label: v, value: v }))} onChange={(v) => update('outboundType', v)} /></QueryItem>

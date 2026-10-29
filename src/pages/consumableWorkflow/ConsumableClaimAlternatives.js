@@ -108,7 +108,7 @@ function ConsumableClaimAlternativePage({ variant }) {
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
       <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
-        <Typography.Title level={4} className="mb-0">{data.title}</Typography.Title>
+        <span hidden data-mmp-page-title>{data.title}</span>
         <Typography.Text type="secondary">领用申请单号：{data.applicationNo}</Typography.Text>
       </div>
 

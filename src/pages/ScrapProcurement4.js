@@ -114,10 +114,10 @@ export default function ScrapProcurement4() {
       )}
 
       <header className="bg-white border-b px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
-        <h1 className="text-xl font-bold text-gray-800 flex items-center">
+        <><span hidden data-mmp-page-title>
           报废申请单审批 
-          <span className="ml-3 px-2.5 py-0.5 text-xs font-normal bg-orange-100 text-orange-700 border border-orange-200 rounded-full">当前节点：{submittedData.currentNode}</span>
-        </h1>
+
+        </span><span className="ml-3 px-2.5 py-0.5 text-xs font-normal bg-orange-100 text-orange-700 border border-orange-200 rounded-full">当前节点：{submittedData.currentNode}</span></>
       </header>
 
       <main className="max-w-7xl mx-auto p-4 space-y-5">

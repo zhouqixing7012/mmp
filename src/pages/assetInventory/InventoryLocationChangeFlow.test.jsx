@@ -6,7 +6,7 @@ import { recordInventoryLocationChange } from './inventoryLocationChangeStore';
 
 jest.mock('antd', () => ({
  Card: ({ children, title, extra }) => <section>{title}{extra}{children}</section>,
- Space: ({ children }) => <div>{children}</div>, Typography: { Title: ({ children }) => <h1>{children}</h1> },
+ Space: ({ children, ...props }) => <div {...Object.fromEntries(Object.entries(props).filter(([key]) => key.startsWith('data-')))}>{children}</div>, Typography: { Title: ({ children }) => <h1>{children}</h1> },
  Button: ({ children, onClick }) => <button onClick={onClick}>{children}</button>,
  Table: ({ columns, dataSource }) => <table><thead><tr>{columns.map(column => <th key={column.key}>{column.title}</th>)}</tr></thead><tbody>{dataSource.map(row => <tr key={row.id}>{columns.map(column => <td key={column.key}>{column.render(undefined, row)}</td>)}</tr>)}</tbody></table>,
  message: { useMessage: () => [{ error: jest.fn() }, null] },
@@ -18,7 +18,7 @@ function seed() { return recordInventoryLocationChange({ projectNo: project.proj
 test('PC仅查看位置变更池和导出，任何操作人均无新增编辑和审批入口', () => {
  seed(); const back = jest.fn();
  const view = render(<InventoryLocationChangeFlow project={project} currentOperator="冯丽婷" onBack={back} />);
- expect(screen.getByRole('heading', { name: '位置变更池' })).toBeInTheDocument();
+ expect(document.querySelector('[data-mmp-page-title="位置变更池"]')).toBeInTheDocument();
  expect(screen.getByText('114121801802')).toBeInTheDocument();
  expect(screen.getByText('9层')).toBeInTheDocument(); expect(screen.getByText('8层')).toBeInTheDocument();
  expect(screen.getAllByRole('button').map(button => button.textContent)).toEqual(['导出', '返回']);

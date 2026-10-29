@@ -106,7 +106,7 @@ export default function ConsumableClaimConfirmPage() {
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between">
-          <Typography.Title level={4} className="mb-0">员工耗材领用确认</Typography.Title>
+          <span hidden data-mmp-page-title>员工耗材领用确认</span>
           <Typography.Text type="secondary">领用单号：{current.id}</Typography.Text>
         </div>
 

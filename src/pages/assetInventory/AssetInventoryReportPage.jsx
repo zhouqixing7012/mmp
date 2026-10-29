@@ -37,7 +37,7 @@ function InventoryReportContent() {
   const unavailable = <Card size="small"><Empty description={emptyDescription} /></Card>;
   return <div className="inventory-report flex flex-col gap-4">
     <div className="flex items-center justify-between gap-4 flex-wrap">
-      <Typography.Title level={4} className="!mb-0">盘点报表</Typography.Title>
+      <span hidden data-mmp-page-title>盘点报表</span>
       <Space wrap><Typography.Text>盘点年份</Typography.Text><Select aria-label="盘点年份" style={{ width: 140 }} value={year} onChange={(value) => { setYear(value); setProjectNo(undefined); }} options={yearOptions.map(value => ({ label: `${value}年`, value }))} />
         {projects.length > 1 && <><Typography.Text>盘点项目</Typography.Text><Select aria-label="盘点项目" style={{ width: 260 }} placeholder="请选择盘点项目" value={projectNo} onChange={setProjectNo} options={projects.map(project => ({ label: `${project.projectNo} ${project.projectName}`, value: project.projectNo }))} /></>}
       </Space>

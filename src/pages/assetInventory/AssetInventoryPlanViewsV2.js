@@ -86,9 +86,7 @@ function formatMoney(value) {
   return numeric.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function PageTitle({ children }) {
-  return <Typography.Title level={4} style={{ margin: 0 }}>{children}</Typography.Title>;
-}
+
 
 function CardTitle({ children }) {
   return (
@@ -328,9 +326,9 @@ export function AssetInventoryPlansV2({ project, onBack, onOpenPlanAssets }) {
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("盘点计划")}>
       {contextHolder}
-      <PageTitle>盘点计划</PageTitle>
+      {null}
       <ProjectInfoCard project={project} />
 
       <QueryBar
@@ -535,9 +533,9 @@ export function AssetInventoryPlanAssetListV2({ plan, project, currentOperator, 
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("盘点计划资产清单")}>
       {contextHolder}
-      <PageTitle>盘点计划资产清单</PageTitle>
+      {null}
 
       <div className="inventory-plan-assets-query"><QueryBar
         onQuery={() => setFilters({ ...draftFilters })}

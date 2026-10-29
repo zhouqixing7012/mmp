@@ -27,7 +27,7 @@ jest.mock('./AssetInventoryProjectPage', () => ({ onProjectGenerated, snapshotEd
   const React = require('react');
   const [page, setPage] = React.useState('盘点项目');
   React.useEffect(() => { if (snapshotEditRequest) setPage('编辑盘点项目'); }, [snapshotEditRequest]);
-  return <div><h4 className="ant-typography">{page}</h4>
+  return <div data-mmp-page-title={page}>
     {page === '盘点项目' ? <button onClick={() => setPage('创建盘点项目')}>创建项目</button>
       : <><button onClick={() => { setPage('盘点项目详情'); require('./inventoryPhotoRules').saveInventoryPhotoSnapshot({ projectNo: 'CP-new' }, require('./mockData').ASSET_ROWS.filter(asset => ['asset-3','asset-4'].includes(asset.key)).map(asset => ({ ...asset, executeInventory: mockExecutionKeys.includes(asset.key) }))); onProjectGenerated({ creator, projectNo: 'CP-new', projectType: '初盘', status: '快照生成', snapshotAssetKeys: mockExecutionKeys, scopeSnapshotAssetKeys: ['asset-3','asset-4'] }); }}>生成快照</button><button onClick={() => setPage('盘点项目')}>返 回</button></>}
   </div>;
@@ -93,7 +93,7 @@ test('无计划结果快照撤销后回到可编辑草稿，并能重新生成',
   fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
   fireEvent.click(screen.getByRole('button', { name: '撤销快照' }));
   await waitFor(() => expect(screen.queryByRole('heading', { name: '快照详情' })).not.toBeInTheDocument());
-  expect(screen.getByText('编辑盘点项目')).toBeInTheDocument();
+  expect(document.querySelector('[data-mmp-page-title="编辑盘点项目"]')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
   expect(screen.getByRole('heading', { name: '快照详情' })).toBeInTheDocument();
   expect(screen.getByText('快照生成')).toBeInTheDocument();
@@ -124,7 +124,7 @@ test('生成未启动计划后撤销快照，同时撤销草稿计划，可重�
   fireEvent.click(screen.getByRole('button', { name: '退出计划' }));
   await waitFor(() => expect(screen.getByRole('button', { name: '撤销快照' })).toBeInTheDocument());
   fireEvent.click(screen.getByRole('button', { name: '撤销快照' }));
-  await waitFor(() => expect(screen.getByText('编辑盘点项目')).toBeInTheDocument());
+  await waitFor(() => expect(document.querySelector('[data-mmp-page-title="编辑盘点项目"]')).toBeInTheDocument());
   fireEvent.click(screen.getByRole('button', { name: '生成快照' }));
   fireEvent.click(screen.getByRole('button', { name: '生成默认计划' }));
   expect(screen.getByTestId('plan-rows').textContent).toMatch(/PLAN-\d{8}-0001:草稿/);

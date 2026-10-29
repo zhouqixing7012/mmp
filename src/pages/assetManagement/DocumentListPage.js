@@ -111,10 +111,7 @@ export default function DocumentListPage({
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
 
-      <div className="flex items-center gap-2">
-        <div className="h-8 w-1.5 rounded bg-[#1677ff]" />
-        <Typography.Title level={3} className="mb-0">{title}</Typography.Title>
-      </div>
+      <span hidden data-mmp-page-title>{title}</span>
 
       <QueryBar
         onQuery={() => {

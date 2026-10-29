@@ -41,7 +41,8 @@ test.each([['仓库', ['编码', '名称', '公司']], ['Building', ['Building�
 test.each(reportDefinitions.map(definition => [definition.id, definition.title]))('%s从实际内容组件渲染%s', (id, title) => {
   const definition = reportDefinitions.find(item => item.id === id);
   render(<AssetReportsContent activeSubMenu={definition.menu} activeTab={definition.menu === title ? '' : title} />);
-  expect(screen.getByRole('heading', { name: title })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: title })).not.toBeInTheDocument();
+  expect(screen.getByText(title)).not.toBeVisible();
   expect(screen.getByRole('button', { name: /查\s*询/ })).toBeInTheDocument();
   expect(screen.getByText('查询结果')).toBeInTheDocument();
   if (id === 'report-8-1') expect(screen.queryByRole('columnheader', { name: '处置类型' })).not.toBeInTheDocument();

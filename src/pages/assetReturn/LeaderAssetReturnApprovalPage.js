@@ -122,7 +122,7 @@ export default function LeaderAssetReturnApprovalPage() {
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between">
-          <Typography.Title level={4} className="mb-0">领导退库审批</Typography.Title>
+          <span hidden data-mmp-page-title>领导退库审批</span>
           <Typography.Text type="secondary">退库单号：{RETURN_ORDER.id}</Typography.Text>
         </div>
 

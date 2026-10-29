@@ -248,8 +248,8 @@ function ApprovalTaskPage({ mode }) {
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
-      <Typography.Title level={4} className="mb-0">{title}</Typography.Title>
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={(title)}>
+      {null}
       <Card size="small" title={<SectionTitle>查询条件</SectionTitle>}>
         <QueryBar onQuery={() => setApplied({ ...draft })} onReset={reset}>
           <QueryItem label="单据类型"><Select allowClear placeholder="请选择单据类型" options={DOCUMENT_TYPE_OPTIONS} value={draft.documentType || undefined} onChange={(value) => setDraft((current) => ({ ...current, documentType: value || '' }))} /></QueryItem>
@@ -314,8 +314,8 @@ function AppliedPage() {
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
-      <Typography.Title level={4} className="mb-0">已申请</Typography.Title>
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("已申请")}>
+      {null}
       <Card size="small" title={<SectionTitle>查询条件</SectionTitle>}>
         <QueryBar onQuery={() => setApplied({ ...draft })} onReset={reset}>
           <QueryItem label="单据类型"><Select allowClear placeholder="请选择单据类型" options={DOCUMENT_TYPE_OPTIONS} value={draft.documentType || undefined} onChange={(value) => setDraft((current) => ({ ...current, documentType: value || '' }))} /></QueryItem>

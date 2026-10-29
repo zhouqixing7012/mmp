@@ -104,9 +104,7 @@ export default function AssetReturnApplyPage() {
     <div className="min-h-screen bg-slate-100 p-4">
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
-          <Typography.Title level={4} className="mb-0">资产退库</Typography.Title>
-        </div>
+        <span hidden data-mmp-page-title>资产退库</span>
 
         <Card size="small" title="申请信息">
           <DetailGrid>

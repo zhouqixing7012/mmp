@@ -23,7 +23,7 @@ import {
   mockWarehouseInfoData,
 } from '../../mock/businessRulesMock';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 // 与账面报废申请页使用同一组演示资产，避免产生另一套数据口径。
 const AVAILABLE_ASSETS = [
@@ -465,7 +465,7 @@ export default function CompanyTransferEditPage({ onBack }) {
   return (
     <div className="space-y-4 pb-4 text-gray-800">
       <div className="flex items-start justify-between gap-4 px-1">
-        <Title level={3} className="!mb-0 !text-[22px]">公司间转移申请单</Title>
+        <span hidden data-mmp-page-title>公司间转移申请单</span>
         <div className="pt-1 text-right">
           <Text type="secondary" className="mb-1 block text-xs">申请单号</Text>
           <Text type="secondary">保存/提交后生成</Text>

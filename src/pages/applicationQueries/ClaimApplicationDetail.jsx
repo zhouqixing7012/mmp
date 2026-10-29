@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Card, Input, Modal, Space, Table, Typography } from 'antd';
+import { Button, Card, Input, Modal, Space, Table } from 'antd';
 import { DetailGrid, DetailItem } from '../../components/DetailGrid';
 import ClaimSummaryDetail from './ClaimSummaryDetail';
 import { displayApplicationValue } from './LegacyStorageDetail';
@@ -24,8 +24,8 @@ export default function ClaimApplicationDetail({ definition, record, onBack, vie
   const [componentLine, setComponentLine] = useState(null);
   if (view === 'summary') return <ClaimSummaryDetail key={record.id} definition={definition} record={record} onBack={onBack} />;
   const isNewEmployee = definition.id === 'newEmployee';
-  return <Space orientation="vertical" size={16} style={{ width: '100%' }}>
-    <Typography.Title level={4}>{isNewEmployee ? '新员工领用详情' : definition.id === 'asset' ? '申请资产详情' : '申请耗材详情'}</Typography.Title>
+  return <Space orientation="vertical" size={16} style={{ width: '100%' }} data-mmp-page-title={(isNewEmployee ? '新员工领用详情' : definition.id === 'asset' ? '申请资产详情' : '申请耗材详情')}>
+    {null}
     <Card title="申请信息"><DetailGrid>{Object.entries(record.head).map(([label, value]) => <DetailItem key={label} label={label} span={label === '备注' ? 3 : 1}><span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{displayApplicationValue(value)}</span></DetailItem>)}{!isNewEmployee && <DetailItem label="单据备注" span={3}><Input.TextArea aria-label="单据备注" value={remark} onChange={event => setRemark(event.target.value)} maxLength={100} autoSize /></DetailItem>}</DetailGrid></Card>
     {isNewEmployee ? <Card title="资产明细"><Table rowKey="id" size="small" pagination={false} scroll={{ x: 'max-content' }} columns={newEmployeeColumns.map(([title, dataIndex]) => ({ title, dataIndex, key: dataIndex, width: title === '物资名称' ? 250 : 160, render: displayApplicationValue }))} dataSource={record.lines} /></Card> : record.lines.map(line => <ClaimLine key={line.id} line={line} onComponents={setComponentLine} />)}
     <div style={{ textAlign: 'center' }}><Button onClick={onBack}>返回</Button></div>

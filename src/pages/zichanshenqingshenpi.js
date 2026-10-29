@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  FileText, User, Monitor, Clock, 
+ User, Monitor, Clock,
   CheckCircle2, XCircle, CornerUpLeft, UserPlus,
   MessageSquare, ShieldCheck
 } from 'lucide-react';
@@ -220,11 +220,7 @@ export default function ApprovalPagePrototype() {
         
         {/* 页头区 */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 pb-4 border-b border-slate-200">
-          <div className="flex items-center gap-3">
-            <FileText className="w-7 h-7 text-blue-600 p-1 bg-blue-100 rounded-lg" />
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">统一申请单</h1>
-            <StatusBadge status="pending" />
-          </div>
+          <span hidden data-mmp-page-title>统一申请单</span>
           <div className="mt-2 md:mt-0 text-sm text-slate-500 flex items-center gap-2 bg-white px-3 py-1.5 rounded-md shadow-sm border border-slate-200">
             <span>单号:</span>
             <span className="font-mono font-medium text-slate-700">{MOCK_DATA.formId}</span>

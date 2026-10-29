@@ -84,8 +84,8 @@ export default function ContractReturnApplyPage() {
   return (
     <>
       {contextHolder}
-      <Space direction="vertical" size={16} className="w-full">
-        <Typography.Title level={4} className="mb-0">合约号码退库</Typography.Title>
+      <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("合约号码退库")}>
+        {null}
         <Card size="small" title={<SectionTitle>申请信息</SectionTitle>}>
           <DetailGrid className="!overflow-x-hidden">
             <DetailItem label="申请人">213852-孙志强</DetailItem>

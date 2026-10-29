@@ -273,14 +273,7 @@
   background-color: transparent !important;
 }
 
-/* 桌面业务页不再额外使用白底阴影标题盒，统一回归纯页面标题。 */
-.workspace-content:not([data-workspace-page="工作台首页"]):not([data-workspace-page="移动端工作台"])
-  .rounded-lg.bg-white.px-5.py-4.shadow-sm:has(> h4.ant-typography) {
-  padding: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
+
 
 /* 历史页面底部的白底阴影操作条统一收口为普通居中操作区。 */
 .workspace-content:not([data-workspace-page="工作台首页"]):not([data-workspace-page="移动端工作台"])

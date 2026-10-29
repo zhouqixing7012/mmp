@@ -1,3 +1,4 @@
+import { getPageIdentity } from '../../components/pageIdentity';
 import { inventoryManagementBlockReason } from './inventoryManagementPermissions';
 import { sumInventoryQuantity } from './inventoryQuantity';
 import { applyInventoryScanResults } from './inventoryScanResultImport';
@@ -214,7 +215,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   };
 
   const openPlanView = (sourceElement, forceGeneratedStatus = false) => {
-    openPlanViewByProject(resolveProject(baseContainerRef.current, sourceElement), forceGeneratedStatus, baseContainerRef.current?.querySelector('h4.ant-typography')?.textContent?.trim() === '盘点项目详情');
+    openPlanViewByProject(resolveProject(baseContainerRef.current, sourceElement), forceGeneratedStatus, getPageIdentity(baseContainerRef.current) === '盘点项目详情');
   };
 
   const openProgressByProject = (project) => {
@@ -247,7 +248,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
   const returnToProjectList = useCallback(() => {
     resetOverlays();
     const base = baseContainerRef.current;
-    const pageTitle = base?.querySelector('h4.ant-typography')?.textContent?.trim() || '';
+    const pageTitle = getPageIdentity(base) || '';
     if (!base || pageTitle === '盘点项目') return;
     const returnButton = Array.from(base.querySelectorAll('button')).find((button) => button.textContent?.replace(/\s/g, '') === '返回');
     returnButton?.click();
@@ -388,7 +389,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     if (!button) return;
     if (!baseContainerRef.current?.contains(button)) return;
     const text = button.textContent?.trim() || '';
-    const pageTitle = baseContainerRef.current?.querySelector('h4.ant-typography')?.textContent?.trim() || '';
+    const pageTitle = getPageIdentity(baseContainerRef.current) || '';
     if (text === '生成盘点计划' && pageTitle === '盘点项目详情') {
       event.preventDefault();
       event.stopPropagation();
@@ -448,7 +449,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     const applyVariant = () => {
       restoreVariantChanges();
       normalizeDraftLabels();
-      const pageTitle = base.querySelector('h4.ant-typography')?.textContent?.trim() || '盘点项目';
+      const pageTitle = getPageIdentity(base) || '盘点项目';
       setBasePageTitle((current) => current === pageTitle ? current : pageTitle);
       const cards = Array.from(base.querySelectorAll('.ant-card'));
       const baseCards = cards.filter((card) => !card.closest('[data-asset-inventory-v2-image-slot="true"]'));
@@ -487,7 +488,7 @@ export default function AssetInventoryProjectPageV2({ variantLabel = '方案二'
     };
     applyVariant();
     const observer = new MutationObserver(scheduleApply);
-    observer.observe(base, { childList: true, subtree: true });
+    observer.observe(base, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-mmp-page-title'] });
     return () => {
       observer.disconnect();
       if (frameId) cancelAnimationFrame(frameId);

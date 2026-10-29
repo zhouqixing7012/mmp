@@ -25,7 +25,7 @@ export default function FinancialNewAssetReportPage() {
     catch (error) { message.error(error.message); }
   };
   return <div className="flex flex-col gap-4">
-    <Typography.Title level={4} className="!mb-0">固定资产新增报表</Typography.Title>
+    <span hidden data-mmp-page-title>固定资产新增报表</span>
     <QueryBar onQuery={query} onReset={reset}>
       <QueryItem label="公司"><Select mode="multiple" aria-label="公司" showSearch optionFilterProp="label" allowClear style={{ width: '100%' }} placeholder="请选择公司" options={companyOptions} value={draft.companies} onChange={companies => setDraft(previous => ({ ...previous, companies }))} /></QueryItem>
       <QueryItem label="板块"><Select mode="multiple" aria-label="板块" showSearch optionFilterProp="label" allowClear style={{ width: '100%' }} placeholder="请选择板块" options={ASSET_PLATE_OPTIONS.map(value => ({ label: value, value }))} value={draft.plates} onChange={plates => setDraft(previous => ({ ...previous, plates }))} /></QueryItem>

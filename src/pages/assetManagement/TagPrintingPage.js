@@ -629,8 +629,8 @@ function GenerateLabelsPage({
   };
 
   return (
-    <Space direction="vertical" size={16} className="w-full pb-4">
-      <Typography.Title level={4} className="!mb-0">生成标签</Typography.Title>
+    <Space direction="vertical" size={16} className="w-full pb-4" data-mmp-page-title={("生成标签")}>
+      {null}
 
       <Card size="small" title="标签设置">
         <div className="mb-5 grid grid-cols-1 gap-4 border-b border-[#f0f0f0] pb-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-center">
@@ -1071,9 +1071,9 @@ export default function TagPrintingPage() {
 
   if (previewMode) {
     return (
-      <Space direction="vertical" size={16} className="w-full pb-4">
+      <Space direction="vertical" size={16} className="w-full pb-4" data-mmp-page-title={("标签预打印")}>
         {contextHolder}
-        <Typography.Title level={4} className="!mb-0">标签预打印</Typography.Title>
+        {null}
 
         <QueryBar
           onQuery={() => {
@@ -1268,9 +1268,9 @@ export default function TagPrintingPage() {
   }
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("标签打印")}>
       {contextHolder}
-      <Typography.Title level={4} className="!mb-0">标签打印</Typography.Title>
+      {null}
 
       <QueryBar
         onQuery={() => {

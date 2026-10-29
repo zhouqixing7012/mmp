@@ -15,7 +15,7 @@ import {
   message,
 } from 'antd';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const AVAILABLE_ASSETS = [
   {
@@ -195,9 +195,7 @@ export default function AssetDisposalEditPage({ onBack }) {
 
   return (
     <div className="space-y-4 pb-4 text-gray-800">
-      <div className="flex items-center justify-between gap-4 px-1">
-        <Title level={3} className="!mb-0 !text-[22px]">资产处置申请单</Title>
-      </div>
+      <span hidden data-mmp-page-title>资产处置申请单</span>
 
       <Card size="small" title="基本信息" className="shadow-sm">
         <Descriptions bordered size="small" column={3} labelStyle={{ width: 128 }}>

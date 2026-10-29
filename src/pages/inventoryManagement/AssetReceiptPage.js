@@ -237,9 +237,7 @@ function SelectorInput({ value, placeholder, onOpen }) {
   );
 }
 
-function PageTitle({ children }) {
-  return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;
-}
+
 
 function Readonly({ children }) {
   return <Typography.Text>{children === 0 ? 0 : (children || '-')}</Typography.Text>;
@@ -1235,9 +1233,9 @@ export default function AssetReceiptPage() {
     const editingPoItemLocked = Boolean(editItem && getDraftReceiptItemReference(currentPO.poNo, editItem.id));
 
     return (
-      <Space direction="vertical" size={16} className="w-full">
+      <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("PO单详情")}>
         {contextHolder}
-        <PageTitle>PO单详情</PageTitle>
+        {null}
         <Alert
           type="info"
           showIcon
@@ -1425,9 +1423,9 @@ export default function AssetReceiptPage() {
     ];
 
     return (
-      <Space direction="vertical" size={16} className="w-full">
+      <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={(isDraft ? '维护接收明细' : '查看接收明细')}>
         {contextHolder}
-        <PageTitle>{isDraft ? '维护接收明细' : '查看接收明细'}</PageTitle>
+        {null}
         <Card size="small" title="接收单信息">
           <DetailGrid columns={3} labelWidth={112}>
             <DetailItem label="接收单号"><Readonly>{activeReceipt.receiptNo}</Readonly></DetailItem>
@@ -1511,9 +1509,9 @@ export default function AssetReceiptPage() {
     const canOperateReceipt = activeReceipt.status === '草稿';
 
     return (
-      <Space direction="vertical" size={16} className="w-full">
+      <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("接收单详情")}>
         {contextHolder}
-        <PageTitle>接收单详情</PageTitle>
+        {null}
         <Card size="small" title="接收单信息">
           <DetailGrid columns={3} labelWidth={112}>
             <DetailItem label="采购接收单号"><Readonly>{activeReceipt.receiptNo}</Readonly></DetailItem>
@@ -1558,9 +1556,9 @@ export default function AssetReceiptPage() {
       : null;
 
     return (
-      <Space direction="vertical" size={16} className="w-full">
+      <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("接收单列表")}>
         {contextHolder}
-        <PageTitle>接收单列表</PageTitle>
+        {null}
         <QueryBar onQuery={() => { setReceiptAppliedFilters({ ...receiptDraftFilters }); setSelectedReceiptKeys([]); setReceiptPage(1); }} onReset={() => {
           setReceiptDraftFilters(EMPTY_RECEIPT_FILTERS);
           setReceiptAppliedFilters(EMPTY_RECEIPT_FILTERS);
@@ -1611,9 +1609,9 @@ export default function AssetReceiptPage() {
   }
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("资产接收")}>
       {contextHolder}
-      <PageTitle>资产接收</PageTitle>
+      {null}
       <QueryBar onQuery={() => { setPoAppliedFilters({ ...poDraftFilters }); setPoPage(1); }} onReset={() => { setPoDraftFilters(EMPTY_PO_FILTERS); setPoAppliedFilters(EMPTY_PO_FILTERS); setPoPage(1); }}>
         <QueryItem label="公司"><SelectorInput value={poDraftFilters.company} placeholder="请选择公司" onOpen={() => setSelectorType('company')} /></QueryItem>
         <QueryItem label="板块"><SelectorInput value={poDraftFilters.plate} placeholder="请选择板块" onOpen={() => setSelectorType('plate')} /></QueryItem>

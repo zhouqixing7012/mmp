@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Card, Space, Table, Typography, message } from 'antd';
+import { Button, Card, Space, Table, message } from 'antd';
 import * as XLSX from 'xlsx';
 import { getInventoryLocationChangePool } from './inventoryLocationChangeStore';
 
@@ -32,9 +32,9 @@ export default function InventoryLocationChangeFlow({ project, onBack }) {
     title, key: String(index), width: ['资产说明', '备注'].includes(title) ? 220 : 150,
     render: (_, row) => value(row) === null || value(row) === undefined || value(row) === '' ? '-' : value(row),
   }));
-  return <Space direction="vertical" size={16} className="w-full">
+  return <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("位置变更池")}>
     {contextHolder}
-    <Typography.Title level={4}>位置变更池</Typography.Title>
+    {null}
     <Card size="small" title={`${project.projectNo} ${project.projectName || ''}`} extra={<Button onClick={exportPool}>导出</Button>}>
       <Table rowKey="id" bordered size="small" columns={columns} dataSource={rows}
         locale={{ emptyText: '暂无待变更资产' }} scroll={{ x: 'max-content' }} pagination={{ pageSize: 10, showSizeChanger: true, showTotal: total => `共 ${total} 条` }} />

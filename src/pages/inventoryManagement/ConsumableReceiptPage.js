@@ -107,9 +107,7 @@ function SelectorInput({ value, placeholder, onOpen }) {
   );
 }
 
-function PageTitle({ children = '耗材接收' }) {
-  return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;
-}
+
 
 function Readonly({ children }) {
   return <Typography.Text>{children === 0 ? 0 : (children || '-')}</Typography.Text>;
@@ -1010,9 +1008,9 @@ export default function ConsumableReceiptPage() {
     const isReceiptLocked = hasReceipt || isClosed;
     const editingPoItemLocked = Boolean(editItem && getDraftReceiptLineReference(activePO.poNo, editItem.id));
     return (
-      <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-po-detail">
+      <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-po-detail" data-mmp-page-title={("PO单详情")}>
         {contextHolder}
-        <PageTitle>PO单详情</PageTitle>
+        {null}
         <Alert type="info" showIcon message="默认为全量接收，可点击编辑按钮修改接收数量！" />
         <Card size="small" title="PO基础信息">
           <DetailGrid columns={3} labelWidth={112}>
@@ -1114,9 +1112,9 @@ export default function ConsumableReceiptPage() {
 
   if (view === 'receiptList') {
     return (
-      <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-receipt-list">
+      <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-receipt-list" data-mmp-page-title={("接收单列表")}>
         {contextHolder}
-        <PageTitle>接收单列表</PageTitle>
+        {null}
         <QueryBar
           onQuery={() => { setReceiptFilters({ ...receiptDraft }); setSelectedReceipts([]); setReceiptPage(1); }}
           onReset={() => {
@@ -1186,9 +1184,9 @@ export default function ConsumableReceiptPage() {
     const isDraft = activeReceipt.status === '草稿';
     const isDurable = activeReceipt.purchaseType === '低值耐用品';
     return (
-      <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-receipt-detail">
+      <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-receipt-detail" data-mmp-page-title={("接收单详情")}>
         {contextHolder}
-        <PageTitle>接收单详情</PageTitle>
+        {null}
         <ReceiptInfoCard receipt={activeReceipt} />
         <Card
           size="small"
@@ -1230,9 +1228,9 @@ export default function ConsumableReceiptPage() {
     const allTagsGenerated = details.length > 0 && details.every((detail) => String(detail.assetTag || '').trim());
     const allSnMaintained = details.length > 0 && details.every((detail) => String(detail.sn || '').trim());
     return (
-      <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-maintenance">
+      <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-maintenance" data-mmp-page-title={(isDraft ? '维护接收明细' : '查看接收明细')}>
         {contextHolder}
-        <PageTitle>{isDraft ? '维护接收明细' : '查看接收明细'}</PageTitle>
+        {null}
         <ReceiptInfoCard receipt={activeReceipt} />
         {isDraft && (
           <Card size="small">
@@ -1317,9 +1315,9 @@ export default function ConsumableReceiptPage() {
   }
 
   return (
-    <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-po-list">
+    <Space direction="vertical" size={16} className="w-full" data-page-view-key="consumable-po-list" data-mmp-page-title={"耗材接收"}>
       {contextHolder}
-      <PageTitle />
+      {null}
       <QueryBar
         onQuery={() => { setPoFilters({ ...poDraft }); setPoPage(1); }}
         onReset={() => { setPoDraft({ ...EMPTY_PO_FILTERS }); setPoFilters({ ...EMPTY_PO_FILTERS }); setPoPage(1); }}

@@ -7,7 +7,7 @@ jest.mock('./AssetInventoryImageReviewV2', () => ({ buildReviewRows: () => [] })
 jest.mock('antd',()=>({
  Dropdown:({children})=><>{children}</>,
  Alert:({message})=><div>{message}</div>, DatePicker:()=>null, Modal:Object.assign(()=>null,{confirm:jest.fn()}), message:{useMessage:()=>[{warning:jest.fn(),success:jest.fn(),error:jest.fn()},null]},
- Button:({children,onClick,disabled,danger,icon,...props})=><button disabled={disabled} onClick={onClick} {...props}>{children}</button>,Card:({children,title})=><section>{title}{children}</section>,Space:({children})=><div>{children}</div>,Typography:{Title:({children})=><h1>{children}</h1>,Text:({children})=><span>{children}</span>},
+ Button:({children,onClick,disabled,danger,icon,...props})=><button disabled={disabled} onClick={onClick} {...props}>{children}</button>,Card:({children,title})=><section>{title}{children}</section>,Space:({children,...props})=><div {...Object.fromEntries(Object.entries(props).filter(([key])=>key.startsWith('data-')))}>{children}</div>,Typography:{Title:({children})=><h1>{children}</h1>,Text:({children})=><span>{children}</span>},
  TreeSelect:Object.assign(()=>null,{SHOW_PARENT:'SHOW_PARENT'}),
  Input:Object.assign(({onPressEnter,suffix,allowClear,...props})=><input {...props}/>, { TextArea: ({value,onChange,...props}) => <textarea value={value} onChange={onChange} {...props}/> }),Select:({value,options,onChange})=><select value={value} onChange={e=>onChange(e.target.value)}><option value=""/>{options.map(o=><option key={o.value}>{o.value}</option>)}</select>,
  Table:({columns,dataSource,rowSelection})=><>{rowSelection && dataSource.map(row=><button key={row.key} onClick={()=>rowSelection.onChange([row.key])}>{`选择${row.planNo}`}</button>)}<table><thead><tr>{columns.map(c=><th key={c.title}>{c.title}</th>)}</tr></thead><tbody>{dataSource.map((r,i)=><tr key={i}>{columns.map(c=><td key={c.title}>{c.render?c.render(r[c.dataIndex],r):r[c.dataIndex]}</td>)}</tr>)}</tbody></table></>
@@ -32,9 +32,9 @@ test('逐计划入口仅提交对应计划，全部通过后才开放项目审�
  expect(screen.queryByRole('button',{name:'提交项目审批'})).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'选择P1'}));
  fireEvent.click(screen.getByRole('button',{name:'提交计划审批'}));
- expect(screen.getByRole('heading',{name:'复盘结果编辑'})).toBeInTheDocument();
+ expect(document.querySelector('[data-mmp-page-title="复盘结果编辑"]')).toBeInTheDocument();
  fireEvent.click(screen.getByRole('button',{name:'提交'}));
- expect(screen.getByRole('heading',{name:'复盘结果审核'})).toBeInTheDocument();
+ expect(document.querySelector('[data-mmp-page-title="复盘结果审核"]')).toBeInTheDocument();
  expect(screen.queryByText('财务经理审批')).toBeNull();
  expect(screen.queryByText('ES主管审批')).toBeNull();
  expect(screen.queryByText('NO领导审批')).toBeNull();
@@ -59,7 +59,7 @@ test('逐计划入口仅提交对应计划，全部通过后才开放项目审�
  view=render(<Harness operator="冯丽婷"/>);
  expect(screen.getByRole('button',{name:'提交项目审批'})).toBeEnabled();
  fireEvent.click(screen.getByRole('button',{name:'提交项目审批'}));
- expect(screen.getByRole('heading',{name:'复盘结果审核'})).toBeInTheDocument();
+ expect(document.querySelector('[data-mmp-page-title="复盘结果审核"]')).toBeInTheDocument();
  expect(screen.getByText('财务经理审批')).toBeInTheDocument();
  expect(screen.queryByRole('button',{name:'同意'})).toBeNull();
  view.unmount();
@@ -79,7 +79,7 @@ test('计划驳回后恢复该计划提交入口，重提保留意见',()=>{
  render(<Harness/>);
  fireEvent.click(screen.getByRole('button',{name:'选择P1'}));
  fireEvent.click(screen.getByRole('button',{name:'提交计划审批'}));
- expect(screen.getByRole('heading',{name:'复盘结果编辑'})).toBeInTheDocument();
+ expect(document.querySelector('[data-mmp-page-title="复盘结果编辑"]')).toBeInTheDocument();
  fireEvent.click(screen.getByRole('button',{name:'提交'}));
  fireEvent.change(screen.getByLabelText('复盘审批意见'),{target:{value:'请补充'}});
  fireEvent.click(screen.getByRole('button',{name:'驳回'}));
@@ -87,7 +87,7 @@ test('计划驳回后恢复该计划提交入口，重提保留意见',()=>{
  fireEvent.click(screen.getByRole('button',{name:'返回'}));
  fireEvent.click(screen.getByRole('button',{name:'选择P1'}));
  fireEvent.click(screen.getByRole('button',{name:'提交计划审批'}));
- expect(screen.getByRole('heading',{name:'复盘结果编辑'})).toBeInTheDocument();
+ expect(document.querySelector('[data-mmp-page-title="复盘结果编辑"]')).toBeInTheDocument();
  fireEvent.click(screen.getByRole('button',{name:'提交'}));
  expect(screen.getByText('请补充')).toBeInTheDocument();
  expect(screen.getByRole('button',{name:'同意'})).toBeInTheDocument();
@@ -121,14 +121,14 @@ test('工具栏先选一已启动计划进入编辑，进入和返回都不生�
  expect(screen.queryByRole('columnheader',{name:'计划审批'})).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'选择P1'}));
  fireEvent.click(screen.getByRole('button',{name:'提交计划审批'}));
- expect(screen.getByRole('heading',{name:'复盘结果编辑'})).toBeInTheDocument();
+ expect(document.querySelector('[data-mmp-page-title="复盘结果编辑"]')).toBeInTheDocument();
  expect(screen.queryByText('审批信息')).toBeNull();
  expect(getReplaySubmission(project.projectNo)).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'返回'}));
  expect(getReplaySubmission(project.projectNo)).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'提交计划审批'}));
  fireEvent.click(screen.getByRole('button',{name:'提交'}));
- expect(screen.getByRole('heading',{name:'复盘结果审核'})).toBeInTheDocument();
+ expect(document.querySelector('[data-mmp-page-title="复盘结果审核"]')).toBeInTheDocument();
  expect(getReplaySubmission(project.projectNo).planReviews.P1.records.some(record=>record.node==='提交计划审批')).toBe(true);
 });
 

@@ -48,9 +48,7 @@ function normalizeAssetForProjectStage(asset, projectStatus) {
   };
 }
 
-function PageTitle({ children }) {
-  return <Typography.Title level={4} style={{ margin: 0 }}>{children}</Typography.Title>;
-}
+
 
 function CardTitle({ children }) {
   return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>;
@@ -481,9 +479,9 @@ export default function AssetInventorySnapshotDetailV2({
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("盘点项目详情")}>
       {contextHolder}
-      <PageTitle>盘点项目详情</PageTitle>
+      {null}
       <ProjectInfoCard project={{ ...project, status: projectStatus }} />
       <Tabs items={tabItems} defaultActiveKey="summary" />
 

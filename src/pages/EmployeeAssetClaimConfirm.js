@@ -44,7 +44,7 @@ export default function EmployeeAssetClaimConfirm() {
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between">
-          <Typography.Title level={4} className="mb-0">员工领用确认</Typography.Title>
+          <span hidden data-mmp-page-title>员工领用确认</span>
           <Typography.Text type="secondary">申请单号：{application.applicationNo}</Typography.Text>
         </div>
 

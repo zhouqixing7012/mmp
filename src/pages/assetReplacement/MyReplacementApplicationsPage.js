@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import { Button, Card, DatePicker, Empty, Input, Select, Space, Table, Tag, Typography } from 'antd';
+import { Button, Card, DatePicker, Empty, Input, Select, Space, Table, Tag } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { getAssetReplacementApplications } from '../../services/assetReplacementService';
 import ReplacementDetailModal from './ReplacementDetailModal';
@@ -44,7 +44,7 @@ export default function MyReplacementApplicationsPage() {
     <div className="min-h-screen bg-slate-100 p-4">
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
-          <Typography.Title level={4} className="mb-0">我的资产更换申请</Typography.Title>
+          <span hidden data-mmp-page-title>我的资产更换申请</span>
           <Button onClick={() => setApplications(getAssetReplacementApplications())}>刷新</Button>
         </div>
 

@@ -7,7 +7,7 @@ import AutoWidthTable from '../../components/tableSizing/AutoWidthTable';
 import { getIPDetail, getIPTypes, queryIPs } from '../../services/intangibleIPService';
 import { basicFields, displayIPValue, relatedSections } from './ipFields';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const pagination = { defaultPageSize: 10, showSizeChanger: true, showTotal: total => `共 ${total} 条` };
 export default function IPManagement() {
   const [filters, setFilters] = useState({ keyword: '', type: undefined });
@@ -29,7 +29,7 @@ export default function IPManagement() {
   ];
   if (detail) return (
     <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
-      <Space><Button onClick={() => setDetail(null)}>返回列表</Button><Title level={4} style={{ margin: 0 }}>{detail.name}</Title><Text type="secondary">{detail.code} · {detail.reviewStatus}</Text></Space>
+      <Space data-mmp-page-title={(detail.name)}><Button onClick={() => setDetail(null)}>返回列表</Button><Text strong>{detail.name}</Text><Text type="secondary">{detail.code} · {detail.reviewStatus}</Text></Space>
       <Card title="IP基本信息" size="small">
         <DetailGrid>{basicFields.map(([label, key, span]) => <DetailItem key={key} label={label} span={span}>{displayIPValue(detail[key], key)}</DetailItem>)}</DetailGrid>
       </Card>

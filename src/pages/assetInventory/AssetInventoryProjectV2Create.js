@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, Card, DatePicker, Input, InputNumber, Select, Space, Table, Typography, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import { ASSET_ROWS, PROJECT_INFO, PROJECT_ROWS, SCOPE_ROWS } from './mockData';
-import { CardTitle, PageTitle, PROJECT_TYPES, assetColumns } from './AssetInventoryProjectV2Common';
+import { CardTitle, PROJECT_TYPES, assetColumns } from './AssetInventoryProjectV2Common';
 
 function BasicInfoEditor({ project, setProject }) {
   const setField = (field, value) => setProject((current) => ({ ...current, [field]: value }));
@@ -113,9 +113,9 @@ export default function CreateProjectView({ initialProject, onBack, onGenerated 
   };
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={(initialProject ? '编辑盘点项目（方案二）' : '创建盘点项目（方案二）')}>
       {contextHolder}
-      <PageTitle>{initialProject ? '编辑盘点项目（方案二）' : '创建盘点项目（方案二）'}</PageTitle>
+      {null}
       <BasicInfoEditor project={project} setProject={setProject} />
       <ScopeCard rows={scopeRows} setRows={setScopeRows} messageApi={messageApi} />
       <Card size="small" title={<CardTitle>盘点资产范围明细</CardTitle>} extra={<Typography.Text type="secondary">共 {ASSET_ROWS.length} 条</Typography.Text>}>

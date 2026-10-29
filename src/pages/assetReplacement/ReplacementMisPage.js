@@ -87,7 +87,7 @@ export default function ReplacementMisPage() {
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between">
-          <Typography.Title level={4} className="mb-0">MIS鉴定</Typography.Title>
+          <span hidden data-mmp-page-title>MIS鉴定</span>
           <Typography.Text type="secondary">申请单号：{selectedApplication.id}</Typography.Text>
         </div>
 

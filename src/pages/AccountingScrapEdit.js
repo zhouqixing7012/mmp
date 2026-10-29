@@ -34,7 +34,7 @@ import {
   mockWarehouseInfoData,
 } from '../mock/businessRulesMock';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 // --- 模拟初始数据 ---
 const initialData = [
@@ -631,7 +631,7 @@ export default function AccountingScrapEdit({ embedded = false, onBack }) {
     <div className={embedded ? 'text-gray-800 pb-4' : 'min-h-screen bg-[#f5f7fa] text-gray-800 pb-24'}>
       <div className="max-w-[1800px] mx-auto p-5 space-y-4">
         <div className="flex items-start justify-between gap-4 px-1">
-          <Title level={3} className="!mb-0 !text-[22px]">账面报废申请单</Title>
+          <span hidden data-mmp-page-title>账面报废申请单</span>
           <div className="text-right pt-1">
             <Text type="secondary" className="block text-xs mb-1">申请单号</Text>
             <Text strong className="font-mono text-[15px]">{formData.docNo}</Text>

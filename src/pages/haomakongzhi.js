@@ -276,9 +276,7 @@ export default function ContractPermissionAdmin() {
     <>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between">
-          <Typography.Title level={4} className="mb-0">号码控制</Typography.Title>
-        </div>
+        <span hidden data-mmp-page-title>号码控制</span>
 
         <QueryBar
           onQuery={() => setAppliedFilters({ ...draftFilters })}

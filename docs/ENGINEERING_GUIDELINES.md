@@ -52,6 +52,7 @@
 - 禁止用正则表达式处理嵌套 JSX、HTML、XML；使用能识别嵌套结构的解析器或状态机，修改后检查实际结构。
 - 列增删、Tabs 显隐、字段显隐、编辑/查看态差异、查询拆并和范围控件替换，必须修改 JSX、`columns`、Tabs `items` 或条件渲染。
 - 禁止用全局 `:has()`、`nth-child`、DOM 顺序或 Ant Design 内部层级隐藏业务字段、列和页签；公共组件不得按字段名称自动改写具体业务结构。CSS 只负责视觉。
+- 桌面正文页面名称由面包屑承载，不再渲染重复大标题或空标题容器。需要识别当前内部视图时使用页面元数据（`data-mmp-page-title`）及公共读取函数，不依赖可见标题标签；元数据不得占用布局。卡片/弹窗/打印报表标题、业务单号、状态及对象名称按原业务保留。
 - 结构修改完成后核对最终源码中的实际渲染结构；构建成功不能代替该检查。具体检查见 `docs/IMPLEMENTATION_GUARDRAILS.md`。
 - 弹窗选择字段复用 `SelectModal`：输入区整体可点击，输入控件设为 `readOnly`，需要时用 `pointer-events-none` 将点击交给带 `cursor-pointer` 和 `onClick` 的父容器。禁止在 disabled input 上直接绑定点击事件。这里的只读选择控件是可操作入口，纯查看字段仍使用文本或状态展示。
 - 业务 Modal 暂时隐藏以打开 SelectModal 时，二者同级渲染；选择弹窗不得放在会因 `open=false + destroyOnHidden` 卸载的父 Modal 内容树中。

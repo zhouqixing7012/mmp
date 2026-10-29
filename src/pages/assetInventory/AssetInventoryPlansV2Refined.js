@@ -26,7 +26,7 @@ const EMPTY_PLAN_FILTERS = { planNo: '', planName: '', planStatus: '', organizat
 const planRanges = row => row.ranges || [row.range];
 const RANGE_OPTIONS = ['员工', '库房', '公共', '机房'];
 function includesText(value, query) { if (!query) return true; return String(value || '').toLowerCase().includes(String(query).trim().toLowerCase()); }
-function PageTitle({ children }) { return <Typography.Title level={4} style={{ margin: 0 }}>{children}</Typography.Title>; }
+
 function ProjectInfoCard({ project }) {
   return (
     <Card size="small" title={<SectionCardTitle>盘点项目信息</SectionCardTitle>}>
@@ -211,8 +211,8 @@ export default function AssetInventoryPlansV2Refined({ project, allAssetsPlanned
 
   if (activeReview) return <InventoryReplayReview key={`${activeReview.scope}:${activeReview.planNo || 'project'}:${activeReview.round}`} project={project} plans={activeReview.plans} assetsForPlan={row => activeReview.assetsByPlan[row.planNo] || []} submission={activeReview} currentOperator={currentOperator} onDecide={decideReview} onBack={() => setReviewTarget(null)} />;
 
-  return <Space direction="vertical" size={16} className="w-full">
-    {contextHolder}<PageTitle>盘点计划</PageTitle><ProjectInfoCard project={project} />
+  return <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("盘点计划")}>
+    {contextHolder}{null}<ProjectInfoCard project={project} />
     <Card size="small" title={<SectionCardTitle>盘点计划明细</SectionCardTitle>} extra={<Typography.Text type="secondary">共 {filteredRows.length} 条</Typography.Text>}>
       <QueryBar onQuery={() => { setAppliedFilters({ ...draftFilters }); setSelectedKeys([]); }} onReset={() => { setDraftFilters(EMPTY_PLAN_FILTERS); setAppliedFilters(EMPTY_PLAN_FILTERS); setSelectedKeys([]); }}>
         <QueryItem label="计划编码"><Input value={draftFilters.planNo} allowClear placeholder="请输入计划编码" onChange={(event) => updateFilter('planNo', event.target.value)} /></QueryItem>

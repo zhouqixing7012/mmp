@@ -42,7 +42,7 @@ const { TextArea } = Input;
 function PageHeader({ title, numberLabel, number }) {
   return (
     <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
-      <Typography.Title level={4} className="mb-0">{title}</Typography.Title>
+      <span hidden data-mmp-page-title>{title}</span>
       {number && <Typography.Text type="secondary">{numberLabel || '单据编号'}：{number}</Typography.Text>}
     </div>
   );

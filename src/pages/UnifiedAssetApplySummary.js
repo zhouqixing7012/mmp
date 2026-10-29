@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, Download, FileText, Save, UploadCloud } from 'lucide-react';
+import { CheckCircle2, Download, Save, UploadCloud } from 'lucide-react';
 import { Button, Card, Empty, Input, Space, Table, Upload, message as antdMessage } from 'antd';
 import {
   DEPARTMENT_SUMMARY_ROWS,
@@ -33,10 +33,7 @@ function csvCell(value) {
 
 function PageHeader({ title }) {
   return (
-    <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-800">
-      <FileText size={20} className="text-blue-600" />
-      {title}
-    </div>
+    <span hidden data-mmp-page-title>{title}</span>
   );
 }
 

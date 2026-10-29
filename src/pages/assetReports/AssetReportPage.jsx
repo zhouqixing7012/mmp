@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Card, Modal, Space, Table, Typography, message } from 'antd';
+import { Alert, Button, Card, Modal, Space, Table, message } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { exportReport, formatReportValue, getReportDefinition, queryReport, updateReportFilter } from '../../services/assetReportsService';
 import ReportFilter from './ReportFilter';
@@ -23,7 +23,7 @@ export default function AssetReportPage({ reportId, access = DEFAULT_REPORT_ACCE
   let accessError = null;
   try { assertReportAccess(access); } catch (error) { accessError = error.message; }
   if (accessError) return <div className="flex flex-col gap-4">
-    <Typography.Title level={4} className="!mb-0">{definition.title}</Typography.Title>
+    <span hidden data-mmp-page-title>{definition.title}</span>
     <Alert type="error" showIcon title={accessError} />
   </div>;
   const rows = queryResult.rows;
@@ -66,7 +66,7 @@ export default function AssetReportPage({ reportId, access = DEFAULT_REPORT_ACCE
     })),
   ];
   return <div className="flex flex-col gap-4">
-    <Typography.Title level={4} className="!mb-0">{definition.title}</Typography.Title>
+    <span hidden data-mmp-page-title>{definition.title}</span>
     <div onDoubleClick={event => { if (!event.target.closest('button')) clear(); }}>
       <QueryBar labelWidth={84} buttons={<Space wrap>{moreIndex >= 0 && <Button type="link" onClick={() => setExpanded(value => !value)}>{expanded ? '收起' : '更多'}</Button>}
         <Button onClick={clear}>重置</Button><Button type="primary" onClick={onQuery}>查询</Button></Space>}>

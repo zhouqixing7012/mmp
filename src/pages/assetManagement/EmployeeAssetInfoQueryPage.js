@@ -825,7 +825,7 @@ export default function EmployeeAssetInfoQueryPage() {
     <>
       {contextHolder}
       <div className="flex flex-col gap-4">
-        <Typography.Title level={4} className="mb-0">员工资产信息查询</Typography.Title>
+        <span hidden data-mmp-page-title>员工资产信息查询</span>
 
         <Tabs
           activeKey={activeTab}

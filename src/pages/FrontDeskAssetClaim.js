@@ -110,7 +110,7 @@ export default function FrontDeskAssetClaim() {
       >
         <Space direction="vertical" size={16} className="w-full">
           <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
-            <Typography.Title level={4} className="mb-0">ES前台领用</Typography.Title>
+            <span hidden data-mmp-page-title>ES前台领用</span>
             <Typography.Text type="secondary">申请单号：{application.applicationNo}</Typography.Text>
           </div>
 

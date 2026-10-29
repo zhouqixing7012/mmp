@@ -59,8 +59,8 @@ export default function ClaimSummaryDetail({ definition, record, onBack }) {
     const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(summaryExportRows(summary.lines, consumable)), '申请明细');
     XLSX.writeFile(workbook, definition.title + '-申请明细.xlsx');
   };
-  return <Space orientation="vertical" size={16} style={{ width: '100%' }}>
-    <Typography.Title level={4}>统一申请汇总详情</Typography.Title>
+  return <Space orientation="vertical" size={16} style={{ width: '100%' }} data-mmp-page-title={("统一申请汇总详情")}>
+    {null}
     <Card title="汇总信息"><DetailGrid><DetailItem label="ES汇总说明" span={3}><Input.TextArea value={readOnlyValue(summary.esDescription)} readOnly autoSize /></DetailItem><DetailItem label="项目用途说明" span={3}><Input.TextArea aria-label="项目用途说明" value={usage} onChange={event => setUsage(event.target.value)} autoSize /><Typography.Text type="secondary">此信息会同步至PR系统</Typography.Text></DetailItem></DetailGrid></Card>
     <Card title="部门汇总信息"><Table rowKey="id" size="small" pagination={false} columns={groupColumns} dataSource={groups} summary={() => summaryTotal(groupColumns, groups, 'quantity', 'amount')} /></Card>
     <Alert type="info" title="此汇总申请中的价格仅供参考，最终采购价格以PR单为准。" />

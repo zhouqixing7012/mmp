@@ -105,7 +105,7 @@ export default function ContractReturnHandlingPage() {
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between">
-          <Typography.Title level={4} className="mb-0">合约号码退库办理</Typography.Title>
+          <span hidden data-mmp-page-title>合约号码退库办理</span>
           <Typography.Text type="secondary">退库单号：{selected.id}</Typography.Text>
         </div>
         <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>

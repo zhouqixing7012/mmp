@@ -122,9 +122,7 @@ function formatMoney(value) {
   return numeric.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function PageTitle({ children }) {
-  return <Typography.Title level={4} style={{ margin: 0 }}>{children}</Typography.Title>;
-}
+
 
 function CardTitle({ children }) {
   return (
@@ -417,9 +415,9 @@ function ProjectListView({ getCloseBlockReason = inventoryProjectCloseBlockReaso
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("盘点项目")}>
       {contextHolder}
-      <PageTitle>盘点项目</PageTitle>
+      {null}
 
       <QueryBar
         onQuery={() => {
@@ -1061,9 +1059,9 @@ export function CreateProjectView({ initialProject, onBack, onGenerated, creator
   };
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={(initialProject ? '编辑盘点项目' : '创建盘点项目')}>
       {contextHolder}
-      <PageTitle>{initialProject ? '编辑盘点项目' : '创建盘点项目'}</PageTitle>
+      {null}
       {managementBlock && <Alert type="warning" showIcon title={managementBlock} />}
       {project.numberAllocationError && <Alert type="error" showIcon title={project.numberAllocationError} />}
 
@@ -1466,9 +1464,9 @@ function SnapshotView({ project, projectStatus, setProjectStatus, onBack, onOpen
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("盘点项目详情")}>
       {contextHolder}
-      <PageTitle>盘点项目详情</PageTitle>
+      {null}
       <ProjectInfoCard project={{ ...project, status: projectStatus }} extended />
       <ImageUploadRuleEditor />
 
@@ -1610,9 +1608,9 @@ function PlanAssetListView({ project, plan, onBack }) {
   };
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("盘点计划资产清单")}>
       {contextHolder}
-      <PageTitle>盘点计划资产清单</PageTitle>
+      {null}
       <ProjectInfoCard project={project} />
       <Card size="small" title={<CardTitle>计划信息</CardTitle>}>
         <DetailGrid columns={3}>
@@ -1810,9 +1808,9 @@ function PlansView({ project, projectStatus, setProjectStatus, onBack, onOpenPla
   const anyStarted = rows.some((row) => row.status === '盘点中');
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("盘点计划")}>
       {contextHolder}
-      <PageTitle>盘点计划</PageTitle>
+      {null}
       <ProjectInfoCard project={{ ...project, status: projectStatus }} />
 
       <QueryBar
@@ -2029,9 +2027,9 @@ function ImageReviewView({ project, onBack }) {
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("图片审核")}>
       {contextHolder}
-      <PageTitle>图片审核</PageTitle>
+      {null}
       <ProjectInfoCard project={project} />
 
       <Card size="small" title={<CardTitle>审核概览</CardTitle>}>
@@ -2188,9 +2186,9 @@ function ProgressView({ project, onBack }) {
     : ASSET_ROWS;
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("盘点进度查看")}>
       {contextHolder}
-      <PageTitle>盘点进度查看</PageTitle>
+      {null}
       <ProjectInfoCard project={project} />
       <Tabs items={tabItems} defaultActiveKey="summary" />
       <div className="flex justify-center">

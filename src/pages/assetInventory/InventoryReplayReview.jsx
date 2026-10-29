@@ -33,8 +33,8 @@ export default function InventoryReplayReview({ project, plans, assetsForPlan, s
     const list = assetsForPlan(row); const counted = sumInventoryQuantity(list.filter((asset) => asset.inventoryStatus === '已盘' || asset.inventoryStatus === '代盘')); const total = sumInventoryQuantity(list);
     return {...row, period: project.period, financialSupervisor:'徐博', assetCount:total, countedCount:counted, uncountedCount:total-counted, mandatoryUncountedCount:sumInventoryQuantity(list.filter(asset => asset.inventoryStatus === '未盘' && isInventoryAssetMandatory(asset, project))), ratio:total ? `${(counted/total*100).toFixed(2)}%` : '-'};
   });
-  return <div data-inventory-review><Space direction="vertical" size={16} className="w-full">
-    <Typography.Title level={4} style={{margin:0}}>{mode === 'edit' ? '复盘结果编辑' : '复盘结果审核'}</Typography.Title>
+  return <div data-inventory-review><Space direction="vertical" size={16} className="w-full" data-mmp-page-title={(mode === 'edit' ? '复盘结果编辑' : '复盘结果审核')}>
+    {null}
     <Card size="small" title={<SectionCardTitle>复盘信息</SectionCardTitle>}><Table size="small" bordered pagination={false} rowKey="planNo" scroll={{x:'max-content'}} dataSource={summary} columns={[
       {title:'计划编号',dataIndex:'planNo',render:(value)=><Button type="link" onClick={()=>{setPlanNo(value);setDraft(EMPTY);setFilters(EMPTY);}}>{value}</Button>},
       ...[['计划名称','planName'],['期间','period'],['盘点执行人','executor'],['财务监督人','financialSupervisor'],['资产总量','assetCount'],['未盘数量','uncountedCount'],['未盘必盘数量','mandatoryUncountedCount'],['盘点比例','ratio']].map(([title,dataIndex])=>({title,dataIndex,render:(value)=>value ?? '-'}))

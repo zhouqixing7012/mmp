@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Card, Modal, Space, Table, Typography } from 'antd';
+import { Button, Card, Modal, Space, Table } from 'antd';
 import { displayApplicationValue, LegacyFields } from './LegacyStorageDetail';
 
 const historyColumns = [
@@ -19,8 +19,8 @@ export default function EmployeeApplicationDetail({ definition, record, onBack, 
   const returnColumns = [...baseColumns, column('配置', 'config', { width: 250, render: (_, line) => displayApplicationValue(line.material.config) }), column('数量', 'quantity', { render: number }), column('资产状态', 'status'), column('资产用途', 'purpose'), accessories, column('耗材信息', 'consumableInfo'), column('物资说明', 'materialNote')];
   const pendingColumns = [column('仓库', 'warehouse', { width: 240 }), column('资产标签号', 'tag'), column('SN号', 'sn'), column('公司', 'company'), column('模块', 'module'), column('启用日期', 'enabledDate'), description, column('配置', 'config', { width: 250, render: (_, line) => displayApplicationValue(line.material.config) }), column('备注', 'note'), column('耗材信息', 'consumableInfo')];
   const source = record.sourcePerson, target = record.targetPerson;
-  return <Space orientation="vertical" size={16} style={{ width: '100%' }}>
-    <Typography.Title level={4} style={{ margin: 0 }}>{definition.title}详情</Typography.Title>
+  return <Space orientation="vertical" size={16} style={{ width: '100%' }} data-mmp-page-title={(definition.title) + ("详情")}>
+    {null}
     {transfer ? <>
       <Card size="small" title="转出人信息" extra={record.values.applicationNo}><LegacyFields fields={[
         ['转出人', source.name], ['转出公司', source.company], ['转出部门', source.department], ['联系电话', source.phone], ['邮箱', source.email],

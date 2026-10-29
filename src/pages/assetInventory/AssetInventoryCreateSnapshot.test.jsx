@@ -17,7 +17,7 @@ jest.mock('antd', () => {
   DatePicker.RangePicker = () => <div />;
   const Modal = ({ children, open }) => open ? <div>{children}</div> : null;
   Modal.confirm = jest.fn();
-  return {
+  return { Tooltip: ({ children }) => <>{children}</>,
     Alert: Box, Button: ({ children, onClick }) => <button onClick={onClick}>{children}</button>,
     Card: Box, Checkbox: Box, Collapse: Box, DatePicker, Input,
     InputNumber: () => <div />, Modal, Progress: Box, Radio: Box, Select,

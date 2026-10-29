@@ -1,3 +1,4 @@
+import { getPageIdentity } from '../../components/pageIdentity';
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import AssetInventoryProjectPageV2 from './AssetInventoryProjectPageV2';
@@ -48,7 +49,7 @@ export default function AssetInventoryProjectPageV3() {
 
     const apply = () => {
       restoreScope();
-      const pageTitle = root.querySelector('h4.ant-typography')?.textContent?.trim() || '';
+      const pageTitle = getPageIdentity(root) || '';
       if (!['创建盘点项目', '编辑盘点项目'].includes(pageTitle)) {
         removeSlot();
         return;
@@ -87,7 +88,7 @@ export default function AssetInventoryProjectPageV3() {
 
     apply();
     const observer = new MutationObserver(scheduleApply);
-    observer.observe(root, { childList: true, subtree: true, characterData: true });
+    observer.observe(root, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['data-mmp-page-title'] });
 
     return () => {
       observer.disconnect();

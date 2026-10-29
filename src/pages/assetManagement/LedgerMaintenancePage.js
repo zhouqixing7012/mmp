@@ -279,9 +279,7 @@ export default function LedgerMaintenancePage({
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
 
-      <div className="flex items-center justify-between">
-        <Typography.Title level={4} className="mb-0">{title}</Typography.Title>
-      </div>
+      <span hidden data-mmp-page-title>{title}</span>
 
       <QueryBar onQuery={handleQuery} onReset={handleReset}>
         {filterDefinitions.map((definition) => (

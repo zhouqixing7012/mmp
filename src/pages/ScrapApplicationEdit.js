@@ -13,7 +13,7 @@ import {
 } from 'antd';
 import SelectModal from '../components/SelectModal';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const emptyRow = (id) => ({
   id,
@@ -166,7 +166,7 @@ export default function ScrapApplicationEdit({ embedded = false, onBack }) {
     <div className={embedded ? 'pb-4 text-gray-800' : 'min-h-screen bg-[#f5f7fa] pb-24 text-gray-800'}>
       <div className="mx-auto max-w-[1800px] space-y-4 p-5">
         <div className="flex items-start justify-between gap-4 px-1">
-          <Title level={3} className="!mb-0 !text-[22px]">报废申请单</Title>
+          <span hidden data-mmp-page-title>报废申请单</span>
           <div className="pt-1 text-right">
             <Text type="secondary" className="mb-1 block text-xs">单据编号</Text>
             <Text className="font-mono text-[15px] text-gray-400">保存/提交后生成</Text>

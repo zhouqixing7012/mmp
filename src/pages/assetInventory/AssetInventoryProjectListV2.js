@@ -184,7 +184,7 @@ export default function AssetInventoryProjectListV2({ creator, onCreatorChange, 
   return <Space direction="vertical" size={16} className="w-full">
     {contextHolder}
     <div className="flex items-center justify-between">
-      <Typography.Title level={4} style={{ margin: 0 }}>盘点项目</Typography.Title>
+      <span hidden data-mmp-page-title>盘点项目</span>
       <Space>
       <Button icon={<Smartphone size={14} />} onClick={() => {
           if (selectedKeys.length > 1) { messageApi.warning('请选择一个盘点项目进行移动端预览'); return; }

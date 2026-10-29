@@ -95,7 +95,7 @@ function formatMoney(value) {
 }
 
 function PageTitle({ children }) {
-  return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;
+  return <span hidden data-mmp-page-title>{children}</span>;
 }
 
 function Readonly({ children }) {
@@ -668,9 +668,9 @@ function MoveEditor({ source, documents, onBack, onSave, onSubmit }) {
 
   return (
     <div data-page-view-key={`move-editor-${status}`}>
-      <Space direction="vertical" size={16} className="w-full">
+      <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={(!source ? '创建移库单' : editable ? '编辑移库单' : '移库单详情')}>
         {contextHolder}
-        <PageTitle>{!source ? '创建移库单' : editable ? '编辑移库单' : '移库单详情'}</PageTitle>
+        {null}
 
         <Card size="small" title="移库单信息">
           <DetailGrid columns={3} labelWidth={96}>

@@ -49,7 +49,7 @@ export default function ContractReturnConfirmPage() {
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
         <div className="flex items-center justify-between">
-          <Typography.Title level={4} className="mb-0">员工合约号码退库确认</Typography.Title>
+          <span hidden data-mmp-page-title>员工合约号码退库确认</span>
           <Typography.Text type="secondary">退库单号：{application.id}</Typography.Text>
         </div>
         <Card size="small" title={<SectionTitle>申请人信息</SectionTitle>}>

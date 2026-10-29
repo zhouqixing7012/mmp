@@ -52,9 +52,7 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-function PageTitle({ children }) {
-  return <Typography.Title level={4} style={{ margin: 0 }}>{children}</Typography.Title>;
-}
+
 
 
 function toImportedPhoto(record) {
@@ -620,9 +618,9 @@ export default function AssetInventoryImageReviewV2({ project, onBack }) {
     },
   ];
 
-  return <Space direction="vertical" size={16} className="w-full">
+  return <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("图片审核")}>
     {contextHolder}
-    <PageTitle>图片审核</PageTitle>
+    {null}
     {project && <ProjectInfoCard project={project} />}
     <Card size="small" title={<SectionCardTitle>审核概览</SectionCardTitle>}>
       <div className="grid grid-cols-3 gap-6">

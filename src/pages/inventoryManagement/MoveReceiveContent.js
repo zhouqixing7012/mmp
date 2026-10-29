@@ -473,9 +473,9 @@ function ReceiveDetail({ row, documents, setDocuments, onBack }) {
 
   return (
     <div data-page-view-key={`move-receive-${row.id}`}>
-      <Space direction="vertical" size={16} className="w-full">
+      <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("移库接收")}>
         {contextHolder}
-        <Typography.Title level={4} className="mb-0">移库接收</Typography.Title>
+        {null}
 
         <Card size="small" title="移库单信息">
           <DetailGrid columns={3} labelWidth={100}>

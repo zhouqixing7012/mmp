@@ -23,7 +23,7 @@ import {
   mockWarehouseInfoData,
 } from '../../mock/businessRulesMock';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const AVAILABLE_ASSETS = [
   {
@@ -567,7 +567,7 @@ export default function CrossCompanyTransferEditPage({ onBack, variant = 'menu' 
   return (
     <div className="space-y-4 pb-4 text-gray-800">
       <div className="flex items-start justify-between gap-4 px-1">
-        <Title level={3} className="!mb-0 !text-[22px]">跨公司转移申请单</Title>
+        <span hidden data-mmp-page-title>跨公司转移申请单</span>
         <div className="pt-1 text-right">
           <Text type="secondary" className="mb-1 block text-xs">
             {fromScrapList ? '单据编号' : '申请单号'}

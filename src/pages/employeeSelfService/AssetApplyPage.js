@@ -325,8 +325,8 @@ export default function EmployeeAssetApplyPage() {
   return (
     <>
       {contextHolder}
-      <Space direction="vertical" size={16} className="w-full">
-        <Typography.Title level={4} className="mb-0">物资申请</Typography.Title>
+      <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("物资申请")}>
+        {null}
 
         {!canApply && <Alert type="error" showIcon message="当前员工身份暂不支持发起物资申请" />}
         {isPreview && overStandardCount > 0 && (

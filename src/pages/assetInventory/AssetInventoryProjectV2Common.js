@@ -1,6 +1,6 @@
 import { formatAssetCategory } from '../../components/AssetQueryControls';
 import React from 'react';
-import { Card, Typography } from 'antd';
+import { Card } from 'antd';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 
@@ -13,7 +13,7 @@ export const EMPTY_FILTERS = { projectNo: '', projectName: '', status: '', owner
 export function CardTitle({ children }) {
   return <div className="flex items-center gap-2"><span className="h-4 w-1 rounded bg-[#1677ff]" /><span>{children}</span></div>;
 }
-export function PageTitle({ children }) { return <Typography.Title level={4} style={{ margin: 0 }}>{children}</Typography.Title>; }
+export function PageTitle({ children }) { return <span hidden data-mmp-page-title>{children}</span>; }
 export function includesText(value, query) { if (!query) return true; return String(value || '').toLowerCase().includes(String(query).trim().toLowerCase()); }
 export function ProjectInfoCard({ project }) {
   return <Card size="small" title={<CardTitle>盘点项目信息</CardTitle>}><DetailGrid columns={3}>

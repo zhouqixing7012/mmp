@@ -30,7 +30,8 @@ beforeEach(() => { window.localStorage.clear(); jest.clearAllMocks(); require('.
 test.each(INVENTORY_REPORT_USERS)('仅明确授权身份$name可直接进入盘点报表', person => {
   setInventoryOperator(person.value);
   render(<AssetInventoryReportPage/>);
-  expect(screen.getByRole('heading',{name:'盘点报表'})).toBeInTheDocument();
+  expect(screen.queryByRole('heading',{name:'盘点报表'})).toBeNull();
+  expect(screen.getByRole('combobox',{name:'盘点年份'})).toBeInTheDocument();
   expect(getInventoryReport).toHaveBeenCalled();
 });
 
@@ -55,7 +56,8 @@ test('既有演示身份切换同时更新菜单及已打开报表，刷新继�
   expect(screen.getAllByText('盘点报表')).toHaveLength(2);
   view.unmount();
   render(<AssetInventoryReportPage/>);
-  expect(screen.getByRole('heading',{name:'盘点报表'})).toBeInTheDocument();
+  expect(screen.queryByRole('heading',{name:'盘点报表'})).toBeNull();
+  expect(screen.getByRole('combobox',{name:'盘点年份'})).toBeInTheDocument();
   expect(getInventoryOperator()).toBe('穆晓丹');
 });
 

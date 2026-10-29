@@ -108,9 +108,7 @@ export default function ReplacementApplyPage() {
     <>
       {contextHolder}
       <Space direction="vertical" size={16} className="w-full">
-        <div className="flex items-center justify-between">
-          <Typography.Title level={4} className="mb-0">资产更换申请</Typography.Title>
-        </div>
+        <span hidden data-mmp-page-title>资产更换申请</span>
 
         <Card title={<SectionTitle>更换信息说明</SectionTitle>} size="small">
           <DetailGrid>

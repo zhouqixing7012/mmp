@@ -1,6 +1,6 @@
 import { APPLICATION_WEEKLY_RULE } from '../../services/applicationWeeklyReport';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Card, Modal, Space, Table, Typography, message } from 'antd';
+import { Alert, Button, Card, Modal, Space, Table, message } from 'antd';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
 import { exportApplications, formatApplicationValue, getApplicationDefinition, queryApplications, removeApplicationDrafts } from '../../services/applicationQueryService';
@@ -54,7 +54,7 @@ export default function ApplicationQueryPage({ id }) {
   const Detail = definition.detailType === 'employee' ? EmployeeApplicationDetail : ['storage', 'return', 'borrow'].includes(id) ? LegacyApplicationDetail : ClaimApplicationDetail;
   return <div className="flex flex-col gap-4">
     {detail ? <Detail definition={definition} record={detail.record} view={detail.view} onBack={goBack} onProgress={setProgress} /> : <>
-      <Typography.Title level={4} className="!mb-0">{definition.title}</Typography.Title>
+      <span hidden data-mmp-page-title>{definition.title}</span>
       {id === 'unfinished' && <Alert type="info" title={`未完成员工申请周报：每周${'日一二三四五六'[APPLICATION_WEEKLY_RULE.weekday]} ${APPLICATION_WEEKLY_RULE.time}（北京时间），通过${APPLICATION_WEEKLY_RULE.channel}发送给 ${APPLICATION_WEEKLY_RULE.recipients.join('、')}。`} description="原型可查询、导出汇总清单；真实定时发送尚未接入。" />}
       <QueryBar labelWidth={84} onQuery={onQuery} onReset={reset}>
         {definition.filters.map(field => <QueryItem key={field.key} label={field.label} labelWidth={84}>

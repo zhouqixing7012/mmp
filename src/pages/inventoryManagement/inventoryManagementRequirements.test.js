@@ -442,11 +442,11 @@ test('移动端我的接收展示待接收数量且扫码后定位资产卡片',
 
 
 test('资产和耗材接收页面遵循统一UI层级与操作状态', () => {
-  expect(assetReceiptSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
+  expect(assetReceiptSource).toContain('data-mmp-page-title');
   expect(assetReceiptSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
-  expect(assetReceiptSource).toContain("<PageTitle>PO单详情</PageTitle>");
-  expect(assetReceiptSource).toContain("<PageTitle>接收单列表</PageTitle>");
-  expect(assetReceiptSource).toContain("<PageTitle>接收单详情</PageTitle>");
+  expect(assetReceiptSource).toContain('data-mmp-page-title={("PO单详情")}');
+  expect(assetReceiptSource).toContain('data-mmp-page-title={("接收单列表")}');
+  expect(assetReceiptSource).toContain('data-mmp-page-title={("接收单详情")}');
   expect(assetReceiptSource).toContain("title=\"PO资产明细\"");
   expect(assetReceiptSource).toContain("title=\"接收资产明细\"");
   expect(assetReceiptSource).toContain("{ title: '资产总类', dataIndex: 'materialGroup'");
@@ -459,11 +459,11 @@ test('资产和耗材接收页面遵循统一UI层级与操作状态', () => {
   expect(assetReceiptSource).toContain("disabled={!selectedReceiptLineKeys.length}");
   expect(assetReceiptSource).not.toContain('text-[#1677ff]');
 
-  expect(consumableReceiptSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
+  expect(consumableReceiptSource).toContain('data-mmp-page-title');
   expect(consumableReceiptSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
-  expect(consumableReceiptSource).toContain("<PageTitle>PO单详情</PageTitle>");
-  expect(consumableReceiptSource).toContain("<PageTitle>接收单列表</PageTitle>");
-  expect(consumableReceiptSource).toContain("<PageTitle>接收单详情</PageTitle>");
+  expect(consumableReceiptSource).toContain('data-mmp-page-title={("PO单详情")}');
+  expect(consumableReceiptSource).toContain('data-mmp-page-title={("接收单列表")}');
+  expect(consumableReceiptSource).toContain('data-mmp-page-title={("接收单详情")}');
   expect(consumableReceiptSource).toContain('title="PO耗材明细"');
   expect(consumableReceiptSource).toContain('title="接收耗材明细"');
   expect(consumableReceiptSource).toContain("disabled={!selectedReceipts.length}");
@@ -496,14 +496,14 @@ test('入库单当前仓库位于入库单信息Card右上角', () => {
 
 
 test('入库和出库页面遵循统一层级、面包屑和勾选操作状态', () => {
-  expect(inboundSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
+  expect(inboundSource).toContain('data-mmp-page-title');
   expect(inboundSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
   expect(inboundSource).toContain("!source ? '创建入库单' : editable ? '编辑入库单' : '入库单详情'");
   expect(inboundSource).toContain("disabled={!selectedKeys.length} onClick={deleteLines}");
   expect(inboundSource).toContain("disabled={!selectedKeys.length || rows.filter((row) => selectedKeys.includes(row.id)).some((row) => row.status !== '草稿')}");
   expect(inboundSource).toContain("disabled={!selectedKeys.length || rows.filter((row) => selectedKeys.includes(row.id)).some((row) => row.status !== '已完成')} onClick={batchPrint}");
 
-  expect(outboundSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
+  expect(outboundSource).toContain('data-mmp-page-title');
   expect(outboundSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
   expect(outboundSource).toContain("!source ? '创建出库单' : editable ? '编辑出库单' : '出库单详情'");
   expect(outboundSource).toContain("disabled={!selectedKeys.length} onClick={deleteLines}");
@@ -581,7 +581,7 @@ test('转移手工创建仅使用资产命名并统一资产类别', () => {
 
 
 test('库存管理剩余页面遵循统一UI层级与已确认字段口径', () => {
-  expect(moveSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
+  expect(moveSource).toContain('data-mmp-page-title');
   expect(moveSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
   expect(moveSource).toContain("!source ? '创建移库单' : editable ? '编辑移库单' : '移库单详情'");
   expect(moveSource).not.toContain('>保存草稿</Button>');
@@ -596,7 +596,7 @@ test('库存管理剩余页面遵循统一UI层级与已确认字段口径', () 
   expect(moveSource).toContain('disabled={!selectedRowKeys.length} onClick={deleteRows}');
   expect(moveSource).toContain("getCheckboxProps: (record) => ({ disabled: record.status !== '草稿' })");
 
-  expect(moveReceiveSource).toContain('<Typography.Title level={4} className="mb-0">移库接收</Typography.Title>');
+  expect(moveReceiveSource).toContain('data-mmp-page-title');
   expect(moveReceiveSource).toContain('<DetailItem label="移入仓库"><Readonly>{row.toWarehouse}</Readonly></DetailItem>');
   expect(moveReceiveSource).toContain("title: '接收说明'");
   expect(moveReceiveSource).toContain("title: '接收仓管员'");
@@ -605,15 +605,15 @@ test('库存管理剩余页面遵循统一UI层级与已确认字段口径', () 
   expect(moveReceiveSource).toContain("updateReceiveField(asset.id, 'receiveDesc'");
   expect(moveReceiveSource).toContain('disabled={!selectedKeys.length} onClick={receive}');
 
-  expect(transferSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
+  expect(transferSource).toContain('data-mmp-page-title');
   expect(transferSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
-  expect(transferSource).toContain("<PageTitle>{initialDocument ? '编辑转移单' : '创建转移单'}</PageTitle>");
+  expect(transferSource).toContain("data-mmp-page-title={(initialDocument ? '编辑转移单' : '创建转移单')}");
   expect(transferSource).not.toContain('财务公司');
   expect(transferSource).toContain('<Button onClick={saveDraft}>保存草稿</Button>');
   expect(transferSource).toContain('disabled={!selectedRowKeys.length} onClick={deleteRows}');
   expect(transferSource).toContain("getCheckboxProps: (record) => ({ disabled: record.status !== '草稿' })");
 
-  expect(warehouseWorkbenchSource).toContain('return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;');
+  expect(warehouseWorkbenchSource).toContain('data-mmp-page-title');
   expect(warehouseWorkbenchSource).toContain("window.dispatchEvent(new CustomEvent('mmp:breadcrumb-change'");
   expect(warehouseWorkbenchSource).toContain('data-page-view-key="warehouse-workbench"');
   expect(warehouseWorkbenchSource).not.toContain('bg-[#1677ff]');

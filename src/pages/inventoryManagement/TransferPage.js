@@ -301,9 +301,7 @@ function toSelectData(values) {
   return [...new Set(values.filter(Boolean))].map((name, index) => ({ id: index + 1, name }));
 }
 
-function PageTitle({ children }) {
-  return <Typography.Title level={4} className="mb-0">{children}</Typography.Title>;
-}
+
 
 function Readonly({ children }) {
   return <Typography.Text>{children === 0 ? 0 : (children || '-')}</Typography.Text>;
@@ -977,8 +975,8 @@ function TransferDetail({ document: transferDocument, onBack }) {
   ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
-      <PageTitle>转移单详情</PageTitle>
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("转移单详情")}>
+      {null}
       <Card size="small" title="转移单信息">
         <DetailGrid columns={3} labelWidth={96}>
           <DetailItem label="转移单号"><Readonly>{transferDocument.documentNo}</Readonly></DetailItem>
@@ -1220,9 +1218,9 @@ function TransferEditor({ initialDocument, lockedAssetTags = new Set(), onBack, 
     return undefined;
   };
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={(initialDocument ? '编辑转移单' : '创建转移单')}>
       {contextHolder}
-      <PageTitle>{initialDocument ? '编辑转移单' : '创建转移单'}</PageTitle>
+      {null}
       <Card size="small" title="转移单信息">
         <DetailGrid columns={3} labelWidth={96}>
           <DetailItem label="转移单号"><Readonly>{documentNo || '自动生成'}</Readonly></DetailItem>
@@ -1442,9 +1440,9 @@ export default function TransferPage() {
     { title: '资产数量', dataIndex: 'quantity', width: 110, align: 'right', sorter: (a, b) => Number(a.quantity || 0) - Number(b.quantity || 0) },
   ];
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("转移")}>
       {contextHolder}
-      <PageTitle>转移</PageTitle>
+      {null}
       <QueryBar onQuery={() => {
         if (draft.createdFrom && draft.createdTo && draft.createdTo < draft.createdFrom) {
           messageApi.warning('制单日期结束日期不得早于开始日期');

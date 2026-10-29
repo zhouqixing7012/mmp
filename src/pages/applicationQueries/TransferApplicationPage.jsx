@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ApplicationQueryPage from './ApplicationQueryPage';
-import { App, Button, Card, DatePicker, Input, Popconfirm, Select, Space, Table, Typography } from 'antd';
+import { App, Button, Card, DatePicker, Input, Popconfirm, Select, Space, Table } from 'antd';
 import dayjs from 'dayjs';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
@@ -34,7 +34,7 @@ export function ExecutionTransferPage() {
     { title: '操作', fixed: 'right', width: 85, render: (_, row) => <Button type="link" onClick={() => open(row, row.status !== '草稿')}>{row.status === '草稿' ? '编辑' : '查看'}</Button> },
   ];
   return <div className="space-y-4">
-    <Typography.Title level={4} className="!mb-0">转移单</Typography.Title>
+    <span hidden data-mmp-page-title>转移单</span>
     <QueryBar onQuery={() => { setFilters({ ...draft }); setPage({ ...page, current: 1 }); }} onReset={() => { setDraft({}); setFilters({}); setPage({ ...page, current: 1 }); }}>
       <QueryItem label="转移单号"><Input allowClear value={draft.number} onChange={event => patch('number', event.target.value)} /></QueryItem>
       <QueryItem label="转移原因"><Input allowClear value={draft.remarks} onChange={event => patch('remarks', event.target.value)} /></QueryItem>

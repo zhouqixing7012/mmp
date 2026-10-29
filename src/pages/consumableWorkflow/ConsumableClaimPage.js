@@ -112,7 +112,7 @@ export default function ConsumableClaimPage() {
     <Space direction="vertical" size={16} className="w-full">
       {contextHolder}
       <div className="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
-        <Typography.Title level={4} className="mb-0">耗材领用</Typography.Title>
+        <span hidden data-mmp-page-title>耗材领用</span>
         <Typography.Text type="secondary">领用单号：{claim.id}</Typography.Text>
       </div>
 

@@ -14,14 +14,14 @@ jest.mock('xlsx', () => ({ ...jest.requireActual('xlsx'), writeFile: jest.fn() }
 
 jest.mock('antd', () => {
   const React = require('react');
-  const Box = ({ children, title, extra }) => <div>{title}{extra}{children}</div>;
+  const Box = ({ children, title, extra, ...props }) => <div {...Object.fromEntries(Object.entries(props).filter(([key]) => key.startsWith('data-')))}>{title}{extra}{children}</div>;
   const Input = ({ value, onChange, 'aria-label': ariaLabel }) => <input aria-label={ariaLabel} value={value ?? ''} onChange={onChange} />;
   Input.TextArea = Input;
   const DatePicker = Object.assign(() => null, { RangePicker: () => null });
   const Modal = ({ open, children }) => open ? <div role="dialog">{children}</div> : null;
   Modal.confirm = jest.fn();
   const Card = ({ children, title, extra }) => <div className="ant-card"><div className="ant-card-head-title">{title}</div>{extra}{children}</div>;
-  return { Alert: Box, TreeSelect: ({ treeData, onChange }) => <div>{treeData.map(node => <button key={node.value} onClick={() => onChange([node.value])}>{`筛选组织${node.title}`}</button>)}</div>, Button: ({ children, onClick }) => <button onClick={onClick}>{children}</button>, Card,
+  return { Tooltip: ({ children }) => <>{children}</>, Alert: Box, TreeSelect: ({ treeData, onChange }) => <div>{treeData.map(node => <button key={node.value} onClick={() => onChange([node.value])}>{`筛选组织${node.title}`}</button>)}</div>, Button: ({ children, onClick }) => <button onClick={onClick}>{children}</button>, Card,
     Checkbox: Object.assign(Box, { Group: Box }), Collapse: Box, DatePicker, Input, InputNumber: () => null, Modal, Progress: Box, Radio: Box,
     Select: ({ 'aria-label': ariaLabel, value, options, onChange, disabled }) => ['项目类型', '盘点类型', '盘点期间'].includes(ariaLabel) ? <select aria-label={ariaLabel} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select> : null,
     Space: Box, Statistic: Box, Switch: () => null, Tabs: Box, Tag: Box, Typography: { Text: Box, Title: ({ children }) => <h4 className="ant-typography">{children}</h4> },

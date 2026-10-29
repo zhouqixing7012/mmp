@@ -46,9 +46,9 @@ export default function AssetManagement() {
               <div className="w-10 h-10 rounded-full bg-blue-600" />
               <div className="w-5 h-5 rounded-full bg-orange-400" />
             </div>
-            <h1 className="text-5xl font-black text-slate-900 tracking-tight">
+            <span hidden data-mmp-page-title>
               机房资产现状与目标对比
-            </h1>
+            </span>
           </div>
           <p className="text-xl text-slate-500 ml-14">
             对照目标逐项提升，实现机房资产管理标准化、自动化

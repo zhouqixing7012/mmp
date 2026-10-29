@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, Card, Progress, Space, Table, Tabs, Typography, message as antdMessage } from 'antd';
 import StatusTag from '../../components/StatusTag';
 import { IMAGE_REVIEW_ROWS, INITIAL_PLAN_ROWS, PROGRESS_DETAIL_ROWS, PROGRESS_ROWS } from './mockData';
-import { CardTitle, PageTitle, ProjectInfoCard } from './AssetInventoryProjectV2Common';
+import { CardTitle, ProjectInfoCard } from './AssetInventoryProjectV2Common';
 
 export function PlansView({ project, onBack }) {
   const [rows, setRows] = useState(INITIAL_PLAN_ROWS);
@@ -28,9 +28,9 @@ export function PlansView({ project, onBack }) {
     messageApi.success('所选盘点计划已启动');
   };
   return (
-    <Space direction="vertical" size={16} className="w-full">
+    <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("盘点计划（方案二）")}>
       {contextHolder}
-      <PageTitle>盘点计划（方案二）</PageTitle>
+      {null}
       <ProjectInfoCard project={{ ...project, status: rows.some((row) => row.status === '盘点中') ? '盘点中' : '生成盘点计划' }} />
       <Card size="small" title={<CardTitle>盘点计划明细</CardTitle>} extra={<Typography.Text type="secondary">共 {rows.length} 条</Typography.Text>}>
         <div className="mb-3 flex justify-end"><Space><Button type="primary" disabled={!selectedKeys.length || rows.every((row) => row.status === '盘点中' || row.status === '关闭')} onClick={startPlans}>启动盘点计划</Button><Button onClick={() => messageApi.success('导入入口已打开')}>导入</Button><Button onClick={() => messageApi.success('导出任务已创建')}>导出</Button></Space></div>
@@ -51,7 +51,7 @@ export function ProgressView({ project, onBack }) {
     { title: '应盘数量', dataIndex: 'expected' }, { title: '已盘数量', dataIndex: 'counted' }, { title: '报失数量', dataIndex: 'lost' }, { title: '未盘数量', dataIndex: 'uncounted' },
     { title: '数量进度', dataIndex: 'progress', width: 160, render: (value) => <Progress percent={value} size="small" /> }, { title: '剩余天数', dataIndex: 'remainingDays' }, { title: '计划监督人', dataIndex: 'supervisor' },
   ];
-  return <Space direction="vertical" size={16} className="w-full"><PageTitle>盘点进度（方案二）</PageTitle><ProjectInfoCard project={project} /><Card size="small"><Tabs items={[{ key: 'summary', label: '项目进度', children: <Table rowKey="key" size="small" bordered columns={progressColumns} dataSource={PROGRESS_ROWS} pagination={false} /> }, { key: 'detail', label: '进度详情', children: <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={PROGRESS_DETAIL_ROWS} pagination={false} /> }]} /></Card><div className="flex justify-center"><Button onClick={onBack}>返回</Button></div></Space>;
+  return <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("盘点进度（方案二）")}>{null}<ProjectInfoCard project={project} /><Card size="small"><Tabs items={[{ key: 'summary', label: '项目进度', children: <Table rowKey="key" size="small" bordered columns={progressColumns} dataSource={PROGRESS_ROWS} pagination={false} /> }, { key: 'detail', label: '进度详情', children: <Table rowKey="key" size="small" bordered columns={detailColumns} dataSource={PROGRESS_DETAIL_ROWS} pagination={false} /> }]} /></Card><div className="flex justify-center"><Button onClick={onBack}>返回</Button></div></Space>;
 }
 export function ImageReviewView({ project, onBack }) {
   const columns = [
@@ -63,5 +63,5 @@ export function ImageReviewView({ project, onBack }) {
     { title: '盘点状态', dataIndex: ['asset', 'inventoryStatus'], width: 100, render: (value) => <StatusTag value={value} /> },
     { title: '图片审核状态', dataIndex: 'reviewStatus', width: 120, render: (value) => <StatusTag value={value} /> },
   ];
-  return <Space direction="vertical" size={16} className="w-full"><PageTitle>图片审核（方案二）</PageTitle><ProjectInfoCard project={project} /><Card size="small" title={<CardTitle>图片审核信息</CardTitle>}><Table rowKey="key" size="small" bordered columns={columns} dataSource={IMAGE_REVIEW_ROWS} pagination={false} /></Card><div className="flex justify-center"><Button onClick={onBack}>返回</Button></div></Space>;
+  return <Space direction="vertical" size={16} className="w-full" data-mmp-page-title={("图片审核（方案二）")}>{null}<ProjectInfoCard project={project} /><Card size="small" title={<CardTitle>图片审核信息</CardTitle>}><Table rowKey="key" size="small" bordered columns={columns} dataSource={IMAGE_REVIEW_ROWS} pagination={false} /></Card><div className="flex justify-center"><Button onClick={onBack}>返回</Button></div></Space>;
 }
