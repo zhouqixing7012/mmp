@@ -42,10 +42,17 @@ test('退库详情只显示首条主资产，配件与附属耗材来自该条�
   const dialog = await screen.findByRole('dialog');
   expect(within(dialog).getByText(record.lines[0].accessories[0].tag)).toBeInTheDocument();
 });
-test('续借有独立字段，审批代理人保持空白', () => {
-  open('borrow-3');
-  expect(screen.getAllByText('续借次数')).toHaveLength(2);
-  expect(screen.getAllByText('续借开始日期')).toHaveLength(2);
+test('续借全部资产放在同一张表格，三个卡片分区且保留审批记录', () => {
+  const record = open('borrow-3');
+  expect(Array.from(document.querySelectorAll('.ant-card-head-title')).map(node => node.textContent)).toEqual(['申请人信息', '续借资产信息', '审批记录']);
+  const card = screen.getByText('续借资产信息').closest('.ant-card');
+  const table = within(card).getByRole('table');
+  expect(within(table).getAllByRole('columnheader').map(cell => cell.textContent)).toEqual(['资产标签号', '资产说明', '续借次数', '续借原因', '续借开始日期', '续借归还日期']);
+  expect(within(table).getAllByRole('row')).toHaveLength(record.lines.length + 1);
+  record.lines.forEach(line => expect(within(table).getByText(line.tag)).toBeInTheDocument());
+  expect(within(table).getByRole('columnheader', { name: '资产说明' }).style.textAlign).toBe('left');
+  expect(within(table).getByRole('columnheader', { name: '续借次数' }).style.textAlign).toBe('right');
+  expect(within(table).getByRole('columnheader', { name: '续借开始日期' }).style.textAlign).toBe('center');
   expect(screen.getByRole('columnheader', { name: '代理人' })).toBeInTheDocument();
   expect(screen.queryByText('借用开始日期')).not.toBeInTheDocument();
 });
