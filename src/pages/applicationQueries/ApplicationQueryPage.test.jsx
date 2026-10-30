@@ -61,3 +61,30 @@ test('查询编辑后执行才更新列表，详情返回保留查询，进度�
     expect(download).toHaveBeenLastCalledWith('return', {}, null, { current: 1, pageSize: 10 });
   } finally { download.mockRestore(); }
 });
+
+test('未完成单据不展示周报及接入说明，类型使用获权处理中单据的名称', () => {
+  render(<ApplicationQueriesContent activeSubMenu="未完成单据" />);
+  expect(screen.queryByText(/未完成员工申请周报|真实定时发送|原型可查询/)).not.toBeInTheDocument();
+  const definition = applicationService.getApplicationDefinition('unfinished');
+  const options = applicationService.getApplicationOptions('unfinished', definition.filters.find(field => field.key === 'type'));
+  expect(options.map(option => option.label)).toEqual(expect.arrayContaining(['资产维修更换', '员工借用', '资产申请单', '耗材申请单']));
+  options.forEach(option => expect(queryApplications('unfinished', { type: option.value }).length).toBeGreaterThan(0));
+});
+test('汇总提交人打开所点行对应的汇总明细，进度保留外部节点并去掉接入说明', async () => {
+  const record = queryApplications('asset').find(row => row.values.summaryApplicant);
+  const { unmount } = render(<ApplicationQueriesContent activeSubMenu="资产申请单" />);
+  const tr = screen.getByRole('button', { name: record.values.subNo }).closest('tr');
+  fireEvent.click(within(tr).getByRole('button', { name: record.values.summaryApplicant }));
+  expect(document.querySelector('[data-mmp-page-title="统一申请汇总详情"]')).toBeInTheDocument();
+  const info = screen.getByText('汇总信息').closest('.ant-card');
+  expect(info.querySelector('.ant-card-extra')).toHaveTextContent(record.values.subNo);
+  expect(screen.getByText(record.summary.projectUsage)).toBeInTheDocument();
+  unmount();
+  render(<ApplicationQueriesContent activeSubMenu="耗材申请单" />);
+  const purchase = queryApplications('consumable').find(row => row.values.summaryApplicant);
+  const purchaseTr = screen.getAllByRole('button', { name: purchase.values.subNo })[0].closest('tr');
+  fireEvent.click(within(purchaseTr).getByRole('button', { name: '查看' }));
+  const dialog = await screen.findByRole('dialog');
+  expect(within(dialog).queryByText(/未连接外部系统|关联流程演示记录/)).not.toBeInTheDocument();
+  purchase.progressSections.forEach(section => expect(within(dialog).getByText(section.title)).toBeInTheDocument());
+});

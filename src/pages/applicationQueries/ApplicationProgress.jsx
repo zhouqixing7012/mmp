@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Modal, Typography } from 'antd';
+import { Modal, Typography } from 'antd';
 import Table from '../../components/businessQuery/BusinessTable';
 import { applicationProgressRecords, formatApplicationValue } from '../../services/applicationQueryService';
 
@@ -19,7 +19,6 @@ export default function ApplicationProgress({ record, onClose }) {
     <div className="flex flex-col gap-4">
       {record.progressTitle && <Typography.Text strong>{record.progressTitle}</Typography.Text>}
       <Table size="small" bordered rowKey="id" columns={columns} dataSource={history} pagination={false} scroll={{ x: 'max-content' }} />
-      {external.length > 0 && <Alert type="info" title="以下为关联流程演示记录，未连接外部系统。" />}
       {external.map(section => <div key={section.title}>
         <Typography.Text strong>{section.title}</Typography.Text>
         <Table size="small" bordered rowKey="id" columns={columns} dataSource={section.records} pagination={false} scroll={{ x: 'max-content' }} />

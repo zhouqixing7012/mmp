@@ -82,3 +82,13 @@ test('资产申请单号按CA规则生成，日期与源单一致并传递到查
     });
   });
 });
+
+test('资产与耗材领用子流程统一使用CA号，保持USE类型及出库关联', () => {
+  const rows = claimApplicationRows.filter(row => row.filters.subType === 'USE');
+  expect(rows.length).toBeGreaterThan(0);
+  rows.forEach(row => {
+    expect(row.values.subType).toBe('领用');
+    expect(row.values.subNo).toMatch(/^CA-\d{13}$/);
+    expect(row.values.outboundNo).toBeTruthy();
+  });
+});

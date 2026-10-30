@@ -130,10 +130,15 @@ export function queryApplications(id, filters = {}, sort = null, access = DEFAUL
     if (!line.originalLineId) throw new Error('汇总明细缺少原申请明细关联');
     return allowedOriginalLines.has(line.originalLineId);
   }) } } : row);
-  const displayRows = scopedRows.map(row => id === 'borrow' ? {
+  const displayRows = scopedRows.map(row => ['borrow', 'asset', 'consumable'].includes(id) ? {
     ...row,
-    values: { ...row.values, department: displayDepartmentPath(row.values.department) },
-    head: row.head.map(([label, value]) => [label, label === '部门' ? displayDepartmentPath(value) : value]),
+    values: { ...row.values, department: displayDepartmentPath(row.lookupLabels?.department || row.values.department) },
+    head: Array.isArray(row.head) ? row.head.map(([label, value]) => [label, label === '部门' ? displayDepartmentPath(value) : value])
+      : { ...row.head, '部门': displayDepartmentPath(row.lookupLabels?.department || row.head['部门']) },
+    ...(row.summary ? { summary: { ...row.summary, lines: row.summary.lines.map(line => ({ ...line,
+      department: displayDepartmentPath(line.department === row.values.department ? row.lookupLabels?.department || line.department : line.department),
+      originalDepartment: displayDepartmentPath(line.originalDepartment === row.values.department ? row.lookupLabels?.department || line.originalDepartment : line.originalDepartment),
+    })) } } : {}),
   } : row);
   return displayRows.map(row => id === 'unfinished' ? { ...row, values: { ...row.values, node: selectUnfinishedTodo(row)?.node || '', approver: selectUnfinishedTodo(row)?.approver || '' } } : row);
 }

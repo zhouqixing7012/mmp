@@ -45,11 +45,11 @@ test('周一材料按10点服务号策略发给ES何文，不伪称已发送', (
   const result = prepareApplicationWeeklyReport('2026-10-19');
   expect(result.recipients).toEqual(['ES-何文']);
   expect(result).toMatchObject({ time: '10:00', timezone: 'Asia/Shanghai', channel: '服务号' });
-  expect(result.rows).toHaveLength(11);
+  expect(result.rows).toHaveLength(14);
   expect(result.rows.every(row => row.employeeApplication)).toBe(true);
   expect(result.sent).toBe(false);
   const data = XLSX.utils.sheet_to_json(result.workbook.Sheets[result.workbook.SheetNames[0]], { header: 1 });
-  expect(data).toHaveLength(12);
+  expect(data).toHaveLength(15);
   expect(() => prepareApplicationWeeklyReport('2026-10-20')).toThrow('每周一');
 });
 

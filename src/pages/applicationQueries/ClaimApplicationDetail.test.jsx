@@ -79,3 +79,15 @@ test('资产领用可打开真实目录配件，领用与采购均展示资产�
   fireEvent.click(screen.getByRole('button', { name: /查看.+的配件（1件）/ }));
   expect(within(screen.getByRole('dialog', { name: '配件明细' })).getByText('228001598002000')).toBeInTheDocument();
 });
+
+test.each(['asset', 'consumable'])('%s详情短字段先行、长说明整行，资产用途只在资产详情保留', kind => {
+  const row = claimApplicationRows.find(item => item.kind === kind && item.filters.subType === 'USE');
+  render(<ClaimApplicationDetail definition={byKind(kind)} record={row} onBack={() => {}} />);
+  const card = screen.getByText('申请明细').closest('.ant-card');
+  const labels = Array.from(card.querySelectorAll('dt')).map(node => node.textContent);
+  ['序列号', '公司', '板块', '启用日期', '实际物资说明', '配置', '备注', '城市', '建筑', '楼层', '申请物资说明', '申请原因', '详细说明', '使用说明'].forEach(label => expect(labels).toContain(label));
+  expect(labels.includes('资产用途')).toBe(kind === 'asset');
+  expect(card.querySelector('dl').style.gridTemplateColumns).toBe('112px minmax(0, 1fr) 112px minmax(0, 1fr) 112px minmax(0, 1fr)');
+  expect(card.querySelector('[data-prototype-detail-value="申请物资说明"]').style.gridColumn).toBe('2 / -1');
+  expect(labels.indexOf('建筑')).toBe(labels.indexOf('城市') + 1);
+});

@@ -1,6 +1,5 @@
-import { APPLICATION_WEEKLY_RULE } from '../../services/applicationWeeklyReport';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Dropdown, Modal, Space, Typography, message } from 'antd';
+import { Button, Dropdown, Modal, Space, Typography, message } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import Table, { BusinessCard as Card } from '../../components/businessQuery/BusinessTable';
 import AppliedFilterSummary, { filterSummaryItems } from '../../components/businessQuery/AppliedFilterSummary';
@@ -60,7 +59,6 @@ export default function ApplicationQueryPage({ id }) {
   return <div className="flex flex-col gap-4 min-w-0">
     {detail ? <Detail definition={definition} record={detail.record} view={detail.view} onBack={goBack} /> : <>
       <span hidden data-mmp-page-title>{definition.title}</span>
-      {id === 'unfinished' && <Alert type="info" title={`未完成员工申请周报：每周${'日一二三四五六'[APPLICATION_WEEKLY_RULE.weekday]} ${APPLICATION_WEEKLY_RULE.time}（北京时间），通过${APPLICATION_WEEKLY_RULE.channel}发送给 ${APPLICATION_WEEKLY_RULE.recipients.join('、')}。`} description="原型可查询、导出汇总清单；真实定时发送尚未接入。" />}
       <QueryBar labelWidth={84} onQuery={onQuery} onReset={reset}>
         {definition.filters.map(field => <QueryItem key={field.key} label={field.label} labelWidth={84}>
           <ApplicationFilter definition={definition} field={field} value={draft[field.key]} onQuery={onQuery} onChange={value => setDraft(previous => ({ ...previous, [field.key]: value }))} />

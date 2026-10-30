@@ -61,7 +61,7 @@ export default function ClaimSummaryDetail({ definition, record, onBack }) {
   };
   return <Space orientation="vertical" size={16} style={{ width: '100%' }} data-mmp-page-title={("统一申请汇总详情")}>
     {null}
-    <Card title="汇总信息"><DetailGrid><DetailItem label="ES汇总说明" span={3}><span className="mmp-query-readonly">{readOnlyValue(summary.esDescription)}</span></DetailItem><DetailItem label="项目用途说明" span={3}><span aria-label="项目用途说明" className="mmp-query-readonly">{readOnlyValue(summary.projectUsage)}</span></DetailItem></DetailGrid></Card>
+    <Card title="汇总信息" extra={record.values.subNo}><DetailGrid><DetailItem label="ES汇总说明" span={3}><span className="mmp-query-readonly">{readOnlyValue(summary.esDescription)}</span></DetailItem><DetailItem label="项目用途说明" span={3}><span aria-label="项目用途说明" className="mmp-query-readonly">{readOnlyValue(summary.projectUsage)}</span></DetailItem></DetailGrid></Card>
     <Card title="部门汇总信息"><Table rowKey="id" size="small" pagination={false} columns={groupColumns} dataSource={groups} summary={() => summaryTotal(groupColumns, groups, 'quantity', 'amount')} /></Card>
     <Alert type="info" title="此汇总申请中的价格仅供参考，最终采购价格以PR单为准。" />
     {consumable ? detailTable('申请明细', summary.lines, '本批暂无耗材申请明细') : [detailTable('超标申请', summary.lines.filter(line => line.overStandard), '本批暂无超标申请'), detailTable('非超标申请', summary.lines.filter(line => !line.overStandard), '本批暂无非超标申请')]}
