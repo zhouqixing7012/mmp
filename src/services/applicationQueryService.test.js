@@ -119,3 +119,14 @@ test('退库筛选排序和Excel使用原申请时间，不被独立创建时间
     row.filters.createdAt = before.filter;
   }
 });
+
+
+test('人员候选复用账号姓名结构，受原申请权限约束且不把申请部门冒充审批人部门', () => {
+  const definition = getApplicationDefinition('newEmployee');
+  const field = definition.filters.find(item => item.key === 'applicant');
+  const options = getApplicationOptions('newEmployee', field);
+  expect(options).toContainEqual(expect.objectContaining({ value: '220784', code: '220784', name: '周琦星', label: '220784-周琦星' }));
+  const { DEFAULT_APPLICATION_ACCESS } = require('./applicationAccess');
+  expect(getApplicationOptions('newEmployee', field, { ...DEFAULT_APPLICATION_ACCESS, grants: { people: [], departments: [], companies: [] } })).toEqual([]);
+  expect(queryApplications('newEmployee', { applicant: options[0].value }).length).toBeGreaterThan(0);
+});

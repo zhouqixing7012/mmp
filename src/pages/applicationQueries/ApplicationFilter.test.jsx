@@ -1,0 +1,51 @@
+import React from 'react';
+import { fireEvent, render, screen, within, waitFor } from '@testing-library/react';
+import ApplicationQueryPage from './ApplicationQueryPage';
+import ApplicationFilter from './ApplicationFilter';
+import { applicationDefinitions, getApplicationDefinition, queryApplications } from '../../services/applicationQueryService';
+import { applicationFilterEntity } from '../../services/applicationFilterModel';
+beforeEach(() => {
+  window.matchMedia = () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
+  global.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
+  window.MessageChannel = class { constructor() { this.port1 = { onmessage: null }; this.port2 = { postMessage: () => Promise.resolve().then(() => this.port1.onmessage?.()) }; } };
+});
+test('新员工申请人复用人员弹窗，按编号姓名查询、确认回填账号并执行主查询', async () => {
+  render(<ApplicationQueryPage id="newEmployee" />);
+  fireEvent.click(screen.getByRole('textbox', { name: '申请人' }));
+  const dialog = await screen.findByRole('dialog');
+  ['员工编号', '员工姓名', '部门'].forEach(name => expect(within(dialog).getByRole('columnheader', { name })).toBeInTheDocument());
+  fireEvent.change(within(dialog).getByPlaceholderText('请输入员工编号'), { target: { value: '220784' } });
+  fireEvent.change(within(dialog).getByPlaceholderText('请输入员工姓名'), { target: { value: '周琦星' } });
+  fireEvent.click(within(dialog).getByRole('button', { name: /查\s*询/ }));
+  fireEvent.click(within(dialog).getByRole('radio'));
+  fireEvent.click(within(dialog).getByRole('button', { name: /确\s*定/ }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(screen.getByRole('textbox', { name: '申请人' })).toHaveValue('220784-周琦星');
+  fireEvent.click(screen.getByRole('button', { name: /查\s*询/ }));
+  expect(screen.getByLabelText('已生效筛选条件')).toHaveTextContent('220784-周琦星');
+  expect(screen.getByText(`共 ${queryApplications('newEmployee', { applicant: '220784' }).length} 条`)).toBeInTheDocument();
+}, 30000);
+const personCases = applicationDefinitions.flatMap(def => def.filters.filter(field => applicationFilterEntity(field) === 'person').map(field => [def.id, field.key]));
+test.each(personCases)('%s/%s使用共用人员字段而非通用编码名称', async (id, key) => {
+  const definition = getApplicationDefinition(id), field = definition.filters.find(item => item.key === key);
+  render(<ApplicationFilter definition={definition} field={field} onChange={jest.fn()} />);
+  fireEvent.click(screen.getByRole('textbox', { name: field.label }));
+  const dialog = await screen.findByRole('dialog');
+  expect(within(dialog).getByRole('columnheader', { name: '员工编号' })).toBeInTheDocument();
+  expect(within(dialog).getByRole('columnheader', { name: '员工姓名' })).toBeInTheDocument();
+});
+test('新员工公司仍为多选弹窗，子公司和板块使用下拉，部门使用专属字段', async () => {
+  const definition = getApplicationDefinition('newEmployee');
+  const { unmount } = render(<ApplicationFilter definition={definition} field={definition.filters.find(f => f.key === 'company')} onChange={jest.fn()} />);
+  fireEvent.click(screen.getByRole('textbox', { name: '公司' }));
+  const dialog = await screen.findByRole('dialog');
+  expect(within(dialog).getByRole('columnheader', { name: '公司编码' })).toBeInTheDocument();
+  expect(within(dialog).getAllByRole('checkbox').length).toBeGreaterThan(0);
+  unmount();
+  const def = getApplicationDefinition('return');
+  const next = render(<ApplicationFilter definition={def} field={def.filters.find(f => f.key === 'subsidiary')} onChange={jest.fn()} />);
+  expect(screen.getByRole('combobox', { name: '子公司' })).toBeInTheDocument(); next.unmount();
+  render(<ApplicationFilter definition={definition} field={definition.filters.find(f => f.key === 'department')} onChange={jest.fn()} />);
+  fireEvent.click(screen.getByRole('textbox', { name: '部门' }));
+  expect(within(await screen.findByRole('dialog')).getByRole('columnheader', { name: '部门编码' })).toBeInTheDocument();
+});

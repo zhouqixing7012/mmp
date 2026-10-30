@@ -1,4 +1,6 @@
 import { applicationMoveRows } from './applicationMoveProjection';
+import { applicationFilterEntity } from './applicationFilterModel';
+import { getSharedPeople } from './assetReferenceOptions';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
 import { applicationQueryRows, assetReportCatalog } from '../mock/businessRulesMock';
@@ -51,16 +53,31 @@ export function getApplicationOptions(id, field, access = DEFAULT_APPLICATION_AC
     return assetReportCatalog.warehouses.filter(row => row.status === '启用' && warehouseCodes.has(row.warehouseCode)).map(row => ({ value: row.warehouseCode, code: row.warehouseCode, name: row.warehouseDescription, label: row.warehouseCode + '.' + row.warehouseDescription, company: row.company }));
   }
   const found = new Map();
+  const entity = applicationFilterEntity(field);
+  const people = entity === 'person' ? getSharedPeople() : [];
   const deleted = removedIds();
   currentApplicationRows(id).filter(row => row.kind === id && !row.deleted && !deleted.has(row.id) && canReadApplication(row, access)).forEach(row => {
     if (id === 'unfinished' && row.statusCode !== '3') return;
     list(row.filters[field.key]).filter(value => !empty(value)).forEach(value => {
-      if (!found.has(String(value))) found.set(String(value), {
-        value: String(value), code: String(value), label: row.optionLabels?.[field.key]?.[value] ?? row.lookupLabels?.[field.key] ?? row.values[field.key] ?? String(value),
-      });
+      if (!found.has(String(value))) {
+        const code = String(value);
+        const label = String(row.optionLabels?.[field.key]?.[value] ?? row.lookupLabels?.[field.key] ?? row.values[field.key] ?? code);
+        let name = label;
+        // Strip only an exact saved identifier prefix; never split an arbitrary name or organization path.
+        for (const separator of ['.', '-']) if (label.startsWith(code + separator)) name = label.slice(code.length + 1);
+        if (entity === 'person') {
+          const person = people.find(item => item.code === code);
+          const savedPerson = (field.key === 'receiver' ? row.targetPerson : ['sender', 'applicant'].includes(field.key) ? row.sourcePerson : null);
+          const savedIdentity = savedPerson && String(savedPerson.account) === code ? savedPerson : null;
+          const explicitName = name !== code ? name : savedIdentity?.name || person?.name || '';
+          const cleanName = ['.', '-'].some(separator => explicitName.startsWith(code + separator)) ? explicitName.slice(code.length + 1) : explicitName;
+          found.set(code, { value: code, code, name: cleanName, label: cleanName ? `${code}-${cleanName}` : code,
+            department: savedIdentity?.department || person?.department || '' });
+        } else found.set(code, { value: code, code, label, name });
+      }
     });
   });
-  return [...found.values()].map(option => ({ ...option, name: String(option.label) }));
+  return [...found.values()];
 }
 export function validateApplicationFilters(definition, filters) {
   for (const [key, value] of Object.entries(filters)) {
