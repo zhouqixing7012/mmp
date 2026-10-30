@@ -97,6 +97,7 @@ export default function QueryBar({
   children,
   buttons,
   labelWidth = 84,
+  singleFieldFullWidth = true,
   onQuery,
   onReset,
 }) {
@@ -112,7 +113,7 @@ export default function QueryBar({
     window.addEventListener('resize', update);
     return () => { observer?.disconnect(); window.removeEventListener('resize', update); };
   }, []);
-  const layoutColumns = fields.length === 1 ? 1 : columns;
+  const layoutColumns = singleFieldFullWidth && fields.length === 1 ? 1 : columns;
   const defaultButtons = (
     <>
       <Button icon={<RefreshCcw size={14} />} onClick={onReset}>重置</Button>

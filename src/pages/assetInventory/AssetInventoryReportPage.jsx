@@ -40,7 +40,7 @@ function InventoryReportContent() {
   };
   const unavailable = <Card size="small"><Empty description={emptyDescription} /></Card>;
   return <div className="inventory-report flex flex-col gap-4">
-    <QueryBar buttons={<>
+    <QueryBar singleFieldFullWidth={false} buttons={<>
       <Button onClick={() => { const next = defaults(); setDraft(next); setApplied(next); }}>重置</Button>
       <Button type="primary" onClick={() => setApplied({ ...draft })}>查询</Button>
       <Button disabled={!report} onClick={download}>导出</Button>
