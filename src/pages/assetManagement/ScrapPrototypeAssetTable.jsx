@@ -5,11 +5,11 @@ import {
   InputNumber,
   Select,
   Space,
-  Table,
   Tabs,
   Upload,
   message,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import {
   DeleteOutlined,
   DownloadOutlined,

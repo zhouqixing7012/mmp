@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Plus, CheckCircle, XCircle, Edit, ChevronDown, ChevronUp, RefreshCcw } from 'lucide-react';
-import { Button, Input, InputNumber, Select, Table, message } from 'antd';
+import { Button, Input, InputNumber, Select, message } from 'antd';
+import Table from '../../../../components/tableAlignment/AlignedTable';
 import QueryBar, { QueryItem } from '../../../../components/QueryBar';
 import MaterialBatchActionModal from './MaterialBatchActionModal';
 import MaterialComprehensiveFormModal from './MaterialComprehensiveFormModal';

@@ -193,17 +193,17 @@ const ResponsiblePersonEdit = () => {
             <table className="w-full min-w-[1300px] text-left text-sm text-gray-700">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="py-3 px-4 font-medium min-w-[200px]">资产标签号</th>
-                  <th className="py-3 px-4 font-medium">序列号</th>
-                  <th className="py-3 px-4 font-medium w-16">关系</th>
-                  <th className="py-3 px-4 font-medium">资产说明</th>
-                  <th className="py-3 px-4 font-medium w-16">数量</th>
-                  <th className="py-3 px-4 font-medium w-24">City</th>
-                  <th className="py-3 px-4 font-medium w-32">Building</th>
-                  <th className="py-3 px-4 font-medium w-20">Floor</th>
-                  <th className="py-3 px-4 font-medium w-24">资产大类</th>
-                  <th className="py-3 px-4 font-medium w-28">资产小类</th>
-                  <th className="py-3 px-4 font-medium w-32 text-right">资产状态</th>
+                  <th className="py-3 px-4 font-medium min-w-[200px] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产标签号</th>
+                  <th className="py-3 px-4 font-medium mmp-table-cell-left" style={{ textAlign: 'left' }}>序列号</th>
+                  <th className="py-3 px-4 font-medium w-16 mmp-table-cell-left" style={{ textAlign: 'left' }}>关系</th>
+                  <th className="py-3 px-4 font-medium mmp-table-cell-left" style={{ textAlign: 'left' }}>资产说明</th>
+                  <th className="py-3 px-4 font-medium w-16 mmp-table-cell-right" style={{ textAlign: 'right' }}>数量</th>
+                  <th className="py-3 px-4 font-medium w-24 mmp-table-cell-left" style={{ textAlign: 'left' }}>City</th>
+                  <th className="py-3 px-4 font-medium w-32 mmp-table-cell-left" style={{ textAlign: 'left' }}>Building</th>
+                  <th className="py-3 px-4 font-medium w-20 mmp-table-cell-left" style={{ textAlign: 'left' }}>Floor</th>
+                  <th className="py-3 px-4 font-medium w-24 mmp-table-cell-left" style={{ textAlign: 'left' }}>资产大类</th>
+                  <th className="py-3 px-4 font-medium w-28 mmp-table-cell-left" style={{ textAlign: 'left' }}>资产小类</th>
+                  <th className="py-3 px-4 font-medium w-32 mmp-table-cell-center" style={{ textAlign: 'center' }}>资产状态</th>
                 </tr>
               </thead>
               <tbody>
@@ -211,7 +211,7 @@ const ResponsiblePersonEdit = () => {
                   <React.Fragment key={row.id}>
                     {/* 主资产行 */}
                     <tr className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <div className="flex items-center gap-2">
                           {row.children && row.children.length > 0 && (
                             <button 
@@ -224,24 +224,24 @@ const ResponsiblePersonEdit = () => {
                           <span className="font-medium">{row.tag}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4">{row.sn}</td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.sn}</td>
+                      <td className="py-3 px-4 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs border border-blue-100">{row.relation}</span>
                       </td>
-                      <td className="py-3 px-4">{row.desc}</td>
-                      <td className="py-3 px-4">{row.qty}</td>
-                      <td className="py-3 px-4">{row.city}</td>
-                      <td className="py-3 px-4">{row.building}</td>
-                      <td className="py-3 px-4">{row.floor}</td>
-                      <td className="py-3 px-4">{row.majorCategory}</td>
-                      <td className="py-3 px-4">{row.minorCategory}</td>
-                      <td className="py-3 px-4 text-right">{row.status}</td>
+                      <td className="py-3 px-4 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.desc}</td>
+                      <td className="py-3 px-4 mmp-table-cell-right" style={{ textAlign: 'right' }}>{row.qty}</td>
+                      <td className="py-3 px-4 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.city}</td>
+                      <td className="py-3 px-4 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.building}</td>
+                      <td className="py-3 px-4 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.floor}</td>
+                      <td className="py-3 px-4 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.majorCategory}</td>
+                      <td className="py-3 px-4 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.minorCategory}</td>
+                      <td className="py-3 px-4 mmp-table-cell-center" style={{ textAlign: 'center' }}>{row.status}</td>
                     </tr>
 
                     {/* 备用/子资产行 */}
                     {expandedRows[row.id] && row.children?.map((child) => (
                       <tr key={child.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group bg-gray-50/20">
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                           <div className="flex items-center pl-3">
                             {/* L 型树状连接线 */}
                             <div className="w-4 h-4 border-l-[1.5px] border-b-[1.5px] border-gray-300 mr-2 -mt-2 rounded-bl-[2px]"></div>
@@ -250,18 +250,18 @@ const ResponsiblePersonEdit = () => {
                             </span>
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-gray-600">{child.sn}</td>
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{child.sn}</td>
+                        <td className="py-3 px-4 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                           <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs border border-gray-200">{child.relation}</span>
                         </td>
-                        <td className="py-3 px-4 text-gray-600">{child.desc}</td>
-                        <td className="py-3 px-4 text-gray-600">{child.qty}</td>
-                        <td className="py-3 px-4 text-gray-500">{child.city}</td>
-                        <td className="py-3 px-4 text-gray-500">{child.building}</td>
-                        <td className="py-3 px-4 text-gray-500">{child.floor}</td>
-                        <td className="py-3 px-4 text-gray-600">{child.majorCategory}</td>
-                        <td className="py-3 px-4 text-gray-600">{child.minorCategory}</td>
-                        <td className="py-3 px-4 text-right text-gray-600">{child.status}</td>
+                        <td className="py-3 px-4 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{child.desc}</td>
+                        <td className="py-3 px-4 text-gray-600 mmp-table-cell-right" style={{ textAlign: 'right' }}>{child.qty}</td>
+                        <td className="py-3 px-4 text-gray-500 mmp-table-cell-left" style={{ textAlign: 'left' }}>{child.city}</td>
+                        <td className="py-3 px-4 text-gray-500 mmp-table-cell-left" style={{ textAlign: 'left' }}>{child.building}</td>
+                        <td className="py-3 px-4 text-gray-500 mmp-table-cell-left" style={{ textAlign: 'left' }}>{child.floor}</td>
+                        <td className="py-3 px-4 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{child.majorCategory}</td>
+                        <td className="py-3 px-4 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{child.minorCategory}</td>
+                        <td className="py-3 px-4  text-gray-600 mmp-table-cell-center" style={{ textAlign: 'center' }}>{child.status}</td>
                       </tr>
                     ))}
                   </React.Fragment>

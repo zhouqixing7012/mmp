@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
-import { Button, Card, Empty, Input, Modal, Select, Space, Table, Tag, Typography, message as antdMessage } from 'antd';
+import { Button, Card, Empty, Input, Modal, Select, Space, Tag, Typography, message as antdMessage } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';

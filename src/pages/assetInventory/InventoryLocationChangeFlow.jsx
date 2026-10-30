@@ -1,5 +1,6 @@
 import React from 'react';
-import { Button, Card, Space, Table, message } from 'antd';
+import { Button, Card, Space, message } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import * as XLSX from 'xlsx';
 import { getInventoryLocationChangePool } from './inventoryLocationChangeStore';
 

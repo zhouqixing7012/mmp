@@ -15,11 +15,11 @@ import {
   Space,
   Select,
   Statistic,
-  Table,
   Tabs,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import { calculateInventorySnapshotStats } from './inventorySnapshotStats';
 import { serializeInventoryAssetExport, serializeInventorySnapshotExport } from './inventoryAssetExport';

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { RefreshCcw } from 'lucide-react';
-import { Button, Input, Table } from 'antd';
+import { Button, Input } from 'antd';
+import Table from '../../../../components/tableAlignment/AlignedTable';
 import QueryBar from '../../../../components/QueryBar';
 import { mockEmployeeProjectMappingData } from '../../../../mock/businessRulesMock';
 

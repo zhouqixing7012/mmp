@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Table, theme } from 'antd';
+import { theme } from 'antd';
+import Table from '../tableAlignment/AlignedTable';
 import { createTextMeasurer, sizeTableColumns } from './columnSizing';
 
 export default function AutoWidthTable({ columns, dataSource = [], compact = false, rowKey = 'key', pagination = false, ...props }) {

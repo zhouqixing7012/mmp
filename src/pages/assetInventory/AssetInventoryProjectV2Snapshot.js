@@ -1,6 +1,7 @@
 import { sumInventoryQuantity } from './inventoryQuantity';
 import React, { useState } from 'react';
-import { Alert, Button, Card, Checkbox, Input, InputNumber, Select, Space, Statistic, Switch, Table, Tabs, Typography, message as antdMessage } from 'antd';
+import { Alert, Button, Card, Checkbox, Input, InputNumber, Select, Space, Statistic, Switch, Tabs, Typography, message as antdMessage } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import { ASSET_ROWS, IMAGE_RULE_ROWS, INVENTORY_RANGE_METHOD_ROWS, UNINCLUDED_ASSET_ROWS } from './mockData';
 import { CardTitle, ProjectInfoCard, RANGE_OPTIONS, SCAN_METHOD_OPTIONS, assetColumns } from './AssetInventoryProjectV2Common';
 

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Card, InputNumber, Select, Switch, Table, Typography } from 'antd';
+import { Card, InputNumber, Select, Switch, Typography } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import { OwnerLevelSelect } from '../../components/AssetQueryControls';
 import { ASSET_ROWS } from './mockData';
 

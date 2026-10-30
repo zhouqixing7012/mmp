@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, Button, Input, Modal, Space, Table, Typography } from 'antd';
+import { Alert, Button, Input, Modal, Space, Typography } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import { checkInventoryScannedTag, inventoryScannerBlockReason, uploadInventoryScannedTags } from './inventoryLabelScan';
 
 export default function InventoryLabelScanner({ open, project, plan, operator, assets, onClose, onUploaded }) {

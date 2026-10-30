@@ -85,3 +85,9 @@ PC只读表格通过 `src/components/tableSizing/AutoWidthTable.jsx` 使用列�
 浏览器Canvas按实际正文/表头字体测量，ResizeObserver监听可用容器，字体加载完成和主题字号/字体变化重新计算。无Canvas环境仅提供可复现的初始估算，浏览器挂载后实测。纯算法可注入测量函数验证边界，组件通过实际报表检查合并表头、横向滚动、窄表和格式化结果；页面列宽不写回数据或导出配置。
 
 后台多标签查询布局由公共`QueryTabs`与`QueryBar`的标签插槽衔接，标签只进入当前可见的首个页内查询Card，弹窗查询不接收页面标签。无查询Card时保留可访问的标签导航，单标签不另显示。顶部动态面包屑集中于`AdminBreadcrumb`；后台配置同一子菜单下的标签页面保留已挂载状态，切换子菜单时释放。
+
+## 普通表格对齐入口
+
+普通Ant Design表格通过`components/tableAlignment/AlignedTable`统一列对齐，AutoWidthTable与BusinessTable也复用该入口。规则按列标题、字段身份及已有sizing/format元数据执行，支持显式alignmentType；不读取某条记录的数值外观猜测字段类型。分组表头、底层标题、合计与可编辑数字需与UI规范一致。包装层保留ref、分页/排序/选择回调、渲染器、合并单元格及Summary等静态接口。
+
+已有专门版式的盘点/财务报告通过`preserveColumnAlignment`保留原对齐；其他例外需先有明确业务依据，不因旧页面写了align就自动当例外。打印模板与Markdown内容表格不套普通业务对齐策略。手写HTML表格显式配置列对齐及同名语义class，避免页面根节点统一text-center覆盖不同字段。

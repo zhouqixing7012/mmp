@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Input, Modal, Space, Table, Typography } from 'antd';
+import { Button, Input, Modal, Space, Typography } from 'antd';
+import Table from './tableAlignment/AlignedTable';
 import QueryBar, { QueryItem } from './QueryBar';
 
 const DEFAULT_SEARCH_VALUES = {};

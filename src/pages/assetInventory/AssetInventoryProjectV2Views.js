@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Button, Card, Progress, Space, Table, Tabs, Typography, message as antdMessage } from 'antd';
+import { Button, Card, Progress, Space, Tabs, Typography, message as antdMessage } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import StatusTag from '../../components/StatusTag';
 import { IMAGE_REVIEW_ROWS, INITIAL_PLAN_ROWS, PROGRESS_DETAIL_ROWS, PROGRESS_ROWS } from './mockData';
 import { CardTitle, ProjectInfoCard } from './AssetInventoryProjectV2Common';

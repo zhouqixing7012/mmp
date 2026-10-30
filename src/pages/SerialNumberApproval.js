@@ -171,16 +171,16 @@ const SerialNumberApproval = () => {
             <table className="w-full text-left whitespace-nowrap border-collapse">
               <thead className="bg-[#fafafa]">
                 <tr>
-                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[180px]">资产标签号</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[220px]">序列号</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-24 text-center">照片</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[200px]">资产说明</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-16 text-center">数量</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[100px]">City</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[140px]">Building</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[120px]">Floor</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[140px]">备注</th>
-                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[120px]">资产状态</th>
+                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[180px] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产标签号</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[220px] mmp-table-cell-left" style={{ textAlign: 'left' }}>序列号</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-24 mmp-table-cell-left" style={{ textAlign: 'left' }}>照片</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[200px] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产说明</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-16 mmp-table-cell-right" style={{ textAlign: 'right' }}>数量</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[100px] mmp-table-cell-left" style={{ textAlign: 'left' }}>City</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[140px] mmp-table-cell-left" style={{ textAlign: 'left' }}>Building</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[120px] mmp-table-cell-left" style={{ textAlign: 'left' }}>Floor</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[140px] mmp-table-cell-left" style={{ textAlign: 'left' }}>备注</th>
+                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[120px] mmp-table-cell-center" style={{ textAlign: 'center' }}>资产状态</th>
                 </tr>
               </thead>
               
@@ -190,16 +190,16 @@ const SerialNumberApproval = () => {
                     key={asset.id} 
                     className="border-b border-[#f0f0f0] transition-colors hover:bg-[#f5f5f5]"
                   >
-                    <td className="py-3 px-4 align-middle">
+                    <td className="py-3 px-4 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       <span className="font-medium text-[rgba(0,0,0,0.88)]">{asset.assetCode}</span>
                     </td>
                     
                     {/* 序列号变更字段 */}
-                    <td className="py-2 px-3 align-middle text-[13px]">
+                    <td className="py-2 px-3 align-middle text-[13px] mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       {renderChangedField(asset.serialNumberChange)}
                     </td>
 
-                    <td className="py-3 px-3 align-middle text-center">
+                    <td className="py-3 px-3 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       <div className="flex items-center justify-center">
                         {asset.snPhoto ? (
                           <div className="relative w-10 h-10 rounded-[4px] border border-[#d9d9d9] overflow-hidden shadow-sm cursor-pointer group hover:border-[#1677ff] transition-colors">
@@ -217,16 +217,16 @@ const SerialNumberApproval = () => {
                       </div>
                     </td>
                     
-                    <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.88)]">
+                    <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.88)] mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       <div className="truncate max-w-[200px]" title={asset.description}>{asset.description}</div>
                     </td>
                     
-                    <td className="py-3 px-3 align-middle text-center text-[rgba(0,0,0,0.88)]">{asset.qty}</td>
-                    <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px]">{asset.city}</td>
-                    <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px]">{asset.building}</td>
-                    <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px]">{asset.floor}</td>
-                    <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px]">{asset.remark || '-'}</td>
-                    <td className="py-3 px-4 align-middle text-[rgba(0,0,0,0.65)] text-[13px]">{asset.status}</td>
+                    <td className="py-3 px-3 align-middle  text-[rgba(0,0,0,0.88)] mmp-table-cell-right" style={{ textAlign: 'right' }}>{asset.qty}</td>
+                    <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px] mmp-table-cell-left" style={{ textAlign: 'left' }}>{asset.city}</td>
+                    <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px] mmp-table-cell-left" style={{ textAlign: 'left' }}>{asset.building}</td>
+                    <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px] mmp-table-cell-left" style={{ textAlign: 'left' }}>{asset.floor}</td>
+                    <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px] mmp-table-cell-left" style={{ textAlign: 'left' }}>{asset.remark || '-'}</td>
+                    <td className="py-3 px-4 align-middle text-[rgba(0,0,0,0.65)] text-[13px] mmp-table-cell-center" style={{ textAlign: 'center' }}>{asset.status}</td>
                   </tr>
                 ))}
               </tbody>

@@ -1,3 +1,4 @@
+import { columnAlignment } from '../components/tableAlignment/columnAlignment';
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
 
@@ -61,11 +62,11 @@ export default function PurchaseOrderEdit() {
           <table className="min-w-max w-full text-left whitespace-nowrap">
             <thead className="bg-gray-50 border-b border-gray-200 text-gray-600 font-medium">
               <tr>
-                <th className="px-4 py-3 text-center w-12">
+                <th className="px-4 py-3  w-12 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                   <input type="checkbox" className="rounded border-gray-300 w-4 h-4 cursor-pointer" />
                 </th>
                 {headers.map((header, index) => (
-                  <th key={index} className="px-4 py-3">{header}</th>
+                  <th key={index} className="px-4 py-3" style={{ textAlign: columnAlignment({ title: header }) }}>{header}</th>
                 ))}
               </tr>
             </thead>
@@ -74,10 +75,10 @@ export default function PurchaseOrderEdit() {
               
               {/* ====== 父节点：主机行 ====== */}
               <tr className="hover:bg-blue-50/50 transition-colors group">
-                <td className="px-4 py-3 text-center">
+                <td className="px-4 py-3 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                   <input type="checkbox" className="rounded border-gray-300 w-4 h-4 cursor-pointer" />
                 </td>
-                <td className="px-4 py-3 flex items-center gap-1.5 font-medium text-gray-800">
+                <td className="px-4 py-3 flex items-center gap-1.5 font-medium text-gray-800 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                   <button 
                     onClick={() => setIsExpanded(!isExpanded)} 
                     className="text-gray-400 hover:text-gray-700 focus:outline-none p-0.5 rounded hover:bg-gray-200 transition-colors"
@@ -86,42 +87,42 @@ export default function PurchaseOrderEdit() {
                   </button>
                   Inspur.SA5212 M5
                 </td>
-                <td className="px-4 py-3 text-gray-600">服务器-主机</td>
-                <td className="px-4 py-3 text-gray-600">Intel Gold5318Y*2, DDR4_2933MH</td>
-                <td className="px-4 py-3 text-gray-600">SA1812140004</td>
-                <td className="px-4 py-3 text-gray-600">台</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>服务器-主机</td>
+                <td className="px-4 py-3 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>Intel Gold5318Y*2, DDR4_2933MH</td>
+                <td className="px-4 py-3 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>SA1812140004</td>
+                <td className="px-4 py-3 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>台</td>
+                <td className="px-4 py-3 mmp-table-cell-right" style={{ textAlign: 'right' }}>
                   <input type="number" defaultValue={20} className="w-20 border border-gray-300 px-2 py-1.5 rounded text-center focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" />
                 </td>
-                <td className="px-4 py-3 text-gray-400 text-center">100%</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 text-gray-400 mmp-table-cell-right" style={{ textAlign: 'right' }}>100%</td>
+                <td className="px-4 py-3 mmp-table-cell-right" style={{ textAlign: 'right' }}>
                   <input type="text" defaultValue="40,000.00" className="w-24 border border-gray-300 px-2 py-1.5 rounded text-right focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" />
                 </td>
-                <td className="px-4 py-3 text-gray-400"></td>
-                <td className="px-4 py-3 text-gray-400"></td>
-                <td className="px-4 py-3 text-gray-400"></td>
-                <td className="px-4 py-3 text-gray-400"></td>
-                <td className="px-4 py-3 font-medium text-gray-800">800,000.00</td>
-                <td className="px-4 py-3 text-gray-600">飞狐信息技术（天津）有限公司</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 text-gray-400 mmp-table-cell-right" style={{ textAlign: 'right' }}></td>
+                <td className="px-4 py-3 text-gray-400 mmp-table-cell-right" style={{ textAlign: 'right' }}></td>
+                <td className="px-4 py-3 text-gray-400 mmp-table-cell-right" style={{ textAlign: 'right' }}></td>
+                <td className="px-4 py-3 text-gray-400 mmp-table-cell-right" style={{ textAlign: 'right' }}></td>
+                <td className="px-4 py-3 font-medium text-gray-800 mmp-table-cell-right" style={{ textAlign: 'right' }}>800,000.00</td>
+                <td className="px-4 py-3 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>飞狐信息技术（天津）有限公司</td>
+                <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                   <input type="text" className="w-24 border border-gray-300 px-2 py-1.5 rounded outline-none focus:border-blue-500 transition-all" />
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                   <input type="text" defaultValue="搜狐媒体大厦" className="w-28 border border-gray-300 px-2 py-1.5 rounded outline-none focus:border-blue-500 transition-all" />
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                   <input type="text" defaultValue="MTDS" className="w-16 border border-gray-300 px-2 py-1.5 rounded outline-none focus:border-blue-500 transition-all" />
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                   <input type="text" defaultValue="北京市海淀区..." className="w-32 border border-gray-300 px-2 py-1.5 rounded outline-none focus:border-blue-500 transition-all" />
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                   <input type="text" defaultValue="邓崇伟" className="w-20 border border-gray-300 px-2 py-1.5 rounded outline-none focus:border-blue-500 transition-all" />
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                   <input type="text" defaultValue="18911208028" className="w-28 border border-gray-300 px-2 py-1.5 rounded outline-none focus:border-blue-500 transition-all" />
                 </td>
-                <td className="px-4 py-3 text-center">
+                <td className="px-4 py-3 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                   <button className="text-red-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50">
                     <X size={18} />
                   </button>
@@ -133,40 +134,40 @@ export default function PurchaseOrderEdit() {
                 const isLast = index === subItems.length - 1;
                 return (
                   <tr key={item.id} className="hover:bg-gray-50/80 transition-colors text-gray-500">
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                       {/* 去除复选框，留空 */}
                     </td>
-                    <td className="px-4 py-3 relative pl-10 text-gray-400 flex items-center h-full min-h-[52px]">
+                    <td className="px-4 py-3 relative pl-10 text-gray-400 flex items-center h-full min-h-[52px] mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       {/* 树形结构连接线 */}
                       <div className={`absolute left-[28px] top-0 border-l border-dashed border-gray-300 ${isLast ? 'bottom-1/2' : 'bottom-0'}`}></div>
                       <div className="absolute left-[28px] top-1/2 w-4 border-t border-dashed border-gray-300"></div>
                       <span className="ml-1">{item.name}</span>
                     </td>
-                    <td className="px-4 py-3">{item.category}</td>
-                    <td className="px-4 py-3">{item.config}</td>
-                    <td className="px-4 py-3">SA1812140004</td>
-                    <td className="px-4 py-3">{item.unit}</td>
-                    <td className="px-4 py-3 text-center">{item.qty}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>{item.category}</td>
+                    <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>{item.config}</td>
+                    <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>SA1812140004</td>
+                    <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>{item.unit}</td>
+                    <td className="px-4 py-3 mmp-table-cell-right" style={{ textAlign: 'right' }}>{item.qty}</td>
+                    <td className="px-4 py-3 mmp-table-cell-right" style={{ textAlign: 'right' }}>
                       <input type="text" className="w-16 border border-gray-300 px-2 py-1.5 rounded text-center focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" />
                     </td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <td className="px-4 py-3  whitespace-nowrap mmp-table-cell-right" style={{ textAlign: 'right' }}>
                       {item.price}
                       <span className="text-gray-400 text-xs ml-1">（预估）</span>
                     </td>
-                    <td className="px-4 py-3"></td>
-                    <td className="px-4 py-3"></td>
-                    <td className="px-4 py-3"></td>
-                    <td className="px-4 py-3"></td>
-                    <td className="px-4 py-3 text-gray-800">{item.total}</td>
-                    <td className="px-4 py-3">飞狐信息技术（天津）有限公司</td>
-                    <td className="px-4 py-3 text-center">-</td>
-                    <td className="px-4 py-3">搜狐媒体大厦</td>
-                    <td className="px-4 py-3">MTDS</td>
-                    <td className="px-4 py-3">北京市海淀区...</td>
-                    <td className="px-4 py-3">邓崇伟</td>
-                    <td className="px-4 py-3">18911208028</td>
-                    <td className="px-4 py-3"></td>
+                    <td className="px-4 py-3 mmp-table-cell-right" style={{ textAlign: 'right' }}></td>
+                    <td className="px-4 py-3 mmp-table-cell-right" style={{ textAlign: 'right' }}></td>
+                    <td className="px-4 py-3 mmp-table-cell-right" style={{ textAlign: 'right' }}></td>
+                    <td className="px-4 py-3 mmp-table-cell-right" style={{ textAlign: 'right' }}></td>
+                    <td className="px-4 py-3 text-gray-800 mmp-table-cell-right" style={{ textAlign: 'right' }}>{item.total}</td>
+                    <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>飞狐信息技术（天津）有限公司</td>
+                    <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>-</td>
+                    <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>搜狐媒体大厦</td>
+                    <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>MTDS</td>
+                    <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>北京市海淀区...</td>
+                    <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>邓崇伟</td>
+                    <td className="px-4 py-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>18911208028</td>
+                    <td className="px-4 py-3 mmp-table-cell-center" style={{ textAlign: 'center' }}></td>
                   </tr>
                 );
               })}

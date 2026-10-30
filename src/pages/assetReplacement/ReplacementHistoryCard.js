@@ -1,5 +1,6 @@
 import React from 'react';
-import { Card, Table } from 'antd';
+import { Card } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import StatusTag from '../../components/StatusTag';
 
 export default function ReplacementHistoryCard({

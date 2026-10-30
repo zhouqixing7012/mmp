@@ -10,10 +10,10 @@ import {
   Radio,
   Select,
   Space,
-  Table,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
 import {

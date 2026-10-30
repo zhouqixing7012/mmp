@@ -3,7 +3,8 @@ import { inventoryManagementBlockReason } from './inventoryManagementPermissions
 import { inventoryProjectCloseBlockReason } from './inventoryCloseRules';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Button, Card, DatePicker, Input, Modal, Select, Space, Typography, message as antdMessage } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import { ChevronDown, ChevronRight, Smartphone } from 'lucide-react';
 import { Plus, Trash2, XCircle } from 'lucide-react';

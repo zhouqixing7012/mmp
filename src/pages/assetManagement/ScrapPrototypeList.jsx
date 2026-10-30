@@ -9,9 +9,9 @@ import {
   Modal,
   Select,
   Space,
-  Table,
   Typography,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import { PlusOutlined } from '@ant-design/icons';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import SelectModal from '../../components/SelectModal';

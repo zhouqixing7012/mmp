@@ -7,9 +7,9 @@ import {
   Input,
   Select,
   Space,
-  Table,
   Typography,
 } from 'antd';
+import Table from '../components/tableAlignment/AlignedTable';
 
 const { RangePicker } = DatePicker;
 const { Link } = Typography;

@@ -231,18 +231,18 @@ const MainSpareApproval = () => {
             <table className="w-full text-left whitespace-nowrap border-collapse">
               <thead className="bg-[#fafafa]">
                 <tr>
-                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[160px]">资产标签号</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[140px]">序列号</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-16 text-center">关系</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[100px]">品牌</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[120px]">资产小类</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[160px]">资产说明</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-16 text-center">数量</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[100px]">城市</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[120px]">建筑物</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[120px]">楼层/机房</th>
-                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[160px]">备注</th>
-                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-24 text-center sticky right-0 bg-[#fafafa] z-10 shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] border-l border-[#f0f0f0]">变更状态</th>
+                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[160px] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产标签号</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[140px] mmp-table-cell-left" style={{ textAlign: 'left' }}>序列号</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-16 mmp-table-cell-left" style={{ textAlign: 'left' }}>关系</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[100px] mmp-table-cell-left" style={{ textAlign: 'left' }}>品牌</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[120px] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产小类</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[160px] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产说明</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-16 mmp-table-cell-right" style={{ textAlign: 'right' }}>数量</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[100px] mmp-table-cell-left" style={{ textAlign: 'left' }}>城市</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[120px] mmp-table-cell-left" style={{ textAlign: 'left' }}>建筑物</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[120px] mmp-table-cell-left" style={{ textAlign: 'left' }}>楼层/机房</th>
+                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[160px] mmp-table-cell-left" style={{ textAlign: 'left' }}>备注</th>
+                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-24  sticky right-0 bg-[#fafafa] z-10 shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] border-l border-[#f0f0f0] mmp-table-cell-center" style={{ textAlign: 'center' }}>变更状态</th>
                 </tr>
               </thead>
               
@@ -263,7 +263,7 @@ const MainSpareApproval = () => {
                       className={`border-b border-[#f0f0f0] transition-colors hover:bg-[#f5f5f5] ${rowBgClass}`}
                     >
                       {/* 1. 资产标签号 */}
-                      <td className="py-3 px-4 align-middle">
+                      <td className="py-3 px-4 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <div className="flex items-center gap-1.5" style={{ paddingLeft: asset.isMain ? '0px' : '24px' }}>
                           {asset.isMain && (
                             <div 
@@ -282,11 +282,11 @@ const MainSpareApproval = () => {
                       </td>
 
                       {/* 其他字段统一应用 rowTextClass 控制置灰和删除线 */}
-                      <td className={`py-3 px-3 align-middle text-[13px] ${isRemoved ? rowTextClass : 'text-[rgba(0,0,0,0.65)]'}`}>
+                      <td className={`py-3 px-3 align-middle text-[13px] ${isRemoved ? rowTextClass : 'text-[rgba(0,0,0,0.65)]'}`} style={{ textAlign: 'left' }}>
                         {asset.serialNumber}
                       </td>
 
-                      <td className="py-3 px-3 align-middle text-center">
+                      <td className="py-3 px-3 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <span className={`px-2 py-[2px] rounded border text-[12px] ${
                           isRemoved 
                             ? 'bg-transparent text-[rgba(0,0,0,0.35)] border-[rgba(0,0,0,0.2)] line-through' // 解除状态的关系标签也置灰
@@ -296,27 +296,27 @@ const MainSpareApproval = () => {
                         </span>
                       </td>
 
-                      <td className={`py-3 px-3 align-middle ${rowTextClass}`}>{asset.brand}</td>
-                      <td className={`py-3 px-3 align-middle text-[13px] ${isRemoved ? rowTextClass : 'text-[rgba(0,0,0,0.65)]'}`}>{asset.minorCategory}</td>
-                      <td className={`py-3 px-3 align-middle ${rowTextClass}`}>
+                      <td className={`py-3 px-3 align-middle ${rowTextClass}`} style={{ textAlign: 'left' }}>{asset.brand}</td>
+                      <td className={`py-3 px-3 align-middle text-[13px] ${isRemoved ? rowTextClass : 'text-[rgba(0,0,0,0.65)]'}`} style={{ textAlign: 'left' }}>{asset.minorCategory}</td>
+                      <td className={`py-3 px-3 align-middle ${rowTextClass}`} style={{ textAlign: 'left' }}>
                         <div className="truncate max-w-[160px]" title={asset.description}>{asset.description}</div>
                       </td>
-                      <td className={`py-3 px-3 align-middle text-center ${rowTextClass}`}>{asset.qty}</td>
+                      <td className={`py-3 px-3 align-middle text-center ${rowTextClass}`} style={{ textAlign: 'right' }}>{asset.qty}</td>
                       
                       {/* 地理位置 */}
                       {['city', 'building', 'floor'].map((field) => (
-                        <td key={field} className={`py-2 px-3 align-middle text-[13px] ${isRemoved ? rowTextClass : 'text-[rgba(0,0,0,0.65)]'}`}>
+                        <td key={field} className={`py-2 px-3 align-middle text-[13px] ${isRemoved ? rowTextClass : 'text-[rgba(0,0,0,0.65)]'}`} style={{ textAlign: 'left' }}>
                           {asset[field] || '-'}
                         </td>
                       ))}
 
                       {/* 备注变为只读展示 */}
-                      <td className={`py-3 px-4 align-middle text-[13px] ${isRemoved ? rowTextClass : 'text-[rgba(0,0,0,0.65)]'}`}>
+                      <td className={`py-3 px-4 align-middle text-[13px] ${isRemoved ? rowTextClass : 'text-[rgba(0,0,0,0.65)]'}`} style={{ textAlign: 'left' }}>
                         {asset.remark || '-'}
                       </td>
 
                       {/* 2. 变更状态标签列 (移至最后并作为冻结列) */}
-                      <td className={`py-3 px-4 align-middle text-center sticky right-0 z-10 border-l border-[#f0f0f0] transition-colors shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] ${rowBgClass}`}>
+                      <td className={`py-3 px-4 align-middle text-center sticky right-0 z-10 border-l border-[#f0f0f0] transition-colors shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] ${rowBgClass}`} style={{ textAlign: 'left' }}>
                         {asset.changeStatus === 'add' && (
                           <span className="inline-block px-2 py-0.5 bg-[#f6ffed] border border-[#b7eb8f] text-[#52c41a] rounded text-[12px] whitespace-nowrap">
                             新增

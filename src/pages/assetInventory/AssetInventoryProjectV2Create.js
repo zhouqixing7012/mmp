@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Button, Card, DatePicker, Input, InputNumber, Select, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Button, Card, DatePicker, Input, InputNumber, Select, Space, Typography, message as antdMessage } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import { ASSET_ROWS, PROJECT_INFO, PROJECT_ROWS, SCOPE_ROWS } from './mockData';
 import { CardTitle, PROJECT_TYPES, assetColumns } from './AssetInventoryProjectV2Common';

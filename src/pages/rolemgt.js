@@ -1,3 +1,4 @@
+import { columnAlignment } from '../components/tableAlignment/columnAlignment';
 import React, { useState } from 'react';
 import { Button, Input, Select, Modal } from 'antd';
 import { Plus, CheckCircle, XCircle, Search, X } from 'lucide-react';
@@ -184,13 +185,13 @@ function UserLinkModal({ open, onClose, roleName, linkedUsers, onConfirm }) {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[#fafafa] border-b border-[#f0f0f0]">
-                  <th className="px-4 py-3 w-12 text-center">
+                  <th className="px-4 py-3 w-12 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                     <input type="checkbox" className="w-3.5 h-3.5 cursor-pointer" checked={allSelected}
                       onChange={handleSelectAll} />
                   </th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-800">工号</th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-800">姓名</th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-800">部门</th>
+                  <th className="px-4 py-3 text-sm font-semibold text-gray-800 mmp-table-cell-left" style={{ textAlign: 'left' }}>工号</th>
+                  <th className="px-4 py-3 text-sm font-semibold text-gray-800 mmp-table-cell-left" style={{ textAlign: 'left' }}>姓名</th>
+                  <th className="px-4 py-3 text-sm font-semibold text-gray-800 mmp-table-cell-left" style={{ textAlign: 'left' }}>部门</th>
                 </tr>
               </thead>
               <tbody>
@@ -201,13 +202,13 @@ function UserLinkModal({ open, onClose, roleName, linkedUsers, onConfirm }) {
                       className={'border-b border-[#f0f0f0] cursor-pointer transition-colors ' + (isChecked ? 'bg-[#e6f7ff]' : 'hover:bg-[#fafafa]')}
                       onClick={() => toggleUser(user.id)}
                     >
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                         <input type="checkbox" className="w-3.5 h-3.5" checked={isChecked}
                           onChange={() => toggleUser(user.id)} />
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#1677ff]">{user.id}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{user.name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{user.dept}</td>
+                      <td className="px-4 py-3 text-sm text-[#1677ff] mmp-table-cell-left" style={{ textAlign: 'left' }}>{user.id}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>{user.name}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{user.dept}</td>
                     </tr>
                   );
                 })}
@@ -314,17 +315,17 @@ function PermissionAssignmentPage({ roleName, onClose, onSave }) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#fafafa] border-b border-[#f0f0f0]">
-                <th className="px-4 py-3 text-sm font-semibold text-gray-800 w-[180px]">二级菜单</th>
-                <th className="px-4 py-3 text-sm font-semibold text-gray-800 w-[180px]">三级菜单</th>
-                <th className="px-4 py-3 text-sm font-semibold text-gray-800">功能点</th>
+                <th className="px-4 py-3 text-sm font-semibold text-gray-800 w-[180px] mmp-table-cell-left" style={{ textAlign: 'left' }}>二级菜单</th>
+                <th className="px-4 py-3 text-sm font-semibold text-gray-800 w-[180px] mmp-table-cell-left" style={{ textAlign: 'left' }}>三级菜单</th>
+                <th className="px-4 py-3 text-sm font-semibold text-gray-800 mmp-table-cell-left" style={{ textAlign: 'left' }}>功能点</th>
               </tr>
             </thead>
             <tbody>
               {filteredData.map((row, idx) => (
                 <tr key={idx} className={'border-b border-[#f0f0f0] hover:bg-[#fafafa] transition-colors ' + (idx % 2 === 0 ? 'bg-white' : 'bg-[#fcfcfc]')}>
-                  <td className="px-4 py-3 text-sm text-gray-700 font-medium">{row.secondMenu}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{row.thirdMenu}</td>
-                  <td className="px-4 py-3 text-sm">
+                  <td className="px-4 py-3 text-sm text-gray-700 font-medium mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.secondMenu}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.thirdMenu}</td>
+                  <td className="px-4 py-3 text-sm mmp-table-cell-center" style={{ textAlign: 'center' }}>
                     <div className="flex flex-wrap items-center gap-4">
                       {row.features.map(feature => {
                         const checked = selectedFeatures.has(makeKey(row, feature));
@@ -468,31 +469,31 @@ export default function RoleManagementView() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-[#fafafa] border-b border-[#f0f0f0]">
-              <th className="px-4 py-3 w-12 text-center"><input type="checkbox" className="rounded border-gray-300" /></th>
+              <th className="px-4 py-3 w-12 mmp-table-cell-center" style={{ textAlign: 'center' }}><input type="checkbox" className="rounded border-gray-300" /></th>
               {columns.map(col => (
-                <th key={col.key || col.dataIndex} className="px-4 py-3 text-xs font-semibold text-gray-600">{col.title}</th>
+                <th key={col.key || col.dataIndex} className="px-4 py-3 text-xs font-semibold text-gray-600" style={{ textAlign: columnAlignment(col) }}>{col.title}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 text-sm">
             {filteredData.map(record => (
               <tr key={record.id} className="hover:bg-blue-50/50 transition-colors">
-                <td className="py-2.5 px-4 text-center"><input type="checkbox" className="rounded border-gray-300" /></td>
-                <td className="py-2.5 px-3 text-gray-800">{record.roleName}</td>
-                <td className="py-2.5 px-3 text-gray-600">{record.duty}</td>
-                <td className="py-2.5 px-3">
+                <td className="py-2.5 px-4 mmp-table-cell-center" style={{ textAlign: 'center' }}><input type="checkbox" className="rounded border-gray-300" /></td>
+                <td className="py-2.5 px-3 text-gray-800 mmp-table-cell-left" style={{ textAlign: 'left' }}>{record.roleName}</td>
+                <td className="py-2.5 px-3 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{record.duty}</td>
+                <td className="py-2.5 px-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                   <div className="flex items-center gap-2">
                     <span className="text-gray-700 truncate max-w-[160px]">{record.users && record.users.length > 0 ? record.users.join(', ') : '-'}</span>
                     <Button type="link" size="small" onClick={() => setLinkUserRole(record)}>关联</Button>
                   </div>
                 </td>
-                <td className="py-2.5 px-3">
+                <td className="py-2.5 px-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                   <div className="flex items-center gap-2">
                     <span className="text-gray-700 truncate max-w-[200px]">{record.menus && record.menus.length > 0 ? record.menus.join(', ') : '-'}</span>
                     <Button type="link" size="small" onClick={() => { setPermRole(record); setViewMode('permission'); }}>分配</Button>
                   </div>
                 </td>
-                <td className="py-2.5 px-3">
+                <td className="py-2.5 px-3 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                   <span className={'px-2 py-0.5 rounded text-xs ' + (record.status === '启用' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}>{record.status}</span>
                 </td>
               </tr>

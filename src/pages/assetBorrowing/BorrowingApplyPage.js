@@ -14,10 +14,10 @@ import {
   Modal,
   Select,
   Space,
-  Table,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import {
   BORROW_CUSTODY_TEXT,
   BORROW_NOTICE,

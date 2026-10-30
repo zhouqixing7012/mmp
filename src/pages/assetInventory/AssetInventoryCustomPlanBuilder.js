@@ -10,11 +10,11 @@ import {
   InputNumber,
   Modal,
   Space,
-  Table,
   Typography,
   TreeSelect,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import { Download, Eye, Search, Trash2 } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';

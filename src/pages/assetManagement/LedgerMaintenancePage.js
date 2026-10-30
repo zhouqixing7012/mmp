@@ -11,10 +11,10 @@ import {
   Row,
   Select,
   Space,
-  Table,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import { Download, Edit3, Search } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';

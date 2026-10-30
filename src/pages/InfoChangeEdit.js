@@ -377,17 +377,17 @@ const InfoChangeEdit = () => {
             <table className="w-full text-left whitespace-nowrap">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="py-3 px-4 font-medium text-gray-600 w-56">资产标签号</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 w-48">序列号</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 w-24 text-center">主备关系</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[200px]">资产说明</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 w-16 text-center">数量</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[140px]"><span className="text-red-500 mr-1">*</span>城市</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[160px]"><span className="text-red-500 mr-1">*</span>建筑物</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[140px]"><span className="text-red-500 mr-1">*</span>楼层/机房</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[150px]">备注</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 w-28">资产状态</th>
-                  <th className="py-3 px-4 font-medium text-gray-600 w-20 text-center">操作</th>
+                  <th className="py-3 px-4 font-medium text-gray-600 w-56 mmp-table-cell-left" style={{ textAlign: 'left' }}>资产标签号</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 w-48 mmp-table-cell-left" style={{ textAlign: 'left' }}>序列号</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 w-24 mmp-table-cell-left" style={{ textAlign: 'left' }}>主备关系</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[200px] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产说明</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 w-16 mmp-table-cell-right" style={{ textAlign: 'right' }}>数量</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[140px] mmp-table-cell-left" style={{ textAlign: 'left' }}><span className="text-red-500 mr-1">*</span>城市</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[160px] mmp-table-cell-left" style={{ textAlign: 'left' }}><span className="text-red-500 mr-1">*</span>建筑物</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[140px] mmp-table-cell-left" style={{ textAlign: 'left' }}><span className="text-red-500 mr-1">*</span>楼层/机房</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[150px] mmp-table-cell-left" style={{ textAlign: 'left' }}>备注</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 w-28 mmp-table-cell-center" style={{ textAlign: 'center' }}>资产状态</th>
+                  <th className="py-3 px-4 font-medium text-gray-600 w-20 mmp-table-cell-center" style={{ textAlign: 'center' }}>操作</th>
                 </tr>
               </thead>
               
@@ -401,7 +401,7 @@ const InfoChangeEdit = () => {
                       key={asset.id} 
                       className={`border-b border-gray-100 transition-colors ${isChild ? 'bg-gray-50/50 hover:bg-blue-50/30' : 'hover:bg-blue-50/40'}`}
                     >
-                      <td className="py-3 px-4 align-middle">
+                      <td className="py-3 px-4 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <div 
                           className="flex items-center" 
                           style={{ paddingLeft: `${asset._level * 24}px` }}
@@ -422,18 +422,18 @@ const InfoChangeEdit = () => {
                         </div>
                       </td>
                       
-                      <td className={`py-3 px-2 align-middle ${isChild ? 'text-gray-500 text-xs' : 'text-gray-700 font-medium'}`}>
+                      <td className={`py-3 px-2 align-middle ${isChild ? 'text-gray-500 text-xs' : 'text-gray-700 font-medium'}`} style={{ textAlign: 'left' }}>
                         {asset.serialNumber}
                       </td>
-                      <td className="py-3 px-2 align-middle text-center">
+                      <td className="py-3 px-2 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <span className={`px-2.5 py-1 rounded-sm text-xs font-medium ${asset.relation === '主' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
                           {asset.relation}
                         </span>
                       </td>
-                      <td className={`py-3 px-2 align-middle ${isChild ? 'text-gray-500 text-xs' : 'text-gray-700'}`}>{asset.description}</td>
-                      <td className="py-3 px-2 align-middle text-center font-medium text-gray-600">{asset.qty}</td>
+                      <td className={`py-3 px-2 align-middle ${isChild ? 'text-gray-500 text-xs' : 'text-gray-700'}`} style={{ textAlign: 'left' }}>{asset.description}</td>
+                      <td className="py-3 px-2 align-middle  font-medium text-gray-600 mmp-table-cell-right" style={{ textAlign: 'right' }}>{asset.qty}</td>
                       
-                      <td className="py-2 px-2 align-middle">
+                      <td className="py-2 px-2 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         {asset.relation === '备' ? (
                           <div className={`px-2 py-1.5 ${isChild ? 'text-xs text-gray-400' : 'text-sm text-gray-500'} bg-gray-100 border border-gray-200 rounded cursor-not-allowed`} title="备件地点随主资产变动，不可单独编辑">
                             {asset.city}
@@ -452,7 +452,7 @@ const InfoChangeEdit = () => {
                         )}
                       </td>
                       
-                      <td className="py-2 px-2 align-middle">
+                      <td className="py-2 px-2 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         {asset.relation === '备' ? (
                           <div className={`px-2 py-1.5 ${isChild ? 'text-xs text-gray-400' : 'text-sm text-gray-500'} bg-gray-100 border border-gray-200 rounded cursor-not-allowed`} title="备件地点随主资产变动，不可单独编辑">
                             {asset.building}
@@ -471,7 +471,7 @@ const InfoChangeEdit = () => {
                         )}
                       </td>
                       
-                      <td className="py-2 px-2 align-middle">
+                      <td className="py-2 px-2 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         {asset.relation === '备' ? (
                           <div className={`px-2 py-1.5 ${isChild ? 'text-xs text-gray-400' : 'text-sm text-gray-500'} bg-gray-100 border border-gray-200 rounded cursor-not-allowed`} title="备件地点随主资产变动，不可单独编辑">
                             {asset.floor}
@@ -490,7 +490,7 @@ const InfoChangeEdit = () => {
                         )}
                       </td>
 
-                      <td className="py-2 px-2 align-middle">
+                      <td className="py-2 px-2 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <div className="relative">
                           <input 
                             type="text" 
@@ -502,11 +502,11 @@ const InfoChangeEdit = () => {
                         </div>
                       </td>
                       
-                      <td className={`py-3 px-2 align-middle ${isChild ? 'text-gray-400 text-xs' : 'text-gray-500'}`}>
+                      <td className={`py-3 px-2 align-middle ${isChild ? 'text-gray-400 text-xs' : 'text-gray-500'}`} style={{ textAlign: 'center' }}>
                         {asset.status}
                       </td>
 
-                      <td className="py-3 px-4 align-middle text-center">
+                      <td className="py-3 px-4 align-middle mmp-table-cell-center" style={{ textAlign: 'center' }}>
                         {asset.relation === '主' ? (
                           <button 
                             onClick={() => handleDeleteAsset(asset.id)}

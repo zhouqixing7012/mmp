@@ -7,10 +7,10 @@ import {
   Input,
   Modal,
   Space,
-  Table,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import {
   getBorrowingApplicationByNode,

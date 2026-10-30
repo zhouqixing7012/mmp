@@ -8,11 +8,11 @@ import {
   Modal,
   Select,
   Space,
-  Table,
   Tabs,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import { Plus, Printer, Search, Trash2 } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';

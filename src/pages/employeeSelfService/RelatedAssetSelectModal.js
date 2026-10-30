@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Input, Modal, Radio, Table, Typography } from 'antd';
+import { Input, Modal, Radio, Typography } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import StatusTag from '../../components/StatusTag';
 import { MY_EXISTING_ASSETS } from '../../mock/assetApplicationMock';
 

@@ -7,10 +7,10 @@ import {
   Input,
   Modal,
   Space,
-  Table,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import StatusTag from '../../components/StatusTag';
 import { CURRENT_EMPLOYEE } from '../../mock/employeeSelfServiceMock';
 import {

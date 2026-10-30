@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Button, Card, DatePicker, Input, Modal, Select, Space, Typography, message as antdMessage } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import { Plus, Search, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';

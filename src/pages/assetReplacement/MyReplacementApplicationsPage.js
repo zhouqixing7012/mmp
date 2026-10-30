@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import { Button, Card, DatePicker, Empty, Input, Select, Space, Table, Tag } from 'antd';
+import { Button, Card, DatePicker, Empty, Input, Select, Space, Tag } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { getAssetReplacementApplications } from '../../services/assetReplacementService';
 import ReplacementDetailModal from './ReplacementDetailModal';

@@ -10,11 +10,11 @@ import {
   Modal,
   Select,
   Space,
-  Table,
   Tabs,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
 import {

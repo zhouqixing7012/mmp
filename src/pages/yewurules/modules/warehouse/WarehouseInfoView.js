@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import { Search, Plus, CheckCircle, XCircle, Trash2 } from 'lucide-react';
-import { Button, Input, Select, Modal, Table, Radio, DatePicker } from 'antd';
+import { Button, Input, Select, Modal, Radio, DatePicker } from 'antd';
+import Table from '../../../../components/tableAlignment/AlignedTable';
 import StatusTag from '../../../../components/StatusTag';
 import QueryBar, { QueryItem } from '../../../../components/QueryBar';
 import {

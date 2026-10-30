@@ -420,19 +420,19 @@ const MainSpareEdit = () => {
             <table className="w-full text-left whitespace-nowrap border-collapse">
               <thead className="bg-[#fafafa]">
                 <tr>
-                  <th className="py-3.5 px-4 font-medium text-text-primary border-b border-border min-w-[160px]">资产标签号</th>
-                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[160px]">序列号</th>
-                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border w-16 text-center">关系</th>
-                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[100px]">品牌</th>
-                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[130px]">资产小类</th>
-                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[160px]">资产说明</th>
-                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[180px]">配置</th>
-                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border w-16 text-center">数量</th>
-                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[100px]">城市</th>
-                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[130px]">建筑物</th>
-                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[130px]">楼层/机房</th>
-                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[160px]">备注</th>
-                  <th className="py-3.5 px-4 font-medium text-text-primary border-b border-border w-44 text-center sticky right-0 bg-[#fafafa] z-10 shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] border-l border-border">操作</th>
+                  <th className="py-3.5 px-4 font-medium text-text-primary border-b border-border min-w-[160px] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产标签号</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[160px] mmp-table-cell-left" style={{ textAlign: 'left' }}>序列号</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border w-16 mmp-table-cell-left" style={{ textAlign: 'left' }}>关系</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[100px] mmp-table-cell-left" style={{ textAlign: 'left' }}>品牌</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[130px] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产小类</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[160px] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产说明</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[180px] mmp-table-cell-left" style={{ textAlign: 'left' }}>配置</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border w-16 mmp-table-cell-right" style={{ textAlign: 'right' }}>数量</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[100px] mmp-table-cell-left" style={{ textAlign: 'left' }}>城市</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[130px] mmp-table-cell-left" style={{ textAlign: 'left' }}>建筑物</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[130px] mmp-table-cell-left" style={{ textAlign: 'left' }}>楼层/机房</th>
+                  <th className="py-3.5 px-3 font-medium text-text-primary border-b border-border min-w-[160px] mmp-table-cell-left" style={{ textAlign: 'left' }}>备注</th>
+                  <th className="py-3.5 px-4 font-medium text-text-primary border-b border-border w-44  sticky right-0 bg-[#fafafa] z-10 shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] border-l border-border mmp-table-cell-center" style={{ textAlign: 'center' }}>操作</th>
                 </tr>
               </thead>
               
@@ -453,7 +453,7 @@ const MainSpareEdit = () => {
                       key={asset.id} 
                       className={`group border-b border-border transition-colors hover:bg-[#f5f5f5] ${rowBg}`}
                     >
-                      <td className="py-3 px-4 align-middle">
+                      <td className="py-3 px-4 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <div className="flex items-center gap-1.5" style={{ paddingLeft: asset.isMain ? '0px' : '24px' }}>
                           {asset.isMain && (
                             <div 
@@ -468,11 +468,11 @@ const MainSpareEdit = () => {
                         </div>
                       </td>
                       
-                      <td className="py-3 px-3 align-middle text-text-secondary text-[13px]">
+                      <td className="py-3 px-3 align-middle text-text-secondary text-[13px] mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         {asset.serialNumber}
                       </td>
 
-                      <td className="py-3 px-3 align-middle text-center">
+                      <td className="py-3 px-3 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <span className={`px-2 py-[2px] rounded border text-[12px] ${
                           asset.isMain 
                             ? 'bg-primary-bg text-primary border-primary-border' 
@@ -482,30 +482,30 @@ const MainSpareEdit = () => {
                         </span>
                       </td>
 
-                      <td className="py-3 px-3 align-middle text-text-primary">
+                      <td className="py-3 px-3 align-middle text-text-primary mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         {asset.brand}
                       </td>
-                      <td className="py-3 px-3 align-middle text-text-secondary text-[13px]">
+                      <td className="py-3 px-3 align-middle text-text-secondary text-[13px] mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         {asset.minorCategory}
                       </td>
                       
-                      <td className="py-3 px-3 align-middle">
+                      <td className="py-3 px-3 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <div className="text-text-primary truncate max-w-[160px]" title={asset.description}>{asset.description}</div>
                       </td>
-                      <td className="py-3 px-3 align-middle">
+                      <td className="py-3 px-3 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <div className="text-text-secondary text-[13px] truncate max-w-[180px]" title={asset.config}>{asset.config}</div>
                       </td>
 
-                      <td className="py-3 px-3 align-middle text-center text-text-primary">{asset.qty}</td>
+                      <td className="py-3 px-3 align-middle  text-text-primary mmp-table-cell-right" style={{ textAlign: 'right' }}>{asset.qty}</td>
                       
                       {/* 地点展示区 */}
                       {['city', 'building', 'floor'].map((field) => (
-                        <td key={field} className="py-2 px-3 align-middle text-text-secondary text-[13px]">
+                        <td key={field} className="py-2 px-3 align-middle text-text-secondary text-[13px] mmp-table-cell-left" style={{ textAlign: 'left' }}>
                           {asset[field] || '-'}
                         </td>
                       ))}
 
-                      <td className="py-2 px-3 align-middle">
+                      <td className="py-2 px-3 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <input 
                           type="text" value={asset.remark || ''} placeholder="选填..."
                           onChange={(e) => handleAssetChange(asset.id, 'remark', e.target.value)}
@@ -514,7 +514,7 @@ const MainSpareEdit = () => {
                       </td>
 
                       {/* Sticky 操作区列 - 已重构为极致轻盈、一致的无背景纯文本链接按钮样式 */}
-                      <td className={`py-3 px-4 align-middle text-center sticky right-0 z-10 border-l border-border transition-colors shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] ${rowBg} group-hover:bg-[#f5f5f5]`}>
+                      <td className={`py-3 px-4 align-middle text-center sticky right-0 z-10 border-l border-border transition-colors shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] ${rowBg} group-hover:bg-[#f5f5f5]`} style={{ textAlign: 'left' }}>
                         <div className="flex items-center justify-center gap-2">
                           {asset.isMain ? (
                             // 主资产操作：添加备件 与 删除

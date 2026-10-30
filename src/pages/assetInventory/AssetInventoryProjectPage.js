@@ -26,12 +26,12 @@ import {
   Space,
   Statistic,
   Switch,
-  Table,
   Tabs,
   Tag,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import { allowedProjectTypes } from './inventoryCreatorPermissions';
 import { inventoryProjectDateBlockReason } from './inventoryDateRules';

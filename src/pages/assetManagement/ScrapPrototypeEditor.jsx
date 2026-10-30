@@ -6,7 +6,6 @@ import {
   Descriptions,
   Input,
   Select,
-  Table,
   Tabs,
   Collapse,
   Typography,
@@ -14,6 +13,7 @@ import {
   Upload,
   message,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import { DownloadOutlined, UploadOutlined } from '@ant-design/icons';
 import SelectModal from '../../components/SelectModal';
 import LookupInput from '../../components/LookupInput';

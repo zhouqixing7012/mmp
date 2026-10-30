@@ -11,11 +11,11 @@ import {
   Radio,
   Select,
   Space,
-  Table,
   Typography,
   Upload,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import StatusTag from '../../components/StatusTag';
 import { formatDepartment } from '../../utils/displayFormat';
 import {
@@ -743,8 +743,8 @@ function DepartmentSummaryCard({ rows }) {
         pagination={false}
         summary={() => (
           <Table.Summary.Row>
-            <Table.Summary.Cell index={0} colSpan={2} align="center">合计</Table.Summary.Cell>
-            <Table.Summary.Cell index={2} align="center">{totalQuantity}</Table.Summary.Cell>
+            <Table.Summary.Cell index={0} colSpan={2} align="left">合计</Table.Summary.Cell>
+            <Table.Summary.Cell index={2} align="right">{totalQuantity}</Table.Summary.Cell>
             <Table.Summary.Cell index={3} align="right">{money(totalAmount)}</Table.Summary.Cell>
           </Table.Summary.Row>
         )}
@@ -781,8 +781,8 @@ function SummaryApplicationTable({ rows }) {
         scroll={{ x: 1550 }}
         summary={() => (
           <Table.Summary.Row>
-            <Table.Summary.Cell index={0} colSpan={6} align="center">合计</Table.Summary.Cell>
-            <Table.Summary.Cell index={6} align="center">{totalQuantity}</Table.Summary.Cell>
+            <Table.Summary.Cell index={0} colSpan={6} align="left">合计</Table.Summary.Cell>
+            <Table.Summary.Cell index={6} align="right">{totalQuantity}</Table.Summary.Cell>
             <Table.Summary.Cell index={7} align="right">{money(totalAmount)}</Table.Summary.Cell>
             <Table.Summary.Cell index={8} colSpan={2} />
           </Table.Summary.Row>

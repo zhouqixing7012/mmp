@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Button, Card, DatePicker, Input, Select, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Alert, Button, Card, DatePicker, Input, Select, Space, Typography, message as antdMessage } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import { Smartphone } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';

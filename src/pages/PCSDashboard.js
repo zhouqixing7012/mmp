@@ -490,25 +490,25 @@ export default function PCSDashboard() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-[#FAFAFA] border-b border-gray-200">
-                      <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[20%]">域名名称</th>
-                      <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[20%]">注册时间</th>
-                      <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[20%]">到期时间</th>
-                      <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[15%]">费用金额（CNY）</th>
-                      <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[15%]">健康状态</th>
-                      <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[10%]">操作</th>
+                      <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[20%] mmp-table-cell-left" style={{ textAlign: 'left' }}>域名名称</th>
+                      <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[20%] mmp-table-cell-center" style={{ textAlign: 'center' }}>注册时间</th>
+                      <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[20%] mmp-table-cell-center" style={{ textAlign: 'center' }}>到期时间</th>
+                      <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[15%] mmp-table-cell-right" style={{ textAlign: 'right' }}>费用金额（CNY）</th>
+                      <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[15%] mmp-table-cell-center" style={{ textAlign: 'center' }}>健康状态</th>
+                      <th className="px-6 py-3.5 text-sm font-semibold text-gray-800 w-[10%] mmp-table-cell-center" style={{ textAlign: 'center' }}>操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {mockData.map((item) => (
                       <tr key={item.id} className="hover:bg-[#F8FBFF] transition-colors group">
-                        <td className="px-6 py-4 text-[13px] text-gray-700">{item.name}</td>
-                        <td className="px-6 py-4 text-[13px] text-gray-700">{item.regDate}</td>
-                        <td className="px-6 py-4 text-[13px] text-gray-700">{item.expDate}</td>
-                        <td className="px-6 py-4 text-[13px] text-gray-700">{item.cost}</td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 text-[13px] text-gray-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>{item.name}</td>
+                        <td className="px-6 py-4 text-[13px] text-gray-700 mmp-table-cell-center" style={{ textAlign: 'center' }}>{item.regDate}</td>
+                        <td className="px-6 py-4 text-[13px] text-gray-700 mmp-table-cell-center" style={{ textAlign: 'center' }}>{item.expDate}</td>
+                        <td className="px-6 py-4 text-[13px] text-gray-700 mmp-table-cell-right" style={{ textAlign: 'right' }}>{item.cost}</td>
+                        <td className="px-6 py-4 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                           {renderStatusBadge(item.status)}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                           <button className="text-[#1E5EFF] text-[13px] hover:text-blue-700 hover:underline transition-colors">变更记录</button>
                         </td>
                       </tr>
@@ -648,17 +648,17 @@ export default function PCSDashboard() {
                 <table className="w-full text-center border-collapse text-[13px]">
                   <thead>
                     <tr className="bg-[#FAFAFA] border-b border-gray-200">
-                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">证书名称 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
-                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">涵盖域名</th>
-                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">使用人</th>
-                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">使用部门</th>
-                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">费用金额（CNY）） <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
-                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">供应商 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
-                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">证书品牌 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
-                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">生效时间 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
-                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">到期时间</th>
-                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100">健康状态</th>
-                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap">操作</th>
+                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100 mmp-table-cell-left" style={{ textAlign: 'left' }}>证书名称 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
+                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100 mmp-table-cell-left" style={{ textAlign: 'left' }}>涵盖域名</th>
+                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100 mmp-table-cell-left" style={{ textAlign: 'left' }}>使用人</th>
+                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100 mmp-table-cell-left" style={{ textAlign: 'left' }}>使用部门</th>
+                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100 mmp-table-cell-right" style={{ textAlign: 'right' }}>费用金额（CNY）） <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
+                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100 mmp-table-cell-left" style={{ textAlign: 'left' }}>供应商 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
+                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100 mmp-table-cell-left" style={{ textAlign: 'left' }}>证书品牌 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
+                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100 mmp-table-cell-center" style={{ textAlign: 'center' }}>生效时间 <ArrowUpDown className="w-3 h-3 inline text-gray-400 ml-0.5" /></th>
+                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100 mmp-table-cell-center" style={{ textAlign: 'center' }}>到期时间</th>
+                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-100 mmp-table-cell-center" style={{ textAlign: 'center' }}>健康状态</th>
+                      <th className="px-4 py-4 font-semibold text-gray-800 whitespace-nowrap mmp-table-cell-center" style={{ textAlign: 'center' }}>操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -667,28 +667,28 @@ export default function PCSDashboard() {
                         {cert.subItems.map((sub, subIdx) => (
                           <tr key={`${cert.id}-${subIdx}`}>
                             {subIdx === 0 && (
-                              <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white">
+                              <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white mmp-table-cell-left" style={{ textAlign: 'left' }}>
                                 <span  className="text-[#1E5EFF] hover:text-blue-700 hover:underline transition-colors font-medium">{cert.name}</span>
                               </td>
                             )}
-                            <td className={`px-4 py-3 border-r border-gray-100 text-gray-700 bg-white ${subIdx !== cert.subItems.length - 1 ? 'border-b border-gray-50' : 'border-b border-gray-100'}`}>
+                            <td className={`px-4 py-3 border-r border-gray-100 text-gray-700 bg-white ${subIdx !== cert.subItems.length - 1 ? 'border-b border-gray-50' : 'border-b border-gray-100'}`} style={{ textAlign: 'left' }}>
                               {sub.domain}
                             </td>
-                            <td className={`px-4 py-3 border-r border-gray-100 bg-white ${subIdx !== cert.subItems.length - 1 ? 'border-b border-gray-50' : 'border-b border-gray-100'}`}>
+                            <td className={`px-4 py-3 border-r border-gray-100 bg-white ${subIdx !== cert.subItems.length - 1 ? 'border-b border-gray-50' : 'border-b border-gray-100'}`} style={{ textAlign: 'left' }}>
                               <button className="text-[#1E5EFF] hover:underline transition-colors">{sub.user}</button>
                             </td>
                             {subIdx === 0 && (
                               <>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-600 bg-white">{cert.department}</td>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white">{cert.cost}</td>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white">{cert.provider}</td>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white">{cert.brand}</td>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white whitespace-pre-line leading-relaxed">{cert.effectiveTime}</td>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white whitespace-pre-line leading-relaxed">{cert.expireTime}</td>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 bg-white">
+                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-600 bg-white mmp-table-cell-left" style={{ textAlign: 'left' }}>{cert.department}</td>
+                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white mmp-table-cell-right" style={{ textAlign: 'right' }}>{cert.cost}</td>
+                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white mmp-table-cell-left" style={{ textAlign: 'left' }}>{cert.provider}</td>
+                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white mmp-table-cell-left" style={{ textAlign: 'left' }}>{cert.brand}</td>
+                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white whitespace-pre-line leading-relaxed mmp-table-cell-center" style={{ textAlign: 'center' }}>{cert.effectiveTime}</td>
+                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 text-gray-700 bg-white whitespace-pre-line leading-relaxed mmp-table-cell-center" style={{ textAlign: 'center' }}>{cert.expireTime}</td>
+                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-r border-b border-gray-100 bg-white mmp-table-cell-center" style={{ textAlign: 'center' }}>
                                   {renderStatusBadge(cert.status)}
                                 </td>
-                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-b border-gray-100 bg-white">
+                                <td rowSpan={cert.subItems.length} className="px-4 py-4 border-b border-gray-100 bg-white mmp-table-cell-center" style={{ textAlign: 'center' }}>
                                   <button className="text-[#1E5EFF] hover:text-blue-700 hover:underline transition-colors">变更记录</button>
                                 </td>
                               </>

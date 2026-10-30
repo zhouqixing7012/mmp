@@ -185,43 +185,43 @@ export default function ScrapProcurement3() {
               <table className="w-full text-left whitespace-nowrap min-w-[1500px]">
                 <thead className="bg-gray-100 border-b">
                   <tr>
-                    <th className="p-2 w-12 text-center text-gray-600 font-medium">#</th>
-                    {activeTab === 'accessory' && <th className="p-2 font-medium text-gray-600 bg-gray-200/50">所属主资产</th>}
-                    <th className="p-2 font-medium text-gray-600">资产标签号</th>
-                    <th className="p-2 font-medium text-gray-600">序列号</th>
-                    <th className="p-2 font-medium text-gray-600 text-center">数量</th>
-                    <th className="p-2 font-medium text-gray-600">资产大类</th>
-                    <th className="p-2 font-medium text-gray-600">资产说明</th>
-                    <th className="p-2 font-medium text-gray-600">公司</th>
-                    <th className="p-2 font-medium text-gray-600">板块</th>
-                    <th className="p-2 font-medium text-gray-600 text-right">原值</th>
-                    <th className="p-2 font-medium text-gray-600 text-right">净值</th>
-                    <th className="p-2 font-medium text-gray-600">资产状态</th>
-                    <th className="p-2 font-medium text-gray-600">City</th>
-                    <th className="p-2 font-medium text-gray-600">Building</th>
-                    <th className="p-2 font-medium text-gray-600">Floor</th>
-                    <th className="p-2 font-medium text-gray-600 text-center">资产照片</th>
+                    <th className="p-2 w-12  text-gray-600 font-medium mmp-table-cell-center" style={{ textAlign: 'center' }}>#</th>
+                    {activeTab === 'accessory' && <th className="p-2 font-medium text-gray-600 bg-gray-200/50 mmp-table-cell-left" style={{ textAlign: 'left' }}>所属主资产</th>}
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>资产标签号</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>序列号</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-right" style={{ textAlign: 'right' }}>数量</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>资产大类</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>资产说明</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>公司</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>板块</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-right" style={{ textAlign: 'right' }}>原值</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-right" style={{ textAlign: 'right' }}>净值</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-center" style={{ textAlign: 'center' }}>资产状态</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>City</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>Building</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>Floor</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>资产照片</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {currentList.map((row, index) => (
                     <tr key={row.id} className="hover:bg-gray-50 transition-colors text-gray-700">
-                      <td className="p-3 text-center text-gray-400">{index + 1}</td>
-                      {activeTab === 'accessory' && <td className="p-3 bg-gray-50 font-mono text-gray-500">{row.parentTagNo}</td>}
-                      <td className="p-3 font-mono">{row.tagNo}</td>
-                      <td className="p-3 text-gray-500">{row.serialNo}</td>
-                      <td className="p-3 text-center">{row.qty}</td>
-                      <td className="p-3">{row.category}</td>
-                      <td className="p-3" title={row.desc}>{row.desc}</td>
-                      <td className="p-3">{row.company}</td>
-                      <td className="p-3">{row.segment}</td>
-                      <td className="p-3 text-right">{row.originalValue}</td>
-                      <td className="p-3 text-right">{row.netValue}</td>
-                      <td className="p-3">{row.status}</td>
-                      <td className="p-3 text-gray-500">{row.city}</td>
-                      <td className="p-3 text-gray-500">{row.building}</td>
-                      <td className="p-3 text-gray-500">{row.floor}</td>
-                      <td className="p-3 text-center">
+                      <td className="p-3  text-gray-400 mmp-table-cell-center" style={{ textAlign: 'center' }}>{index + 1}</td>
+                      {activeTab === 'accessory' && <td className="p-3 bg-gray-50 font-mono text-gray-500 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.parentTagNo}</td>}
+                      <td className="p-3 font-mono mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.tagNo}</td>
+                      <td className="p-3 text-gray-500 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.serialNo}</td>
+                      <td className="p-3 mmp-table-cell-right" style={{ textAlign: 'right' }}>{row.qty}</td>
+                      <td className="p-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.category}</td>
+                      <td className="p-3 mmp-table-cell-left" title={row.desc} style={{ textAlign: 'left' }}>{row.desc}</td>
+                      <td className="p-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.company}</td>
+                      <td className="p-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.segment}</td>
+                      <td className="p-3 mmp-table-cell-right" style={{ textAlign: 'right' }}>{row.originalValue}</td>
+                      <td className="p-3 mmp-table-cell-right" style={{ textAlign: 'right' }}>{row.netValue}</td>
+                      <td className="p-3 mmp-table-cell-center" style={{ textAlign: 'center' }}>{row.status}</td>
+                      <td className="p-3 text-gray-500 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.city}</td>
+                      <td className="p-3 text-gray-500 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.building}</td>
+                      <td className="p-3 text-gray-500 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.floor}</td>
+                      <td className="p-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         {row.photoUrl ? (
                           <button onClick={() => setPreviewImage(row.photoUrl)} className="inline-flex items-center text-blue-500 hover:text-blue-700 hover:underline">
                             <Eye className="w-4 h-4 mr-1" /> 查看
@@ -249,19 +249,19 @@ export default function ScrapProcurement3() {
               <table className="w-full text-left whitespace-nowrap">
                 <thead className="bg-gray-100 border-b">
                   <tr>
-                    <th className="p-2 w-12 text-center text-gray-600 font-medium">序号</th>
-                    <th className="p-2 font-medium text-gray-600">回收供应商</th>
-                    <th className="p-2 font-medium text-gray-600 text-right">报价金额（元）</th>
-                    <th className="p-2 font-medium text-gray-600">报价附件</th>
+                    <th className="p-2 w-12  text-gray-600 font-medium mmp-table-cell-center" style={{ textAlign: 'center' }}>序号</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>回收供应商</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-right" style={{ textAlign: 'right' }}>报价金额（元）</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>报价附件</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {submittedData.internalAuditQuotations.map((row, index) => (
                     <tr key={row.id} className="hover:bg-gray-50 transition-colors text-gray-700">
-                      <td className="p-3 text-center text-gray-400">{index + 1}</td>
-                      <td className="p-3 font-medium">{row.supplier}</td>
-                      <td className="p-3 text-right font-medium text-gray-800">{row.quoteAmount}</td>
-                      <td className="p-3">
+                      <td className="p-3  text-gray-400 mmp-table-cell-center" style={{ textAlign: 'center' }}>{index + 1}</td>
+                      <td className="p-3 font-medium mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.supplier}</td>
+                      <td className="p-3  font-medium text-gray-800 mmp-table-cell-right" style={{ textAlign: 'right' }}>{row.quoteAmount}</td>
+                      <td className="p-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <div className="flex items-center space-x-2">
                           <FileText className="w-4 h-4 text-gray-400" />
                           <span className="text-blue-500 hover:underline cursor-pointer">{row.attachmentName}</span>

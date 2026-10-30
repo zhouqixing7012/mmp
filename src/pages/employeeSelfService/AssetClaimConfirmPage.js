@@ -9,11 +9,11 @@ import {
   Modal,
   Radio,
   Space,
-  Table,
   Tag,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { ASSET_CUSTODY_NOTICE } from '../../mock/employeeSelfServiceClaimMock';
 import {

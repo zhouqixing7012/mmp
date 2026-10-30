@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Button, Modal, Space, Table } from 'antd';
+import { Alert, Button, Modal, Space } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import * as XLSX from 'xlsx';
 import { UNCOUNTED_HEADERS, uncountedImportBlockReason, parseUncountedImport, applyUncountedImport } from './inventoryUncountedImport';
 export default function InventoryUncountedImport(props) {

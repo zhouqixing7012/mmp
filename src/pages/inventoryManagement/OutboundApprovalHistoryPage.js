@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import StatusTag from '../../components/StatusTag';
 
 export default function OutboundApprovalHistoryPage({ outbound }) {

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Button, Card, Empty, Input, QRCode, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Alert, Button, Card, Empty, Input, QRCode, Space, Typography, message as antdMessage } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { confirmContractNumberReceipt, getEmployeeContractNumberConfirmation } from '../../services/contractNumberAllocationService';

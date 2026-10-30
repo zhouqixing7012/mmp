@@ -1,5 +1,6 @@
 import React from 'react';
-import { Card, Table, Tooltip } from 'antd';
+import { Card, Tooltip } from 'antd';
+import Table from '../tableAlignment/AlignedTable';
 import AutoWidthTable from '../tableSizing/AutoWidthTable';
 import SectionCardTitle from '../SectionCardTitle';
 import TableEmptyState from '../TableEmptyState';

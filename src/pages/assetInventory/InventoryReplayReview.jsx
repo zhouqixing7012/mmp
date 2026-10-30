@@ -1,6 +1,7 @@
 import { sumInventoryQuantity } from './inventoryQuantity';
 import React, { useState } from 'react';
-import { Button, Card, Input, Space, Table, Typography } from 'antd';
+import { Button, Card, Input, Space, Typography } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { AssetCategorySelect, AssetPersonSelect, AssetValueSelect, formatAssetCategory, matchesAssetCategory, matchesQuerySelection } from '../../components/AssetQueryControls';
 import SectionCardTitle from './SectionCardTitle';

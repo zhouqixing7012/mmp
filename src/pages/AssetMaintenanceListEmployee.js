@@ -275,41 +275,41 @@ export default function AssetMaintenanceListEmployee() {
             <table className="w-full text-center border-collapse whitespace-nowrap">
               <thead className="sticky top-0 z-20 shadow-[0_1px_2px_rgba(0,0,0,0.1)]">
                 <tr className="bg-[#f2f2f2] text-gray-800">
-                  <th className="border border-gray-300 p-1.5 font-bold w-10 bg-[#f2f2f2]">选择</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">标签号</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">主资产标签号</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">序列号</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">公司</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">板块</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">资产大类</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">资产小类</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">资产说明</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">品牌</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">配置</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">NO位置</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">资产责任人</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">资产状态</th>
-                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2]">启用日期</th>
+                  <th className="border border-gray-300 p-1.5 font-bold w-10 bg-[#f2f2f2] mmp-table-cell-center" style={{ textAlign: 'center' }}>选择</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2] mmp-table-cell-left" style={{ textAlign: 'left' }}>标签号</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2] mmp-table-cell-left" style={{ textAlign: 'left' }}>主资产标签号</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2] mmp-table-cell-left" style={{ textAlign: 'left' }}>序列号</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2] mmp-table-cell-left" style={{ textAlign: 'left' }}>公司</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2] mmp-table-cell-left" style={{ textAlign: 'left' }}>板块</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产大类</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产小类</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产说明</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2] mmp-table-cell-left" style={{ textAlign: 'left' }}>品牌</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2] mmp-table-cell-left" style={{ textAlign: 'left' }}>配置</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2] mmp-table-cell-left" style={{ textAlign: 'left' }}>NO位置</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产责任人</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2] mmp-table-cell-center" style={{ textAlign: 'center' }}>资产状态</th>
+                  <th className="border border-gray-300 p-1.5 font-bold bg-[#f2f2f2] mmp-table-cell-center" style={{ textAlign: 'center' }}>启用日期</th>
                 </tr>
               </thead>
               <tbody>
                 {tableData.map((row) => (
                   <tr key={row.id} className="hover:bg-blue-50 group">
-                    <td className="border border-gray-300 p-1"><input type="checkbox" className="cursor-pointer" /></td>
-                    <td className="border border-gray-300 p-1 text-blue-600 hover:underline cursor-pointer">{row.tag}</td>
-                    <td className="border border-gray-300 p-1">{row.mainTag}</td>
-                    <td className="border border-gray-300 p-1 text-blue-600 hover:underline cursor-pointer">{row.seq}</td>
-                    <td className="border border-gray-300 p-1">{row.company}</td>
-                    <td className="border border-gray-300 p-1">{row.sector}</td>
-                    <td className="border border-gray-300 p-1">{row.majorClass}</td>
-                    <td className="border border-gray-300 p-1">{row.minorClass}</td>
-                    <td className="border border-gray-300 p-1">{row.desc}</td>
-                    <td className="border border-gray-300 p-1">{row.brand}</td>
-                    <td className="border border-gray-300 p-1">{row.config}</td>
-                    <td className="border border-gray-300 p-1">{row.location}</td>
-                    <td className="border border-gray-300 p-1">{row.owner}</td>
-                    <td className="border border-gray-300 p-1">{row.status}</td>
-                    <td className="border border-gray-300 p-1">{row.date}</td>
+                    <td className="border border-gray-300 p-1 mmp-table-cell-center" style={{ textAlign: 'center' }}><input type="checkbox" className="cursor-pointer" /></td>
+                    <td className="border border-gray-300 p-1 text-blue-600 hover:underline cursor-pointer mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.tag}</td>
+                    <td className="border border-gray-300 p-1 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.mainTag}</td>
+                    <td className="border border-gray-300 p-1 text-blue-600 hover:underline cursor-pointer mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.seq}</td>
+                    <td className="border border-gray-300 p-1 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.company}</td>
+                    <td className="border border-gray-300 p-1 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.sector}</td>
+                    <td className="border border-gray-300 p-1 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.majorClass}</td>
+                    <td className="border border-gray-300 p-1 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.minorClass}</td>
+                    <td className="border border-gray-300 p-1 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.desc}</td>
+                    <td className="border border-gray-300 p-1 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.brand}</td>
+                    <td className="border border-gray-300 p-1 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.config}</td>
+                    <td className="border border-gray-300 p-1 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.location}</td>
+                    <td className="border border-gray-300 p-1 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.owner}</td>
+                    <td className="border border-gray-300 p-1 mmp-table-cell-center" style={{ textAlign: 'center' }}>{row.status}</td>
+                    <td className="border border-gray-300 p-1 mmp-table-cell-center" style={{ textAlign: 'center' }}>{row.date}</td>
                   </tr>
                 ))}
               </tbody>

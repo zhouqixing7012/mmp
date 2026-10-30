@@ -60,19 +60,19 @@ export default function AssetManagement() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-[#eef4ff] text-[#2153d4]">
-                  <th className="py-5 px-4 text-lg font-bold border-b border-slate-200 w-20">
+                  <th className="py-5 px-4 text-lg font-bold border-b border-slate-200 w-20 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                     序号
                   </th>
-                  <th className="py-5 px-4 text-lg font-bold border-b border-slate-200 w-40">
+                  <th className="py-5 px-4 text-lg font-bold border-b border-slate-200 w-40 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                     功能模块
                   </th>
-                  <th className="py-5 px-6 text-lg font-bold border-b border-slate-200 text-left">
+                  <th className="py-5 px-6 text-lg font-bold border-b border-slate-200 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                     现状
                   </th>
-                  <th className="py-5 px-6 text-lg font-bold border-b border-slate-200 text-left">
+                  <th className="py-5 px-6 text-lg font-bold border-b border-slate-200 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                     目标
                   </th>
-                  <th className="py-5 px-6 text-lg font-bold border-b border-slate-200 text-left">
+                  <th className="py-5 px-6 text-lg font-bold border-b border-slate-200 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                     目标价值
                   </th>
                 </tr>
@@ -84,27 +84,27 @@ export default function AssetManagement() {
                     key={row.id}
                     className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}
                   >
-                    <td className="border-b border-slate-200 text-center py-6">
+                    <td className="border-b border-slate-200  py-6 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                       <div className="mx-auto w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-md">
                         {row.id}
                       </div>
                     </td>
 
-                    <td className="border-b border-slate-200 py-6 px-4">
-                      <div className="font-bold text-slate-800 text-xl text-center">
+                    <td className="border-b border-slate-200 py-6 px-4 mmp-table-cell-left" style={{ textAlign: 'left' }}>
+                      <div className="font-bold text-slate-800 text-xl text-left">
                         {row.module}
                       </div>
                     </td>
 
-                    <td className="border-b border-slate-200 py-6 px-6 text-slate-700 text-base leading-8">
+                    <td className="border-b border-slate-200 py-6 px-6 text-slate-700 text-base leading-8 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       {row.current}
                     </td>
 
-                    <td className="border-b border-slate-200 py-6 px-6 text-green-700 text-base leading-8 bg-green-50">
+                    <td className="border-b border-slate-200 py-6 px-6 text-green-700 text-base leading-8 bg-green-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       {row.target}
                     </td>
 
-                    <td className="border-b border-slate-200 py-6 px-6 text-[#2153d4] font-semibold text-base leading-8 bg-blue-50">
+                    <td className="border-b border-slate-200 py-6 px-6 text-[#2153d4] font-semibold text-base leading-8 bg-blue-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       {row.value}
                     </td>
                   </tr>

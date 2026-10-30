@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Card, Input, QRCode, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Button, Card, Input, QRCode, Space, Typography, message as antdMessage } from 'antd';
+import Table from '../components/tableAlignment/AlignedTable';
 import DetailGrid, { DetailItem } from '../components/DetailGrid';
 import { assetClaimApplication, assetClaimNotice } from '../mock/assetClaimMock';
 

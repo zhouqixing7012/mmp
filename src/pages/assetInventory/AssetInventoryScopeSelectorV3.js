@@ -2,7 +2,8 @@ import InventoryScopeImport from './InventoryScopeImport';
 import { inventoryManagementBlockReason } from './inventoryManagementPermissions';
 import { useInventoryOperator } from './useInventoryOperator';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, DatePicker, InputNumber, Select, Space, Table, TreeSelect, Typography, message as antdMessage } from 'antd';
+import { Button, Card, DatePicker, InputNumber, Select, Space, TreeSelect, Typography, message as antdMessage } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import { Eye, Search, Trash2 } from 'lucide-react';
 import {

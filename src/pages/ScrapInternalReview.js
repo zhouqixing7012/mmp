@@ -240,43 +240,43 @@ export default function ScrapInternalReview() {
               <table className="w-full text-left whitespace-nowrap min-w-[1300px]">
                 <thead className="bg-gray-100 border-b">
                   <tr>
-                    <th className="p-2 w-12 text-center text-gray-600 font-medium">序号</th>
-                    {activeTab === 'accessory' && <th className="p-2 font-medium text-gray-600 bg-gray-200/50">所属主资产</th>}
-                    <th className="p-2 font-medium text-gray-600">资产标签号</th>
-                    <th className="p-2 font-medium text-gray-600">序列号</th>
-                    <th className="p-2 font-medium text-gray-600 text-center">数量</th>
-                    <th className="p-2 font-medium text-gray-600">资产大类</th>
-                    <th className="p-2 font-medium text-gray-600">资产说明</th>
-                    <th className="p-2 font-medium text-gray-600">公司</th>
-                    <th className="p-2 font-medium text-gray-600">板块</th>
-                    <th className="p-2 font-medium text-gray-600 text-right">原值</th>
-                    <th className="p-2 font-medium text-gray-600 text-right">净值</th>
-                    <th className="p-2 font-medium text-gray-600">资产状态</th>
-                    <th className="p-2 font-medium text-gray-600">City</th>
-                    <th className="p-2 font-medium text-gray-600">Building</th>
-                    <th className="p-2 font-medium text-gray-600">Floor</th>
-                    <th className="p-2 font-medium text-gray-600 text-center">资产照片</th>
+                    <th className="p-2 w-12  text-gray-600 font-medium mmp-table-cell-center" style={{ textAlign: 'center' }}>序号</th>
+                    {activeTab === 'accessory' && <th className="p-2 font-medium text-gray-600 bg-gray-200/50 mmp-table-cell-left" style={{ textAlign: 'left' }}>所属主资产</th>}
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>资产标签号</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>序列号</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-right" style={{ textAlign: 'right' }}>数量</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>资产大类</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>资产说明</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>公司</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>板块</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-right" style={{ textAlign: 'right' }}>原值</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-right" style={{ textAlign: 'right' }}>净值</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-center" style={{ textAlign: 'center' }}>资产状态</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>City</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>Building</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>Floor</th>
+                    <th className="p-2 font-medium text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>资产照片</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {currentList.map((row, index) => (
                     <tr key={row.id} className="hover:bg-gray-50 transition-colors text-gray-700">
-                      <td className="p-3 text-center text-gray-400">{index + 1}</td>
-                      {activeTab === 'accessory' && <td className="p-3 bg-gray-50 font-mono text-gray-500">{row.parentTagNo}</td>}
-                      <td className="p-3 font-mono">{row.tagNo}</td>
-                      <td className="p-3 text-gray-500">{row.serialNo}</td>
-                      <td className="p-3 text-center">{row.qty}</td>
-                      <td className="p-3">{row.category}</td>
-                      <td className="p-3" title={row.desc}>{row.desc}</td>
-                      <td className="p-3">{row.company}</td>
-                      <td className="p-3">{row.segment}</td>
-                      <td className="p-3 text-right">{row.originalValue}</td>
-                      <td className="p-3 text-right">{row.netValue}</td>
-                      <td className="p-3">{row.status}</td>
-                      <td className="p-3">{row.city}</td>
-                      <td className="p-3">{row.building}</td>
-                      <td className="p-3">{row.floor}</td>
-                      <td className="p-3 text-center">
+                      <td className="p-3  text-gray-400 mmp-table-cell-center" style={{ textAlign: 'center' }}>{index + 1}</td>
+                      {activeTab === 'accessory' && <td className="p-3 bg-gray-50 font-mono text-gray-500 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.parentTagNo}</td>}
+                      <td className="p-3 font-mono mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.tagNo}</td>
+                      <td className="p-3 text-gray-500 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.serialNo}</td>
+                      <td className="p-3 mmp-table-cell-right" style={{ textAlign: 'right' }}>{row.qty}</td>
+                      <td className="p-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.category}</td>
+                      <td className="p-3 mmp-table-cell-left" title={row.desc} style={{ textAlign: 'left' }}>{row.desc}</td>
+                      <td className="p-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.company}</td>
+                      <td className="p-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.segment}</td>
+                      <td className="p-3 mmp-table-cell-right" style={{ textAlign: 'right' }}>{row.originalValue}</td>
+                      <td className="p-3 mmp-table-cell-right" style={{ textAlign: 'right' }}>{row.netValue}</td>
+                      <td className="p-3 mmp-table-cell-center" style={{ textAlign: 'center' }}>{row.status}</td>
+                      <td className="p-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.city}</td>
+                      <td className="p-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.building}</td>
+                      <td className="p-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>{row.floor}</td>
+                      <td className="p-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         {row.photoUrl ? (
                           <button onClick={() => setPreviewImage(row.photoUrl)} className="inline-flex items-center text-blue-500 hover:text-blue-700 hover:underline">
                             <Eye className="w-4 h-4 mr-1" /> 查看
@@ -312,19 +312,19 @@ export default function ScrapInternalReview() {
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="p-2 w-12 text-center text-gray-600 font-medium">序号</th>
-                  <th className="p-2 w-[30%] font-medium text-gray-700">回收供应商 <span className="text-red-500">*</span></th>
-                  <th className="p-2 w-[25%] font-medium text-gray-700">报价金额（元） <span className="text-red-500">*</span></th>
-                  <th className="p-2 font-medium text-gray-700">报价附件 <span className="text-red-500">*</span></th>
-                  <th className="p-2 w-16 text-center font-medium text-gray-700">操作</th>
+                  <th className="p-2 w-12  text-gray-600 font-medium mmp-table-cell-center" style={{ textAlign: 'center' }}>序号</th>
+                  <th className="p-2 w-[30%] font-medium text-gray-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>回收供应商 <span className="text-red-500">*</span></th>
+                  <th className="p-2 w-[25%] font-medium text-gray-700 mmp-table-cell-right" style={{ textAlign: 'right' }}>报价金额（元） <span className="text-red-500">*</span></th>
+                  <th className="p-2 font-medium text-gray-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>报价附件 <span className="text-red-500">*</span></th>
+                  <th className="p-2 w-16  font-medium text-gray-700 mmp-table-cell-center" style={{ textAlign: 'center' }}>操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {quotationList.map((row, index) => (
                   <tr key={row.id} className="hover:bg-gray-50 transition-colors align-top">
-                    <td className="p-3 text-center text-gray-400 pt-5">{index + 1}</td>
+                    <td className="p-3  text-gray-400 pt-5 mmp-table-cell-center" style={{ textAlign: 'center' }}>{index + 1}</td>
                     
-                    <td className="p-3">
+                    <td className="p-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       <input 
                         type="text" 
                         value={row.supplier}
@@ -334,7 +334,7 @@ export default function ScrapInternalReview() {
                       />
                     </td>
 
-                    <td className="p-3">
+                    <td className="p-3 mmp-table-cell-right" style={{ textAlign: 'right' }}>
                       <input 
                         type="number" 
                         value={row.quoteAmount}
@@ -344,7 +344,7 @@ export default function ScrapInternalReview() {
                       />
                     </td>
 
-                    <td className="p-3">
+                    <td className="p-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       <div className="flex flex-col space-y-2">
                         <div className="flex items-center h-9">
                           <input 
@@ -384,7 +384,7 @@ export default function ScrapInternalReview() {
                       </div>
                     </td>
 
-                    <td className="p-3 text-center pt-4">
+                    <td className="p-3  pt-4 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                       <button 
                         onClick={() => handleRemoveQuotationRow(row.id)}
                         className={`p-1.5 rounded-full transition-colors ${quotationList.length === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}

@@ -8,11 +8,11 @@ import {
   Modal,
   Select,
   Space,
-  Table,
   Tabs,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import { Download, Plus, Search, Smartphone, Trash2, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';

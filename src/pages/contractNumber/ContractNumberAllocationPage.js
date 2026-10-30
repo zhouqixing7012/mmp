@@ -8,11 +8,11 @@ import {
   Input,
   Popconfirm,
   Space,
-  Table,
   Typography,
   Upload,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { CONTRACT_NUMBER_CANDIDATES } from '../../mock/contractNumberAllocationMock';

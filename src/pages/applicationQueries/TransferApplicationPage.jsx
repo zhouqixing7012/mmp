@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ApplicationQueryPage from './ApplicationQueryPage';
-import { App, Button, Card, DatePicker, Input, Popconfirm, Select, Space, Table } from 'antd';
+import { App, Button, Card, DatePicker, Input, Popconfirm, Select, Space } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';

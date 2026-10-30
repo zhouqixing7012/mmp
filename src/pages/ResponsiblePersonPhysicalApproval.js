@@ -189,17 +189,17 @@ export default function ResponsiblePersonPhysicalApproval() {
               <table className="w-full text-center text-xs border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-[#f8f9fa]">
-                    <th className="border border-gray-300 py-2 font-normal text-left pl-4 w-[16%]">资产标签号</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[12%]">序列号</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[6%]">关系</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[12%]">资产说明</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[5%]">数量</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[8%]">City</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[10%]">Building</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[7%]">Floor</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[8%]">资产大类</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[8%]">资产小类</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[8%]">资产状态</th>
+                    <th className="border border-gray-300 py-2 font-normal  pl-4 w-[16%] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产标签号</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[12%] mmp-table-cell-left" style={{ textAlign: 'left' }}>序列号</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[6%] mmp-table-cell-left" style={{ textAlign: 'left' }}>关系</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[12%] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产说明</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[5%] mmp-table-cell-right" style={{ textAlign: 'right' }}>数量</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[8%] mmp-table-cell-left" style={{ textAlign: 'left' }}>City</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[10%] mmp-table-cell-left" style={{ textAlign: 'left' }}>Building</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[7%] mmp-table-cell-left" style={{ textAlign: 'left' }}>Floor</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[8%] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产大类</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[8%] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产小类</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[8%] mmp-table-cell-center" style={{ textAlign: 'center' }}>资产状态</th>
                   </tr>
                 </thead>
                 <tbody>

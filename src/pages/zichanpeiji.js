@@ -201,25 +201,25 @@ export default function AssetAdminApprovalPrototype() {
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-slate-50/80 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
-              <th className="py-3.5 px-5 font-medium w-40">审批环节</th>
-              <th className="py-3.5 px-4 font-medium">申请人/审批人</th>
-              <th className="py-3.5 px-4 font-medium text-center">代理人</th>
-              <th className="py-3.5 px-4 font-medium text-center w-28">审批状态</th>
-              <th className="py-3.5 px-4 font-medium w-40">审批时间</th>
-              <th className="py-3.5 px-5 font-medium">审批意见</th>
+              <th className="py-3.5 px-5 font-medium w-40 mmp-table-cell-left" style={{ textAlign: 'left' }}>审批环节</th>
+              <th className="py-3.5 px-4 font-medium mmp-table-cell-left" style={{ textAlign: 'left' }}>申请人/审批人</th>
+              <th className="py-3.5 px-4 font-medium mmp-table-cell-left" style={{ textAlign: 'left' }}>代理人</th>
+              <th className="py-3.5 px-4 font-medium  w-28 mmp-table-cell-center" style={{ textAlign: 'center' }}>审批状态</th>
+              <th className="py-3.5 px-4 font-medium w-40 mmp-table-cell-center" style={{ textAlign: 'center' }}>审批时间</th>
+              <th className="py-3.5 px-5 font-medium mmp-table-cell-left" style={{ textAlign: 'left' }}>审批意见</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {MOCK_DATA.approvalHistory.map((history, idx) => (
               <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-3.5 px-5 text-sm font-medium text-slate-700">{history.node}</td>
-                <td className="py-3.5 px-4 text-sm text-slate-800">{history.person}</td>
-                <td className="py-3.5 px-4 text-sm text-slate-400 text-center">{history.agent}</td>
-                <td className="py-3.5 px-4 text-center">
+                <td className="py-3.5 px-5 text-sm font-medium text-slate-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>{history.node}</td>
+                <td className="py-3.5 px-4 text-sm text-slate-800 mmp-table-cell-left" style={{ textAlign: 'left' }}>{history.person}</td>
+                <td className="py-3.5 px-4 text-sm text-slate-400 mmp-table-cell-left" style={{ textAlign: 'left' }}>{history.agent}</td>
+                <td className="py-3.5 px-4 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                   <StatusBadge status={history.status} />
                 </td>
-                <td className="py-3.5 px-4 text-sm text-slate-500 font-mono text-[13px]">{history.time}</td>
-                <td className="py-3.5 px-5 text-sm text-slate-600">{history.comment}</td>
+                <td className="py-3.5 px-4 text-sm text-slate-500 font-mono text-[13px] mmp-table-cell-center" style={{ textAlign: 'center' }}>{history.time}</td>
+                <td className="py-3.5 px-5 text-sm text-slate-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{history.comment}</td>
               </tr>
             ))}
           </tbody>

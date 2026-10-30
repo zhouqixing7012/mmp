@@ -10,10 +10,10 @@ import {
   Popconfirm,
   Select,
   Space,
-  Table,
   Typography,
   message,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 
 const { Text } = Typography;
 

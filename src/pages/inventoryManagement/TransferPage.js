@@ -7,10 +7,10 @@ import {
   Modal,
   Select,
   Space,
-  Table,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
 import { Download, Plus, Search, Trash2, Upload } from 'lucide-react';

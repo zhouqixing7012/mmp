@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Input, Modal, Select, Table } from 'antd';
+import { Input, Modal, Select } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
 import { getAvailableReplacementAssets } from '../../services/assetReplacementService';

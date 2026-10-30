@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, Input, Space, Table, Tabs, Typography } from 'antd';
+import { Button, Card, Input, Space, Tabs, Typography } from 'antd';
+import Table from '../components/tableAlignment/AlignedTable';
 import { Handshake, Plus } from 'lucide-react';
 import StatusTag from '../components/StatusTag';
 import { mockComprehensiveData } from '../mock/businessRulesMock';

@@ -7,11 +7,11 @@ import {
   Input,
   Select,
   Space,
-  Table,
   Tag,
   Upload,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { DEPARTMENT_ASSET_USAGE } from '../../mock/employeeSelfServiceWorkflowMock';
 import {

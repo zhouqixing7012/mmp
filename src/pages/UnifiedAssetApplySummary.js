@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { CheckCircle2, Download, Save, UploadCloud } from 'lucide-react';
-import { Button, Card, Empty, Input, Space, Table, Upload, message as antdMessage } from 'antd';
+import { Button, Card, Empty, Input, Space, Upload, message as antdMessage } from 'antd';
+import Table from '../components/tableAlignment/AlignedTable';
 import {
   DEPARTMENT_SUMMARY_ROWS,
   NON_OVER_STANDARD_ROWS,
@@ -261,8 +262,8 @@ export default function UnifiedAssetApplySummary() {
         pagination={false}
         summary={() => (
           <Table.Summary.Row>
-            <Table.Summary.Cell index={0} colSpan={2} align="center">合计</Table.Summary.Cell>
-            <Table.Summary.Cell index={2} align="center">{departmentTotals.quantity}</Table.Summary.Cell>
+            <Table.Summary.Cell index={0} colSpan={2} align="left">合计</Table.Summary.Cell>
+            <Table.Summary.Cell index={2} align="right">{departmentTotals.quantity}</Table.Summary.Cell>
             <Table.Summary.Cell index={3} align="right">{formatMoney(departmentTotals.amount)}</Table.Summary.Cell>
           </Table.Summary.Row>
         )}
@@ -291,8 +292,8 @@ export default function UnifiedAssetApplySummary() {
           scroll={{ x: isEditable ? 1480 : 1250 }}
           summary={() => (
             <Table.Summary.Row>
-              <Table.Summary.Cell index={0} colSpan={isEditable ? 5 : 4} align="center">合计</Table.Summary.Cell>
-              <Table.Summary.Cell index={isEditable ? 5 : 4} align="center">{nonOverTotals.quantity}</Table.Summary.Cell>
+              <Table.Summary.Cell index={0} colSpan={isEditable ? 5 : 4} align="left">合计</Table.Summary.Cell>
+              <Table.Summary.Cell index={isEditable ? 5 : 4} align="right">{nonOverTotals.quantity}</Table.Summary.Cell>
               <Table.Summary.Cell index={isEditable ? 6 : 5} align="right">{formatMoney(nonOverTotals.amount)}</Table.Summary.Cell>
               <Table.Summary.Cell index={isEditable ? 7 : 6} colSpan={3} />
             </Table.Summary.Row>

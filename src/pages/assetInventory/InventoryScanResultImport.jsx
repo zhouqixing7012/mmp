@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Button, Modal, Space, Table, Typography } from 'antd';
+import { Alert, Button, Modal, Space, Typography } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import * as XLSX from 'xlsx';
 import { importInventoryScanResults, inventoryScanErrorsWorkbook, inventoryScanImporter, inventoryScanResultImportBlockReason, readInventoryScanWorkbook } from './inventoryScanResultImport';
 

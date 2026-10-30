@@ -1,6 +1,7 @@
 import React from 'react';
 import { RefreshCcw } from 'lucide-react';
-import { Button, Input, Select, Table } from 'antd';
+import { Button, Input, Select } from 'antd';
+import Table from '../../../../components/tableAlignment/AlignedTable';
 import StatusTag from '../../../../components/StatusTag';
 import QueryBar from '../../../../components/QueryBar';
 import {

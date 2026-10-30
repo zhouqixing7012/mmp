@@ -1,6 +1,7 @@
 import { ASSET_MARK_SELECT_OPTIONS, isValidAssetMark } from '../../config/assetMarks';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Button, Card, DatePicker, Input, Modal, Select, Space, Typography, message as antdMessage } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import { Search } from 'lucide-react';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';

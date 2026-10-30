@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Check, LayoutGrid, Plus, ShoppingCart, Trash2 } from 'lucide-react';
-import { Button, Card, Empty, Input, InputNumber, Modal, Select, Space, Table, Tree, message as antdMessage } from 'antd';
+import { Button, Card, Empty, Input, InputNumber, Modal, Select, Space, Tree, message as antdMessage } from 'antd';
+import Table from '../components/tableAlignment/AlignedTable';
 import {
   ASSET_LIBRARY,
   MY_EXISTING_ASSETS,

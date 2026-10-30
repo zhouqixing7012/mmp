@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Input, Result, Select, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Button, Card, Input, Result, Select, Space, Typography, message as antdMessage } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import { RefreshCcw, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import QueryBar, { QueryItem } from '../../components/QueryBar';

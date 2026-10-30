@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, Empty, Input, Select, Space, Table, Typography, message as antdMessage } from 'antd';
+import { Button, Card, Empty, Input, Select, Space, Typography, message as antdMessage } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import { CONTRACT_WAREHOUSES } from '../../mock/assetReturnMock';

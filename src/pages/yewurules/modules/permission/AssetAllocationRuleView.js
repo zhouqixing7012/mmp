@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { Button, Select, Table } from 'antd';
+import { Button, Select } from 'antd';
+import Table from '../../../../components/tableAlignment/AlignedTable';
 
 import QueryBar from '../../../../components/QueryBar';
 import {

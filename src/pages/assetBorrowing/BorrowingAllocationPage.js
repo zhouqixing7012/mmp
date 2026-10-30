@@ -8,10 +8,10 @@ import {
   Input,
   Modal,
   Space,
-  Table,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import { BORROWABLE_MATERIALS } from '../../mock/assetBorrowingMock';
 import {
   getBorrowingApplicationByNode,

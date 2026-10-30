@@ -392,3 +392,12 @@ div.min-h-screen[class*="bg-[#f5f7fa]"] .ant-card-head-title::before {
 .ant-modal-confirm-paragraph { display: flex; flex-direction: column; }
 .ant-modal-confirm-content { overflow-y: auto; min-height: 0; }
 .ant-modal-confirm-title, .ant-modal-confirm-btns { flex-shrink: 0; }
+
+/* Keep editable numeric fields and direct cell layout aligned with their semantic column. */
+.mmp-table-cell-right .ant-input-number-input,
+.mmp-table-cell-right input.ant-input,
+td.mmp-table-cell-right input[type="number"],
+td.mmp-table-cell-right input[type="text"] { text-align: right; }
+.mmp-table-cell-left > .flex { justify-content: flex-start; }
+.mmp-table-cell-center > .flex { justify-content: center; }
+.mmp-table-cell-right > .flex { justify-content: flex-end; }

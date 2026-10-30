@@ -1,6 +1,7 @@
 import { selectInventoryExportRows } from './inventoryPlanExport';
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Progress, Space, Table, message } from 'antd';
+import { Button, Card, Progress, Space, message } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import * as XLSX from 'xlsx';
 import { Download } from 'lucide-react';
 import StatusTag from '../../components/StatusTag';

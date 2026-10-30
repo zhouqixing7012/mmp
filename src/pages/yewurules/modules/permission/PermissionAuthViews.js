@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Download, Edit, Plus, Search, Trash2, Upload } from 'lucide-react';
-import { Button, Input, Modal, Radio, Select, Table } from 'antd';
+import { Button, Input, Modal, Radio, Select } from 'antd';
+import Table from '../../../../components/tableAlignment/AlignedTable';
 import StatusTag from '../../../../components/StatusTag';
 import QueryBar from '../../../../components/QueryBar';
 import {

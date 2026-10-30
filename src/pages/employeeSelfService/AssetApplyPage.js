@@ -11,11 +11,11 @@ import {
   Modal,
   Select,
   Space,
-  Table,
   Tag,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import { MY_EXISTING_ASSETS } from '../../mock/assetApplicationMock';
 import {
   APPLICATION_NOTICE,

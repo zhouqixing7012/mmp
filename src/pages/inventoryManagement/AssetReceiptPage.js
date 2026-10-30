@@ -9,10 +9,10 @@ import {
   Modal,
   Select,
   Space,
-  Table,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import { Search, Trash2 } from 'lucide-react';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';

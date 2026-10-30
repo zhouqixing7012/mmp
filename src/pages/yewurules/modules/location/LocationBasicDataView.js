@@ -36,10 +36,10 @@ const LocationBasicDataView = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-[#fafafa] border-b border-[#e8e8e8]">
-                  <th className="w-[8%] p-2 text-left font-medium text-gray-700">序号</th>
-                  <th className="w-[35%] p-2 text-left font-medium text-gray-700">城市名称</th>
-                  <th className="w-[35%] p-2 text-left font-medium text-gray-700">建筑名称</th>
-                  <th className="w-[22%] p-2 text-left font-medium text-gray-700">是否启用</th>
+                  <th className="w-[8%] p-2  font-medium text-gray-700 mmp-table-cell-center" style={{ textAlign: 'center' }}>序号</th>
+                  <th className="w-[35%] p-2  font-medium text-gray-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>城市名称</th>
+                  <th className="w-[35%] p-2  font-medium text-gray-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>建筑名称</th>
+                  <th className="w-[22%] p-2  font-medium text-gray-700 mmp-table-cell-center" style={{ textAlign: 'center' }}>是否启用</th>
                 </tr>
               </thead>
               <tbody>
@@ -53,17 +53,17 @@ const LocationBasicDataView = () => {
                             : [...expandedKeys, city.id];
                           setExpandedKeys(newExpanded);
                         }}>
-                      <td className="p-2">
+                      <td className="p-2 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                         <div className="flex items-center">
                           <span className="w-4">{expandedKeys.includes(city.id) ? '▼' : '▶'}</span>
                           <span>{cityIndex + 1}</span>
                         </div>
                       </td>
-                      <td className="p-2">
+                      <td className="p-2 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <span className="font-medium text-gray-800">{city.cityName}</span>
                       </td>
-                      <td className="p-2 text-gray-500">-</td>
-                      <td className="p-2">
+                      <td className="p-2 text-gray-500 mmp-table-cell-left" style={{ textAlign: 'left' }}>-</td>
+                      <td className="p-2 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                         <span className={`px-2 py-0.5 rounded text-xs ${city.enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                           {city.enabled ? '启用' : '停用'}
                         </span>
@@ -72,16 +72,16 @@ const LocationBasicDataView = () => {
                     {/* 建筑行 */}
                     {expandedKeys.includes(city.id) && city.children?.map((building, buildingIndex) => (
                       <tr key={building.id} className="border-b border-[#e8e8e8] hover:bg-[#f0f5ff]">
-                        <td className="p-2 pl-10 text-gray-500">
+                        <td className="p-2 pl-10 text-gray-500 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                           {cityIndex + 1}.{buildingIndex + 1}
                         </td>
-                        <td className="p-2 pl-8 text-gray-400">
+                        <td className="p-2 pl-8 text-gray-400 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                           {city.cityName}
                         </td>
-                        <td className="p-2">
+                        <td className="p-2 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                           <span className="text-gray-700">{building.buildingName}</span>
                         </td>
-                        <td className="p-2">
+                        <td className="p-2 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                           <span className={`px-2 py-0.5 rounded text-xs ${building.enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                             {building.enabled ? '启用' : '停用'}
                           </span>

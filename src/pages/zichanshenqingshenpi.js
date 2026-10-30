@@ -98,36 +98,36 @@ export default function ApprovalPagePrototype() {
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-slate-50/80 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
-              <th className="py-3 px-5 font-medium">物资说明</th>
-              <th className="py-3 px-4 font-medium">配置</th>
-              <th className="py-3 px-4 font-medium w-48">详细说明</th>
-              <th className="py-3 px-4 font-medium">申请原因</th>
-              <th className="py-3 px-4 font-medium">申请用途</th>
-              <th className="py-3 px-4 font-medium text-center">是否超标</th>
-              <th className="py-3 px-5 font-medium text-center w-20">数量</th>
+              <th className="py-3 px-5 font-medium mmp-table-cell-left" style={{ textAlign: 'left' }}>物资说明</th>
+              <th className="py-3 px-4 font-medium mmp-table-cell-left" style={{ textAlign: 'left' }}>配置</th>
+              <th className="py-3 px-4 font-medium w-48 mmp-table-cell-left" style={{ textAlign: 'left' }}>详细说明</th>
+              <th className="py-3 px-4 font-medium mmp-table-cell-left" style={{ textAlign: 'left' }}>申请原因</th>
+              <th className="py-3 px-4 font-medium mmp-table-cell-left" style={{ textAlign: 'left' }}>申请用途</th>
+              <th className="py-3 px-4 font-medium mmp-table-cell-center" style={{ textAlign: 'center' }}>是否超标</th>
+              <th className="py-3 px-5 font-medium  w-20 mmp-table-cell-right" style={{ textAlign: 'right' }}>数量</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {MOCK_DATA.materials.map((item) => (
               <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-3 px-5">
+                <td className="py-3 px-5 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                   <div className="flex flex-col">
                     <span className="text-sm font-medium text-slate-800">{item.name}</span>
                     <span className="text-xs text-slate-500 mt-0.5">{item.desc}</span>
                   </div>
                 </td>
-                <td className="py-3 px-4 text-sm text-slate-700">{item.config || '无'}</td>
-                <td className="py-3 px-4 text-sm text-slate-600">{item.detail}</td>
-                <td className="py-3 px-4 text-sm text-slate-700">{item.reason}</td>
-                <td className="py-3 px-4 text-sm text-slate-700">{item.usage}</td>
-                <td className="py-3 px-4 text-center">
+                <td className="py-3 px-4 text-sm text-slate-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>{item.config || '无'}</td>
+                <td className="py-3 px-4 text-sm text-slate-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{item.detail}</td>
+                <td className="py-3 px-4 text-sm text-slate-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>{item.reason}</td>
+                <td className="py-3 px-4 text-sm text-slate-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>{item.usage}</td>
+                <td className="py-3 px-4 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                   {item.isOverStandard ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-50 text-red-700 border border-red-100">是</span>
                   ) : (
                     <span className="text-sm text-slate-500">否</span>
                   )}
                 </td>
-                <td className="py-3 px-5 text-center font-semibold text-slate-800">{item.quantity}</td>
+                <td className="py-3 px-5  font-semibold text-slate-800 mmp-table-cell-right" style={{ textAlign: 'right' }}>{item.quantity}</td>
               </tr>
             ))}
           </tbody>
@@ -146,25 +146,25 @@ export default function ApprovalPagePrototype() {
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-slate-50/80 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
-              <th className="py-3 px-5 font-medium w-40">审批环节</th>
-              <th className="py-3 px-4 font-medium">申请人/审批人</th>
-              <th className="py-3 px-4 font-medium text-center">代理人</th>
-              <th className="py-3 px-4 font-medium text-center w-28">审批状态</th>
-              <th className="py-3 px-4 font-medium w-40">审批时间</th>
-              <th className="py-3 px-5 font-medium">审批意见</th>
+              <th className="py-3 px-5 font-medium w-40 mmp-table-cell-left" style={{ textAlign: 'left' }}>审批环节</th>
+              <th className="py-3 px-4 font-medium mmp-table-cell-left" style={{ textAlign: 'left' }}>申请人/审批人</th>
+              <th className="py-3 px-4 font-medium mmp-table-cell-left" style={{ textAlign: 'left' }}>代理人</th>
+              <th className="py-3 px-4 font-medium  w-28 mmp-table-cell-center" style={{ textAlign: 'center' }}>审批状态</th>
+              <th className="py-3 px-4 font-medium w-40 mmp-table-cell-center" style={{ textAlign: 'center' }}>审批时间</th>
+              <th className="py-3 px-5 font-medium mmp-table-cell-left" style={{ textAlign: 'left' }}>审批意见</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {MOCK_DATA.approvalHistory.map((history, idx) => (
               <tr key={idx} className={`${history.status === 'pending' ? 'bg-amber-50/20' : 'hover:bg-slate-50/50'} transition-colors`}>
-                <td className="py-3 px-5 text-sm font-medium text-slate-700">{history.node}</td>
-                <td className="py-3 px-4 text-sm text-slate-800">{history.person}</td>
-                <td className="py-3 px-4 text-sm text-slate-500 text-center">{history.agent}</td>
-                <td className="py-3 px-4 text-center">
+                <td className="py-3 px-5 text-sm font-medium text-slate-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>{history.node}</td>
+                <td className="py-3 px-4 text-sm text-slate-800 mmp-table-cell-left" style={{ textAlign: 'left' }}>{history.person}</td>
+                <td className="py-3 px-4 text-sm text-slate-500 mmp-table-cell-left" style={{ textAlign: 'left' }}>{history.agent}</td>
+                <td className="py-3 px-4 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                   <StatusBadge status={history.status} />
                 </td>
-                <td className="py-3 px-4 text-sm text-slate-500 font-mono text-[13px]">{history.time}</td>
-                <td className="py-3 px-5 text-sm text-slate-600">{history.comment}</td>
+                <td className="py-3 px-4 text-sm text-slate-500 font-mono text-[13px] mmp-table-cell-center" style={{ textAlign: 'center' }}>{history.time}</td>
+                <td className="py-3 px-5 text-sm text-slate-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{history.comment}</td>
               </tr>
             ))}
           </tbody>

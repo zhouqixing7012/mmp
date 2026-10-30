@@ -7,11 +7,11 @@ import {
   Descriptions,
   Input,
   Space,
-  Table,
   Tabs,
   Typography,
   message,
 } from 'antd';
+import Table from '../components/tableAlignment/AlignedTable';
 import StatusTag from '../components/StatusTag';
 
 const { Text } = Typography;

@@ -196,24 +196,24 @@ export default function ResponsiblePersonReceiverApproval() {
               <table className="w-full text-center text-xs border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-[#f8f9fa]">
-                    <th className="border border-gray-300 py-2 font-normal w-[13%]">资产标签号</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[10%]">序列号</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[5%]">关系</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[18%]">资产说明</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[4%]">数量</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[9%]">City</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[11%]">Building</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[8%]">Floor</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[7%]">资产大类</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[7%]">资产小类</th>
-                    <th className="border border-gray-300 py-2 font-normal w-[8%]">资产状态</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[13%] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产标签号</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[10%] mmp-table-cell-left" style={{ textAlign: 'left' }}>序列号</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[5%] mmp-table-cell-left" style={{ textAlign: 'left' }}>关系</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[18%] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产说明</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[4%] mmp-table-cell-right" style={{ textAlign: 'right' }}>数量</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[9%] mmp-table-cell-left" style={{ textAlign: 'left' }}>City</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[11%] mmp-table-cell-left" style={{ textAlign: 'left' }}>Building</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[8%] mmp-table-cell-left" style={{ textAlign: 'left' }}>Floor</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[7%] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产大类</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[7%] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产小类</th>
+                    <th className="border border-gray-300 py-2 font-normal w-[8%] mmp-table-cell-center" style={{ textAlign: 'center' }}>资产状态</th>
                   </tr>
                 </thead>
                 <tbody>
                   {assets.map(item => (
                     <React.Fragment key={`recv-${item.id}`}>
                       <tr>
-                        <td className="border border-gray-300 p-2 bg-gray-50 text-left">
+                        <td className="border border-gray-300 p-2 bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                           <div className="flex items-center">
                             {item.children && (
                               <button
@@ -226,11 +226,11 @@ export default function ResponsiblePersonReceiverApproval() {
                             {item.tag}
                           </div>
                         </td>
-                        <td className="border border-gray-300 p-2 bg-gray-50">{item.sn}</td>
-                        <td className="border border-gray-300 p-2 bg-gray-50"><RelationBadge type={item.relation} /></td>
-                        <td className="border border-gray-300 p-2 text-left bg-gray-50">{item.description}</td>
-                        <td className="border border-gray-300 p-2 bg-gray-50">{item.quantity}</td>
-                        <td className="border border-gray-300 p-1">
+                        <td className="border border-gray-300 p-2 bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>{item.sn}</td>
+                        <td className="border border-gray-300 p-2 bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}><RelationBadge type={item.relation} /></td>
+                        <td className="border border-gray-300 p-2  bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>{item.description}</td>
+                        <td className="border border-gray-300 p-2 bg-gray-50 mmp-table-cell-right" style={{ textAlign: 'right' }}>{item.quantity}</td>
+                        <td className="border border-gray-300 p-1 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                           <div className="flex items-center border border-gray-300 bg-white">
                             <input 
                               type="text" 
@@ -241,7 +241,7 @@ export default function ResponsiblePersonReceiverApproval() {
                             <Search className="w-4 h-4 text-blue-500 mx-1 cursor-pointer" />
                           </div>
                         </td>
-                        <td className="border border-gray-300 p-1">
+                        <td className="border border-gray-300 p-1 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                           <div className="flex items-center border border-gray-300 bg-white">
                             <input 
                               type="text" 
@@ -252,7 +252,7 @@ export default function ResponsiblePersonReceiverApproval() {
                             <Search className="w-4 h-4 text-blue-500 mx-1 cursor-pointer" />
                           </div>
                         </td>
-                        <td className="border border-gray-300 p-1">
+                        <td className="border border-gray-300 p-1 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                           <select 
                             className="w-full border border-gray-300 outline-none p-1 text-xs bg-white" 
                             value={item.floor}
@@ -263,34 +263,34 @@ export default function ResponsiblePersonReceiverApproval() {
                             <option>10层</option>
                           </select>
                         </td>
-                        <td className="border border-gray-300 p-2 bg-gray-50">{item.major}</td>
-                        <td className="border border-gray-300 p-2 bg-gray-50">{item.minor}</td>
-                        <td className="border border-gray-300 p-2 bg-gray-50">{item.status}</td>
+                        <td className="border border-gray-300 p-2 bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>{item.major}</td>
+                        <td className="border border-gray-300 p-2 bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>{item.minor}</td>
+                        <td className="border border-gray-300 p-2 bg-gray-50 mmp-table-cell-center" style={{ textAlign: 'center' }}>{item.status}</td>
                       </tr>
                       {expandedRows.includes(item.id) && item.children?.map(child => (
                         <tr key={`recv-${child.id}`}>
-                          <td className="border border-gray-300 p-2 bg-gray-50 text-left">
+                          <td className="border border-gray-300 p-2 bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                             <div className="flex items-center pl-6">
                               <div className="w-3 h-3 border-l-2 border-b-2 border-gray-300 mr-2 -translate-y-1"></div>
                               <span className="text-gray-600">{child.tag}</span>
                             </div>
                           </td>
-                          <td className="border border-gray-300 p-2 text-gray-600 bg-gray-50">{child.sn}</td>
-                          <td className="border border-gray-300 p-2 bg-gray-50"><RelationBadge type={child.relation} /></td>
-                          <td className="border border-gray-300 p-2 text-left text-gray-600 bg-gray-50">{child.description}</td>
-                          <td className="border border-gray-300 p-2 text-gray-600 bg-gray-50">{child.quantity}</td>
-                          <td className="border border-gray-300 p-1 bg-gray-50">
+                          <td className="border border-gray-300 p-2 text-gray-600 bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>{child.sn}</td>
+                          <td className="border border-gray-300 p-2 bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}><RelationBadge type={child.relation} /></td>
+                          <td className="border border-gray-300 p-2  text-gray-600 bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>{child.description}</td>
+                          <td className="border border-gray-300 p-2 text-gray-600 bg-gray-50 mmp-table-cell-right" style={{ textAlign: 'right' }}>{child.quantity}</td>
+                          <td className="border border-gray-300 p-1 bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                             <div className="p-1 text-gray-500">{child.city}</div>
                           </td>
-                          <td className="border border-gray-300 p-1 bg-gray-50">
+                          <td className="border border-gray-300 p-1 bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                             <div className="p-1 text-gray-500">{child.building}</div>
                           </td>
-                          <td className="border border-gray-300 p-1 bg-gray-50">
+                          <td className="border border-gray-300 p-1 bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                             <div className="p-1 text-gray-500">{child.floor}</div>
                           </td>
-                          <td className="border border-gray-300 p-2 text-gray-600 bg-gray-50">{child.major}</td>
-                          <td className="border border-gray-300 p-2 text-gray-600 bg-gray-50">{child.minor}</td>
-                          <td className="border border-gray-300 p-2 text-gray-600 bg-gray-50">{child.status}</td>
+                          <td className="border border-gray-300 p-2 text-gray-600 bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>{child.major}</td>
+                          <td className="border border-gray-300 p-2 text-gray-600 bg-gray-50 mmp-table-cell-left" style={{ textAlign: 'left' }}>{child.minor}</td>
+                          <td className="border border-gray-300 p-2 text-gray-600 bg-gray-50 mmp-table-cell-center" style={{ textAlign: 'center' }}>{child.status}</td>
                         </tr>
                       ))}
                     </React.Fragment>

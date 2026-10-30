@@ -250,18 +250,18 @@ const PositionChangeApproval = () => {
             <table className="w-full text-left whitespace-nowrap border-collapse">
               <thead className="bg-[#fafafa]">
                 <tr>
-                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[200px]">资产标签号</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[140px]">序列号</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-20 text-center">主备关系</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[180px]">资产说明</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-16 text-center">数量</th>
+                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[200px] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产标签号</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[140px] mmp-table-cell-left" style={{ textAlign: 'left' }}>序列号</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-20 mmp-table-cell-left" style={{ textAlign: 'left' }}>主备关系</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[180px] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产说明</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] w-16 mmp-table-cell-right" style={{ textAlign: 'right' }}>数量</th>
                   {/* 位置相关字段 */}
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[100px]">城市</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[200px]">建筑物</th>
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[200px]">楼层/机房</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[100px] mmp-table-cell-left" style={{ textAlign: 'left' }}>城市</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[200px] mmp-table-cell-left" style={{ textAlign: 'left' }}>建筑物</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[200px] mmp-table-cell-left" style={{ textAlign: 'left' }}>楼层/机房</th>
                   
-                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[140px]">备注</th>
-                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[120px] text-center sticky right-0 bg-[#fafafa] z-10 shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] border-l border-[#f0f0f0]">资产状态</th>
+                  <th className="py-3.5 px-3 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[140px] mmp-table-cell-left" style={{ textAlign: 'left' }}>备注</th>
+                  <th className="py-3.5 px-4 font-medium text-[rgba(0,0,0,0.88)] border-b border-[#f0f0f0] min-w-[120px]  sticky right-0 bg-[#fafafa] z-10 shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] border-l border-[#f0f0f0] mmp-table-cell-center" style={{ textAlign: 'center' }}>资产状态</th>
                 </tr>
               </thead>
               
@@ -276,7 +276,7 @@ const PositionChangeApproval = () => {
                       key={asset.id} 
                       className={`border-b border-[#f0f0f0] transition-colors hover:bg-[#f5f5f5] ${rowBg}`}
                     >
-                      <td className="py-3 px-4 align-middle">
+                      <td className="py-3 px-4 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <div className="flex items-center gap-1.5" style={{ paddingLeft: isMain ? '0px' : '24px' }}>
                           {isMain && (
                             <div 
@@ -293,40 +293,40 @@ const PositionChangeApproval = () => {
                         </div>
                       </td>
                       
-                      <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px]">
+                      <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px] mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         {asset.serialNumber}
                       </td>
                       
-                      <td className="py-3 px-3 align-middle text-center">
+                      <td className="py-3 px-3 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <span className={`px-2 py-[2px] rounded border text-[12px] ${isMain ? 'bg-[#e6f4ff] text-[#1677ff] border-[#91caff]' : 'bg-[#fafafa] text-[rgba(0,0,0,0.65)] border-[#d9d9d9]'}`}>
                           {asset.relation}
                         </span>
                       </td>
                       
-                      <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.88)]">
+                      <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.88)] mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         <div className="truncate max-w-[180px]" title={asset.description}>{asset.description}</div>
                       </td>
                       
-                      <td className="py-3 px-3 align-middle text-center text-[rgba(0,0,0,0.88)]">
+                      <td className="py-3 px-3 align-middle  text-[rgba(0,0,0,0.88)] mmp-table-cell-right" style={{ textAlign: 'right' }}>
                         {asset.qty}
                       </td>
                       
                       {/* 渲染位置字段：支持高亮和箭头指示 */}
-                      <td className="py-2 px-3 align-middle text-[13px]">
+                      <td className="py-2 px-3 align-middle text-[13px] mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         {renderLocationField(asset.locationChange?.city)}
                       </td>
-                      <td className="py-2 px-3 align-middle text-[13px]">
+                      <td className="py-2 px-3 align-middle text-[13px] mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         {renderLocationField(asset.locationChange?.building)}
                       </td>
-                      <td className="py-2 px-3 align-middle text-[13px]">
+                      <td className="py-2 px-3 align-middle text-[13px] mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         {renderLocationField(asset.locationChange?.floor)}
                       </td>
                       
-                      <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px]">
+                      <td className="py-3 px-3 align-middle text-[rgba(0,0,0,0.65)] text-[13px] mmp-table-cell-left" style={{ textAlign: 'left' }}>
                         {asset.remark || '-'}
                       </td>
                       
-                      <td className={`py-3 px-4 align-middle text-center text-[rgba(0,0,0,0.65)] text-[13px] sticky right-0 z-10 border-l border-[#f0f0f0] transition-colors shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] ${rowBg}`}>
+                      <td className={`py-3 px-4 align-middle text-center text-[rgba(0,0,0,0.65)] text-[13px] sticky right-0 z-10 border-l border-[#f0f0f0] transition-colors shadow-[-12px_0_15px_-4px_rgba(0,0,0,0.12)] ${rowBg}`} style={{ textAlign: 'center' }}>
                         {asset.status}
                       </td>
                     </tr>

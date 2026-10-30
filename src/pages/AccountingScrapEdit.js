@@ -20,11 +20,11 @@ import {
   Radio,
   Select,
   Space,
-  Table,
   Tooltip,
   Typography,
   message,
 } from 'antd';
+import Table from '../components/tableAlignment/AlignedTable';
 import SelectModal from '../components/SelectModal';
 import {
   mockCompanies,

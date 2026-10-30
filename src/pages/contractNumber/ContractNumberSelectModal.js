@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Input, Modal, Table } from 'antd';
+import { Button, Input, Modal } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 
 export default function ContractNumberSelectModal({

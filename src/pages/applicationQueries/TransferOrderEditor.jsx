@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { App, Button, Card, Input, Popconfirm, Space, Table } from 'antd';
+import { App, Button, Card, Input, Popconfirm, Space } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import { DetailGrid, DetailItem } from '../../components/DetailGrid';
 import StatusTag from '../../components/StatusTag';
 import SelectModal from '../../components/SelectModal';

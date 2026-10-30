@@ -1,6 +1,7 @@
 import { selectInventoryExportRows } from './inventoryPlanExport';
 import React, { useState } from 'react';
-import { Button, Input, Modal, Space, Table } from 'antd';
+import { Button, Input, Modal, Space } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import * as XLSX from 'xlsx';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { AssetCategorySelect, AssetPersonSelect, AssetValueSelect, OwnerLevelSelect } from '../../components/AssetQueryControls';

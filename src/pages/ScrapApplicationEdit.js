@@ -7,10 +7,10 @@ import {
   Input,
   Select,
   Space,
-  Table,
   Typography,
   message,
 } from 'antd';
+import Table from '../components/tableAlignment/AlignedTable';
 import SelectModal from '../components/SelectModal';
 
 const { Text } = Typography;

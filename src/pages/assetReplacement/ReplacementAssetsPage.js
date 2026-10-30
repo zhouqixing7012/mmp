@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowDownToLine, ArrowRightLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, Empty, Input, Select, Space, Table, Tag, Typography, message as antdMessage } from 'antd';
+import { Button, Card, Empty, Input, Select, Space, Tag, Typography, message as antdMessage } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import StatusTag from '../../components/StatusTag';
 import {

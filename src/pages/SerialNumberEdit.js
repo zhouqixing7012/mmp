@@ -235,29 +235,29 @@ const SerialNumberEdit = () => {
             <table className="w-full text-left whitespace-nowrap">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="py-3 px-4 font-medium text-gray-600 w-48">资产标签号</th>
+                  <th className="py-3 px-4 font-medium text-gray-600 w-48 mmp-table-cell-left" style={{ textAlign: 'left' }}>资产标签号</th>
                   {/* 序列号宽度调宽：从 w-48 调整为 w-64 */}
-                  <th className="py-3 px-4 font-medium text-gray-600 min-w-[150px]"><span className="text-red-500 mr-1">*</span>序列号</th>
-                  <th className="py-3 px-4 font-medium text-gray-600 min-w-[50px] text-center"><span className="text-red-500 mr-1">*</span>照片</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[150px]">备注</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[200px]">资产说明</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 w-16 text-center">数量</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[120px]">City</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[140px]">Building</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[120px]">Floor</th>
-                  <th className="py-3 px-2 font-medium text-gray-600 w-28">资产状态</th>
-                  <th className="py-3 px-4 font-medium text-gray-600 w-20 text-center">操作</th>
+                  <th className="py-3 px-4 font-medium text-gray-600 min-w-[150px] mmp-table-cell-left" style={{ textAlign: 'left' }}><span className="text-red-500 mr-1">*</span>序列号</th>
+                  <th className="py-3 px-4 font-medium text-gray-600 min-w-[50px] mmp-table-cell-left" style={{ textAlign: 'left' }}><span className="text-red-500 mr-1">*</span>照片</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[150px] mmp-table-cell-left" style={{ textAlign: 'left' }}>备注</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[200px] mmp-table-cell-left" style={{ textAlign: 'left' }}>资产说明</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 w-16 mmp-table-cell-right" style={{ textAlign: 'right' }}>数量</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[120px] mmp-table-cell-left" style={{ textAlign: 'left' }}>City</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[140px] mmp-table-cell-left" style={{ textAlign: 'left' }}>Building</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 min-w-[120px] mmp-table-cell-left" style={{ textAlign: 'left' }}>Floor</th>
+                  <th className="py-3 px-2 font-medium text-gray-600 w-28 mmp-table-cell-center" style={{ textAlign: 'center' }}>资产状态</th>
+                  <th className="py-3 px-4 font-medium text-gray-600 w-20 mmp-table-cell-center" style={{ textAlign: 'center' }}>操作</th>
                 </tr>
               </thead>
               
               <tbody>
                 {assets.map((asset) => (
                   <tr key={asset.id} className="border-b border-gray-100 transition-colors hover:bg-blue-50/40">
-                    <td className="py-3 px-4 align-middle">
+                    <td className="py-3 px-4 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       <span className="font-semibold text-gray-800">{asset.assetCode}</span>
                     </td>
                     
-                    <td className="py-3 px-2 align-middle">
+                    <td className="py-3 px-2 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       <input 
                         type="text" 
                         value={asset.serialNumber} 
@@ -267,7 +267,7 @@ const SerialNumberEdit = () => {
                       />
                     </td>
 
-                    <td className="py-3 px-2 align-middle text-center">
+                    <td className="py-3 px-2 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       <div className="flex items-center justify-center">
                         {asset.snPhoto ? (
                           // 显示缩略图预览
@@ -295,7 +295,7 @@ const SerialNumberEdit = () => {
                       </div>
                     </td>
 
-                    <td className="py-2 px-2 align-middle">
+                    <td className="py-2 px-2 align-middle mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       <input 
                         type="text" 
                         value={asset.remark || ''}
@@ -305,19 +305,19 @@ const SerialNumberEdit = () => {
                       />
                     </td>
 
-                    <td className="py-3 px-2 align-middle text-gray-700">{asset.description}</td>
-                    <td className="py-3 px-2 align-middle text-center font-medium text-gray-600">{asset.qty}</td>
+                    <td className="py-3 px-2 align-middle text-gray-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>{asset.description}</td>
+                    <td className="py-3 px-2 align-middle  font-medium text-gray-600 mmp-table-cell-right" style={{ textAlign: 'right' }}>{asset.qty}</td>
                     
                     {/* 以下三个字段设为无外框普通文本只读 */}
-                    <td className="py-3 px-2 align-middle text-gray-700">{asset.city}</td>
-                    <td className="py-3 px-2 align-middle text-gray-700">{asset.building}</td>
-                    <td className="py-3 px-2 align-middle text-gray-700">{asset.floor}</td>
+                    <td className="py-3 px-2 align-middle text-gray-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>{asset.city}</td>
+                    <td className="py-3 px-2 align-middle text-gray-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>{asset.building}</td>
+                    <td className="py-3 px-2 align-middle text-gray-700 mmp-table-cell-left" style={{ textAlign: 'left' }}>{asset.floor}</td>
 
-                    <td className="py-3 px-2 align-middle text-gray-500">
+                    <td className="py-3 px-2 align-middle text-gray-500 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                       {asset.status}
                     </td>
 
-                    <td className="py-3 px-4 align-middle text-center">
+                    <td className="py-3 px-4 align-middle mmp-table-cell-center" style={{ textAlign: 'center' }}>
                       <button 
                         onClick={() => handleDeleteAsset(asset.id)}
                         className="text-gray-400 hover:text-red-500 p-1.5 rounded hover:bg-red-50 transition-colors focus:outline-none inline-flex items-center justify-center"

@@ -8,10 +8,10 @@ import {
   Input,
   Modal,
   Space,
-  Table,
   Typography,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import StatusTag from '../../components/StatusTag';
 import { formatDepartment } from '../../utils/displayFormat';
 import {

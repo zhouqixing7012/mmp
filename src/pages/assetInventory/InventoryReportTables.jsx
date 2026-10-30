@@ -10,7 +10,7 @@ export function reportColumns(columns) {
   }));
 }
 export function ReportTable({ columns, rows, rowKey = 'key', ...props }) {
-  return <AutoWidthTable columns={reportColumns(columns)} dataSource={rows} rowKey={rowKey} {...props} />;
+  return <AutoWidthTable preserveColumnAlignment columns={reportColumns(columns)} dataSource={rows} rowKey={rowKey} {...props} />;
 }
 const column = (title, dataIndex, render = quantity, type = title.includes('占') ? 'percent' : title.includes('（元）') ? 'money' : 'number') => ({
   title, dataIndex, key: dataIndex, render, align: 'right', sizing: { type, format: render },
@@ -73,7 +73,7 @@ export function DetailTable({ report }) {
     : value == null ? '' : ['原值', '报失当月资产净值'].includes(name) ? accountingAmount(value)
       : ['赔偿金额', '损失'].includes(name) ? amount(value) : name === '数量' ? quantity(value) : value;
   return <Card size="small" title="盘亏及待查明细" extra={`共 ${report.details.length} 条`}>
-    <AutoWidthTable rowKey="key" dataSource={rows} columns={reportColumns(DETAIL_FIELDS.map((name, i) => ({
+    <AutoWidthTable preserveColumnAlignment rowKey="key" dataSource={rows} columns={reportColumns(DETAIL_FIELDS.map((name, i) => ({
       title: name, dataIndex: name, key: name, ellipsis: ['资产说明', '说明', '子公司', '一级部门'].includes(name),
       sizing: { type: types[name] || 'text', text: row => row.summary && i < 5 ? null : format(name, row[name], row) },
       align: ['数量', '原值', '报失当月资产净值', '赔偿金额', '损失'].includes(name) ? 'right' : 'center',

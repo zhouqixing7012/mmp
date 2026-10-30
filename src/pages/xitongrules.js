@@ -10,7 +10,10 @@ import {
   XCircle,
   Trash2
 } from 'lucide-react';
-import { Input, Select, Button, Modal, Table } from 'antd';
+import { Input, Select, Button, Modal } from 'antd';
+
+// --- 统一的Ant Button组件 ---
+import Table from '../components/tableAlignment/AlignedTable';
 
 // --- 统一的Ant Button组件 ---
 const AntButton = ({ children, type = 'default', icon, className = '', ...props }) => {
@@ -291,13 +294,13 @@ const OrgManagementView = () => {
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead className="sticky top-0 bg-[#fafafa] z-10 shadow-sm">
               <tr className="border-b border-gray-200">
-                <th className="py-3 px-4 w-12 text-center"><input type="checkbox" className="rounded border-gray-300" /></th>
-                <th className="py-3 px-4 text-xs font-semibold text-gray-600">组织名称</th>
-                <th className="py-3 px-4 text-xs font-semibold text-gray-600">组织编码</th>
-                <th className="py-3 px-4 text-xs font-semibold text-gray-600">部门负责人</th>
-                <th className="py-3 px-4 text-xs font-semibold text-gray-600">部门全称</th>
-                <th className="py-3 px-4 text-xs font-semibold text-gray-600">上级部门编码</th>
-                <th className="py-3 px-4 text-xs font-semibold text-gray-600">状态</th>
+                <th className="py-3 px-4 w-12 mmp-table-cell-center" style={{ textAlign: 'center' }}><input type="checkbox" className="rounded border-gray-300" /></th>
+                <th className="py-3 px-4 text-xs font-semibold text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>组织名称</th>
+                <th className="py-3 px-4 text-xs font-semibold text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>组织编码</th>
+                <th className="py-3 px-4 text-xs font-semibold text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>部门负责人</th>
+                <th className="py-3 px-4 text-xs font-semibold text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>部门全称</th>
+                <th className="py-3 px-4 text-xs font-semibold text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>上级部门编码</th>
+                <th className="py-3 px-4 text-xs font-semibold text-gray-600 mmp-table-cell-center" style={{ textAlign: 'center' }}>状态</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
@@ -305,11 +308,11 @@ const OrgManagementView = () => {
                 const hasChildren = node.children && node.children.length > 0;
                 return (
                   <tr key={node.key} className="hover:bg-blue-50/50 transition-colors group">
-                    <td className="py-2.5 px-4 text-center">
+                    <td className="py-2.5 px-4 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                       <span className="text-gray-300 text-xs mr-2">{index + 1}</span>
                       <input type="checkbox" className="rounded border-gray-300" />
                     </td>
-                    <td className="py-2.5 px-4">
+                    <td className="py-2.5 px-4 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                       <div className="flex items-center" style={{ paddingLeft: `${node.level * 24}px` }}>
                         <span 
                           className="w-5 h-5 flex items-center justify-center mr-1 cursor-pointer"
@@ -328,11 +331,11 @@ const OrgManagementView = () => {
                         <span className="font-medium text-gray-800">{node.title}</span>
                       </div>
                     </td>
-                    <td className="py-2.5 px-4 text-gray-600">{node.code}</td>
-                    <td className="py-2.5 px-4 text-gray-600">{node.leader}{node.leaderCode ? " (" + node.leaderCode + ")" : ""}</td>
-                    <td className="py-2.5 px-4 text-gray-600">{node.fullName}</td>
-                    <td className="py-2.5 px-4 text-gray-600">{node.parentCode || '-'}</td>
-                    <td className="py-2.5 px-4">
+                    <td className="py-2.5 px-4 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{node.code}</td>
+                    <td className="py-2.5 px-4 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{node.leader}{node.leaderCode ? " (" + node.leaderCode + ")" : ""}</td>
+                    <td className="py-2.5 px-4 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{node.fullName}</td>
+                    <td className="py-2.5 px-4 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{node.parentCode || '-'}</td>
+                    <td className="py-2.5 px-4 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                       <span className={`px-2 py-0.5 rounded text-xs ${node.status === '已启用' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{node.status}</span>
                     </td>
                   </tr>
@@ -460,21 +463,21 @@ if (viewingUserId) {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-[#fafafa] border-b border-gray-200">
-                      <th className="py-3 px-3 w-12 text-center"><input type="checkbox" className="rounded border-gray-300" /></th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">工号</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">姓名</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">邮箱</th>
-                     <th className="py-3 px-3 text-xs font-semibold text-gray-600">职级</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600">部门</th>
-                     <th className="py-3 px-3 text-xs font-semibold text-gray-600">使用状态</th>
-                      <th className="py-3 px-3 text-xs font-semibold text-gray-600 text-right">角色</th>
+                      <th className="py-3 px-3 w-12 mmp-table-cell-center" style={{ textAlign: 'center' }}><input type="checkbox" className="rounded border-gray-300" /></th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>工号</th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>姓名</th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>邮箱</th>
+                     <th className="py-3 px-3 text-xs font-semibold text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>职级</th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>部门</th>
+                     <th className="py-3 px-3 text-xs font-semibold text-gray-600 mmp-table-cell-center" style={{ textAlign: 'center' }}>使用状态</th>
+                      <th className="py-3 px-3 text-xs font-semibold text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>角色</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-sm">
                     {mockUserData.map((user) => (
                       <tr key={user.id} className="hover:bg-blue-50/50">
-                        <td className="py-2.5 px-3 text-center"><input type="checkbox" className="rounded border-gray-300" /></td>
-                        <td className="py-2.5 px-3">
+                        <td className="py-2.5 px-3 mmp-table-cell-center" style={{ textAlign: 'center' }}><input type="checkbox" className="rounded border-gray-300" /></td>
+                        <td className="py-2.5 px-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                           {/* 将工号设置为超链接 */}
                           <button type="button"
                             onClick={() => setViewingUserId(user.id)}
@@ -483,16 +486,16 @@ if (viewingUserId) {
                             {user.id}
                           </button>
                         </td>
-                        <td className="py-2.5 px-3 text-gray-800">{user.name}</td>
-                        <td className="py-2.5 px-3 text-gray-500">{user.email}</td>
-                       <td className="py-2.5 px-3 text-gray-600">{user.level}</td>
-                        <td className="py-2.5 px-3 text-gray-600">{user.dept}</td>
-                       <td className="py-2.5 px-3">
+                        <td className="py-2.5 px-3 text-gray-800 mmp-table-cell-left" style={{ textAlign: 'left' }}>{user.name}</td>
+                        <td className="py-2.5 px-3 text-gray-500 mmp-table-cell-left" style={{ textAlign: 'left' }}>{user.email}</td>
+                       <td className="py-2.5 px-3 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{user.level}</td>
+                        <td className="py-2.5 px-3 text-gray-600 mmp-table-cell-left" style={{ textAlign: 'left' }}>{user.dept}</td>
+                       <td className="py-2.5 px-3 mmp-table-cell-center" style={{ textAlign: 'center' }}>
                          <span className={`px-2 py-0.5 rounded text-xs ${user.usageStatus === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                            {user.usageStatus === 'active' ? '启用' : '停用'}
                          </span>
                        </td>
-                       <td className="py-2.5 px-3 text-right">
+                       <td className="py-2.5 px-3 mmp-table-cell-left" style={{ textAlign: 'left' }}>
                            <AntButton type="link" onClick={() => handleRoleAssign(user)}>分配</AntButton>
                        </td>
                       </tr>

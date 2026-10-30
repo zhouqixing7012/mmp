@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Plus, Trash2 } from 'lucide-react';
-import { Button, Input, Modal, Table } from 'antd';
+import { Button, Input, Modal } from 'antd';
+import Table from '../../../../components/tableAlignment/AlignedTable';
 import SelectModal from '../../../../components/SelectModal';
 import QueryBar from '../../../../components/QueryBar';
 import { mockCompanies, mockPlates, mockAccountBookContentData } from '../../../../mock/businessRulesMock';

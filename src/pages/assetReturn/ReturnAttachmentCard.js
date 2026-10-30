@@ -1,6 +1,7 @@
 import React from 'react';
 import { Trash2, UploadCloud } from 'lucide-react';
-import { Button, Card, Popconfirm, Table, Typography, Upload } from 'antd';
+import { Button, Card, Popconfirm, Typography, Upload } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 
 function formatSize(size = 0) {
   if (!size) return '-';

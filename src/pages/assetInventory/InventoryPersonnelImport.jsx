@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Modal, Space, Table, Alert } from 'antd';
+import { Button, Modal, Space, Alert } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import * as XLSX from 'xlsx';
 import { PERSONNEL_IMPORT_HEADERS, parseInventoryPersonnelImport } from './inventoryPersonnelImport';
 import { inventoryManagementBlockReason } from './inventoryManagementPermissions';

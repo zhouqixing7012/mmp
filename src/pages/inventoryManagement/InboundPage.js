@@ -10,11 +10,11 @@ import {
   Modal,
   Select,
   Space,
-  Table,
   Typography,
   Upload as AntUpload,
   message as antdMessage,
 } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import { Download, Plus, Printer, Search, Trash2, Upload as UploadIcon } from 'lucide-react';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';

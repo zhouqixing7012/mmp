@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Input, Modal, Select, Table, Tag, Typography } from 'antd';
+import { Input, Modal, Select, Tag, Typography } from 'antd';
+import Table from '../../components/tableAlignment/AlignedTable';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
 import { BORROWER_EXISTING_ASSETS, CURRENT_BORROWER } from '../../mock/assetBorrowingMock';
 
