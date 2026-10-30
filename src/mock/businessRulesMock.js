@@ -103,7 +103,7 @@ export const mockModelListData = [
 // 办公区
 export const mockOffices = officeOptions;
 export const mockOfficeWarehouseData = officeWarehouseMappings.map((row, index) => ({ id: index + 1,
-  company: row.company, dept: row.department, office: officeOptions.find(office => office.code === row.officeCode)?.label || row.officeCode,
+  company: row.company, dept: row.department, office: row.officeName,
   warehouse: row.warehouse, enabled: true, enabledDate: row.enabledDate,
 }));
 

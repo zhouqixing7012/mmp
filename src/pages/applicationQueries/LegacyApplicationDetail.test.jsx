@@ -63,17 +63,44 @@ test('借用数量按明细合计，退库列表与导出使用同一申请时�
   expect(legacyDefinitions.find(item => item.id === 'return').exportColumns.find(column => column.label === '申请时间').key).toBe('applyTime');
 });
 
-test.each([['出库待接收', undefined, undefined, false], ['出库待接收', true, true, true], ['草稿', true, true, false]])('移库状态%s库区货位开关%s/%s按明确配置显示', async (statusCode, zoneEnabled, binEnabled, visible) => {
+test.each(['出库待接收', '草稿', '已完成'])('移库状态%s查看弹窗按用户精简库区货位等字段', async statusCode => {
   const source = queryApplications('storage').find(row => row.id === 'storage-3');
-  const record = { ...source, values: { ...source.values, status: statusCode }, statusCode, to: { ...source.to, zoneEnabled, binEnabled }, lines: source.lines.map(line => ({ ...line, inboundZone: '测试库区', inboundBin: '测试货位' })) };
+  const record = { ...source, values: { ...source.values, status: statusCode }, statusCode, to: { ...source.to, zoneEnabled: true, binEnabled: true }, lines: source.lines.map(line => ({ ...line, inboundZone: '测试库区', inboundBin: '测试货位' })) };
   render(<LegacyStorageDetail record={record} />);
   fireEvent.click(screen.getAllByRole('button', { name: '查看' })[0]);
   const dialog = await screen.findByRole('dialog');
-  if (visible) {
-    expect(within(dialog).getByText('入库库区')).toBeInTheDocument();
-    expect(within(dialog).getByText('测试货位')).toBeInTheDocument();
-  } else {
-    expect(within(dialog).queryByText('入库库区')).not.toBeInTheDocument();
-    expect(within(dialog).queryByText('入库货位')).not.toBeInTheDocument();
-  }
+  ['库区', '货位', '入库库区', '入库货位', '印刷号', '品牌', '规格/型号', 'Room', '物资总类'].forEach(label => {
+    expect(within(dialog).queryByText(label, { selector: 'dt' })).not.toBeInTheDocument();
+  });
+  expect(within(dialog).getByText('资产说明', { selector: 'dt' })).toBeInTheDocument();
+  Array.from(dialog.querySelectorAll('dl')).forEach(grid => expect(grid.style.gridTemplateColumns).toBe('128px minmax(0, 1fr) 128px minmax(0, 1fr) 128px minmax(0, 1fr)'));
+  expect(dialog.querySelector('[data-prototype-detail-value="出库仓库"]').style.gridColumn).toBe('span 3');
+});
+
+test('移库数量不补小数，详情表格按语义对齐，验证列先于移库状态', () => {
+  open('storage-3');
+  expect(document.querySelector('[data-prototype-detail-value="资产数量"]')).not.toHaveTextContent('2.0');
+  const table = screen.getByRole('table');
+  const headings = within(table).getAllByRole('columnheader');
+  expect(headings.findIndex(cell => cell.textContent === '资产验证')).toBeLessThan(headings.findIndex(cell => cell.textContent === '移库状态'));
+  expect(within(table).getByRole('columnheader', { name: '资产说明' }).style.textAlign).toBe('left');
+  expect(within(table).getByRole('columnheader', { name: '数量' }).style.textAlign).toBe('right');
+  expect(within(table).getByRole('columnheader', { name: '资产验证' }).style.textAlign).toBe('center');
+  expect(within(table).getByRole('columnheader', { name: '启用日期' }).style.textAlign).toBe('center');
+  expect(within(table).queryByRole('columnheader', { name: '物资总类' })).not.toBeInTheDocument();
+  const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell');
+  [['资产说明', 'left'], ['数量', 'right'], ['资产验证', 'center'], ['启用日期', 'center']].forEach(([label, align]) => {
+    expect(cells[headings.findIndex(cell => cell.textContent === label)].style.textAlign).toBe(align);
+  });
+});
+
+test('已完成移库打印与返回属于同一个居中操作栏，返回真实回调', () => {
+  const record = queryApplications('storage').find(row => row.values.status === '已完成');
+  const onBack = jest.fn();
+  render(<LegacyApplicationDetail definition={legacyDefinitions.find(item => item.id === 'storage')} record={record} onBack={onBack} />);
+  const back = screen.getByRole('button', { name: /返\s*回/ });
+  const print = screen.getByRole('button', { name: /打\s*印/ });
+  expect(back.closest('.ant-space')).toBe(print.closest('.ant-space'));
+  expect(back.closest('.ant-space').style.justifyContent).toBe('center');
+  fireEvent.click(back); expect(onBack).toHaveBeenCalledTimes(1);
 });

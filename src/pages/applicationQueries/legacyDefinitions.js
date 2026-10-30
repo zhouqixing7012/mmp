@@ -18,20 +18,23 @@ const completeDocumentSheets = [
 
 // 退库申请时间与源申请一致，导出按列表的日期格式展示。
 const returnDocumentSheets = completeDocumentSheets.map(sheet => sheet.name === '单据信息'
-  ? { ...sheet, columns: sheet.columns.map(item => item.key === '申请时间' ? { ...item, format: 'date' } : item) } : sheet);
+  ? { ...sheet, columns: sheet.columns.map(item => item.key === '申请时间' ? { ...item, format: 'date' } : item.key === '退库单号' ? { ...item, label: '入库单号' } : item) } : sheet);
+
+const storageDocumentSheets = completeDocumentSheets.map(sheet => sheet.name === '资产明细'
+  ? { ...sheet, columns: sheet.columns.map(item => item.key === '物资说明' ? { ...item, label: '资产说明' } : item) } : sheet);
 
 export const legacyDefinitions = [
   {
-    id: 'storage', title: '移库单', sortable: true, sortKey: 'createdAt', actions: { export: true, pageExport: true }, exportSheets: completeDocumentSheets,
+    id: 'storage', title: '移库单', sortable: true, sortKey: 'createdAt', actions: { export: true, pageExport: true }, exportSheets: storageDocumentSheets,
     filters: [filter('移库单号', 'applicationNo'), filter('单据状态', 'status', 'select', 'exact', { options: MOVE_DOCUMENT_STATUSES.map(value => ({ value, label: value })) }), filter('制单人', 'applicant', 'lookup'), filter('制单日期', 'createdAt', 'date', 'date'), filter('资产标签号', 'assetTag')],
     columns: [column('移库单号', 'applicationNo', { action: 'detail' }), column('单据状态', 'status', { format: 'status' }), column('移出仓库', 'fromWarehouse'), column('移入仓库', 'toWarehouse'), column('制单日期', 'createdAt', { format: 'date' }), column('制单人', 'applicant'), column('物资数量', 'quantity', { format: 'number' }), column('接收人', 'receiver')],
     exportColumns: [column('移库单号', 'applicationNo'), column('状态', 'status'), column('移出仓库', 'fromWarehouse'), column('移入仓库', 'toWarehouse'), column('制单日期', 'createdAt'), column('制单人', 'exportApplicant'), column('物资数量', 'quantity'), column('接收人', 'exportReceiver')],
   },
   {
     id: 'return', title: '退库单', sortKey: 'applyTime', actions: { export: true, pageExport: true }, exportSheets: returnDocumentSheets,
-    filters: [filter('申请单号', 'applicationNo'), filter('退库类型', 'returnType', 'select', 'exact', { options: [{ value: '资产退库', label: '资产退库' }, { value: '离职归还', label: '离职归还' }] }), filter('单据状态', 'status', 'select', 'exact', { options: stateOptions }), filter('资产标签号', 'assetTag', 'text', 'prefix'), filter('申请人', 'applicant', 'lookup'), filter('子公司', 'subsidiary', 'lookup', 'exact'), filter('部门', 'department', 'lookup', 'exact'), filter('仓库', 'warehouse', 'lookup'), filter('退库单号', 'inboundNo'), filter('申请时间', 'applyTime', 'date', 'date')],
-    columns: [column('申请单号', 'applicationNo', { action: 'detail' }), column('退库单号', 'inboundNo'), column('单据状态', 'status', { format: 'status' }), column('退库类型', 'returnType'), column('审批人', 'approver'), column('申请人', 'applicant'), column('申请时间', 'applyTime', { format: 'date' }), column('资产标签号', 'assetTag'), column('退库原因', 'reason'), column('物资数量', 'quantity', { format: 'number' }), column('是否赔偿', 'compensation'), column('进度查看', 'progress', { action: 'progress' })],
-    exportColumns: [column('申请单号', 'applicationNo'), column('退库单号', 'inboundNo'), column('状态', 'status'), column('业务类型', 'returnType'), column('审批人', 'approver'), column('申请人', 'applicant'), column('申请时间', 'applyTime', { format: 'date' }), column('标签号', 'assetTag'), column('退库原因', 'reason'), column('数量', 'quantity'), column('是否赔偿', 'compensation')],
+    filters: [filter('申请单号', 'applicationNo'), filter('退库类型', 'returnType', 'select', 'exact', { options: [{ value: '资产退库', label: '资产退库' }, { value: '离职归还', label: '离职归还' }] }), filter('单据状态', 'status', 'select', 'exact', { options: stateOptions }), filter('资产标签号', 'assetTag', 'text', 'prefix'), filter('申请人', 'applicant', 'lookup'), filter('子公司', 'subsidiary', 'lookup', 'exact'), filter('部门', 'department', 'lookup', 'exact'), filter('仓库', 'warehouse', 'lookup'), filter('入库单号', 'inboundNo'), filter('申请时间', 'applyTime', 'date', 'date')],
+    columns: [column('申请单号', 'applicationNo', { action: 'detail' }), column('入库单号', 'inboundNo'), column('单据状态', 'status', { format: 'status' }), column('退库类型', 'returnType'), column('审批人', 'approver'), column('申请人', 'applicant'), column('申请时间', 'applyTime', { format: 'date' }), column('资产标签号', 'assetTag'), column('退库原因', 'reason'), column('物资数量', 'quantity', { format: 'number' }), column('是否赔偿', 'compensation'), column('进度查看', 'progress', { action: 'progress' })],
+    exportColumns: [column('申请单号', 'applicationNo'), column('入库单号', 'inboundNo'), column('状态', 'status'), column('业务类型', 'returnType'), column('审批人', 'approver'), column('申请人', 'applicant'), column('申请时间', 'applyTime', { format: 'date' }), column('标签号', 'assetTag'), column('退库原因', 'reason'), column('数量', 'quantity'), column('是否赔偿', 'compensation')],
   },
   {
     id: 'borrow', title: '借用单', sortKey: 'createdAt', actions: { export: true }, exportSheets: completeDocumentSheets,

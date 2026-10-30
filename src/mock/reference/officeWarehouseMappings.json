@@ -5,70 +5,70 @@
     {
       "company": "WIS.北京搜狐互联网信息服务有限公司",
       "department": "D0164.搜狐媒体.社交产品中心",
-      "officeCode": "L062",
+      "officeName": "L062",
       "warehouse": "I0015.资产集团前台库（互联网）",
       "enabledDate": "2024-07-12"
     },
     {
       "company": "420.上海搜狐新互动信息技术有限公司",
       "department": "D1819.搜狐媒体.广告营销部",
-      "officeCode": "L004",
+      "officeName": "L004",
       "warehouse": "I2064.资产集团上海库（新媒体）",
       "enabledDate": "2023-08-22"
     },
     {
       "company": "380.北京博点智合科技有限公司",
       "department": "D3880.焦点.博点经管部",
-      "officeCode": "L056",
+      "officeName": "L056",
       "warehouse": "I3017.资产焦点昆明库（博点智合科技）",
       "enabledDate": "2023-07-24"
     },
     {
       "company": "340.成都博点科技有限公司",
       "department": "D3880.焦点.博点经管部",
-      "officeCode": "L095",
+      "officeName": "L095",
       "warehouse": "I3006.资产焦点成都库（成都博点科技）",
       "enabledDate": "2023-06-07"
     },
     {
       "company": "NMG.北京搜狐新媒体信息技术有限公司广州分公司",
       "department": "D0722.视频.广告销售中心",
-      "officeCode": "L005",
+      "officeName": "L005",
       "warehouse": "I3020.资产视频广州库（新媒体-广州）",
       "enabledDate": "2023-05-17"
     },
     {
       "company": "167.北京搜狐新媒体信息技术有限公司武汉分公司",
       "department": "D1819.搜狐媒体.广告营销部",
-      "officeCode": "L098",
+      "officeName": "L098",
       "warehouse": "I2001.资产武汉研发库（新媒体）",
       "enabledDate": "2023-05-16"
     },
     {
       "company": "167.北京搜狐新媒体信息技术有限公司武汉分公司",
       "department": "D3136.搜狐媒体.智能平台",
-      "officeCode": "L098",
+      "officeName": "L098",
       "warehouse": "I2001.资产武汉研发库（新媒体）",
       "enabledDate": "2023-05-16"
     },
     {
       "company": "167.北京搜狐新媒体信息技术有限公司武汉分公司",
       "department": "D1787.搜狐媒体.智能媒体研发中心",
-      "officeCode": "L098",
+      "officeName": "L098",
       "warehouse": "I2001.资产武汉研发库（新媒体）",
       "enabledDate": "2023-05-16"
     },
     {
       "company": "167.北京搜狐新媒体信息技术有限公司武汉分公司",
       "department": "D3880.焦点.博点经管部",
-      "officeCode": "L094",
+      "officeName": "L094",
       "warehouse": "I3012.资产焦点武汉库（博点智合科技）",
       "enabledDate": "2023-05-16"
     },
     {
       "company": "FIS.北京焦点互动信息服务有限公司",
       "department": "D0842.焦点.全国业务支持",
-      "officeCode": "L007",
+      "officeName": "L007",
       "warehouse": "I2053.资产焦点石家庄库（焦点互动）",
       "enabledDate": "2023-03-28"
     }

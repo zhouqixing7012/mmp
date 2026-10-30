@@ -4,14 +4,15 @@ import { mockOfficeWarehouseData } from '../mock/businessRulesMock';
 import { getApplicationDefinition, getApplicationOptions, queryApplications } from './applicationQueryService';
 import { mockProcurementNumber } from '../mock/procurementNumbers';
 
-test('附件10条映射完整保留公司、完整部门、办公区、仓库、启用日期', () => {
+test('附件办公区按用户确认为名称，10条映射完整保留', () => {
   expect(mockOfficeWarehouseData).toHaveLength(10);
-  expect(officeWarehouseMappings[0]).toEqual({ company: 'WIS.北京搜狐互联网信息服务有限公司', department: 'D0164.搜狐媒体.社交产品中心', officeCode: 'L062', warehouse: 'I0015.资产集团前台库（互联网）', enabledDate: '2024-07-12' });
+  expect(officeWarehouseMappings[0]).toEqual({ company: 'WIS.北京搜狐互联网信息服务有限公司', department: 'D0164.搜狐媒体.社交产品中心', officeName: 'L062', warehouse: 'I0015.资产集团前台库（互联网）', enabledDate: '2024-07-12' });
   expect(mockOfficeWarehouseData[0]).toMatchObject({ company: officeWarehouseMappings[0].company, dept: officeWarehouseMappings[0].department, enabledDate: '2024-07-12' });
   expect(knownDepartmentPath('D0164')).toBe('搜狐媒体.社交产品中心');
   expect(knownDepartmentPath('D0002')).toBe('');
-  expect(officeWarehouseMappings.every(row => officeOptions.some(office => office.code === row.officeCode))).toBe(true);
+  expect(officeWarehouseMappings.every(row => officeOptions.some(office => office.name === row.officeName))).toBe(true);
   expect(officeOptions.every(row => row.address === '')).toBe(true);
+  expect(officeOptions.find(row => row.name === 'L062')).toMatchObject({ value: 'L062', name: 'L062', label: 'L062', code: '' });
 });
 test('五项资产配置完整独立于交易记录，条件及单头使用同一字典', () => {
   const definition = getApplicationDefinition('newEmployee');
