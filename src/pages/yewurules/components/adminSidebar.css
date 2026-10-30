@@ -58,3 +58,6 @@
 }
 .mmp-admin-sidebar-toggle:hover { color: #1677ff; background: #f0f7ff; }
 .mmp-admin-sidebar :focus-visible { outline: 2px solid #1677ff; outline-offset: -2px; }
+
+.mmp-admin-sidebar-brand { gap: 8px; padding-inline: 12px; font-size: 14px; }
+.mmp-admin-sidebar-logo { width: 40px; height: auto; object-fit: contain; border-radius: 0; background: transparent; }

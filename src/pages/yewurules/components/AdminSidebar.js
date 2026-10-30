@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Menu, Tooltip } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Settings, User, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { LayoutDashboard, Settings, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useInventoryOperator } from '../../assetInventory/useInventoryOperator';
 import { inventoryMenuItemsForOperator } from '../../assetInventory/inventoryReportAccess';
 import { BACKEND_CONFIG_MENU_ITEMS, MAIN_MENU_ITEMS } from '../config/menuConfig';
 import { WORKSPACE_MENU_ITEMS } from '../config/workspaceMenuConfig';
 import './adminSidebar.css';
+import sohuLogo from './logo-sohu.png';
 
 export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, onSubMenuSelect }) {
   const [inventoryOperator] = useInventoryOperator();
@@ -70,14 +71,8 @@ export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, 
   return (
     <aside className={'mmp-admin-sidebar' + (collapsed ? ' is-collapsed' : '')} aria-label="后台侧栏">
       <div className="mmp-admin-sidebar-brand">
-        <span className="mmp-admin-sidebar-logo" aria-hidden="true">E</span>
-        {!collapsed && <span>企业资产管理系统</span>}
-      </div>
-      <div className="mmp-admin-sidebar-user">
-        <Tooltip title="系统管理员 (admin)" trigger={['hover', 'focus']} placement="right">
-          <span tabIndex={collapsed ? 0 : undefined} aria-label="系统管理员 (admin)"><User size={16} aria-hidden="true" /></span>
-        </Tooltip>
-        {!collapsed && <span>系统管理员 (admin)</span>}
+        <img className="mmp-admin-sidebar-logo" src={sohuLogo} alt="搜狐" />
+        {!collapsed && <span>搜狐资产管理平台</span>}
       </div>
       <nav id="admin-sidebar-navigation" className="mmp-admin-sidebar-nav" aria-label="主导航">
         <Menu

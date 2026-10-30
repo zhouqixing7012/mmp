@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
@@ -20,6 +20,16 @@ export function getRouterBasename(publicUrl = process.env.PUBLIC_URL) {
 
 function AppRoutes() {
   const location = useLocation();
+  const [signedOut, setSignedOut] = useState(() => sessionStorage.getItem('mmp-demo-signed-out') === '1');
+  useEffect(() => {
+    const update = () => setSignedOut(sessionStorage.getItem('mmp-demo-signed-out') === '1');
+    window.addEventListener('mmp-demo-session-change', update);
+    return () => window.removeEventListener('mmp-demo-session-change', update);
+  }, []);
+  if (signedOut) return <main className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50">
+    <h1 className="text-xl font-semibold">搜狐资产管理平台</h1><p>已退出登录</p>
+    <button type="button" className="rounded bg-blue-600 px-4 py-2 text-white" onClick={() => { sessionStorage.removeItem('mmp-demo-signed-out'); setSignedOut(false); }}>重新进入演示</button>
+  </main>;
   const isAdminWorkspace = location.pathname === '/yewurules';
 
   return (
