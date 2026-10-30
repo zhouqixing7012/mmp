@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Menu, Tooltip } from 'antd';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Settings, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useInventoryOperator } from '../../assetInventory/useInventoryOperator';
 import { inventoryMenuItemsForOperator } from '../../assetInventory/inventoryReportAccess';
@@ -11,32 +10,6 @@ import sohuLogo from './logo-sohu.png';
 
 export default function AdminSidebar({ activeMenu, activeSubMenu, onMenuToggle, onSubMenuSelect }) {
   const [inventoryOperator] = useInventoryOperator();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const onMenuToggleRef = useRef(onMenuToggle);
-  const onSubMenuSelectRef = useRef(onSubMenuSelect);
-
-  useEffect(() => {
-    onMenuToggleRef.current = onMenuToggle;
-    onSubMenuSelectRef.current = onSubMenuSelect;
-  }, [onMenuToggle, onSubMenuSelect]);
-
-  useEffect(() => {
-    const targetMenu = location.state?.workspace;
-    if (!targetMenu) return;
-
-    if (activeMenu !== '个人工作台') {
-      onMenuToggleRef.current?.('个人工作台', false);
-    }
-    if (activeSubMenu !== targetMenu) {
-      onSubMenuSelectRef.current?.(targetMenu);
-    }
-    navigate(
-      { pathname: location.pathname, search: location.search },
-      { replace: true, state: null }
-    );
-  }, [activeMenu, activeSubMenu, location.key, location.pathname, location.search, location.state, navigate]);
-
   const [collapsed, setCollapsed] = useState(false);
   const [openKeys, setOpenKeys] = useState([activeMenu]);
   useEffect(() => { setOpenKeys([activeMenu]); }, [activeMenu]);
