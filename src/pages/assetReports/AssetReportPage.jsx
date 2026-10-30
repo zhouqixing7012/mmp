@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Modal, Space, Typography, message } from 'antd';
 import Table, { BusinessCard as Card } from '../../components/businessQuery/BusinessTable';
-import TableDensityControl from '../../components/TableDensityControl';
 import AppliedFilterSummary, { filterSummaryItems } from '../../components/businessQuery/AppliedFilterSummary';
 import { Search, RefreshCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
@@ -17,10 +16,9 @@ export default function AssetReportPage({ reportId, access = DEFAULT_REPORT_ACCE
   const [pagination, setPagination] = useState(() => initialState.pagination || { current: 1, pageSize: 10 });
   const [sort, setSort] = useState(() => initialState.sort || null);
   const [selectedKeys, setSelectedKeys] = useState(() => initialState.selectedKeys || []);
-  const [rowHeight, setRowHeight] = useState(() => initialState.rowHeight || 40);
   useEffect(() => {
-    onStateChange?.(reportId, { filters, applied, expanded, pagination, sort, selectedKeys, rowHeight });
-  }, [reportId, filters, applied, expanded, pagination, sort, selectedKeys, rowHeight, onStateChange]);
+    onStateChange?.(reportId, { filters, applied, expanded, pagination, sort, selectedKeys });
+  }, [reportId, filters, applied, expanded, pagination, sort, selectedKeys, onStateChange]);
   const queryResult = useMemo(() => {
     try { return { rows: queryReport(reportId, applied, sort, access), error: null }; }
     catch (error) { return { rows: [], error: error.message }; }
@@ -88,11 +86,10 @@ export default function AssetReportPage({ reportId, access = DEFAULT_REPORT_ACCE
     {queryResult.error && <Alert type="error" showIcon title={queryResult.error} />}
     <Card size="small" title="查询结果" extra={<Space wrap>
       <Typography.Text type="secondary">共 {rows.length} 条</Typography.Text>
-      <TableDensityControl value={rowHeight} onChange={setRowHeight} />
       <Button disabled={Boolean(queryResult.error)} onClick={download}>{definition.exportLabel}</Button>
     </Space>}>
       <AppliedFilterSummary items={filterSummaryItems(definition.filters, applied, field => field.label, field => getReportOptions(definition, field, applied, access))} onClear={clearApplied} />
-      <Table autoWidth rowHeight={rowHeight} filtered={Object.keys(applied).length > 0} rowKey="id" size="small" bordered columns={columns} dataSource={rows} scroll={{ x: 'max-content' }}
+      <Table autoWidth filtered={Object.keys(applied).length > 0} rowKey="id" size="small" bordered columns={columns} dataSource={rows} scroll={{ x: 'max-content' }}
         rowSelection={definition.selectRows ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, preserveSelectedRowKeys: true } : undefined}
         locale={queryResult.error ? { emptyText: '数据条件未满足，暂无法显示结果' } : { emptyText: '暂无数据' }}
         pagination={{ ...pagination, showSizeChanger: true }}

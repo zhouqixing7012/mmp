@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Button, DatePicker, Select, Space, Typography, message } from 'antd';
 import Table, { BusinessCard as Card } from '../../components/businessQuery/BusinessTable';
-import TableDensityControl from '../../components/TableDensityControl';
 import AppliedFilterSummary, { filterSummaryItems } from '../../components/businessQuery/AppliedFilterSummary';
 import dayjs from 'dayjs';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
@@ -17,7 +16,6 @@ export default function FinancialNewAssetReportPage() {
   const [rows, setRows] = useState(() => queryFinancialNewAssets());
   const companyOptions = getFinancialAssetCompanyOptions();
   const [page, setPage] = useState({ current: 1, pageSize: 10 });
-  const [rowHeight, setRowHeight] = useState(40);
   const totals = totalFinancialNewAssets(rows);
   const query = () => {
     try { const result = queryFinancialNewAssets(draft); setApplied(draft); setRows(result); setPage(previous => ({ ...previous, current: 1 })); }
@@ -39,11 +37,10 @@ export default function FinancialNewAssetReportPage() {
     </QueryBar>
     <Card size="small" title="查询结果" extra={<Space wrap size={[16, 8]}>
       {numeric.map(field => <span key={field}><Typography.Text type="secondary">{field}合计：</Typography.Text><Typography.Text strong>{formatFinancialAssetValue(totals[field], field)}</Typography.Text></span>)}
-      <TableDensityControl value={rowHeight} onChange={setRowHeight} />
       <Button onClick={download}>导出</Button></Space>}>
       <AppliedFilterSummary items={filterSummaryItems([{ label: '公司', key: 'companies' }, { label: '板块', key: 'plates' }, { label: '启用日期', key: 'dates', type: 'daterange' }], applied, field => field.key,
         field => field.key === 'companies' ? companyOptions : ASSET_PLATE_OPTIONS.map(value => ({ value, label: value })))} onClear={reset} />
-      <Table autoWidth rowHeight={rowHeight} filtered={applied.companies.length > 0 || applied.plates.length > 0 || applied.dates.some(Boolean)} rowKey="id" size="small" bordered dataSource={rows} scroll={{ x: 'max-content' }} locale={{ emptyText: '暂无数据' }}
+      <Table autoWidth filtered={applied.companies.length > 0 || applied.plates.length > 0 || applied.dates.some(Boolean)} rowKey="id" size="small" bordered dataSource={rows} scroll={{ x: 'max-content' }} locale={{ emptyText: '暂无数据' }}
         columns={financialAssetFields.map((field, index) => ({ title: field, dataIndex: ['values', field], key: field, width: widths[index], align: numeric.includes(field) ? 'right' : 'left',
           sizing: { type: field === '数量' ? 'number' : numeric.includes(field) ? 'money' : field === '启用日期' ? 'date' : ['配置', '资产说明', '使用说明'].includes(field) ? 'description' : ['PO单号', 'PR单号', '资产标签号'].includes(field) ? 'code' : 'text', format: value => formatFinancialAssetValue(value, field) },
           render: value => formatFinancialAssetValue(value, field) }))}

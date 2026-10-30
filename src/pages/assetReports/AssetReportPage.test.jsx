@@ -198,24 +198,16 @@ test('统一申领页签分别恢复未查询输入与最近查询结果', async
   expect(screen.getByText('暂无数据')).toBeInTheDocument();
 });
 
-test('行高切换保留分页和查询结果，统一申领页签分别保存密度', async () => {
+test('报表固定默认行高，切换页签仍恢复分页且不提供密度控件', () => {
   const stock = reportDefinitions.find(item => item.id === 'report-6-1');
   const purchase = reportDefinitions.find(item => item.id === 'report-6-2');
   const access = { userId: 'density-test', canView: true, allowedScopes: ['集团', '上海媒体', '广州媒体'] };
-  const rows = queryReport(stock.id, {}, null, access);
-  expect(rows.length).toBeGreaterThan(10);
   const view = render(<AssetReportsContent activeSubMenu={stock.menu} activeTab={stock.title} access={access} />);
+  expect(screen.queryByRole('combobox', { name: '表格行高' })).not.toBeInTheDocument();
   expect(document.querySelector('.mmp-business-table').style.getPropertyValue('--mmp-table-row-height')).toBe('40px');
   fireEvent.click(screen.getByTitle('2'));
-  expect(document.querySelector('.ant-pagination-item-active')).toHaveAttribute('title', '2');
-  fireEvent.mouseDown(screen.getByRole('combobox', { name: '表格行高' }));
-  fireEvent.click(await screen.findByText('行高 32px', { selector: '.ant-select-item-option-content' }));
-  expect(document.querySelector('.mmp-business-table').style.getPropertyValue('--mmp-table-row-height')).toBe('32px');
-  expect(document.querySelector('.ant-pagination-item-active')).toHaveAttribute('title', '2');
-  expect(screen.getByText('共 ' + rows.length + ' 条')).toBeInTheDocument();
   view.rerender(<AssetReportsContent activeSubMenu={purchase.menu} activeTab={purchase.title} access={access} />);
-  expect(document.querySelector('.mmp-business-table').style.getPropertyValue('--mmp-table-row-height')).toBe('40px');
   view.rerender(<AssetReportsContent activeSubMenu={stock.menu} activeTab={stock.title} access={access} />);
-  expect(document.querySelector('.mmp-business-table').style.getPropertyValue('--mmp-table-row-height')).toBe('32px');
   expect(document.querySelector('.ant-pagination-item-active')).toHaveAttribute('title', '2');
+  expect(document.querySelector('.mmp-business-table').style.getPropertyValue('--mmp-table-row-height')).toBe('40px');
 });
