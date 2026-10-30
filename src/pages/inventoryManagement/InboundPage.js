@@ -967,7 +967,7 @@ function PurchasePendingModal({ open, rows, currentLines, warehouse, editRow, on
     { title: 'PR单/行', dataIndex: 'prLine', width: 150, render: (v) => v || '-' },
   ];
   const selectedRows = data.filter((row) => selected.includes(row.id));
-  useEffect(() => { setSelected(editCandidate ? [editCandidate.id] : []); }, [open, warehouse, editCandidate.id, editCandidate]);
+  useEffect(() => { setSelected(editCandidate ? [editCandidate.id] : []); }, [open, warehouse, editCandidate]);
 
   return (
     <Modal open={open} title="选择待入库物资" width={960} okText="确认" cancelText="取消" onCancel={onCancel} onOk={() => onConfirm(selectedRows)}>
