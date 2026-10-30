@@ -83,3 +83,5 @@ PC只读表格通过 `src/components/tableSizing/AutoWidthTable.jsx` 使用列�
 列配置增加 `sizing: { type, format?, text?, enumValues?, headerText?, flex? }`：普通值由 dataIndex取得；format接收原值和行并返回实际显示文本；自定义React渲染用text(row)提供纯文本，不能将React对象字符串化测量。枚举通过enumValues提供完整字典；数据源传已加载的全部结果，不只传当前分页。分类/指标使用label按最长值测量；普通text不默认拉伸，只有描述或显式flex列分配剩余宽度。表头加边框及安全余量后作为硬下限，叶子表头单行。分组children递归处理。`compact`启用紧凑布局。既有render、onCell、行合并及排序规则保持原样。
 
 浏览器Canvas按实际正文/表头字体测量，ResizeObserver监听可用容器，字体加载完成和主题字号/字体变化重新计算。无Canvas环境仅提供可复现的初始估算，浏览器挂载后实测。纯算法可注入测量函数验证边界，组件通过实际报表检查合并表头、横向滚动、窄表和格式化结果；页面列宽不写回数据或导出配置。
+
+后台多标签查询布局由公共`QueryTabs`与`QueryBar`的标签插槽衔接，标签只进入当前可见的首个页内查询Card，弹窗查询不接收页面标签。无查询Card时保留可访问的标签导航，单标签不另显示。顶部动态面包屑集中于`AdminBreadcrumb`；后台配置同一子菜单下的标签页面保留已挂载状态，切换子菜单时释放。

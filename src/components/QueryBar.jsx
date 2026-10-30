@@ -138,6 +138,7 @@ export default function QueryBar({
       className="mmp-query-bar"
       onClickCapture={handleActionClickCapture}
     >
+      <div data-mmp-query-tabs />
       <div ref={layoutRef} className="mmp-query-layout" style={{ gridTemplateColumns: `repeat(${layoutColumns}, minmax(0, 1fr))` }}>
           {fields.map((field, index) => (
             <div key={field.key || index} className="mmp-query-field" style={{ '--mmp-query-label-width': `${labelWidth}px` }}>

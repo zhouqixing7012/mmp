@@ -1,8 +1,9 @@
 import './inventoryReport.css';
 import React, { useState } from 'react';
-import { Button, Card, Empty, Result, Select, Space, Tabs, Typography, message } from 'antd';
+import { Button, Card, Empty, Result, Select, Space, Tabs, message } from 'antd';
 import { exportInventoryReport, getInventoryReport, getInventoryReportProjects } from '../../services/inventoryReportService';
 import { AnalysisTables, DetailTable } from './InventoryReportTables';
+import QueryBar, { QueryItem } from '../../components/QueryBar';
 import InventoryReportCharts from './InventoryReportCharts';
 import { canAccessInventoryReport } from './inventoryReportAccess';
 import { useInventoryOperator } from './useInventoryOperator';
@@ -14,10 +15,13 @@ export default function AssetInventoryReportPage() {
 }
 
 function InventoryReportContent() {
-  const [year, setYear] = useState(() => new Date().getFullYear());
-  const [projectNo, setProjectNo] = useState(undefined);
+  const defaults = () => ({ year: new Date().getFullYear(), projectNo: undefined });
+  const [draft, setDraft] = useState(defaults);
+  const [applied, setApplied] = useState(defaults);
+  const { year, projectNo } = applied;
   const [activeTab, setActiveTab] = useState('analysis');
   const projects = getInventoryReportProjects(year);
+  const draftProjects = draft.year === year ? projects : getInventoryReportProjects(draft.year);
   const selectedProject = projects.length === 1 ? projects[0] : projects.find(project => project.projectNo === projectNo);
   const projectReport = selectedProject?.report;
   const current = projectReport?.history?.find?.(row => row.year === Number(year));
@@ -36,15 +40,19 @@ function InventoryReportContent() {
   };
   const unavailable = <Card size="small"><Empty description={emptyDescription} /></Card>;
   return <div className="inventory-report flex flex-col gap-4">
-    <div className="flex items-center justify-between gap-4 flex-wrap">
-      <span hidden data-mmp-page-title>盘点报表</span>
-      <Space wrap><Typography.Text>盘点年份</Typography.Text><Select aria-label="盘点年份" style={{ width: 140 }} value={year} onChange={(value) => { setYear(value); setProjectNo(undefined); }} options={yearOptions.map(value => ({ label: `${value}年`, value }))} />
-        {projects.length > 1 && <><Typography.Text>盘点项目</Typography.Text><Select aria-label="盘点项目" style={{ width: 260 }} placeholder="请选择盘点项目" value={projectNo} onChange={setProjectNo} options={projects.map(project => ({ label: `${project.projectNo} ${project.projectName}`, value: project.projectNo }))} /></>}
-      </Space>
-    </div>
+    <QueryBar buttons={<>
+      <Button onClick={() => { const next = defaults(); setDraft(next); setApplied(next); }}>重置</Button>
+      <Button type="primary" onClick={() => setApplied({ ...draft })}>查询</Button>
+      <Button disabled={!report} onClick={download}>导出</Button>
+    </>}>
+      <QueryItem label="盘点年份"><Select aria-label="盘点年份" style={{ width: '100%' }} value={draft.year}
+        onChange={value => setDraft({ year: value, projectNo: undefined })} options={yearOptions.map(value => ({ label: `${value}年`, value }))} /></QueryItem>
+      {draftProjects.length > 1 && <QueryItem label="盘点项目"><Select aria-label="盘点项目" style={{ width: '100%' }} placeholder="请选择盘点项目"
+        value={draft.projectNo} onChange={value => setDraft(current => ({ ...current, projectNo: value }))}
+        options={draftProjects.map(project => ({ label: `${project.projectNo} ${project.projectName}`, value: project.projectNo }))} /></QueryItem>}
+    </QueryBar>
     <div data-mmp-query-result>
       <Space orientation="vertical" size={16} className="w-full">
-        {report && <div className="flex items-center justify-between gap-4"><Typography.Text strong>{report.year}年度资产盘点报告（ES管控资产）</Typography.Text><Button onClick={download}>导出</Button></div>}
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
           { key: 'analysis', label: '盘点结果比较分析', children: report ? <AnalysisTables report={report} /> : unavailable },
           { key: 'details', label: '盘亏及待查明细', children: report ? <DetailTable report={report} /> : unavailable },

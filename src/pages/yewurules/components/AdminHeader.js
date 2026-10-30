@@ -1,10 +1,11 @@
 import React from 'react';
-import { Bell, Menu, XCircle, User, ChevronDown, LogOut } from 'lucide-react';
+import { Bell, User, ChevronDown, LogOut } from 'lucide-react';
 
+import AdminBreadcrumb from './AdminBreadcrumb';
 import { Avatar, Dropdown } from 'antd';
 import { useInventoryOperator } from '../../assetInventory/useInventoryOperator';
 
-export default function AdminHeader({ activeSubMenu }) {
+export default function AdminHeader({ activeMenu, activeSubMenu, activeTab, onTabChange }) {
   const [operator] = useInventoryOperator();
   const employeeName = operator.replace(/^\d+-/, '');
   const logout = () => {
@@ -12,22 +13,8 @@ export default function AdminHeader({ activeSubMenu }) {
     window.dispatchEvent(new Event('mmp-demo-session-change'));
   };
   return (
-    <div className="h-14 bg-white shadow-[0_1px_4px_rgba(0,21,41,0.08)] flex items-center justify-between px-4 z-10">
-      <div className="flex items-center gap-4">
-        <div className="p-1 cursor-pointer text-gray-500 hover:bg-gray-100 rounded transition-colors">
-          <Menu size={20} />
-        </div>
-        <div className="flex items-end h-full pt-3 gap-1">
-          <div className="px-4 py-1.5 bg-[#fafafa] border border-b-0 border-[#f0f0f0] rounded-t-md text-sm text-gray-500 cursor-pointer flex items-center gap-2 hover:bg-gray-50">
-            我的资产
-            <XCircle size={12} className="hover:text-red-500" />
-          </div>
-          <div className="px-4 py-1.5 bg-primary-bg border border-b-0 border-primary rounded-t-md text-sm text-primary font-medium cursor-pointer flex items-center gap-2 relative top-[1px]">
-            {activeSubMenu}
-            <XCircle size={12} className="hover:text-primary" />
-          </div>
-        </div>
-      </div>
+    <div className="min-h-16 shrink-0 py-2 bg-white shadow-[0_1px_4px_rgba(0,21,41,0.08)] flex items-center justify-between px-4 z-10">
+      <div className="min-w-0 flex-1 pr-4"><AdminBreadcrumb {...{ activeMenu, activeSubMenu, activeTab, onTabChange }} /></div>
       <div className="flex items-center gap-4 text-gray-500">
         <Bell size={18} className="cursor-pointer hover:text-gray-800 transition-colors" />
         <Dropdown trigger={['click']} menu={{ items: [{ key: 'logout', label: '退出登录', icon: <LogOut size={16} /> }], onClick: logout }}>

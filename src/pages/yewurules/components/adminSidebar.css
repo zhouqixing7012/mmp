@@ -61,3 +61,9 @@
 
 .mmp-admin-sidebar-brand { gap: 8px; padding-inline: 12px; font-size: 14px; }
 .mmp-admin-sidebar-logo { width: 40px; height: auto; object-fit: contain; border-radius: 0; background: transparent; }
+
+/* Expanded brand aligns with the consolidated 64px header. */
+.mmp-admin-sidebar-brand { height: 64px; font-size: 16px; gap: 10px; }
+.mmp-admin-sidebar-logo { width: 50px; }
+.mmp-admin-sidebar.is-collapsed .mmp-admin-sidebar-brand { padding-inline: 8px; }
+.mmp-admin-sidebar.is-collapsed .mmp-admin-sidebar-logo { width: 48px; }

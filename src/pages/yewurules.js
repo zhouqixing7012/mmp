@@ -118,7 +118,7 @@ export default function App() {
     <div className="flex h-screen w-full bg-[#f0f2f5] font-sans text-gray-800 overflow-hidden">
       <AdminSidebar activeMenu={activeMenu} activeSubMenu={activeSubMenu} onMenuToggle={handleMenuToggle} onSubMenuSelect={handleSubMenuSelect} />
       <div className="flex-1 flex flex-col min-w-0 bg-[#f0f2f5]">
-        <AdminHeader activeSubMenu={activeSubMenu} />
+        <AdminHeader activeMenu={activeMenu} activeSubMenu={activeSubMenu} activeTab={activeTab} onTabChange={setActiveTab} />
         <AdminContent activeMenu={activeMenu} activeSubMenu={activeSubMenu} activeTab={activeTab} tabs={tabs} onTabChange={setActiveTab}>
           {activeSubMenu === '用户管理' && <div className="flex-1 flex flex-col relative"><UserManagementView /></div>}
           {activeSubMenu === '组织管理' && <div className="flex-1 flex flex-col relative"><OrgManagementView /></div>}

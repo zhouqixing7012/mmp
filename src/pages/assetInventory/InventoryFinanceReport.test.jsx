@@ -27,7 +27,7 @@ test('财务独立页面共用报表表格，保留三表和19列明细，导出
   const panel = screen.getByRole('main', { name: '财务盘点报告' });
   expect(within(panel).getByRole('combobox', { name: '子公司' })).toBeInTheDocument();
   expect(within(panel).getByRole('combobox', { name: '板块' })).toBeInTheDocument();
-  expect(within(panel).getByLabelText('年度')).toBeInTheDocument();
+  expect(within(panel).getByRole('textbox', { name: '年度' })).toBeInTheDocument();
   expect(within(panel).queryByRole('heading', { name: '财务盘点报告' })).not.toBeInTheDocument();
   expect(within(panel).queryByText(/模板预览/)).not.toBeInTheDocument();
   expect(within(panel).queryByText('报告说明')).not.toBeInTheDocument();
@@ -53,4 +53,23 @@ test('独立菜单沿用原页签权限，ES报表不再包含财务页签', () 
   expect(inventoryMenuItemsForOperator(ASSET_INVENTORY_MENU_ITEMS, '徐博')).not.toContain('财务盘点报告');
   render(<AssetInventoryReportPage />);
   expect(screen.queryByRole('tab', { name: '财务盘点报告' })).not.toBeInTheDocument();
+});
+
+test('财务条件点击查询才生效，导出沿用当前报告，重置清空选择', async () => {
+  const selectInput = jest.spyOn(financeService, 'selectFinanceInventoryReportInput');
+  const download = jest.spyOn(financeService, 'exportFinanceInventoryReport').mockResolvedValue(undefined);
+  const options = financeService.getFinanceInventoryQueryOptions();
+  render(<InventoryFinanceReport reportInput={{ companyCode: options.companies[0].value, plates: [options.plates[0].value], year: 2026, assets: [] }} />);
+  const company = screen.getByRole('combobox', { name: '子公司' });
+  const card = company.closest('.ant-card');
+  expect(within(card).getByRole('button', { name: /查\s*询/ })).toBeInTheDocument();
+  expect(within(card).getByRole('button', { name: /导\s*出/ })).toBeInTheDocument();
+  fireEvent.click(company.closest('.ant-select').querySelector('.ant-select-clear'));
+  expect(selectInput.mock.calls.at(-1)[1].company).toBe(options.companies[0].value);
+  fireEvent.click(screen.getByRole('button', { name: /导\s*出/ }));
+  await waitFor(() => expect(download).toHaveBeenCalledTimes(1));
+  fireEvent.click(screen.getByRole('button', { name: /重\s*置/ }));
+  expect(selectInput.mock.calls.at(-1)[1]).toEqual({ company: '', plates: [], year: new Date().getFullYear() });
+  expect(screen.getByRole('button', { name: /导\s*出/ })).toBeDisabled();
+  selectInput.mockRestore(); download.mockRestore();
 });

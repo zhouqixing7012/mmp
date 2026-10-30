@@ -9,6 +9,8 @@ test('账户显示员工姓名并通过菜单退出演示会话', async () => {
   const listener = jest.fn();
   window.addEventListener('mmp-demo-session-change', listener);
   render(<AdminHeader activeSubMenu="我的资产" />);
+  expect(screen.getByRole('navigation', { name: '面包屑' })).toBeInTheDocument();
+  expect(screen.queryByText('A')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '孙志强，账户菜单' }));
   fireEvent.click(await screen.findByText('退出登录'));
   expect(sessionStorage.getItem('mmp-demo-signed-out')).toBe('1');
