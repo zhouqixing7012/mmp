@@ -1,3 +1,4 @@
+import { officeOptions, knownDepartmentPath } from '../mock/reference/officeReference';
 import { applicationMoveRows } from './applicationMoveProjection';
 import { applicationFilterEntity } from './applicationFilterModel';
 import { getSharedPeople } from './assetReferenceOptions';
@@ -48,6 +49,7 @@ export function selectUnfinishedTodo(record) {
 export function getApplicationOptions(id, field, access = DEFAULT_APPLICATION_ACCESS) {
   assertApplicationAccess(access, id);
   if (field.options) return field.options;
+  if (applicationFilterEntity(field) === 'office') return officeOptions;
   if (field.label === '仓库') {
     const warehouseCodes = new Set(queryApplications(id, {}, null, access).flatMap(row => list(row.filters.warehouse)));
     return assetReportCatalog.warehouses.filter(row => row.status === '启用' && warehouseCodes.has(row.warehouseCode)).map(row => ({ value: row.warehouseCode, code: row.warehouseCode, name: row.warehouseDescription, label: row.warehouseCode + '.' + row.warehouseDescription, company: row.company }));
@@ -65,6 +67,7 @@ export function getApplicationOptions(id, field, access = DEFAULT_APPLICATION_AC
         let name = label;
         // Strip only an exact saved identifier prefix; never split an arbitrary name or organization path.
         for (const separator of ['.', '-']) if (label.startsWith(code + separator)) name = label.slice(code.length + 1);
+        if (entity === 'department') name = knownDepartmentPath(code) || (name.includes('.') ? name : '');
         if (entity === 'person') {
           const person = people.find(item => item.code === code);
           const savedPerson = (field.key === 'receiver' ? row.targetPerson : ['sender', 'applicant'].includes(field.key) ? row.sourcePerson : null);
@@ -73,7 +76,7 @@ export function getApplicationOptions(id, field, access = DEFAULT_APPLICATION_AC
           const cleanName = ['.', '-'].some(separator => explicitName.startsWith(code + separator)) ? explicitName.slice(code.length + 1) : explicitName;
           found.set(code, { value: code, code, name: cleanName, label: cleanName ? `${code}-${cleanName}` : code,
             department: savedIdentity?.department || person?.department || '' });
-        } else found.set(code, { value: code, code, label, name });
+        } else found.set(code, { value: code, code, label: entity === 'department' ? (name ? `${code}.${name}` : code) : label, name });
       }
     });
   });

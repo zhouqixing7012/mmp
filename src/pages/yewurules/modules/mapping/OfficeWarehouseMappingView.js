@@ -1,3 +1,4 @@
+import { mappingCompanyOptions, mappingWarehouseOptions } from '../../../../mock/reference/officeReference';
 import React, { useState } from 'react';
 import { Search, Plus, CheckCircle, XCircle, Download, Edit, Upload } from 'lucide-react';
 import { Button, Input, Select, Modal, Radio } from 'antd';
@@ -6,7 +7,7 @@ import StatusTag from '../../../../components/StatusTag';
 import SelectModal from '../../../../components/SelectModal';
 import QueryBar, { QueryItem } from '../../../../components/QueryBar';
 import {
-  mockCompanies, mockDepartments, mockOfficeWarehouseData, mockOffices, mockWarehouses,
+  mockDepartments, mockOfficeWarehouseData, mockOffices,
 } from '../../../../mock/businessRulesMock';
 
 const OfficeWarehouseMappingView = () => {
@@ -34,6 +35,7 @@ const OfficeWarehouseMappingView = () => {
     { title: '部门', dataIndex: 'dept' },
     { title: '办公区', dataIndex: 'office' },
     { title: '仓库', dataIndex: 'warehouse' },
+    { title: '启用日期', dataIndex: 'enabledDate' },
     { title: '是否启用', dataIndex: 'enabled', render: (val) => <StatusTag value={val} type="enabled" /> },
     { title: '操作', dataIndex: 'action', render: (_, record) => <Button type="link" onClick={() => handleEdit(record)}>编辑</Button> }
   ];
@@ -136,14 +138,14 @@ const OfficeWarehouseMappingView = () => {
       <SelectModal
         open={isCompanyModalOpen}
         title="选择公司"
-        dataSource={mockCompanies}
+        dataSource={mappingCompanyOptions}
         columns={[{ title: '公司编码', dataIndex: 'code' }, { title: '公司描述', dataIndex: 'desc' }]}
         searchFields={[{ label: '公司编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '公司描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
         onCancel={() => setIsCompanyModalOpen(false)}
         onConfirm={(record) => {
           setFormData({
           ...formData,
-          company: record.desc
+          company: record.label
           });
           setIsCompanyModalOpen(false);
         }}
@@ -152,13 +154,13 @@ const OfficeWarehouseMappingView = () => {
         open={isDepartmentModalOpen}
         title="选择部门"
         dataSource={mockDepartments}
-        columns={[{ title: '部门编码', dataIndex: 'code' }, { title: '部门描述', dataIndex: 'desc' }]}
-        searchFields={[{ label: '部门编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '部门描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
+        columns={[{ title: '部门编码', dataIndex: 'code' }, { title: '部门全称', dataIndex: 'fullName' }]}
+        searchFields={[{ label: '部门编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '部门全称', name: 'fullName', dataIndex: 'fullName', placeholder: '请输入描述' }]}
         onCancel={() => setIsDepartmentModalOpen(false)}
         onConfirm={(record) => {
           setFormData({
           ...formData,
-          dept: record.desc
+          dept: `${record.code}.${record.desc}`
           });
           setIsDepartmentModalOpen(false);
         }}
@@ -166,14 +168,14 @@ const OfficeWarehouseMappingView = () => {
       <SelectModal
         open={isWarehouseModalOpen}
         title="选择仓库"
-        dataSource={mockWarehouses}
+        dataSource={mappingWarehouseOptions}
         columns={[{ title: '仓库编码', dataIndex: 'code' }, { title: '仓库描述', dataIndex: 'desc' }]}
         searchFields={[{ label: '仓库编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '仓库描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
         onCancel={() => setIsWarehouseModalOpen(false)}
         onConfirm={(record) => {
           setFormData({
           ...formData,
-          warehouse: record.desc
+          warehouse: record.label
           });
           setIsWarehouseModalOpen(false);
         }}
@@ -182,13 +184,13 @@ const OfficeWarehouseMappingView = () => {
         open={isOfficeModalOpen}
         title="选择办公区"
         dataSource={mockOffices}
-        columns={[{ title: '办公区编码', dataIndex: 'code' }, { title: '办公区描述', dataIndex: 'desc' }]}
+        columns={[{ title: '办公区编码', dataIndex: 'code' }, { title: '办公区名称', dataIndex: 'name' }, { title: '办公区地址', dataIndex: 'address' }]}
         searchFields={[{ label: '办公区编码', name: 'code', dataIndex: 'code', placeholder: '请输入编码' }, { label: '办公区描述', name: 'desc', dataIndex: 'desc', placeholder: '请输入描述' }]}
         onCancel={() => setIsOfficeModalOpen(false)}
         onConfirm={(record) => {
           setFormData({
           ...formData,
-          office: record.desc
+          office: record.label
           });
           setIsOfficeModalOpen(false);
         }}

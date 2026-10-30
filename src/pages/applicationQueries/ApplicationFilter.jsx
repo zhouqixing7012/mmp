@@ -26,7 +26,7 @@ export default function ApplicationFilter({ definition, field, value, onChange, 
       placeholder={`请选择${field.label}`} onOpen={() => setOpen(true)} onClear={() => onChange(field.multiple ? [] : undefined)} />
     <SelectModal title={`选择${field.label}`} open={open} onCancel={() => setOpen(false)} rowKey="value" multiple={Boolean(field.multiple)}
       dataSource={options} initialSelectedKeys={selected}
-      columns={[{ title: `${lookupLabel}编码`, dataIndex: 'code', width: 180 }, { title: `${lookupLabel}名称`, dataIndex: 'name', width: 280 }, ...(entity === 'warehouse' ? [{ title: '公司', dataIndex: 'company', width: 220 }] : [])]}
+      columns={[{ title: `${lookupLabel}编码`, dataIndex: 'code', width: 180 }, { title: entity === 'department' ? '部门全称' : `${lookupLabel}名称`, dataIndex: 'name', width: 280 }, ...(entity === 'office' ? [{ title: '办公区地址', dataIndex: 'address', width: 360 }] : []), ...(entity === 'warehouse' ? [{ title: '公司', dataIndex: 'company', width: 220 }] : [])]}
       searchFields={[{ name: 'code', label: `${lookupLabel}编码`, dataIndex: 'code' }, { name: 'name', label: `${lookupLabel}名称`, dataIndex: 'name' }]}
       onConfirm={result => onChange(field.multiple ? result.map(item => item.value) : result.value)} />
   </>;

@@ -1,3 +1,4 @@
+import { mockProcurementNumber } from './procurementNumbers';
 import { mockDocumentNumber } from './documentNumbers';
 import { materialCatalog } from './reference/materialCatalog';
 import { findMaterialCategory } from './reference/materialCategoryMapping';
@@ -100,7 +101,7 @@ export const reportConsumables = consumableWarehouses.flatMap((warehouse, group)
 export const addedAssets = reportWarehouses.flatMap((warehouse, group) => ['新增入库', '采购接收', '自购入库'].map((type, index) => completedSnapshot(fixture(`add-${group}-${index}`, assetMaterials[index], warehouse, {
   '费用账户': assetReportPresentationSource.finance.account, '资产账簿': assetReportPresentationSource.finance.book,
   '税金': 130, '含税金额': 1130, '入库类型': type, '新增类型': '采购新增',
-  'PO单号': type === '采购接收' ? `PO-DEMO-${group}-${index}` : '',
+  'PO单号': type === '采购接收' ? mockProcurementNumber('PO', `add-${group}-${index}`, '2026-08-31') : '',
 }), '入库完成')));
 addedAssets.push({ ...fixture('add-pending', assetMaterials[0], reportWarehouses[0], { '入库类型': '新增入库' }), documentStatus: '待执行' });
 // 字段结构复用现有账面报废模型：已完成单据的assetsSnapshot保存金额，不在报表分摊。

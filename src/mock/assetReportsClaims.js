@@ -1,3 +1,4 @@
+import { mockProcurementNumber } from './procurementNumbers';
 import { mockDocumentNumber } from './documentNumbers';
 import { reportTag } from './assetReportTags';
 import { assetMaterials, consumableMaterials, reportWarehouses, consumableWarehouses, fixture, assetReportPresentationSource } from './assetReportsFixtures';
@@ -45,7 +46,7 @@ function assetClaimSource(warehouse, group, mode, stage) {
     line: { number: mockDocumentNumber('员工领用申请', `report-assign-${suffix}`, '2026-10-02'), quantity: 2, referencePrice: 1000,
       assignedTags: !purchase && linked ? tags : [] },
     summary: purchase && linked ? { number: mockDocumentNumber('统一申请', `report-summary-${suffix}`, '2026-10-02'), suggestion: '汇总单采购建议', person: '213852.孙志强' } : null,
-    procurement: purchase && linked ? { request: `PR-DEMO-${suffix}`, po: `PO-DEMO-${suffix}`, status: '已完成', taxIncludedUnitPrice: 1130 } : null,
+    procurement: purchase && linked ? { request: mockProcurementNumber('PR', suffix, '2026-10-02'), po: mockProcurementNumber('PO', suffix, '2026-10-02'), status: '已完成', taxIncludedUnitPrice: 1130 } : null,
     claim: { abandoned: received ? '否' : '', tags: received ? tags : [] },
     outbound: received ? { number: mockDocumentNumber('出库工单', `report-claim-${suffix}`, '2026-10-03'), auditedAt: '2026-10-03 09:00:00', quantity: 2, confirmation: '刷卡', handSigned: '否' } : null,
   };
@@ -92,8 +93,8 @@ export const consumableClaims = consumableWarehouses.flatMap((warehouse, group) 
     '配给单审核完成时间': '2026-10-02 09:00:00', '耗材统一汇总单号': mockDocumentNumber('统一申请', `report-consum-summary-${group}-${index}`, '2026-10-02'),
     '审批节点': completed ? '' : 'ES主管审批', '当前审批人名称': completed ? '' : 'DEMO-HEWEN.何文',
     '申请数量': quantity, '参考单价': price, '预计采购金额': quantity * price, '汇总提交人名称': '213852.孙志强',
-    'ES建议': '汇总单建议', '采购申请单号': completed ? `PR-CONSUM-DEMO-${group}-${index}` : '', '采购申请状态': completed ? '已完成' : '',
-    'PO单号': completed ? `PO-CONSUM-DEMO-${group}-${index}` : '', 'PO状态': completed ? '已完成' : '',
+    'ES建议': '汇总单建议', '采购申请单号': completed ? mockProcurementNumber('PR', `consumable-${group}-${index}`, '2026-10-02') : '', '采购申请状态': completed ? '已完成' : '',
+    'PO单号': completed ? mockProcurementNumber('PO', `consumable-${group}-${index}`, '2026-10-02') : '', 'PO状态': completed ? '已完成' : '',
     '采购数量': completed ? 2 : null, '采购单价': completed ? 56.5 : null, '采购金额': completed ? 113 : null,
     '是否弃领': completed ? '否' : '', '领用出库单号': completed ? mockDocumentNumber('出库工单', `report-consum-${group}-${index}`, '2026-10-03') : '',
     '出库日期': completed ? '2026-10-03 09:00:00' : '', '员工确认方式': completed ? '刷卡' : '',

@@ -5,7 +5,7 @@ import { DetailGrid, DetailItem } from '../../components/DetailGrid';
 import ClaimSummaryDetail from './ClaimSummaryDetail';
 import { displayApplicationValue } from './LegacyStorageDetail';
 
-const newEmployeeColumns = [['资产标签号', 'tag'], ['序列号', 'serialNo'], ['物资总类', 'materialType'], ['大类', 'majorCategory'], ['物资名称', 'materialDescription'], ['申请数量', 'requestedQuantity'], ['领用数量', 'receivedQuantity'], ['资产状态', 'assetStatus'], ['PR单号', 'prNo']];
+const newEmployeeColumns = [['资产标签号', 'tag'], ['序列号', 'serialNo'], ['大类', 'majorCategory'], ['资产说明', 'materialDescription'], ['申请数量', 'requestedQuantity'], ['领用数量', 'receivedQuantity'], ['资产状态', 'assetStatus'], ['PR单号', 'prNo']];
 // 长文本在本业务页面逐字段指定整行，公共详情网格不按字段名推断宽度。
 const assetLineFields = [['序列号', 'serialNo'], ['公司', 'company'], ['板块', 'plate'], ['启用日期', 'enabledAt'], ['实际物资说明', 'actualDescription', 3], ['配置', 'configuration', 3], ['备注', 'remark', 3], ['城市', 'city'], ['楼层', 'floor'], ['资产用途', 'assetPurpose'], ['申请物资说明', 'requestedDescription', 3], ['申请原因', 'reason', 3], ['详细说明', 'detailDescription', 3]];
 function ClaimLine({ line, onComponents }) {

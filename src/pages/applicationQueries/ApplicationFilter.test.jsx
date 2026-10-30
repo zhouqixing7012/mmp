@@ -49,3 +49,17 @@ test('新员工公司仍为多选弹窗，子公司和板块使用下拉，部�
   fireEvent.click(screen.getByRole('textbox', { name: '部门' }));
   expect(within(await screen.findByRole('dialog')).getByRole('columnheader', { name: '部门编码' })).toBeInTheDocument();
 });
+
+test('办公区弹窗在名称后显示地址，新员工详情使用资产说明并去掉物资总类', async () => {
+  const definition = getApplicationDefinition('newEmployee');
+  const { unmount } = render(<ApplicationFilter definition={definition} field={definition.filters.find(field => field.key === 'office')} onChange={jest.fn()} />);
+  fireEvent.click(screen.getByRole('textbox', { name: '办公区' }));
+  const dialog = await screen.findByRole('dialog');
+  expect(within(dialog).getAllByRole('columnheader').map(cell => cell.textContent)).toEqual(['', '办公区编码', '办公区名称', '办公区地址']);
+  unmount();
+  render(<ApplicationQueryPage id="newEmployee" />);
+  fireEvent.click(screen.getByRole('button', { name: queryApplications('newEmployee')[0].values.applicationNo }));
+  expect(screen.getByRole('columnheader', { name: '资产说明' })).toBeInTheDocument();
+  expect(screen.queryByRole('columnheader', { name: '物资名称' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('columnheader', { name: '物资总类' })).not.toBeInTheDocument();
+}, 30000);

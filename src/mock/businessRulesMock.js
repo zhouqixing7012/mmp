@@ -1,3 +1,4 @@
+import { officeOptions, officeWarehouseMappings, departmentPathOptions } from './reference/officeReference';
 import accountBookContents from './reference/accountBookContents.json';
 // Mock 数据集中管理，后续接真实接口时只改这一个文件
 
@@ -47,13 +48,18 @@ export const mockCompanies = [
 ];
 
 // 部门
-export const mockDepartments = [
+const existingDepartments = [
   { id: 1, code: 'D0001', desc: '集团总部' },
   { id: 2, code: 'D0002', desc: '财务中心' },
   { id: 3, code: 'D0003', desc: '法律中心' },
   { id: 4, code: 'D0161', desc: '搜狐媒体' },
   { id: 5, code: 'D0164', desc: '搜狐媒体_社会招聘' },
 ];
+
+export const mockDepartments = [...new Set([...existingDepartments.map(row => row.code), ...departmentPathOptions.map(row => row.code)])].map((code, index) => ({
+  id: index + 1, code, desc: departmentPathOptions.find(row => row.code === code)?.name || existingDepartments.find(row => row.code === code)?.desc || '',
+  fullName: departmentPathOptions.find(row => row.code === code)?.name || '',
+}));
 
 // 仓库
 export const mockWarehouses = [
@@ -95,16 +101,11 @@ export const mockModelListData = [
 ];
 
 // 办公区
-export const mockOffices = [
-  { id: 1, code: 'L062', desc: '北京-搜狐媒体大厦' },
-  { id: 2, code: 'L063', desc: '北京-搜狐网络大厦' },
-  { id: 3, code: 'L064', desc: '上海-搜狐媒体大厦' },
-];
-
-export const mockOfficeWarehouseData = [
-  { id: 1, company: 'WJS.北京搜狐互联网信息服务有限公司', dept: 'D0164.搜狐媒体.社交产品中心', office: 'L062.北京-搜狐媒体大厦', warehouse: 'I0015.资产集团前台库（互联网）', enabled: true },
-  { id: 2, company: '420.上海搜狐互联网有限公司', dept: 'D0164.搜狐媒体.社交产品中心', office: 'L064.上海-搜狐媒体大厦', warehouse: 'I3001.资产库上海库', enabled: true },
-];
+export const mockOffices = officeOptions;
+export const mockOfficeWarehouseData = officeWarehouseMappings.map((row, index) => ({ id: index + 1,
+  company: row.company, dept: row.department, office: officeOptions.find(office => office.code === row.officeCode)?.label || row.officeCode,
+  warehouse: row.warehouse, enabled: true, enabledDate: row.enabledDate,
+}));
 
 // 城市
 export const mockCities = [

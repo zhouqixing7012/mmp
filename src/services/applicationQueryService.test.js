@@ -46,10 +46,10 @@ test('申请状态遵循PRD名称，筛选与导出使用一致状态', () => {
   }
   const employee = queryApplications('newEmployee')[0];
   expect(employee.head['单据状态']).toBe('处理中');
-  expect(employee.head['资产配置']).toBe('资产配置示例（演示）');
+  expect(employee.head['资产配置']).toBe(employee.filters.configuration);
   const configuration = getApplicationDefinition('newEmployee').filters.find(field => field.key === 'configuration');
   expect(getApplicationOptions('newEmployee', configuration)).toContainEqual(
-    expect.objectContaining({ value: employee.filters.configuration, label: '资产配置示例（演示）' }),
+    expect.objectContaining({ value: employee.filters.configuration, label: employee.filters.configuration }),
   );
 });
 test('退库查询不提供删除，调用删除也不改变申请或业务锁', () => {
