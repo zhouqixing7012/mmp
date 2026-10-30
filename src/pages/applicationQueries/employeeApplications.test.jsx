@@ -28,7 +28,7 @@ test('更换分别展示退回待发放鉴定和进度，不出现办理按钮',
   expect(screen.getByText('退回物资信息')).toBeInTheDocument(); expect(screen.getByText('待发放物资信息')).toBeInTheDocument();
   expect(screen.getByText(record.identification.explanation)).toBeInTheDocument();
   record.lines.concat(record.pendingLines).forEach(line => expect(screen.getByText(line.tag)).toBeInTheDocument());
-  fireEvent.click(screen.getByRole('button', { name: '查看进度' })); expect(onProgress).toHaveBeenCalledWith(record);
+  expect(screen.queryByRole('button', { name: '查看进度' })).not.toBeInTheDocument(); expect(onProgress).not.toHaveBeenCalled();
   expect(screen.queryByRole('button', { name: '添加' })).not.toBeInTheDocument();
 });
 test('部件入口只读取对应资产部件', () => {

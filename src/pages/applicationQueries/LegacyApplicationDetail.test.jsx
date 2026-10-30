@@ -104,3 +104,16 @@ test('已完成移库打印与返回属于同一个居中操作栏，返回真�
   expect(back.closest('.ant-space').style.justifyContent).toBe('center');
   fireEvent.click(back); expect(onBack).toHaveBeenCalledTimes(1);
 });
+
+test('退库信息独立分区，退库仓库显示于右上角，鉴定记录按有效PRD保留', () => {
+  const record = open('return-3');
+  const info = screen.getByText('退库信息').closest('.ant-card');
+  expect(Array.from(info.querySelectorAll('dt')).map(node => node.textContent)).toEqual(['退库单号', '单据状态', '退库类型', '退库原因', 'MIS鉴定']);
+  expect(within(info).getByText(record.values.applicationNo)).toBeInTheDocument();
+  expect(info.querySelector('[data-prototype-detail-value="MIS鉴定"]')).toHaveTextContent('否');
+  const applicant = screen.getByText('申请人信息').closest('.ant-card');
+  expect(applicant.querySelector('.ant-card-extra')).toHaveTextContent(`退库仓库：${record.lookupLabels.warehouse}`);
+  expect(within(applicant).queryByText('退库类型')).not.toBeInTheDocument();
+  ['鉴定人', '鉴定日期', '鉴定结果', '鉴定说明'].forEach(label => expect(screen.getByText(label, { selector: 'dt' })).toBeInTheDocument());
+  expect(screen.queryByRole('button', { name: '查看进度' })).not.toBeInTheDocument();
+});

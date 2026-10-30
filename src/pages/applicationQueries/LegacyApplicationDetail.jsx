@@ -7,15 +7,20 @@ import LegacyStorageDetail, { displayApplicationValue, LegacyFields } from './Le
 const dateText = value => displayApplicationValue(value) === '-' ? '-' : String(value).slice(0, 10);
 const historyColumns = [{ title: '审批环节', dataIndex: 'node', width: 170 }, { title: '审批人', dataIndex: 'approver', width: 170 }, { title: '审批状态', dataIndex: 'status', width: 110, render: value => displayApplicationValue(value) === '-' ? '-' : <StatusTag value={value} /> }, { title: '审批时间', dataIndex: 'time', width: 130, render: dateText }, { title: '审批意见', dataIndex: 'opinion' }];
 const accessoryColumns = [{ title: '标签号', dataIndex: 'tag', width: 160 }, { title: '小类', key: 'minor', width: 180, render: (_, row) => displayApplicationValue(row.material.minorCategory) }, { title: '资产说明', key: 'description', width: 260, render: (_, row) => displayApplicationValue(row.material.materialDescription) }, { title: '品牌', key: 'brand', width: 130, render: (_, row) => displayApplicationValue(row.material.brand) }, { title: '数量', dataIndex: 'quantity', width: 90, render: value => displayApplicationValue(value) === '-' ? '-' : Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 6 }) }, { title: '启用时间', dataIndex: 'enabledDate', width: 120, render: dateText }].map(column => ({ render: displayApplicationValue, ...column }));
-export default function LegacyApplicationDetail({ definition, record, onBack, onProgress }) {
+export default function LegacyApplicationDetail({ definition, record, onBack }) {
   const [dialog, setDialog] = useState(null);
   const lines = record.kind === 'borrow' ? record.lines : [record.lines[0]];
   const activeLine = dialog?.line;
+  const returnLabels = ['退库单号', '单据状态', '退库类型', '退库原因', 'MIS鉴定'];
+  const applicantFields = record.kind === 'return' ? record.head.filter(([label]) => !returnLabels.includes(label)) : record.head;
+  const returnFields = record.kind === 'return' ? returnLabels.map(label => [label, record.head.find(([key]) => key === label)?.[1]]) : [];
+
   const columns = (record.kind === 'borrow' ? [...historyColumns.slice(0, 2), { title: '代理人', key: 'agent', width: 120, render: () => '-' }, ...historyColumns.slice(2)] : historyColumns).map(column => ({ render: displayApplicationValue, ...column }));
   return <Space orientation="vertical" size={16} style={{ width: '100%' }} data-mmp-page-title={(record.extension ? '续借申请详情' : definition.title + '详情')}>
     {null}
     {record.kind === 'storage' ? <LegacyStorageDetail record={record} onBack={onBack} /> : <>
-      <Card title="申请人信息" extra={record.values.applicationNo}><LegacyFields fields={record.head.map(([label, value]) => [record.kind === 'return' && label === '退库单号' ? '入库单号' : label, value])} fullWidthLabels={['退库原因']} /></Card>
+      <Card title="申请人信息" extra={record.kind === 'return' ? `退库仓库：${displayApplicationValue(record.lookupLabels?.warehouse)}` : record.values.applicationNo}><LegacyFields fields={applicantFields} /></Card>
+      {record.kind === 'return' && <Card title="退库信息"><LegacyFields fields={returnFields} fullWidthLabels={['退库原因']} /></Card>}
       {lines.map((line, index) => <React.Fragment key={line.id}>
         <Card title={(record.extension ? '续借信息' : '资产信息') + (lines.length > 1 ? '（' + (index + 1) + '）' : '')}>
           <LegacyFields fields={[
@@ -30,7 +35,7 @@ export default function LegacyApplicationDetail({ definition, record, onBack, on
       </React.Fragment>)}
       <Card title="审批记录"><Table rowKey="id" columns={columns} dataSource={record.history} pagination={false} scroll={{ x: 'max-content' }} /></Card>
     </>}
-    {record.kind !== 'storage' && <Space style={{ display: 'flex', justifyContent: 'center' }}><Button onClick={onBack}>返回</Button>{record.kind !== 'storage' && <Button onClick={() => onProgress(record)}>查看进度</Button>}</Space>}
+    {record.kind !== 'storage' && <Space style={{ display: 'flex', justifyContent: 'center' }}><Button onClick={onBack}>返回</Button></Space>}
     <Modal className="mmp-application-modal" open={Boolean(dialog)} title={dialog?.type === 'accessories' ? '配件明细' : '资产明细'} width={960} footer={null} onCancel={() => setDialog(null)} destroyOnHidden>
       {dialog?.type === 'asset' && <LegacyFields fields={activeLine.info} fullWidthLabels={['物资说明', '配置', '备注']} />}
       {dialog?.type === 'accessories' && <Table rowKey="id" columns={accessoryColumns} dataSource={activeLine.accessories} pagination={false} scroll={{ x: 'max-content' }} />}

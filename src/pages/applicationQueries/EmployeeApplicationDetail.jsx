@@ -8,7 +8,7 @@ const historyColumns = [
   { title: '代理人', dataIndex: 'agent', width: 130 }, { title: '审批状态', dataIndex: 'status', width: 100 },
   { title: '审批时间', dataIndex: 'time', width: 180 }, { title: '审批意见', dataIndex: 'opinion', width: 220 },
 ].map(column => ({ render: displayApplicationValue, ...column }));
-export default function EmployeeApplicationDetail({ definition, record, onBack, onProgress }) {
+export default function EmployeeApplicationDetail({ definition, record, onBack }) {
   const [accessoryLine, setAccessoryLine] = useState(null);
   const transfer = record.kind === 'transfer';
   const number = value => displayApplicationValue(value) === '-' ? '-' : Number(value).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
@@ -40,7 +40,7 @@ export default function EmployeeApplicationDetail({ definition, record, onBack, 
       ]} fullWidthLabels={['鉴定说明']} /></Card>
     </>}
     <Card size="small" title="审批记录"><Table rowKey="id" size="small" bordered columns={historyColumns} dataSource={record.history} pagination={false} scroll={{ x: 'max-content' }} /></Card>
-    <Space style={{ display: 'flex', justifyContent: 'center' }}><Button onClick={onBack}>返回</Button><Button onClick={() => onProgress(record)}>查看进度</Button></Space>
+    <Space style={{ display: 'flex', justifyContent: 'center' }}><Button onClick={onBack}>返回</Button></Space>
     <Modal className="mmp-application-modal" title="部件明细" open={Boolean(accessoryLine)} onCancel={() => setAccessoryLine(null)} footer={null} width={900} destroyOnHidden>
       <Table rowKey="id" size="small" bordered pagination={false} dataSource={accessoryLine?.accessories || []} columns={[
         column('资产标签号', 'tag'), column('物料说明', 'description', { width: 260, render: (_, item) => displayApplicationValue(item.material.materialDescription) }),

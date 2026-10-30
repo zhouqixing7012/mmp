@@ -3,6 +3,7 @@ jest.mock('@rc-component/picker/locale/en_US', () => jest.requireActual('@rc-com
 jest.mock('@rc-component/picker/generate/dayjs', () => jest.requireActual('@rc-component/picker/lib/generate/dayjs'), { virtual: true });
 import React from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import * as applicationService from '../../services/applicationQueryService';
 import { queryApplications } from '../../services/applicationQueryService';
 import ApplicationQueriesContent, { APPLICATION_PAGE_IDS } from './index';
 import { MAIN_MENU_ITEMS, APPLICATION_MENU_ITEMS } from '../yewurules/config/menuConfig';
@@ -37,10 +38,26 @@ test('查询编辑后执行才更新列表，详情返回保留查询，进度�
   fireEvent.click(screen.getByRole('button', { name: number }));
   expect(screen.queryByRole('heading', { name: '退库单详情' })).not.toBeInTheDocument();
   expect(document.querySelector('[data-mmp-page-title="退库单详情"]')).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: /查看进度/ }));
+  expect(screen.queryByRole('button', { name: /查看进度/ })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /返\s*回/ }));
+  fireEvent.click(screen.getAllByRole('button', { name: '查看' })[0]);
   const dialog = await screen.findByRole('dialog');
   expect(within(dialog).getAllByRole('row').length).toBeGreaterThan(1);
   fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
-  fireEvent.click(screen.getByRole('button', { name: /返\s*回/ }));
   await waitFor(() => expect(screen.getByRole('textbox', { name: '申请单号' })).toHaveValue(''));
+});
+
+ test('退库列表去掉赔偿列，统一导出菜单传递全部或当前分页范围', async () => {
+  const download = jest.spyOn(applicationService, 'exportApplications').mockImplementation(() => {});
+  try {
+    render(<ApplicationQueriesContent activeSubMenu="退库单" />);
+    expect(screen.queryByRole('columnheader', { name: '是否赔偿' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '导出当前页' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /导出/ }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: '导出全部' }));
+    expect(download).toHaveBeenLastCalledWith('return', {}, null, null);
+    fireEvent.click(screen.getByRole('button', { name: /导出/ }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: '导出当前页' }));
+    expect(download).toHaveBeenLastCalledWith('return', {}, null, { current: 1, pageSize: 10 });
+  } finally { download.mockRestore(); }
 });

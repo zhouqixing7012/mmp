@@ -1,6 +1,7 @@
 import { APPLICATION_WEEKLY_RULE } from '../../services/applicationWeeklyReport';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Modal, Space, Typography, message } from 'antd';
+import { Alert, Button, Dropdown, Modal, Space, Typography, message } from 'antd';
+import { DownOutlined } from '@ant-design/icons';
 import Table, { BusinessCard as Card } from '../../components/businessQuery/BusinessTable';
 import AppliedFilterSummary, { filterSummaryItems } from '../../components/businessQuery/AppliedFilterSummary';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
@@ -57,7 +58,7 @@ export default function ApplicationQueryPage({ id }) {
   ];
   const Detail = definition.detailType === 'employee' ? EmployeeApplicationDetail : ['storage', 'return', 'borrow'].includes(id) ? LegacyApplicationDetail : ClaimApplicationDetail;
   return <div className="flex flex-col gap-4 min-w-0">
-    {detail ? <Detail definition={definition} record={detail.record} view={detail.view} onBack={goBack} onProgress={setProgress} /> : <>
+    {detail ? <Detail definition={definition} record={detail.record} view={detail.view} onBack={goBack} /> : <>
       <span hidden data-mmp-page-title>{definition.title}</span>
       {id === 'unfinished' && <Alert type="info" title={`未完成员工申请周报：每周${'日一二三四五六'[APPLICATION_WEEKLY_RULE.weekday]} ${APPLICATION_WEEKLY_RULE.time}（北京时间），通过${APPLICATION_WEEKLY_RULE.channel}发送给 ${APPLICATION_WEEKLY_RULE.recipients.join('、')}。`} description="原型可查询、导出汇总清单；真实定时发送尚未接入。" />}
       <QueryBar labelWidth={84} onQuery={onQuery} onReset={reset}>
@@ -67,8 +68,10 @@ export default function ApplicationQueryPage({ id }) {
       </QueryBar>
       <Card size="small" title="查询结果" extra={<Space wrap>
         <Typography.Text type="secondary">共 {rows.length} 条</Typography.Text>
-        {definition.actions.export && <Button onClick={() => download(null)}>导出</Button>}
-        {(id === 'storage' || definition.actions.pageExport) && <Button onClick={() => download(pagination)}>导出当前页</Button>}
+        {definition.actions.export && <Dropdown trigger={['click']} menu={{
+          items: [{ key: 'all', label: '导出全部' }, ...((id === 'storage' || definition.actions.pageExport) ? [{ key: 'page', label: '导出当前页' }] : [])],
+          onClick: ({ key }) => download(key === 'page' ? pagination : null),
+        }}><Button>导出 <DownOutlined /></Button></Dropdown>}
       </Space>}>
         <AppliedFilterSummary items={filterSummaryItems(definition.filters, applied, field => field.key, field => getApplicationOptions(id, field))} onClear={reset} />
         {definition.actions.remove && selection.length > 0 && <div className="mmp-query-batch-bar" role="region" aria-label="所选单据批量操作">
