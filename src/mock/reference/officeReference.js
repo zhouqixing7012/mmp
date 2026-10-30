@@ -13,6 +13,21 @@ export function knownDepartmentPath(value) {
   const code = String(value || '').split('.')[0];
   return departmentPathOptions.find(row => row.code === code)?.name || '';
 }
+// 全称须有完整路径来源；部门简称不补造中间层级。
+export function departmentFullName(value) {
+  const text = String(value || '').trim();
+  const separator = text.indexOf('.');
+  const code = separator < 0 ? text : text.slice(0, separator);
+  const savedName = separator < 0 ? '' : text.slice(separator + 1);
+  return knownDepartmentPath(code) || (savedName.includes('.') ? savedName : '');
+}
+export function displayDepartmentPath(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  const code = text.split('.')[0];
+  const name = departmentFullName(text);
+  return name ? `${code}.${name}` : code;
+}
 function mappingOptions(field) {
   return [...new Set(source.records.map(row => row[field]))].map(label => {
     const separator = label.indexOf('.'), code = label.slice(0, separator), name = label.slice(separator + 1);

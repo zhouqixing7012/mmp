@@ -1,4 +1,4 @@
-import { officeOptions, knownDepartmentPath } from '../mock/reference/officeReference';
+import { officeOptions, departmentFullName, displayDepartmentPath } from '../mock/reference/officeReference';
 import { applicationMoveRows } from './applicationMoveProjection';
 import { applicationFilterEntity } from './applicationFilterModel';
 import { getSharedPeople } from './assetReferenceOptions';
@@ -62,12 +62,12 @@ export function getApplicationOptions(id, field, access = DEFAULT_APPLICATION_AC
     if (id === 'unfinished' && row.statusCode !== '3') return;
     list(row.filters[field.key]).filter(value => !empty(value)).forEach(value => {
       if (!found.has(String(value))) {
-        const code = String(value);
+        const code = entity === 'department' ? String(value).split('.')[0] : String(value);
         const label = String(row.optionLabels?.[field.key]?.[value] ?? row.lookupLabels?.[field.key] ?? row.values[field.key] ?? code);
         let name = label;
         // Strip only an exact saved identifier prefix; never split an arbitrary name or organization path.
         for (const separator of ['.', '-']) if (label.startsWith(code + separator)) name = label.slice(code.length + 1);
-        if (entity === 'department') name = knownDepartmentPath(code) || (name.includes('.') ? name : '');
+        if (entity === 'department') name = departmentFullName(`${code}.${name}`);
         if (entity === 'person') {
           const person = people.find(item => item.code === code);
           const savedPerson = (field.key === 'receiver' ? row.targetPerson : ['sender', 'applicant'].includes(field.key) ? row.sourcePerson : null);
@@ -76,7 +76,7 @@ export function getApplicationOptions(id, field, access = DEFAULT_APPLICATION_AC
           const cleanName = ['.', '-'].some(separator => explicitName.startsWith(code + separator)) ? explicitName.slice(code.length + 1) : explicitName;
           found.set(code, { value: code, code, name: cleanName, label: cleanName ? `${code}-${cleanName}` : code,
             department: savedIdentity?.department || person?.department || '' });
-        } else found.set(code, { value: code, code, label: entity === 'department' ? (name ? `${code}.${name}` : code) : label, name });
+        } else found.set(code, { value: entity === 'department' ? String(value) : code, code, label: entity === 'department' ? (name ? `${code}.${name}` : code) : label, name });
       }
     });
   });
@@ -130,7 +130,12 @@ export function queryApplications(id, filters = {}, sort = null, access = DEFAUL
     if (!line.originalLineId) throw new Error('汇总明细缺少原申请明细关联');
     return allowedOriginalLines.has(line.originalLineId);
   }) } } : row);
-  return scopedRows.map(row => id === 'unfinished' ? { ...row, values: { ...row.values, node: selectUnfinishedTodo(row)?.node || '', approver: selectUnfinishedTodo(row)?.approver || '' } } : row);
+  const displayRows = scopedRows.map(row => id === 'borrow' ? {
+    ...row,
+    values: { ...row.values, department: displayDepartmentPath(row.values.department) },
+    head: row.head.map(([label, value]) => [label, label === '部门' ? displayDepartmentPath(value) : value]),
+  } : row);
+  return displayRows.map(row => id === 'unfinished' ? { ...row, values: { ...row.values, node: selectUnfinishedTodo(row)?.node || '', approver: selectUnfinishedTodo(row)?.approver || '' } } : row);
 }
 export function formatApplicationValue(value, format) {
   if (empty(value)) return '';
