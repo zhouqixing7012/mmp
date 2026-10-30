@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Button, Modal, Space } from 'antd';
 import Table, { BusinessCard as Card } from '../../components/businessQuery/BusinessTable';
-import StatusTag from '../../components/StatusTag';
+import { renderApplicationStatus } from './ApplicationStatus';
 import LegacyStorageDetail, { displayApplicationValue, LegacyFields } from './LegacyStorageDetail';
 
 const dateText = value => displayApplicationValue(value) === '-' ? '-' : String(value).slice(0, 10);
-const historyColumns = [{ title: '审批环节', dataIndex: 'node', width: 170 }, { title: '审批人', dataIndex: 'approver', width: 170 }, { title: '审批状态', dataIndex: 'status', width: 110, render: value => displayApplicationValue(value) === '-' ? '-' : <StatusTag value={value} /> }, { title: '审批时间', dataIndex: 'time', width: 130, render: dateText }, { title: '审批意见', dataIndex: 'opinion' }];
+const historyColumns = [{ title: '审批环节', dataIndex: 'node', width: 170 }, { title: '审批人', dataIndex: 'approver', width: 170 }, { title: '审批状态', dataIndex: 'status', width: 110, render: renderApplicationStatus }, { title: '审批时间', dataIndex: 'time', width: 130, render: dateText }, { title: '审批意见', dataIndex: 'opinion' }];
 const renewalColumns = [
   { title: '资产标签号', dataIndex: '资产标签号', width: 170 },
   { title: '资产说明', dataIndex: '资产说明', width: 280 },

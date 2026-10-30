@@ -4,7 +4,7 @@ import { App, Button, Card, DatePicker, Input, Popconfirm, Select, Space } from 
 import Table from '../../components/tableAlignment/AlignedTable';
 import dayjs from 'dayjs';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
-import StatusTag from '../../components/StatusTag';
+import { renderApplicationStatus } from './ApplicationStatus';
 import TransferLookup, { transferChoices } from './TransferLookup';
 import TransferOrderEditor from './TransferOrderEditor';
 import { applicationTransferService as service } from '../../services/applicationTransferService';
@@ -27,7 +27,7 @@ export function ExecutionTransferPage() {
     { title: '行号', width: 65, render: (_, row, index) => (page.current - 1) * page.pageSize + index + 1 },
     { title: '转移单号', dataIndex: 'number', width: 200, render: (value, row) => <Button type="link" onClick={() => open(row, true)}>{value}</Button> },
     { title: '申请单号', dataIndex: 'applicationNo', width: 200 },
-    { title: '单据状态', dataIndex: 'status', width: 100, render: value => <StatusTag status={value} /> },
+    { title: '单据状态', dataIndex: 'status', width: 100, render: renderApplicationStatus },
     { title: '公司', dataIndex: 'company', width: 180 },
     { title: '制单日期', dataIndex: 'createdAt', width: 120, render: value => value.slice(0, 10) },
     { title: '制单人', dataIndex: 'creator', width: 130, render: value => references.people.find(row => row.id === value)?.name || value },

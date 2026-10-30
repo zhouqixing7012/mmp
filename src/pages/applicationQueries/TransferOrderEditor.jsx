@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { App, Button, Card, Input, Popconfirm, Space } from 'antd';
 import Table from '../../components/tableAlignment/AlignedTable';
 import { DetailGrid, DetailItem } from '../../components/DetailGrid';
-import StatusTag from '../../components/StatusTag';
+import { renderApplicationStatus } from './ApplicationStatus';
 import SelectModal from '../../components/SelectModal';
 import TransferLookup, { transferChoices } from './TransferLookup';
 import TransferDetailDialog from './TransferDetailDialog';
@@ -48,7 +48,7 @@ export default function TransferOrderEditor({ initial, readOnly, references, onB
     <Card title={edit ? '转移单填写' : '转移单详情'} size="small" extra={order.number}>
       <DetailGrid>
         <DetailItem label="单据类型">转移单</DetailItem>
-        <DetailItem label="单据状态"><StatusTag status={order.status} /></DetailItem>
+        <DetailItem label="单据状态">{renderApplicationStatus(order.status)}</DetailItem>
         <DetailItem label="*公司"><TransferLookup title="公司" options={transferChoices(references.warehouses.filter(row => row.status === '启用').map(row => row.company))} value={order.company} onChange={company => setOrder({ ...order, company })} disabled={!edit} /></DetailItem>
         <DetailItem label="制单人">{person(order.creator)}</DetailItem>
         <DetailItem label="制单时间">{order.createdAt.slice(0, 10)}</DetailItem>

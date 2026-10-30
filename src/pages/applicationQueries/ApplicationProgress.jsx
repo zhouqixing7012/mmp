@@ -1,4 +1,5 @@
 import React from 'react';
+import { renderApplicationStatus } from './ApplicationStatus';
 import { Modal, Typography } from 'antd';
 import Table from '../../components/businessQuery/BusinessTable';
 import { applicationProgressRecords, formatApplicationValue } from '../../services/applicationQueryService';
@@ -6,7 +7,7 @@ import { applicationProgressRecords, formatApplicationValue } from '../../servic
 const readOnlyValue = value => value == null || (typeof value === 'string' && !value.trim()) ? '-' : value;
 const columns = [
   { title: '审批环节', dataIndex: 'node', width: 160, render: readOnlyValue }, { title: '审批人', dataIndex: 'approver', width: 180, render: readOnlyValue },
-  { title: '审批状态', dataIndex: 'status', width: 120, render: readOnlyValue },
+  { title: '审批状态', dataIndex: 'status', width: 120, render: renderApplicationStatus },
   { title: '审批时间', dataIndex: 'time', width: 130, render: value => value ? formatApplicationValue(value, 'date') : '-' },
   { title: '审批意见', dataIndex: 'opinion', width: 220, render: value => <span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{readOnlyValue(value)}</span> },
 ];

@@ -88,3 +88,10 @@ test('汇总提交人打开所点行对应的汇总明细，进度保留外部�
   expect(within(dialog).queryByText(/未连接外部系统|关联流程演示记录/)).not.toBeInTheDocument();
   purchase.progressSections.forEach(section => expect(within(dialog).getByText(section.title)).toBeInTheDocument());
 });
+
+test.each([['资产申请单', 'asset'], ['耗材申请单', 'consumable'], ['新员工领用单', 'newEmployee']])('%s列表单据状态使用统一标签', (menu, id) => {
+  const record = queryApplications(id)[0];
+  render(<ApplicationQueriesContent activeSubMenu={menu} />);
+  const tr = Array.from(document.querySelectorAll('tr[data-row-key]')).find(node => node.getAttribute('data-row-key') === record.id);
+  expect(within(tr).getByText(record.values.status).closest('.ant-tag')).not.toBeNull();
+});

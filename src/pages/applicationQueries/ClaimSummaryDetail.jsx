@@ -1,4 +1,5 @@
 import React from 'react';
+import { renderApplicationStatus } from './ApplicationStatus';
 import { Alert, Button, Space } from 'antd';
 import Table, { BusinessCard as Card } from '../../components/businessQuery/BusinessTable';
 import * as XLSX from 'xlsx';
@@ -32,7 +33,7 @@ const makeColumns = items => [{ title: '序号', key: 'index', width: 70, render
   title, dataIndex, key: dataIndex,
   width: title.includes('说明') || title.includes('信息') ? 220 : 150,
   align: money || numericFields.has(dataIndex) ? 'right' : undefined,
-  render: money ? claimMoney : readOnlyValue,
+  render: dataIndex === 'poStatus' ? renderApplicationStatus : money ? claimMoney : readOnlyValue,
 }))];
 function summaryTotal(columns, rows, quantityKey, amountKey) {
   const quantityIndex = columns.findIndex(column => column.dataIndex === quantityKey);

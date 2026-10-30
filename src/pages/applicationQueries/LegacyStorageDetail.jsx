@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Button, Modal, Space } from 'antd';
 import Table, { BusinessCard as Card } from '../../components/businessQuery/BusinessTable';
 import DetailGrid, { DetailItem } from '../../components/DetailGrid';
-import StatusTag from '../../components/StatusTag';
+import { renderApplicationStatus } from './ApplicationStatus';
 
 // 仅处理普通展示空值，不替换真实数值0，也不吞掉加载错误。
 export function displayApplicationValue(value) {
@@ -14,8 +14,8 @@ function displayValue(label, value) {
   if (/数量$/.test(label) && value != null && String(value).trim() !== '' && Number.isFinite(Number(value))) return Number(value).toLocaleString('zh-CN', { maximumFractionDigits: 6 });
   return displayApplicationValue(value);
 }
-export function LegacyFields({ fields, fullWidthLabels = [], spans = {}, labelWidth = 96 }) {
-  return <DetailGrid labelWidth={labelWidth}>{fields.map(([label, value], index) => <DetailItem key={label + index} label={label} span={fullWidthLabels.includes(label) ? 3 : spans[label] || 1}><span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{displayValue(label, value)}</span></DetailItem>)}</DetailGrid>;
+export function LegacyFields({ fields, fullWidthLabels = [], spans = {}, labelWidth = 96, statusLabels = ['单据状态', '资产状态', '移库状态', '鉴定结果'] }) {
+  return <DetailGrid labelWidth={labelWidth}>{fields.map(([label, value], index) => <DetailItem key={label + index} label={label} span={fullWidthLabels.includes(label) ? 3 : spans[label] || 1}><span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{statusLabels.includes(label) ? renderApplicationStatus(value) : displayValue(label, value)}</span></DetailItem>)}</DetailGrid>;
 }
 // 使用浏览器打印当前单据，避免将后台菜单及其他页面一同打印。
 function printDocument(element, title) {
@@ -40,7 +40,7 @@ export default function LegacyStorageDetail({ record, onBack }) {
   const [selected, setSelected] = useState(null);
   const printable = useRef(null);
   const validationVisible = record.values.status === '出库待接收';
-  const columns = [column('行号', 'lineNo', { width: 70 }), ...(validationVisible ? [column('资产验证', 'validation', { alignmentType: 'status' })] : []), ...(record.lines.some(line => line.handlingStatus) ? [column('移库状态', 'handlingStatus')] : []), column('资产标签号', 'tag'), column('资产说明', 'description', { width: 260 }), column('数量', 'quantity', { width: 90, render: value => displayValue('数量', value) }), column('公司', 'company'), column('板块', 'plate'), column('资产标记', 'mark'), column('启用日期', 'enabledDate'), column('资产状态', 'status', { render: value => displayApplicationValue(value) === '-' ? '-' : <StatusTag value={value} /> }), column('操作', 'operation', { width: 80, fixed: 'right', render: (_, line) => <Button type="link" onClick={() => setSelected(record.lines.find(item => item.id === line.id))}>查看</Button> })];
+  const columns = [column('行号', 'lineNo', { width: 70 }), ...(validationVisible ? [column('资产验证', 'validation', { alignmentType: 'status', render: renderApplicationStatus })] : []), ...(record.lines.some(line => line.handlingStatus) ? [column('移库状态', 'handlingStatus', { render: renderApplicationStatus })] : []), column('资产标签号', 'tag'), column('资产说明', 'description', { width: 260 }), column('数量', 'quantity', { width: 90, render: value => displayValue('数量', value) }), column('公司', 'company'), column('板块', 'plate'), column('资产标记', 'mark'), column('启用日期', 'enabledDate'), column('资产状态', 'status', { render: renderApplicationStatus }), column('操作', 'operation', { width: 80, fixed: 'right', render: (_, line) => <Button type="link" onClick={() => setSelected(record.lines.find(item => item.id === line.id))}>查看</Button> })];
   const rows = record.lines.map(line => ({ ...line, description: line.material.materialDescription, materialType: line.material.materialType, company: line.warehouse.company, plate: line.plate || '', validation: line.verification || '' }));
   const modalHead = selected ? [
     ['移库单号', record.values.applicationNo], ['移库单行号', selected.lineNo], ['移库数量', selected.quantity],

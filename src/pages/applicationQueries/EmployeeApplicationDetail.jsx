@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { renderApplicationStatus } from './ApplicationStatus';
 import { Button, Modal, Space } from 'antd';
 import Table, { BusinessCard as Card } from '../../components/businessQuery/BusinessTable';
 import { displayApplicationValue, LegacyFields } from './LegacyStorageDetail';
@@ -7,12 +8,12 @@ const historyColumns = [
   { title: '审批环节', dataIndex: 'node', width: 170 }, { title: '审批人', dataIndex: 'approver', width: 170 },
   { title: '代理人', dataIndex: 'agent', width: 130 }, { title: '审批状态', dataIndex: 'status', width: 100 },
   { title: '审批时间', dataIndex: 'time', width: 180 }, { title: '审批意见', dataIndex: 'opinion', width: 220 },
-].map(column => ({ render: displayApplicationValue, ...column }));
+].map(column => ({ render: column.dataIndex === 'status' ? renderApplicationStatus : displayApplicationValue, ...column }));
 export default function EmployeeApplicationDetail({ definition, record, onBack }) {
   const [accessoryLine, setAccessoryLine] = useState(null);
   const transfer = record.kind === 'transfer';
   const number = value => displayApplicationValue(value) === '-' ? '-' : Number(value).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
-  const column = (title, dataIndex, extra = {}) => ({ title, dataIndex, width: 170, render: displayApplicationValue, ...extra });
+  const column = (title, dataIndex, extra = {}) => ({ title, dataIndex, width: 170, render: dataIndex === 'status' ? renderApplicationStatus : displayApplicationValue, ...extra });
   const description = column('资产说明', 'description', { width: 280, render: (_, line) => displayApplicationValue(line.material.materialDescription) });
   const accessories = column('部件数量', 'accessories', { width: 100, render: (items, line) => <Button type="link" aria-label={`查看${line.tag}的配件（${number(items.reduce((sum, item) => sum + item.quantity, 0))}件）`} onClick={() => setAccessoryLine(line)}>{number(items.reduce((sum, item) => sum + item.quantity, 0))}</Button> });
   const baseColumns = [column('资产标签号', 'tag'), description];

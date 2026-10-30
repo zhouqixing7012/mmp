@@ -1,3 +1,4 @@
+import { renderApplicationStatus } from './ApplicationStatus';
 import React, { useState } from 'react';
 import { App, DatePicker, Input, Modal, Select } from 'antd';
 import dayjs from 'dayjs';
@@ -34,7 +35,7 @@ export default function TransferDetailDialog({ value, readOnly, onCancel, onSave
         <DetailItem label="*Floor">{readOnly ? draft.floor : <Select style={{ width: '100%' }} value={draft.floor || undefined} onChange={next => patch('floor', next)} options={transferChoices(enabled.filter(row => row.city === draft.city && row.building === draft.building).map(row => row.floor)).map(row => ({ value: row.id, label: row.label }))} />}</DetailItem>
         {text('room', 'Room')}
         <DetailItem label="*用途">{readOnly ? draft.purpose : <Select value={draft.purpose || undefined} style={{ width: '100%' }} onChange={next => patch('purpose', next)} options={references.purposes.map(value => ({ value, label: value }))} />}</DetailItem>
-        <DetailItem label="*资产状态">{draft.original.status}</DetailItem>
+        <DetailItem label="*资产状态">{renderApplicationStatus(draft.original.status)}</DetailItem>
         {display('businessLine', '业务线')}{display('project', '项目')}{text('reason', '转移原因')}
         <DetailItem label="*转移日期">{readOnly ? draft.transferDate : <DatePicker value={draft.transferDate ? dayjs(draft.transferDate) : null} onChange={date => patch('transferDate', date ? date.format('YYYY-MM-DD') : '')} style={{ width: '100%' }} />}</DetailItem>
         {text('usageDescription', '使用说明', true)}

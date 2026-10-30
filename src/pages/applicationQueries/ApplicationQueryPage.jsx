@@ -4,7 +4,7 @@ import { DownOutlined } from '@ant-design/icons';
 import Table, { BusinessCard as Card } from '../../components/businessQuery/BusinessTable';
 import AppliedFilterSummary, { filterSummaryItems } from '../../components/businessQuery/AppliedFilterSummary';
 import QueryBar, { QueryItem } from '../../components/QueryBar';
-import StatusTag from '../../components/StatusTag';
+import { renderApplicationStatus } from './ApplicationStatus';
 import { exportApplications, formatApplicationValue, getApplicationDefinition, getApplicationOptions, queryApplications, removeApplicationDrafts } from '../../services/applicationQueryService';
 import ApplicationFilter from './ApplicationFilter';
 import ApplicationProgress from './ApplicationProgress';
@@ -51,7 +51,7 @@ export default function ApplicationQueryPage({ id }) {
       sorter: Boolean(definition.sortable), render: (value, row) => column.action
         ? value || column.action === 'progress' ? <Button type="link" className="!p-0" onClick={() => column.action === 'progress' ? setProgress(row) : setDetail({ record: row, view: column.action })}>
           {column.action === 'progress' ? '查看' : value}</Button> : '-'
-        : column.format === 'status' ? value == null || value === '' ? '-' : <StatusTag value={value} type="business" /> : value == null || (typeof value === 'string' && !value.trim()) ? '-' : formatApplicationValue(value, column.format),
+        : column.format === 'status' ? renderApplicationStatus(value) : value == null || (typeof value === 'string' && !value.trim()) ? '-' : formatApplicationValue(value, column.format),
     })),
     ...(id === 'unfinished' ? [{ title: '操作', key: 'operation', fixed: 'right', width: 100, render: (_, row) => row.allowProgress ? <Button type="link" className="!p-0" onClick={() => setProgress(row)}>查看流程</Button> : '-' }] : []),
   ];

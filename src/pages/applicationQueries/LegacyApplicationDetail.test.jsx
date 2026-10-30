@@ -117,6 +117,7 @@ test('退库信息独立分区，退库仓库显示于右上角，鉴定记录�
   const info = screen.getByText('退库信息').closest('.ant-card');
   expect(Array.from(info.querySelectorAll('dt')).map(node => node.textContent)).toEqual(['退库单号', '单据状态', '退库类型', '退库原因', 'MIS鉴定']);
   expect(within(info).getByText(record.values.applicationNo)).toBeInTheDocument();
+  expect(info.querySelector('[data-prototype-detail-value="单据状态"] .ant-tag')).toHaveTextContent(record.values.status);
   expect(info.querySelector('[data-prototype-detail-value="MIS鉴定"]')).toHaveTextContent('否');
   const applicant = screen.getByText('申请人信息').closest('.ant-card');
   expect(applicant.querySelector('.ant-card-extra')).toHaveTextContent(`退库仓库：${record.lookupLabels.warehouse}`);
